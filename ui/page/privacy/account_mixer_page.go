@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"context"
-	"fmt"
 
 	"gioui.org/layout"
 
@@ -33,25 +32,20 @@ type AccountMixerPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	pageContainer         layout.List
-	dangerZoneCollapsible *cryptomaterial.Collapsible
+	wallet *dcrlibwallet.Wallet
 
-	backButton  cryptomaterial.IconButton
-	infoButton  cryptomaterial.IconButton
-	toggleMixer *cryptomaterial.Switch
+	toggleMixer *decredmaterial.Switch
 
 	mixerCompleted bool
 }
 
 func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 	pg := &AccountMixerPage{
-		Load:                  l,
-		GenericPageModal:      app.NewGenericPageModal(AccountMixerPageID),
-		pageContainer:         layout.List{Axis: layout.Vertical},
-		toggleMixer:           l.Theme.Switch(),
-		dangerZoneCollapsible: l.Theme.Collapsible(),
+		Load:             l,
+		GenericPageModal: app.NewGenericPageModal(AccountMixerPageID),
+		wallet:           wallet,
+		toggleMixer:      l.Theme.Switch(),
 	}
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
 	return pg
 }
@@ -182,23 +176,11 @@ func (pg *AccountMixerPage) mixerSettingsLayout(gtx layout.Context) layout.Dimen
 			})
 		}
 
-		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.UniformInset(values.MarginPadding15).Layout(gtx, pg.Theme.Body2("Mixer Settings").Layout)
-			}),
-			layout.Rigid(func(gtx C) D { return row("Mixed account", mixedAccountName) }),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Change account", unmixedAccountName) }),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Account branch", fmt.Sprintf("%d", libwallet.MixedAccountBranch)) }),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Shuffle server", libwallet.ShuffleServer) }),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Shuffle port", pg.shufflePortForCurrentNet()) }),
-		)
-	})
+func (pg *AccountMixerPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+	return D{}
 }
 
+/*
 func (pg *AccountMixerPage) shufflePortForCurrentNet() string {
 	if pg.WL.Wallet.Net == libwallet.Testnet3 {
 		return libwallet.TestnetShufflePort
