@@ -1,12 +1,6 @@
 package components
 
-import (
-	"gioui.org/layout"
-
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/values"
-)
-
+/*
 func MixerInfoStatusTextLayout(gtx C, l *load.Load, mixerActive bool) D {
 	txt := l.Theme.H6(values.String(values.StrMixer))
 	subtxt := l.Theme.Body2(values.String(values.StrReadyToMix))
@@ -46,3 +40,4 @@ func MixerInfoContentWrapper(gtx C, l *load.Load, content layout.Widget) D {
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, content)
 	})
 }
+*/
