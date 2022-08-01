@@ -1,7 +1,7 @@
 package components
 
 import (
-	"image/color"
+	// "image/color"
 
 	"gioui.org/layout"
 	"gitlab.com/raedah/cryptopower/app"
@@ -117,14 +117,14 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 	)
 }
 
-func (sp *SubPage) SplitLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
-	card := sp.Theme.Card()
-	card.Color = color.NRGBA{}
-	return card.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return sp.Header(window, gtx) }),
-			layout.Rigid(sp.Body),
-		)
+func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+	return sp.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.UniformInset(values.MarginPadding24).Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return sp.Header(window, gtx) }),
+				layout.Rigid(sp.Body),
+			)
+		})
 	})
 }
 

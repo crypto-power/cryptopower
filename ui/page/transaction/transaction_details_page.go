@@ -46,16 +46,18 @@ type TxDetailsPage struct {
 	associatedTicketClickable       *cryptomaterial.Clickable
 	hashClickable                   *widget.Clickable
 	destAddressClickable            *widget.Clickable
+
 	dot                             *cryptomaterial.Icon
 	toDcrdata                       *cryptomaterial.Clickable
 	outputsCollapsible              *cryptomaterial.Collapsible
 	inputsCollapsible               *cryptomaterial.Collapsible
 	backButton                      cryptomaterial.IconButton
-	infoButton                      cryptomaterial.IconButton
+	// infoButton                      cryptomaterial.IconButton
 	rebroadcast                     cryptomaterial.Label
 	rebroadcastClickable            *cryptomaterial.Clickable
 	rebroadcastIcon                 *cryptomaterial.Image
 	copyRedirectURL                 *cryptomaterial.Clickable
+	moreOption           *cryptomaterial.Clickable
 
 	txnWidgets    transactionWdg
 	transaction   *libwallet.Transaction
@@ -94,6 +96,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction)
 		associatedTicketClickable: l.Theme.NewClickable(true),
 		hashClickable:             new(widget.Clickable),
 		destAddressClickable:      new(widget.Clickable),
+		moreOption:                l.Theme.NewClickable(false),
 		toDcrdata:                 l.Theme.NewClickable(true),
 		copyRedirectURL:           l.Theme.NewClickable(false),
 
@@ -104,7 +107,9 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction)
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
 	}
 
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
+	pg.backButton, _ = components.SubpageHeaderButtons(pg.Load)
+	// pg.backButton.Color = pg.Theme.Color.DeepBlue
+
 	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 	pg.dot.Color = l.Theme.Color.Gray1
 
@@ -164,7 +169,10 @@ func (pg *TxDetailsPage) Layout(gtx layout.Context) layout.Dimensions {
 			Load:       pg.Load,
 			Title:      pg.txnWidgets.title,
 			BackButton: pg.backButton,
-			InfoButton: pg.infoButton,
+			ExtraItem:  pg.moreOption,
+			Extra: func(gtx C) D {
+				return layout.E.Layout(gtx, pg.Theme.Icons.EllipseVert.Layout24dp)
+			},
 			Back: func() {
 				if pg.txBackStack == nil {
 					pg.ParentNavigator().CloseCurrentPage()
@@ -220,9 +228,8 @@ func (pg *TxDetailsPage) Layout(gtx layout.Context) layout.Dimensions {
 					})
 				})
 			},
-			InfoTemplate: modal.TransactionDetailsInfoTemplate,
 		}
-		return sp.Layout(pg.ParentWindow(), gtx)
+		return sp.CombinedLayout(pg.ParentWindow(), gtx)
 	}
 
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -736,6 +743,10 @@ func (pg *TxDetailsPage) pageSections(gtx layout.Context, body layout.Widget) la
 // displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions() {
+	for pg.moreOption.Clicked() {
+
+	}
+
 	for pg.toDcrdata.Clicked() {
 		redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
 		info := modal.NewInfoModal(pg.Load).
