@@ -35,7 +35,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	m24 := values.MarginPadding24
 	backButton.Size, infoButton.Size = m24, m24
 
-	buttonInset := layout.UniformInset(values.MarginPadding4)
+	buttonInset := layout.UniformInset(values.MarginPadding0)
 	backButton.Inset, infoButton.Inset = buttonInset, buttonInset
 
 	return backButton, infoButton
@@ -44,7 +44,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding22}.Layout(gtx, func(gtx C) D {
 				return sp.Header(window, gtx)
 			})
 		}),
@@ -58,7 +58,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Right: values.MarginPadding16,
+				Right: values.MarginPadding20,
 				Top:   values.MarginPaddingMinus2,
 			}.Layout(gtx, sp.BackButton.Layout)
 		}),
