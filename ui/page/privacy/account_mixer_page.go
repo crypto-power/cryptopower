@@ -221,12 +221,11 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			go pg.showModalPasswordStartAccountMixer()
 		} else {
 			pg.toggleMixer.SetChecked(true)
-			info := modal.NewCustomModal(pg.Load).
-				Title("Cancel mixer?").
-				Body("Are you sure you want to cancel mixer action?").
-				SetNegativeButtonText(values.String(values.StrNo)).
-				SetPositiveButtonText(values.String(values.StrYes)).
-				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			info := modal.NewInfoModal(pg.Load).
+				Title(values.String(values.StrCancelMixer)).
+				Body(values.String(values.StrSureToCancelMixer)).
+				NegativeButton(values.String(values.StrNo), func() {}).
+				PositiveButton(values.String(values.StrYes), func(isChecked bool) bool {
 					pg.toggleMixer.SetChecked(false)
 					go pg.WL.MultiWallet.StopAccountMixer(pg.WL.SelectedWallet.Wallet.ID)
 					return true
@@ -246,7 +245,7 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 	passwordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title("Confirm to mix account").
+		Title(values.String(values.StrConfirmToMixAccount)).
 		SetNegativeButtonCallback(func() {
 			pg.toggleMixer.SetChecked(false)
 		}).
@@ -280,7 +279,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 			select {
 			case n := <-pg.MixerChan:
 				if n.RunStatus == wallet.MixerStarted {
-					pg.Toast.Notify("Mixer start Successfully")
+					pg.Toast.Notify(values.String(values.StrMixerStart))
 					pg.ParentWindow().Reload()
 				}
 
