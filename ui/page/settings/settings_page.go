@@ -402,7 +402,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal2(pg.Load).
+		info := modal.NewInfoModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
 			PositiveButtonWidth(values.MarginPadding100).
@@ -534,7 +534,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 func (pg *SettingsPage) showNoticeSuccess(title string) {
 	icon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
 	icon.Color = pg.Theme.Color.Green500
-	info := modal.NewInfoModal2(pg.Load).
+	info := modal.NewInfoModal(pg.Load).
 		SetContentAlignment(layout.Center, layout.Center).
 		Title(title).
 		Icon(icon).

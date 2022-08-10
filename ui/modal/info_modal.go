@@ -46,16 +46,34 @@ type InfoModal struct {
 	isLoading    bool
 }
 
+// ButtonType is the type of button in modal.
+type ButtonType uint8
+
+const (
+	Normal ButtonType = iota
+	Outline
+	Danger
+)
+
 func NewInfoModal(l *load.Load) *InfoModal {
-	return NewInfoModalWithKey(l, "info_modal", false)
+	return NewInfoModalWithKey(l, "info_modal", Outline)
 }
 
-// This function for normal positive button
-func NewInfoModal2(l *load.Load) *InfoModal {
-	return NewInfoModalWithKey(l, "info_modal", true)
+func NewSuccessModal(l *load.Load, title string, clicked func(isChecked bool) bool) *InfoModal {
+	icon := decredmaterial.NewIcon(l.Theme.Icons.ActionCheckCircle)
+	icon.Color = l.Theme.Color.Green500
+	info := NewInfoModalWithKey(l, "info_modal", Normal)
+	info.positiveButtonText = values.String(values.StrOk)
+	info.positiveButtonClicked = clicked
+	info.btnPositiveWidth = values.MarginPadding100
+	info.dialogIcon = icon
+	info.dialogTitle = title
+	info.titleAlignment = layout.Center
+	info.btnAlignment = layout.Center
+	return info
 }
 
-func NewInfoModalWithKey(l *load.Load, key string, isPositiveButtonNormal bool) *InfoModal {
+func NewInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
 
 	in := &InfoModal{
 		Load:             l,
@@ -67,18 +85,23 @@ func NewInfoModalWithKey(l *load.Load, key string, isPositiveButtonNormal bool) 
 		btnPositiveWidth: 0,
 	}
 
-	if isPositiveButtonNormal {
-		in.btnPositive = l.Theme.Button(values.String(values.StrYes))
-	} else {
-		in.btnPositive = l.Theme.OutlineButton(values.String(values.StrYes))
-	}
-
+	in.btnPositive = getPositiveButtonType(l, btnPositiveType)
 	in.btnPositive.Font.Weight = text.Medium
 	in.btnNegative.Font.Weight = text.Medium
 
 	in.materialLoader = material.Loader(l.Theme.Base)
 
 	return in
+}
+
+func getPositiveButtonType(l *load.Load, btnType ButtonType) decredmaterial.Button {
+	if btnType == Normal {
+		return l.Theme.Button(values.String(values.StrYes))
+	} else if btnType == Outline {
+		return l.Theme.OutlineButton(values.String(values.StrYes))
+	} else {
+		return l.Theme.DangerButton(values.String(values.StrYes))
+	}
 }
 
 func (in *InfoModal) OnResume() {}
