@@ -13,6 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -166,7 +167,10 @@ func (v *vspSelectorModal) Handle() {
 		go func() {
 			err := v.WL.MultiWallet.SaveVSP(v.inputVSP.Editor.Text())
 			if err != nil {
-				v.Toast.NotifyError(err.Error())
+				errModal := modal.NewErrorModal(v.Load, err.Error(), func(isChecked bool) bool {
+					return true
+				})
+				v.ParentWindow().ShowModal(errModal)
 			} else {
 				v.inputVSP.Editor.SetText("")
 			}

@@ -18,8 +18,6 @@ type InfoModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	enterKeyPressed bool
-
 	dialogIcon *cryptomaterial.Icon
 
 	dialogTitle    string
@@ -60,8 +58,18 @@ func NewInfoModal(l *load.Load) *InfoModal {
 }
 
 func NewSuccessModal(l *load.Load, title string, clicked func(isChecked bool) bool) *InfoModal {
-	icon := decredmaterial.NewIcon(l.Theme.Icons.ActionCheckCircle)
+	icon := cryptomaterial.NewIcon(l.Theme.Icons.ActionCheckCircle)
 	icon.Color = l.Theme.Color.Green500
+	return NewNotice(l, title, icon, clicked)
+}
+
+func NewErrorModal(l *load.Load, title string, clicked func(isChecked bool) bool) *InfoModal {
+	icon := cryptomaterial.NewIcon(l.Theme.Icons.ErrorIcon)
+	icon.Color = l.Theme.Color.Danger
+	return NewNotice(l, title, icon, clicked)
+}
+
+func NewNotice(l *load.Load, title string, icon *cryptomaterial.Icon, clicked func(isChecked bool) bool) *InfoModal {
 	info := NewInfoModalWithKey(l, "info_modal", Normal)
 	info.positiveButtonText = values.String(values.StrOk)
 	info.positiveButtonClicked = clicked
@@ -94,7 +102,7 @@ func NewInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 	return in
 }
 
-func getPositiveButtonType(l *load.Load, btnType ButtonType) decredmaterial.Button {
+func getPositiveButtonType(l *load.Load, btnType ButtonType) cryptomaterial.Button {
 	if btnType == Normal {
 		return l.Theme.Button(values.String(values.StrYes))
 	} else if btnType == Outline {

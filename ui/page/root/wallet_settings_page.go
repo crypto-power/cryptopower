@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gioui.org/layout"
+	"github.com/planetdecred/dcrlibwallet"
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
@@ -560,15 +561,21 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButton(values.String(values.StrRescan), func(isChecked bool) bool {
 					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
 					if err != nil {
-						if err.Error() == libwallet.ErrNotConnected {
-							pg.Toast.NotifyError(values.String(values.StrNotConnected))
-							return true
+						errMess := err.Error()
+						if err.Error() == dcrlibwallet.ErrNotConnected {
+							errMess = values.String(values.StrNotConnected)
 						}
-						pg.Toast.NotifyError(err.Error())
+						errorModal := modal.NewErrorModal(pg.Load, errMess, func(isChecked bool) bool {
+							return true
+						})
+						pg.ParentWindow().ShowModal(errorModal)
 						return true
 					}
 					msg := values.String(values.StrRescanProgressNotification)
-					pg.Toast.Notify(msg)
+					infoModal := modal.NewSuccessModal(pg.Load, msg, func(isChecked bool) bool {
+						return true
+					})
+					pg.ParentWindow().ShowModal(infoModal)
 					return true
 				})
 

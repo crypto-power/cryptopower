@@ -628,4 +628,6 @@ const (
 	StrTxFee                           = "txFee"
 	StrVsp                             = "vsp"
 	StrVspFee                          = "vspFee"
+	StrDexDataReset                    = "dexDataReset"
+	StrDexDataResetFalse               = "dexDataResetFalse"
 )

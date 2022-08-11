@@ -413,9 +413,15 @@ func (mp *MainPage) HandleUserInteractions() {
 				if mp.WL.MultiWallet.IsSynced() {
 					mp.Display(pg)
 				} else if mp.WL.MultiWallet.IsSyncing() {
-					mp.Toast.NotifyError(values.String(values.StrNotConnected))
+					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), func(isChecked bool) bool {
+						return true
+					})
+					mp.ParentWindow().ShowModal(errModal)
 				} else {
-					mp.Toast.NotifyError(values.String(values.StrWalletSyncing))
+					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), func(isChecked bool) bool {
+						return true
+					})
+					mp.ParentWindow().ShowModal(errModal)
 				}
 			} else {
 				mp.Display(pg)
@@ -462,9 +468,15 @@ func (mp *MainPage) HandleUserInteractions() {
 			if mp.WL.MultiWallet.IsSynced() {
 				mp.Display(pg)
 			} else if mp.WL.MultiWallet.IsSyncing() {
-				mp.Toast.NotifyError(values.String(values.StrWalletSyncing))
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), func(isChecked bool) bool {
+					return true
+				})
+				mp.ParentWindow().ShowModal(errModal)
 			} else {
-				mp.Toast.NotifyError(values.String(values.StrNotConnected))
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), func(isChecked bool) bool {
+					return true
+				})
+				mp.ParentWindow().ShowModal(errModal)
 			}
 		}
 	}

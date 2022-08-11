@@ -78,7 +78,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal(), vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
-					vm.voteDetails = &libwallet.ProposalVoteDetails{*voteDetails}
+					vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
 					vm.voteDetailsErr = err
 				}
 				vm.detailsMu.Unlock()
@@ -162,7 +162,10 @@ func (vm *voteModal) sendVotes() {
 					return
 				}
 				pm.Dismiss()
-				vm.Toast.Notify(values.String(values.StrVoteSent))
+				infoModal := modal.NewSuccessModal(vm.Load, values.String(values.StrVoteSent), func(isChecked bool) bool {
+					return true
+				})
+				vm.ParentWindow().ShowModal(infoModal)
 				go vm.WL.MultiWallet.Politeia.Sync(ctx)
 				vm.Dismiss()
 			}()
