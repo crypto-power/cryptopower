@@ -3,12 +3,12 @@ package page
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const DebugPageID = "Debug"
@@ -28,9 +28,9 @@ type DebugPage struct {
 	*app.GenericPageModal
 
 	debugItems []debugItem
-	list       *decredmaterial.ClickableList
+	list       *cryptomaterial.ClickableList
 
-	backButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
 }
 
 func NewDebugPage(l *load.Load) *DebugPage {
@@ -57,7 +57,7 @@ func NewDebugPage(l *load.Load) *DebugPage {
 		debugItems:       debugItems,
 		list:             l.Theme.NewClickableList(layout.Vertical),
 	}
-	pg.list.Radius = decredmaterial.Radius(14)
+	pg.list.Radius = cryptomaterial.Radius(14)
 	pg.list.IsShadowEnabled = true
 
 	// Add a "Reset DEX Client" option.
@@ -109,7 +109,7 @@ func (pg *DebugPage) debugItem(gtx C, i int) D {
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-					ic := decredmaterial.NewIcon(pg.Theme.Icons.ChevronRight)
+					ic := cryptomaterial.NewIcon(pg.Theme.Icons.ChevronRight)
 					ic.Color = pg.Theme.Color.Gray1
 					return ic.Layout(gtx, values.MarginPadding22)
 				})

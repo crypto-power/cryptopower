@@ -524,4 +524,5 @@ unlockWithPassword = "Unlock with password"
 "vspFee" = "VSP Fee"
 "dexDataReset" = "DEX client data reset complete."
 "dexDataResetFalse" = "DEX client data reset failed. Check the logs."
+"notSameAccoutMixUnmix" = ""Cannot use same account for mixed & unmixed""
 `

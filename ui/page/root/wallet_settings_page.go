@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"gioui.org/layout"
-	"github.com/planetdecred/dcrlibwallet"
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
@@ -562,7 +561,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
 					if err != nil {
 						errMess := err.Error()
-						if err.Error() == dcrlibwallet.ErrNotConnected {
+						if err.Error() == libwallet.ErrNotConnected {
 							errMess = values.String(values.StrNotConnected)
 						}
 						errorModal := modal.NewErrorModal(pg.Load, errMess, func(isChecked bool) bool {

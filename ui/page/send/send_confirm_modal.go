@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -72,10 +73,16 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		scm.isSending = false
 		scm.Modal.SetDisabled(false)
 		if err != nil {
-			scm.Toast.NotifyError(err.Error())
+			errModal := modal.NewErrorModal(scm.Load, err.Error(), func(isChecked bool) bool {
+				return true
+			})
+			scm.ParentWindow().ShowModal(errModal)
 			return
 		}
-		scm.Toast.Notify(values.String(values.StrTxSent))
+		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(isChecked bool) bool {
+			return true
+		})
+		scm.ParentWindow().ShowModal(successModal)
 
 		scm.txSent()
 		scm.Dismiss()

@@ -630,4 +630,5 @@ const (
 	StrVspFee                          = "vspFee"
 	StrDexDataReset                    = "dexDataReset"
 	StrDexDataResetFalse               = "dexDataResetFalse"
+	StrNotSameAccoutMixUnmix           = "notSameAccoutMixUnmix"
 )
