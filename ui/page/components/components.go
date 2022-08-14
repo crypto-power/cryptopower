@@ -424,7 +424,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 								amount = "-" + amount
 							}
 						}
-						return LayoutBalance(gtx, l, amount)
+						return LayoutBalanceWithUnit(gtx, l, amount)
 					}
 
 					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
