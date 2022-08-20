@@ -511,6 +511,7 @@ const EN = `
 "sureToCancelMixer" = "Are you sure you want to cancel mixer action?"
 "confirmToMixAcc" = "Confirm to mix account"
 "mixerStart" = "Mixer start Successfully"
+"default" = "default"
 "removeWalletInfo" = "%v Are you sure you want to remove %v %s%v? Enter the name of the wallet below to verify. %v"
 "confirmUmixedSpending" = "Confirm to allow spending from unmixed accounts"
 "ok" = "OK"
