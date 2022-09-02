@@ -139,7 +139,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 			if input.AccountNumber != -1 {
 				accountName, err := pg.wallet.AccountName(input.AccountNumber)
 				if err != nil {
-					// log.Error(err)
+					log.Error(err)
 				} else {
 					pg.txSourceAccount = accountName
 				}
@@ -171,9 +171,9 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 		pg.ticketSpender, _ = pg.wallet.TicketSpender(pg.transaction.Hash)
 	}
 
-	pg.title = "Transaction Details"
-	if pg.transaction.Type == "Ticket" {
-		pg.title = "Ticket Details"
+	pg.title = values.String(values.StrTransactionDetails)
+	if pg.transaction.Type == values.String(values.StrTicket) {
+		pg.title = values.String(values.StrTicketDetails)
 	}
 
 	pg.getTXSourceAccountAndDirection()
@@ -325,7 +325,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 							case dcrlibwallet.TicketStatusLive:
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										lbl := pg.Theme.Label(values.TextSize16, "Life Span: ")
+										lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrLifeSpan)+": ")
 										lbl.Color = col
 										return lbl.Layout(gtx)
 									}),
@@ -343,7 +343,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									if pg.ticketSpender.Type == dcrlibwallet.TxTypeVote {
 										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												lbl := pg.Theme.Label(values.TextSize16, "Reward: ")
+												lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
 												lbl.Color = col
 												return lbl.Layout(gtx)
 											}),
@@ -394,9 +394,18 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									Clickable: pg.rebroadcastClickable,
 									Direction: layout.Center,
 									Alignment: layout.Middle,
-									Border:    cryptomaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: cryptomaterial.Radius(10)},
-									Padding:   layout.Inset{Top: values.MarginPadding3, Bottom: values.MarginPadding3, Left: values.MarginPadding8, Right: values.MarginPadding8},
-									Margin:    layout.Inset{Left: values.MarginPadding10},
+									Border: cryptomaterial.Border{
+										Color:  pg.Theme.Color.Gray2,
+										Width:  values.MarginPadding1,
+										Radius: cryptomaterial.Radius(10),
+									},
+									Padding: layout.Inset{
+										Top:    values.MarginPadding3,
+										Bottom: values.MarginPadding3,
+										Left:   values.MarginPadding8,
+										Right:  values.MarginPadding8,
+									},
+									Margin: layout.Inset{Left: values.MarginPadding10},
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, pg.rebroadcastIcon.Layout16dp)
@@ -532,7 +541,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			key := values.String(values.StrTicketPrice)
-			if pg.transaction.Type == "Ticket" {
+			if pg.transaction.Type == values.String(values.StrTicket) {
 				key = values.String(values.StrAmount)
 			}
 
@@ -557,26 +566,26 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 
 			if pg.ticketSpender != nil { // voted or revoked
 				if pg.ticketSpender.Type == dcrlibwallet.TxTypeVote {
-					return pg.keyValue(gtx, "Voted on", pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
+					return pg.keyValue(gtx, values.String(values.StrVotedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
 				} else if pg.ticketSpender.Type == dcrlibwallet.TxTypeRevocation {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return pg.keyValue(gtx, "Missed on", pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
+							return pg.keyValue(gtx, values.String(values.StrMissedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return pg.keyValue(gtx, "Revocation cause", pg.Theme.Label(values.TextSize14, "Missed Ticket").Layout)
+							return pg.keyValue(gtx, values.String(values.StrRevokeCause), pg.Theme.Label(values.TextSize14, values.String(values.StrMissedTickets)).Layout)
 						}),
 					)
 				}
 			}
 
 			if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterExpired) {
-				return pg.keyValue(gtx, "Expired On", pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
+				return pg.keyValue(gtx, values.String(values.StrExpiredOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
 			}
 
 			// TODO vote transaction progress bar (V2 UI missing)
 			// missed tickets currently not implemented on dcrlibwallet
-			return pg.keyValue(gtx, "Purchased On", pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
+			return pg.keyValue(gtx, values.String(values.StrPurchasedOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			stat := func(gtx C) D {
@@ -611,10 +620,10 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					}),
 				)
 			}
-			return pg.keyValue(gtx, "Confirmation Status", stat)
+			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.keyValue(gtx, "Transaction Fee", pg.Theme.Label(values.TextSize14, dcrutil.Amount(transaction.Fee).String()).Layout)
+			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, dcrutil.Amount(transaction.Fee).String()).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterStaking) {
@@ -623,8 +632,8 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					log.Errorf("VSPTicketInfo error: %v\n", err)
 				}
 
-				vspHost := "Not available"
-				vspFee := "Not available"
+				vspHost := values.String(values.StrNotAvailable)
+				vspFee := values.String(values.StrNotAvailable)
 				if info != nil {
 					vspHost = info.VSP
 
@@ -644,10 +653,10 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, "VSP", pg.Theme.Label(values.TextSize14, vspHost).Layout)
+						return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, vspHost).Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, "VSP Fee", pg.Theme.Label(values.TextSize14, vspFee).Layout)
+						return pg.keyValue(gtx, values.String(values.StrVspFees), pg.Theme.Label(values.TextSize14, vspFee).Layout)
 					}),
 				)
 			}
@@ -866,7 +875,7 @@ func (pg *TxDetailsPage) handleTextCopyEvent(gtx C) {
 	for _, menu := range pg.moreItems {
 		if menu.button.Clicked() && menu.id == copyBlockID {
 			clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
-			pg.Toast.Notify("URL copied")
+			pg.Toast.Notify(values.String(values.StrCopied))
 			pg.moreOptionIsOpen = false
 			break
 		}
