@@ -87,7 +87,7 @@ func stakeToTransactionItems(l *load.Load, txs []libwallet.Transaction, newestFi
 		}
 
 		ticketCopy := tx
-		txStatus := components.TransactionTitleIcon(l, w, &tx, ticketSpender)
+		txStatus := components.TransactionTitleIcon(l, w, &tx)
 		confirmations := tx.Confirmations(w.GetBestBlock())
 		var ticketAge string
 
