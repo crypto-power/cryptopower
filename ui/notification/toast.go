@@ -1,3 +1,7 @@
+// This file contains the toast UI component implementation which should be used
+// sparingly unless explicity defined and used in a given the UI design.
+// TODO: Add Toast UI Components usage policy URL.
+
 package notification
 
 import (
@@ -24,58 +28,66 @@ type Toast struct {
 	timer   *time.Timer
 }
 
-type duration int32
-
 const (
-	Short duration = iota
-	Long
+	// shortDelay s limited to 2 seconds.
+	shortDelay = 2 * time.Second
+	// longDelay is limited to 5 seconds
+	longDelay = 5 * time.Second
 )
 
+// NewToast returns an initialized instance of the toast UI component.
+// To avoid poor user experience on the UI, this component should sparingly used.
 func NewToast(th *cryptomaterial.Theme) *Toast {
 	return &Toast{
 		theme: th,
 	}
 }
 
-func getDurationFromDelay(d duration) time.Duration {
-	if d == Long {
-		return 5 * time.Second
+func checkDelay(isLong bool) time.Duration {
+	if isLong {
+		return longDelay
 	}
-	return 2 * time.Second
+	return shortDelay
 }
 
-// Notify is called to display a message indicating a successful action. It updates the toast object with the toast message
-// and duration. The duration parameter is optional.
-func (t *Toast) Notify(message string, d ...duration) {
-	t.notify(message, true, d...)
+// Notify is called to display a message indicating a successful action.
+// It updates the toast object with the toast message and duration.
+// isLongDelay parameter is optional.
+func (t *Toast) Notify(message string, isLongDelay ...bool) {
+	t.notify(message, true, isLongDelay...)
 }
 
-// Notify is called to display a message indicating a failed action. It updates the toast object with the toast message
-// and duration. The duration parameter is optional.
-func (t *Toast) NotifyError(message string, d ...duration) {
-	t.notify(message, false, d...)
+// Notify is called to display a message indicating a failed action.
+// It updates the toast object with the toast message and duration.
+// isLongDelay parameter is optional.
+func (t *Toast) NotifyError(message string, isLongDelay ...bool) {
+	t.notify(message, false, isLongDelay...)
 }
 
-// notify updates notification parameters on the toast object. It takes the message, success and duration
-// parameters.
-func (t *Toast) notify(message string, success bool, d ...duration) {
-	var notificationDelay duration
+// notify updates notification parameters on the toast object.
+// It takes the message, success and duration parameters.
+// It defaults to 5 secs if long delay set to true and 2 sec if otherwise.
+func (t *Toast) notify(message string, success bool, d ...bool) {
+	var isLong bool
 	if len(d) > 0 {
-		notificationDelay = d[0]
+		isLong = d[0]
 	}
 
 	t.Lock()
+	defer t.Unlock()
 	t.message = message
 	t.success = success
-	t.timer = time.NewTimer(getDurationFromDelay(notificationDelay))
-	t.Unlock()
+	t.timer = time.NewTimer(checkDelay(isLong))
 }
 
+// Layout uses the provided dimensions and constraints to construct a toast UI
+// component.
 func (t *Toast) Layout(gtx layout.Context) layout.Dimensions {
-	t.handleToastDisplay(gtx)
 	if t.timer == nil {
 		return layout.Dimensions{}
 	}
+
+	go t.handleToastDisplay(gtx)
 
 	color := t.theme.Color.Success
 	if !t.success {
@@ -100,11 +112,8 @@ func (t *Toast) Layout(gtx layout.Context) layout.Dimensions {
 	})
 }
 
+// handleToastDisplay removes the toast UI component after the timer expires.
 func (t *Toast) handleToastDisplay(gtx layout.Context) {
-	if t.timer == nil {
-		return
-	}
-
 	select {
 	case <-t.timer.C:
 		t.timer = nil
