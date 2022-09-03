@@ -136,7 +136,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 			host = "https://test-proposals.decred.org/record/" + pg.proposal.Token
 		}
 
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrViewOnPoliteia)).
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).

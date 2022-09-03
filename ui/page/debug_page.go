@@ -177,7 +177,7 @@ func (pg *DebugPage) layoutMobile(gtx layout.Context, body layout.Widget) layout
 
 func (pg *DebugPage) resetDexData() {
 	// Show confirm modal before resetting dex client data.
-	confirmModal := modal.NewInfoModal(pg.Load).
+	confirmModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrConfirmDexReset)).
 		Body(values.String(values.StrDexResetInfo)).
 		NegativeButton(values.String(values.StrCancel), func() {}).

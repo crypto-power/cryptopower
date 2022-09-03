@@ -209,7 +209,7 @@ func (pg *HelpPage) pageSectionsMobile(gtx C, icon *cryptomaterial.Image, action
 func (pg *HelpPage) HandleUserInteractions() {
 	if pg.documentation.Clicked() {
 		decredURL := "https://docs.decred.org"
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title("View documentation").
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
@@ -252,9 +252,7 @@ func (pg *HelpPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 

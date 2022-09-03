@@ -28,7 +28,7 @@ type TextInputModal struct {
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm := &TextInputModal{
-		InfoModal:    NewInfoModalWithKey(l, "text_input_modal", Outline),
+		InfoModal:    newInfoModalWithKey(l, "text_input_modal", CustomBtn),
 		isCancelable: true,
 	}
 

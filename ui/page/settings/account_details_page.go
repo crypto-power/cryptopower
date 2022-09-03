@@ -344,9 +344,7 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 					return false
 				}
 				pg.account.Name = newName
-				successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrAcctRenamed), func(isChecked bool) bool {
-					return true
-				})
+				successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrAcctRenamed), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(successModal)
 				return true
 			})

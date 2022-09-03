@@ -93,9 +93,7 @@ func (avm *agendaVoteModal) FetchUnspentUnexpiredTickets(walletID int) {
 		wallet := avm.WL.MultiWallet.WalletWithID(walletID)
 		tickets, err := wallet.UnspentUnexpiredTickets()
 		if err != nil {
-			errorModal := modal.NewErrorModal(avm.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errorModal := modal.NewErrorModal(avm.Load, err.Error(), modal.DefaultClickFunc())
 			avm.ParentWindow().ShowModal(errorModal)
 			return
 		}
@@ -238,16 +236,12 @@ func (avm *agendaVoteModal) sendVotes() {
 			if err.Error() == libwallet.ErrInvalidPassphrase {
 				avm.spendingPassword.SetError(values.String(values.StrInvalidPassphrase))
 			} else {
-				errorModal := modal.NewErrorModal(avm.Load, err.Error(), func(isChecked bool) bool {
-					return true
-				})
+				errorModal := modal.NewErrorModal(avm.Load, err.Error(), modal.DefaultClickFunc())
 				avm.ParentWindow().ShowModal(errorModal)
 			}
 			return
 		}
-		successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), func(isChecked bool) bool {
-			return true
-		})
+		successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
 		avm.ParentWindow().ShowModal(successModal)
 		avm.Dismiss()
 		avm.onPreferenceUpdated()

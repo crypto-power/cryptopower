@@ -100,9 +100,7 @@ func (md *AddDexModal) doAddDexServer(serverAddr string) {
 
 		dexServer, paid, err := md.Dexc().Core().DiscoverAccount(serverAddr, []byte(DEXClientPass), cert)
 		if err != nil {
-			errorModal := modal.NewErrorModal(md.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errorModal := modal.NewErrorModal(md.Load, err.Error(), modal.DefaultClickFunc())
 			md.ParentWindow().ShowModal(errorModal)
 			return
 		}
@@ -171,7 +169,7 @@ func (md *AddDexModal) payFeeAndRegister(dexServer *core.Exchange, cert []byte) 
 	assetSelectorModal := newFeeAssetSelectorModal(md.Load, dexServer)
 
 	confirmAndRegister := func(feeAsset *core.SupportedAsset) {
-		infoModal := modal.NewInfoModal(md.Load).
+		infoModal := modal.NewCustomModal(md.Load).
 			Title(strConfirmReg).
 			Body(confirmRegisterModalDesc(dexServer, feeAsset.Symbol)).
 			SetCancelable(false).

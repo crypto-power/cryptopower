@@ -147,10 +147,9 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	selectedWallet := pg.multiWallet.WalletWithID(pg.selector.SelectedAccount().WalletID)
 	currentAddress, err := selectedWallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
-		log.Errorf("Error getting current address: %v", err)
-		errModal := modal.NewErrorModal(pg.Load, fmt.Sprintf("Error getting current address: %v", err), func(isChecked bool) bool {
-			return true
-		})
+		errStr := fmt.Sprintf("Error getting current address: %v", err)
+		log.Errorf(errStr)
+		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 	} else {
 		pg.currentAddress = currentAddress
@@ -462,12 +461,10 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrReceive)+" DCR").
 			Body(values.String(values.StrReceiveInfo)).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 

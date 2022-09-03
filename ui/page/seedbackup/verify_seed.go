@@ -164,9 +164,8 @@ func (pg *VerifySeedPage) verifySeed() {
 				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
 				if err != nil {
 					if err.Error() == libwallet.ErrInvalid {
-						errModal := modal.NewErrorModal(pg.Load, "Failed to verify. Please go through every word and try again.", func(isChecked bool) bool {
-							return true
-						})
+						msg := "Failed to verify. Please go through every word and try again."
+						errModal := modal.NewErrorModal(pg.Load, msg, modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errModal)
 						m.Dismiss()
 						return

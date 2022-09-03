@@ -47,9 +47,7 @@ func (pg *Page) listenForTxNotifications() {
 func (pg *Page) fetchTickets() {
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterTickets, true)
 	if err != nil {
-		errModal := modal.NewErrorModal(pg.Load, err.Error(), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
@@ -58,9 +56,7 @@ func (pg *Page) fetchTickets() {
 		return filter == libwallet.TxFilterTickets
 	})
 	if err != nil {
-		errModal := modal.NewErrorModal(pg.Load, err.Error(), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return
 	}

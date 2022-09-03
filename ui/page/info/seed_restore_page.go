@@ -496,9 +496,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 	if isValid {
 		pg.seedPhrase = seedphrase
 		if !libwallet.VerifySeed(pg.seedPhrase) {
-			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), func(isChecked bool) bool {
-				return true
-			})
+			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
 			return false
 		}
@@ -513,9 +511,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 	}
 
 	if walletWithSameSeed != -1 {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return false
 	}
@@ -579,9 +575,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 						return
 					}
 
-					infoModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletRestored), func(isChecked bool) bool {
-						return true
-					})
+					infoModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
 					pg.ParentWindow().ShowModal(infoModal)
 					pg.resetSeeds()
 					m.Dismiss()

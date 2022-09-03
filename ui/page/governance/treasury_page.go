@@ -92,13 +92,11 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		infoModal := modal.NewInfoModal(pg.Load).
+		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrTreasurySpending)).
 			Body(values.String(values.StrTreasurySpendingInfo)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
@@ -108,7 +106,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrVerifyGovernanceKeys)).
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
@@ -149,9 +147,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -276,18 +272,14 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 					if err.Error() == libwallet.ErrInvalidPassphrase {
 						pm.SetError(values.String(values.StrInvalidPassphrase))
 					} else {
-						errModal := modal.NewErrorModal(pg.Load, err.Error(), func(isChecked bool) bool {
-							return true
-						})
+						errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errModal)
 					}
 					pm.SetLoading(false)
 					return
 				}
 				go pg.FetchPolicies() // re-fetch policies when voting is done.
-				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), func(isChecked bool) bool {
-					return true
-				})
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(infoModal)
 				pm.Dismiss()
 			}()

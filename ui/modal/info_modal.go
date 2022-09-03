@@ -7,7 +7,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
+	"golang.org/x/exp/shiny/materialdesign/icons"
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -47,30 +49,47 @@ type InfoModal struct {
 // ButtonType is the type of button in modal.
 type ButtonType uint8
 
+// ClickFunc defines the button click method signature.
+type ClickFunc func(isChecked bool) bool
+
 const (
-	Normal ButtonType = iota
-	Outline
-	Danger
+	// CustomBtn defines the bare metal custom modal button type.
+	CustomBtn ButtonType = iota
+	// DangerBtn defines the default danger modal button type
+	DangerBtn
+	// InfoBtn defines the default info modal button type
+	InfoBtn
 )
 
-func NewInfoModal(l *load.Load) *InfoModal {
-	return NewInfoModalWithKey(l, "info_modal", Outline)
+// NewCustomModal returns a modal that can be customized.
+func NewCustomModal(l *load.Load) *InfoModal {
+	return newInfoModalWithKey(l, "info_modal", CustomBtn)
 }
 
-func NewSuccessModal(l *load.Load, title string, clicked func(isChecked bool) bool) *InfoModal {
+// NewSuccessModal returns the default success modal UI component.
+func NewSuccessModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 	icon := cryptomaterial.NewIcon(l.Theme.Icons.ActionCheckCircle)
 	icon.Color = l.Theme.Color.Green500
-	return NewNotice(l, title, icon, clicked)
+	return newModal(l, title, icon, clicked)
 }
 
-func NewErrorModal(l *load.Load, title string, clicked func(isChecked bool) bool) *InfoModal {
-	icon := cryptomaterial.NewIcon(l.Theme.Icons.ErrorIcon)
+// NewErrorModal returns the default error modal UI component.
+func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
+	icon := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
 	icon.Color = l.Theme.Color.Danger
-	return NewNotice(l, title, icon, clicked)
+	return newModal(l, title, icon, clicked)
 }
 
-func NewNotice(l *load.Load, title string, icon *cryptomaterial.Icon, clicked func(isChecked bool) bool) *InfoModal {
-	info := NewInfoModalWithKey(l, "info_modal", Normal)
+// DefaultClickFunc returns the default click function satisfying the positive
+// btn click function.
+func DefaultClickFunc() ClickFunc {
+	return func(isChecked bool) bool {
+		return true
+	}
+}
+
+func newModal(l *load.Load, title string, icon *cryptomaterial.Icon, clicked ClickFunc) *InfoModal {
+	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
 	info.positiveButtonText = values.String(values.StrOk)
 	info.positiveButtonClicked = clicked
 	info.btnPositiveWidth = values.MarginPadding100
@@ -81,8 +100,7 @@ func NewNotice(l *load.Load, title string, icon *cryptomaterial.Icon, clicked fu
 	return info
 }
 
-func NewInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
-
+func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
 		Modal:            l.Theme.ModalFloatTitle(key),
@@ -103,12 +121,13 @@ func NewInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 }
 
 func getPositiveButtonType(l *load.Load, btnType ButtonType) cryptomaterial.Button {
-	if btnType == Normal {
+	switch btnType {
+	case CustomBtn:
 		return l.Theme.Button(values.String(values.StrYes))
-	} else if btnType == Outline {
-		return l.Theme.OutlineButton(values.String(values.StrYes))
-	} else {
+	case DangerBtn:
 		return l.Theme.DangerButton(values.String(values.StrYes))
+	default:
+		return l.Theme.OutlineButton(values.String(values.StrYes))
 	}
 }
 
@@ -153,7 +172,7 @@ func (in *InfoModal) Body(subtitle string) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) PositiveButton(text string, clicked func(isChecked bool) bool) *InfoModal {
+func (in *InfoModal) PositiveButton(text string, clicked ClickFunc) *InfoModal {
 	in.positiveButtonText = text
 	in.positiveButtonClicked = clicked
 	return in

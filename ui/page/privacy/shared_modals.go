@@ -3,16 +3,12 @@ package privacy
 import (
 	"fmt"
 
-	"gioui.org/layout"
-	"gioui.org/widget"
-
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 
 type sharedModalConfig struct {
@@ -23,31 +19,18 @@ type sharedModalConfig struct {
 }
 
 func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError, alignCenter bool) {
-	icon := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
-	icon.Color = conf.Theme.Color.DeepBlue
-	if !isError {
-		icon = cryptomaterial.NewIcon(conf.Theme.Icons.ActionCheckCircle)
-		icon.Color = conf.Theme.Color.Success
-	}
-
-	info := modal.NewInfoModal(conf.Load).
-		Icon(icon).
-		Title(title).
-		Body(body).
-		PositiveButton(btnText, func(isChecked bool) bool {
-			return true
-		})
-
-	if alignCenter {
-		align := layout.Center
-		info.SetContentAlignment(align, align)
+	var info *modal.InfoModal
+	if isError {
+		info = modal.NewErrorModal(conf.Load, btnText, modal.DefaultClickFunc())
+	} else {
+		info = modal.NewSuccessModal(conf.Load, btnText, modal.DefaultClickFunc())
 	}
 
 	conf.window.ShowModal(info)
 }
 
 func showModalSetupMixerInfo(conf *sharedModalConfig) {
-	info := modal.NewInfoModal(conf.Load).
+	info := modal.NewCustomModal(conf.Load).
 		Title("Set up mixer by creating two needed accounts").
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
 		CheckBox(conf.checkBox, false).
@@ -64,11 +47,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	txt := "There are existing accounts named mixed or unmixed. Please change the name to something else for now. You can change them back after the setup."
 	for _, acct := range accounts.Acc {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
-			alert := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
-			alert.Color = conf.Theme.Color.DeepBlue
-			info := modal.NewInfoModal(conf.Load).
-				Icon(alert).
-				Title("Account name is taken").
+			info := modal.NewErrorModal(conf.Load, "Account name is taken", modal.DefaultClickFunc()).
 				Body(txt).
 				PositiveButton("Go back & rename", func(movefundsChecked bool) bool {
 					conf.pageNavigator.CloseCurrentPage()

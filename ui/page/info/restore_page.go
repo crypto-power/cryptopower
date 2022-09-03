@@ -248,9 +248,7 @@ func (pg *Restore) showHexRestoreModal() {
 								return
 							}
 
-							successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), func(isChecked bool) bool {
-								return true
-							})
+							successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(successModal)
 							m.Dismiss()
 							if pg.restoreComplete == nil {
@@ -289,9 +287,7 @@ func (pg *Restore) verifyHex(hex string) bool {
 	}
 
 	if walletWithSameSeed != -1 {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return false
 	}

@@ -218,7 +218,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			go pg.showModalPasswordStartAccountMixer()
 		} else {
 			pg.toggleMixer.SetChecked(true)
-			info := modal.NewInfoModal(pg.Load).
+			info := modal.NewCustomModal(pg.Load).
 				Title("Cancel mixer?").
 				Body("Are you sure you want to cancel mixer action?").
 				NegativeButton("No", func() {}).

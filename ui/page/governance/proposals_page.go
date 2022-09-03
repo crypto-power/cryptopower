@@ -179,13 +179,11 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		infoModal := modal.NewInfoModal(pg.Load).
+		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrProposal)).
 			Body(values.String(values.StrOffChainVote)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 

@@ -167,9 +167,7 @@ func (v *vspSelectorModal) Handle() {
 		go func() {
 			err := v.WL.MultiWallet.SaveVSP(v.inputVSP.Editor.Text())
 			if err != nil {
-				errModal := modal.NewErrorModal(v.Load, err.Error(), func(isChecked bool) bool {
-					return true
-				})
+				errModal := modal.NewErrorModal(v.Load, err.Error(), modal.DefaultClickFunc())
 				v.ParentWindow().ShowModal(errModal)
 			} else {
 				v.inputVSP.Editor.SetText("")

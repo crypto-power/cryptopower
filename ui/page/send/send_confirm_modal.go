@@ -73,15 +73,11 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		scm.isSending = false
 		scm.Modal.SetDisabled(false)
 		if err != nil {
-			errModal := modal.NewErrorModal(scm.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errModal := modal.NewErrorModal(scm.Load, err.Error(), modal.DefaultClickFunc())
 			scm.ParentWindow().ShowModal(errModal)
 			return
 		}
-		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), func(isChecked bool) bool {
-			return true
-		})
+		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), modal.DefaultClickFunc())
 		scm.ParentWindow().ShowModal(successModal)
 
 		scm.txSent()

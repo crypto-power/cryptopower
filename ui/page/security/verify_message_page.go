@@ -187,14 +187,12 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 			verifyMessageText = values.String(values.StrValidSignature)
 		}
 
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Icon(verifyMessageStatus).
 			Title(verifyMessageText).
 			SetContentAlignment(layout.Center, layout.Center).
 			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-			PositiveButton(values.String(values.StrOK), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 

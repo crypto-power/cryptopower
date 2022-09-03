@@ -187,9 +187,7 @@ func (pg *ManualMixerSetupPage) mixerAccountSections(gtx layout.Context, title s
 
 func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	if pg.mixedAccountSelector.SelectedAccount().Number == pg.unmixedAccountSelector.SelectedAccount().Number {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotSameAccoutMixUnmix), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotSameAccoutMixUnmix),modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return
 	}

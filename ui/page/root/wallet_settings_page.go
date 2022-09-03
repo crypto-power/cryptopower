@@ -525,7 +525,7 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 }
 
 func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
-	info := modal.NewInfoModal(pg.Load).
+	info := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
 		NegativeButton(values.String(values.StrCancel), func() {
@@ -552,7 +552,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	for pg.rescan.Clicked() {
 		go func() {
-			info := modal.NewInfoModal(pg.Load).
+			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrRescanBlockchain)).
 				Body(values.String(values.StrRescanInfo)).
 				NegativeButton(values.String(values.StrCancel), func() {}).
@@ -564,16 +564,12 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						if err.Error() == libwallet.ErrNotConnected {
 							errMsg = values.String(values.StrNotConnected)
 						}
-						errorModal := modal.NewErrorModal(pg.Load, errMsg, func(isChecked bool) bool {
-							return true
-						})
+						errorModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
 						return true
 					}
 					msg := values.String(values.StrRescanProgressNotification)
-					infoModal := modal.NewSuccessModal(pg.Load, msg, func(isChecked bool) bool {
-						return true
-					})
+					infoModal := modal.NewSuccessModal(pg.Load, msg, modal.DefaultClickFunc())
 					pg.ParentWindow().ShowModal(infoModal)
 					return true
 				})
@@ -594,14 +590,12 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.Center).
 			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
 			Title(values.String(values.StrSecurityTools)).
-			PositiveButton(values.String(values.StrOK), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -612,7 +606,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
 			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
 		} else {
-			info := modal.NewInfoModal(pg.Load).
+			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrGovernance)).
 				Body(values.String(values.StrGovernanceSettingsInfo)).
 				NegativeButton(values.String(values.StrCancel), func() {
@@ -742,7 +736,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 func (pg *WalletSettingsPage) resetDexDataModal() {
 	// Show confirm modal before resetting dex client data.
-	confirmModal := modal.NewInfoModal(pg.Load).
+	confirmModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrConfirmDexReset)).
 		Body(values.String(values.StrDexResetInfo)).
 		NegativeButton(values.String(values.StrCancel), func() {}).

@@ -80,9 +80,7 @@ func (tb *ticketBuyerModal) OnResume() {
 		tbConfig := tb.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
 		acct, err := tb.WL.SelectedWallet.Wallet.GetAccount(tbConfig.PurchaseAccount)
 		if err != nil {
-			errModal := modal.NewErrorModal(tb.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
 		}
 
@@ -93,9 +91,7 @@ func (tb *ticketBuyerModal) OnResume() {
 		} else {
 			err := tb.accountSelector.SelectFirstWalletValidAccount()
 			if err != nil {
-				errModal := modal.NewErrorModal(tb.Load, err.Error(), func(isChecked bool) bool {
-					return true
-				})
+				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}
 		}
@@ -107,9 +103,7 @@ func (tb *ticketBuyerModal) OnResume() {
 	if tb.accountSelector.SelectedAccount() == nil {
 		err := tb.accountSelector.SelectFirstWalletValidAccount()
 		if err != nil {
-			errModal := modal.NewErrorModal(tb.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
 		}
 	}
@@ -210,9 +204,7 @@ func (tb *ticketBuyerModal) Handle() {
 		vspHost := tb.vspSelector.SelectedVSP().Host
 		amount, err := strconv.ParseFloat(tb.balToMaintainEditor.Editor.Text(), 64)
 		if err != nil {
-			errModal := modal.NewErrorModal(tb.Load, err.Error(), func(isChecked bool) bool {
-				return true
-			})
+			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
 			return
 		}

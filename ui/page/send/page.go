@@ -320,9 +320,7 @@ func (pg *Page) feeEstimationError(err string) {
 		pg.amount.setError(invalidAmountErr)
 	} else {
 		pg.amount.setError(err)
-		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTxEstimateErr, err), func(isChecked bool) bool {
-			return true
-		})
+		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTxEstimateErr, err), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 	}
 
@@ -363,12 +361,10 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrSend)+" DCR").
 			Body(values.String(values.StrSendInfo)).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 
