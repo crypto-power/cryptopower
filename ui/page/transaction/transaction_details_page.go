@@ -80,6 +80,7 @@ type TxDetailsPage struct {
 	txSourceAccount      string
 	txDestinationAddress string
 	title                string
+	vspHost              string
 
 	moreOptionIsOpen bool
 }
@@ -169,6 +170,20 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 
 	if ok, _ := pg.wallet.TicketHasVotedOrRevoked(pg.transaction.Hash); ok {
 		pg.ticketSpender, _ = pg.wallet.TicketSpender(pg.transaction.Hash)
+	}
+
+	if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterStaking) {
+		go func() {
+			info, err := pg.WL.MultiWallet.VSPTicketInfo(pg.wallet.ID, pg.transaction.Hash)
+			if err != nil {
+				log.Errorf("VSPTicketInfo error: %v\n", err)
+			}
+
+			pg.vspHost = values.String(values.StrNotAvailable)
+			if info != nil {
+				pg.vspHost = info.VSP
+			}
+		}()
 	}
 
 	pg.title = values.String(values.StrTransactionDetails)
@@ -627,36 +642,12 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterStaking) {
-				info, err := pg.WL.MultiWallet.VSPTicketInfo(pg.wallet.ID, transaction.Hash)
-				if err != nil {
-					log.Errorf("VSPTicketInfo error: %v\n", err)
-				}
-
-				vspHost := values.String(values.StrNotAvailable)
-				vspFee := values.String(values.StrNotAvailable)
-				if info != nil {
-					vspHost = info.VSP
-
-					// TODO workaround to get vsp fees
-					// for _, vsp := range pg.WL.MultiWallet.KnownVSPs() {
-					// 	if vsp.Host == info.VSP {
-					// 		fmt.Println("vsptransaction.FeeFee", transaction.Fee)
-					// 		fmt.Println("vsp.FeePercentage", vsp.FeePercentage)
-					// 		fmt.Println("vsp.FeePercentage/100", vsp.FeePercentage/100)
-					// 		vspFee = float64(transaction.Fee) * (vsp.FeePercentage/100)
-					// 		fmt.Println(" dcrutil.Amount(vspFee).String()",  dcrutil.Amount(vspFee).String())
-					// 		fmt.Println("vspFee", vspFee)
-					// 		break
-					// 	}
-					// }
-				}
-
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, vspHost).Layout)
+						return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, pg.vspHost).Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, values.String(values.StrVspFees), pg.Theme.Label(values.TextSize14, vspFee).Layout)
+						return pg.keyValue(gtx, values.String(values.StrVspFees), pg.Theme.Label(values.TextSize14, values.String(values.StrNotAvailable)).Layout)
 					}),
 				)
 			}
