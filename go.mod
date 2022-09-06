@@ -1,4 +1,4 @@
-module github.com/planetdecred/godcr
+module gitlab.com/raedah/cryptopower
 
 go 1.17
 

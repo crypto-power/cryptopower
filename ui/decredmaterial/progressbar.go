@@ -12,7 +12,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ProgressBarStyle struct {

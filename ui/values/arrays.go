@@ -1,6 +1,6 @@
 package values
 
-import "github.com/planetdecred/godcr/ui/values/localizable"
+import "gitlab.com/raedah/cryptopower/ui/values/localizable"
 
 var (
 	ArrLanguages          map[string]string

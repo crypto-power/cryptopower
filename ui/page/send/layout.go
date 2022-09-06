@@ -8,9 +8,9 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type (

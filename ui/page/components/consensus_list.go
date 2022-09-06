@@ -9,9 +9,9 @@ import (
 	"gioui.org/unit"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ConsensusItem struct {

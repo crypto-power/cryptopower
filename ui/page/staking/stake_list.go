@@ -5,8 +5,8 @@ import (
 	"gioui.org/text"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 func (pg *Page) initTicketList() {

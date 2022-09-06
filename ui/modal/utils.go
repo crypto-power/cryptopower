@@ -5,7 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 )
 
 type (

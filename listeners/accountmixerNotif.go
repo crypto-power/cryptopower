@@ -1,6 +1,6 @@
 package listeners
 
-import "github.com/planetdecred/godcr/wallet"
+import "gitlab.com/raedah/cryptopower/wallet"
 
 // AccountMixerNotificationListener satisfies dcrlibwallet
 // AccountMixerNotificationListener interface. Consumers interested in mixer

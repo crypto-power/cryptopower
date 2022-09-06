@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 // ProposalNotificationListener satisfies dcrlibwallet

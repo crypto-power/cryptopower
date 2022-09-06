@@ -13,11 +13,11 @@ import (
 	"gioui.org/unit"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 // VoteBar widget implements voting stat for proposals.

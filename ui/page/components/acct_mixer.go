@@ -3,8 +3,8 @@ package components
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 func mixerInfoStatusTextLayout(gtx C, l *load.Load, mixerActive bool) D {

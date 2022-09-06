@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 // BlocksRescanProgressListener satisfies dcrlibwallet

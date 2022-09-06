@@ -10,12 +10,12 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
 
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )

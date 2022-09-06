@@ -7,7 +7,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 // ErrIDNotExist is returned when a given ID does not exist

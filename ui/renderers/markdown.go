@@ -9,8 +9,8 @@ import (
 	"gioui.org/widget"
 
 	"github.com/gomarkdown/markdown/ast"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const (

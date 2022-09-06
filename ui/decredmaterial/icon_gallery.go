@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
-	"github.com/planetdecred/godcr/ui/assets"
+	"gitlab.com/raedah/cryptopower/ui/assets"
 )
 
 type Icons struct {

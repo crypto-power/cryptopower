@@ -6,7 +6,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/op"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type Tooltip struct {

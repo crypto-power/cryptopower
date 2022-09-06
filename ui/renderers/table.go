@@ -9,7 +9,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 )
 
 type cellAlign int

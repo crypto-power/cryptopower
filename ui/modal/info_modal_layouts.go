@@ -3,10 +3,10 @@ package modal
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/renderers"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const (

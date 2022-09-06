@@ -7,9 +7,9 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 func (pg *Page) initStakePriceWidget() *Page {

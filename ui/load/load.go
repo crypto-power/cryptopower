@@ -9,11 +9,11 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/assets"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/notification"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/assets"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/notification"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 type DCRUSDTBittrex struct {

@@ -11,9 +11,9 @@ import (
 	"gioui.org/app"
 
 	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui"
-	_ "github.com/planetdecred/godcr/ui/assets"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/ui"
+	_ "gitlab.com/raedah/cryptopower/ui/assets"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 var (

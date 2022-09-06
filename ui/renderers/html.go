@@ -13,7 +13,7 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gomarkdown/markdown/ast"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 )
 
 type HTMLProvider struct {
