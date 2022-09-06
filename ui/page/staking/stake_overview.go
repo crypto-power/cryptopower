@@ -316,7 +316,9 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		return
 	}
 
-	walletPasswordModal := modal.NewPasswordModal(pg.Load).
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmPurchase)).
 		SetCancelable(false).
 		UseCustomWidget(func(gtx C) D {
@@ -357,7 +359,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		NegativeButton(values.String(values.StrCancel), func() {
 			pg.stake.SetChecked(false)
 		}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
 				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)

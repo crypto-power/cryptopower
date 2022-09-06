@@ -524,5 +524,7 @@ unlockWithPassword = "Unlock with password"
 "vspFee" = "VSP Fee"
 "dexDataReset" = "DEX client data reset complete."
 "dexDataResetFalse" = "DEX client data reset failed. Check the logs."
-"notSameAccoutMixUnmix" = ""Cannot use same account for mixed & unmixed""
+"notSameAccoutMixUnmix" = "Cannot use same account for mixed & unmixed"
+"walletNameMismatch" = "Wallet name entered doesn't match selected one"
+"confirmPending" = "Confirmation Required"
 `

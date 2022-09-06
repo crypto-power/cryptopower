@@ -176,7 +176,7 @@ func (md *AddDexModal) payFeeAndRegister(dexServer *core.Exchange, cert []byte) 
 			NegativeButton(values.String(values.StrCancel), func() {
 				md.ParentWindow().ShowModal(assetSelectorModal)
 			}).
-			PositiveButton(strRegister, func(_ bool) bool {
+			PositiveButton(strRegister, func(_ bool, _ *modal.InfoModal) bool {
 				md.ParentWindow().ShowModal(assetSelectorModal)
 				go func() {
 					assetSelectorModal.SetLoading(true)

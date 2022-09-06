@@ -501,4 +501,6 @@ syncCompTime" = "Est. Sync completion time"
 "txFee" = "Transaction Fee"
 "vsp" = "VSP"
 "vspFee" = "VSP Fee"
+"walletNameMismatch" = "El nombre de la billetera ingresado no coincide con el seleccionado"
+"confirmPending" = "Confirmación requerida"
 `

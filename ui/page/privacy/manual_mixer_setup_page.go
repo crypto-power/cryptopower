@@ -187,15 +187,17 @@ func (pg *ManualMixerSetupPage) mixerAccountSections(gtx layout.Context, title s
 
 func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	if pg.mixedAccountSelector.SelectedAccount().Number == pg.unmixedAccountSelector.SelectedAccount().Number {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotSameAccoutMixUnmix),modal.DefaultClickFunc())
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotSameAccoutMixUnmix), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
 
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to set mixer accounts").
-		NegativeButton("Cancel", func() {}).
-		PositiveButton("Confirm", func(password string, pm *modal.PasswordModal) bool {
+		NegativeButton("", func() {}).
+		PositiveButton("", func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
 				unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number

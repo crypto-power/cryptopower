@@ -235,11 +235,11 @@ func (pg *Restore) showHexRestoreModal() {
 					EnableName(true).
 					ShowWalletInfoTip(true).
 					SetParent(pg).
-					NegativeButton(func() {
+					NegativeButton("", func() {
 						pg.tabIndex = 0
 						pg.switchTab(pg.tabIndex)
 					}).
-					PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+					PositiveButton("", func(walletName, password string, m *modal.CreatePasswordModal) bool {
 						go func() {
 							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 							if err != nil {

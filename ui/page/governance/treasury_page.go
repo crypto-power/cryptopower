@@ -260,21 +260,22 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 }
 
 func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.TreasuryItem) {
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
 		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				selectedWallet := pg.WL.SelectedWallet.Wallet
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
 				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
 				if err != nil {
+					errStr := err.Error()
 					if err.Error() == libwallet.ErrInvalidPassphrase {
-						pm.SetError(values.String(values.StrInvalidPassphrase))
-					} else {
-						errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-						pg.ParentWindow().ShowModal(errModal)
+						errStr = values.String(values.StrInvalidPassphrase)
 					}
+					pm.SetError(errStr)
 					pm.SetLoading(false)
 					return
 				}

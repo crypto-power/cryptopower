@@ -156,9 +156,11 @@ func (pg *VerifySeedPage) selectedSeedPhrase() string {
 }
 
 func (pg *VerifySeedPage) verifySeed() {
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to verify seed").
-		PositiveButton("Confirm", func(password string, m *modal.PasswordModal) bool {
+		PositiveButton("", func(_, password string, m *modal.CreatePasswordModal) bool {
 			go func() {
 				seed := pg.selectedSeedPhrase()
 				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))

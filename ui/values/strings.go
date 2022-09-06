@@ -631,4 +631,6 @@ const (
 	StrDexDataReset                    = "dexDataReset"
 	StrDexDataResetFalse               = "dexDataResetFalse"
 	StrNotSameAccoutMixUnmix           = "notSameAccoutMixUnmix"
+	StrWalletNameMismatch              = "walletNameMismatch"
+	StrConfirmPending                  = "confirmPending"
 )

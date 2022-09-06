@@ -18,14 +18,15 @@ type sharedModalConfig struct {
 	checkBox      cryptomaterial.CheckBoxStyle
 }
 
-func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError, alignCenter bool) {
+func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError bool) {
 	var info *modal.InfoModal
 	if isError {
-		info = modal.NewErrorModal(conf.Load, btnText, modal.DefaultClickFunc())
+		info = modal.NewErrorModal(conf.Load, title, modal.DefaultClickFunc())
 	} else {
-		info = modal.NewSuccessModal(conf.Load, btnText, modal.DefaultClickFunc())
+		info = modal.NewSuccessModal(conf.Load, title, modal.DefaultClickFunc())
 	}
-
+	info.Body(body).
+		PositiveButton(btnText, modal.DefaultClickFunc())
 	conf.window.ShowModal(info)
 }
 
@@ -35,7 +36,7 @@ func showModalSetupMixerInfo(conf *sharedModalConfig) {
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
 		CheckBox(conf.checkBox, false).
 		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton("Begin setup", func(movefundsChecked bool) bool {
+		PositiveButton("Begin setup", func(movefundsChecked bool, _ *modal.InfoModal) bool {
 			showModalSetupMixerAcct(conf, movefundsChecked)
 			return true
 		})
@@ -49,7 +50,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
 			info := modal.NewErrorModal(conf.Load, "Account name is taken", modal.DefaultClickFunc()).
 				Body(txt).
-				PositiveButton("Go back & rename", func(movefundsChecked bool) bool {
+				PositiveButton("Go back & rename", func(movefundsChecked bool, _ *modal.InfoModal) bool {
 					conf.pageNavigator.CloseCurrentPage()
 					return true
 				})
@@ -58,10 +59,12 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		}
 	}
 
-	passwordModal := modal.NewPasswordModal(conf.Load).
+	passwordModal := modal.NewCreatePasswordModal(conf.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
-		NegativeButton("Cancel", func() {}).
-		PositiveButton("Confirm", func(password string, pm *modal.PasswordModal) bool {
+		NegativeButton("", func() {}).
+		PositiveButton("", func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
 				if err != nil {
@@ -76,7 +79,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 					if err != nil {
 						log.Error(err)
 						txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
-						showInfoModal(conf, "Move funds to unmixed account", txt, "Got it", true, false)
+						showInfoModal(conf, "Move funds to unmixed account", txt, "Got it", true)
 					}
 				}
 
@@ -131,7 +134,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	showInfoModal(conf, "Transaction sent!", "", "Got it", false, true)
+	showInfoModal(conf, "Transaction sent!", "", "Got it", false)
 
 	return err
 }

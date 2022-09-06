@@ -28,7 +28,7 @@ type InfoModal struct {
 	customWidget   layout.Widget
 
 	positiveButtonText    string
-	positiveButtonClicked func(isChecked bool) bool
+	positiveButtonClicked ClickFunc
 	btnPositive           cryptomaterial.Button
 	btnPositiveWidth      unit.Dp
 
@@ -49,8 +49,10 @@ type InfoModal struct {
 // ButtonType is the type of button in modal.
 type ButtonType uint8
 
-// ClickFunc defines the button click method signature.
-type ClickFunc func(isChecked bool) bool
+// ClickFunc defines the positive button click method signature.
+// Adding the InfoModal parameter allow reference of the parent info modal
+// qualities inside the positive button function call.
+type ClickFunc func(isChecked bool, im *InfoModal) bool
 
 const (
 	// CustomBtn defines the bare metal custom modal button type.
@@ -83,7 +85,7 @@ func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 // DefaultClickFunc returns the default click function satisfying the positive
 // btn click function.
 func DefaultClickFunc() ClickFunc {
-	return func(isChecked bool) bool {
+	return func(isChecked bool, in *InfoModal) bool {
 		return true
 	}
 }
@@ -260,7 +262,7 @@ func (in *InfoModal) Handle() {
 			isChecked = in.checkbox.CheckBox.Value
 		}
 
-		if in.positiveButtonClicked(isChecked) {
+		if in.positiveButtonClicked(isChecked, in) {
 			in.Dismiss()
 		}
 	}

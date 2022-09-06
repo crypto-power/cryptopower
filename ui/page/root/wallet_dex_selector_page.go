@@ -310,12 +310,19 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
+<<<<<<< HEAD:ui/page/root/wallet_dex_selector_page.go
 func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
+=======
+func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
+	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+>>>>>>> 2590ec0... Move implementation of PasswordModal to CreatePasswordModal:ui/page/wallet_dex_selector_page.go
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-		Hint(values.String(values.StrSpendingPassword)).
+		PasswordHint(values.String(values.StrSpendingPassword)).
 		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, pm *modal.PasswordModal) bool {
+		PositiveButton(values.String(values.StrUnlock), func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {

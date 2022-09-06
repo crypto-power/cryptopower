@@ -86,9 +86,11 @@ func NewSaveSeedPage(l *load.Load, wallet *libwallet.Wallet) *SaveSeedPage {
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) OnNavigatedTo() {
 
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to show seed").
-		PositiveButton("Confirm", func(password string, m *modal.PasswordModal) bool {
+		PositiveButton("", func(_, password string, m *modal.CreatePasswordModal) bool {
 			go func() {
 				seed, err := pg.wallet.DecryptSeed([]byte(password))
 				if err != nil {

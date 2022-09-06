@@ -73,14 +73,16 @@ func (sp *startPage) OnNavigatedTo() {
 }
 
 func (sp *startPage) unlock() {
-	startupPasswordModal := modal.NewPasswordModal(sp.Load).
+	startupPasswordModal := modal.NewCreatePasswordModal(sp.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrUnlockWithPassword)).
-		Hint(values.String(values.StrStartupPassword)).
+		PasswordHint(values.String(values.StrStartupPassword)).
 		NegativeButton(values.String(values.StrExit), func() {
 			sp.WL.MultiWallet.Shutdown()
 			os.Exit(0)
 		}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, m *modal.PasswordModal) bool {
+		PositiveButton(values.String(values.StrUnlock), func(_, password string, m *modal.CreatePasswordModal) bool {
 			go func() {
 				err := sp.openWallets(password)
 				if err != nil {

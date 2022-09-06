@@ -478,4 +478,6 @@ const FR = `
 "txFee" = "Transaction Fee"
 "vsp" = "VSP"
 "vspFee" = "VSP Fee"
+"walletNameMismatch" = "Le nom de portefeuille saisi ne correspond pas à celui sélectionné"
+"confirmPending" = "Confirmation requise"
 `

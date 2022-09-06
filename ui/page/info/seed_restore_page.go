@@ -565,7 +565,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			EnableName(true).
 			ShowWalletInfoTip(true).
 			SetParent(pg).
-			PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+			PositiveButton("", func(walletName, password string, m *modal.CreatePasswordModal) bool {
 				go func() {
 					_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
 					if err != nil {

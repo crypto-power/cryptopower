@@ -429,8 +429,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.continueBtn.Clicked() || isSubmit) && pg.validInputs() {
 		spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrSpendingPassword)).
-			NegativeButton(func() {}).
-			PasswordCreated(func(_, password string, m *modal.CreatePasswordModal) bool {
+			NegativeButton("", func() {}).
+			PositiveButton("", func(_, password string, m *modal.CreatePasswordModal) bool {
 				go func() {
 					wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, libwallet.PassphraseTypePass)
 					if err != nil {

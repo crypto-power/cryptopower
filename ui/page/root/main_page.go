@@ -321,6 +321,52 @@ func (mp *MainPage) updateBalance() {
 	}
 }
 
+<<<<<<< HEAD:ui/page/root/main_page.go
+=======
+func (mp *MainPage) StartSyncing() {
+	for _, wal := range mp.WL.SortedWalletList() {
+		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
+			mp.UnlockWalletForSyncing(wal)
+			return
+		}
+	}
+
+	err := mp.WL.MultiWallet.SpvSync()
+	if err != nil {
+		// show error dialog
+		log.Info("Error starting sync:", err)
+	}
+}
+
+func (mp *MainPage) UnlockWalletForSyncing(wal *libwallet.Wallet) {
+	spendingPasswordModal := modal.NewCreatePasswordModal(mp.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
+		PasswordHint(values.String(values.StrSpendingPassword)).
+		NegativeButton(values.String(values.StrCancel), func() {}).
+		PositiveButton(values.String(values.StrUnlock), func(_, password string, pm *modal.CreatePasswordModal) bool {
+			go func() {
+				err := mp.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
+				if err != nil {
+					errText := err.Error()
+					if err.Error() == libwallet.ErrInvalidPassphrase {
+						errText = values.String(values.StrInvalidPassphrase)
+					}
+					pm.SetError(errText)
+					pm.SetLoading(false)
+					return
+				}
+				pm.Dismiss()
+				mp.StartSyncing()
+			}()
+
+			return false
+		})
+	mp.ParentWindow().ShowModal(spendingPasswordModal)
+}
+
+>>>>>>> 2590ec0... Move implementation of PasswordModal to CreatePasswordModal:ui/page/main_page.go
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
 // to enable restyling UI elements where necessary.
 // Satisfies the load.AppSettingsChangeHandler interface.
@@ -887,7 +933,7 @@ func (mp *MainPage) showBackupInfo() {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 		}).
 		PositiveButtonStyle(mp.Load.Theme.Color.Primary, mp.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrBackupNow), func(isChecked bool) bool {
+		PositiveButton(values.String(values.StrBackupNow), func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet))
 			return true

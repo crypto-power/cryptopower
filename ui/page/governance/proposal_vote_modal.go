@@ -147,12 +147,14 @@ func (vm *voteModal) sendVotes() {
 	addVotes(libwallet.VoteBitNo, vm.noVote.voteCount())
 
 	ctx := context.Background()
-	passwordModal := modal.NewPasswordModal(vm.Load).
+	passwordModal := modal.NewCreatePasswordModal(vm.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrVoteConfirm)).
 		NegativeButton(values.String(values.StrCancel), func() {
 			vm.isVoting = false
 		}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				w := vm.walletSelector.selectedWallet.Internal()
 				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)

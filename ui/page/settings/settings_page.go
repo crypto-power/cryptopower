@@ -345,7 +345,7 @@ func (pg *SettingsPage) showWarningModalDialog(title, msg, key string) {
 		Body(msg).
 		NegativeButton(values.String(values.StrCancel), func() {}).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-		PositiveButton(values.String(values.StrRemove), func(isChecked bool) bool {
+		PositiveButton(values.String(values.StrRemove), func(_ bool, _ *modal.InfoModal) bool {
 			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
 			return true
 		})
@@ -423,21 +423,22 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.changeStartupPass.Clicked() {
-		currentPasswordModal := modal.NewPasswordModal(pg.Load).
+		currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+			EnableName(false).
+			EnableConfirmPassword(false).
 			Title(values.String(values.StrConfirmStartupPass)).
-			Hint(values.String(values.StrCurrentStartupPass)).
+			PasswordHint(values.String(values.StrCurrentStartupPass)).
 			NegativeButton(values.String(values.StrCancel), func() {}).
-			PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+			PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 				go func() {
-					var error string
+					var errStr string
 					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
 					if err != nil {
-						if err.Error() == libwallet.ErrInvalidPassphrase {
-							error = values.String(values.StrInvalidPassphrase)
-						} else {
-							error = err.Error()
+						errStr = err.Error()
+						if errStr == libwallet.ErrInvalidPassphrase {
+							errStr = values.String(values.StrInvalidPassphrase)
 						}
-						pm.SetError(error)
+						pm.SetError(errStr)
 						pm.SetLoading(false)
 						return
 					}
@@ -449,7 +450,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						EnableName(false).
 						PasswordHint(values.String(values.StrNewStartupPass)).
 						ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
-						PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+						PositiveButton("", func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 							go func() {
 								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
 								if err != nil {
@@ -478,8 +479,8 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				EnableName(false).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
-				NegativeButton(func() {}).
-				PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+				NegativeButton("", func() {}).
+				PositiveButton("", func(walletName, password string, m *modal.CreatePasswordModal) bool {
 					go func() {
 						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
 						if err != nil {
@@ -494,21 +495,22 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				})
 			pg.ParentWindow().ShowModal(createPasswordModal)
 		} else {
-			currentPasswordModal := modal.NewPasswordModal(pg.Load).
+			currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				EnableName(false).
+				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
-				Hint(values.String(values.StrStartupPassword)).
+				PasswordHint(values.String(values.StrStartupPassword)).
 				NegativeButton(values.String(values.StrCancel), func() {}).
-				PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+				PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 					go func() {
-						var error string
+						var errStr string
 						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
 						if err != nil {
-							if err.Error() == libwallet.ErrInvalidPassphrase {
-								error = values.String(values.StrInvalidPassphrase)
-							} else {
-								error = err.Error()
+							errStr = err.Error()
+							if errStr == libwallet.ErrInvalidPassphrase {
+								errStr = values.String(values.StrInvalidPassphrase)
 							}
-							pm.SetError(error)
+							pm.SetError(errStr)
 							pm.SetLoading(false)
 							return
 						}
