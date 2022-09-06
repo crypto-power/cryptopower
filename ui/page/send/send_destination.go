@@ -7,7 +7,7 @@ import (
 
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -42,7 +42,7 @@ func newSendDestination(l *load.Load) *destination {
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
 		Title(values.String(values.StrReceivingAddress)).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountValidator(func(account *libwallet.Account) bool {
 
 			// Filter out imported account and mixed.
 			wal := dst.Load.WL.MultiWallet.WalletWithID(account.WalletID)
@@ -77,7 +77,7 @@ func (dst *destination) destinationAddress(useDefaultParams bool) (string, error
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
-func (dst *destination) destinationAccount(useDefaultParams bool) *dcrlibwallet.Account {
+func (dst *destination) destinationAccount(useDefaultParams bool) *libwallet.Account {
 	if useDefaultParams {
 		return dst.destinationAccountSelector.SelectedAccount()
 	}

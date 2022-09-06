@@ -8,7 +8,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -22,7 +22,7 @@ type Page struct {
 	*load.Load
 	*app.MasterPage
 
-	multiWallet *dcrlibwallet.MultiWallet
+	multiWallet *libwallet.MultiWallet
 
 	tabCategoryList        *decredmaterial.ClickableList
 	splashScreenInfoButton decredmaterial.IconButton

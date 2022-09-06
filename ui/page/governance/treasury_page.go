@@ -9,7 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -31,8 +31,8 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet   *dcrlibwallet.MultiWallet
-	wallets       []*dcrlibwallet.Wallet
+	multiWallet   *libwallet.MultiWallet
+	wallets       []*libwallet.Wallet
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List
@@ -104,7 +104,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.MultiWallet.NetType() == dcrlibwallet.Testnet3 {
+		if pg.WL.MultiWallet.NetType() == libwallet.Testnet3 {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
@@ -273,7 +273,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
 				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
 				if err != nil {
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						pm.SetError(values.String(values.StrInvalidPassphrase))
 					} else {
 						pm.Toast.NotifyError(err.Error())

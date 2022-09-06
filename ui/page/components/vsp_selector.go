@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -23,7 +23,7 @@ type VSPSelector struct {
 
 	changed      bool
 	showVSPModal *decredmaterial.Clickable
-	selectedVSP  *dcrlibwallet.VSP
+	selectedVSP  *libwallet.VSP
 }
 
 func NewVSPSelector(l *load.Load) *VSPSelector {
@@ -55,7 +55,7 @@ func (v *VSPSelector) SelectVSP(vspHost string) {
 	}
 }
 
-func (v *VSPSelector) SelectedVSP() *dcrlibwallet.VSP {
+func (v *VSPSelector) SelectedVSP() *libwallet.VSP {
 	return v.selectedVSP
 }
 
@@ -63,7 +63,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 	if v.showVSPModal.Clicked() {
 		modal := newVSPSelectorModal(v.Load).
 			title(values.String(values.StrVotingServiceProvider)).
-			vspSelected(func(info *dcrlibwallet.VSP) {
+			vspSelected(func(info *libwallet.VSP) {
 				v.SelectVSP(info.Host)
 			})
 		window.ShowModal(modal)
@@ -129,10 +129,10 @@ type vspSelectorModal struct {
 	inputVSP decredmaterial.Editor
 	addVSP   decredmaterial.Button
 
-	selectedVSP *dcrlibwallet.VSP
+	selectedVSP *libwallet.VSP
 	vspList     *decredmaterial.ClickableList
 
-	vspSelectedCallback func(*dcrlibwallet.VSP)
+	vspSelectedCallback func(*libwallet.VSP)
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
@@ -189,7 +189,7 @@ func (v *vspSelectorModal) title(title string) *vspSelectorModal {
 	return v
 }
 
-func (v *vspSelectorModal) vspSelected(callback func(*dcrlibwallet.VSP)) *vspSelectorModal {
+func (v *vspSelectorModal) vspSelected(callback func(*libwallet.VSP)) *vspSelectorModal {
 	v.vspSelectedCallback = callback
 	return v
 }

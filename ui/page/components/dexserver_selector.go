@@ -49,14 +49,14 @@ func (ds *DexServerSelector) Expose() {
 }
 
 // isLoadingDexClient check for Dexc start, initialized, loggedin status,
-// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at dcrlibwallet.
+// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at libwallet.
 func (ds *DexServerSelector) isLoadingDexClient() bool {
 	return ds.Dexc().Core() == nil || !ds.Dexc().Core().IsInitialized() || !ds.Dexc().IsLoggedIn()
 }
 
 // startDexClient do start DEX client,
 // initialize and login to DEX,
-// since Dex client UI not required for app password, initialize and login should be done at dcrlibwallet.
+// since Dex client UI not required for app password, initialize and login should be done at libwallet.
 func (ds *DexServerSelector) startDexClient() {
 	_, err := ds.WL.MultiWallet.StartDexClient()
 	if err != nil {
@@ -64,7 +64,7 @@ func (ds *DexServerSelector) startDexClient() {
 		return
 	}
 
-	// TODO: move to dcrlibwallet sine bypass Dex password by DEXClientPass
+	// TODO: move to libwallet sine bypass Dex password by DEXClientPass
 	if !ds.Dexc().Initialized() {
 		err = ds.Dexc().InitializeWithPassword([]byte(values.DEXClientPass))
 		if err != nil {
@@ -134,7 +134,7 @@ func (ds *DexServerSelector) HandleUserInteractions() {
 	}
 }
 
-// TODO: handler CRUD dex servers at dcrlibwallet
+// TODO: handler CRUD dex servers at libwallet
 const KnownDexServersConfigKey = "known_dex_servers"
 
 type DexServer struct {

@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -43,7 +43,7 @@ type Page struct {
 
 	tickets []*transactionItem
 
-	ticketOverview *dcrlibwallet.StakingOverview
+	ticketOverview *libwallet.StakingOverview
 
 	ticketsList   *decredmaterial.ClickableList
 	stakeSettings *decredmaterial.Clickable
@@ -66,7 +66,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
-	pg.ticketOverview = new(dcrlibwallet.StakingOverview)
+	pg.ticketOverview = new(libwallet.StakingOverview)
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
@@ -207,7 +207,7 @@ func (pg *Page) HandleUserInteractions() {
 			//if not set, check if the saved account is mixed before opening modal
 			// if it is not, open stake config modal
 			tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-			if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, false) &&
+			if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
 				!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 				(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 				pg.startTicketBuyerPasswordModal()
@@ -263,7 +263,7 @@ func (pg *Page) HandleUserInteractions() {
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v\n", err)
 		} else {
-			if ticketInfo.FeeTxStatus != dcrlibwallet.VSPFeeProcessConfirmed {
+			if ticketInfo.FeeTxStatus != libwallet.VSPFeeProcessConfirmed {
 				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
 					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
@@ -302,7 +302,7 @@ func (pg *Page) ticketBuyerSettingsModal() {
 
 func (pg *Page) startTicketBuyerPasswordModal() {
 	tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-	balToMaintain := dcrlibwallet.AmountCoin(tbConfig.BalanceToMaintain)
+	balToMaintain := libwallet.AmountCoin(tbConfig.BalanceToMaintain)
 	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
 		pg.Toast.NotifyError(values.StringF(values.StrTicketError, err))

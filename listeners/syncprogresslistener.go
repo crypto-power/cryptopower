@@ -1,11 +1,11 @@
 package listeners
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
-// SyncProgressListener satisfies dcrlibwallet SyncProgressListener interface
+// SyncProgressListener satisfies libwallet SyncProgressListener interface
 // contract.
 type SyncProgressListener struct {
 	SyncStatusChan chan wallet.SyncStatusUpdate
@@ -30,28 +30,28 @@ func (sp *SyncProgressListener) OnPeerConnectedOrDisconnected(numberOfConnectedP
 	})
 }
 
-func (sp *SyncProgressListener) OnCFiltersFetchProgress(cfiltersFetchProgress *dcrlibwallet.CFiltersFetchProgressReport) {
+func (sp *SyncProgressListener) OnCFiltersFetchProgress(cfiltersFetchProgress *libwallet.CFiltersFetchProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.CfiltersFetchProgress,
 		ProgressReport: cfiltersFetchProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnHeadersFetchProgress(headersFetchProgress *dcrlibwallet.HeadersFetchProgressReport) {
+func (sp *SyncProgressListener) OnHeadersFetchProgress(headersFetchProgress *libwallet.HeadersFetchProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.HeadersFetchProgress,
 		ProgressReport: headersFetchProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnAddressDiscoveryProgress(addressDiscoveryProgress *dcrlibwallet.AddressDiscoveryProgressReport) {
+func (sp *SyncProgressListener) OnAddressDiscoveryProgress(addressDiscoveryProgress *libwallet.AddressDiscoveryProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.AddressDiscoveryProgress,
 		ProgressReport: addressDiscoveryProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnHeadersRescanProgress(headersRescanProgress *dcrlibwallet.HeadersRescanProgressReport) {
+func (sp *SyncProgressListener) OnHeadersRescanProgress(headersRescanProgress *libwallet.HeadersRescanProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.HeadersRescanProgress,
 		ProgressReport: headersRescanProgress,
@@ -69,7 +69,7 @@ func (sp *SyncProgressListener) OnSyncCanceled(willRestart bool) {
 	})
 }
 func (sp *SyncProgressListener) OnSyncEndedWithError(err error)          {}
-func (sp *SyncProgressListener) Debug(debugInfo *dcrlibwallet.DebugInfo) {}
+func (sp *SyncProgressListener) Debug(debugInfo *libwallet.DebugInfo) {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {
 	sp.SyncStatusChan <- signal

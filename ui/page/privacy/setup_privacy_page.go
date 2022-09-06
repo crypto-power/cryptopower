@@ -7,7 +7,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -157,7 +157,7 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 		walCount := accounts.Count
 		// Filter out imported account and default account.
 		for _, v := range accounts.Acc {
-			if v.Number == dcrlibwallet.ImportedAccountNumber || v.Number == dcrlibwallet.DefaultAccountNum {
+			if v.Number == libwallet.ImportedAccountNumber || v.Number == libwallet.DefaultAccountNum {
 				walCount--
 			}
 		}

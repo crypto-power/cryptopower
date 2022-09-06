@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -23,10 +23,10 @@ type voteModal struct {
 
 	detailsMu      sync.Mutex
 	detailsCancel  context.CancelFunc
-	voteDetails    *dcrlibwallet.ProposalVoteDetails
+	voteDetails    *libwallet.ProposalVoteDetails
 	voteDetailsErr error
 
-	proposal *dcrlibwallet.Proposal
+	proposal *libwallet.Proposal
 	isVoting bool
 
 	walletSelector *WalletSelector
@@ -37,7 +37,7 @@ type voteModal struct {
 	cancelBtn      decredmaterial.Button
 }
 
-func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
+func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm := &voteModal{
 		Load:           l,
 		Modal:          l.Theme.ModalFloatTitle("input_vote_modal"),
@@ -54,7 +54,7 @@ func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
 
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
-		WalletSelected(func(w *dcrlibwallet.Wallet) {
+		WalletSelected(func(w *libwallet.Wallet) {
 
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
@@ -84,7 +84,7 @@ func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
 				vm.detailsMu.Unlock()
 			}()
 		}).
-		WalletValidator(func(w *dcrlibwallet.Wallet) bool {
+		WalletValidator(func(w *libwallet.Wallet) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 	return vm
@@ -127,15 +127,15 @@ func (vm *voteModal) sendVotes() {
 	tickets := vm.voteDetails.EligibleTickets
 	vm.detailsMu.Unlock()
 
-	votes := make([]*dcrlibwallet.ProposalVote, 0)
+	votes := make([]*libwallet.ProposalVote, 0)
 	addVotes := func(bit string, count int) {
 		for i := 0; i < count; i++ {
 
 			// get and pop
-			var eligibleTicket *dcrlibwallet.EligibleTicket
+			var eligibleTicket *libwallet.EligibleTicket
 			eligibleTicket, tickets = tickets[0], tickets[1:]
 
-			vote := &dcrlibwallet.ProposalVote{
+			vote := &libwallet.ProposalVote{
 				Ticket: eligibleTicket,
 				Bit:    bit,
 			}
@@ -144,8 +144,8 @@ func (vm *voteModal) sendVotes() {
 		}
 	}
 
-	addVotes(dcrlibwallet.VoteBitYes, vm.yesVote.voteCount())
-	addVotes(dcrlibwallet.VoteBitNo, vm.noVote.voteCount())
+	addVotes(libwallet.VoteBitYes, vm.yesVote.voteCount())
+	addVotes(libwallet.VoteBitNo, vm.noVote.voteCount())
 
 	passwordModal := modal.NewPasswordModal(vm.Load).
 		Title(values.String(values.StrVoteConfirm)).

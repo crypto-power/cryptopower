@@ -12,7 +12,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -20,8 +20,8 @@ import (
 )
 
 type transactionItem struct {
-	transaction   *dcrlibwallet.Transaction
-	ticketSpender *dcrlibwallet.Transaction
+	transaction   *libwallet.Transaction
+	ticketSpender *libwallet.Transaction
 	status        *components.TxStatus
 	confirmations int32
 	progress      float32
@@ -56,7 +56,7 @@ const (
 	StakingExpired  = "EXPIRED"
 )
 
-func stakeToTransactionItems(l *load.Load, txs []dcrlibwallet.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+func stakeToTransactionItems(l *load.Load, txs []libwallet.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {
@@ -68,21 +68,21 @@ func stakeToTransactionItems(l *load.Load, txs []dcrlibwallet.Transaction, newes
 		}
 
 		// Apply voted and revoked tx filter
-		if (hasFilter(dcrlibwallet.TxFilterVoted) || hasFilter(dcrlibwallet.TxFilterRevoked)) && ticketSpender == nil {
+		if (hasFilter(libwallet.TxFilterVoted) || hasFilter(libwallet.TxFilterRevoked)) && ticketSpender == nil {
 			continue
 		}
 
-		if hasFilter(dcrlibwallet.TxFilterVoted) && ticketSpender.Type != dcrlibwallet.TxTypeVote {
+		if hasFilter(libwallet.TxFilterVoted) && ticketSpender.Type != libwallet.TxTypeVote {
 			continue
 		}
 
-		if hasFilter(dcrlibwallet.TxFilterRevoked) && ticketSpender.Type != dcrlibwallet.TxTypeRevocation {
+		if hasFilter(libwallet.TxFilterRevoked) && ticketSpender.Type != libwallet.TxTypeRevocation {
 			continue
 		}
 
-		// This fixes a dcrlibwallet bug where live tickets transactions
+		// This fixes a libwallet bug where live tickets transactions
 		// do not have updated data of Stake spender.
-		if hasFilter(dcrlibwallet.TxFilterLive) && ticketSpender != nil {
+		if hasFilter(libwallet.TxFilterLive) && ticketSpender != nil {
 			continue
 		}
 
@@ -91,23 +91,23 @@ func stakeToTransactionItems(l *load.Load, txs []dcrlibwallet.Transaction, newes
 		confirmations := tx.Confirmations(w.GetBestBlock())
 		var ticketAge string
 
-		showProgress := txStatus.TicketStatus == dcrlibwallet.TicketStatusImmature || txStatus.TicketStatus == dcrlibwallet.TicketStatusLive
+		showProgress := txStatus.TicketStatus == libwallet.TicketStatusImmature || txStatus.TicketStatus == libwallet.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
 			showProgress = ticketSpender.Confirmations(w.GetBestBlock()) <= multiWallet.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
-		} else if txStatus.TicketStatus == dcrlibwallet.TicketStatusImmature ||
-			txStatus.TicketStatus == dcrlibwallet.TicketStatusLive {
+		} else if txStatus.TicketStatus == libwallet.TicketStatusImmature ||
+			txStatus.TicketStatus == libwallet.TicketStatusLive {
 
 			ticketAgeDuration := time.Since(time.Unix(tx.Timestamp, 0)).Seconds()
 			ticketAge = components.TimeFormat(int(ticketAgeDuration), true)
 		}
 
-		showTime := showProgress && txStatus.TicketStatus != dcrlibwallet.TicketStatusLive
+		showTime := showProgress && txStatus.TicketStatus != libwallet.TicketStatusLive
 
 		var progress float32
 		if showProgress {
 			progressMax := multiWallet.TicketMaturity()
-			if txStatus.TicketStatus == dcrlibwallet.TicketStatusLive {
+			if txStatus.TicketStatus == libwallet.TicketStatusLive {
 				progressMax = multiWallet.TicketExpiry()
 			}
 
@@ -160,9 +160,9 @@ func stakeToTransactionItems(l *load.Load, txs []dcrlibwallet.Transaction, newes
 	return tickets, nil
 }
 
-func allLiveTickets(mw *dcrlibwallet.MultiWallet) ([]dcrlibwallet.Transaction, error) {
-	var tickets []dcrlibwallet.Transaction
-	liveTicketFilters := []int32{dcrlibwallet.TxFilterUnmined, dcrlibwallet.TxFilterImmature, dcrlibwallet.TxFilterLive}
+func allLiveTickets(mw *libwallet.MultiWallet) ([]libwallet.Transaction, error) {
+	var tickets []libwallet.Transaction
+	liveTicketFilters := []int32{libwallet.TxFilterUnmined, libwallet.TxFilterImmature, libwallet.TxFilterLive}
 	for _, filter := range liveTicketFilters {
 		tx, err := mw.GetTransactionsRaw(0, 0, filter, true)
 		if err != nil {
@@ -186,16 +186,16 @@ func ticketStatusTooltip(gtx C, l *load.Load, tx *transactionItem) D {
 
 	var title, mainDesc, subDesc string
 	switch tx.status.TicketStatus {
-	case dcrlibwallet.TicketStatusUnmined:
+	case libwallet.TicketStatusUnmined:
 		title = values.String(values.StrUnminedInfo)
-	case dcrlibwallet.TicketStatusImmature:
+	case libwallet.TicketStatusImmature:
 		title = values.StringF(values.StrImmatureInfo, maturity, maturityDuration)
-	case dcrlibwallet.TicketStatusLive:
+	case libwallet.TicketStatusLive:
 		title = values.String(values.StrLiveInfo)
 		mainDesc = values.String(values.StrLiveInfoDisc)
 		subDesc = values.String(values.StrLiveInfoDiscSub)
-	case dcrlibwallet.TicketStatusVotedOrRevoked:
-		if tx.ticketSpender.Type == dcrlibwallet.TxTypeVote {
+	case libwallet.TicketStatusVotedOrRevoked:
+		if tx.ticketSpender.Type == libwallet.TxTypeVote {
 			title = values.String(values.StrVotedInfo)
 			mainDesc = values.String(values.StrVotedInfoDisc)
 		} else {
@@ -208,7 +208,7 @@ func ticketStatusTooltip(gtx C, l *load.Load, tx *transactionItem) D {
 		} else {
 			mainDesc = values.StringF(mainDesc, maturity, maturityDuration)
 		}
-	case dcrlibwallet.TicketStatusExpired:
+	case libwallet.TicketStatusExpired:
 		title = values.StringF(values.StrExpiredInfo, l.WL.MultiWallet.TicketMaturity())
 		mainDesc = values.String(values.StrExpiredInfoDisc)
 		subDesc = values.String(values.StrExpiredInfoDiscSub)
@@ -251,11 +251,11 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 	col := l.Theme.Color.GrayText3
 
 	switch tx.status.TicketStatus {
-	case dcrlibwallet.TicketStatusUnmined:
+	case libwallet.TicketStatusUnmined:
 		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrUnminedInfo, components.TimeAgo(tx.transaction.Timestamp)))
 		lbl.Color = col
 		return lbl.Layout(gtx)
-	case dcrlibwallet.TicketStatusImmature:
+	case libwallet.TicketStatusImmature:
 		maturity := l.WL.MultiWallet.TicketMaturity()
 		blockTime := l.WL.MultiWallet.TargetTimePerBlockMinutes()
 		maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
@@ -273,18 +273,18 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 				return p.Layout(gtx)
 			}),
 		)
-	case dcrlibwallet.TicketStatusLive:
+	case libwallet.TicketStatusLive:
 		lbl := l.Theme.Label(values.TextSize16, values.String(values.StrLiveInfoDisc))
 		lbl.Color = col
 		return lbl.Layout(gtx)
-	case dcrlibwallet.TicketStatusVotedOrRevoked:
-		if tx.ticketSpender.Type == dcrlibwallet.TxTypeVote {
+	case libwallet.TicketStatusVotedOrRevoked:
+		if tx.ticketSpender.Type == libwallet.TxTypeVote {
 			return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrVoted), components.TimeAgo(tx.transaction.Timestamp)))
 		}
 		lbl := l.Theme.Label(values.TextSize16, dateTime)
 		lbl.Color = col
 		return lbl.Layout(gtx)
-	case dcrlibwallet.TicketStatusExpired:
+	case libwallet.TicketStatusExpired:
 		return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrExpired), components.TimeAgo(tx.transaction.Timestamp)))
 	default:
 		return D{}
@@ -415,7 +415,7 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 									)
 
 									var durationTitle = values.String(values.StrLiveIn) // immature
-									if txStatus.TicketStatus != dcrlibwallet.TicketStatusImmature {
+									if txStatus.TicketStatus != libwallet.TicketStatusImmature {
 										// voted or revoked
 										durationTitle = values.String(values.StrSpendableIn)
 									}
@@ -519,13 +519,13 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 
 							var tooltipTitle string
 							if tx.ticketSpender != nil { // voted or revoked
-								if tx.ticketSpender.Type == dcrlibwallet.TxTypeVote {
+								if tx.ticketSpender.Type == libwallet.TxTypeVote {
 									tooltipTitle = values.String(values.StrDaysToVote)
 								} else {
 									tooltipTitle = values.String(values.StrDaysToMiss)
 								}
-							} else if txStatus.TicketStatus == dcrlibwallet.TicketStatusImmature ||
-								txStatus.TicketStatus == dcrlibwallet.TicketStatusLive {
+							} else if txStatus.TicketStatus == libwallet.TicketStatusImmature ||
+								txStatus.TicketStatus == libwallet.TicketStatusLive {
 								tooltipTitle = values.String(values.StrStakeAge)
 							} else {
 								return D{}

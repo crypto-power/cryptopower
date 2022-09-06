@@ -10,7 +10,7 @@ import (
 	"gioui.org/text"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -24,9 +24,9 @@ type AccountSelector struct {
 	*load.Load
 	*listeners.TxAndBlockNotificationListener
 
-	selectedAccount *dcrlibwallet.Account
-	accountIsValid  func(*dcrlibwallet.Account) bool
-	callback        func(*dcrlibwallet.Account)
+	selectedAccount *libwallet.Account
+	accountIsValid  func(*libwallet.Account) bool
+	callback        func(*libwallet.Account)
 
 	openSelectorDialog *decredmaterial.Clickable
 	selectorModal      *AccountSelectorModal
@@ -42,7 +42,7 @@ type AccountSelector struct {
 func NewAccountSelector(l *load.Load) *AccountSelector {
 	return &AccountSelector{
 		Load:               l,
-		accountIsValid:     func(*dcrlibwallet.Account) bool { return true },
+		accountIsValid:     func(*libwallet.Account) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 }
@@ -52,12 +52,12 @@ func (as *AccountSelector) Title(title string) *AccountSelector {
 	return as
 }
 
-func (as *AccountSelector) AccountValidator(accountIsValid func(*dcrlibwallet.Account) bool) *AccountSelector {
+func (as *AccountSelector) AccountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelector {
 	as.accountIsValid = accountIsValid
 	return as
 }
 
-func (as *AccountSelector) AccountSelected(callback func(*dcrlibwallet.Account)) *AccountSelector {
+func (as *AccountSelector) AccountSelected(callback func(*libwallet.Account)) *AccountSelector {
 	as.callback = callback
 	return as
 }
@@ -73,7 +73,7 @@ func (as *AccountSelector) Handle(window app.WindowNavigator) {
 		as.selectorModal = newAccountSelectorModal(as.Load, as.selectedAccount).
 			title(as.dialogTitle).
 			accountValidator(as.accountIsValid).
-			accountSelected(func(account *dcrlibwallet.Account) {
+			accountSelected(func(account *libwallet.Account) {
 				if as.selectedAccount.Number != account.Number {
 					as.changed = true
 				}
@@ -114,7 +114,7 @@ func (as *AccountSelector) SelectFirstWalletValidAccount() error {
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (as *AccountSelector) SetSelectedAccount(account *dcrlibwallet.Account) {
+func (as *AccountSelector) SetSelectedAccount(account *libwallet.Account) {
 	as.selectedAccount = account
 	as.totalBalance = dcrutil.Amount(account.TotalBalance).String()
 }
@@ -126,7 +126,7 @@ func (as *AccountSelector) UpdateSelectedAccountBalance() {
 	}
 }
 
-func (as *AccountSelector) SelectedAccount() *dcrlibwallet.Account {
+func (as *AccountSelector) SelectedAccount() *libwallet.Account {
 	return as.selectedAccount
 }
 
@@ -226,14 +226,14 @@ type AccountSelectorModal struct {
 	*load.Load
 	*decredmaterial.Modal
 
-	accountIsValid func(*dcrlibwallet.Account) bool
-	callback       func(*dcrlibwallet.Account)
+	accountIsValid func(*libwallet.Account) bool
+	callback       func(*libwallet.Account)
 	onExit         func()
 
 	walletInfoButton decredmaterial.IconButton
 	accountsList     layout.List
 
-	currentSelectedAccount *dcrlibwallet.Account
+	currentSelectedAccount *libwallet.Account
 	accounts               []*selectorAccount // key = wallet id
 	eventQueue             event.Queue
 	walletMu               sync.Mutex
@@ -244,11 +244,11 @@ type AccountSelectorModal struct {
 }
 
 type selectorAccount struct {
-	*dcrlibwallet.Account
+	*libwallet.Account
 	clickable *decredmaterial.Clickable
 }
 
-func newAccountSelectorModal(l *load.Load, currentSelectedAccount *dcrlibwallet.Account) *AccountSelectorModal {
+func newAccountSelectorModal(l *load.Load, currentSelectedAccount *libwallet.Account) *AccountSelectorModal {
 	asm := &AccountSelectorModal{
 		Load:         l,
 		Modal:        l.Theme.ModalFloatTitle("AccountSelectorModal"),
@@ -321,12 +321,12 @@ func (asm *AccountSelectorModal) title(title string) *AccountSelectorModal {
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*dcrlibwallet.Account) bool) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelectorModal {
 	asm.accountIsValid = accountIsValid
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountSelected(callback func(*dcrlibwallet.Account)) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountSelected(callback func(*libwallet.Account)) *AccountSelectorModal {
 	asm.callback = callback
 	return asm
 }

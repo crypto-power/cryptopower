@@ -175,14 +175,14 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 // isLoadingDexClient check for Dexc start, initialized, loggedin status,
-// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at dcrlibwallet.
+// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at libwallet.
 func (pg *Page) isLoadingDexClient() bool {
 	return pg.Dexc().Core() == nil || !pg.Dexc().Core().IsInitialized() || !pg.Dexc().IsLoggedIn()
 }
 
 // startDexClient do start DEX client,
 // initialize and login to DEX,
-// since Dex client UI not required for app password, initialize and login should be done at dcrlibwallet.
+// since Dex client UI not required for app password, initialize and login should be done at libwallet.
 func (pg *Page) startDexClient() {
 	_, err := pg.WL.MultiWallet.StartDexClient()
 	if err != nil {
@@ -190,7 +190,7 @@ func (pg *Page) startDexClient() {
 		return
 	}
 
-	// TODO: move to dcrlibwallet sine bypass Dex password by DEXClientPass
+	// TODO: move to libwallet sine bypass Dex password by DEXClientPass
 	if !pg.Dexc().Initialized() {
 		err = pg.Dexc().InitializeWithPassword([]byte(DEXClientPass))
 		if err != nil {

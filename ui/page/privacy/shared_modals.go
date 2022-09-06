@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -90,7 +90,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 					pm.SetLoading(false)
 					return
 				}
-				conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, true)
+				conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
 
 				if movefundsChecked {
 					err := moveFundsFromDefaultToUnmixed(conf, password)

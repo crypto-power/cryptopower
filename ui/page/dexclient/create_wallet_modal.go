@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -57,8 +57,8 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 	md.submitBtn.SetEnabled(false)
 	md.sourceAccountSelector = components.NewAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
-		AccountSelected(func(selectedAccount *dcrlibwallet.Account) {}).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountSelected(func(selectedAccount *libwallet.Account) {}).
+		AccountValidator(func(account *libwallet.Account) bool {
 			// Filter out imported account and mixed.
 			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
@@ -155,10 +155,10 @@ func (md *createWalletModal) doCreateWallet(walletPass []byte) {
 		switch coinID {
 		case dcr.BipID:
 			selectedAccount := md.sourceAccountSelector.SelectedAccount()
-			settings[dcrlibwallet.DexDcrWalletIDConfigKey] = strconv.Itoa(selectedAccount.WalletID)
+			settings[libwallet.DexDcrWalletIDConfigKey] = strconv.Itoa(selectedAccount.WalletID)
 			settings["account"] = selectedAccount.Name
 			settings["password"] = md.walletPassword.Editor.Text()
-			walletType = dcrlibwallet.CustomDexDcrWalletType
+			walletType = libwallet.CustomDexDcrWalletType
 		case btc.BipID:
 			walletType = "SPV" // decred.org/dcrdex/client/asset/btc.walletTypeSPV
 			walletPass = nil   // Core doesn't accept wallet passwords for dex-managed spv wallets.

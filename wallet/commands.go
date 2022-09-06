@@ -1,10 +1,10 @@
 package wallet
 
-import "github.com/planetdecred/dcrlibwallet"
+import "gitlab.com/raedah/libwallet"
 
 // TODO command.go file to be deprecated in subsiquent code clean up
 
-// TODO move method to dcrlibwallet
+// TODO move method to libwallet
 // HaveAddress checks if the given address is valid for the wallet
 func (wal *Wallet) HaveAddress(address string) (bool, string) {
 	for _, wallet := range wal.multi.AllWallets() {
@@ -16,6 +16,6 @@ func (wal *Wallet) HaveAddress(address string) (bool, string) {
 	return false, ""
 }
 
-func (wal *Wallet) GetMultiWallet() *dcrlibwallet.MultiWallet {
+func (wal *Wallet) GetMultiWallet() *libwallet.MultiWallet {
 	return wal.multi
 }

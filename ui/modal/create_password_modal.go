@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -299,7 +299,7 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 
 	if cm.serverError != "" {
 		// set wallet name editor error if wallet name already exist
-		if cm.serverError == dcrlibwallet.ErrExist && cm.walletNameEnabled {
+		if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
 		} else {
 			t := cm.Theme.Body2(cm.serverError)

@@ -11,7 +11,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -37,7 +37,7 @@ type SaveSeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcrlibwallet.Wallet
+	wallet *libwallet.Wallet
 
 	backButton   decredmaterial.IconButton
 	actionButton decredmaterial.Button
@@ -51,7 +51,7 @@ type SaveSeedPage struct {
 	mobileRows []saveSeedRow
 }
 
-func NewSaveSeedPage(l *load.Load, wallet *dcrlibwallet.Wallet) *SaveSeedPage {
+func NewSaveSeedPage(l *load.Load, wallet *libwallet.Wallet) *SaveSeedPage {
 	pg := &SaveSeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),

@@ -10,7 +10,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -49,8 +49,8 @@ type TransactionsPage struct {
 	walletDropDown  *decredmaterial.DropDown
 	transactionList *decredmaterial.ClickableList
 	container       *widget.List
-	transactions    []dcrlibwallet.Transaction
-	wallets         []*dcrlibwallet.Wallet
+	transactions    []libwallet.Transaction
+	wallets         []*libwallet.Wallet
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
@@ -96,12 +96,12 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType(l *load.Load) {
-	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterAll)
-	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterSent)
-	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterReceived)
-	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterTransferred)
-	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterMixed)
-	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterStaking)
+	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterAll)
+	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterSent)
+	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterReceived)
+	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterTransferred)
+	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterMixed)
+	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterStaking)
 
 	pg.txTypeDropDown = l.Theme.DropDown([]decredmaterial.DropDownItem{
 		{
@@ -129,18 +129,18 @@ func (pg *TransactionsPage) loadTransactions(selectedWalletIndex int) {
 	selectedWallet := pg.wallets[selectedWalletIndex]
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
 
-	txFilter := dcrlibwallet.TxFilterAll
+	txFilter := libwallet.TxFilterAll
 	switch pg.txTypeDropDown.SelectedIndex() {
 	case 1:
-		txFilter = dcrlibwallet.TxFilterSent
+		txFilter = libwallet.TxFilterSent
 	case 2:
-		txFilter = dcrlibwallet.TxFilterReceived
+		txFilter = libwallet.TxFilterReceived
 	case 3:
-		txFilter = dcrlibwallet.TxFilterTransferred
+		txFilter = libwallet.TxFilterTransferred
 	case 4:
-		txFilter = dcrlibwallet.TxFilterMixed
+		txFilter = libwallet.TxFilterMixed
 	case 5:
-		txFilter = dcrlibwallet.TxFilterStaking
+		txFilter = libwallet.TxFilterStaking
 	}
 
 	wallTxs, err := selectedWallet.GetTransactionsRaw(0, 0, txFilter, newestFirst) //TODO

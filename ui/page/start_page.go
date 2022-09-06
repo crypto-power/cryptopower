@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -177,7 +177,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					netType := sp.WL.Wallet.Net
-					if sp.WL.Wallet.Net == dcrlibwallet.Testnet3 {
+					if sp.WL.Wallet.Net == libwallet.Testnet3 {
 						netType = "Testnet"
 					}
 

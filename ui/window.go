@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/assets"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -34,7 +34,7 @@ type Window struct {
 
 	load *load.Load
 
-	txAuthor dcrlibwallet.TxAuthor
+	txAuthor libwallet.TxAuthor
 
 	walletAcctMixerStatus chan *wallet.AccountMixer
 }
@@ -54,7 +54,7 @@ type WriteClipboard struct {
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	var netType string
-	if wal.Net == dcrlibwallet.Testnet3 {
+	if wal.Net == libwallet.Testnet3 {
 		netType = "testnet"
 	} else {
 		netType = wal.Net

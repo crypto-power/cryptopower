@@ -11,7 +11,7 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -66,7 +66,7 @@ var (
 func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
-	dcrlibwallet.UseLogger(dlwlLog)
+	libwallet.UseLogger(dlwlLog)
 	page.UseLogger(winLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
@@ -116,7 +116,7 @@ func setLogLevel(subsystemID string, logLevel string) {
 	if !ok {
 		return
 	}
-	dcrlibwallet.SetLogLevels("info")
+	libwallet.SetLogLevels("info")
 	// Defaults to info if the log level is invalid.
 	level, _ := slog.LevelFromString(logLevel)
 	logger.SetLevel(level)

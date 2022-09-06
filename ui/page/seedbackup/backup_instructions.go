@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -28,7 +28,7 @@ type BackupInstructionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcrlibwallet.Wallet
+	wallet *libwallet.Wallet
 
 	backButton  decredmaterial.IconButton
 	viewSeedBtn decredmaterial.Button
@@ -36,7 +36,7 @@ type BackupInstructionsPage struct {
 	infoList    *layout.List
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *dcrlibwallet.Wallet) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet *libwallet.Wallet) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),

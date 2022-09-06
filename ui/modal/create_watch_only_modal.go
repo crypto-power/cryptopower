@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -191,7 +191,7 @@ func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
 		func(gtx C) D {
 			if cm.serverError != "" {
 				// set wallet name editor error if wallet name already exist
-				if cm.serverError == dcrlibwallet.ErrExist && cm.walletNameEnabled {
+				if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
 					cm.walletName.SetError(fmt.Sprintf("Wallet with name: %s already exist", cm.walletName.Editor.Text()))
 				} else {
 					cm.extendedPubKey.SetError(cm.serverError)

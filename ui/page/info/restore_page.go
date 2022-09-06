@@ -8,7 +8,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -241,7 +241,7 @@ func (pg *Restore) showHexRestoreModal() {
 					}).
 					PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 						go func() {
-							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, dcrlibwallet.PassphraseTypePass)
+							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 							if err != nil {
 								m.SetError(components.TranslateErr(err))
 								m.SetLoading(false)
@@ -273,7 +273,7 @@ func (pg *Restore) showHexRestoreModal() {
 }
 
 func (pg *Restore) verifyHex(hex string) bool {
-	if !dcrlibwallet.VerifySeed(hex) {
+	if !libwallet.VerifySeed(hex) {
 		return false
 	}
 

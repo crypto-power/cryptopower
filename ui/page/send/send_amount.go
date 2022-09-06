@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -107,7 +107,7 @@ func (sa *sendAmount) validAmount() (int64, bool, error) {
 		return -1, sa.SendMax, err
 	}
 
-	return dcrlibwallet.AmountAtom(amount), sa.SendMax, nil
+	return libwallet.AmountAtom(amount), sa.SendMax, nil
 }
 
 func (sa *sendAmount) validateDCRAmount() {

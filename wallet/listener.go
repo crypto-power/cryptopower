@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 type RescanNotificationType int
@@ -100,6 +100,6 @@ type (
 	RescanUpdate struct {
 		Stage          RescanNotificationType
 		WalletID       int
-		ProgressReport *dcrlibwallet.HeadersRescanProgressReport
+		ProgressReport *libwallet.HeadersRescanProgressReport
 	}
 )

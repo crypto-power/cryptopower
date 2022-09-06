@@ -8,7 +8,7 @@ package load
 import (
 	"golang.org/x/text/message"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/assets"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -48,6 +48,6 @@ func (l *Load) RefreshTheme(window app.WindowNavigator) {
 	window.Reload()
 }
 
-func (l *Load) Dexc() *dcrlibwallet.DexClient {
+func (l *Load) Dexc() *libwallet.DexClient {
 	return l.WL.MultiWallet.DexClient()
 }

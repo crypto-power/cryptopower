@@ -15,7 +15,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -39,7 +39,7 @@ type ReceivePage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet       *dcrlibwallet.MultiWallet
+	multiWallet       *libwallet.MultiWallet
 	pageContainer     layout.List
 	scrollContainer   *widget.List
 	isNewAddr, isInfo bool
@@ -110,7 +110,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 	pg.selector = components.NewAccountSelector(pg.Load).
 		Title(values.String(values.StrReceivingAddress)).
-		AccountSelected(func(selectedAccount *dcrlibwallet.Account) {
+		AccountSelected(func(selectedAccount *libwallet.Account) {
 			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
 			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
@@ -121,7 +121,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 			pg.generateQRForAddress()
 		}).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountValidator(func(account *libwallet.Account) bool {
 
 			// Filter out imported account and mixed.
 			wal := pg.multiWallet.WalletWithID(account.WalletID)

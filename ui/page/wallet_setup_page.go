@@ -7,7 +7,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -422,7 +422,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			NegativeButton(func() {}).
 			PasswordCreated(func(_, password string, m *modal.CreatePasswordModal) bool {
 				go func() {
-					wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, dcrlibwallet.PassphraseTypePass)
+					wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, libwallet.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -434,7 +434,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 						m.SetLoading(false)
 						return
 					}
-					wal.SetBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, true)
+					wal.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
 					m.Dismiss()
 
 					pg.handlerWalletDexServerSelectorCallBacks()

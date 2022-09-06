@@ -7,6 +7,6 @@ const (
 	ConsensusDropdownGroup
 )
 
-// TODO: move this to the dcrlibwallet
+// TODO: move this to the libwallet
 // DEXClientPass use for DEX since the UI not required password.
 const DEXClientPass = "DEXClientPass"

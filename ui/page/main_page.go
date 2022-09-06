@@ -15,7 +15,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -309,9 +309,9 @@ func (mp *MainPage) setLanguageSetting() {
 }
 
 func (mp *MainPage) updateExchangeSetting() {
-	currencyExchangeValue := mp.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)
+	currencyExchangeValue := mp.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
 	if currencyExchangeValue == "" {
-		mp.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
+		mp.WL.MultiWallet.SaveUserConfigValue(libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
 	}
 
 	usdExchangeSet := currencyExchangeValue == values.USDExchangeValue
@@ -377,7 +377,7 @@ func (mp *MainPage) StartSyncing() {
 	}
 }
 
-func (mp *MainPage) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
+func (mp *MainPage) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(mp.Load).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		Hint(values.String(values.StrSpendingPassword)).
@@ -387,7 +387,7 @@ func (mp *MainPage) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
 				err := mp.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {
 					errText := err.Error()
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						errText = values.String(values.StrInvalidPassphrase)
 					}
 					pm.SetError(errText)
@@ -833,17 +833,17 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	case wallet.NewTransaction:
 
 		switch t.Transaction.Type {
-		case dcrlibwallet.TxTypeRegular:
-			if t.Transaction.Direction != dcrlibwallet.TxDirectionReceived {
+		case libwallet.TxTypeRegular:
+			if t.Transaction.Direction != libwallet.TxDirectionReceived {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(dcrlibwallet.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
+			amount := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
-		case dcrlibwallet.TxTypeVote:
-			reward := strconv.FormatFloat(dcrlibwallet.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
+		case libwallet.TxTypeVote:
+			reward := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
-		case dcrlibwallet.TxTypeRevocation:
+		case libwallet.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)
 		default:
 			return
@@ -940,7 +940,7 @@ func (mp *MainPage) listenForNotifications() {
 					}
 					mp.ParentWindow().Reload()
 				case listeners.BlockAttached:
-					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(dcrlibwallet.BeepNewBlocksConfigKey, false)
+					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(libwallet.BeepNewBlocksConfigKey, false)
 					if beep {
 						err := beeep.Beep(5, 1)
 						if err != nil {

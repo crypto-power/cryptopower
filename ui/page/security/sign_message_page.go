@@ -7,7 +7,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -32,7 +32,7 @@ type SignMessagePage struct {
 	*app.GenericPageModal
 
 	container layout.List
-	wallet    *dcrlibwallet.Wallet
+	wallet    *libwallet.Wallet
 
 	isSigningMessage bool
 	addressIsValid   bool
@@ -292,7 +292,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 						}
 
 						pm.Dismiss()
-						pg.signedMessageLabel.Text = dcrlibwallet.EncodeBase64(sig)
+						pg.signedMessageLabel.Text = libwallet.EncodeBase64(sig)
 
 					}()
 					return false

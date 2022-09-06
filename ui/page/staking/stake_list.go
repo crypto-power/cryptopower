@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -44,14 +44,14 @@ func (pg *Page) listenForTxNotifications() {
 }
 
 func (pg *Page) fetchTickets() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcrlibwallet.TxFilterTickets, true)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterTickets, true)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 		return
 	}
 
 	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
-		return filter == dcrlibwallet.TxFilterTickets
+		return filter == libwallet.TxFilterTickets
 	})
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())

@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -40,7 +40,7 @@ type ProposalsPage struct {
 	ctxCancel  context.CancelFunc
 	proposalMu sync.Mutex
 
-	multiWallet      *dcrlibwallet.MultiWallet
+	multiWallet      *libwallet.MultiWallet
 	listContainer    *widget.List
 	orderDropDown    *decredmaterial.DropDown
 	categoryDropDown *decredmaterial.DropDown
@@ -116,14 +116,14 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 func (pg *ProposalsPage) fetchProposals() {
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
 
-	proposalFilter := dcrlibwallet.ProposalCategoryAll
+	proposalFilter := libwallet.ProposalCategoryAll
 	switch pg.categoryDropDown.SelectedIndex() {
 	case 1:
-		proposalFilter = dcrlibwallet.ProposalCategoryApproved
+		proposalFilter = libwallet.ProposalCategoryApproved
 	case 2:
-		proposalFilter = dcrlibwallet.ProposalCategoryRejected
+		proposalFilter = libwallet.ProposalCategoryRejected
 	case 3:
-		proposalFilter = dcrlibwallet.ProposalCategoryAbandoned
+		proposalFilter = libwallet.ProposalCategoryAbandoned
 	}
 
 	proposalItems := components.LoadProposals(proposalFilter, newestFirst, pg.Load)
@@ -131,15 +131,15 @@ func (pg *ProposalsPage) fetchProposals() {
 	// group 'In discussion' and 'Active' proposals into under review
 	listItems := make([]*components.ProposalItem, 0)
 	for _, item := range proposalItems {
-		if item.Proposal.Category == dcrlibwallet.ProposalCategoryPre ||
-			item.Proposal.Category == dcrlibwallet.ProposalCategoryActive {
+		if item.Proposal.Category == libwallet.ProposalCategoryPre ||
+			item.Proposal.Category == libwallet.ProposalCategoryActive {
 			listItems = append(listItems, item)
 		}
 	}
 
 	pg.proposalMu.Lock()
 	pg.proposalItems = proposalItems
-	if proposalFilter == dcrlibwallet.ProposalCategoryAll {
+	if proposalFilter == libwallet.ProposalCategoryAll {
 		pg.proposalItems = listItems
 	}
 	pg.proposalMu.Unlock()

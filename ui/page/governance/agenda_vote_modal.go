@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -22,9 +22,9 @@ type agendaVoteModal struct {
 
 	// tickets that have not been spent by a vote or revocation (unspent) and that
 	// have not expired (unexpired).
-	votableTickets []*dcrlibwallet.Transaction
+	votableTickets []*libwallet.Transaction
 
-	agenda           *dcrlibwallet.Agenda
+	agenda           *libwallet.Agenda
 	isVoting         bool
 	modalUpdateCount int // this keeps track of the number of times the modal has been updated.
 
@@ -41,7 +41,7 @@ type agendaVoteModal struct {
 	cancelBtn         decredmaterial.Button
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
+func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
 		Load:                l,
 		Modal:               l.Theme.ModalFloatTitle("input_vote_modal"),
@@ -59,7 +59,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceU
 
 	avm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrSelectWallet)).
-		WalletSelected(func(w *dcrlibwallet.Wallet) {
+		WalletSelected(func(w *libwallet.Wallet) {
 			avm.modalUpdateCount = 0 // modal just opened.
 
 			avm.FetchUnspentUnexpiredTickets(w.ID)
@@ -80,7 +80,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceU
 				}
 			}
 		}).
-		WalletValidator(func(w *dcrlibwallet.Wallet) bool {
+		WalletValidator(func(w *libwallet.Wallet) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 
@@ -102,7 +102,7 @@ func (avm *agendaVoteModal) FetchUnspentUnexpiredTickets(walletID int) {
 			var timeStampJ = tickets[j].Timestamp
 			return timeStampI > timeStampJ
 		})
-		avm.votableTickets = make([]*dcrlibwallet.Transaction, len(tickets))
+		avm.votableTickets = make([]*libwallet.Transaction, len(tickets))
 		for i := range tickets {
 			avm.votableTickets[i] = &tickets[i]
 		}
@@ -231,7 +231,7 @@ func (avm *agendaVoteModal) sendVotes() {
 		choiceID := avm.optionsRadioGroup.Value
 		err := avm.walletSelector.selectedWallet.SetVoteChoice(avm.agenda.AgendaID, choiceID, "", password)
 		if err != nil {
-			if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+			if err.Error() == libwallet.ErrInvalidPassphrase {
 				avm.spendingPassword.SetError(values.String(values.StrInvalidPassphrase))
 			} else {
 				avm.Toast.NotifyError(err.Error())

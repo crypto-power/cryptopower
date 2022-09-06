@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -51,7 +51,7 @@ type WalletInfo struct {
 	ctxCancel context.CancelFunc
 	listLock  sync.Mutex
 
-	multiWallet  *dcrlibwallet.MultiWallet
+	multiWallet  *libwallet.MultiWallet
 	rescanUpdate *wallet.RescanUpdate
 
 	container *widget.List
@@ -216,18 +216,18 @@ func (pg *WalletInfo) listenForNotifications() {
 				// Update sync progress fields which will be displayed
 				// when the next UI invalidation occurs.
 				switch t := n.ProgressReport.(type) {
-				case *dcrlibwallet.HeadersFetchProgressReport:
+				case *libwallet.HeadersFetchProgressReport:
 					pg.stepFetchProgress = t.HeadersFetchProgress
 					pg.headersToFetchOrScan = t.TotalHeadersToFetch
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.FetchHeadersSteps
-				case *dcrlibwallet.AddressDiscoveryProgressReport:
+				case *libwallet.AddressDiscoveryProgressReport:
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.AddressDiscoveryStep
 					pg.stepFetchProgress = t.AddressDiscoveryProgress
-				case *dcrlibwallet.HeadersRescanProgressReport:
+				case *libwallet.HeadersRescanProgressReport:
 					pg.headersToFetchOrScan = t.TotalHeadersToScan
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)

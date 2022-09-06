@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 type ProposalStatus int
@@ -14,6 +14,6 @@ const (
 )
 
 type Proposal struct {
-	Proposal       *dcrlibwallet.Proposal
+	Proposal       *libwallet.Proposal
 	ProposalStatus ProposalStatus
 }

@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -190,9 +190,9 @@ func (pg *AccountMixerPage) mixerSettingsLayout(gtx layout.Context) layout.Dimen
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D { return row("Change account", unmixedAccountName) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Account branch", fmt.Sprintf("%d", dcrlibwallet.MixedAccountBranch)) }),
+			layout.Rigid(func(gtx C) D { return row("Account branch", fmt.Sprintf("%d", libwallet.MixedAccountBranch)) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Shuffle server", dcrlibwallet.ShuffleServer) }),
+			layout.Rigid(func(gtx C) D { return row("Shuffle server", libwallet.ShuffleServer) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D { return row("Shuffle port", pg.shufflePortForCurrentNet()) }),
 		)
@@ -200,11 +200,11 @@ func (pg *AccountMixerPage) mixerSettingsLayout(gtx layout.Context) layout.Dimen
 }
 
 func (pg *AccountMixerPage) shufflePortForCurrentNet() string {
-	if pg.WL.Wallet.Net == dcrlibwallet.Testnet3 {
-		return dcrlibwallet.TestnetShufflePort
+	if pg.WL.Wallet.Net == libwallet.Testnet3 {
+		return libwallet.TestnetShufflePort
 	}
 
-	return dcrlibwallet.MainnetShufflePort
+	return libwallet.MainnetShufflePort
 }
 
 // HandleUserInteractions is called just before Layout() to determine

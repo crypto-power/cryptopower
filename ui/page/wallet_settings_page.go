@@ -3,7 +3,7 @@ package page
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -22,7 +22,7 @@ type clickableRowData struct {
 }
 
 type accountData struct {
-	*dcrlibwallet.Account
+	*libwallet.Account
 	clickable *decredmaterial.Clickable
 }
 
@@ -34,7 +34,7 @@ type WalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *dcrlibwallet.Wallet
+	wallet   *libwallet.Wallet
 	accounts []*accountData
 
 	pageContainer layout.List
@@ -103,10 +103,10 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
 	pg.fetchProposal.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
 	pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
-	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcrlibwallet.SpendUnconfirmedConfigKey, false))
+	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
-	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.SpvPersistentPeerAddressesConfigKey)
+	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
@@ -124,7 +124,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 	}
 
 	for _, acct := range accounts.Acc {
-		if acct.Number == dcrlibwallet.ImportedAccountNumber {
+		if acct.Number == libwallet.ImportedAccountNumber {
 			continue
 		}
 
@@ -192,7 +192,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.SpvPersistentPeerAddressesConfigKey) == "" {
+						if pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey) == "" {
 							return D{}
 						}
 
@@ -375,7 +375,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 					PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 						go func() {
 							err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
-								[]byte(newPassword), dcrlibwallet.PassphraseTypePass)
+								[]byte(newPassword), libwallet.PassphraseTypePass)
 							if err != nil {
 								m.SetError(err.Error())
 								m.SetLoading(false)
@@ -493,7 +493,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
 			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})
@@ -554,7 +554,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButton(values.String(values.StrRescan), func(isChecked bool) bool {
 					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
 					if err != nil {
-						if err.Error() == dcrlibwallet.ErrNotConnected {
+						if err.Error() == libwallet.ErrNotConnected {
 							pg.Toast.NotifyError(values.String(values.StrNotConnected))
 							return true
 						}
@@ -623,7 +623,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.spendUnconfirmed.Changed() {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcrlibwallet.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
 	if pg.spendUnconfirmed.Changed() {
@@ -654,7 +654,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		}
 	}
 
-	specificPeerKey := dcrlibwallet.SpvPersistentPeerAddressesConfigKey
+	specificPeerKey := libwallet.SpvPersistentPeerAddressesConfigKey
 	if pg.connectToPeer.Changed() {
 		if pg.connectToPeer.IsChecked() {
 			pg.showSPVPeerDialog()

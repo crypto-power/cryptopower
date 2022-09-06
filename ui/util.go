@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"gioui.org/widget"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"golang.org/x/text/message"
@@ -20,7 +20,7 @@ import (
 
 func translateErr(err error) string {
 	switch err.Error() {
-	case dcrlibwallet.ErrInvalidPassphrase:
+	case libwallet.ErrInvalidPassphrase:
 		return values.String(values.StrInvalidPassphrase)
 	}
 
@@ -37,8 +37,8 @@ func editorsNotEmpty(editors ...*widget.Editor) bool {
 }
 
 // getLockWallet returns a list of locked wallets
-func getLockedWallets(wallets []*dcrlibwallet.Wallet) []*dcrlibwallet.Wallet {
-	var walletsLocked []*dcrlibwallet.Wallet
+func getLockedWallets(wallets []*libwallet.Wallet) []*libwallet.Wallet {
+	var walletsLocked []*libwallet.Wallet
 	for _, wl := range wallets {
 		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
 			walletsLocked = append(walletsLocked, wl)
@@ -110,7 +110,7 @@ func goToURL(url string) {
 
 func computePasswordStrength(pb *decredmaterial.ProgressBarStyle, th *decredmaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
-	strength := dcrlibwallet.ShannonEntropy(password.Text()) / 4.0
+	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength * 100)
 	pb.Color = th.Color.Success
 }

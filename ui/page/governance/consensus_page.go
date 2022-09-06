@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -32,9 +32,9 @@ type ConsensusPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet    *dcrlibwallet.MultiWallet
-	wallets        []*dcrlibwallet.Wallet
-	LiveTickets    []*dcrlibwallet.Transaction
+	multiWallet    *libwallet.MultiWallet
+	wallets        []*libwallet.Wallet
+	LiveTickets    []*libwallet.Transaction
 	consensusItems []*components.ConsensusItem
 
 	listContainer       *widget.List
@@ -129,7 +129,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for pg.viewVotingDashboard.Clicked() {
 		host := "https://voting.decred.org"
-		if pg.WL.MultiWallet.NetType() == dcrlibwallet.Testnet3 {
+		if pg.WL.MultiWallet.NetType() == libwallet.Testnet3 {
 			host = "https://voting.decred.org/testnet"
 		}
 

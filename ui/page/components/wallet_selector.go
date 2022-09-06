@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -19,7 +19,7 @@ import (
 const WalletSelectorID = "wallet_selector"
 
 type badWalletListItem struct {
-	*dcrlibwallet.Wallet
+	*libwallet.Wallet
 	deleteBtn decredmaterial.Button
 }
 

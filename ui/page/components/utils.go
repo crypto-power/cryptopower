@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -45,7 +45,7 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 
 func SeedWordsToHex(seedWords string) (string, error) {
 	var seedHex string
-	wordList := dcrlibwallet.PGPWordList()
+	wordList := libwallet.PGPWordList()
 	var wordIndexes = make(map[string]uint16, len(wordList))
 	for i, word := range wordList {
 		wordIndexes[strings.ToLower(word)] = uint16(i)

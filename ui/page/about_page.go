@@ -3,7 +3,7 @@ package page
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -64,7 +64,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	pg.buildDateValue.Color = col
 
 	netType := pg.WL.Wallet.Net
-	if pg.WL.Wallet.Net == dcrlibwallet.Testnet3 {
+	if pg.WL.Wallet.Net == libwallet.Testnet3 {
 		netType = "Testnet"
 	}
 	pg.networkValue = l.Theme.Body1(netType)

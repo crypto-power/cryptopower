@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 )
 
@@ -24,7 +24,7 @@ func editorsNotEmpty(editors ...*widget.Editor) bool {
 
 func computePasswordStrength(pb *decredmaterial.ProgressBarStyle, th *decredmaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
-	strength := dcrlibwallet.ShannonEntropy(password.Text()) / 4.0
+	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength)
 
 	//set progress bar color

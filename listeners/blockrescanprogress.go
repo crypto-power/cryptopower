@@ -1,11 +1,11 @@
 package listeners
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
-// BlocksRescanProgressListener satisfies dcrlibwallet
+// BlocksRescanProgressListener satisfies libwallet
 // BlocksRescanProgressListener interface.
 type BlocksRescanProgressListener struct {
 	BlockRescanChan chan wallet.RescanUpdate
@@ -26,7 +26,7 @@ func (br *BlocksRescanProgressListener) OnBlocksRescanStarted(walletID int) {
 }
 
 // OnBlocksRescanProgress is a callback func for block rescan progress report.
-func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *dcrlibwallet.HeadersRescanProgressReport) {
+func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *libwallet.HeadersRescanProgressReport) {
 	br.UpdateNotification(wallet.RescanUpdate{
 		Stage:          wallet.RescanProgress,
 		WalletID:       progress.WalletID,

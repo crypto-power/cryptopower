@@ -12,7 +12,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -233,7 +233,7 @@ func (v *VoteBar) infoButtonModal() *modal.InfoModal {
 	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
 	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
 	text3 := values.StringF(values.StrDiscussions, v.numComment)
-	text4 := values.StringF(values.StrPublished, dcrlibwallet.FormatUTCTime(v.publishedAt))
+	text4 := values.StringF(values.StrPublished, libwallet.FormatUTCTime(v.publishedAt))
 	text5 := values.StringF(values.StrToken, v.token)
 
 	bodyText := fmt.Sprintf("%s\n %v\n %s\n %s\n %s", text1, text2, text3, text4, text5)

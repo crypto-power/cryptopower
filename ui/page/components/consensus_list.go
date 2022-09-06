@@ -8,14 +8,14 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ConsensusItem struct {
-	Agenda     dcrlibwallet.Agenda
+	Agenda     libwallet.Agenda
 	VoteButton decredmaterial.Button
 }
 
@@ -34,39 +34,39 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 	)
 }
 
-func layoutAgendaStatus(gtx C, l *load.Load, agenda dcrlibwallet.Agenda) D {
+func layoutAgendaStatus(gtx C, l *load.Load, agenda libwallet.Agenda) D {
 
 	var statusLabel decredmaterial.Label
 	var statusIcon *decredmaterial.Icon
 	var backgroundColor color.NRGBA
 
 	switch agenda.Status {
-	case dcrlibwallet.AgendaStatusFinished.String():
+	case libwallet.AgendaStatusFinished.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.GreenText
 		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCheck)
 		statusIcon.Color = l.Theme.Color.Green500
 		backgroundColor = l.Theme.Color.Green50
-	case dcrlibwallet.AgendaStatusLockedIn.String():
+	case libwallet.AgendaStatusLockedIn.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.GreenText
 		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCheck)
 		statusIcon.Color = l.Theme.Color.Green500
 		backgroundColor = l.Theme.Color.Green50
-	case dcrlibwallet.AgendaStatusFailed.String():
+	case libwallet.AgendaStatusFailed.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
 		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCancel)
 		statusIcon.Color = l.Theme.Color.Gray1
 		backgroundColor = l.Theme.Color.Gray2
-	case dcrlibwallet.AgendaStatusInProgress.String():
+	case libwallet.AgendaStatusInProgress.String():
 		clr := l.Theme.Color.Primary
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = clr
 		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
 		statusIcon.Color = clr
 		backgroundColor = l.Theme.Color.LightBlue
-	case dcrlibwallet.AgendaStatusUpcoming.String():
+	case libwallet.AgendaStatusUpcoming.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
 		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.PlayIcon)
@@ -121,7 +121,7 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)
-	if item.Agenda.Status == dcrlibwallet.AgendaStatusUpcoming.String() || item.Agenda.Status == dcrlibwallet.AgendaStatusInProgress.String() {
+	if item.Agenda.Status == libwallet.AgendaStatusUpcoming.String() || item.Agenda.Status == libwallet.AgendaStatusInProgress.String() {
 		item.VoteButton.Background = l.Theme.Color.Primary
 		item.VoteButton.SetEnabled(true)
 	}
@@ -143,7 +143,7 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, selectedWallet *dcrlibwallet.Wallet, newestFirst bool) []*ConsensusItem {
+func LoadAgendas(l *load.Load, selectedWallet *libwallet.Wallet, newestFirst bool) []*ConsensusItem {
 	agendas, err := selectedWallet.AllVoteAgendas("", newestFirst)
 	if err != nil {
 		return nil

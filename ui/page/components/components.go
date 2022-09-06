@@ -17,7 +17,7 @@ import (
 
 	"github.com/ararog/timeago"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -35,7 +35,7 @@ type (
 	C              = layout.Context
 	D              = layout.Dimensions
 	TransactionRow struct {
-		Transaction dcrlibwallet.Transaction
+		Transaction libwallet.Transaction
 		Index       int
 		ShowBadge   bool
 	}
@@ -126,14 +126,14 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *dcrlibwallet.Wallet, tx *dcrlibwallet.Transaction, ticketSpender *dcrlibwallet.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Transaction, ticketSpender *libwallet.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
-	case dcrlibwallet.TxDirectionSent:
+	case libwallet.TxDirectionSent:
 		txStatus.Title = values.String(values.StrSent)
 		txStatus.Icon = l.Theme.Icons.SendIcon
-	case dcrlibwallet.TxDirectionReceived:
+	case libwallet.TxDirectionReceived:
 		txStatus.Title = values.String(values.StrReceived)
 		txStatus.Icon = l.Theme.Icons.ReceiveIcon
 	default:
@@ -142,45 +142,45 @@ func TransactionTitleIcon(l *load.Load, wal *dcrlibwallet.Wallet, tx *dcrlibwall
 	}
 
 	// replace icon for staking tx types
-	if wal.TxMatchesFilter(tx, dcrlibwallet.TxFilterStaking) {
+	if wal.TxMatchesFilter(tx, libwallet.TxFilterStaking) {
 		switch tx.Type {
-		case dcrlibwallet.TxTypeTicketPurchase:
+		case libwallet.TxTypeTicketPurchase:
 			{
-				if wal.TxMatchesFilter(tx, dcrlibwallet.TxFilterUnmined) {
+				if wal.TxMatchesFilter(tx, libwallet.TxFilterUnmined) {
 					txStatus.Title = values.String(values.StrUmined)
 					txStatus.Icon = l.Theme.Icons.TicketUnminedIcon
-					txStatus.TicketStatus = dcrlibwallet.TicketStatusUnmined
+					txStatus.TicketStatus = libwallet.TicketStatusUnmined
 					txStatus.Color = l.Theme.Color.LightBlue6
 					txStatus.Background = l.Theme.Color.LightBlue
-				} else if wal.TxMatchesFilter(tx, dcrlibwallet.TxFilterImmature) {
+				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterImmature) {
 					txStatus.Title = values.String(values.StrImmature)
 					txStatus.Icon = l.Theme.Icons.TicketImmatureIcon
 					txStatus.Color = l.Theme.Color.LightBlue6
-					txStatus.TicketStatus = dcrlibwallet.TicketStatusImmature
+					txStatus.TicketStatus = libwallet.TicketStatusImmature
 					txStatus.ProgressBarColor = l.Theme.Color.LightBlue5
 					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue3
 					txStatus.Background = l.Theme.Color.LightBlue
-				} else if wal.TxMatchesFilter(tx, dcrlibwallet.TxFilterLive) {
+				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterLive) {
 					txStatus.Title = values.String(values.StrLive)
 					txStatus.Icon = l.Theme.Icons.TicketLiveIcon
 					txStatus.Color = l.Theme.Color.Primary
-					txStatus.TicketStatus = dcrlibwallet.TicketStatusLive
+					txStatus.TicketStatus = libwallet.TicketStatusLive
 					txStatus.ProgressBarColor = l.Theme.Color.Primary
 					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue4
 					txStatus.Background = l.Theme.Color.Primary50
-				} else if wal.TxMatchesFilter(tx, dcrlibwallet.TxFilterExpired) {
+				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterExpired) {
 					txStatus.Title = values.String(values.StrExpired)
 					txStatus.Icon = l.Theme.Icons.TicketExpiredIcon
 					txStatus.Color = l.Theme.Color.GrayText2
-					txStatus.TicketStatus = dcrlibwallet.TicketStatusExpired
+					txStatus.TicketStatus = libwallet.TicketStatusExpired
 					txStatus.Background = l.Theme.Color.Gray4
 				} else {
 					if ticketSpender != nil {
-						if ticketSpender.Type == dcrlibwallet.TxTypeVote {
+						if ticketSpender.Type == libwallet.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)
 							txStatus.Icon = l.Theme.Icons.TicketVotedIcon
 							txStatus.Color = l.Theme.Color.Turquoise700
-							txStatus.TicketStatus = dcrlibwallet.TicketStatusVotedOrRevoked
+							txStatus.TicketStatus = libwallet.TicketStatusVotedOrRevoked
 							txStatus.ProgressBarColor = l.Theme.Color.Turquoise300
 							txStatus.ProgressTrackColor = l.Theme.Color.Turquoise100
 							txStatus.Background = l.Theme.Color.Success2
@@ -188,7 +188,7 @@ func TransactionTitleIcon(l *load.Load, wal *dcrlibwallet.Wallet, tx *dcrlibwall
 							txStatus.Title = values.String(values.StrRevoked)
 							txStatus.Icon = l.Theme.Icons.TicketRevokedIcon
 							txStatus.Color = l.Theme.Color.Orange
-							txStatus.TicketStatus = dcrlibwallet.TicketStatusVotedOrRevoked
+							txStatus.TicketStatus = libwallet.TicketStatusVotedOrRevoked
 							txStatus.ProgressBarColor = l.Theme.Color.Danger
 							txStatus.ProgressTrackColor = l.Theme.Color.Orange3
 							txStatus.Background = l.Theme.Color.Orange2
@@ -196,11 +196,11 @@ func TransactionTitleIcon(l *load.Load, wal *dcrlibwallet.Wallet, tx *dcrlibwall
 					}
 				}
 			}
-		case dcrlibwallet.TxTypeVote:
+		case libwallet.TxTypeVote:
 			txStatus.Title = values.String(values.StrVote)
 			txStatus.Icon = l.Theme.Icons.TicketVotedIcon
 			txStatus.Color = l.Theme.Color.Turquoise700
-			txStatus.TicketStatus = dcrlibwallet.TicketStatusVotedOrRevoked
+			txStatus.TicketStatus = libwallet.TicketStatusVotedOrRevoked
 			txStatus.ProgressBarColor = l.Theme.Color.Turquoise300
 			txStatus.ProgressTrackColor = l.Theme.Color.Turquoise100
 			txStatus.Background = l.Theme.Color.Success2
@@ -208,12 +208,12 @@ func TransactionTitleIcon(l *load.Load, wal *dcrlibwallet.Wallet, tx *dcrlibwall
 			txStatus.Title = values.String(values.StrRevocation)
 			txStatus.Icon = l.Theme.Icons.TicketRevokedIcon
 			txStatus.Color = l.Theme.Color.Orange
-			txStatus.TicketStatus = dcrlibwallet.TicketStatusVotedOrRevoked
+			txStatus.TicketStatus = libwallet.TicketStatusVotedOrRevoked
 			txStatus.ProgressBarColor = l.Theme.Color.Danger
 			txStatus.ProgressTrackColor = l.Theme.Color.Orange3
 			txStatus.Background = l.Theme.Color.Orange2
 		}
-	} else if tx.Type == dcrlibwallet.TxTypeMixed {
+	} else if tx.Type == libwallet.TxTypeMixed {
 		txStatus.Title = values.String(values.StrMixed)
 		txStatus.Icon = l.Theme.Icons.MixedTx
 	}
@@ -390,8 +390,8 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
-	var ticketSpender *dcrlibwallet.Transaction
-	if wal.TxMatchesFilter(&row.Transaction, dcrlibwallet.TxFilterStaking) {
+	var ticketSpender *libwallet.Transaction
+	if wal.TxMatchesFilter(&row.Transaction, libwallet.TxFilterStaking) {
 		ticketSpender, _ = wal.TicketSpender(row.Transaction.Hash)
 	}
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction, ticketSpender)
@@ -413,9 +413,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				Direction:   layout.Center,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if row.Transaction.Type == dcrlibwallet.TxTypeRegular {
+					if row.Transaction.Type == libwallet.TxTypeRegular {
 						amount := dcrutil.Amount(row.Transaction.Amount).String()
-						if row.Transaction.Direction == dcrlibwallet.TxDirectionSent {
+						if row.Transaction.Direction == libwallet.TxDirectionSent {
 							amount = "-" + amount
 						}
 						return LayoutBalance(gtx, l, amount)
@@ -442,7 +442,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 							return layout.Dimensions{}
 						}),
 						layout.Rigid(func(gtx C) D {
-							if wal.TxMatchesFilter(&row.Transaction, dcrlibwallet.TxFilterStaking) {
+							if wal.TxMatchesFilter(&row.Transaction, libwallet.TxFilterStaking) {
 								ic := l.Theme.Icons.StakeIconInactive
 								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, ic.Layout12dp)
 							}
@@ -450,12 +450,12 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						}),
 						layout.Rigid(func(gtx C) D {
 							// mix denomination or ticket price
-							if row.Transaction.Type == dcrlibwallet.TxTypeMixed {
+							if row.Transaction.Type == libwallet.TxTypeMixed {
 								mixedDenom := dcrutil.Amount(row.Transaction.MixDenomination).String()
 								txt := l.Theme.Label(values.TextSize12, mixedDenom)
 								txt.Color = l.Theme.Color.GrayText2
 								return txt.Layout(gtx)
-							} else if wal.TxMatchesFilter(&row.Transaction, dcrlibwallet.TxFilterStaking) {
+							} else if wal.TxMatchesFilter(&row.Transaction, libwallet.TxFilterStaking) {
 								ticketPrice := dcrutil.Amount(row.Transaction.Amount).String()
 								txt := l.Theme.Label(values.TextSize12, ticketPrice)
 								txt.Color = l.Theme.Color.GrayText2
@@ -465,7 +465,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						}),
 						layout.Rigid(func(gtx C) D {
 							// Mixed outputs count
-							if row.Transaction.Type == dcrlibwallet.TxTypeMixed && row.Transaction.MixCount > 1 {
+							if row.Transaction.Type == libwallet.TxTypeMixed && row.Transaction.MixCount > 1 {
 								label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
 								label.Color = l.Theme.Color.GrayText2
 								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
@@ -474,7 +474,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						}),
 						layout.Rigid(func(gtx C) D {
 							// vote reward
-							if row.Transaction.Type != dcrlibwallet.TxTypeVote && row.Transaction.Type != dcrlibwallet.TxTypeRevocation {
+							if row.Transaction.Type != libwallet.TxTypeVote && row.Transaction.Type != libwallet.TxTypeRevocation {
 								return D{}
 							}
 
@@ -496,7 +496,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 								layout.Rigid(func(gtx C) D {
 									label := l.Theme.Label(values.TextSize12, dcrutil.Amount(row.Transaction.VoteReward).String())
 									label.Color = l.Theme.Color.Orange
-									if row.Transaction.Type == dcrlibwallet.TxTypeVote {
+									if row.Transaction.Type == libwallet.TxTypeVote {
 										label.Color = l.Theme.Color.Turquoise800
 									}
 									return label.Layout(gtx)
@@ -528,9 +528,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if row.Transaction.Type == dcrlibwallet.TxTypeVote || row.Transaction.Type == dcrlibwallet.TxTypeRevocation {
+							if row.Transaction.Type == libwallet.TxTypeVote || row.Transaction.Type == libwallet.TxTypeRevocation {
 								var title string
-								if row.Transaction.Type == dcrlibwallet.TxTypeVote {
+								if row.Transaction.Type == libwallet.TxTypeVote {
 									title = values.String(values.StrVote)
 								} else {
 									title = values.String(values.StrRevoke)
@@ -578,7 +578,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	)
 }
 
-func TxConfirmations(l *load.Load, transaction dcrlibwallet.Transaction) int32 {
+func TxConfirmations(l *load.Load, transaction libwallet.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
 		// TODO
 		return (l.WL.MultiWallet.WalletWithID(transaction.WalletID).GetBestBlock() - transaction.BlockHeight) + 1
@@ -719,7 +719,7 @@ func TimeFormat(secs int, long bool) string {
 
 // createOrUpdateWalletDropDown check for len of wallets to create dropDown,
 // also update the list when create, update, delete a wallet.
-func CreateOrUpdateWalletDropDown(l *load.Load, dwn **decredmaterial.DropDown, wallets []*dcrlibwallet.Wallet, grp uint, pos uint) *decredmaterial.DropDown {
+func CreateOrUpdateWalletDropDown(l *load.Load, dwn **decredmaterial.DropDown, wallets []*libwallet.Wallet, grp uint, pos uint) *decredmaterial.DropDown {
 	var walletDropDownItems []decredmaterial.DropDownItem
 	walletIcon := l.Theme.Icons.WalletIcon
 	walletIcon.Scale = 1
@@ -741,7 +741,7 @@ func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *decredmaterial.DropD
 
 func TranslateErr(err error) string {
 	switch err.Error() {
-	case dcrlibwallet.ErrInvalidPassphrase:
+	case libwallet.ErrInvalidPassphrase:
 		return values.String(values.StrInvalidPassphrase)
 	}
 

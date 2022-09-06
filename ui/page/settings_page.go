@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -208,7 +208,7 @@ func (pg *SettingsPage) general() layout.Widget {
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
 						icon:      pg.chevronRightIcon,
-						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)),
+						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)),
 					}
 					return pg.clickableRow(gtx, exchangeRate)
 				}),
@@ -371,7 +371,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.currency.Clicked() {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
-			dcrlibwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
+			libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			values.ArrExchangeCurrencies).
 			Title(values.StrExchangeRate).
 			UpdateValues(func() {})
@@ -425,7 +425,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					var error string
 					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
 					if err != nil {
-						if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+						if err.Error() == libwallet.ErrInvalidPassphrase {
 							error = values.String(values.StrInvalidPassphrase)
 						} else {
 							error = err.Error()
@@ -444,7 +444,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
 						PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 							go func() {
-								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), dcrlibwallet.PassphraseTypePass)
+								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
 								if err != nil {
 									m.SetError(err.Error())
 									m.SetLoading(false)
@@ -474,7 +474,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				NegativeButton(func() {}).
 				PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 					go func() {
-						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), dcrlibwallet.PassphraseTypePass)
+						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -496,7 +496,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						var error string
 						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
 						if err != nil {
-							if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+							if err.Error() == libwallet.ErrInvalidPassphrase {
 								error = values.String(values.StrInvalidPassphrase)
 							} else {
 								error = err.Error()
@@ -517,7 +517,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	select {
 	case err := <-pg.errorReceiver:
-		if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+		if err.Error() == libwallet.ErrInvalidPassphrase {
 			pg.Toast.NotifyError(values.String(values.StrInvalidPassphrase))
 			return
 		}
@@ -546,7 +546,7 @@ func (pg *SettingsPage) showSPVPeerDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
 			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})
@@ -562,7 +562,7 @@ func (pg *SettingsPage) showUserAgentDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(userAgent string, tim *modal.TextInputModal) bool {
 			if userAgent != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.UserAgentConfigKey, userAgent)
+				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.UserAgentConfigKey, userAgent)
 			}
 			return true
 		})

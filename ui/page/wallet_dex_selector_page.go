@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -245,7 +245,7 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
-func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
+func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		Hint(values.String(values.StrSpendingPassword)).
@@ -255,7 +255,7 @@ func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *dcrlibwallet.Wall
 				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {
 					errText := err.Error()
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						errText = values.String(values.StrInvalidPassphrase)
 					}
 					pm.SetError(errText)

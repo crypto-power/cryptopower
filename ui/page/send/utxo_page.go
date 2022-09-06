@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -48,7 +48,7 @@ type UTXOPage struct {
 	selectedAccountID int32
 }
 
-func NewUTXOPage(l *load.Load, account *dcrlibwallet.Account) *UTXOPage {
+func NewUTXOPage(l *load.Load, account *libwallet.Account) *UTXOPage {
 	pg := &UTXOPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(UTXOPageID),

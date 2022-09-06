@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -34,7 +34,7 @@ type VerifySeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet        *dcrlibwallet.Wallet
+	wallet        *libwallet.Wallet
 	seed          string
 	multiSeedList []shuffledSeedWords
 
@@ -44,7 +44,7 @@ type VerifySeedPage struct {
 	list          *widget.List
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *dcrlibwallet.Wallet, seed string) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet *libwallet.Wallet, seed string) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -72,7 +72,7 @@ func NewVerifySeedPage(l *load.Load, wallet *dcrlibwallet.Wallet, seed string) *
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := dcrlibwallet.PGPWordList()
+	allSeeds := libwallet.PGPWordList()
 
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
@@ -81,7 +81,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, dcrlibwallet.PGPWordList()) // using allSeeds here modifies the slice
+		shuffledSeed := pg.getMultiSeed(index, libwallet.PGPWordList()) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -163,7 +163,7 @@ func (pg *VerifySeedPage) verifySeed() {
 				seed := pg.selectedSeedPhrase()
 				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
 				if err != nil {
-					if err.Error() == dcrlibwallet.ErrInvalid {
+					if err.Error() == libwallet.ErrInvalid {
 						pg.Toast.NotifyError("Failed to verify. Please go through every word and try again.")
 						m.Dismiss()
 						return
