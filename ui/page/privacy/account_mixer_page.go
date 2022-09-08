@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -16,6 +15,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const AccountMixerPageID = "AccountMixer"

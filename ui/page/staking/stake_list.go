@@ -4,9 +4,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 func (pg *Page) initTicketList() {

@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -13,6 +12,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const ManualMixerSetupPageID = "ManualMixerSetup"

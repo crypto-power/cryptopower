@@ -9,7 +9,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -18,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const InfoID = "Info"

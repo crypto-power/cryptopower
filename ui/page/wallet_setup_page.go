@@ -7,7 +7,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -15,6 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/info"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const CreateWalletID = "create_wallet"

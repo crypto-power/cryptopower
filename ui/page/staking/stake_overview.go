@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -18,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	tpage "gitlab.com/raedah/cryptopower/ui/page/transaction"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type (

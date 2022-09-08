@@ -15,14 +15,14 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/libwallet"
+	qrcode "github.com/yeqown/go-qrcode"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	qrcode "github.com/yeqown/go-qrcode"
+	"gitlab.com/raedah/libwallet"
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 

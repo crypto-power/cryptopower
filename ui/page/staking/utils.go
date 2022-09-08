@@ -12,11 +12,11 @@ import (
 	"gioui.org/unit"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type transactionItem struct {

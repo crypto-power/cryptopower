@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // BlocksRescanProgressListener satisfies libwallet

@@ -11,9 +11,9 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 func translateErr(err error) string {

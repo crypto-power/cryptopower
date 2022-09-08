@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // SyncProgressListener satisfies libwallet SyncProgressListener interface
@@ -68,7 +68,7 @@ func (sp *SyncProgressListener) OnSyncCanceled(willRestart bool) {
 		Stage: wallet.SyncCanceled,
 	})
 }
-func (sp *SyncProgressListener) OnSyncEndedWithError(err error)          {}
+func (sp *SyncProgressListener) OnSyncEndedWithError(err error)       {}
 func (sp *SyncProgressListener) Debug(debugInfo *libwallet.DebugInfo) {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {

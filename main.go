@@ -10,10 +10,10 @@ import (
 
 	"gioui.org/app"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/ui"
 	_ "gitlab.com/raedah/cryptopower/ui/assets"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 var (
