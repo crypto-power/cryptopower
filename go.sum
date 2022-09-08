@@ -1074,8 +1074,8 @@ github.com/yuin/goldmark v1.2.0/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.2.1 h1:ruQGxdhGHe7FWOJPT0mKs5+pD2Xs1Bm/kdGlHO04FmM=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/zquestz/grab v0.0.0-20190224022517-abcee96e61b1/go.mod h1:bslhAiUxakrA6z6CHmVyvkfpnxx18RJBwVyx2TluJWw=
-gitlab.com/raedah/libwallet v1.7.1-0.20220908032656-68c26a7c5bd6 h1:1xro6X027MiV2Nxun4G6KvudfAoCi/WKrbi3odICbtM=
-gitlab.com/raedah/libwallet v1.7.1-0.20220908032656-68c26a7c5bd6/go.mod h1:SkMVWcIBYUFsNR/EzwmnPxAWYvQd8jIkNgDFPOjaELk=
+gitlab.com/raedah/libwallet v1.7.1-0.20220908203416-634aa9031ee2 h1:DFEFED6+YcabUSdGpRBu23Nh1QcBJgYWCbBKjRsIPEE=
+gitlab.com/raedah/libwallet v1.7.1-0.20220908203416-634aa9031ee2/go.mod h1:SkMVWcIBYUFsNR/EzwmnPxAWYvQd8jIkNgDFPOjaELk=
 gitlab.com/raedah/libwallet/dexdcr v0.0.0-20220906143858-af7972dbfd1d h1:rJVj9tTT5nl8iJOKXVCaDYwCJiEgR9F70AH8kv/2j0U=
 gitlab.com/raedah/libwallet/dexdcr v0.0.0-20220906143858-af7972dbfd1d/go.mod h1:OY5/fDTLp0l0VCZTdRDklezW3Gf0WWeeMtt80e9P3WI=
 go.etcd.io/bbolt v1.3.0/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
