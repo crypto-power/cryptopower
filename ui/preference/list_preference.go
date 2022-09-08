@@ -120,11 +120,9 @@ func (lp *ListPreferenceModal) Layout(gtx layout.Context) layout.Dimensions {
 			return txt.Layout(gtx)
 		},
 		func(gtx layout.Context) layout.Dimensions {
+			text := values.StringF(lp.subtitle, `<span style="text-color: text">`, `<span style="font-weight: bold">`, `</span><span style="text-color: danger">`, `</span></span>`)
 			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					text := values.StringF(lp.subtitle, `<span style="text-color: text">`, `<span style="font-weight: bold">`, `</span><span style="text-color: danger">`, `</span></span>`)
-					return renderers.RenderHTML(text, lp.Load.Theme).Layout(gtx)
-				}),
+				layout.Rigid(renderers.RenderHTML(text, lp.Load.Theme).Layout),
 			)
 		},
 		func(gtx layout.Context) layout.Dimensions {

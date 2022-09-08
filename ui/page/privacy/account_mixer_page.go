@@ -62,10 +62,6 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 		coordinationServer:  l.Theme.NewClickable(false),
 		pageContainer:       layout.List{Axis: layout.Vertical},
 	}
-	pg.mixerProgress.Height = values.MarginPadding18
-	pg.mixerProgress.Radius = decredmaterial.Radius(2)
-	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load) // TODO - handle error
-	pg.totalBalance = totalBalance.Total
 
 	return pg
 }
@@ -79,6 +75,10 @@ func (pg *AccountMixerPage) OnNavigatedTo() {
 
 	pg.listenForMixerNotifications()
 	pg.toggleMixer.SetChecked(pg.WL.SelectedWallet.Wallet.IsAccountMixerActive())
+	pg.mixerProgress.Height = values.MarginPadding18
+	pg.mixerProgress.Radius = decredmaterial.Radius(2)
+	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load) // TODO - handle error
+	pg.totalBalance = totalBalance.Total
 }
 
 func (pg *AccountMixerPage) bottomSectionLabel(clickable *decredmaterial.Clickable, title string) layout.Widget {
@@ -132,9 +132,7 @@ func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Wi
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding10, Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-					return l.Theme.Separator().Layout(gtx)
-				})
+				return layout.Inset{Left: values.MarginPadding10, Right: values.MarginPadding10}.Layout(gtx, l.Theme.Separator().Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.UniformInset(values.MarginPadding22).Layout(gtx, func(gtx C) D {
@@ -154,16 +152,16 @@ func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Wi
 	})
 }
 
-func (pg *AccountMixerPage) mixedBalanceInfo(l *load.Load, mixedBalance string) layout.FlexChild {
+func (pg *AccountMixerPage) balanceInfo(l *load.Load, balanceLabel, balanceValue string, balanceIcon *decredmaterial.Image) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(l.Theme.Icons.MixedTxIcon.Layout12dp),
+			layout.Rigid(balanceIcon.Layout12dp),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding11}.Layout(gtx, l.Theme.H6(values.String(values.StrMixed)).Layout)
+				return layout.Inset{Left: values.MarginPadding11}.Layout(gtx, l.Theme.H6(balanceLabel).Layout)
 			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
-					return components.LayoutBalanceWithUnit(gtx, pg.Load, mixedBalance)
+					return components.LayoutBalanceWithUnit(gtx, pg.Load, balanceValue)
 				})
 			}),
 		)
@@ -260,9 +258,10 @@ func (pg *AccountMixerPage) LayoutMixerPage(gtx C, l *load.Load, mixerActive boo
 				return layout.UniformInset(values.MarginPadding25).Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						pg.toggleMixerAndProgres(l, button),
-						pg.mixedBalanceInfo(l, mixedBalance),
+						pg.balanceInfo(l, values.String(values.StrMixed), mixedBalance, l.Theme.Icons.MixedTxIcon),
 						pg.mixerImage(l),
-						pg.unmixedBalanceInfo(l, unmixedBalance),
+						pg.balanceInfo(l, values.String(values.StrUnmixed), unmixedBalance, l.Theme.Icons.UnmixedTxIcon),
+
 						pg.mixerSettings(l),
 					)
 				})
