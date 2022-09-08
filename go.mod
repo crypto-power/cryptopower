@@ -16,7 +16,7 @@ require (
 	github.com/jrick/logrotate v1.0.0
 	github.com/nxadm/tail v1.4.4
 	github.com/yeqown/go-qrcode v1.5.1
-	gitlab.com/raedah/libwallet v1.7.1-0.20220906145130-3685abc7e923
+	gitlab.com/raedah/libwallet v1.7.1-0.20220908032656-68c26a7c5bd6
 	gitlab.com/raedah/libwallet/dexdcr v0.0.0-20220906143858-af7972dbfd1d // indirect
 	golang.org/x/exp v0.0.0-20210722180016-6781d3edade3
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d

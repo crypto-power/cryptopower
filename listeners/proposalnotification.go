@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // ProposalNotificationListener satisfies libwallet
@@ -23,29 +23,31 @@ func (pn *ProposalNotificationListener) OnProposalsSynced() {
 	})
 }
 
-func (pn *ProposalNotificationListener) OnNewProposal(proposal *libwallet.Proposal) {
+func (pn *ProposalNotificationListener) OnNewProposal(proposal interface{}) {
 	update := wallet.Proposal{
 		ProposalStatus: wallet.NewProposalFound,
-		Proposal:       proposal,
+		Proposal:       proposal.(*libwallet.Proposal),
 	}
 	pn.sendNotification(update)
 }
 
-func (pn *ProposalNotificationListener) OnProposalVoteStarted(proposal *libwallet.Proposal) {
+func (pn *ProposalNotificationListener) OnProposalVoteStarted(proposal interface{}) {
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteStarted,
-		Proposal:       proposal,
+		Proposal:       proposal.(*libwallet.Proposal),
 	}
 	pn.sendNotification(update)
 }
-func (pn *ProposalNotificationListener) OnProposalVoteFinished(proposal *libwallet.Proposal) {
+func (pn *ProposalNotificationListener) OnProposalVoteFinished(proposal interface{}) {
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteFinished,
-		Proposal:       proposal,
+		Proposal:       proposal.(*libwallet.Proposal),
 	}
 	pn.sendNotification(update)
 }
 
 func (pn *ProposalNotificationListener) sendNotification(signal wallet.Proposal) {
-	pn.ProposalNotifChan <- signal
+	if signal.Proposal != nil {
+		pn.ProposalNotifChan <- signal
+	}
 }

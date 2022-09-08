@@ -11,7 +11,6 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -24,6 +23,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -66,7 +66,7 @@ var (
 func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
-	libwallet.UseLogger(dlwlLog)
+	// libwallet.UseLogger(dlwlLog)
 	page.UseLogger(winLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)

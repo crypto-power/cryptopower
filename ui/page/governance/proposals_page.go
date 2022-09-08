@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -18,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const ProposalsPageID = "Proposals"
@@ -172,7 +172,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	for pg.syncButton.Clicked() {
-		go pg.multiWallet.Politeia.Sync()
+		go pg.multiWallet.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
 		//Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync

@@ -1,9 +1,10 @@
 package page
 
 import (
+	"context"
+
 	"gioui.org/layout"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -11,6 +12,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/security"
 	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const WalletSettingsPageID = "WalletSettings"
@@ -595,7 +597,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	if pg.fetchProposal.Changed() {
 		if pg.fetchProposal.IsChecked() {
-			go pg.WL.MultiWallet.Politeia.Sync()
+			go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 			// set proposal notification config when proposal fetching is enabled
 			pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
 			pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)

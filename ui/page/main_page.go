@@ -15,7 +15,6 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -32,6 +31,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const (
@@ -291,7 +291,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
 		mp.StartSyncing()
 		if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
-			go mp.WL.MultiWallet.Politeia.Sync()
+			go mp.WL.MultiWallet.Politeia.Sync(context.Background())
 		}
 	}
 

@@ -12,7 +12,6 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/libwallet"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
@@ -22,6 +21,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/renderers"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const ProposalDetailsPageID = "proposal_details"
@@ -204,7 +204,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 				if notification.ProposalStatus == wallet.Synced {
 					proposal, err := pg.WL.MultiWallet.Politeia.GetProposalRaw(pg.proposal.Token)
 					if err == nil {
-						pg.proposal = proposal
+						pg.proposal = &libwallet.Proposal{Proposal: *proposal}
 						pg.ParentWindow().Reload()
 					}
 				}
