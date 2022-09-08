@@ -17,14 +17,14 @@ import (
 
 const (
 	defaultNetwork        = "mainnet"
-	defaultConfigFileName = "godcr.conf"
-	defaultLogFilename    = "godcr.log"
+	defaultConfigFileName = "cryptopower.conf"
+	defaultLogFilename    = "cryptopower.log"
 	defaultLogLevel       = "info"
 	defaultLogDirname     = "logs"
 )
 
 var (
-	defaultHomeDir        = dcrutil.AppDataDir("godcr", false)
+	defaultHomeDir        = dcrutil.AppDataDir("cryptopower", false)
 	defaultConfigFilename = filepath.Join(defaultHomeDir, defaultConfigFileName)
 	defaultLogDir         = filepath.Join(defaultHomeDir, defaultLogDirname)
 )

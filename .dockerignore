@@ -1,6 +1,6 @@
-godcr*
+cryptopower*
 _*
 *.dll
 .vscode
 *.coverprofile
-**/.godcr_test*
+**/.cryptopower_test*

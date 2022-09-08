@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	syncID    = "godcr"
+	syncID    = "cryptopower"
 	DevBuild  = "dev"
 	ProdBuild = "prod"
 )

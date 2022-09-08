@@ -4,7 +4,7 @@ const Uint32Size = 32 // 32 or 64 ? shifting 32-bit value by 32 bits will always
 const MaxInt32 = 1<<(Uint32Size-1) - 1
 
 const (
-	// godcr config keys
+	// cryptopower config keys
 	HideBalanceConfigKey             = "hide_balance"
 	AutoSyncConfigKey                = "autoSync"
 	LanguagePreferenceKey            = "app_language"

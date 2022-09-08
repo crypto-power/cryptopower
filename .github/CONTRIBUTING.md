@@ -55,10 +55,10 @@ Only submit a PR once the intended edits are either done or nearing completion. 
 1. Fork the repository on GitHub.  Just click the little Fork button at https://gitlab.com/raedah/cryptopower
 
 
-2. Clone your newly forked godcr repository
+2. Clone your newly forked cryptopower repository
 
 ```sh
-git clone git@github.com:my-user-name/godcr.git
+git clone git@gitlab.com:my-user-name/cryptopower.git
 ```
 
 ###### recommended
@@ -100,7 +100,7 @@ git commit # type a good commit message
 
 6. Bring master up-to-date and rebase
 
-Since the GoDCR repo may have changes that you do not have locally, you'll want to pull in any changes and rebase.
+Since the Cryptopower repo may have changes that you do not have locally, you'll want to pull in any changes and rebase.
 Read [this](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase) if you need a primer on rebasing.
 
 ```sh
