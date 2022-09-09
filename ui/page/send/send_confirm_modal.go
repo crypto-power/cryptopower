@@ -19,6 +19,7 @@ import (
 type sendConfirmModal struct {
 	*load.Load
 	*cryptomaterial.Modal
+	modal.CreatePasswordModal
 
 	closeConfirmationModalButton cryptomaterial.Button
 	confirmButton                cryptomaterial.Button
@@ -58,6 +59,15 @@ func (scm *sendConfirmModal) OnResume() {
 	scm.passwordEditor.Editor.Focus()
 }
 
+func (scm *sendConfirmModal) SetError(err string) {
+	scm.passwordEditor.SetError(err)
+}
+
+func (scm *sendConfirmModal) SetLoading(loading bool) {
+	scm.isSending = loading
+	scm.Modal.SetDisabled(loading)
+}
+
 func (scm *sendConfirmModal) OnDismiss() {}
 
 func (scm *sendConfirmModal) broadcastTransaction() {
@@ -66,15 +76,12 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 		return
 	}
 
-	scm.isSending = true
-	scm.Modal.SetDisabled(true)
+	scm.SetLoading(true)
 	go func() {
 		_, err := scm.authoredTxData.txAuthor.Broadcast([]byte(password))
-		scm.isSending = false
-		scm.Modal.SetDisabled(false)
 		if err != nil {
-			errModal := modal.NewErrorModal(scm.Load, err.Error(), modal.DefaultClickFunc())
-			scm.ParentWindow().ShowModal(errModal)
+			scm.SetError(err.Error())
+			scm.SetLoading(false)
 			return
 		}
 		successModal := modal.NewSuccessModal(scm.Load, values.String(values.StrTxSent), modal.DefaultClickFunc())

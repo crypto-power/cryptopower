@@ -179,9 +179,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(_ bool, _ *modal.InfoModal) bool {
-				return true
-			})
+			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(info)
 	}
 }

@@ -633,4 +633,11 @@ const (
 	StrNotSameAccoutMixUnmix           = "notSameAccoutMixUnmix"
 	StrWalletNameMismatch              = "walletNameMismatch"
 	StrConfirmPending                  = "confirmPending"
+	StrMultipleMixerAccNeeded          = "multipleMixerAccNeeded"
+	StrInitiateSetup                   = "initiateSetup"
+	StrTakenAccount                    = "takenAccount"
+	StrMixerAccErrorMsg                = "mixerAccErrorMsg"
+	StrBackAndRename                   = "backAndRename"
+	StrMoveToUnmixed                   = "moveToUnmixed"
+	StrSeedValidationFailed            = "seedValidationFailed"
 )

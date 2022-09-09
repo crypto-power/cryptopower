@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"gioui.org/io/key"
@@ -315,15 +314,9 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 
 func (pg *Page) feeEstimationError(err string) {
 	if err == libwallet.ErrInsufficientBalance {
-		pg.amount.setError(values.String(values.StrInsufficentFund))
-	} else if strings.Contains(err, invalidAmountErr) {
-		pg.amount.setError(invalidAmountErr)
-	} else {
-		pg.amount.setError(err)
-		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTxEstimateErr, err), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(errModal)
+		err = values.String(values.StrInsufficentFund)
 	}
-
+	pg.amount.setError(err)
 	pg.clearEstimates()
 }
 

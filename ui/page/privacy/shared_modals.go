@@ -32,11 +32,11 @@ func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError
 
 func showModalSetupMixerInfo(conf *sharedModalConfig) {
 	info := modal.NewCustomModal(conf.Load).
-		Title("Set up mixer by creating two needed accounts").
+		Title(values.String(values.StrMultipleMixerAccNeeded)).
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
 		CheckBox(conf.checkBox, false).
 		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton("Begin setup", func(movefundsChecked bool, _ *modal.InfoModal) bool {
+		PositiveButton(values.String(values.StrInitiateSetup), func(movefundsChecked bool, _ *modal.InfoModal) bool {
 			showModalSetupMixerAcct(conf, movefundsChecked)
 			return true
 		})
@@ -45,12 +45,11 @@ func showModalSetupMixerInfo(conf *sharedModalConfig) {
 
 func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	accounts, _ := conf.WL.SelectedWallet.Wallet.GetAccountsRaw()
-	txt := "There are existing accounts named mixed or unmixed. Please change the name to something else for now. You can change them back after the setup."
 	for _, acct := range accounts.Acc {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
-			info := modal.NewErrorModal(conf.Load, "Account name is taken", modal.DefaultClickFunc()).
-				Body(txt).
-				PositiveButton("Go back & rename", func(movefundsChecked bool, _ *modal.InfoModal) bool {
+			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
+				Body(values.String(values.StrMixerAccErrorMsg)).
+				PositiveButton(values.String(values.StrBackAndRename), func(movefundsChecked bool, _ *modal.InfoModal) bool {
 					conf.pageNavigator.CloseCurrentPage()
 					return true
 				})
@@ -79,7 +78,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 					if err != nil {
 						log.Error(err)
 						txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
-						showInfoModal(conf, "Move funds to unmixed account", txt, "Got it", true)
+						showInfoModal(conf, values.String(values.StrMoveToUnmixed), txt, values.String(values.StrGotIt), true)
 					}
 				}
 
@@ -134,7 +133,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	showInfoModal(conf, "Transaction sent!", "", "Got it", false)
+	showInfoModal(conf, values.String(values.StrTxSent), "", values.String(values.StrGotIt), false)
 
 	return err
 }

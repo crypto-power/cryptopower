@@ -89,8 +89,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			err := tb.accountSelector.SelectFirstWalletValidAccount()
-			if err != nil {
+			if err := tb.accountSelector.SelectFirstWalletValidAccount(); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}

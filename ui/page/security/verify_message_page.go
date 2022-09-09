@@ -166,33 +166,23 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 	}
 
 	if (pg.verifyButton.Clicked() || isSubmit) && pg.validateAllInputs() {
-
-		var verifyMessageStatus *cryptomaterial.Icon
 		var verifyMessageText string
+		var info *modal.InfoModal
 
 		valid, err := pg.WL.MultiWallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
 		if err != nil {
-			verifyMessageText = values.StringF(values.StrVerifyMsgError, err)
-			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
-			verifyMessageStatus.Color = pg.Theme.Color.Danger
-
-		} else if !valid {
-			verifyMessageText = values.String(values.StrInvalidSignature)
-			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
-			verifyMessageStatus.Color = pg.Theme.Color.Danger
-
+			verifyMessageText = values.String(values.StrInvalidAddress)
+			if !valid {
+				verifyMessageText = values.String(values.StrInvalidSignature)
+			}
+			info = modal.NewErrorModal(pg.Load, verifyMessageText, modal.DefaultClickFunc())
 		} else {
-			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheck)
-			verifyMessageStatus.Color = pg.Theme.Color.Success
 			verifyMessageText = values.String(values.StrValidSignature)
+			info = modal.NewSuccessModal(pg.Load, verifyMessageText, modal.DefaultClickFunc())
 		}
 
-		info := modal.NewCustomModal(pg.Load).
-			Icon(verifyMessageStatus).
-			Title(verifyMessageText).
-			SetContentAlignment(layout.Center, layout.Center).
-			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-			PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc())
+		info.PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc()).
+			NegativeButton("", func() {})
 		pg.ParentWindow().ShowModal(info)
 	}
 

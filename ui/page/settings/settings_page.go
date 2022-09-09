@@ -394,15 +394,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		go func() {
 			pg.WL.MultiWallet.SaveUserConfigValue(load.TransactionNotificationConfigKey, pg.transactionNotification.IsChecked())
 		}()
-
-		strTitle := values.String(values.StrDisabled)
-		if pg.transactionNotification.IsChecked() {
-			strTitle = values.String(values.StrEnabled)
-		}
-
-		infoModal := modal.NewSuccessModal(pg.Load, values.StringF(values.StrTxNotification, strTitle),
-			modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(infoModal)
 	}
 
 	if pg.infoButton.Button.Clicked() {

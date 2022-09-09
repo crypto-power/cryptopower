@@ -7,9 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"golang.org/x/exp/shiny/materialdesign/icons"
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -20,7 +18,7 @@ type InfoModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	dialogIcon *cryptomaterial.Icon
+	dialogIcon *cryptomaterial.Image
 
 	dialogTitle    string
 	subtitle       string
@@ -70,15 +68,13 @@ func NewCustomModal(l *load.Load) *InfoModal {
 
 // NewSuccessModal returns the default success modal UI component.
 func NewSuccessModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
-	icon := cryptomaterial.NewIcon(l.Theme.Icons.ActionCheckCircle)
-	icon.Color = l.Theme.Color.Green500
+	icon := l.Theme.Icons.SuccessIcon
 	return newModal(l, title, icon, clicked)
 }
 
 // NewErrorModal returns the default error modal UI component.
 func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
-	icon := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
-	icon.Color = l.Theme.Color.Danger
+	icon := l.Theme.Icons.FailedIcon
 	return newModal(l, title, icon, clicked)
 }
 
@@ -90,7 +86,7 @@ func DefaultClickFunc() ClickFunc {
 	}
 }
 
-func newModal(l *load.Load, title string, icon *cryptomaterial.Icon, clicked ClickFunc) *InfoModal {
+func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked ClickFunc) *InfoModal {
 	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
 	info.positiveButtonText = values.String(values.StrOk)
 	info.positiveButtonClicked = clicked
@@ -148,7 +144,7 @@ func (in *InfoModal) SetContentAlignment(title, btn layout.Direction) *InfoModal
 	return in
 }
 
-func (in *InfoModal) Icon(icon *cryptomaterial.Icon) *InfoModal {
+func (in *InfoModal) Icon(icon *cryptomaterial.Image) *InfoModal {
 	in.dialogIcon = icon
 	return in
 }
@@ -295,7 +291,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
-				return in.dialogIcon.Layout(gtx, values.MarginPadding50)
+				return in.dialogIcon.LayoutSize(gtx, values.MarginPadding50)
 			})
 		})
 	}

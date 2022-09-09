@@ -480,4 +480,11 @@ const FR = `
 "vspFee" = "VSP Fee"
 "walletNameMismatch" = "Le nom de portefeuille saisi ne correspond pas à celui sélectionné"
 "confirmPending" = "Confirmation requise"
+"multipleMixerAccNeeded" = "Configurez le mélangeur en créant deux comptes nécessaires"
+"initiateSetup" = "Lancer la configuration"
+"takenAccount" = "Le nom du compte est pris"
+"mixerAccErrorMsg" = "Il existe des comptes existants nommés mixtes ou non mixtes. Veuillez changer le nom en quelque chose d'autre pour l'instant. Vous pouvez les modifier après la configuration"
+"backAndRename" = "Revenir en arrière et renommer"
+"moveToUnmixed" = "Déplacer des fonds vers un compte non mixte"
+"seedValidationFailed" = "Échec de la vérification. Veuillez parcourir chaque graine de portefeuille et réessayer"
 `
