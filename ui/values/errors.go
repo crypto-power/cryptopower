@@ -1,6 +1,10 @@
 package values
 
-import "gitlab.com/raedah/cryptopower/libwallet"
+import (
+	"strings"
+
+	"gitlab.com/raedah/cryptopower/libwallet"
+)
 
 // This files holds implementation to translate errors into user friendly messages.
 
@@ -15,7 +19,11 @@ func TranslateErr(errStr string) string {
 
 	case libwallet.ErrInsufficientBalance:
 		return String(StrInsufficentFund)
-	}
 
+	default:
+		if strings.Contains(errStr, "strconv.ParseFloat") {
+			return String((StrInvalidAmount))
+		}
+	}
 	return errStr
 }

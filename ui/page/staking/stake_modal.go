@@ -63,6 +63,10 @@ func (tb *ticketBuyerModal) OnCancel(cancel func()) *ticketBuyerModal {
 	return tb
 }
 
+func (tb *ticketBuyerModal) SetError(err string) {
+	tb.balToMaintainEditor.SetError(values.TranslateErr(err))
+}
+
 func (tb *ticketBuyerModal) OnResume() {
 	tb.initializeAccountSelector()
 	tb.ctx, tb.ctxCancel = context.WithCancel(context.TODO())
@@ -203,8 +207,7 @@ func (tb *ticketBuyerModal) Handle() {
 		vspHost := tb.vspSelector.SelectedVSP().Host
 		amount, err := strconv.ParseFloat(tb.balToMaintainEditor.Editor.Text(), 64)
 		if err != nil {
-			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
-			tb.ParentWindow().ShowModal(errModal)
+			tb.SetError(err.Error())
 			return
 		}
 
