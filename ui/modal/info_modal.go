@@ -120,7 +120,7 @@ func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 
 func getPositiveButtonType(l *load.Load, btnType ButtonType) cryptomaterial.Button {
 	switch btnType {
-	case CustomBtn:
+	case InfoBtn:
 		return l.Theme.Button(values.String(values.StrYes))
 	case DangerBtn:
 		return l.Theme.DangerButton(values.String(values.StrYes))

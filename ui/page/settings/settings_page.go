@@ -56,7 +56,6 @@ type SettingsPage struct {
 	transactionNotification *cryptomaterial.Switch
 
 	isStartupPassword bool
-	errorReceiver     chan error
 }
 
 func NewSettingsPage(l *load.Load) *SettingsPage {
@@ -74,8 +73,6 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		transactionNotification: l.Theme.Switch(),
 
 		chevronRightIcon: cryptomaterial.NewIcon(chevronRightIcon),
-
-		errorReceiver: make(chan error),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -503,13 +500,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				})
 			pg.ParentWindow().ShowModal(currentPasswordModal)
 		}
-	}
-
-	select {
-	case err := <-pg.errorReceiver:
-		infoModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(infoModal)
-	default:
 	}
 }
 

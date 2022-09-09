@@ -361,25 +361,22 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		}).
 		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
-				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
-				pg.ParentWindow().ShowModal(errModal)
+				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)
 				pg.stake.SetChecked(false)
 				return false
 			}
 
-			go func() {
-				err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer([]byte(password))
-				if err != nil {
-					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(errModal)
-					pm.SetLoading(false)
-					return
-				}
+			err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
 
-				pg.stake.SetChecked(pg.WL.SelectedWallet.Wallet.IsAutoTicketsPurchaseActive())
-				pg.ParentWindow().Reload()
-			}()
+			pg.stake.SetChecked(pg.WL.SelectedWallet.Wallet.IsAutoTicketsPurchaseActive())
+			pg.ParentWindow().Reload()
+
 			pm.Dismiss()
 
 			return false

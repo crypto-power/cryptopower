@@ -135,12 +135,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace (
-	// Older versions of github.com/lib/pq are required by politeia (v1.9.0)
-	// and dcrdex (v1.10.3) but only v1.10.4 and above can be compiled for
-	// the android OS using gomobile. This replace can be removed once any
-	// of those projects update their github.com/lib/pq dependency.
-	github.com/lib/pq => github.com/lib/pq v1.10.4
-	// Once godcr deprecation has been completed this can be removed.
-	github.com/planetdecred/godcr/ui/values => ./ui/values
-)
+// Older versions of github.com/lib/pq are required by politeia (v1.9.0)
+// and dcrdex (v1.10.3) but only v1.10.4 and above can be compiled for
+// the android OS using gomobile. This replace can be removed once any
+// of those projects update their github.com/lib/pq dependency.
+replace github.com/lib/pq => github.com/lib/pq v1.10.4

@@ -11,7 +11,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/root"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -83,21 +82,15 @@ func (sp *startPage) unlock() {
 			os.Exit(0)
 		}).
 		PositiveButton(values.String(values.StrUnlock), func(_, password string, m *modal.CreatePasswordModal) bool {
-			go func() {
-				err := sp.openWallets(password)
-				if err != nil {
-<<<<<<< HEAD
-					m.SetError(components.TranslateErr(err))
-=======
-					m.SetError(err.Error())
->>>>>>> b3df895... Translate the server errors to user friendly messages
-					m.SetLoading(false)
-					return
-				}
+			err := sp.openWallets(password)
+			if err != nil {
+				m.SetError(err.Error())
+				m.SetLoading(false)
+				return false
+			}
 
-				m.Dismiss()
-			}()
-			return false
+			m.Dismiss()
+			return true
 		})
 	sp.ParentWindow().ShowModal(startupPasswordModal)
 }

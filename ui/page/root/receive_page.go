@@ -148,7 +148,6 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	currentAddress, err := selectedWallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
-		log.Errorf(errStr)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 	} else {
