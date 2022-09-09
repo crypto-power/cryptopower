@@ -63,7 +63,7 @@ const (
 
 // NewCustomModal returns a modal that can be customized.
 func NewCustomModal(l *load.Load) *InfoModal {
-	return newInfoModalWithKey(l, "info_modal", CustomBtn)
+	return newInfoModalWithKey(l, "info_modal", InfoBtn)
 }
 
 // NewSuccessModal returns the default success modal UI component.
@@ -75,7 +75,7 @@ func NewSuccessModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 // NewErrorModal returns the default error modal UI component.
 func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 	icon := l.Theme.Icons.FailedIcon
-	return newModal(l, title, icon, clicked)
+	return newModal(l, values.TranslateErr(title), icon, clicked)
 }
 
 // DefaultClickFunc returns the default click function satisfying the positive

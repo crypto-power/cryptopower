@@ -487,4 +487,5 @@ const FR = `
 "backAndRename" = "Revenir en arrière et renommer"
 "moveToUnmixed" = "Déplacer des fonds vers un compte non mixte"
 "seedValidationFailed" = "Échec de la vérification. Veuillez parcourir chaque graine de portefeuille et réessayer"
+"invalidAmount" = "montant invalide"
 `

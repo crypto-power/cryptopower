@@ -349,11 +349,7 @@ func (mp *MainPage) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 			go func() {
 				err := mp.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {
-					errText := err.Error()
-					if err.Error() == libwallet.ErrInvalidPassphrase {
-						errText = values.String(values.StrInvalidPassphrase)
-					}
-					pm.SetError(errText)
+					pm.SetError(err.Error())
 					pm.SetLoading(false)
 					return
 				}

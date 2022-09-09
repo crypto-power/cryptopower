@@ -510,4 +510,5 @@ syncCompTime" = "Est. Sync completion time"
 "backAndRename" = "Volver atrás y renombrar"
 "moveToUnmixed" = "Mover fondos a una cuenta no mixta"
 "seedValidationFailed" = "No se pudo verificar. Revise cada semilla de billetera e intente nuevamente."
+"invalidAmount" = "Monto invalido"
 `

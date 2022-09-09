@@ -233,12 +233,7 @@ func (avm *agendaVoteModal) sendVotes() {
 		choiceID := avm.optionsRadioGroup.Value
 		err := avm.walletSelector.selectedWallet.SetVoteChoice(avm.agenda.AgendaID, choiceID, "", password)
 		if err != nil {
-			if err.Error() == libwallet.ErrInvalidPassphrase {
-				avm.spendingPassword.SetError(values.String(values.StrInvalidPassphrase))
-			} else {
-				errorModal := modal.NewErrorModal(avm.Load, err.Error(), modal.DefaultClickFunc())
-				avm.ParentWindow().ShowModal(errorModal)
-			}
+			avm.spendingPassword.SetError(err.Error())
 			return
 		}
 		successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())

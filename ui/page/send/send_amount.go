@@ -13,8 +13,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
-const invalidAmountErr = "Invalid amount" //TODO: use localized strings
-
 type sendAmount struct {
 	*load.Load
 
@@ -117,8 +115,7 @@ func (sa *sendAmount) validateDCRAmount() {
 		if err != nil {
 			// empty usd input
 			sa.usdAmountEditor.Editor.SetText("")
-			sa.amountErrorText = invalidAmountErr
-			// todo: invalid decimal places error
+			sa.amountErrorText = values.String(values.StrInvalidAmount)
 			return
 		}
 
@@ -143,7 +140,7 @@ func (sa *sendAmount) validateUSDAmount() bool {
 		if err != nil {
 			// empty dcr input
 			sa.dcrAmountEditor.Editor.SetText("")
-			sa.amountErrorText = invalidAmountErr
+			sa.amountErrorText = values.String(values.StrInvalidAmount)
 			return false
 		}
 
@@ -170,7 +167,7 @@ func (sa *sendAmount) inputsNotEmpty(editors ...*widget.Editor) bool {
 }
 
 func (sa *sendAmount) setError(err string) {
-	sa.amountErrorText = err
+	sa.amountErrorText = values.TranslateErr(err)
 }
 
 func (sa *sendAmount) resetFields() {

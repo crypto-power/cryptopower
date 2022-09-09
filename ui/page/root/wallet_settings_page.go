@@ -564,11 +564,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButton(values.String(values.StrRescan), func(isChecked bool, im *modal.InfoModal) bool {
 					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
 					if err != nil {
-						errMsg := err.Error()
-						if err.Error() == libwallet.ErrNotConnected {
-							errMsg = values.String(values.StrNotConnected)
-						}
-						errorModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
+						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
 						return false
 					}

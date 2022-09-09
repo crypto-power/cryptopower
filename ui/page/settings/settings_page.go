@@ -422,14 +422,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			NegativeButton(values.String(values.StrCancel), func() {}).
 			PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 				go func() {
-					var errStr string
 					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
 					if err != nil {
-						errStr = err.Error()
-						if errStr == libwallet.ErrInvalidPassphrase {
-							errStr = values.String(values.StrInvalidPassphrase)
-						}
-						pm.SetError(errStr)
+						pm.SetError(err.Error())
 						pm.SetLoading(false)
 						return
 					}
@@ -494,14 +489,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				NegativeButton(values.String(values.StrCancel), func() {}).
 				PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
 					go func() {
-						var errStr string
 						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
 						if err != nil {
-							errStr = err.Error()
-							if errStr == libwallet.ErrInvalidPassphrase {
-								errStr = values.String(values.StrInvalidPassphrase)
-							}
-							pm.SetError(errStr)
+							pm.SetError(err.Error())
 							pm.SetLoading(false)
 							return
 						}
@@ -517,11 +507,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	select {
 	case err := <-pg.errorReceiver:
-		erro := err.Error()
-		if erro == libwallet.ErrInvalidPassphrase {
-			erro = values.String(values.StrInvalidPassphrase)
-		}
-		infoModal := modal.NewErrorModal(pg.Load, erro, modal.DefaultClickFunc())
+		infoModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(infoModal)
 	default:
 	}

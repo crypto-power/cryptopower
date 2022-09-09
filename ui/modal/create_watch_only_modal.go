@@ -88,7 +88,7 @@ func (cm *CreateWatchOnlyModal) SetCancelable(min bool) *CreateWatchOnlyModal {
 }
 
 func (cm *CreateWatchOnlyModal) SetError(err string) {
-	cm.serverError = err
+	cm.serverError = values.TranslateErr(err)
 }
 
 func (cm *CreateWatchOnlyModal) WatchOnlyCreated(callback func(walletName, extPubKey string, m *CreateWatchOnlyModal) bool) *CreateWatchOnlyModal {
@@ -195,7 +195,7 @@ func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
 			if cm.serverError != "" {
 				// set wallet name editor error if wallet name already exist
 				if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
-					cm.walletName.SetError(fmt.Sprintf("Wallet with name: %s already exist", cm.walletName.Editor.Text()))
+					cm.walletName.SetError(fmt.Sprintf(values.StrWalletExist, cm.walletName.Editor.Text()))
 				} else {
 					cm.extendedPubKey.SetError(cm.serverError)
 				}

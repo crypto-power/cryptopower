@@ -86,7 +86,11 @@ func (sp *startPage) unlock() {
 			go func() {
 				err := sp.openWallets(password)
 				if err != nil {
+<<<<<<< HEAD
 					m.SetError(components.TranslateErr(err))
+=======
+					m.SetError(err.Error())
+>>>>>>> b3df895... Translate the server errors to user friendly messages
 					m.SetLoading(false)
 					return
 				}

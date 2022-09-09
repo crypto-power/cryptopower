@@ -534,4 +534,5 @@ unlockWithPassword = "Unlock with password"
 "backAndRename" = "Go back & rename"
 "moveToUnmixed" = "Move funds to unmixed account"
 "seedValidationFailed" = "Failed to verify. Please go through every wallet seed and try again."
+"invalidAmount" = "Invalid amount"
 `

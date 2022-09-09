@@ -313,9 +313,6 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 }
 
 func (pg *Page) feeEstimationError(err string) {
-	if err == libwallet.ErrInsufficientBalance {
-		err = values.String(values.StrInsufficentFund)
-	}
 	pg.amount.setError(err)
 	pg.clearEstimates()
 }

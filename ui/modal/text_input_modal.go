@@ -74,7 +74,7 @@ func (tm *TextInputModal) SetError(err string) {
 	if err == "" {
 		tm.textInput.ClearError()
 	} else {
-		tm.textInput.SetError(err)
+		tm.textInput.SetError(values.TranslateErr(err))
 	}
 }
 

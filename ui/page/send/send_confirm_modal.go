@@ -60,7 +60,7 @@ func (scm *sendConfirmModal) OnResume() {
 }
 
 func (scm *sendConfirmModal) SetError(err string) {
-	scm.passwordEditor.SetError(err)
+	scm.passwordEditor.SetError(values.TranslateErr(err))
 }
 
 func (scm *sendConfirmModal) SetLoading(loading bool) {

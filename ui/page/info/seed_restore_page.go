@@ -16,7 +16,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -569,13 +568,13 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				go func() {
 					_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
 					if err != nil {
-						m.SetError(components.TranslateErr(err))
+						m.SetError(err.Error())
 						m.SetLoading(false)
 						pg.isRestoring = false
 						return
 					}
 
-					infoModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
+					infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
 					pg.ParentWindow().ShowModal(infoModal)
 					pg.resetSeeds()
 					m.Dismiss()

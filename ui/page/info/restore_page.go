@@ -243,7 +243,7 @@ func (pg *Restore) showHexRestoreModal() {
 						go func() {
 							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 							if err != nil {
-								m.SetError(components.TranslateErr(err))
+								m.SetError(err.Error())
 								m.SetLoading(false)
 								return
 							}

@@ -156,7 +156,7 @@ func (cm *CreatePasswordModal) SetDescription(description string) *CreatePasswor
 }
 
 func (cm *CreatePasswordModal) SetError(err string) {
-	cm.serverError = err
+	cm.serverError = values.TranslateErr(err)
 }
 
 func (cm *CreatePasswordModal) UseCustomWidget(layout layout.Widget) *CreatePasswordModal {

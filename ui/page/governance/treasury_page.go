@@ -271,11 +271,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
 				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
 				if err != nil {
-					errStr := err.Error()
-					if err.Error() == libwallet.ErrInvalidPassphrase {
-						errStr = values.String(values.StrInvalidPassphrase)
-					}
-					pm.SetError(errStr)
+					pm.SetError(err.Error())
 					pm.SetLoading(false)
 					return
 				}

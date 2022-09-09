@@ -640,4 +640,5 @@ const (
 	StrBackAndRename                   = "backAndRename"
 	StrMoveToUnmixed                   = "moveToUnmixed"
 	StrSeedValidationFailed            = "seedValidationFailed"
+	StrInvalidAmount                   = "invalidAmount"
 )
