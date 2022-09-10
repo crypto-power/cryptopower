@@ -96,7 +96,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 			Title(values.String(values.StrTreasurySpending)).
 			Body(values.String(values.StrTreasurySpendingInfo)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
@@ -147,7 +147,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -264,8 +264,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				selectedWallet := pg.WL.SelectedWallet.Wallet
 				votingPreference := treasuryItem.OptionsRadioGroup.Value

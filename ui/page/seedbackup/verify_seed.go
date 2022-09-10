@@ -160,7 +160,7 @@ func (pg *VerifySeedPage) verifySeed() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title("Confirm to verify seed").
-		PositiveButton("", func(_, password string, m *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			go func() {
 				seed := pg.selectedSeedPhrase()
 				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
@@ -183,8 +183,7 @@ func (pg *VerifySeedPage) verifySeed() {
 			}()
 
 			return false
-		}).
-		NegativeButton("Cancel", func() {})
+		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 

@@ -137,8 +137,7 @@ func (sp *SubPage) EventHandler(window app.WindowNavigator) {
 				SetupWithTemplate(sp.InfoTemplate).
 				SetContentAlignment(layout.W, layout.Center).
 				SetCancelable(true).
-				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface).
-				PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc())
+				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface)
 			window.ShowModal(infoModal)
 		}
 	}

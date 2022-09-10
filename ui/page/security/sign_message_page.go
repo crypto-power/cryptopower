@@ -283,8 +283,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 				EnableName(false).
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToSign)).
-				NegativeButton(values.String(values.StrCancel), func() {}).
-				PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
+				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 					go func() {
 						sig, err := pg.wallet.SignMessage([]byte(password), address, message)
 						if err != nil {

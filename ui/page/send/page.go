@@ -352,9 +352,9 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrSend)+" DCR").
+			Title(values.String(values.StrSend) + " DCR").
 			Body(values.String(values.StrSendInfo)).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 

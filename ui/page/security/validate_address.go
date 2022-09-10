@@ -213,8 +213,6 @@ func (pg *ValidateAddressPage) validateAddress() {
 		info = modal.NewSuccessModal(pg.Load, verifyMsgAddr, modal.DefaultClickFunc())
 	}
 
-	info.PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc()).
-		NegativeButton("", func() {})
 	pg.ParentWindow().ShowModal(info)
 }
 

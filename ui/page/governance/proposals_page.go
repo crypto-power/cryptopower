@@ -183,7 +183,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			Title(values.String(values.StrProposal)).
 			Body(values.String(values.StrOffChainVote)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 

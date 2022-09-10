@@ -180,9 +180,6 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 			verifyMessageText = values.String(values.StrValidSignature)
 			info = modal.NewSuccessModal(pg.Load, verifyMessageText, modal.DefaultClickFunc())
 		}
-
-		info.PositiveButton(values.String(values.StrOk), modal.DefaultClickFunc()).
-			NegativeButton("", func() {})
 		pg.ParentWindow().ShowModal(info)
 	}
 

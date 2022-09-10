@@ -90,7 +90,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title("Confirm to show seed").
-		PositiveButton("", func(_, password string, m *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			go func() {
 				seed, err := pg.wallet.DecryptSeed([]byte(password))
 				if err != nil {
@@ -139,7 +139,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 
 			return false
 		}).
-		NegativeButton("Cancel", func() {
+		SetNegativeButtonCallback(func() {
 			pg.ParentNavigator().ClosePagesAfter(components.WalletsPageID)
 		})
 	pg.ParentWindow().ShowModal(passwordModal)

@@ -121,7 +121,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 			Title(values.String(values.StrConsensusChange)).
 			Body(values.String(values.StrOnChainVote)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
@@ -172,7 +172,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 

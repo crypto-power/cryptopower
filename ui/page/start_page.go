@@ -77,11 +77,13 @@ func (sp *startPage) unlock() {
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrUnlockWithPassword)).
 		PasswordHint(values.String(values.StrStartupPassword)).
-		NegativeButton(values.String(values.StrExit), func() {
+		SetNegativeButtonText(values.String(values.StrExit)).
+		SetNegativeButtonCallback(func() {
 			sp.WL.MultiWallet.Shutdown()
 			os.Exit(0)
 		}).
-		PositiveButton(values.String(values.StrUnlock), func(_, password string, m *modal.CreatePasswordModal) bool {
+		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			err := sp.openWallets(password)
 			if err != nil {
 				m.SetError(err.Error())

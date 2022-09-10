@@ -288,7 +288,7 @@ func (pg *Page) HandleUserInteractions() {
 			UseCustomWidget(func(gtx C) D {
 				return pg.stakingRecordStatistics(gtx)
 			}).
-			PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(backupNowOrLaterModal)
 	}
 }
@@ -356,10 +356,8 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 				}),
 			)
 		}).
-		NegativeButton(values.String(values.StrCancel), func() {
-			pg.stake.SetChecked(false)
-		}).
-		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)

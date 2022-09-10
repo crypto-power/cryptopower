@@ -65,6 +65,6 @@ func (pg *Page) showInfoModal() {
 	info := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrGovernance)).
 		Body(values.String(values.StrProposalInfo)).
-		PositiveButton(values.String(values.StrGotIt), modal.DefaultClickFunc())
+		SetPositiveButtonText(values.String(values.StrGotIt))
 	pg.ParentWindow().ShowModal(info)
 }

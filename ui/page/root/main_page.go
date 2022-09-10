@@ -883,11 +883,13 @@ func (mp *MainPage) showBackupInfo() {
 		SetCancelable(false).
 		SetContentAlignment(layout.W, layout.Center).
 		CheckBox(mp.checkBox, true).
-		NegativeButton(values.String(values.StrBackupLater), func() {
+		SetNegativeButtonText(values.String(values.StrBackupLater)).
+		SetNegativeButtonCallback(func() {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 		}).
 		PositiveButtonStyle(mp.Load.Theme.Color.Primary, mp.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrBackupNow), func(_ bool, _ *modal.InfoModal) bool {
+		SetPositiveButtonText(values.String(values.StrBackupNow)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet))
 			return true

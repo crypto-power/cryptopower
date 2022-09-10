@@ -222,7 +222,7 @@ func (pg *Restore) showHexRestoreModal() {
 	hexModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrEnterHex)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrSubmit), func(hex string, hm *modal.TextInputModal) bool {
+		SetPositiveButtonCallback(func(hex string, hm *modal.TextInputModal) bool {
 			go func() {
 				if !pg.verifyHex(hex) {
 					hm.SetError(values.String(values.StrInvalidHex))
@@ -235,11 +235,11 @@ func (pg *Restore) showHexRestoreModal() {
 					EnableName(true).
 					ShowWalletInfoTip(true).
 					SetParent(pg).
-					NegativeButton("", func() {
+					SetNegativeButtonCallback(func() {
 						pg.tabIndex = 0
 						pg.switchTab(pg.tabIndex)
 					}).
-					PositiveButton("", func(walletName, password string, m *modal.CreatePasswordModal) bool {
+					SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 						go func() {
 							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 							if err != nil {
@@ -266,7 +266,8 @@ func (pg *Restore) showHexRestoreModal() {
 			return false
 		})
 	hexModal.Title(values.String(values.StrRestoreWithHex)).
-		NegativeButton(values.String(values.StrCancel), func() {
+		SetPositiveButtonText(values.String(values.StrSubmit)).
+		SetNegativeButtonCallback(func() {
 			pg.tabIndex = 0
 			pg.switchTab(pg.tabIndex)
 		})

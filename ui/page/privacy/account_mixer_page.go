@@ -221,8 +221,9 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			info := modal.NewCustomModal(pg.Load).
 				Title("Cancel mixer?").
 				Body("Are you sure you want to cancel mixer action?").
-				NegativeButton("No", func() {}).
-				PositiveButton("Yes", func(_ bool, _ *modal.InfoModal) bool {
+				SetNegativeButtonText(values.String(values.StrNo)).
+				SetPositiveButtonText(values.String(values.StrYes)).
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
 					go pg.WL.MultiWallet.StopAccountMixer(pg.WL.SelectedWallet.Wallet.ID)
 					return true
@@ -247,10 +248,10 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title("Confirm to mix account").
-		NegativeButton(values.String(values.StrCancel), func() {
+		SetNegativeButtonCallback(func() {
 			pg.toggleMixer.SetChecked(false)
 		}).
-		PositiveButton(values.String(values.StrConfirm), func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				err := pg.WL.MultiWallet.StartAccountMixer(pg.WL.SelectedWallet.Wallet.ID, password)
 				if err != nil {

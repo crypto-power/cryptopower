@@ -128,14 +128,22 @@ func (cm *CreatePasswordModal) ShowWalletInfoTip(show bool) *CreatePasswordModal
 	return cm
 }
 
-func (cm *CreatePasswordModal) PositiveButton(text string, callback func(walletName, password string, m *CreatePasswordModal) bool) *CreatePasswordModal {
+func (cm *CreatePasswordModal) SetPositiveButtonText(text string) *CreatePasswordModal {
 	cm.positiveButtonText = text
+	return cm
+}
+
+func (cm *CreatePasswordModal) SetPositiveButtonCallback(callback func(walletName, password string, m *CreatePasswordModal) bool) *CreatePasswordModal {
 	cm.positiveButtonClicked = callback
 	return cm
 }
 
-func (cm *CreatePasswordModal) NegativeButton(text string, callback func()) *CreatePasswordModal {
+func (cm *CreatePasswordModal) SetNegativeButtonText(text string) *CreatePasswordModal {
 	cm.negativeButtonText = text
+	return cm
+}
+
+func (cm *CreatePasswordModal) SetNegativeButtonCallback(callback func()) *CreatePasswordModal {
 	cm.negativeButtonClicked = callback
 	return cm
 }
@@ -186,14 +194,8 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 }
 
 func (cm *CreatePasswordModal) Handle() {
-	if cm.negativeButtonText != "" {
-		cm.btnNegative.Text = cm.negativeButtonText
-	}
-
-	if cm.positiveButtonText != "" {
-		cm.btnPositive.Text = cm.positiveButtonText
-	}
-
+	cm.btnNegative.Text = cm.negativeButtonText
+	cm.btnPositive.Text = cm.positiveButtonText
 	cm.btnPositive.SetEnabled(cm.validToCreate())
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)

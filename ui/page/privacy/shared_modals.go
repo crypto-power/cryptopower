@@ -25,8 +25,7 @@ func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError
 	} else {
 		info = modal.NewSuccessModal(conf.Load, title, modal.DefaultClickFunc())
 	}
-	info.Body(body).
-		PositiveButton(btnText, modal.DefaultClickFunc())
+	info.Body(body).SetPositiveButtonText(btnText)
 	conf.window.ShowModal(info)
 }
 
@@ -35,8 +34,9 @@ func showModalSetupMixerInfo(conf *sharedModalConfig) {
 		Title(values.String(values.StrMultipleMixerAccNeeded)).
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
 		CheckBox(conf.checkBox, false).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrInitiateSetup), func(movefundsChecked bool, _ *modal.InfoModal) bool {
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrInitiateSetup)).
+		SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
 			showModalSetupMixerAcct(conf, movefundsChecked)
 			return true
 		})
@@ -49,7 +49,8 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
 				Body(values.String(values.StrMixerAccErrorMsg)).
-				PositiveButton(values.String(values.StrBackAndRename), func(movefundsChecked bool, _ *modal.InfoModal) bool {
+				SetPositiveButtonText(values.String(values.StrBackAndRename)).
+				SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
 					conf.pageNavigator.CloseCurrentPage()
 					return true
 				})
@@ -62,8 +63,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
-		NegativeButton("", func() {}).
-		PositiveButton("", func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
 				if err != nil {

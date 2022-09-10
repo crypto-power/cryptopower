@@ -316,8 +316,8 @@ func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet)
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		PasswordHint(values.String(values.StrSpendingPassword)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrUnlock), func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {

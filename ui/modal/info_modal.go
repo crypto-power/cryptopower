@@ -88,7 +88,6 @@ func DefaultClickFunc() ClickFunc {
 
 func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked ClickFunc) *InfoModal {
 	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
-	info.positiveButtonText = values.String(values.StrOk)
 	info.positiveButtonClicked = clicked
 	info.btnPositiveWidth = values.MarginPadding100
 	info.dialogIcon = icon
@@ -102,7 +101,7 @@ func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 	in := &InfoModal{
 		Load:             l,
 		Modal:            l.Theme.ModalFloatTitle(key),
-		btnNegative:      l.Theme.OutlineButton(values.String(values.StrNo)),
+		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,
 		btnAlignment:     layout.E,
@@ -121,11 +120,11 @@ func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 func getPositiveButtonType(l *load.Load, btnType ButtonType) cryptomaterial.Button {
 	switch btnType {
 	case InfoBtn:
-		return l.Theme.Button(values.String(values.StrYes))
+		return l.Theme.Button(values.String(values.StrOk))
 	case DangerBtn:
-		return l.Theme.DangerButton(values.String(values.StrYes))
+		return l.Theme.DangerButton(values.String(values.StrOk))
 	default:
-		return l.Theme.OutlineButton(values.String(values.StrYes))
+		return l.Theme.OutlineButton(values.String(values.StrOk))
 	}
 }
 
@@ -170,8 +169,12 @@ func (in *InfoModal) Body(subtitle string) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) PositiveButton(text string, clicked ClickFunc) *InfoModal {
+func (in *InfoModal) SetPositiveButtonText(text string) *InfoModal {
 	in.positiveButtonText = text
+	return in
+}
+
+func (in *InfoModal) SetPositiveButtonCallback(clicked ClickFunc) *InfoModal {
 	in.positiveButtonClicked = clicked
 	return in
 }
@@ -186,8 +189,12 @@ func (in *InfoModal) PositiveButtonWidth(width unit.Dp) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) NegativeButton(text string, clicked func()) *InfoModal {
+func (in *InfoModal) SetNegativeButtonText(text string) *InfoModal {
 	in.negativeButtonText = text
+	return in
+}
+
+func (in *InfoModal) SetNegativeButtonCallback(clicked func()) *InfoModal {
 	in.negativeButtonClicked = clicked
 	return in
 }

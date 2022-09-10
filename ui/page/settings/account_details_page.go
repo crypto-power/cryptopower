@@ -336,7 +336,7 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrAcctName)).
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-			PositiveButton(values.String(values.StrRename), func(newName string, tim *modal.TextInputModal) bool {
+			SetPositiveButtonCallback(func(newName string, tim *modal.TextInputModal) bool {
 				err := pg.wallet.RenameAccount(pg.account.Number, newName)
 				if err != nil {
 					tim.SetError(err.Error())
@@ -347,10 +347,10 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 				successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrAcctRenamed), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(successModal)
 				return true
-			})
+			}).
+			Title(values.String(values.StrRenameAcct)).
+			SetPositiveButtonText(values.String(values.StrRename))
 
-		textModal.Title(values.String(values.StrRenameAcct)).
-			NegativeButton(values.String(values.StrCancel), func() {})
 		pg.ParentWindow().ShowModal(textModal)
 	}
 }

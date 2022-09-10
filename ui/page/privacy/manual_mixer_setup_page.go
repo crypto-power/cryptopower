@@ -196,8 +196,7 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title("Confirm to set mixer accounts").
-		NegativeButton("", func() {}).
-		PositiveButton("", func(_, password string, pm *modal.CreatePasswordModal) bool {
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			go func() {
 				mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
 				unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number

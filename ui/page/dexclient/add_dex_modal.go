@@ -173,10 +173,12 @@ func (md *AddDexModal) payFeeAndRegister(dexServer *core.Exchange, cert []byte) 
 			Title(strConfirmReg).
 			Body(confirmRegisterModalDesc(dexServer, feeAsset.Symbol)).
 			SetCancelable(false).
-			NegativeButton(values.String(values.StrCancel), func() {
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			SetNegativeButtonCallback(func() {
 				md.ParentWindow().ShowModal(assetSelectorModal)
 			}).
-			PositiveButton(strRegister, func(_ bool, _ *modal.InfoModal) bool {
+			SetPositiveButtonText(strRegister).
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				md.ParentWindow().ShowModal(assetSelectorModal)
 				go func() {
 					assetSelectorModal.SetLoading(true)

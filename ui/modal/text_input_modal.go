@@ -28,9 +28,10 @@ type TextInputModal struct {
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm := &TextInputModal{
-		InfoModal:    newInfoModalWithKey(l, "text_input_modal", CustomBtn),
+		InfoModal:    newInfoModalWithKey(l, "text_input_modal", InfoBtn),
 		isCancelable: true,
 	}
+	tm.btnNegative = l.Theme.OutlineButton(values.String(values.StrCancel))
 
 	tm.textInput = l.Theme.Editor(new(widget.Editor), values.String(values.StrHint))
 	tm.textInput.Editor.SingleLine, tm.textInput.Editor.Submit = true, true
@@ -59,8 +60,7 @@ func (tm *TextInputModal) ShowAccountInfoTip(show bool) *TextInputModal {
 	return tm
 }
 
-func (tm *TextInputModal) PositiveButton(text string, callback func(string, *TextInputModal) bool) *TextInputModal {
-	tm.positiveButtonText = text
+func (tm *TextInputModal) SetPositiveButtonCallback(callback func(string, *TextInputModal) bool) *TextInputModal {
 	tm.callback = callback
 	return tm
 }
