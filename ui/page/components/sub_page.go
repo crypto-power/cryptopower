@@ -1,8 +1,6 @@
 package components
 
 import (
-	// "image/color"
-
 	"gioui.org/layout"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -55,11 +53,10 @@ func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout
 func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
 	sp.EventHandler(window)
 
-	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
 				Right: values.MarginPadding20,
-				Top:   values.MarginPaddingMinus2,
 			}.Layout(gtx, sp.BackButton.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -78,7 +75,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			if sp.WalletName != "" {
-				return layout.Inset{Left: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 					return cryptomaterial.Card{
 						Color: sp.Theme.Color.Surface,
 					}.Layout(gtx, func(gtx C) D {
@@ -100,7 +97,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 							if sp.ExtraText != "" {
-								return layout.Inset{Right: values.MarginPadding10, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 									return sp.Theme.Caption(sp.ExtraText).Layout(gtx)
 								})
 							}
@@ -119,9 +116,13 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 
 func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
 	return sp.Theme.Card().Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding24).Layout(gtx, func(gtx C) D {
+		return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return sp.Header(window, gtx) }),
+				layout.Rigid(func(gtx C) D {
+					return layout.UniformInset(values.MarginPadding24).Layout(gtx, func(gtx C) D {
+						return sp.Header(window, gtx)
+					})
+				}),
 				layout.Rigid(sp.Body),
 			)
 		})

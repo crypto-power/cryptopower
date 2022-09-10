@@ -130,7 +130,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Transaction /*, ticketSpender *dcrlibwallet.Transaction*/) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
@@ -395,10 +395,6 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
-	// var ticketSpender *dcrlibwallet.Transaction
-	// if wal.TxMatchesFilter(&row.Transaction, dcrlibwallet.TxFilterStaking) {
-	// 	ticketSpender, _ = wal.TicketSpender(row.Transaction.Hash)
-	// }
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 
 	return cryptomaterial.LinearLayout{
@@ -618,8 +614,9 @@ func FormatDateOrTime(timestamp int64) string {
 	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
 }
 
-// walletLabel displays the wallet which a transaction belongs to. It is only displayed on the overview page when there
-//// are transactions from multiple wallets
+// walletLabel displays the wallet which a transaction belongs to.
+// It is only displayed on the overview page when there are transactions from multiple wallets
+// deprecated -- todo remove.
 func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
 	return cryptomaterial.Card{
 		Color: l.Theme.Color.Gray4,

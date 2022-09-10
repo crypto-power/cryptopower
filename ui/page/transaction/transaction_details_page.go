@@ -3,6 +3,7 @@ package transaction
 import (
 	"fmt"
 	"gioui.org/op"
+	"image"
 	"strings"
 	"time"
 
@@ -48,11 +49,9 @@ type TxDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	list *widget.List
-
-	transactionDetailsPageContainer layout.List
-	transactionInputsContainer      layout.List
-	transactionOutputsContainer     layout.List
+	list                        *widget.List
+	transactionInputsContainer  layout.List
+	transactionOutputsContainer layout.List
 
 	destAddressClickable      *widget.Clickable
 	associatedTicketClickable *cryptomaterial.Clickable
@@ -95,9 +94,6 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction,
 		GenericPageModal: app.NewGenericPageModal(TransactionDetailsPageID),
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
-		},
-		transactionDetailsPageContainer: layout.List{
-			Axis: layout.Vertical,
 		},
 		transactionInputsContainer: layout.List{
 			Axis: layout.Vertical,
@@ -248,19 +244,22 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			},
 			Body: func(gtx C) D {
 				widgets := []func(gtx C) D{
-					pg.txDetailsHeader,
-					pg.Theme.Separator().Layout,
 					// pg.associatedTicket, // TODO currently not part of the v2 update
 					pg.txnTypeAndID,
 					pg.txnInputs,
 					pg.txnOutputs,
 				}
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
-					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-						return pg.transactionDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-							return layout.Inset{}.Layout(gtx, widgets[i])
-						})
-					})
+
+				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.txDetailsHeader),
+						layout.Rigid(pg.Theme.Separator().Layout),
+						layout.Rigid(func(gtx C) D {
+							return pg.Theme.List(pg.list).Layout(gtx, len(widgets), func(gtx C, i int) D {
+								return layout.Inset{}.Layout(gtx, widgets[i])
+							})
+						}),
+					)
 				})
 			},
 		}
@@ -288,7 +287,8 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Padding: layout.Inset{
-			Top:    values.MarginPadding24,
+			Left:   values.MarginPadding24,
+			Right:  values.MarginPadding24,
 			Bottom: values.MarginPadding30,
 		},
 		Alignment: layout.Middle,
@@ -312,10 +312,9 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 										p := pg.Theme.ProgressBarCirle(pg.getTimeToMatureOrExpire())
 										p.Color = pg.txnWidgets.txStatus.ProgressBarColor
 										return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding22)
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											gtx.Constraints.Max.Y = gtx.Constraints.Max.X
-											gtx.Constraints.Min.Y = gtx.Constraints.Max.X
+											sz := gtx.Dp(values.MarginPadding22)
+											gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+											gtx.Constraints.Min = gtx.Constraints.Max
 											return p.Layout(gtx)
 										})
 									}
@@ -549,7 +548,12 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding16),
+		Padding: layout.Inset{
+			Top:    values.MarginPadding30,
+			Left:   values.MarginPadding70,
+			Right:  values.MarginPadding24,
+			Bottom: values.MarginPadding18,
+		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.keyValue(gtx, values.String(values.StrAccount), pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
@@ -781,7 +785,11 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 }
 
 func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
-	return layout.UniformInset(values.MarginPadding16).Layout(gtx, body)
+	return layout.Inset{
+		Left:   values.MarginPadding70,
+		Right:  values.MarginPadding24,
+		Bottom: values.MarginPadding30,
+	}.Layout(gtx, body)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

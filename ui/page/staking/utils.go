@@ -271,10 +271,9 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 				p := l.Theme.ProgressBarCirle(int(tx.progress))
 				p.Color = tx.status.ProgressBarColor
 				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding22)
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding22)
-					gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+					sz := gtx.Dp(values.MarginPadding22)
+					gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+					gtx.Constraints.Min = gtx.Constraints.Max
 					return p.Layout(gtx)
 				})
 			}),
