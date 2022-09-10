@@ -298,7 +298,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 func (pg *WalletDexServerSelector) startSyncing() {
 	for _, wal := range pg.WL.SortedWalletList() {
 		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			pg.unlockWalletForSyncing(wal)
+			pg.UnlockWalletForSyncing(wal)
 			return
 		}
 	}
@@ -310,15 +310,10 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
-<<<<<<< HEAD:ui/page/root/wallet_dex_selector_page.go
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
-	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
-=======
 func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
->>>>>>> 2590ec0... Move implementation of PasswordModal to CreatePasswordModal:ui/page/wallet_dex_selector_page.go
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		NegativeButton(values.String(values.StrCancel), func() {}).
