@@ -1,9 +1,6 @@
 # cryptopower
 
-[![Build Status](https://gitlab.com/raedah/cryptopower/workflows/Build/badge.svg)](https://gitlab.com/raedah/cryptopower/actions)
-[![Tests Status](https://gitlab.com/raedah/cryptopower/workflows/Tests/badge.svg)](https://gitlab.com/raedah/cryptopower/actions)
-
-A cross-platform desktop [SPV](https://docs.decred.org/wallets/spv/) wallet for [decred](https://decred.org/) built with [gio](https://gioui.org/).
+A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 ## Building
 
