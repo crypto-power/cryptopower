@@ -31,7 +31,7 @@ type transactionWdg struct {
 	confirmationIcons *cryptomaterial.Image
 	time, status, wallet cryptomaterial.Label
 
-	copyTextButtons []cryptomaterial.Button
+	copyTextButtons []*cryptomaterial.Clickable
 	txStatus        *components.TxStatus
 }
 
@@ -76,10 +76,9 @@ type TxDetailsPage struct {
 	moreItems  []moreItem
 	txnWidgets transactionWdg
 
-	txSourceAccount      string
-	txDestinationAddress string
-	title                string
-	vspHost              string
+	txSourceAccount string
+	title           string
+	vspHost         string
 
 	moreOptionIsOpen bool
 }
@@ -143,15 +142,6 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 			}
 		}
 	}
-
-	//	find destination address
-	if pg.transaction.Direction == libwallet.TxDirectionSent {
-		for _, output := range pg.transaction.Outputs {
-			if output.AccountNumber == -1 {
-				pg.txDestinationAddress = output.Address
-			}
-		}
-	}
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -210,8 +200,6 @@ func (pg *TxDetailsPage) getMoreItem() []moreItem {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) Layout(gtx C) D {
-	pg.handleTextCopyEvent(gtx)
-
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -658,11 +646,15 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			first := transaction.Hash[0 : len(transaction.Hash)-30]
-			second := transaction.Hash[len(transaction.Hash)-30:]
 			dim := func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize14, fmt.Sprintf("%s %s", first, second))
+				lbl := pg.Theme.Label(values.TextSize14, splitSingleString(transaction.Hash, 30))
 				lbl.Color = pg.Theme.Color.Primary
+
+				// copy transaction hash
+				if pg.hashClickable.Clicked() {
+					clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
+					pg.Toast.Notify(values.String(values.StrTxHashCopied))
+				}
 				return pg.hashClickable.Layout(gtx, lbl.Layout)
 			}
 
@@ -713,7 +705,6 @@ func (pg *TxDetailsPage) txnOutputs(gtx C) D {
 }
 
 func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address string, i int) D {
-
 	accountName := values.String(values.StrExternal)
 	if acctNum != -1 {
 		name, err := pg.wallet.AccountName(acctNum)
@@ -745,8 +736,17 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 						)
 					}),
 					layout.Rigid(func(gtx C) D {
-						pg.txnWidgets.copyTextButtons[i].Text = address
-						return layout.W.Layout(gtx, pg.txnWidgets.copyTextButtons[i].Layout)
+						// copy address
+						if pg.txnWidgets.copyTextButtons[i].Clicked() {
+							clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+							pg.Toast.Notify(values.String(values.StrCopied))
+						}
+
+						return layout.W.Layout(gtx, func(gtx C) D {
+							lbl := pg.Theme.Label(values.TextSize14, splitSingleString(address, 13))
+							lbl.Color = pg.Theme.Color.Primary
+							return pg.txnWidgets.copyTextButtons[i].Layout(gtx, lbl.Layout)
+						})
 					}),
 				)
 			})
@@ -756,7 +756,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 
 func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 	inset := layout.Inset{
-		Left: values.MarginPaddingMinus150,
+		Left: values.MarginPaddingMinus145,
 	}
 
 	m := op.Record(gtx.Ops)
@@ -771,6 +771,14 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									// copy the redirect url
+									redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
+									if pg.moreItems[i].button.Clicked() && pg.moreItems[i].id == copyBlockID {
+										clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
+										pg.Toast.Notify(values.String(values.StrCopied))
+										pg.moreOptionIsOpen = false
+									}
+
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return pg.Theme.Label(values.TextSize14, pg.moreItems[i].text).Layout(gtx)
 								})
@@ -844,40 +852,6 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			pg.moreOptionIsOpen = false
 			break
 		}
-
-	}
-}
-
-func (pg *TxDetailsPage) handleTextCopyEvent(gtx C) {
-	for _, b := range pg.txnWidgets.copyTextButtons {
-		for b.Clicked() {
-			clipboard.WriteOp{Text: b.Text}.Add(gtx.Ops)
-			pg.Toast.Notify(values.String(values.StrCopied))
-			break
-		}
-		break
-	}
-
-	for pg.hashClickable.Clicked() {
-		clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
-		pg.Toast.Notify(values.String(values.StrTxHashCopied))
-		break
-	}
-
-	for pg.destAddressClickable.Clicked() {
-		clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
-		pg.Toast.Notify(values.String(values.StrAddressCopied))
-		break
-	}
-
-	redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
-	for _, menu := range pg.moreItems {
-		if menu.button.Clicked() && menu.id == copyBlockID {
-			clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
-			pg.Toast.Notify(values.String(values.StrCopied))
-			pg.moreOptionIsOpen = false
-			break
-		}
 	}
 }
 
@@ -913,13 +887,16 @@ func initTxnWidgets(l *load.Load, transaction *libwallet.Transaction) transactio
 	txn.txStatus = txStatus
 
 	x := len(transaction.Inputs) + len(transaction.Outputs)
-	txn.copyTextButtons = make([]cryptomaterial.Button, x)
+	txn.copyTextButtons = make([]*cryptomaterial.Clickable, x)
 	for i := 0; i < x; i++ {
-		btn := l.Theme.OutlineButton("")
-		btn.TextSize = values.TextSize14
-		btn.Inset = layout.UniformInset(values.MarginPadding0)
-		txn.copyTextButtons[i] = btn
+		txn.copyTextButtons[i] = l.Theme.NewClickable(false)
 	}
 
 	return txn
+}
+
+func splitSingleString(text string, index int) string {
+	first := text[0 : len(text)-index]
+	second := text[len(text)-index:]
+	return fmt.Sprintf("%s %s", first, second)
 }
