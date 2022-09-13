@@ -163,7 +163,7 @@ func (tm *TextInputModal) Layout(gtx layout.Context) D {
 
 	w = append(w, tm.textInput.Layout)
 
-	if tm.negativeButtonText != "" || tm.positiveButtonText != "" {
+	if tm.btnNegative.Text != "" || tm.btnPositive.Text != "" {
 		w = append(w, tm.actionButtonsLayout())
 	}
 

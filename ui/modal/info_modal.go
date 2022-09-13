@@ -25,12 +25,12 @@ type InfoModal struct {
 	customTemplate []layout.Widget
 	customWidget   layout.Widget
 
-	positiveButtonText    string
+	// positiveButtonText    string
 	positiveButtonClicked ClickFunc
 	btnPositive           cryptomaterial.Button
 	btnPositiveWidth      unit.Dp
 
-	negativeButtonText    string
+	// negativeButtonText    string
 	negativeButtonClicked func()
 	btnNegative           cryptomaterial.Button
 
@@ -170,7 +170,7 @@ func (in *InfoModal) Body(subtitle string) *InfoModal {
 }
 
 func (in *InfoModal) SetPositiveButtonText(text string) *InfoModal {
-	in.positiveButtonText = text
+	in.btnPositive.Text = text
 	return in
 }
 
@@ -190,7 +190,7 @@ func (in *InfoModal) PositiveButtonWidth(width unit.Dp) *InfoModal {
 }
 
 func (in *InfoModal) SetNegativeButtonText(text string) *InfoModal {
-	in.negativeButtonText = text
+	in.btnNegative.Text = text
 	return in
 }
 
@@ -352,7 +352,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 		w = append(w, in.customWidget)
 	}
 
-	if in.negativeButtonText != "" || in.positiveButtonText != "" {
+	if in.btnPositive.Text != "" || in.btnPositive.Text != "" {
 		w = append(w, in.actionButtonsLayout())
 	}
 
@@ -372,11 +372,10 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 		return in.btnAlignment.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if in.negativeButtonText == "" || in.isLoading {
+					if in.btnPositive.Text == "" || in.isLoading {
 						return layout.Dimensions{}
 					}
 
-					in.btnNegative.Text = in.negativeButtonText
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
 					return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, in.btnNegative.Layout)
 				}),
@@ -385,11 +384,10 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 						return in.materialLoader.Layout(gtx)
 					}
 
-					if in.positiveButtonText == "" {
+					if in.btnPositive.Text == "" {
 						return layout.Dimensions{}
 					}
 
-					in.btnPositive.Text = in.positiveButtonText
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
 					if in.btnPositiveWidth > 0 {
 						gtx.Constraints.Min.X = gtx.Dp(in.btnPositiveWidth)

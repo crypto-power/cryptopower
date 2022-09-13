@@ -87,7 +87,7 @@ func (t *Toast) Layout(gtx layout.Context) layout.Dimensions {
 		return layout.Dimensions{}
 	}
 
-	go t.handleToastDisplay(gtx)
+	t.handleToastDisplay(gtx)
 
 	color := t.theme.Color.Success
 	if !t.success {
