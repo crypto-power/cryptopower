@@ -24,24 +24,36 @@ func (pn *ProposalNotificationListener) OnProposalsSynced() {
 }
 
 func (pn *ProposalNotificationListener) OnNewProposal(proposal interface{}) {
+	p, ok := proposal.(*libwallet.Proposal)
+	if !ok {
+		p = &libwallet.Proposal{}
+	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.NewProposalFound,
-		Proposal:       proposal.(*libwallet.Proposal),
+		Proposal:       p,
 	}
 	pn.sendNotification(update)
 }
 
 func (pn *ProposalNotificationListener) OnProposalVoteStarted(proposal interface{}) {
+	p, ok := proposal.(*libwallet.Proposal)
+	if !ok {
+		p = &libwallet.Proposal{}
+	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteStarted,
-		Proposal:       proposal.(*libwallet.Proposal),
+		Proposal:       p,
 	}
 	pn.sendNotification(update)
 }
 func (pn *ProposalNotificationListener) OnProposalVoteFinished(proposal interface{}) {
+	p, ok := proposal.(*libwallet.Proposal)
+	if !ok {
+		p = &libwallet.Proposal{}
+	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteFinished,
-		Proposal:       proposal.(*libwallet.Proposal),
+		Proposal:       p,
 	}
 	pn.sendNotification(update)
 }
