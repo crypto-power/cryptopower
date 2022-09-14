@@ -1,8 +1,6 @@
 package listeners
 
-import (
-	"gitlab.com/raedah/libwallet"
-)
+import "gitlab.com/raedah/cryptopower/libwallet"
 
 type TxNotifType int
 

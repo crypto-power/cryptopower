@@ -3,7 +3,7 @@ package wallet
 import (
 	"errors"
 
-	"gitlab.com/raedah/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet"
 )
 
 var (
