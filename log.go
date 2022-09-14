@@ -54,7 +54,7 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log = backendLog.Logger("GDCR")
+	log = backendLog.Logger("CRPW")
 
 	walletLog  = backendLog.Logger("WALL")
 	winLog     = backendLog.Logger("UI")
@@ -83,7 +83,7 @@ var subsystemLoggers = map[string]slog.Logger{
 	"WALL": walletLog,
 	"DLWL": dlwlLog,
 	"UI":   winLog,
-	"GDCR": log,
+	"CRPW": log,
 	"LSTN": lstnersLog,
 }
 
