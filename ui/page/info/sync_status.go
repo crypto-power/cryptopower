@@ -6,14 +6,14 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 func (pg *WalletInfo) initWalletStatusWidgets() {
-	pg.walletStatusIcon = decredmaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
+	pg.walletStatusIcon = cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
 	pg.syncSwitch = pg.Theme.Switch()
 }
 
@@ -192,7 +192,7 @@ func (pg *WalletInfo) progressBarRow(gtx C) D {
 
 		p := pg.Theme.ProgressBar(progress)
 		p.Height = values.MarginPadding16
-		p.Radius = decredmaterial.Radius(4)
+		p.Radius = cryptomaterial.Radius(4)
 		p.Color = pg.Theme.Color.Success
 		p.TrackColor = pg.Theme.Color.Gray2
 

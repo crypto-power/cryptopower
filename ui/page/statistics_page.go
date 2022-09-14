@@ -10,12 +10,12 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const StatisticsPageID = "Statistics"
@@ -28,15 +28,15 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	txs      []dcrlibwallet.Transaction
-	accounts *dcrlibwallet.Accounts
+	txs      []libwallet.Transaction
+	accounts *libwallet.Accounts
 
 	l             layout.List
 	scrollbarList *widget.List
 	startupTime   string
 	netType       string
 
-	backButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
 }
 
 func NewStatPage(l *load.Load) *StatPage {
@@ -49,7 +49,7 @@ func NewStatPage(l *load.Load) *StatPage {
 		},
 		netType: l.WL.Wallet.Net,
 	}
-	if pg.netType == dcrlibwallet.Testnet3 {
+	if pg.netType == libwallet.Testnet3 {
 		pg.netType = "Testnet"
 	} else {
 		pg.netType = strings.Title(pg.netType)
@@ -65,7 +65,7 @@ func NewStatPage(l *load.Load) *StatPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *StatPage) OnNavigatedTo() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcrlibwallet.TxFilterAll, true)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterAll, true)
 	if err != nil {
 		log.Errorf("Error getting txs: %s", err.Error())
 	} else {

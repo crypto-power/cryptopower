@@ -9,11 +9,11 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type VSPSelector struct {
@@ -22,8 +22,8 @@ type VSPSelector struct {
 	dialogTitle string
 
 	changed      bool
-	showVSPModal *decredmaterial.Clickable
-	selectedVSP  *dcrlibwallet.VSP
+	showVSPModal *cryptomaterial.Clickable
+	selectedVSP  *libwallet.VSP
 }
 
 func NewVSPSelector(l *load.Load) *VSPSelector {
@@ -55,7 +55,7 @@ func (v *VSPSelector) SelectVSP(vspHost string) {
 	}
 }
 
-func (v *VSPSelector) SelectedVSP() *dcrlibwallet.VSP {
+func (v *VSPSelector) SelectedVSP() *libwallet.VSP {
 	return v.selectedVSP
 }
 
@@ -63,7 +63,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 	if v.showVSPModal.Clicked() {
 		modal := newVSPSelectorModal(v.Load).
 			title(values.String(values.StrVotingServiceProvider)).
-			vspSelected(func(info *dcrlibwallet.VSP) {
+			vspSelected(func(info *libwallet.VSP) {
 				v.SelectVSP(info.Host)
 			})
 		window.ShowModal(modal)
@@ -106,7 +106,7 @@ func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) lay
 										Left: values.MarginPadding15,
 									}
 									return inset.Layout(gtx, func(gtx C) D {
-										ic := decredmaterial.NewIcon(v.Theme.Icons.DropDownIcon)
+										ic := cryptomaterial.NewIcon(v.Theme.Icons.DropDownIcon)
 										ic.Color = v.Theme.Color.Gray1
 										return ic.Layout(gtx, values.MarginPadding20)
 									})
@@ -122,17 +122,17 @@ func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) lay
 
 type vspSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
-	inputVSP decredmaterial.Editor
-	addVSP   decredmaterial.Button
+	inputVSP cryptomaterial.Editor
+	addVSP   cryptomaterial.Button
 
-	selectedVSP *dcrlibwallet.VSP
-	vspList     *decredmaterial.ClickableList
+	selectedVSP *libwallet.VSP
+	vspList     *cryptomaterial.ClickableList
 
-	vspSelectedCallback func(*dcrlibwallet.VSP)
+	vspSelectedCallback func(*libwallet.VSP)
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
@@ -189,7 +189,7 @@ func (v *vspSelectorModal) title(title string) *vspSelectorModal {
 	return v
 }
 
-func (v *vspSelectorModal) vspSelected(callback func(*dcrlibwallet.VSP)) *vspSelectorModal {
+func (v *vspSelectorModal) vspSelected(callback func(*libwallet.VSP)) *vspSelectorModal {
 	v.vspSelectedCallback = callback
 	return v
 }
@@ -232,7 +232,7 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 								if v.selectedVSP == nil || v.selectedVSP.Host != vsps[i].Host {
 									return layout.Dimensions{}
 								}
-								ic := decredmaterial.NewIcon(v.Theme.Icons.NavigationCheck)
+								ic := cryptomaterial.NewIcon(v.Theme.Icons.NavigationCheck)
 								return ic.Layout(gtx, values.MarginPadding20)
 							}),
 						)

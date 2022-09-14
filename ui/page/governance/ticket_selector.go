@@ -5,11 +5,11 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type ticketSelector struct {
@@ -18,13 +18,13 @@ type ticketSelector struct {
 	dialogTitle string
 
 	changed         bool
-	showTicketModal *decredmaterial.Clickable
-	selectedTicket  *dcrlibwallet.Transaction
+	showTicketModal *cryptomaterial.Clickable
+	selectedTicket  *libwallet.Transaction
 
-	liveTickets []*dcrlibwallet.Transaction
+	liveTickets []*libwallet.Transaction
 }
 
-func newTicketSelector(l *load.Load, lv []*dcrlibwallet.Transaction) *ticketSelector {
+func newTicketSelector(l *load.Load, lv []*libwallet.Transaction) *ticketSelector {
 	ts := &ticketSelector{
 		Load:            l,
 		showTicketModal: l.Theme.NewClickable(true),
@@ -54,7 +54,7 @@ func (ts *ticketSelector) SelectTicket(ticketHash string) {
 	}
 }
 
-func (ts *ticketSelector) SelectedTicket() *dcrlibwallet.Transaction {
+func (ts *ticketSelector) SelectedTicket() *libwallet.Transaction {
 	return ts.selectedTicket
 }
 
@@ -62,7 +62,7 @@ func (ts *ticketSelector) handle(window app.WindowNavigator) {
 	if ts.showTicketModal.Clicked() {
 		ticketSelectorModal := newTicketSelectorModal(ts.Load, ts.liveTickets).
 			title(values.String(values.StrSelectTicket)).
-			ticketSelected(func(ticket *dcrlibwallet.Transaction) {
+			ticketSelected(func(ticket *libwallet.Transaction) {
 				ts.SelectTicket(ticket.Hash)
 			})
 		window.ShowModal(ticketSelectorModal)
@@ -96,7 +96,7 @@ func (ts *ticketSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 								Left: values.MarginPadding15,
 							}
 							return inset.Layout(gtx, func(gtx C) D {
-								ic := decredmaterial.NewIcon(ts.Theme.Icons.DropDownIcon)
+								ic := cryptomaterial.NewIcon(ts.Theme.Icons.DropDownIcon)
 								ic.Color = ts.Theme.Color.Gray1
 								return ic.Layout(gtx, values.MarginPadding20)
 							})
@@ -110,18 +110,18 @@ func (ts *ticketSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 
 type ticketSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
-	liveTickets    []*dcrlibwallet.Transaction
-	selectedTicket *dcrlibwallet.Transaction
-	ticketList     *decredmaterial.ClickableList
+	liveTickets    []*libwallet.Transaction
+	selectedTicket *libwallet.Transaction
+	ticketList     *cryptomaterial.ClickableList
 
-	ticketSelectedCallback func(*dcrlibwallet.Transaction)
+	ticketSelectedCallback func(*libwallet.Transaction)
 }
 
-func newTicketSelectorModal(l *load.Load, lv []*dcrlibwallet.Transaction) *ticketSelectorModal {
+func newTicketSelectorModal(l *load.Load, lv []*libwallet.Transaction) *ticketSelectorModal {
 	tsm := &ticketSelectorModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("TicketSelectorModal"),
@@ -152,7 +152,7 @@ func (tsm *ticketSelectorModal) title(title string) *ticketSelectorModal {
 	return tsm
 }
 
-func (tsm *ticketSelectorModal) ticketSelected(callback func(*dcrlibwallet.Transaction)) *ticketSelectorModal {
+func (tsm *ticketSelectorModal) ticketSelected(callback func(*libwallet.Transaction)) *ticketSelectorModal {
 	tsm.ticketSelectedCallback = callback
 	tsm.Dismiss()
 	return tsm
@@ -187,7 +187,7 @@ func (tsm *ticketSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 								if tsm.selectedTicket != nil || tsm.selectedTicket != listTickets[i] {
 									return layout.Dimensions{}
 								}
-								ic := decredmaterial.NewIcon(tsm.Theme.Icons.NavigationCheck)
+								ic := cryptomaterial.NewIcon(tsm.Theme.Icons.NavigationCheck)
 								return ic.Layout(gtx, values.MarginPadding20)
 							}),
 						)

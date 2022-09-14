@@ -4,13 +4,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const BackupInstructionsPageID = "backup_instructions"
@@ -28,15 +28,15 @@ type BackupInstructionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcrlibwallet.Wallet
+	wallet *libwallet.Wallet
 
-	backButton  decredmaterial.IconButton
-	viewSeedBtn decredmaterial.Button
-	checkBoxes  []decredmaterial.CheckBoxStyle
+	backButton  cryptomaterial.IconButton
+	viewSeedBtn cryptomaterial.Button
+	checkBoxes  []cryptomaterial.CheckBoxStyle
 	infoList    *layout.List
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *dcrlibwallet.Wallet) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet *libwallet.Wallet) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
@@ -50,7 +50,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet *dcrlibwallet.Wallet) *Backu
 	bi.backButton, _ = components.SubpageHeaderButtons(l)
 	bi.backButton.Icon = l.Theme.Icons.ContentClear
 
-	bi.checkBoxes = []decredmaterial.CheckBoxStyle{
+	bi.checkBoxes = []cryptomaterial.CheckBoxStyle{
 		l.Theme.CheckBox(new(widget.Bool), "The 33-word seed word is EXTREMELY IMPORTANT."),
 		l.Theme.CheckBox(new(widget.Bool), "seed word is the only way to restore your wallet."),
 		l.Theme.CheckBox(new(widget.Bool), "It is recommended to store your seed word in a physical format (e.g. write down on a paper)."),
@@ -148,7 +148,7 @@ func (pg *BackupInstructionsPage) verifyCheckBoxes() bool {
 	return true
 }
 
-func container(gtx C, isMobile bool, theme decredmaterial.Theme, body layout.Widget, infoText string, actionBtn decredmaterial.Button) D {
+func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Widget, infoText string, actionBtn cryptomaterial.Button) D {
 	bodyLayout := func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
 			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
@@ -156,9 +156,9 @@ func container(gtx C, isMobile bool, theme decredmaterial.Theme, body layout.Wid
 			}),
 			layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 				gtx.Constraints.Min = gtx.Constraints.Max
-				return decredmaterial.LinearLayout{
-					Width:       decredmaterial.MatchParent,
-					Height:      decredmaterial.WrapContent,
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Vertical,
 					Direction:   layout.S,
 					Alignment:   layout.Baseline,
@@ -166,7 +166,7 @@ func container(gtx C, isMobile bool, theme decredmaterial.Theme, body layout.Wid
 					Shadow:      theme.Shadow(),
 					Padding:     layout.UniformInset(values.MarginPadding16),
 					Margin:      layout.Inset{Left: values.Size0_5},
-					Border:      decredmaterial.Border{Radius: decredmaterial.Radius(4)},
+					Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(4)},
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						if !components.StringNotEmpty(infoText) {

@@ -7,13 +7,13 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const SetupPrivacyPageID = "SetupPrivacy"
@@ -35,10 +35,10 @@ type SetupPrivacyPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer  layout.List
-	toPrivacySetup decredmaterial.Button
+	toPrivacySetup cryptomaterial.Button
 
-	backButton decredmaterial.IconButton
-	infoButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 }
 
 func NewSetupPrivacyPage(l *load.Load) *SetupPrivacyPage {
@@ -157,7 +157,7 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 		walCount := accounts.Count
 		// Filter out imported account and default account.
 		for _, v := range accounts.Acc {
-			if v.Number == dcrlibwallet.ImportedAccountNumber || v.Number == dcrlibwallet.DefaultAccountNum {
+			if v.Number == libwallet.ImportedAccountNumber || v.Number == libwallet.DefaultAccountNum {
 				walCount--
 			}
 		}

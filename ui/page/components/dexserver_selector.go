@@ -7,10 +7,10 @@ import (
 	"decred.org/dcrdex/client/core"
 	"gioui.org/layout"
 	"gioui.org/widget/material"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const DexServerSelectorID = "dex_server_selector"
@@ -23,8 +23,8 @@ type DexServerSelector struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	shadowBox       *decredmaterial.Shadow
-	knownDexServers *decredmaterial.ClickableList
+	shadowBox       *cryptomaterial.Shadow
+	knownDexServers *cryptomaterial.ClickableList
 	materialLoader  material.LoaderStyle
 
 	dexServerSelected func(server string)
@@ -49,14 +49,14 @@ func (ds *DexServerSelector) Expose() {
 }
 
 // isLoadingDexClient check for Dexc start, initialized, loggedin status,
-// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at dcrlibwallet.
+// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at libwallet.
 func (ds *DexServerSelector) isLoadingDexClient() bool {
 	return ds.Dexc().Core() == nil || !ds.Dexc().Core().IsInitialized() || !ds.Dexc().IsLoggedIn()
 }
 
 // startDexClient do start DEX client,
 // initialize and login to DEX,
-// since Dex client UI not required for app password, initialize and login should be done at dcrlibwallet.
+// since Dex client UI not required for app password, initialize and login should be done at libwallet.
 func (ds *DexServerSelector) startDexClient() {
 	_, err := ds.WL.MultiWallet.StartDexClient()
 	if err != nil {
@@ -64,7 +64,7 @@ func (ds *DexServerSelector) startDexClient() {
 		return
 	}
 
-	// TODO: move to dcrlibwallet sine bypass Dex password by DEXClientPass
+	// TODO: move to libwallet sine bypass Dex password by DEXClientPass
 	if !ds.Dexc().Initialized() {
 		err = ds.Dexc().InitializeWithPassword([]byte(values.DEXClientPass))
 		if err != nil {
@@ -99,15 +99,15 @@ func (ds *DexServerSelector) DexServersLayout(gtx C) D {
 		host := hostport[0]
 		ds.shadowBox.SetShadowRadius(14)
 
-		return decredmaterial.LinearLayout{
-			Width:      decredmaterial.WrapContent,
-			Height:     decredmaterial.WrapContent,
+		return cryptomaterial.LinearLayout{
+			Width:      cryptomaterial.WrapContent,
+			Height:     cryptomaterial.WrapContent,
 			Padding:    layout.UniformInset(values.MarginPadding18),
 			Background: ds.Theme.Color.Surface,
 			Alignment:  layout.Middle,
 			Shadow:     ds.shadowBox,
 			Margin:     layout.UniformInset(values.MarginPadding5),
-			Border:     decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+			Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 		}.Layout(gtx,
 			layout.Flexed(1, ds.Theme.Label(values.TextSize16, host).Layout),
 		)
@@ -134,7 +134,7 @@ func (ds *DexServerSelector) HandleUserInteractions() {
 	}
 }
 
-// TODO: handler CRUD dex servers at dcrlibwallet
+// TODO: handler CRUD dex servers at libwallet
 const KnownDexServersConfigKey = "known_dex_servers"
 
 type DexServer struct {

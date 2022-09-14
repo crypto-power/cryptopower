@@ -4,11 +4,11 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/renderers"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 func (pg *Page) initSplashScreenWidgets() {
@@ -17,14 +17,14 @@ func (pg *Page) initSplashScreenWidgets() {
 }
 
 func (pg *Page) splashScreenLayout(gtx layout.Context) layout.Dimensions {
-	return decredmaterial.LinearLayout{
+	return cryptomaterial.LinearLayout{
 		Orientation: layout.Vertical,
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Background:  pg.Theme.Color.Surface,
 		Direction:   layout.Center,
 		Alignment:   layout.Middle,
-		Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 		Padding:     layout.UniformInset(values.MarginPadding24)}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.NE}.Layout(gtx,

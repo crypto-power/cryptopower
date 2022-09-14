@@ -7,19 +7,19 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ListPreferenceModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	optionsRadioGroup *widget.Enum
 
-	btnSave   decredmaterial.Button
-	btnCancel decredmaterial.Button
+	btnSave   cryptomaterial.Button
+	btnCancel cryptomaterial.Button
 
 	items         map[string]string //[key]str-key
 	itemKeys      []string

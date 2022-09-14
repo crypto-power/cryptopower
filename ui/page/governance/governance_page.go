@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"image"
 
 	"gioui.org/layout"
@@ -8,12 +9,12 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const GovernancePageID = "Governance"
@@ -22,11 +23,11 @@ type Page struct {
 	*load.Load
 	*app.MasterPage
 
-	multiWallet *dcrlibwallet.MultiWallet
+	multiWallet *libwallet.MultiWallet
 
-	tabCategoryList        *decredmaterial.ClickableList
-	splashScreenInfoButton decredmaterial.IconButton
-	enableGovernanceBtn    decredmaterial.Button
+	tabCategoryList        *cryptomaterial.ClickableList
+	splashScreenInfoButton cryptomaterial.IconButton
+	enableGovernanceBtn    cryptomaterial.Button
 }
 
 var governanceTabTitles = []string{
@@ -89,7 +90,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	for pg.enableGovernanceBtn.Clicked() {
-		go pg.WL.MultiWallet.Politeia.Sync()
+		go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
 		pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
 	}

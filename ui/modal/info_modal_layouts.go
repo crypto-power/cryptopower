@@ -3,10 +3,10 @@ package modal
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/renderers"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const (
@@ -22,21 +22,21 @@ const (
 	RemoveWalletInfoTemplate       = "RemoveWalletInfo"
 )
 
-func verifyMessageInfo(th *decredmaterial.Theme) []layout.Widget {
+func verifyMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrVerifyMessageInfo, `<span style="text-color: gray">`, `<br />`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}
 }
 
-func signMessageInfo(th *decredmaterial.Theme) []layout.Widget {
+func signMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrSignMessageInfo, `<span style="text-color: gray">`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}
 }
 
-func securityToolsInfo(th *decredmaterial.Theme) []layout.Widget {
+func securityToolsInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrSecurityToolsInfo, `<span style="text-color: gray">`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
@@ -50,21 +50,21 @@ func privacyInfo(l *load.Load) []layout.Widget {
 	}
 }
 
-func setupMixerInfo(th *decredmaterial.Theme) []layout.Widget {
+func setupMixerInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrSetupMixerInfo, `<span style="text-color: gray">`, `<span style="font-weight: bold">`, `</span>`, `<span style="font-weight: bold">`, `</span>`, `<br> <span style="font-weight: bold">`, `</span></span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}
 }
 
-func transactionDetailsInfo(th *decredmaterial.Theme) []layout.Widget {
+func transactionDetailsInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrTxdetailsInfo, `<span style="text-color: gray">`, `<span style="text-color: primary">`, `</span>`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}
 }
 
-func backupInfo(th *decredmaterial.Theme) []layout.Widget {
+func backupInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrBackupInfo, `<span style="text-color: danger"> <span style="font-weight: bold">`, `</span>`, `<span style="font-weight: bold">`, `</span>`, `<span style="font-weight: bold">`, `</span></span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
@@ -76,7 +76,7 @@ func allowUnspendUnmixedAcct(l *load.Load) []layout.Widget {
 		func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					ic := decredmaterial.NewIcon(l.Theme.Icons.ActionInfo)
+					ic := cryptomaterial.NewIcon(l.Theme.Icons.ActionInfo)
 					ic.Color = l.Theme.Color.GrayText1
 					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 						return ic.Layout(gtx, values.MarginPadding18)

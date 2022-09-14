@@ -12,19 +12,19 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/planetdecred/godcr/version"
+	"gitlab.com/raedah/cryptopower/version"
 )
 
 const (
 	defaultNetwork        = "mainnet"
-	defaultConfigFileName = "godcr.conf"
-	defaultLogFilename    = "godcr.log"
+	defaultConfigFileName = "cryptopower.conf"
+	defaultLogFilename    = "cryptopower.log"
 	defaultLogLevel       = "info"
 	defaultLogDirname     = "logs"
 )
 
 var (
-	defaultHomeDir        = dcrutil.AppDataDir("godcr", false)
+	defaultHomeDir        = dcrutil.AppDataDir("cryptopower", false)
 	defaultConfigFilename = filepath.Join(defaultHomeDir, defaultConfigFileName)
 	defaultLogDir         = filepath.Join(defaultHomeDir, defaultLogDirname)
 )

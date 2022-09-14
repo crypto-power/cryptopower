@@ -4,9 +4,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 var (
@@ -14,9 +14,9 @@ var (
 )
 
 type BottomNavigationBarHandler struct {
-	Clickable     *decredmaterial.Clickable
-	Image         *decredmaterial.Image
-	ImageInactive *decredmaterial.Image
+	Clickable     *cryptomaterial.Clickable
+	Image         *cryptomaterial.Image
+	ImageInactive *cryptomaterial.Image
 	Title         string
 	PageID        string
 }
@@ -39,9 +39,9 @@ type BottomNavigationBar struct {
 func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx layout.Context) layout.Dimensions {
 	return layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.WrapContent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
 				Background:  bottomNavigationbar.Theme.Color.Surface,
 			}.Layout(gtx,
@@ -53,10 +53,10 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 						if bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
 							background = bottomNavigationbar.Theme.Color.Gray5
 						}
-						return decredmaterial.LinearLayout{
+						return cryptomaterial.LinearLayout{
 							Orientation: bottomNavigationbar.axis,
 							Width:       (bottomNavigationbar.Load.GetCurrentAppWidth() * 100 / len(bottomNavigationbar.BottomNaigationItems)) / 100, // Divide each cell equally
-							Height:      decredmaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
 							Padding:     layout.UniformInset(values.MarginPadding10),
 							Alignment:   bottomNavigationbar.alignment,
 							Direction:   bottomNavigationbar.direction,
@@ -101,20 +101,20 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Con
 				layout.Rigid(func(gtx C) D {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						return decredmaterial.LinearLayout{
-							Width:       decredmaterial.WrapContent,
-							Height:      decredmaterial.WrapContent,
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
 							Orientation: layout.Horizontal,
 							Background:  bottomNavigationbar.Theme.Color.DefaultThemeColors().Primary,
-							Border:      decredmaterial.Border{Radius: decredmaterial.Radius(20)},
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(20)},
 							Padding:     layout.UniformInset(values.MarginPadding8),
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return decredmaterial.LinearLayout{
-											Width:       decredmaterial.WrapContent,
-											Height:      decredmaterial.WrapContent,
+										return cryptomaterial.LinearLayout{
+											Width:       cryptomaterial.WrapContent,
+											Height:      cryptomaterial.WrapContent,
 											Orientation: layout.Horizontal,
 											Padding: layout.Inset{
 												Right: values.MarginPadding16,
@@ -149,9 +149,9 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Con
 										return verticalSeparator.Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										return decredmaterial.LinearLayout{
-											Width:       decredmaterial.WrapContent,
-											Height:      decredmaterial.WrapContent,
+										return cryptomaterial.LinearLayout{
+											Width:       cryptomaterial.WrapContent,
+											Height:      cryptomaterial.WrapContent,
 											Orientation: layout.Horizontal,
 											Padding: layout.Inset{
 												Right: values.MarginPadding16,

@@ -10,24 +10,24 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const TransactionDetailsPageID = "TransactionDetails"
 
 type transactionWdg struct {
-	confirmationIcons    *decredmaterial.Image
-	icon                 *decredmaterial.Image
+	confirmationIcons    *cryptomaterial.Image
+	icon                 *cryptomaterial.Image
 	title                string
-	time, status, wallet decredmaterial.Label
+	time, status, wallet cryptomaterial.Label
 
-	copyTextButtons []decredmaterial.Button
+	copyTextButtons []cryptomaterial.Button
 }
 
 type TxDetailsPage struct {
@@ -43,32 +43,32 @@ type TxDetailsPage struct {
 	transactionDetailsPageContainer layout.List
 	transactionInputsContainer      layout.List
 	transactionOutputsContainer     layout.List
-	associatedTicketClickable       *decredmaterial.Clickable
+	associatedTicketClickable       *cryptomaterial.Clickable
 	hashClickable                   *widget.Clickable
 	destAddressClickable            *widget.Clickable
-	dot                             *decredmaterial.Icon
-	toDcrdata                       *decredmaterial.Clickable
-	outputsCollapsible              *decredmaterial.Collapsible
-	inputsCollapsible               *decredmaterial.Collapsible
-	backButton                      decredmaterial.IconButton
-	infoButton                      decredmaterial.IconButton
-	rebroadcast                     decredmaterial.Label
-	rebroadcastClickable            *decredmaterial.Clickable
-	rebroadcastIcon                 *decredmaterial.Image
-	copyRedirectURL                 *decredmaterial.Clickable
+	dot                             *cryptomaterial.Icon
+	toDcrdata                       *cryptomaterial.Clickable
+	outputsCollapsible              *cryptomaterial.Collapsible
+	inputsCollapsible               *cryptomaterial.Collapsible
+	backButton                      cryptomaterial.IconButton
+	infoButton                      cryptomaterial.IconButton
+	rebroadcast                     cryptomaterial.Label
+	rebroadcastClickable            *cryptomaterial.Clickable
+	rebroadcastIcon                 *cryptomaterial.Image
+	copyRedirectURL                 *cryptomaterial.Clickable
 
 	txnWidgets    transactionWdg
-	transaction   *dcrlibwallet.Transaction
-	ticketSpender *dcrlibwallet.Transaction // vote or revoke ticket
-	ticketSpent   *dcrlibwallet.Transaction // ticket spent in a vote or revoke
-	txBackStack   *dcrlibwallet.Transaction // track original transaction
-	wallet        *dcrlibwallet.Wallet
+	transaction   *libwallet.Transaction
+	ticketSpender *libwallet.Transaction // vote or revoke ticket
+	ticketSpent   *libwallet.Transaction // ticket spent in a vote or revoke
+	txBackStack   *libwallet.Transaction // track original transaction
+	wallet        *libwallet.Wallet
 
 	txSourceAccount      string
 	txDestinationAddress string
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *dcrlibwallet.Transaction) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -105,7 +105,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *dcrlibwallet.Transacti
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
-	pg.dot = decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 	pg.dot.Color = l.Theme.Color.Gray1
 
 	return pg
@@ -113,8 +113,8 @@ func NewTransactionDetailsPage(l *load.Load, transaction *dcrlibwallet.Transacti
 
 func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 	// find source account
-	if pg.transaction.Direction == dcrlibwallet.TxDirectionSent ||
-		pg.transaction.Direction == dcrlibwallet.TxDirectionTransferred {
+	if pg.transaction.Direction == libwallet.TxDirectionSent ||
+		pg.transaction.Direction == libwallet.TxDirectionTransferred {
 		for _, input := range pg.transaction.Inputs {
 			if input.AccountNumber != -1 {
 				accountName, err := pg.wallet.AccountName(input.AccountNumber)
@@ -127,7 +127,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 		}
 	}
 	//	find destination address
-	if pg.transaction.Direction == dcrlibwallet.TxDirectionSent {
+	if pg.transaction.Direction == libwallet.TxDirectionSent {
 		for _, output := range pg.transaction.Outputs {
 			if output.AccountNumber == -1 {
 				pg.txDestinationAddress = output.Address
@@ -240,9 +240,9 @@ func (pg *TxDetailsPage) layoutMobile(gtx layout.Context, body layout.Widget) la
 }
 
 func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensions {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Padding:     layout.UniformInset(values.MarginPadding16),
 	}.Layout(gtx,
@@ -256,9 +256,9 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					amount := dcrutil.Amount(pg.transaction.Amount).String()
-					if pg.transaction.Type == dcrlibwallet.TxTypeMixed {
+					if pg.transaction.Type == libwallet.TxTypeMixed {
 						amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
-					} else if pg.transaction.Type == dcrlibwallet.TxTypeRegular && pg.transaction.Direction == dcrlibwallet.TxDirectionSent {
+					} else if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionSent {
 						amount = "-" + amount
 					}
 					return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
@@ -266,7 +266,7 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 							return components.LayoutBalanceSize(gtx, pg.Load, amount, values.TextSize34)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if pg.transaction.Type == dcrlibwallet.TxTypeMixed && pg.transaction.MixCount > 1 {
+							if pg.transaction.Type == libwallet.TxTypeMixed && pg.transaction.MixCount > 1 {
 
 								label := pg.Theme.H5(fmt.Sprintf("x%d", pg.transaction.MixCount))
 								label.Color = pg.Theme.Color.GrayText2
@@ -281,13 +281,13 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 								if !pg.rebroadcastClickable.Enabled() {
 									gtx = pg.rebroadcastClickable.SetEnabled(false, &gtx)
 								}
-								return decredmaterial.LinearLayout{
-									Width:     decredmaterial.WrapContent,
-									Height:    decredmaterial.WrapContent,
+								return cryptomaterial.LinearLayout{
+									Width:     cryptomaterial.WrapContent,
+									Height:    cryptomaterial.WrapContent,
 									Clickable: pg.rebroadcastClickable,
 									Direction: layout.Center,
 									Alignment: layout.Middle,
-									Border:    decredmaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: decredmaterial.Radius(10)},
+									Border:    cryptomaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: cryptomaterial.Radius(10)},
 									Padding:   layout.Inset{Top: values.MarginPadding3, Bottom: values.MarginPadding3, Left: values.MarginPadding8, Right: values.MarginPadding8},
 									Margin:    layout.Inset{Left: values.MarginPadding10},
 								}.Layout(gtx,
@@ -358,9 +358,9 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 }
 
 func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Margin:      layout.Inset{Top: values.MarginPadding12},
 	}.Layout(gtx,
@@ -379,7 +379,7 @@ func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
 			progress.TrackColor = pg.Theme.Color.BlueProgressTint
 			progress.Height = values.MarginPadding8
 			progress.Width = values.MarginPadding80
-			progress.Radius = decredmaterial.Radius(8)
+			progress.Radius = cryptomaterial.Radius(8)
 
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{
@@ -397,8 +397,8 @@ func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
 }
 
 func (pg *TxDetailsPage) ticketDetails(gtx C) D {
-	if !pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterStaking) ||
-		pg.transaction.Type == dcrlibwallet.TxTypeRevocation {
+	if !pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterStaking) ||
+		pg.transaction.Type == libwallet.TxTypeRevocation {
 		return D{}
 	}
 
@@ -406,28 +406,28 @@ func (pg *TxDetailsPage) ticketDetails(gtx C) D {
 		Axis: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Vertical,
 				Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == dcrlibwallet.TxTypeTicketPurchase {
+					if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
 						var status string
 						if pg.ticketSpender != nil {
-							if pg.ticketSpender.Type == dcrlibwallet.TxTypeVote {
+							if pg.ticketSpender.Type == libwallet.TxTypeVote {
 								status = values.String(values.StrVoted)
 							} else {
 								status = values.String(values.StrRevoked)
 							}
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterLive) {
+						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterLive) {
 							status = values.String(values.StrLive)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterImmature) {
+						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterImmature) {
 							status = values.String(values.StrImmature)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterUnmined) {
+						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterUnmined) {
 							status = values.String(values.StrUmined)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, dcrlibwallet.TxFilterExpired) {
+						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterExpired) {
 							status = values.String(values.StrExpired)
 						} else {
 							status = values.String(values.StrUnknown)
@@ -450,7 +450,7 @@ func (pg *TxDetailsPage) ticketDetails(gtx C) D {
 					return D{}
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == dcrlibwallet.TxTypeVote {
+					if pg.transaction.Type == libwallet.TxTypeVote {
 						return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
 							txt := values.String(values.StrDaysToVote)
 							return pg.txnInfoSection(gtx, txt, fmt.Sprintf("%d %s", pg.transaction.DaysToVoteOrRevoke, values.String(values.StrDays)), false, nil)
@@ -460,7 +460,7 @@ func (pg *TxDetailsPage) ticketDetails(gtx C) D {
 					return D{}
 				}),
 				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == dcrlibwallet.TxTypeVote {
+					if pg.transaction.Type == libwallet.TxTypeVote {
 						return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
 							txt := values.String(values.StrReward)
 							return pg.txnInfoSection(gtx, txt, dcrutil.Amount(pg.transaction.VoteReward).String(), false, nil)
@@ -477,7 +477,7 @@ func (pg *TxDetailsPage) ticketDetails(gtx C) D {
 }
 
 func (pg *TxDetailsPage) associatedTicket(gtx C) D {
-	if pg.transaction.Type != dcrlibwallet.TxTypeVote && pg.transaction.Type != dcrlibwallet.TxTypeRevocation {
+	if pg.transaction.Type != libwallet.TxTypeVote && pg.transaction.Type != libwallet.TxTypeRevocation {
 		return D{}
 	}
 
@@ -486,9 +486,9 @@ func (pg *TxDetailsPage) associatedTicket(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.associatedTicketClickable.Layout(gtx, func(gtx C) D {
-				return decredmaterial.LinearLayout{
-					Width:       decredmaterial.MatchParent,
-					Height:      decredmaterial.WrapContent,
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Horizontal,
 					Padding:     layout.Inset{Left: values.MarginPadding16, Top: values.MarginPadding12, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
 				}.Layout(gtx,
@@ -516,9 +516,9 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 func (pg *TxDetailsPage) txnTypeAndID(gtx layout.Context) layout.Dimensions {
 	transaction := pg.transaction
 	m := values.MarginPadding12
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Padding:     layout.UniformInset(values.MarginPadding16),
 	}.Layout(gtx,
@@ -526,7 +526,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx layout.Context) layout.Dimensions {
 			return pg.txnInfoSection(gtx, values.String(values.StrFrom), pg.txSourceAccount, true, nil)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if transaction.Direction == dcrlibwallet.TxDirectionSent {
+			if transaction.Direction == libwallet.TxDirectionSent {
 				return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
 					return pg.txnInfoSection(gtx, values.String(values.StrTo), pg.txDestinationAddress, false, pg.destAddressClickable)
 				})
@@ -585,7 +585,7 @@ func (pg *TxDetailsPage) txnInfoSection(gtx layout.Context, label, value string,
 				layout.Rigid(func(gtx C) D {
 					if showWalletBadge {
 						card := pg.Theme.Card()
-						card.Radius = decredmaterial.Radius(0)
+						card.Radius = cryptomaterial.Radius(0)
 						card.Color = pg.Theme.Color.Gray4
 						return card.Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
@@ -691,7 +691,7 @@ func (pg *TxDetailsPage) txnIORow(gtx layout.Context, amount int64, acctNum int3
 							}),
 							layout.Rigid(func(gtx C) D {
 								card := pg.Theme.Card()
-								card.Radius = decredmaterial.Radius(0)
+								card.Radius = cryptomaterial.Radius(0)
 								card.Color = pg.Theme.Color.Gray4
 								return card.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
@@ -851,7 +851,7 @@ func (pg *TxDetailsPage) handleTextCopyEvent(gtx layout.Context) {
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
 
-func initTxnWidgets(l *load.Load, transaction *dcrlibwallet.Transaction) transactionWdg {
+func initTxnWidgets(l *load.Load, transaction *libwallet.Transaction) transactionWdg {
 
 	var txn transactionWdg
 	wal := l.WL.MultiWallet.WalletWithID(transaction.WalletID)
@@ -870,8 +870,8 @@ func initTxnWidgets(l *load.Load, transaction *dcrlibwallet.Transaction) transac
 		txn.confirmationIcons = l.Theme.Icons.PendingIcon
 	}
 
-	var ticketSpender *dcrlibwallet.Transaction
-	if wal.TxMatchesFilter(transaction, dcrlibwallet.TxFilterStaking) {
+	var ticketSpender *libwallet.Transaction
+	if wal.TxMatchesFilter(transaction, libwallet.TxFilterStaking) {
 		ticketSpender, _ = wal.TicketSpender(transaction.Hash)
 	}
 	txStatus := components.TransactionTitleIcon(l, wal, transaction, ticketSpender)
@@ -880,7 +880,7 @@ func initTxnWidgets(l *load.Load, transaction *dcrlibwallet.Transaction) transac
 	txn.icon = txStatus.Icon
 
 	x := len(transaction.Inputs) + len(transaction.Outputs)
-	txn.copyTextButtons = make([]decredmaterial.Button, x)
+	txn.copyTextButtons = make([]cryptomaterial.Button, x)
 	for i := 0; i < x; i++ {
 		btn := l.Theme.OutlineButton("")
 		btn.TextSize = values.TextSize14

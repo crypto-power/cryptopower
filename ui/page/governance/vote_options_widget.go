@@ -7,19 +7,19 @@ import (
 
 	"gioui.org/text"
 	"gioui.org/widget"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type inputVoteOptionsWidgets struct {
 	label     string
 	activeBg  color.NRGBA
 	dotColor  color.NRGBA
-	input     decredmaterial.Editor
-	increment decredmaterial.IconButton
-	decrement decredmaterial.IconButton
-	max       decredmaterial.Button
+	input     cryptomaterial.Editor
+	increment cryptomaterial.IconButton
+	decrement cryptomaterial.IconButton
+	max       cryptomaterial.Button
 }
 
 func newInputVoteOptions(l *load.Load, label string) *inputVoteOptionsWidgets {

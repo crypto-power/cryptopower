@@ -4,24 +4,24 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/preference"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/preference"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const SettingsPageID = "Settings"
 
 type row struct {
 	title     string
-	clickable *decredmaterial.Clickable
-	icon      *decredmaterial.Icon
-	label     decredmaterial.Label
+	clickable *cryptomaterial.Clickable
+	icon      *cryptomaterial.Icon
+	label     cryptomaterial.Label
 }
 
 type SettingsPage struct {
@@ -35,20 +35,20 @@ type SettingsPage struct {
 	pageContainer *widget.List
 	wal           *wallet.Wallet
 
-	changeStartupPass *decredmaterial.Clickable
-	language          *decredmaterial.Clickable
-	currency          *decredmaterial.Clickable
-	help              *decredmaterial.Clickable
-	about             *decredmaterial.Clickable
-	appearanceMode    *decredmaterial.Clickable
+	changeStartupPass *cryptomaterial.Clickable
+	language          *cryptomaterial.Clickable
+	currency          *cryptomaterial.Clickable
+	help              *cryptomaterial.Clickable
+	about             *cryptomaterial.Clickable
+	appearanceMode    *cryptomaterial.Clickable
 
-	chevronRightIcon *decredmaterial.Icon
-	backButton       decredmaterial.IconButton
-	infoButton       decredmaterial.IconButton
+	chevronRightIcon *cryptomaterial.Icon
+	backButton       cryptomaterial.IconButton
+	infoButton       cryptomaterial.IconButton
 
 	isDarkModeOn            bool
-	startupPassword         *decredmaterial.Switch
-	transactionNotification *decredmaterial.Switch
+	startupPassword         *cryptomaterial.Switch
+	transactionNotification *cryptomaterial.Switch
 
 	isStartupPassword bool
 	errorReceiver     chan error
@@ -68,7 +68,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
 
-		chevronRightIcon: decredmaterial.NewIcon(chevronRightIcon),
+		chevronRightIcon: cryptomaterial.NewIcon(chevronRightIcon),
 
 		errorReceiver: make(chan error),
 
@@ -208,7 +208,7 @@ func (pg *SettingsPage) general() layout.Widget {
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
 						icon:      pg.chevronRightIcon,
-						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)),
+						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)),
 					}
 					return pg.clickableRow(gtx, exchangeRate)
 				}),
@@ -290,7 +290,7 @@ func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	})
 }
 
-func (pg *SettingsPage) subSectionSwitch(gtx C, title string, option *decredmaterial.Switch) D {
+func (pg *SettingsPage) subSectionSwitch(gtx C, title string, option *cryptomaterial.Switch) D {
 	return pg.subSection(gtx, title, option.Layout)
 }
 
@@ -371,7 +371,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.currency.Clicked() {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
-			dcrlibwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
+			libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			values.ArrExchangeCurrencies).
 			Title(values.StrExchangeRate).
 			UpdateValues(func() {})
@@ -425,7 +425,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					var error string
 					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
 					if err != nil {
-						if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+						if err.Error() == libwallet.ErrInvalidPassphrase {
 							error = values.String(values.StrInvalidPassphrase)
 						} else {
 							error = err.Error()
@@ -444,7 +444,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
 						PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 							go func() {
-								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), dcrlibwallet.PassphraseTypePass)
+								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
 								if err != nil {
 									m.SetError(err.Error())
 									m.SetLoading(false)
@@ -474,7 +474,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				NegativeButton(func() {}).
 				PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 					go func() {
-						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), dcrlibwallet.PassphraseTypePass)
+						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -496,7 +496,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						var error string
 						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
 						if err != nil {
-							if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+							if err.Error() == libwallet.ErrInvalidPassphrase {
 								error = values.String(values.StrInvalidPassphrase)
 							} else {
 								error = err.Error()
@@ -517,7 +517,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	select {
 	case err := <-pg.errorReceiver:
-		if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+		if err.Error() == libwallet.ErrInvalidPassphrase {
 			pg.Toast.NotifyError(values.String(values.StrInvalidPassphrase))
 			return
 		}
@@ -527,7 +527,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 }
 
 func (pg *SettingsPage) showNoticeSuccess(title string) {
-	icon := decredmaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
+	icon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
 	icon.Color = pg.Theme.Color.Green500
 	info := modal.NewInfoModal2(pg.Load).
 		SetContentAlignment(layout.Center, layout.Center).
@@ -546,7 +546,7 @@ func (pg *SettingsPage) showSPVPeerDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
 			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})
@@ -562,7 +562,7 @@ func (pg *SettingsPage) showUserAgentDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(userAgent string, tim *modal.TextInputModal) bool {
 			if userAgent != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.UserAgentConfigKey, userAgent)
+				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.UserAgentConfigKey, userAgent)
 			}
 			return true
 		})

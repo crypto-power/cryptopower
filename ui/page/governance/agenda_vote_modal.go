@@ -9,22 +9,22 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type agendaVoteModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	// tickets that have not been spent by a vote or revocation (unspent) and that
 	// have not expired (unexpired).
-	votableTickets []*dcrlibwallet.Transaction
+	votableTickets []*libwallet.Transaction
 
-	agenda           *dcrlibwallet.Agenda
+	agenda           *libwallet.Agenda
 	isVoting         bool
 	modalUpdateCount int // this keeps track of the number of times the modal has been updated.
 
@@ -32,16 +32,16 @@ type agendaVoteModal struct {
 
 	walletSelector    *WalletSelector
 	ticketSelector    *ticketSelector
-	spendingPassword  decredmaterial.Editor
+	spendingPassword  cryptomaterial.Editor
 	materialLoader    material.LoaderStyle
 	voteChoices       []string
 	initialValue      string
 	optionsRadioGroup *widget.Enum
-	voteBtn           decredmaterial.Button
-	cancelBtn         decredmaterial.Button
+	voteBtn           cryptomaterial.Button
+	cancelBtn         cryptomaterial.Button
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
+func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
 		Load:                l,
 		Modal:               l.Theme.ModalFloatTitle("input_vote_modal"),
@@ -59,7 +59,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceU
 
 	avm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrSelectWallet)).
-		WalletSelected(func(w *dcrlibwallet.Wallet) {
+		WalletSelected(func(w *libwallet.Wallet) {
 			avm.modalUpdateCount = 0 // modal just opened.
 
 			avm.FetchUnspentUnexpiredTickets(w.ID)
@@ -80,7 +80,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcrlibwallet.Agenda, onPreferenceU
 				}
 			}
 		}).
-		WalletValidator(func(w *dcrlibwallet.Wallet) bool {
+		WalletValidator(func(w *libwallet.Wallet) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 
@@ -102,7 +102,7 @@ func (avm *agendaVoteModal) FetchUnspentUnexpiredTickets(walletID int) {
 			var timeStampJ = tickets[j].Timestamp
 			return timeStampI > timeStampJ
 		})
-		avm.votableTickets = make([]*dcrlibwallet.Transaction, len(tickets))
+		avm.votableTickets = make([]*libwallet.Transaction, len(tickets))
 		for i := range tickets {
 			avm.votableTickets[i] = &tickets[i]
 		}
@@ -127,7 +127,7 @@ func (avm *agendaVoteModal) Handle() {
 		avm.Dismiss()
 	}
 
-	_, isChanged := decredmaterial.HandleEditorEvents(avm.spendingPassword.Editor)
+	_, isChanged := cryptomaterial.HandleEditorEvents(avm.spendingPassword.Editor)
 	if isChanged {
 		avm.spendingPassword.SetError("")
 	}
@@ -231,7 +231,7 @@ func (avm *agendaVoteModal) sendVotes() {
 		choiceID := avm.optionsRadioGroup.Value
 		err := avm.walletSelector.selectedWallet.SetVoteChoice(avm.agenda.AgendaID, choiceID, "", password)
 		if err != nil {
-			if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+			if err.Error() == libwallet.ErrInvalidPassphrase {
 				avm.spendingPassword.SetError(values.String(values.StrInvalidPassphrase))
 			} else {
 				avm.Toast.NotifyError(err.Error())

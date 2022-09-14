@@ -7,15 +7,15 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const AccountMixerPageID = "AccountMixer"
@@ -34,11 +34,11 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer         layout.List
-	dangerZoneCollapsible *decredmaterial.Collapsible
+	dangerZoneCollapsible *cryptomaterial.Collapsible
 
-	backButton  decredmaterial.IconButton
-	infoButton  decredmaterial.IconButton
-	toggleMixer *decredmaterial.Switch
+	backButton  cryptomaterial.IconButton
+	infoButton  cryptomaterial.IconButton
+	toggleMixer *cryptomaterial.Switch
 
 	mixerCompleted bool
 }
@@ -190,9 +190,9 @@ func (pg *AccountMixerPage) mixerSettingsLayout(gtx layout.Context) layout.Dimen
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D { return row("Change account", unmixedAccountName) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Account branch", fmt.Sprintf("%d", dcrlibwallet.MixedAccountBranch)) }),
+			layout.Rigid(func(gtx C) D { return row("Account branch", fmt.Sprintf("%d", libwallet.MixedAccountBranch)) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Rigid(func(gtx C) D { return row("Shuffle server", dcrlibwallet.ShuffleServer) }),
+			layout.Rigid(func(gtx C) D { return row("Shuffle server", libwallet.ShuffleServer) }),
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D { return row("Shuffle port", pg.shufflePortForCurrentNet()) }),
 		)
@@ -200,11 +200,11 @@ func (pg *AccountMixerPage) mixerSettingsLayout(gtx layout.Context) layout.Dimen
 }
 
 func (pg *AccountMixerPage) shufflePortForCurrentNet() string {
-	if pg.WL.Wallet.Net == dcrlibwallet.Testnet3 {
-		return dcrlibwallet.TestnetShufflePort
+	if pg.WL.Wallet.Net == libwallet.Testnet3 {
+		return libwallet.TestnetShufflePort
 	}
 
-	return dcrlibwallet.MainnetShufflePort
+	return libwallet.MainnetShufflePort
 }
 
 // HandleUserInteractions is called just before Layout() to determine

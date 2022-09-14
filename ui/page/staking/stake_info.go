@@ -7,9 +7,9 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 func (pg *Page) initStakePriceWidget() *Page {
@@ -159,7 +159,7 @@ func (pg *Page) CalculateTotalTicketsCanBuy() int {
 func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load)
 
-	items := []decredmaterial.ProgressBarItem{
+	items := []cryptomaterial.ProgressBarItem{
 		{
 			Value: int(totalBalance.LockedByTickets.ToCoin()),
 			Color: pg.Theme.Color.NavyBlue,
@@ -193,7 +193,7 @@ func (pg *Page) layoutIconAndText(gtx C, title string, val string, col color.NRG
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					ic := decredmaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
+					ic := cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
 					ic.Color = col
 					return ic.Layout(gtx, values.MarginPadding8)
 				})

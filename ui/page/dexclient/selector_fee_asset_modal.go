@@ -7,19 +7,19 @@ import (
 	"decred.org/dcrdex/client/core"
 	"gioui.org/layout"
 	"gioui.org/widget/material"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type assetSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 	dexServer             *core.Exchange
 	materialLoader        material.LoaderStyle
-	listFeeAssetClickable map[uint32]*decredmaterial.Clickable
-	cancelBtn             decredmaterial.Button
+	listFeeAssetClickable map[uint32]*cryptomaterial.Clickable
+	cancelBtn             cryptomaterial.Button
 	onAssetSelected       func(*core.SupportedAsset)
 	isLoading             bool
 }
@@ -46,7 +46,7 @@ func (amd *assetSelectorModal) OnAssetSelected(callback func(*core.SupportedAsse
 
 func (amd *assetSelectorModal) OnResume() {
 	listFeeAsset := sortFeeAsset(amd.dexServer.RegFees)
-	amd.listFeeAssetClickable = make(map[uint32]*decredmaterial.Clickable, len(listFeeAsset))
+	amd.listFeeAssetClickable = make(map[uint32]*cryptomaterial.Clickable, len(listFeeAsset))
 	assetMap := amd.Dexc().Core().SupportedAssets()
 
 	for _, feeAsset := range listFeeAsset {
@@ -55,7 +55,7 @@ func (amd *assetSelectorModal) OnResume() {
 			continue
 		}
 		cl := amd.Theme.NewClickable(true)
-		cl.Radius = decredmaterial.Radius(0)
+		cl.Radius = cryptomaterial.Radius(0)
 		amd.listFeeAssetClickable[feeAsset.ID] = cl
 	}
 }

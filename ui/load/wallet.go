@@ -6,21 +6,21 @@ import (
 	"sort"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // ErrIDNotExist is returned when a given ID does not exist
 var ErrIDNotExist = errors.New("ID does not exist")
 
 type WalletItem struct {
-	Wallet       *dcrlibwallet.Wallet
+	Wallet       *libwallet.Wallet
 	TotalBalance string
 }
 
 type WalletLoad struct {
-	MultiWallet *dcrlibwallet.MultiWallet
-	TxAuthor    dcrlibwallet.TxAuthor
+	MultiWallet *libwallet.MultiWallet
+	TxAuthor    libwallet.TxAuthor
 
 	UnspentOutputs *wallet.UnspentOutputs
 	Wallet         *wallet.Wallet
@@ -29,7 +29,7 @@ type WalletLoad struct {
 	SelectedAccount *int
 }
 
-func (wl *WalletLoad) SortedWalletList() []*dcrlibwallet.Wallet {
+func (wl *WalletLoad) SortedWalletList() []*libwallet.Wallet {
 	wallets := wl.MultiWallet.AllWallets()
 
 	sort.Slice(wallets, func(i, j int) bool {
@@ -59,7 +59,7 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 	totalBalance := int64(0)
 	wallet := wl.MultiWallet.WalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(dcrlibwallet.ErrNotExist)
+		return -1, errors.New(libwallet.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
@@ -78,7 +78,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, erro
 	spendableBal := int64(0)
 	wallet := wl.MultiWallet.WalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(dcrlibwallet.ErrNotExist)
+		return -1, errors.New(libwallet.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
@@ -95,10 +95,10 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, erro
 
 func (wl *WalletLoad) HDPrefix() string {
 	switch wl.Wallet.Net {
-	case dcrlibwallet.Testnet3:
-		return dcrlibwallet.TestnetHDPath
+	case libwallet.Testnet3:
+		return libwallet.TestnetHDPath
 	case "mainnet":
-		return dcrlibwallet.MainnetHDPath
+		return libwallet.MainnetHDPath
 	default:
 		return ""
 	}

@@ -9,15 +9,15 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	tpage "github.com/planetdecred/godcr/ui/page/transaction"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	tpage "gitlab.com/raedah/cryptopower/ui/page/transaction"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type (
@@ -43,12 +43,12 @@ type Page struct {
 
 	tickets []*transactionItem
 
-	ticketOverview *dcrlibwallet.StakingOverview
+	ticketOverview *libwallet.StakingOverview
 
-	ticketsList   *decredmaterial.ClickableList
-	stakeSettings *decredmaterial.Clickable
-	stake         *decredmaterial.Switch
-	infoButton    decredmaterial.IconButton
+	ticketsList   *cryptomaterial.ClickableList
+	stakeSettings *cryptomaterial.Clickable
+	stake         *cryptomaterial.Switch
+	infoButton    cryptomaterial.IconButton
 
 	ticketPrice  string
 	totalRewards string
@@ -66,7 +66,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
-	pg.ticketOverview = new(dcrlibwallet.StakingOverview)
+	pg.ticketOverview = new(libwallet.StakingOverview)
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
@@ -207,7 +207,7 @@ func (pg *Page) HandleUserInteractions() {
 			//if not set, check if the saved account is mixed before opening modal
 			// if it is not, open stake config modal
 			tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-			if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, false) &&
+			if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
 				!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 				(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 				pg.startTicketBuyerPasswordModal()
@@ -263,7 +263,7 @@ func (pg *Page) HandleUserInteractions() {
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v\n", err)
 		} else {
-			if ticketInfo.FeeTxStatus != dcrlibwallet.VSPFeeProcessConfirmed {
+			if ticketInfo.FeeTxStatus != libwallet.VSPFeeProcessConfirmed {
 				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
 					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
@@ -302,7 +302,7 @@ func (pg *Page) ticketBuyerSettingsModal() {
 
 func (pg *Page) startTicketBuyerPasswordModal() {
 	tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-	balToMaintain := dcrlibwallet.AmountCoin(tbConfig.BalanceToMaintain)
+	balToMaintain := libwallet.AmountCoin(tbConfig.BalanceToMaintain)
 	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
 		pg.Toast.NotifyError(values.StringF(values.StrTicketError, err))
@@ -321,15 +321,15 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 					return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, label.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return decredmaterial.LinearLayout{
-						Width:      decredmaterial.MatchParent,
-						Height:     decredmaterial.WrapContent,
+					return cryptomaterial.LinearLayout{
+						Width:      cryptomaterial.MatchParent,
+						Height:     cryptomaterial.WrapContent,
 						Background: pg.Theme.Color.LightBlue,
 						Padding: layout.Inset{
 							Top:    values.MarginPadding12,
 							Bottom: values.MarginPadding12,
 						},
-						Border:    decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+						Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 						Direction: layout.Center,
 						Alignment: layout.Middle,
 					}.Layout2(gtx, func(gtx C) D {

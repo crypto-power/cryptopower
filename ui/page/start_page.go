@@ -6,12 +6,12 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const StartPageID = "start_page"
@@ -24,11 +24,11 @@ type startPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	addWalletButton decredmaterial.Button
+	addWalletButton cryptomaterial.Button
 
 	// to be removed after full layout migration
-	newlayout    decredmaterial.Button
-	legacyLayout decredmaterial.Button
+	newlayout    cryptomaterial.Button
+	legacyLayout cryptomaterial.Button
 
 	loading bool
 }
@@ -177,7 +177,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					netType := sp.WL.Wallet.Net
-					if sp.WL.Wallet.Net == dcrlibwallet.Testnet3 {
+					if sp.WL.Wallet.Net == libwallet.Testnet3 {
 						netType = "Testnet"
 					}
 

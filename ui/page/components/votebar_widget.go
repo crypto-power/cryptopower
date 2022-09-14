@@ -12,12 +12,12 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 // VoteBar widget implements voting stat for proposals.
@@ -39,11 +39,11 @@ type VoteBar struct {
 	yesColor color.NRGBA
 	noColor  color.NRGBA
 
-	passTooltip   *decredmaterial.Tooltip
-	quorumTooltip *decredmaterial.Tooltip
+	passTooltip   *cryptomaterial.Tooltip
+	quorumTooltip *cryptomaterial.Tooltip
 
-	legendIcon *decredmaterial.Icon
-	infoButton decredmaterial.IconButton
+	legendIcon *cryptomaterial.Icon
+	infoButton cryptomaterial.IconButton
 }
 
 var voteBarThumbWidth = 2
@@ -56,7 +56,7 @@ func NewVoteBar(l *load.Load) *VoteBar {
 		noColor:       l.Theme.Color.Danger,
 		passTooltip:   l.Theme.Tooltip(),
 		quorumTooltip: l.Theme.Tooltip(),
-		legendIcon:    decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1),
+		legendIcon:    cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1),
 	}
 
 	_, vb.infoButton = SubpageHeaderButtons(l)
@@ -233,7 +233,7 @@ func (v *VoteBar) infoButtonModal() *modal.InfoModal {
 	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
 	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
 	text3 := values.StringF(values.StrDiscussions, v.numComment)
-	text4 := values.StringF(values.StrPublished, dcrlibwallet.FormatUTCTime(v.publishedAt))
+	text4 := values.StringF(values.StrPublished, libwallet.FormatUTCTime(v.publishedAt))
 	text5 := values.StringF(values.StrToken, v.token)
 
 	bodyText := fmt.Sprintf("%s\n %v\n %s\n %s\n %s", text1, text2, text3, text4, text5)
@@ -246,7 +246,7 @@ func (v *VoteBar) infoButtonModal() *modal.InfoModal {
 		})
 }
 
-func (v *VoteBar) layoutIconAndText(gtx C, lbl decredmaterial.Label, count int, col color.NRGBA) D {
+func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, col color.NRGBA) D {
 	return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

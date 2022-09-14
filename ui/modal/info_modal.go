@@ -9,18 +9,18 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type InfoModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	enterKeyPressed bool
 
-	dialogIcon *decredmaterial.Icon
+	dialogIcon *cryptomaterial.Icon
 
 	dialogTitle    string
 	subtitle       string
@@ -29,14 +29,14 @@ type InfoModal struct {
 
 	positiveButtonText    string
 	positiveButtonClicked func(isChecked bool) bool
-	btnPositive           decredmaterial.Button
+	btnPositive           cryptomaterial.Button
 	btnPositiveWidth      unit.Dp
 
 	negativeButtonText    string
 	negativeButtonClicked func()
-	btnNegative           decredmaterial.Button
+	btnNegative           cryptomaterial.Button
 
-	checkbox      decredmaterial.CheckBoxStyle
+	checkbox      cryptomaterial.CheckBoxStyle
 	mustBeChecked bool
 
 	titleAlignment, btnAlignment layout.Direction
@@ -96,12 +96,12 @@ func (in *InfoModal) SetContentAlignment(title, btn layout.Direction) *InfoModal
 	return in
 }
 
-func (in *InfoModal) Icon(icon *decredmaterial.Icon) *InfoModal {
+func (in *InfoModal) Icon(icon *cryptomaterial.Icon) *InfoModal {
 	in.dialogIcon = icon
 	return in
 }
 
-func (in *InfoModal) CheckBox(checkbox decredmaterial.CheckBoxStyle, mustBeChecked bool) *InfoModal {
+func (in *InfoModal) CheckBox(checkbox cryptomaterial.CheckBoxStyle, mustBeChecked bool) *InfoModal {
 	in.checkbox = checkbox
 	in.mustBeChecked = mustBeChecked // determine if the checkbox must be selected to proceed
 	return in
@@ -189,7 +189,7 @@ func (in *InfoModal) UseCustomWidget(layout layout.Widget) *InfoModal {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (in *InfoModal) KeysToHandle() key.Set {
-	return decredmaterial.AnyKey(key.NameReturn, key.NameEnter, key.NameEscape)
+	return cryptomaterial.AnyKey(key.NameReturn, key.NameEnter, key.NameEscape)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

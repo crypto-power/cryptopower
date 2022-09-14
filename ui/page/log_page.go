@@ -10,11 +10,11 @@ import (
 	"gioui.org/widget"
 
 	"github.com/nxadm/tail"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const (
@@ -32,9 +32,9 @@ type LogPage struct {
 
 	tail *tail.Tail
 
-	copyLog    *decredmaterial.Clickable
-	copyIcon   *decredmaterial.Image
-	backButton decredmaterial.IconButton
+	copyLog    *cryptomaterial.Clickable
+	copyIcon   *cryptomaterial.Image
+	backButton cryptomaterial.IconButton
 
 	logList *widget.List
 	fullLog string

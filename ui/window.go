@@ -11,15 +11,15 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/assets"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/notification"
-	"github.com/planetdecred/godcr/ui/page"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/assets"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/notification"
+	"gitlab.com/raedah/cryptopower/ui/page"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // Window represents the app window (and UI in general). There should only be one.
@@ -34,7 +34,7 @@ type Window struct {
 
 	load *load.Load
 
-	txAuthor dcrlibwallet.TxAuthor
+	txAuthor libwallet.TxAuthor
 
 	walletAcctMixerStatus chan *wallet.AccountMixer
 }
@@ -54,7 +54,7 @@ type WriteClipboard struct {
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	var netType string
-	if wal.Net == dcrlibwallet.Testnet3 {
+	if wal.Net == libwallet.Testnet3 {
 		netType = "testnet"
 	} else {
 		netType = wal.Net
@@ -79,7 +79,7 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 }
 
 func (win *Window) NewLoad() (*load.Load, error) {
-	th := decredmaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
+	th := cryptomaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
 	}
@@ -216,7 +216,7 @@ func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
 // system.FrameEvent.Frame(ops).
 func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 	backgroundWidget := layout.Expanded(func(gtx C) D {
-		return decredmaterial.Fill(gtx, win.load.Theme.Color.Gray4)
+		return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
 	})
 
 	currentPageWidget := layout.Stacked(func(gtx C) D {

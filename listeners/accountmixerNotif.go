@@ -1,8 +1,8 @@
 package listeners
 
-import "github.com/planetdecred/godcr/wallet"
+import "gitlab.com/raedah/cryptopower/wallet"
 
-// AccountMixerNotificationListener satisfies dcrlibwallet
+// AccountMixerNotificationListener satisfies libwallet
 // AccountMixerNotificationListener interface. Consumers interested in mixer
 // notification instantiates this type.
 type AccountMixerNotificationListener struct {

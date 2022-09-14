@@ -10,13 +10,13 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const TransactionsPageID = "Transactions"
@@ -37,20 +37,20 @@ type TransactionsPage struct {
 	*listeners.TxAndBlockNotificationListener
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
-	separator decredmaterial.Line
+	separator cryptomaterial.Line
 
-	walletTabList         *decredmaterial.ClickableList // Tab list of all loaded wallets.
+	walletTabList         *cryptomaterial.ClickableList // Tab list of all loaded wallets.
 	selectedCategoryIndex int
 	walletTabTitles       []string
 	changed               bool
 
-	orderDropDown   *decredmaterial.DropDown
-	txTypeDropDown  *decredmaterial.DropDown
-	walletDropDown  *decredmaterial.DropDown
-	transactionList *decredmaterial.ClickableList
+	orderDropDown   *cryptomaterial.DropDown
+	txTypeDropDown  *cryptomaterial.DropDown
+	walletDropDown  *cryptomaterial.DropDown
+	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
-	transactions    []dcrlibwallet.Transaction
-	wallets         []*dcrlibwallet.Wallet
+	transactions    []libwallet.Transaction
+	wallets         []*libwallet.Wallet
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
@@ -66,7 +66,7 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 	}
 
 	pg.walletTabList.IsHoverable = false
-	pg.transactionList.Radius = decredmaterial.Radius(14)
+	pg.transactionList.Radius = cryptomaterial.Radius(14)
 	pg.transactionList.IsShadowEnabled = true
 
 	pg.orderDropDown = components.CreateOrderDropDown(l, values.TxDropdownGroup, 1)
@@ -96,14 +96,14 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType(l *load.Load) {
-	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterAll)
-	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterSent)
-	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterReceived)
-	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterTransferred)
-	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterMixed)
-	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcrlibwallet.TxFilterStaking)
+	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterAll)
+	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterSent)
+	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterReceived)
+	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterTransferred)
+	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterMixed)
+	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterStaking)
 
-	pg.txTypeDropDown = l.Theme.DropDown([]decredmaterial.DropDownItem{
+	pg.txTypeDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{
 			Text: fmt.Sprintf("%s (%d)", values.String(values.StrAll), txCount),
 		},
@@ -129,18 +129,18 @@ func (pg *TransactionsPage) loadTransactions(selectedWalletIndex int) {
 	selectedWallet := pg.wallets[selectedWalletIndex]
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
 
-	txFilter := dcrlibwallet.TxFilterAll
+	txFilter := libwallet.TxFilterAll
 	switch pg.txTypeDropDown.SelectedIndex() {
 	case 1:
-		txFilter = dcrlibwallet.TxFilterSent
+		txFilter = libwallet.TxFilterSent
 	case 2:
-		txFilter = dcrlibwallet.TxFilterReceived
+		txFilter = libwallet.TxFilterReceived
 	case 3:
-		txFilter = dcrlibwallet.TxFilterTransferred
+		txFilter = libwallet.TxFilterTransferred
 	case 4:
-		txFilter = dcrlibwallet.TxFilterMixed
+		txFilter = libwallet.TxFilterMixed
 	case 5:
-		txFilter = dcrlibwallet.TxFilterStaking
+		txFilter = libwallet.TxFilterStaking
 	}
 
 	wallTxs, err := selectedWallet.GetTransactionsRaw(0, 0, txFilter, newestFirst) //TODO
@@ -374,7 +374,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &pg.transactions[selectedItem]))
 	}
-	decredmaterial.DisplayOneDropdown(pg.walletDropDown, pg.txTypeDropDown, pg.orderDropDown)
+	cryptomaterial.DisplayOneDropdown(pg.walletDropDown, pg.txTypeDropDown, pg.orderDropDown)
 
 	if clicked, selectedItem := pg.walletTabList.ItemClicked(); clicked {
 		if pg.selectedCategoryIndex != selectedItem {

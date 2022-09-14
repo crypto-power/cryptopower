@@ -9,13 +9,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const TreasuryPageID = "Treasury"
@@ -31,17 +31,17 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet   *dcrlibwallet.MultiWallet
-	wallets       []*dcrlibwallet.Wallet
+	multiWallet   *libwallet.MultiWallet
+	wallets       []*libwallet.Wallet
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List
-	viewGovernanceKeys *decredmaterial.Clickable
-	copyRedirectURL    *decredmaterial.Clickable
-	redirectIcon       *decredmaterial.Image
+	viewGovernanceKeys *cryptomaterial.Clickable
+	copyRedirectURL    *cryptomaterial.Clickable
+	redirectIcon       *cryptomaterial.Image
 
-	searchEditor decredmaterial.Editor
-	infoButton   decredmaterial.IconButton
+	searchEditor cryptomaterial.Editor
+	infoButton   cryptomaterial.IconButton
 
 	isPolicyFetchInProgress bool
 }
@@ -104,7 +104,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.MultiWallet.NetType() == dcrlibwallet.Testnet3 {
+		if pg.WL.MultiWallet.NetType() == libwallet.Testnet3 {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
@@ -244,13 +244,13 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return list.Layout(gtx, len(pg.treasuryItems), func(gtx C, i int) D {
-						return decredmaterial.LinearLayout{
+						return cryptomaterial.LinearLayout{
 							Orientation: layout.Vertical,
-							Width:       decredmaterial.MatchParent,
-							Height:      decredmaterial.WrapContent,
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
 							Background:  pg.Theme.Color.Surface,
 							Direction:   layout.W,
-							Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
 							Layout2(gtx, func(gtx C) D {
@@ -273,7 +273,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
 				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
 				if err != nil {
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						pm.SetError(values.String(values.StrInvalidPassphrase))
 					} else {
 						pm.Toast.NotifyError(err.Error())

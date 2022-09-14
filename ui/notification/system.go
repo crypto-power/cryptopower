@@ -11,7 +11,7 @@ import (
 
 const (
 	icon  = "ui/assets/decredicons/qrcodeSymbol.png"
-	title = "Godcr"
+	title = "Cryptopower"
 )
 
 type SystemNotification struct {

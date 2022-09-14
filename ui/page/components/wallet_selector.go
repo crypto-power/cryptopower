@@ -7,20 +7,20 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const WalletSelectorID = "wallet_selector"
 
 type badWalletListItem struct {
-	*dcrlibwallet.Wallet
-	deleteBtn decredmaterial.Button
+	*libwallet.Wallet
+	deleteBtn cryptomaterial.Button
 }
 
 type WalletSelector struct {
@@ -40,9 +40,9 @@ type WalletSelector struct {
 	watchOnlyWalletList []*load.WalletItem
 	badWalletsList      []*badWalletListItem
 
-	shadowBox            *decredmaterial.Shadow
-	walletsList          *decredmaterial.ClickableList
-	watchOnlyWalletsList *decredmaterial.ClickableList
+	shadowBox            *cryptomaterial.Shadow
+	walletsList          *cryptomaterial.ClickableList
+	watchOnlyWalletsList *cryptomaterial.ClickableList
 
 	wallectSelected func()
 }
@@ -176,7 +176,7 @@ func (ws *WalletSelector) HandleUserInteractions() {
 
 func (ws *WalletSelector) syncStatusIcon(gtx C) D {
 	var (
-		syncStatusIcon *decredmaterial.Image
+		syncStatusIcon *cryptomaterial.Image
 		syncStatus     string
 	)
 
@@ -273,7 +273,7 @@ func (ws *WalletSelector) badWalletsSection(gtx layout.Context) layout.Dimension
 
 	card := ws.Theme.Card()
 	card.Color = ws.Theme.Color.Surface
-	card.Radius = decredmaterial.Radius(10)
+	card.Radius = cryptomaterial.Radius(10)
 
 	sectionTitleLabel := ws.Theme.Body1("Bad Wallets") // TODO: localize string
 	sectionTitleLabel.Color = ws.Theme.Color.GrayText2
@@ -299,15 +299,15 @@ func (ws *WalletSelector) badWalletsSection(gtx layout.Context) layout.Dimension
 
 func (ws *WalletSelector) walletWrapper(gtx C, item *load.WalletItem, isWatchingOnlyWallet bool) D {
 	ws.shadowBox.SetShadowRadius(14)
-	return decredmaterial.LinearLayout{
-		Width:      decredmaterial.WrapContent,
-		Height:     decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.WrapContent,
+		Height:     cryptomaterial.WrapContent,
 		Padding:    layout.UniformInset(values.MarginPadding9),
 		Background: ws.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     ws.shadowBox,
 		Margin:     layout.UniformInset(values.MarginPadding5),
-		Border:     decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{

@@ -1,4 +1,4 @@
-package decredmaterial
+package cryptomaterial
 
 import (
 	"image"

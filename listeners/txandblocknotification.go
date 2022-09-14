@@ -3,10 +3,10 @@ package listeners
 import (
 	"encoding/json"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
-// TxAndBlockNotificationListener satisfies dcrlibwallet
+// TxAndBlockNotificationListener satisfies libwallet
 // TxAndBlockNotificationListener interface contract.
 type TxAndBlockNotificationListener struct {
 	TxAndBlockNotifChan chan TxNotification
@@ -19,7 +19,7 @@ func NewTxAndBlockNotificationListener() *TxAndBlockNotificationListener {
 }
 
 func (txAndBlk *TxAndBlockNotificationListener) OnTransaction(transaction string) {
-	var tx dcrlibwallet.Transaction
+	var tx libwallet.Transaction
 	err := json.Unmarshal([]byte(transaction), &tx)
 	if err != nil {
 		log.Errorf("Error unmarshalling transaction: %v", err)

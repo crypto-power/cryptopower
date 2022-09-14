@@ -10,12 +10,12 @@ import (
 	"gioui.org/text"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const AccoutSelectorID = "AccountSelector"
@@ -24,11 +24,11 @@ type AccountSelector struct {
 	*load.Load
 	*listeners.TxAndBlockNotificationListener
 
-	selectedAccount *dcrlibwallet.Account
-	accountIsValid  func(*dcrlibwallet.Account) bool
-	callback        func(*dcrlibwallet.Account)
+	selectedAccount *libwallet.Account
+	accountIsValid  func(*libwallet.Account) bool
+	callback        func(*libwallet.Account)
 
-	openSelectorDialog *decredmaterial.Clickable
+	openSelectorDialog *cryptomaterial.Clickable
 	selectorModal      *AccountSelectorModal
 
 	dialogTitle  string
@@ -42,7 +42,7 @@ type AccountSelector struct {
 func NewAccountSelector(l *load.Load) *AccountSelector {
 	return &AccountSelector{
 		Load:               l,
-		accountIsValid:     func(*dcrlibwallet.Account) bool { return true },
+		accountIsValid:     func(*libwallet.Account) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 }
@@ -52,12 +52,12 @@ func (as *AccountSelector) Title(title string) *AccountSelector {
 	return as
 }
 
-func (as *AccountSelector) AccountValidator(accountIsValid func(*dcrlibwallet.Account) bool) *AccountSelector {
+func (as *AccountSelector) AccountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelector {
 	as.accountIsValid = accountIsValid
 	return as
 }
 
-func (as *AccountSelector) AccountSelected(callback func(*dcrlibwallet.Account)) *AccountSelector {
+func (as *AccountSelector) AccountSelected(callback func(*libwallet.Account)) *AccountSelector {
 	as.callback = callback
 	return as
 }
@@ -73,7 +73,7 @@ func (as *AccountSelector) Handle(window app.WindowNavigator) {
 		as.selectorModal = newAccountSelectorModal(as.Load, as.selectedAccount).
 			title(as.dialogTitle).
 			accountValidator(as.accountIsValid).
-			accountSelected(func(account *dcrlibwallet.Account) {
+			accountSelected(func(account *libwallet.Account) {
 				if as.selectedAccount.Number != account.Number {
 					as.changed = true
 				}
@@ -114,7 +114,7 @@ func (as *AccountSelector) SelectFirstWalletValidAccount() error {
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (as *AccountSelector) SetSelectedAccount(account *dcrlibwallet.Account) {
+func (as *AccountSelector) SetSelectedAccount(account *libwallet.Account) {
 	as.selectedAccount = account
 	as.totalBalance = dcrutil.Amount(account.TotalBalance).String()
 }
@@ -126,21 +126,21 @@ func (as *AccountSelector) UpdateSelectedAccountBalance() {
 	}
 }
 
-func (as *AccountSelector) SelectedAccount() *dcrlibwallet.Account {
+func (as *AccountSelector) SelectedAccount() *libwallet.Account {
 	return as.selectedAccount
 }
 
 func (as *AccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 	as.Handle(window)
 
-	return decredmaterial.LinearLayout{
-		Width:   decredmaterial.MatchParent,
-		Height:  decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:   cryptomaterial.MatchParent,
+		Height:  cryptomaterial.WrapContent,
 		Padding: layout.UniformInset(values.MarginPadding12),
-		Border: decredmaterial.Border{
+		Border: cryptomaterial.Border{
 			Width:  values.MarginPadding2,
 			Color:  as.Theme.Color.Gray2,
-			Radius: decredmaterial.Radius(8),
+			Radius: cryptomaterial.Radius(8),
 		},
 		Clickable: as.openSelectorDialog,
 	}.Layout(gtx,
@@ -167,7 +167,7 @@ func (as *AccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 							Left: values.MarginPadding15,
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							ic := decredmaterial.NewIcon(as.Theme.Icons.DropDownIcon)
+							ic := cryptomaterial.NewIcon(as.Theme.Icons.DropDownIcon)
 							ic.Color = as.Theme.Color.Gray1
 							return ic.Layout(gtx, values.MarginPadding20)
 						})
@@ -224,16 +224,16 @@ func (as *AccountSelector) ListenForTxNotifications(ctx context.Context, window 
 
 type AccountSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
-	accountIsValid func(*dcrlibwallet.Account) bool
-	callback       func(*dcrlibwallet.Account)
+	accountIsValid func(*libwallet.Account) bool
+	callback       func(*libwallet.Account)
 	onExit         func()
 
-	walletInfoButton decredmaterial.IconButton
+	walletInfoButton cryptomaterial.IconButton
 	accountsList     layout.List
 
-	currentSelectedAccount *dcrlibwallet.Account
+	currentSelectedAccount *libwallet.Account
 	accounts               []*selectorAccount // key = wallet id
 	eventQueue             event.Queue
 	walletMu               sync.Mutex
@@ -244,11 +244,11 @@ type AccountSelectorModal struct {
 }
 
 type selectorAccount struct {
-	*dcrlibwallet.Account
-	clickable *decredmaterial.Clickable
+	*libwallet.Account
+	clickable *cryptomaterial.Clickable
 }
 
-func newAccountSelectorModal(l *load.Load, currentSelectedAccount *dcrlibwallet.Account) *AccountSelectorModal {
+func newAccountSelectorModal(l *load.Load, currentSelectedAccount *libwallet.Account) *AccountSelectorModal {
 	asm := &AccountSelectorModal{
 		Load:         l,
 		Modal:        l.Theme.ModalFloatTitle("AccountSelectorModal"),
@@ -321,12 +321,12 @@ func (asm *AccountSelectorModal) title(title string) *AccountSelectorModal {
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*dcrlibwallet.Account) bool) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelectorModal {
 	asm.accountIsValid = accountIsValid
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountSelected(callback func(*dcrlibwallet.Account)) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountSelected(callback func(*libwallet.Account)) *AccountSelectorModal {
 	asm.callback = callback
 	return asm
 }
@@ -372,9 +372,9 @@ func (asm *AccountSelectorModal) Layout(gtx C) D {
 func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAccount) D {
 	accountIcon := asm.Theme.Icons.AccountIcon
 
-	return decredmaterial.LinearLayout{
-		Width:     decredmaterial.MatchParent,
-		Height:    decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:     cryptomaterial.MatchParent,
+		Height:    cryptomaterial.WrapContent,
 		Margin:    layout.Inset{Bottom: values.MarginPadding4},
 		Padding:   layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8},
 		Clickable: account.clickable,
@@ -415,7 +415,7 @@ func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAcc
 			sections := func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return inset.Layout(gtx, func(gtx C) D {
-						ic := decredmaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
+						ic := cryptomaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
 						ic.Color = asm.Theme.Color.Gray1
 						return ic.Layout(gtx, values.MarginPadding20)
 					})
@@ -435,7 +435,7 @@ func (asm *AccountSelectorModal) walletInfoPopup(gtx C) D {
 	title := "Some accounts are hidden."
 	desc := "Some accounts are disabled by StakeShuffle settings to protect your privacy."
 	card := asm.Theme.Card()
-	card.Radius = decredmaterial.Radius(7)
+	card.Radius = cryptomaterial.Radius(7)
 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding280)
 	return card.Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {

@@ -9,11 +9,11 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type (
@@ -33,8 +33,8 @@ type Page struct {
 
 	ctx            context.Context
 	ctxCancel      context.CancelFunc
-	addDexBtn      decredmaterial.Button
-	syncBtn        decredmaterial.Button
+	addDexBtn      cryptomaterial.Button
+	syncBtn        cryptomaterial.Button
 	materialLoader material.LoaderStyle
 }
 
@@ -87,7 +87,7 @@ func (pg *Page) pageSections(gtx layout.Context, body layout.Widget) layout.Dime
 	})
 }
 
-func (pg *Page) welcomeLayout(button *decredmaterial.Button) layout.Widget {
+func (pg *Page) welcomeLayout(button *cryptomaterial.Button) layout.Widget {
 	return func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -175,14 +175,14 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 // isLoadingDexClient check for Dexc start, initialized, loggedin status,
-// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at dcrlibwallet.
+// since Dex client UI not required for app password, IsInitialized and IsLoggedIn should be done at libwallet.
 func (pg *Page) isLoadingDexClient() bool {
 	return pg.Dexc().Core() == nil || !pg.Dexc().Core().IsInitialized() || !pg.Dexc().IsLoggedIn()
 }
 
 // startDexClient do start DEX client,
 // initialize and login to DEX,
-// since Dex client UI not required for app password, initialize and login should be done at dcrlibwallet.
+// since Dex client UI not required for app password, initialize and login should be done at libwallet.
 func (pg *Page) startDexClient() {
 	_, err := pg.WL.MultiWallet.StartDexClient()
 	if err != nil {
@@ -190,7 +190,7 @@ func (pg *Page) startDexClient() {
 		return
 	}
 
-	// TODO: move to dcrlibwallet sine bypass Dex password by DEXClientPass
+	// TODO: move to libwallet sine bypass Dex password by DEXClientPass
 	if !pg.Dexc().Initialized() {
 		err = pg.Dexc().InitializeWithPassword([]byte(DEXClientPass))
 		if err != nil {

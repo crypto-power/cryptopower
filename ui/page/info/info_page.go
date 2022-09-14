@@ -9,15 +9,15 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/page/seedbackup"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const InfoID = "Info"
@@ -30,10 +30,10 @@ type (
 // walletSyncDetails contains sync data for each wallet when a sync
 // is in progress.
 type walletSyncDetails struct {
-	name               decredmaterial.Label
-	status             decredmaterial.Label
-	blockHeaderFetched decredmaterial.Label
-	syncingProgress    decredmaterial.Label
+	name               cryptomaterial.Label
+	status             cryptomaterial.Label
+	blockHeaderFetched cryptomaterial.Label
+	syncingProgress    cryptomaterial.Label
 }
 
 type WalletInfo struct {
@@ -51,15 +51,15 @@ type WalletInfo struct {
 	ctxCancel context.CancelFunc
 	listLock  sync.Mutex
 
-	multiWallet  *dcrlibwallet.MultiWallet
+	multiWallet  *libwallet.MultiWallet
 	rescanUpdate *wallet.RescanUpdate
 
 	container *widget.List
 
-	walletStatusIcon *decredmaterial.Icon
-	syncSwitch       *decredmaterial.Switch
-	toBackup         decredmaterial.Button
-	checkBox         decredmaterial.CheckBoxStyle
+	walletStatusIcon *cryptomaterial.Icon
+	syncSwitch       *cryptomaterial.Switch
+	toBackup         cryptomaterial.Button
+	checkBox         cryptomaterial.CheckBoxStyle
 
 	remainingSyncTime    string
 	syncStepLabel        string
@@ -216,18 +216,18 @@ func (pg *WalletInfo) listenForNotifications() {
 				// Update sync progress fields which will be displayed
 				// when the next UI invalidation occurs.
 				switch t := n.ProgressReport.(type) {
-				case *dcrlibwallet.HeadersFetchProgressReport:
+				case *libwallet.HeadersFetchProgressReport:
 					pg.stepFetchProgress = t.HeadersFetchProgress
 					pg.headersToFetchOrScan = t.TotalHeadersToFetch
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.FetchHeadersSteps
-				case *dcrlibwallet.AddressDiscoveryProgressReport:
+				case *libwallet.AddressDiscoveryProgressReport:
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.AddressDiscoveryStep
 					pg.stepFetchProgress = t.AddressDiscoveryProgress
-				case *dcrlibwallet.HeadersRescanProgressReport:
+				case *libwallet.HeadersRescanProgressReport:
 					pg.headersToFetchOrScan = t.TotalHeadersToScan
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)

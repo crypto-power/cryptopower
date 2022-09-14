@@ -12,7 +12,7 @@ import (
 	"decred.org/dcrdex/dex"
 )
 
-// TODO: move this to the dcrlibwallet
+// TODO: move this to the libwallet
 // DEXClientPass use for DEX since the UI not required password.
 const DEXClientPass = "DEXClientPass"
 
@@ -47,7 +47,7 @@ const (
 	nStrConfirmationsStatus  = "In order to trade at %s, the registration fee payment needs %d confirmations."
 )
 
-// supportedMarket check supported market for app depend on dcrlibwallet.
+// supportedMarket check supported market for app depend on libwallet.
 // TODO: update the logic or remove this when supported all markets.
 func supportedMarket(mkt *core.Market) bool {
 	// dcr_btc

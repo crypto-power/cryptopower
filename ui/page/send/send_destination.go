@@ -7,22 +7,22 @@ import (
 
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type destination struct {
 	*load.Load
 
 	addressChanged             func()
-	destinationAddressEditor   decredmaterial.Editor
+	destinationAddressEditor   cryptomaterial.Editor
 	destinationAccountSelector *components.AccountSelector
 
 	sendToAddress bool
-	accountSwitch *decredmaterial.SwitchButtonText
+	accountSwitch *cryptomaterial.SwitchButtonText
 }
 
 func newSendDestination(l *load.Load) *destination {
@@ -34,7 +34,7 @@ func newSendDestination(l *load.Load) *destination {
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")
 
-	dst.accountSwitch = l.Theme.SwitchButtonText([]decredmaterial.SwitchItem{
+	dst.accountSwitch = l.Theme.SwitchButtonText([]cryptomaterial.SwitchItem{
 		{Text: values.String(values.StrAddress)},
 		{Text: values.String(values.StrMyAcct)},
 	})
@@ -42,7 +42,7 @@ func newSendDestination(l *load.Load) *destination {
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
 		Title(values.String(values.StrReceivingAddress)).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountValidator(func(account *libwallet.Account) bool {
 
 			// Filter out imported account and mixed.
 			wal := dst.Load.WL.MultiWallet.WalletWithID(account.WalletID)
@@ -77,7 +77,7 @@ func (dst *destination) destinationAddress(useDefaultParams bool) (string, error
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
-func (dst *destination) destinationAccount(useDefaultParams bool) *dcrlibwallet.Account {
+func (dst *destination) destinationAccount(useDefaultParams bool) *libwallet.Account {
 	if useDefaultParams {
 		return dst.destinationAccountSelector.SelectedAccount()
 	}

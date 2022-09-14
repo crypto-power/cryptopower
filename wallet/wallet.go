@@ -1,5 +1,5 @@
 // Package wallet provides functions and types for interacting
-// with the dcrlibwallet backend.
+// with the libwallet backend.
 package wallet
 
 import (
@@ -8,18 +8,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const (
-	syncID    = "godcr"
+	syncID    = "cryptopower"
 	DevBuild  = "dev"
 	ProdBuild = "prod"
 )
 
 // Wallet represents the wallet back end of the app
 type Wallet struct {
-	multi       *dcrlibwallet.MultiWallet
+	multi       *libwallet.MultiWallet
 	Root, Net   string
 	buildDate   time.Time
 	version     string
@@ -30,7 +30,7 @@ type Wallet struct {
 // NewWallet initializies an new Wallet instance.
 // The Wallet is not loaded until LoadWallets is called.
 func NewWallet(root, net, version, logFile string, buildDate time.Time) (*Wallet, error) {
-	if root == "" || net == "" { // This should really be handled by dcrlibwallet
+	if root == "" || net == "" { // This should really be handled by libwallet
 		return nil, fmt.Errorf(`root directory or network cannot be ""`)
 	}
 
@@ -63,11 +63,11 @@ func (wal *Wallet) StartupTime() time.Time {
 }
 
 func (wal *Wallet) InitMultiWallet() error {
-	politeiaHost := dcrlibwallet.PoliteiaMainnetHost
-	if wal.Net == dcrlibwallet.Testnet3 {
-		politeiaHost = dcrlibwallet.PoliteiaTestnetHost
+	politeiaHost := libwallet.PoliteiaMainnetHost
+	if wal.Net == libwallet.Testnet3 {
+		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	multiWal, err := dcrlibwallet.NewMultiWallet(wal.Root, "bdb", wal.Net, politeiaHost)
+	multiWal, err := libwallet.NewMultiWallet(wal.Root, "bdb", wal.Net, politeiaHost)
 	if err != nil {
 		return err
 	}
@@ -78,10 +78,10 @@ func (wal *Wallet) InitMultiWallet() error {
 
 func (wal *Wallet) hdPrefix() string {
 	switch wal.Net {
-	case dcrlibwallet.Testnet3:
-		return dcrlibwallet.TestnetHDPath
+	case libwallet.Testnet3:
+		return libwallet.TestnetHDPath
 	case "mainnet":
-		return dcrlibwallet.MainnetHDPath
+		return libwallet.MainnetHDPath
 	default:
 		return ""
 	}
@@ -98,7 +98,7 @@ func (wal *Wallet) Shutdown() {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case dcrlibwallet.Testnet3:
+	case libwallet.Testnet3:
 		return "https://testnet.dcrdata.org/tx/" + txnHash
 	case "mainnet":
 		return "https://explorer.dcrdata.org/tx/" + txnHash

@@ -12,13 +12,13 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 type moreItem struct {
 	text     string
 	id       string
-	button   *decredmaterial.Clickable
+	button   *cryptomaterial.Clickable
 	action   func()
 	separate bool
 }
@@ -50,15 +50,15 @@ type Page struct {
 	sendDestination       *destination
 	amount                *sendAmount
 
-	backButton    decredmaterial.IconButton
-	infoButton    decredmaterial.IconButton
-	moreOption    decredmaterial.IconButton
-	retryExchange decredmaterial.Button
-	nextButton    decredmaterial.Button
+	backButton    cryptomaterial.IconButton
+	infoButton    cryptomaterial.IconButton
+	moreOption    cryptomaterial.IconButton
+	retryExchange cryptomaterial.Button
+	nextButton    cryptomaterial.Button
 
-	txFeeCollapsible *decredmaterial.Collapsible
-	shadowBox        *decredmaterial.Shadow
-	optionsMenuCard  decredmaterial.Card
+	txFeeCollapsible *cryptomaterial.Collapsible
+	shadowBox        *cryptomaterial.Shadow
+	optionsMenuCard  cryptomaterial.Card
 	moreItems        []moreItem
 	backdrop         *widget.Clickable
 
@@ -74,10 +74,10 @@ type Page struct {
 }
 
 type authoredTxData struct {
-	txAuthor            *dcrlibwallet.TxAuthor
+	txAuthor            *libwallet.TxAuthor
 	destinationAddress  string
-	destinationAccount  *dcrlibwallet.Account
-	sourceAccount       *dcrlibwallet.Account
+	destinationAccount  *libwallet.Account
+	sourceAccount       *libwallet.Account
 	txFee               string
 	txFeeUSD            string
 	estSignedSize       string
@@ -106,16 +106,16 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewAccountSelector(l).
 		Title(values.String(values.StrSendingAcct)).
-		AccountSelected(func(selectedAccount *dcrlibwallet.Account) {
+		AccountSelected(func(selectedAccount *libwallet.Account) {
 			pg.validateAndConstructTx()
 		}).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountValidator(func(account *libwallet.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
 
-			if wal.ReadBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, false) &&
+			if wal.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
 				!wal.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
@@ -127,7 +127,7 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		})
 
-	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcrlibwallet.Account) {
+	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *libwallet.Account) {
 		pg.validateAndConstructTx()
 		pg.sourceAccountSelector.SelectFirstWalletValidAccount() // refresh source account
 	})
@@ -167,7 +167,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sourceAccountSelector.SelectFirstWalletValidAccount()
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
-	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)
+	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
 	if currencyExchangeValue == values.USDExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
@@ -314,7 +314,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 }
 
 func (pg *Page) feeEstimationError(err string) {
-	if err == dcrlibwallet.ErrInsufficientBalance {
+	if err == libwallet.ErrInsufficientBalance {
 		pg.amount.setError(values.String(values.StrInsufficentFund))
 	} else if strings.Contains(err, invalidAmountErr) {
 		pg.amount.setError(invalidAmountErr)
@@ -403,7 +403,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
 	if currencyValue != values.USDExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
@@ -482,7 +482,7 @@ func (pg *Page) HandleUserInteractions() {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *Page) KeysToHandle() key.Set {
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -493,21 +493,21 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
 	if currencyValue != values.USDExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			decredmaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
 		default:
-			decredmaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
 		}
 	} else {
 		switch {
 		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			decredmaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
 		default:
-			decredmaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
 		}
 	}
 }

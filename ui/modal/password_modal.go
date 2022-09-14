@@ -6,16 +6,16 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type PasswordModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
-	password decredmaterial.Editor
+	password cryptomaterial.Editor
 
 	dialogTitle string
 	description string
@@ -29,11 +29,11 @@ type PasswordModal struct {
 
 	positiveButtonText    string
 	positiveButtonClicked func(password string, m *PasswordModal) bool // return true to dismiss dialog
-	btnPositve            decredmaterial.Button
+	btnPositve            cryptomaterial.Button
 
 	negativeButtonText    string
 	negativeButtonClicked func()
-	btnNegative           decredmaterial.Button
+	btnNegative           cryptomaterial.Button
 }
 
 func NewPasswordModal(l *load.Load) *PasswordModal {
@@ -117,7 +117,7 @@ func (pm *PasswordModal) SetError(err string) {
 }
 
 func (pm *PasswordModal) Handle() {
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(pm.password.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pm.password.Editor)
 	if isChanged {
 		pm.password.SetError("")
 	}

@@ -9,21 +9,21 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type CreatePasswordModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
-	walletName            decredmaterial.Editor
-	passwordEditor        decredmaterial.Editor
-	confirmPasswordEditor decredmaterial.Editor
-	passwordStrength      decredmaterial.ProgressBarStyle
+	walletName            cryptomaterial.Editor
+	passwordEditor        cryptomaterial.Editor
+	confirmPasswordEditor cryptomaterial.Editor
+	passwordStrength      cryptomaterial.ProgressBarStyle
 
 	isLoading              bool
 	isCancelable           bool
@@ -39,8 +39,8 @@ type CreatePasswordModal struct {
 
 	materialLoader material.LoaderStyle
 
-	btnPositve            decredmaterial.Button
-	btnNegative           decredmaterial.Button
+	btnPositve            cryptomaterial.Button
+	btnNegative           cryptomaterial.Button
 	negativeButtonClicked func()
 
 	callback func(walletName, password string, m *CreatePasswordModal) bool // return true to dismiss dialog
@@ -177,7 +177,7 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 func (cm *CreatePasswordModal) Handle() {
 	cm.btnPositve.SetEnabled(cm.validToCreate())
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
 	if isChanged {
 		// reset all modal errors when any editor is modified
 		cm.serverError = ""
@@ -245,7 +245,7 @@ func (cm *CreatePasswordModal) Handle() {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (cm *CreatePasswordModal) KeysToHandle() key.Set {
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -254,12 +254,12 @@ func (cm *CreatePasswordModal) KeysToHandle() key.Set {
 func (cm *CreatePasswordModal) HandleKeyPress(evt *key.Event) {
 	if cm.walletNameEnabled {
 		if cm.confirmPasswordEnabled {
-			decredmaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
 		} else {
-			decredmaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.passwordEditor.Editor)
 		}
 	} else {
-		decredmaterial.SwitchEditors(evt, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+		cryptomaterial.SwitchEditors(evt, cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
 	}
 }
 
@@ -299,7 +299,7 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 
 	if cm.serverError != "" {
 		// set wallet name editor error if wallet name already exist
-		if cm.serverError == dcrlibwallet.ErrExist && cm.walletNameEnabled {
+		if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
 		} else {
 			t := cm.Theme.Body2(cm.serverError)

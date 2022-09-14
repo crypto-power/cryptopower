@@ -8,22 +8,22 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type AddDexModal struct {
 	*load.Load
-	*decredmaterial.Modal
-	addDexServerBtn  decredmaterial.Button
-	dexServerAddress decredmaterial.Editor
+	*cryptomaterial.Modal
+	addDexServerBtn  cryptomaterial.Button
+	dexServerAddress cryptomaterial.Editor
 	isSending        bool
-	cancelBtn        decredmaterial.Button
+	cancelBtn        cryptomaterial.Button
 	materialLoader   material.LoaderStyle
-	cert             decredmaterial.Editor
+	cert             cryptomaterial.Editor
 
 	onDexAdded func()
 }
@@ -70,7 +70,7 @@ func (md *AddDexModal) validateInputs() (bool, string) {
 func (md *AddDexModal) Handle() {
 	canSubmit, dexServer := md.validateInputs()
 
-	if isDexSubmit, _ := decredmaterial.HandleEditorEvents(md.dexServerAddress.Editor); isDexSubmit && canSubmit {
+	if isDexSubmit, _ := cryptomaterial.HandleEditorEvents(md.dexServerAddress.Editor); isDexSubmit && canSubmit {
 		md.doAddDexServer(dexServer)
 	}
 

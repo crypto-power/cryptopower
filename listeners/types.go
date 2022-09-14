@@ -1,7 +1,7 @@
 package listeners
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 type TxNotifType int
@@ -16,7 +16,7 @@ const (
 // TxNotification models transaction notifications.
 type TxNotification struct {
 	Type        TxNotifType
-	Transaction *dcrlibwallet.Transaction
+	Transaction *libwallet.Transaction
 	WalletID    int
 	BlockHeight int32
 	Hash        string

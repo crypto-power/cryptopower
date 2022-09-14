@@ -12,24 +12,24 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type createWalletModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
 	sourceAccountSelector *components.AccountSelector
-	submitBtn             decredmaterial.Button
-	cancelBtn             decredmaterial.Button
-	walletPassword        decredmaterial.Editor
+	submitBtn             cryptomaterial.Button
+	cancelBtn             cryptomaterial.Button
+	walletPassword        cryptomaterial.Editor
 	walletInfoWidget      *walletInfoWidget
 	materialLoader        material.LoaderStyle
 	isSending             bool
@@ -39,7 +39,7 @@ type createWalletModal struct {
 }
 
 type walletInfoWidget struct {
-	image    *decredmaterial.Image
+	image    *cryptomaterial.Image
 	coinName string
 	coinID   uint32
 }
@@ -57,8 +57,8 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 	md.submitBtn.SetEnabled(false)
 	md.sourceAccountSelector = components.NewAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
-		AccountSelected(func(selectedAccount *dcrlibwallet.Account) {}).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountSelected(func(selectedAccount *libwallet.Account) {}).
+		AccountValidator(func(account *libwallet.Account) bool {
 			// Filter out imported account and mixed.
 			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
@@ -114,7 +114,7 @@ func (md *createWalletModal) validateInputs(isRequiredWalletPassword bool) (bool
 func (md *createWalletModal) Handle() {
 	canSubmit, walletPass := md.validateInputs(md.walletInfoWidget.coinID == dcr.BipID)
 
-	if isWalletPasswordSubmit, _ := decredmaterial.HandleEditorEvents(md.walletPassword.Editor); isWalletPasswordSubmit {
+	if isWalletPasswordSubmit, _ := cryptomaterial.HandleEditorEvents(md.walletPassword.Editor); isWalletPasswordSubmit {
 		if canSubmit {
 			md.doCreateWallet([]byte(walletPass))
 		}
@@ -155,10 +155,10 @@ func (md *createWalletModal) doCreateWallet(walletPass []byte) {
 		switch coinID {
 		case dcr.BipID:
 			selectedAccount := md.sourceAccountSelector.SelectedAccount()
-			settings[dcrlibwallet.DexDcrWalletIDConfigKey] = strconv.Itoa(selectedAccount.WalletID)
+			settings[libwallet.DexDcrWalletIDConfigKey] = strconv.Itoa(selectedAccount.WalletID)
 			settings["account"] = selectedAccount.Name
 			settings["password"] = md.walletPassword.Editor.Text()
-			walletType = dcrlibwallet.CustomDexDcrWalletType
+			walletType = libwallet.CustomDexDcrWalletType
 		case btc.BipID:
 			walletType = "SPV" // decred.org/dcrdex/client/asset/btc.walletTypeSPV
 			walletPass = nil   // Core doesn't accept wallet passwords for dex-managed spv wallets.

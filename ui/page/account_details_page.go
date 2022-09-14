@@ -8,13 +8,13 @@ import (
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const AccountDetailsPageID = "AccountDetails"
@@ -27,14 +27,14 @@ type AcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *dcrlibwallet.Wallet
-	account *dcrlibwallet.Account
+	wallet  *libwallet.Wallet
+	account *libwallet.Account
 
-	theme                    *decredmaterial.Theme
+	theme                    *cryptomaterial.Theme
 	acctDetailsPageContainer layout.List
 	list                     *widget.List
-	backButton               decredmaterial.IconButton
-	renameAccount            *decredmaterial.Clickable
+	backButton               cryptomaterial.IconButton
+	renameAccount            *cryptomaterial.Clickable
 
 	stakingBalance   int64
 	totalBalance     string
@@ -47,7 +47,7 @@ type AcctDetailsPage struct {
 	keys             string
 }
 
-func NewAcctDetailsPage(l *load.Load, account *dcrlibwallet.Account) *AcctDetailsPage {
+func NewAcctDetailsPage(l *load.Load, account *libwallet.Account) *AcctDetailsPage {
 	pg := &AcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),

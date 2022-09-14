@@ -9,13 +9,13 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const VerifySeedPageID = "verify_seed"
@@ -23,7 +23,7 @@ const VerifySeedPageID = "verify_seed"
 type shuffledSeedWords struct {
 	selectedIndex int
 	words         []string
-	clickables    []*decredmaterial.Clickable
+	clickables    []*cryptomaterial.Clickable
 }
 
 type VerifySeedPage struct {
@@ -34,17 +34,17 @@ type VerifySeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet        *dcrlibwallet.Wallet
+	wallet        *libwallet.Wallet
 	seed          string
 	multiSeedList []shuffledSeedWords
 
-	backButton    decredmaterial.IconButton
-	actionButton  decredmaterial.Button
+	backButton    cryptomaterial.IconButton
+	actionButton  cryptomaterial.Button
 	listGroupSeed []*layout.List
 	list          *widget.List
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *dcrlibwallet.Wallet, seed string) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet *libwallet.Wallet, seed string) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -72,7 +72,7 @@ func NewVerifySeedPage(l *load.Load, wallet *dcrlibwallet.Wallet, seed string) *
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := dcrlibwallet.PGPWordList()
+	allSeeds := libwallet.PGPWordList()
 
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
@@ -81,7 +81,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, dcrlibwallet.PGPWordList()) // using allSeeds here modifies the slice
+		shuffledSeed := pg.getMultiSeed(index, libwallet.PGPWordList()) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -93,12 +93,12 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 	shuffledSeed := shuffledSeedWords{
 		selectedIndex: -1,
 		words:         make([]string, 0),
-		clickables:    make([]*decredmaterial.Clickable, 0),
+		clickables:    make([]*cryptomaterial.Clickable, 0),
 	}
 
-	clickable := func() *decredmaterial.Clickable {
+	clickable := func() *cryptomaterial.Clickable {
 		cl := pg.Theme.NewClickable(true)
-		cl.Radius = decredmaterial.Radius(8)
+		cl.Radius = cryptomaterial.Radius(8)
 		return cl
 	}
 
@@ -163,7 +163,7 @@ func (pg *VerifySeedPage) verifySeed() {
 				seed := pg.selectedSeedPhrase()
 				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
 				if err != nil {
-					if err.Error() == dcrlibwallet.ErrInvalid {
+					if err.Error() == libwallet.ErrInvalid {
 						pg.Toast.NotifyError("Failed to verify. Please go through every word and try again.")
 						m.Dismiss()
 						return
@@ -301,12 +301,12 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWords) D {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
-		Border:      decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 		Margin:      layout.Inset{Top: values.MarginPadding4, Bottom: values.MarginPadding4},
 		Padding:     layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
 	}.Layout(gtx,
@@ -345,12 +345,12 @@ func (pg *VerifySeedPage) seedButton(gtx C, index int, multiSeed shuffledSeedWor
 
 	return multiSeed.clickables[index].Layout(gtx, func(gtx C) D {
 
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Width:      gtx.Dp(values.MarginPadding100),
 			Height:     gtx.Dp(values.MarginPadding40),
 			Background: pg.Theme.Color.Surface,
 			Direction:  layout.Center,
-			Border:     decredmaterial.Border{Radius: decredmaterial.Radius(8), Color: borderColor, Width: values.MarginPadding2},
+			Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8), Color: borderColor, Width: values.MarginPadding2},
 		}.Layout2(gtx, func(gtx C) D {
 			label := pg.Theme.Label(values.TextSize16, multiSeed.words[index])
 			label.Color = textColor

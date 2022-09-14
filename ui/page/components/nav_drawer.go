@@ -4,9 +4,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 var (
@@ -15,9 +15,9 @@ var (
 )
 
 type NavHandler struct {
-	Clickable     *decredmaterial.Clickable
-	Image         *decredmaterial.Image
-	ImageInactive *decredmaterial.Image
+	Clickable     *cryptomaterial.Clickable
+	Image         *cryptomaterial.Image
+	ImageInactive *cryptomaterial.Image
 	Title         string
 	PageID        string
 }
@@ -36,16 +36,16 @@ type NavDrawer struct {
 	alignment layout.Alignment
 	direction layout.Direction
 
-	MinimizeNavDrawerButton decredmaterial.IconButton
-	MaximizeNavDrawerButton decredmaterial.IconButton
-	activeDrawerBtn         decredmaterial.IconButton
+	MinimizeNavDrawerButton cryptomaterial.IconButton
+	MaximizeNavDrawerButton cryptomaterial.IconButton
+	activeDrawerBtn         cryptomaterial.IconButton
 	IsNavExpanded           bool
 }
 
 func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context) layout.Dimensions {
-	return decredmaterial.LinearLayout{
+	return cryptomaterial.LinearLayout{
 		Width:       gtx.Dp(nd.width),
-		Height:      decredmaterial.MatchParent,
+		Height:      cryptomaterial.MatchParent,
 		Orientation: layout.Vertical,
 		Background:  nd.Theme.Color.Surface,
 	}.Layout(gtx,
@@ -58,17 +58,17 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context) layout.Dimensions {
 				if nd.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() && (nd.DrawerNavItems[i].PageID == values.String(values.StrSend) ||
 					nd.DrawerNavItems[i].PageID == values.String(values.StrReceive) ||
 					nd.DrawerNavItems[i].PageID == values.String(values.StrAccountMixer)) {
-					background = decredmaterial.Disabled(nd.Theme.Color.Gray5)
+					background = cryptomaterial.Disabled(nd.Theme.Color.Gray5)
 					mGtx = gtx.Disabled()
 				}
 
 				if nd.DrawerNavItems[i].PageID == nd.CurrentPage {
 					background = nd.Theme.Color.Gray5
 				}
-				return decredmaterial.LinearLayout{
+				return cryptomaterial.LinearLayout{
 					Orientation: nd.axis,
-					Width:       decredmaterial.MatchParent,
-					Height:      decredmaterial.WrapContent,
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
 					Padding:     layout.UniformInset(values.MarginPadding15),
 					Alignment:   nd.alignment,
 					Direction:   nd.direction,
@@ -123,9 +123,9 @@ func (nd *NavDrawer) LayoutTopBar(gtx layout.Context) layout.Dimensions {
 				if nd.AppBarNavItems[i].PageID == nd.CurrentPage {
 					background = nd.Theme.Color.Gray5
 				}
-				return decredmaterial.LinearLayout{
-					Width:       decredmaterial.WrapContent,
-					Height:      decredmaterial.WrapContent,
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.WrapContent,
+					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Horizontal,
 					Background:  background,
 					Padding:     layout.UniformInset(values.MarginPadding16),

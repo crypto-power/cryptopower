@@ -9,35 +9,35 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type voteModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	detailsMu      sync.Mutex
 	detailsCancel  context.CancelFunc
-	voteDetails    *dcrlibwallet.ProposalVoteDetails
+	voteDetails    *libwallet.ProposalVoteDetails
 	voteDetailsErr error
 
-	proposal *dcrlibwallet.Proposal
+	proposal *libwallet.Proposal
 	isVoting bool
 
 	walletSelector *WalletSelector
 	materialLoader material.LoaderStyle
 	yesVote        *inputVoteOptionsWidgets
 	noVote         *inputVoteOptionsWidgets
-	voteBtn        decredmaterial.Button
-	cancelBtn      decredmaterial.Button
+	voteBtn        cryptomaterial.Button
+	cancelBtn      cryptomaterial.Button
 }
 
-func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
+func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm := &voteModal{
 		Load:           l,
 		Modal:          l.Theme.ModalFloatTitle("input_vote_modal"),
@@ -54,7 +54,7 @@ func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
 
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
-		WalletSelected(func(w *dcrlibwallet.Wallet) {
+		WalletSelected(func(w *libwallet.Wallet) {
 
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
@@ -75,16 +75,16 @@ func newVoteModal(l *load.Load, proposal *dcrlibwallet.Proposal) *voteModal {
 			vm.ParentWindow().Reload()
 
 			go func() {
-				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(w.ID, vm.proposal.Token)
+				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal(), vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
-					vm.voteDetails = voteDetails
+					vm.voteDetails = &libwallet.ProposalVoteDetails{*voteDetails}
 					vm.voteDetailsErr = err
 				}
 				vm.detailsMu.Unlock()
 			}()
 		}).
-		WalletValidator(func(w *dcrlibwallet.Wallet) bool {
+		WalletValidator(func(w *libwallet.Wallet) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 	return vm
@@ -127,26 +127,26 @@ func (vm *voteModal) sendVotes() {
 	tickets := vm.voteDetails.EligibleTickets
 	vm.detailsMu.Unlock()
 
-	votes := make([]*dcrlibwallet.ProposalVote, 0)
+	votes := make([]*libwallet.ProposalVote, 0)
 	addVotes := func(bit string, count int) {
 		for i := 0; i < count; i++ {
 
 			// get and pop
-			var eligibleTicket *dcrlibwallet.EligibleTicket
-			eligibleTicket, tickets = tickets[0], tickets[1:]
+			tickets = tickets[1:]
 
-			vote := &dcrlibwallet.ProposalVote{
-				Ticket: eligibleTicket,
-				Bit:    bit,
-			}
+			vote := &libwallet.ProposalVote{}
+			vote.Ticket.Hash = tickets[0].Hash
+			vote.Ticket.Address = tickets[0].Address
+			vote.Bit = bit
 
 			votes = append(votes, vote)
 		}
 	}
 
-	addVotes(dcrlibwallet.VoteBitYes, vm.yesVote.voteCount())
-	addVotes(dcrlibwallet.VoteBitNo, vm.noVote.voteCount())
+	addVotes(libwallet.VoteBitYes, vm.yesVote.voteCount())
+	addVotes(libwallet.VoteBitNo, vm.noVote.voteCount())
 
+	ctx := context.Background()
 	passwordModal := modal.NewPasswordModal(vm.Load).
 		Title(values.String(values.StrVoteConfirm)).
 		NegativeButton(values.String(values.StrCancel), func() {
@@ -154,7 +154,8 @@ func (vm *voteModal) sendVotes() {
 		}).
 		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
 			go func() {
-				err := vm.WL.MultiWallet.Politeia.CastVotes(vm.walletSelector.selectedWallet.ID, votes, vm.proposal.Token, password)
+				w := vm.walletSelector.selectedWallet.Internal()
+				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -162,7 +163,7 @@ func (vm *voteModal) sendVotes() {
 				}
 				pm.Dismiss()
 				vm.Toast.Notify(values.String(values.StrVoteSent))
-				go vm.WL.MultiWallet.Politeia.Sync()
+				go vm.WL.MultiWallet.Politeia.Sync(ctx)
 				vm.Dismiss()
 			}()
 
@@ -244,7 +245,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 
 								wrap := vm.Theme.Card()
 								wrap.Color = vm.Theme.Color.Green50
-								wrap.Radius = decredmaterial.Radius(8)
+								wrap.Radius = cryptomaterial.Radius(8)
 								if voteDetails.NoVotes > 0 {
 									wrap.Radius.TopRight = 0
 									wrap.Radius.BottomRight = 0
@@ -261,7 +262,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												card := vm.Theme.Card()
 												card.Color = vm.Theme.Color.Green500
-												card.Radius = decredmaterial.Radius(4)
+												card.Radius = cryptomaterial.Radius(4)
 												return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 													gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 													gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)
@@ -285,7 +286,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 
 								wrap := vm.Theme.Card()
 								wrap.Color = vm.Theme.Color.Orange2
-								wrap.Radius = decredmaterial.Radius(8)
+								wrap.Radius = cryptomaterial.Radius(8)
 								if voteDetails.YesVotes > 0 {
 									wrap.Radius.TopLeft = 0
 									wrap.Radius.BottomLeft = 0
@@ -302,7 +303,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												card := vm.Theme.Card()
 												card.Color = vm.Theme.Color.Danger
-												card.Radius = decredmaterial.Radius(4)
+												card.Radius = cryptomaterial.Radius(4)
 												return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 													gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 													gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)
@@ -393,7 +394,7 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 						layout.Rigid(func(gtx C) D {
 							card := vm.Theme.Card()
 							card.Color = dotColor
-							card.Radius = decredmaterial.Radius(4)
+							card.Radius = cryptomaterial.Radius(4)
 							return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 								gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 								gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)

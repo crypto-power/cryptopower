@@ -6,14 +6,14 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/page/dexclient"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/page/dexclient"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const WalletDexServerSelectorID = "wallet_dex_server_selector"
@@ -30,12 +30,12 @@ type WalletDexServerSelector struct {
 	ctxCancel context.CancelFunc
 
 	scrollContainer   *widget.List
-	shadowBox         *decredmaterial.Shadow
+	shadowBox         *cryptomaterial.Shadow
 	walletSelector    *components.WalletSelector
 	dexServerSelector *components.DexServerSelector
-	addWalClickable   *decredmaterial.Clickable
-	addDexClickable   *decredmaterial.Clickable
-	settings          *decredmaterial.Clickable
+	addWalClickable   *cryptomaterial.Clickable
+	addDexClickable   *cryptomaterial.Clickable
+	settings          *cryptomaterial.Clickable
 }
 
 func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServerSelected func(server string)) *WalletDexServerSelector {
@@ -55,10 +55,10 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	}
 
 	pg.addWalClickable = l.Theme.NewClickable(false)
-	pg.addWalClickable.Radius = decredmaterial.Radius(14)
+	pg.addWalClickable.Radius = cryptomaterial.Radius(14)
 
 	pg.addDexClickable = l.Theme.NewClickable(false)
-	pg.addDexClickable.Radius = decredmaterial.Radius(14)
+	pg.addDexClickable.Radius = cryptomaterial.Radius(14)
 
 	pg.settings = l.Theme.NewClickable(false)
 
@@ -179,14 +179,14 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 		pg.layoutAddMoreRowSection(pg.addDexClickable, values.String(values.StrAddDexServer), pg.Theme.Icons.DexIcon.Layout16dp),
 	}
 
-	return decredmaterial.LinearLayout{
-		Width:     decredmaterial.MatchParent,
-		Height:    decredmaterial.MatchParent,
+	return cryptomaterial.LinearLayout{
+		Width:     cryptomaterial.MatchParent,
+		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Width:  gtx.Dp(values.MarginPadding550),
-			Height: decredmaterial.MatchParent,
+			Height: cryptomaterial.MatchParent,
 			Margin: layout.Inset{
 				Bottom: values.MarginPadding30,
 			},
@@ -200,7 +200,7 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *decredmaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
+func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{
 			Left:   values.MarginPadding5,
@@ -208,14 +208,14 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *decredmaterial.C
 			Bottom: values.MarginPadding48,
 		}.Layout(gtx, func(gtx C) D {
 			pg.shadowBox.SetShadowRadius(14)
-			return decredmaterial.LinearLayout{
-				Width:      decredmaterial.WrapContent,
-				Height:     decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:      cryptomaterial.WrapContent,
+				Height:     cryptomaterial.WrapContent,
 				Padding:    layout.UniformInset(values.MarginPadding12),
 				Background: pg.Theme.Color.Surface,
 				Clickable:  clk,
 				Shadow:     pg.shadowBox,
-				Border:     decredmaterial.Border{Radius: clk.Radius},
+				Border:     cryptomaterial.Border{Radius: clk.Radius},
 				Alignment:  layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(ic),
@@ -245,7 +245,7 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
-func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
+func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		Hint(values.String(values.StrSpendingPassword)).
@@ -255,7 +255,7 @@ func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *dcrlibwallet.Wall
 				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {
 					errText := err.Error()
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						errText = values.String(values.StrInvalidPassphrase)
 					}
 					pm.SetError(errText)

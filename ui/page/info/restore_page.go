@@ -8,13 +8,13 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const CreateRestorePageID = "Restore"
@@ -31,9 +31,9 @@ type Restore struct {
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
 	restoreComplete func()
-	tabList         *decredmaterial.ClickableList
+	tabList         *cryptomaterial.ClickableList
 	tabIndex        int
-	backButton      decredmaterial.IconButton
+	backButton      cryptomaterial.IconButton
 	seedRestorePage *SeedRestore
 }
 
@@ -241,7 +241,7 @@ func (pg *Restore) showHexRestoreModal() {
 					}).
 					PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 						go func() {
-							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, dcrlibwallet.PassphraseTypePass)
+							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 							if err != nil {
 								m.SetError(components.TranslateErr(err))
 								m.SetLoading(false)
@@ -273,7 +273,7 @@ func (pg *Restore) showHexRestoreModal() {
 }
 
 func (pg *Restore) verifyHex(hex string) bool {
-	if !dcrlibwallet.VerifySeed(hex) {
+	if !libwallet.VerifySeed(hex) {
 		return false
 	}
 

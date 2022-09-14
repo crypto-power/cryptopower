@@ -1,9 +1,6 @@
-# godcr
+# cryptopower
 
-[![Build Status](https://github.com/planetdecred/godcr/workflows/Build/badge.svg)](https://github.com/planetdecred/godcr/actions)
-[![Tests Status](https://github.com/planetdecred/godcr/workflows/Tests/badge.svg)](https://github.com/planetdecred/godcr/actions)
-
-A cross-platform desktop [SPV](https://docs.decred.org/wallets/spv/) wallet for [decred](https://decred.org/) built with [gio](https://gioui.org/).
+A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 ## Building
 
@@ -12,30 +9,30 @@ Note: You need to have [Go 1.16](https://golang.org/dl/) or above to build.
 Then `go build`.
 
 ### Linux
-To build **godcr** on Linux these [gio dependencies](https://gioui.org/doc/install/linux) are required.
+To build **cryptopower** on Linux these [gio dependencies](https://gioui.org/doc/install/linux) are required.
 
 Arch Linux:
 `pacman -S vulkan-headers libxkbcommon-x11`
 
 ## FreeBSD
-To build **godcr** on FreeBSD you will need to `pkg install vulkan-headers` as root. This is a gio dependency.
+To build **cryptopower** on FreeBSD you will need to `pkg install vulkan-headers` as root. This is a gio dependency.
 
-## Running godcr
+## Running cryptopower
 ### General usage
-By default, **godcr** runs on Mainnet network type. However, godcr can run on testnet by issuing commands on the terminal in the format:
+By default, **cryptopower** runs on Mainnet network type. However, cryptopower can run on testnet by issuing commands on the terminal in the format:
 ```bash
-godcr [options]
+cryptopower [options]
 ```
-- Run `./godcr --network=testnet` to run godcr on the testnet network.
-- Run `godcr -h` or `godcr help` to get general information of commands and options that can be issued on the cli.
-- Use `godcr <command> -h` or   `godcr help <command>` to get detailed information about a command.
+- Run `./cryptopower --network=testnet` to run cryptopower on the testnet network.
+- Run `cryptopower -h` or `cryptopower help` to get general information of commands and options that can be issued on the cli.
+- Use `cryptopower <command> -h` or   `cryptopower help <command>` to get detailed information about a command.
 
 ## Profiling 
-Godcr uses [pprof](https://github.com/google/pprof) for profiling. It creates a web server which you can use to save your profiles. To setup a profiling web server, run godcr with the --profile flag and pass a server port to it as an argument.
+Cryptopower uses [pprof](https://github.com/google/pprof) for profiling. It creates a web server which you can use to save your profiles. To setup a profiling web server, run cryptopower with the --profile flag and pass a server port to it as an argument.
 
 So, after running the build command above, run the command
 
-`./godcr --profile=6060`
+`./cryptopower --profile=6060`
 
 You should now have a local web server running on 127.0.0.1:6060.
 
@@ -46,7 +43,7 @@ To save a profile, you can simply use
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/planetdecred/godcr/blob/master/.github/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://gitlab.com/raedah/cryptopower/blob/master/.github/CONTRIBUTING.md)
 
 ## Other
 

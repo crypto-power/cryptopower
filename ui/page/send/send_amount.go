@@ -7,10 +7,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const invalidAmountErr = "Invalid amount" //TODO: use localized strings
@@ -18,8 +18,8 @@ const invalidAmountErr = "Invalid amount" //TODO: use localized strings
 type sendAmount struct {
 	*load.Load
 
-	dcrAmountEditor decredmaterial.Editor
-	usdAmountEditor decredmaterial.Editor
+	dcrAmountEditor cryptomaterial.Editor
+	usdAmountEditor cryptomaterial.Editor
 
 	SendMax               bool
 	dcrSendMaxChangeEvent bool
@@ -107,7 +107,7 @@ func (sa *sendAmount) validAmount() (int64, bool, error) {
 		return -1, sa.SendMax, err
 	}
 
-	return dcrlibwallet.AmountAtom(amount), sa.SendMax, nil
+	return libwallet.AmountAtom(amount), sa.SendMax, nil
 }
 
 func (sa *sendAmount) validateDCRAmount() {

@@ -9,19 +9,19 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type sendConfirmModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
-	closeConfirmationModalButton decredmaterial.Button
-	confirmButton                decredmaterial.Button
-	passwordEditor               decredmaterial.Editor
+	closeConfirmationModalButton cryptomaterial.Button
+	confirmButton                cryptomaterial.Button
+	passwordEditor               cryptomaterial.Editor
 
 	txSent    func()
 	isSending bool
@@ -141,7 +141,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							icon := decredmaterial.NewIcon(scm.Theme.Icons.NavigationArrowForward)
+							icon := cryptomaterial.NewIcon(scm.Theme.Icons.NavigationArrowForward)
 							icon.Color = scm.Theme.Color.Gray1
 							return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 								return icon.Layout(gtx, values.MarginPadding15)
@@ -156,7 +156,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											card := scm.Theme.Card()
-											card.Radius = decredmaterial.Radius(0)
+											card.Radius = cryptomaterial.Radius(0)
 											card.Color = scm.Theme.Color.Gray4
 											inset := layout.Inset{
 												Left: values.MarginPadding5,
@@ -216,7 +216,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					icon := decredmaterial.NewIcon(scm.Theme.Icons.ActionInfo)
+					icon := cryptomaterial.NewIcon(scm.Theme.Icons.ActionInfo)
 					icon.Color = scm.Theme.Color.Gray1
 					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return icon.Layout(gtx, values.MarginPadding20)
@@ -273,7 +273,7 @@ func (scm *sendConfirmModal) contentRow(gtx layout.Context, leftValue, rightValu
 					layout.Rigid(func(gtx C) D {
 						if walletName != "" {
 							card := scm.Theme.Card()
-							card.Radius = decredmaterial.Radius(0)
+							card.Radius = cryptomaterial.Radius(0)
 							card.Color = scm.Theme.Color.Gray4
 							inset := layout.Inset{
 								Left: values.MarginPadding5,

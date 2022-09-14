@@ -8,16 +8,16 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type ticketBuyerModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -25,10 +25,10 @@ type ticketBuyerModal struct {
 	settingsSaved func()
 	onCancel      func()
 
-	cancel          decredmaterial.Button
-	saveSettingsBtn decredmaterial.Button
+	cancel          cryptomaterial.Button
+	saveSettingsBtn cryptomaterial.Button
 
-	balToMaintainEditor decredmaterial.Editor
+	balToMaintainEditor cryptomaterial.Editor
 
 	accountSelector *components.AccountSelector
 	vspSelector     *components.VSPSelector
@@ -82,7 +82,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			tb.Toast.NotifyError(err.Error())
 		}
 
-		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, false) &&
+		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
 			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
@@ -94,7 +94,7 @@ func (tb *ticketBuyerModal) OnResume() {
 		}
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
-		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(dcrlibwallet.AmountCoin(tbConfig.BalanceToMaintain), 'f', 0, 64))
+		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(libwallet.AmountCoin(tbConfig.BalanceToMaintain), 'f', 0, 64))
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
@@ -169,12 +169,12 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(selectedAccount *dcrlibwallet.Account) {}).
-		AccountValidator(func(account *dcrlibwallet.Account) bool {
+		AccountSelected(func(selectedAccount *libwallet.Account) {}).
+		AccountValidator(func(account *libwallet.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
-			accountIsValid := account.Number != dcrlibwallet.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
+			accountIsValid := account.Number != libwallet.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
 
-			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcrlibwallet.AccountMixerConfigSet, false) &&
+			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
 				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
 				accountIsValid = account.Number == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()
@@ -204,7 +204,7 @@ func (tb *ticketBuyerModal) Handle() {
 			return
 		}
 
-		balToMaintain := dcrlibwallet.AmountAtom(amount)
+		balToMaintain := libwallet.AmountAtom(amount)
 		account := tb.accountSelector.SelectedAccount()
 
 		tb.WL.SelectedWallet.Wallet.SetAutoTicketsBuyerConfig(vspHost, account.Number, balToMaintain)

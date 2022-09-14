@@ -1,18 +1,18 @@
 package wallet
 
 import (
-	"github.com/planetdecred/dcrlibwallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // TODO: responses.go file to be deprecated with future code clean up
 
 type UnspentOutput struct {
-	UTXO     dcrlibwallet.UnspentOutput
+	UTXO     libwallet.UnspentOutput
 	Amount   string
 	DateTime string
 }
 
-// UnspentOutputs wraps the dcrlibwallet UTXO type and adds processed data
+// UnspentOutputs wraps the libwallet UTXO type and adds processed data
 type UnspentOutputs struct {
 	List []*UnspentOutput
 }

@@ -1,6 +1,6 @@
 package wallet
 
-import "github.com/planetdecred/dcrlibwallet"
+import "gitlab.com/raedah/libwallet"
 
 // NewBlock is sent when a block is attached to the multiwallet.
 type NewBlock struct {
@@ -16,5 +16,5 @@ type TxConfirmed struct {
 }
 
 type NewTransaction struct {
-	Transaction *dcrlibwallet.Transaction
+	Transaction *libwallet.Transaction
 }

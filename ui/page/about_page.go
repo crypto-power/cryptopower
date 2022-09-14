@@ -3,12 +3,12 @@ package page
 import (
 	"gioui.org/layout"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 const AboutPageID = "About"
@@ -21,22 +21,22 @@ type AboutPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	card      decredmaterial.Card
+	card      cryptomaterial.Card
 	container *layout.List
 
-	version        decredmaterial.Label
-	versionValue   decredmaterial.Label
-	buildDate      decredmaterial.Label
-	buildDateValue decredmaterial.Label
-	network        decredmaterial.Label
-	networkValue   decredmaterial.Label
-	license        decredmaterial.Label
-	licenseRow     *decredmaterial.Clickable
+	version        cryptomaterial.Label
+	versionValue   cryptomaterial.Label
+	buildDate      cryptomaterial.Label
+	buildDateValue cryptomaterial.Label
+	network        cryptomaterial.Label
+	networkValue   cryptomaterial.Label
+	license        cryptomaterial.Label
+	licenseRow     *cryptomaterial.Clickable
 
-	chevronRightIcon *decredmaterial.Icon
+	chevronRightIcon *cryptomaterial.Icon
 
-	backButton decredmaterial.IconButton
-	shadowBox  *decredmaterial.Shadow
+	backButton cryptomaterial.IconButton
+	shadowBox  *cryptomaterial.Shadow
 }
 
 func NewAboutPage(l *load.Load) *AboutPage {
@@ -53,10 +53,10 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		license:          l.Theme.Body1(values.String(values.StrLicense)),
 		licenseRow:       l.Theme.NewClickable(true),
 		shadowBox:        l.Theme.Shadow(),
-		chevronRightIcon: decredmaterial.NewIcon(l.Theme.Icons.ChevronRight),
+		chevronRightIcon: cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight),
 	}
 
-	pg.licenseRow.Radius = decredmaterial.BottomRadius(14)
+	pg.licenseRow.Radius = cryptomaterial.BottomRadius(14)
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	col := pg.Theme.Color.GrayText2
@@ -64,7 +64,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	pg.buildDateValue.Color = col
 
 	netType := pg.WL.Wallet.Net
-	if pg.WL.Wallet.Net == dcrlibwallet.Testnet3 {
+	if pg.WL.Wallet.Net == libwallet.Testnet3 {
 		netType = "Testnet"
 	}
 	pg.networkValue = l.Theme.Body1(netType)

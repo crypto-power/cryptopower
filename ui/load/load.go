@@ -8,12 +8,12 @@ package load
 import (
 	"golang.org/x/text/message"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/assets"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/notification"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/assets"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/notification"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 type DCRUSDTBittrex struct {
@@ -21,7 +21,7 @@ type DCRUSDTBittrex struct {
 }
 
 type Load struct {
-	Theme *decredmaterial.Theme
+	Theme *cryptomaterial.Theme
 
 	WL              *WalletLoad
 	Printer         *message.Printer
@@ -48,6 +48,6 @@ func (l *Load) RefreshTheme(window app.WindowNavigator) {
 	window.Reload()
 }
 
-func (l *Load) Dexc() *dcrlibwallet.DexClient {
+func (l *Load) Dexc() *libwallet.DexClient {
 	return l.WL.MultiWallet.DexClient()
 }

@@ -13,12 +13,12 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gomarkdown/markdown/ast"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 )
 
 type HTMLProvider struct {
 	containers    []layout.Widget
-	theme         *decredmaterial.Theme
+	theme         *cryptomaterial.Theme
 	stringBuilder strings.Builder
 	styleGroups   []map[string]string
 	links         map[string]*widget.Clickable
@@ -39,7 +39,7 @@ const (
 	linkSpacer        = "@@@@"
 )
 
-func RenderHTML(html string, theme *decredmaterial.Theme) *HTMLProvider {
+func RenderHTML(html string, theme *cryptomaterial.Theme) *HTMLProvider {
 	htmlProvider := &HTMLProvider{
 		theme: theme,
 	}
@@ -212,7 +212,7 @@ func (p *HTMLProvider) prepareTableRow(node *ast.TableRow, entering bool) {
 	}
 }
 
-func (p *HTMLProvider) render(lbl decredmaterial.Label) {
+func (p *HTMLProvider) render(lbl cryptomaterial.Label) {
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 
@@ -220,7 +220,7 @@ func (p *HTMLProvider) render(lbl decredmaterial.Label) {
 		content = p.prefix + " " + content
 	}
 
-	var labels []decredmaterial.Label
+	var labels []cryptomaterial.Label
 	var inStyleBlock bool
 	var isClosingStyle bool
 	var isClosingBlock bool
@@ -274,7 +274,7 @@ func (p *HTMLProvider) render(lbl decredmaterial.Label) {
 	}
 
 	wdgt := func(gtx C) D {
-		return decredmaterial.GridWrap{
+		return cryptomaterial.GridWrap{
 			Axis:      layout.Horizontal,
 			Alignment: layout.Start,
 		}.Layout(gtx, len(labels), func(gtx C, i int) D {
@@ -287,7 +287,7 @@ func (p *HTMLProvider) render(lbl decredmaterial.Label) {
 	p.containers = append(p.containers, wdgt)
 }
 
-func (p *HTMLProvider) getLabel(lbl decredmaterial.Label, text string) decredmaterial.Label {
+func (p *HTMLProvider) getLabel(lbl cryptomaterial.Label, text string) cryptomaterial.Label {
 	l := lbl
 	l.Text = text
 	l = p.styleLabel(l)
@@ -319,7 +319,7 @@ func (p *HTMLProvider) addStyleGroup(str string) {
 	}
 }
 
-func (p *HTMLProvider) styleLabel(label decredmaterial.Label) decredmaterial.Label {
+func (p *HTMLProvider) styleLabel(label cryptomaterial.Label) cryptomaterial.Label {
 	if len(p.styleGroups) == 0 {
 		return label
 	}

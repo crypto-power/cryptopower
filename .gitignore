@@ -1,8 +1,8 @@
-godcr*
+cryptopower*
 _*
 *.dll
 .vscode
 .DS_Store
 *.coverprofile
-**/.godcr_test*
+**/.cryptopower_test*
 pkged.go

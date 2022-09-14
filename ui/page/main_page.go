@@ -15,23 +15,23 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/page/dexclient"
-	"github.com/planetdecred/godcr/ui/page/governance"
-	"github.com/planetdecred/godcr/ui/page/info"
-	"github.com/planetdecred/godcr/ui/page/privacy"
-	"github.com/planetdecred/godcr/ui/page/seedbackup"
-	"github.com/planetdecred/godcr/ui/page/send"
-	"github.com/planetdecred/godcr/ui/page/staking"
-	"github.com/planetdecred/godcr/ui/page/transaction"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/page/dexclient"
+	"gitlab.com/raedah/cryptopower/ui/page/governance"
+	"gitlab.com/raedah/cryptopower/ui/page/info"
+	"gitlab.com/raedah/cryptopower/ui/page/privacy"
+	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
+	"gitlab.com/raedah/cryptopower/ui/page/send"
+	"gitlab.com/raedah/cryptopower/ui/page/staking"
+	"gitlab.com/raedah/cryptopower/ui/page/transaction"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const (
@@ -50,8 +50,8 @@ var (
 
 type NavHandler struct {
 	Clickable     *widget.Clickable
-	Image         *decredmaterial.Image
-	ImageInactive *decredmaterial.Image
+	Image         *cryptomaterial.Image
+	ImageInactive *cryptomaterial.Image
 	Title         string
 	PageID        string
 }
@@ -73,11 +73,11 @@ type MainPage struct {
 	sendPage    *send.Page   // reuse value to keep data persistent onresume.
 	receivePage *ReceivePage // pointer to receive page. to avoid duplication.
 
-	hideBalanceButton      *decredmaterial.Clickable
-	refreshExchangeRateBtn *decredmaterial.Clickable
-	darkmode               *decredmaterial.Clickable
-	openWalletSelector     *decredmaterial.Clickable
-	checkBox               decredmaterial.CheckBoxStyle
+	hideBalanceButton      *cryptomaterial.Clickable
+	refreshExchangeRateBtn *cryptomaterial.Clickable
+	darkmode               *cryptomaterial.Clickable
+	openWalletSelector     *cryptomaterial.Clickable
+	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
 	dcrUsdtBittrex load.DCRUSDTBittrex
@@ -291,7 +291,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
 		mp.StartSyncing()
 		if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
-			go mp.WL.MultiWallet.Politeia.Sync()
+			go mp.WL.MultiWallet.Politeia.Sync(context.Background())
 		}
 	}
 
@@ -309,9 +309,9 @@ func (mp *MainPage) setLanguageSetting() {
 }
 
 func (mp *MainPage) updateExchangeSetting() {
-	currencyExchangeValue := mp.WL.MultiWallet.ReadStringConfigValueForKey(dcrlibwallet.CurrencyConversionConfigKey)
+	currencyExchangeValue := mp.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
 	if currencyExchangeValue == "" {
-		mp.WL.MultiWallet.SaveUserConfigValue(dcrlibwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
+		mp.WL.MultiWallet.SaveUserConfigValue(libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
 	}
 
 	usdExchangeSet := currencyExchangeValue == values.USDExchangeValue
@@ -377,7 +377,7 @@ func (mp *MainPage) StartSyncing() {
 	}
 }
 
-func (mp *MainPage) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
+func (mp *MainPage) UnlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(mp.Load).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		Hint(values.String(values.StrSpendingPassword)).
@@ -387,7 +387,7 @@ func (mp *MainPage) UnlockWalletForSyncing(wal *dcrlibwallet.Wallet) {
 				err := mp.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
 				if err != nil {
 					errText := err.Error()
-					if err.Error() == dcrlibwallet.ErrInvalidPassphrase {
+					if err.Error() == libwallet.ErrInvalidPassphrase {
 						errText = values.String(values.StrInvalidPassphrase)
 					}
 					pm.SetError(errText)
@@ -642,16 +642,16 @@ func (mp *MainPage) Layout(gtx C) D {
 func (mp *MainPage) layoutDesktop(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.MatchParent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return decredmaterial.LinearLayout{
-						Width:       decredmaterial.MatchParent,
-						Height:      decredmaterial.MatchParent,
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.MatchParent,
 						Orientation: layout.Horizontal,
 					}.Layout(gtx,
 						layout.Rigid(mp.drawerNav.LayoutNavDrawer),
@@ -735,18 +735,18 @@ func (mp *MainPage) totalDCRBalance(gtx C) D {
 }
 
 func (mp *MainPage) LayoutTopBar(gtx C) D {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Background:  mp.Theme.Color.Surface,
 		Orientation: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			h := values.MarginPadding24
 			v := values.MarginPadding8
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
 				Alignment:   layout.Middle,
 				Padding: layout.Inset{
@@ -758,9 +758,9 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 			}.GradientLayout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.W.Layout(gtx, func(gtx C) D {
-						return decredmaterial.LinearLayout{
-							Width:       decredmaterial.WrapContent,
-							Height:      decredmaterial.WrapContent,
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
 							Orientation: layout.Horizontal,
 							Alignment:   layout.Middle,
 							Clickable:   mp.openWalletSelector,
@@ -833,17 +833,17 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	case wallet.NewTransaction:
 
 		switch t.Transaction.Type {
-		case dcrlibwallet.TxTypeRegular:
-			if t.Transaction.Direction != dcrlibwallet.TxDirectionReceived {
+		case libwallet.TxTypeRegular:
+			if t.Transaction.Direction != libwallet.TxDirectionReceived {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(dcrlibwallet.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
+			amount := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
-		case dcrlibwallet.TxTypeVote:
-			reward := strconv.FormatFloat(dcrlibwallet.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
+		case libwallet.TxTypeVote:
+			reward := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
-		case dcrlibwallet.TxTypeRevocation:
+		case libwallet.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)
 		default:
 			return
@@ -884,7 +884,7 @@ func initializeBeepNotification(n string) {
 		log.Error(err.Error())
 	}
 
-	err = beeep.Notify("Decred Godcr Wallet", n, filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
+	err = beeep.Notify("Cryptopower Wallet", n, filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
 	if err != nil {
 		log.Info("could not initiate desktop notification, reason:", err.Error())
 	}
@@ -940,7 +940,7 @@ func (mp *MainPage) listenForNotifications() {
 					}
 					mp.ParentWindow().Reload()
 				case listeners.BlockAttached:
-					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(dcrlibwallet.BeepNewBlocksConfigKey, false)
+					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(libwallet.BeepNewBlocksConfigKey, false)
 					if beep {
 						err := beeep.Beep(5, 1)
 						if err != nil {

@@ -11,19 +11,19 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/page/governance"
-	"github.com/planetdecred/godcr/ui/page/info"
-	"github.com/planetdecred/godcr/ui/page/privacy"
-	"github.com/planetdecred/godcr/ui/page/staking"
-	"github.com/planetdecred/godcr/ui/page/transaction"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/page/governance"
+	"gitlab.com/raedah/cryptopower/ui/page/info"
+	"gitlab.com/raedah/cryptopower/ui/page/privacy"
+	"gitlab.com/raedah/cryptopower/ui/page/staking"
+	"gitlab.com/raedah/cryptopower/ui/page/transaction"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -54,7 +54,7 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log = backendLog.Logger("GDCR")
+	log = backendLog.Logger("CRPW")
 
 	walletLog  = backendLog.Logger("WALL")
 	winLog     = backendLog.Logger("UI")
@@ -66,7 +66,6 @@ var (
 func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
-	dcrlibwallet.UseLogger(dlwlLog)
 	page.UseLogger(winLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
@@ -84,7 +83,7 @@ var subsystemLoggers = map[string]slog.Logger{
 	"WALL": walletLog,
 	"DLWL": dlwlLog,
 	"UI":   winLog,
-	"GDCR": log,
+	"CRPW": log,
 	"LSTN": lstnersLog,
 }
 
@@ -116,7 +115,7 @@ func setLogLevel(subsystemID string, logLevel string) {
 	if !ok {
 		return
 	}
-	dcrlibwallet.SetLogLevels("info")
+	libwallet.SetLogLevels("info")
 	// Defaults to info if the log level is invalid.
 	level, _ := slog.LevelFromString(logLevel)
 	logger.SetLevel(level)

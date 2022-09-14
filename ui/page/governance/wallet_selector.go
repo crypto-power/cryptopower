@@ -8,26 +8,26 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/libwallet"
 )
 
 type WalletSelector struct {
 	*load.Load
-	multiWallet *dcrlibwallet.MultiWallet
+	multiWallet *libwallet.MultiWallet
 	dialogTitle string
 
-	walletIsValid func(*dcrlibwallet.Wallet) bool
-	callback      func(*dcrlibwallet.Wallet)
+	walletIsValid func(*libwallet.Wallet) bool
+	callback      func(*libwallet.Wallet)
 
-	openSelectorDialog *decredmaterial.Clickable
+	openSelectorDialog *cryptomaterial.Clickable
 
-	wallets        []*dcrlibwallet.Wallet
-	selectedWallet *dcrlibwallet.Wallet
+	wallets        []*libwallet.Wallet
+	selectedWallet *libwallet.Wallet
 	totalBalance   string
 }
 
@@ -37,7 +37,7 @@ func NewWalletSelector(l *load.Load) *WalletSelector {
 	return &WalletSelector{
 		Load:               l,
 		multiWallet:        l.WL.MultiWallet,
-		walletIsValid:      func(*dcrlibwallet.Wallet) bool { return true },
+		walletIsValid:      func(*libwallet.Wallet) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 
 		wallets: l.WL.SortedWalletList(),
@@ -49,12 +49,12 @@ func (as *WalletSelector) Title(title string) *WalletSelector {
 	return as
 }
 
-func (as *WalletSelector) WalletValidator(walletIsValid func(*dcrlibwallet.Wallet) bool) *WalletSelector {
+func (as *WalletSelector) WalletValidator(walletIsValid func(*libwallet.Wallet) bool) *WalletSelector {
 	as.walletIsValid = walletIsValid
 	return as
 }
 
-func (as *WalletSelector) WalletSelected(callback func(*dcrlibwallet.Wallet)) *WalletSelector {
+func (as *WalletSelector) WalletSelected(callback func(*libwallet.Wallet)) *WalletSelector {
 	as.callback = callback
 	return as
 }
@@ -64,7 +64,7 @@ func (as *WalletSelector) Handle(window app.WindowNavigator) {
 		walletSelectorModal := newWalletSelectorModal(as.Load, as.selectedWallet).
 			title(as.dialogTitle).
 			accountValidator(as.walletIsValid).
-			accountSelected(func(wallet *dcrlibwallet.Wallet) {
+			accountSelected(func(wallet *libwallet.Wallet) {
 				as.selectedWallet = wallet
 				as.setupSelectedWallet(wallet)
 				as.callback(wallet)
@@ -91,7 +91,7 @@ func (as *WalletSelector) SelectFirstValidWallet() error {
 	return errors.New(values.String(values.StrnoValidWalletFound))
 }
 
-func (as *WalletSelector) setupSelectedWallet(wallet *dcrlibwallet.Wallet) {
+func (as *WalletSelector) setupSelectedWallet(wallet *libwallet.Wallet) {
 
 	totalBalance, err := as.WL.TotalWalletBalance(wallet.ID)
 	if err != nil {
@@ -102,7 +102,7 @@ func (as *WalletSelector) setupSelectedWallet(wallet *dcrlibwallet.Wallet) {
 	as.totalBalance = totalBalance.String()
 }
 
-func (as *WalletSelector) SelectedWallet() *dcrlibwallet.Wallet {
+func (as *WalletSelector) SelectedWallet() *libwallet.Wallet {
 	return as.selectedWallet
 }
 
@@ -135,7 +135,7 @@ func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 										Left: values.MarginPadding15,
 									}
 									return inset.Layout(gtx, func(gtx C) D {
-										ic := decredmaterial.NewIcon(as.Theme.Icons.DropDownIcon)
+										ic := cryptomaterial.NewIcon(as.Theme.Icons.DropDownIcon)
 										return ic.Layout(gtx, values.MarginPadding20)
 									})
 								}),
@@ -150,22 +150,22 @@ func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 
 type WalletSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
 	isCancelable bool
 
-	walletIsValid func(*dcrlibwallet.Wallet) bool
-	callback      func(*dcrlibwallet.Wallet)
+	walletIsValid func(*libwallet.Wallet) bool
+	callback      func(*libwallet.Wallet)
 
-	walletsList *decredmaterial.ClickableList
+	walletsList *cryptomaterial.ClickableList
 
-	currentSelectedWallet *dcrlibwallet.Wallet
-	filteredWallets       []*dcrlibwallet.Wallet
+	currentSelectedWallet *libwallet.Wallet
+	filteredWallets       []*libwallet.Wallet
 }
 
-func newWalletSelectorModal(l *load.Load, currentSelectedAccount *dcrlibwallet.Wallet) *WalletSelectorModal {
+func newWalletSelectorModal(l *load.Load, currentSelectedAccount *libwallet.Wallet) *WalletSelectorModal {
 	asm := &WalletSelectorModal{
 		Load:        l,
 		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal"),
@@ -179,7 +179,7 @@ func newWalletSelectorModal(l *load.Load, currentSelectedAccount *dcrlibwallet.W
 }
 
 func (asm *WalletSelectorModal) OnResume() {
-	wallets := make([]*dcrlibwallet.Wallet, 0)
+	wallets := make([]*libwallet.Wallet, 0)
 
 	for _, wal := range asm.WL.SortedWalletList() {
 		if asm.walletIsValid(wal) {
@@ -206,12 +206,12 @@ func (asm *WalletSelectorModal) title(title string) *WalletSelectorModal {
 	return asm
 }
 
-func (asm *WalletSelectorModal) accountValidator(walletIsValid func(*dcrlibwallet.Wallet) bool) *WalletSelectorModal {
+func (asm *WalletSelectorModal) accountValidator(walletIsValid func(*libwallet.Wallet) bool) *WalletSelectorModal {
 	asm.walletIsValid = walletIsValid
 	return asm
 }
 
-func (asm *WalletSelectorModal) accountSelected(callback func(*dcrlibwallet.Wallet)) *WalletSelectorModal {
+func (asm *WalletSelectorModal) accountSelected(callback func(*libwallet.Wallet)) *WalletSelectorModal {
 	asm.callback = callback
 	return asm
 }
@@ -257,7 +257,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return asm.Modal.Layout(gtx, w)
 }
 
-func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *dcrlibwallet.Wallet) layout.Dimensions {
+func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *libwallet.Wallet) layout.Dimensions {
 
 	walletTotalBalance, _ := asm.WL.TotalWalletBalance(wallet.ID)
 	walletSpendableBalance, _ := asm.WL.SpendableWalletBalance(wallet.ID)
@@ -304,7 +304,7 @@ func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *
 						sections := func(gtx layout.Context) layout.Dimensions {
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return inset.Layout(gtx, func(gtx C) D {
-									ic := decredmaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
+									ic := cryptomaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
 									return ic.Layout(gtx, values.MarginPadding20)
 								})
 							})

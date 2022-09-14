@@ -1,5 +1,5 @@
 # This how we want to name the binary output
-BINARY=godcr
+BINARY=cryptopower
 
 VERSION="1.7.0"
 BUILD=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
@@ -7,7 +7,7 @@ BUILD=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 BuildEnv="prod" 
 
 LDFLAGS=-ldflags "-w -s -X main.Version=${VERSION} -X main.BuildDate=${BUILD} -X main.BuildEnv=${BuildEnv}"
-# LDFLAGSWIN adds the -H=windowsgui flag to windows build to prevent cli from starting alongside godcr
+# LDFLAGSWIN adds the -H=windowsgui flag to windows build to prevent cli from starting alongside cryptopower
 LDFLAGSWIN= -ldflags "-H=windowsgui -w -s -X main.Version=${VERSION} -X main.BuildDate=${BUILD} -X main.BuildEnv=${BuildEnv}"
 
 all: clean macos windows linux freebsd

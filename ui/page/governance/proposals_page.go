@@ -9,15 +9,15 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/app"
-	"github.com/planetdecred/godcr/listeners"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
-	"github.com/planetdecred/godcr/ui/load"
-	"github.com/planetdecred/godcr/ui/modal"
-	"github.com/planetdecred/godcr/ui/page/components"
-	"github.com/planetdecred/godcr/ui/values"
-	"github.com/planetdecred/godcr/wallet"
+	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/values"
+	"gitlab.com/raedah/cryptopower/wallet"
+	"gitlab.com/raedah/libwallet"
 )
 
 const ProposalsPageID = "Proposals"
@@ -40,17 +40,17 @@ type ProposalsPage struct {
 	ctxCancel  context.CancelFunc
 	proposalMu sync.Mutex
 
-	multiWallet      *dcrlibwallet.MultiWallet
+	multiWallet      *libwallet.MultiWallet
 	listContainer    *widget.List
-	orderDropDown    *decredmaterial.DropDown
-	categoryDropDown *decredmaterial.DropDown
-	proposalsList    *decredmaterial.ClickableList
+	orderDropDown    *cryptomaterial.DropDown
+	categoryDropDown *cryptomaterial.DropDown
+	proposalsList    *cryptomaterial.ClickableList
 	syncButton       *widget.Clickable
-	searchEditor     decredmaterial.Editor
+	searchEditor     cryptomaterial.Editor
 
-	infoButton decredmaterial.IconButton
+	infoButton cryptomaterial.IconButton
 
-	updatedIcon *decredmaterial.Icon
+	updatedIcon *cryptomaterial.Icon
 
 	proposalItems []*components.ProposalItem
 
@@ -70,7 +70,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
 
-	pg.updatedIcon = decredmaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
+	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
 
 	pg.syncButton = new(widget.Clickable)
@@ -84,7 +84,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	// orderDropDown is the first dropdown when page is laid out. Its
 	// position should be 0 for consistent backdrop.
 	pg.orderDropDown = components.CreateOrderDropDown(l, values.ProposalDropdownGroup, 0)
-	pg.categoryDropDown = l.Theme.DropDown([]decredmaterial.DropDownItem{
+	pg.categoryDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{
 			Text: values.String(values.StrUnderReview),
 		},
@@ -116,14 +116,14 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 func (pg *ProposalsPage) fetchProposals() {
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
 
-	proposalFilter := dcrlibwallet.ProposalCategoryAll
+	proposalFilter := libwallet.ProposalCategoryAll
 	switch pg.categoryDropDown.SelectedIndex() {
 	case 1:
-		proposalFilter = dcrlibwallet.ProposalCategoryApproved
+		proposalFilter = libwallet.ProposalCategoryApproved
 	case 2:
-		proposalFilter = dcrlibwallet.ProposalCategoryRejected
+		proposalFilter = libwallet.ProposalCategoryRejected
 	case 3:
-		proposalFilter = dcrlibwallet.ProposalCategoryAbandoned
+		proposalFilter = libwallet.ProposalCategoryAbandoned
 	}
 
 	proposalItems := components.LoadProposals(proposalFilter, newestFirst, pg.Load)
@@ -131,15 +131,15 @@ func (pg *ProposalsPage) fetchProposals() {
 	// group 'In discussion' and 'Active' proposals into under review
 	listItems := make([]*components.ProposalItem, 0)
 	for _, item := range proposalItems {
-		if item.Proposal.Category == dcrlibwallet.ProposalCategoryPre ||
-			item.Proposal.Category == dcrlibwallet.ProposalCategoryActive {
+		if item.Proposal.Category == libwallet.ProposalCategoryPre ||
+			item.Proposal.Category == libwallet.ProposalCategoryActive {
 			listItems = append(listItems, item)
 		}
 	}
 
 	pg.proposalMu.Lock()
 	pg.proposalItems = proposalItems
-	if proposalFilter == dcrlibwallet.ProposalCategoryAll {
+	if proposalFilter == libwallet.ProposalCategoryAll {
 		pg.proposalItems = listItems
 	}
 	pg.proposalMu.Unlock()
@@ -172,7 +172,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	for pg.syncButton.Clicked() {
-		go pg.multiWallet.Politeia.Sync()
+		go pg.multiWallet.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
 		//Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
@@ -196,7 +196,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		})
 	}
 
-	decredmaterial.DisplayOneDropdown(pg.orderDropDown, pg.categoryDropDown)
+	cryptomaterial.DisplayOneDropdown(pg.orderDropDown, pg.categoryDropDown)
 
 	for pg.infoButton.Button.Clicked() {
 		//TODO: proposal info modal
@@ -239,7 +239,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 					// 	card := pg.Theme.Card()
-					// 	card.Radius = decredmaterial.Radius(8)
+					// 	card.Radius = cryptomaterial.Radius(8)
 					// 	return card.Layout(gtx, func(gtx C) D {
 					// 		return layout.Inset{
 					// 			Left:   values.MarginPadding10,
@@ -253,7 +253,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return card.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
 							})
@@ -288,7 +288,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 					// 	card := pg.Theme.Card()
-					// 	card.Radius = decredmaterial.Radius(8)
+					// 	card.Radius = cryptomaterial.Radius(8)
 					// 	return card.Layout(gtx, func(gtx C) D {
 					// 		return layout.Inset{
 					// 			Left:   values.MarginPadding10,
@@ -302,7 +302,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 								return card.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
@@ -370,7 +370,7 @@ func (pg *ProposalsPage) layoutIsSyncingSection(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
-	// TODO: use decredmaterial clickable
+	// TODO: use cryptomaterial clickable
 	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
 }
 
