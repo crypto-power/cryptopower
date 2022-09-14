@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/raedah/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet"
 )
 
 // done returns whether the context's Done channel was closed due to

@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/decred/dcrd/dcrutil/v4"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
-	"gitlab.com/raedah/libwallet"
 )
 
 // ErrIDNotExist is returned when a given ID does not exist

@@ -13,11 +13,11 @@ import (
 	"gioui.org/unit"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/libwallet"
 )
 
 // VoteBar widget implements voting stat for proposals.

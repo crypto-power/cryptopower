@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"gioui.org/widget"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/libwallet"
 	"golang.org/x/text/message"
 )
 

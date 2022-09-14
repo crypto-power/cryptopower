@@ -1,8 +1,6 @@
 package wallet
 
-import (
-	"gitlab.com/raedah/libwallet"
-)
+import "gitlab.com/raedah/cryptopower/libwallet"
 
 type ProposalStatus int
 

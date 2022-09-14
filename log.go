@@ -11,6 +11,7 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -23,7 +24,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
 	"gitlab.com/raedah/cryptopower/wallet"
-	"gitlab.com/raedah/libwallet"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

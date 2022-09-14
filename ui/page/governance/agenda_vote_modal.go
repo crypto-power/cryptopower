@@ -9,11 +9,11 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/libwallet"
 )
 
 type agendaVoteModal struct {

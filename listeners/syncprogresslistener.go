@@ -1,8 +1,8 @@
 package listeners
 
 import (
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/wallet"
-	"gitlab.com/raedah/libwallet"
 )
 
 // SyncProgressListener satisfies libwallet SyncProgressListener interface

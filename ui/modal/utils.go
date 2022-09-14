@@ -4,8 +4,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/libwallet"
 )
 
 type (

@@ -7,10 +7,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/decred/dcrd/dcrutil/v4"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/libwallet"
 )
 
 const invalidAmountErr = "Invalid amount" //TODO: use localized strings

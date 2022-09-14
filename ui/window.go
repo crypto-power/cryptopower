@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/message"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/assets"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -19,7 +20,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
-	"gitlab.com/raedah/libwallet"
 )
 
 // Window represents the app window (and UI in general). There should only be one.

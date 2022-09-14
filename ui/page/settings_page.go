@@ -5,6 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -12,7 +13,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/preference"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
-	"gitlab.com/raedah/libwallet"
 )
 
 const SettingsPageID = "Settings"
