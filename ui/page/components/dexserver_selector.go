@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -23,8 +23,8 @@ type DexServerSelector struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	shadowBox       *decredmaterial.Shadow
-	knownDexServers *decredmaterial.ClickableList
+	shadowBox       *cryptomaterial.Shadow
+	knownDexServers *cryptomaterial.ClickableList
 	materialLoader  material.LoaderStyle
 
 	dexServerSelected func(server string)
@@ -99,15 +99,15 @@ func (ds *DexServerSelector) DexServersLayout(gtx C) D {
 		host := hostport[0]
 		ds.shadowBox.SetShadowRadius(14)
 
-		return decredmaterial.LinearLayout{
-			Width:      decredmaterial.WrapContent,
-			Height:     decredmaterial.WrapContent,
+		return cryptomaterial.LinearLayout{
+			Width:      cryptomaterial.WrapContent,
+			Height:     cryptomaterial.WrapContent,
 			Padding:    layout.UniformInset(values.MarginPadding18),
 			Background: ds.Theme.Color.Surface,
 			Alignment:  layout.Middle,
 			Shadow:     ds.shadowBox,
 			Margin:     layout.UniformInset(values.MarginPadding5),
-			Border:     decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+			Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 		}.Layout(gtx,
 			layout.Flexed(1, ds.Theme.Label(values.TextSize16, host).Layout),
 		)

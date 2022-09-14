@@ -17,7 +17,7 @@ import (
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -50,8 +50,8 @@ var (
 
 type NavHandler struct {
 	Clickable     *widget.Clickable
-	Image         *decredmaterial.Image
-	ImageInactive *decredmaterial.Image
+	Image         *cryptomaterial.Image
+	ImageInactive *cryptomaterial.Image
 	Title         string
 	PageID        string
 }
@@ -73,11 +73,11 @@ type MainPage struct {
 	sendPage    *send.Page   // reuse value to keep data persistent onresume.
 	receivePage *ReceivePage // pointer to receive page. to avoid duplication.
 
-	hideBalanceButton      *decredmaterial.Clickable
-	refreshExchangeRateBtn *decredmaterial.Clickable
-	darkmode               *decredmaterial.Clickable
-	openWalletSelector     *decredmaterial.Clickable
-	checkBox               decredmaterial.CheckBoxStyle
+	hideBalanceButton      *cryptomaterial.Clickable
+	refreshExchangeRateBtn *cryptomaterial.Clickable
+	darkmode               *cryptomaterial.Clickable
+	openWalletSelector     *cryptomaterial.Clickable
+	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
 	dcrUsdtBittrex load.DCRUSDTBittrex
@@ -642,16 +642,16 @@ func (mp *MainPage) Layout(gtx C) D {
 func (mp *MainPage) layoutDesktop(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.MatchParent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return decredmaterial.LinearLayout{
-						Width:       decredmaterial.MatchParent,
-						Height:      decredmaterial.MatchParent,
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.MatchParent,
 						Orientation: layout.Horizontal,
 					}.Layout(gtx,
 						layout.Rigid(mp.drawerNav.LayoutNavDrawer),
@@ -735,18 +735,18 @@ func (mp *MainPage) totalDCRBalance(gtx C) D {
 }
 
 func (mp *MainPage) LayoutTopBar(gtx C) D {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Background:  mp.Theme.Color.Surface,
 		Orientation: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			h := values.MarginPadding24
 			v := values.MarginPadding8
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
 				Alignment:   layout.Middle,
 				Padding: layout.Inset{
@@ -758,9 +758,9 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 			}.GradientLayout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.W.Layout(gtx, func(gtx C) D {
-						return decredmaterial.LinearLayout{
-							Width:       decredmaterial.WrapContent,
-							Height:      decredmaterial.WrapContent,
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
 							Orientation: layout.Horizontal,
 							Alignment:   layout.Middle,
 							Clickable:   mp.openWalletSelector,

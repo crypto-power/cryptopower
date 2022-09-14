@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
@@ -28,11 +28,11 @@ type SetupMixerAccountsPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	backButton              decredmaterial.IconButton
-	infoButton              decredmaterial.IconButton
-	autoSetupClickable      *decredmaterial.Clickable
-	manualSetupClickable    *decredmaterial.Clickable
-	autoSetupIcon, nextIcon *decredmaterial.Icon
+	backButton              cryptomaterial.IconButton
+	infoButton              cryptomaterial.IconButton
+	autoSetupClickable      *cryptomaterial.Clickable
+	manualSetupClickable    *cryptomaterial.Clickable
+	autoSetupIcon, nextIcon *cryptomaterial.Icon
 }
 
 func NewSetupMixerAccountsPage(l *load.Load) *SetupMixerAccountsPage {
@@ -42,10 +42,10 @@ func NewSetupMixerAccountsPage(l *load.Load) *SetupMixerAccountsPage {
 	}
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
-	pg.autoSetupIcon = decredmaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
+	pg.autoSetupIcon = cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
 	pg.autoSetupIcon.Color = pg.Theme.Color.Success
 
-	pg.nextIcon = decredmaterial.NewIcon(pg.Theme.Icons.NavigationArrowForward)
+	pg.nextIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationArrowForward)
 	pg.nextIcon.Color = pg.Theme.Color.Gray1
 
 	pg.autoSetupClickable = pg.Theme.NewClickable(true)
@@ -84,7 +84,7 @@ func (pg *SetupMixerAccountsPage) Layout(gtx layout.Context) layout.Dimensions {
 								layout.Rigid(func(gtx C) D {
 									txt := pg.Theme.Body1("Two dedicated accounts will be set up to use the mixer:")
 									txt.Alignment = text.Start
-									ic := decredmaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
+									ic := cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
 									ic.Color = pg.Theme.Color.Gray1
 									return layout.Inset{Top: values.MarginPadding16, Left: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 										return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,

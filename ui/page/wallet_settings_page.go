@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -18,14 +18,14 @@ import (
 const WalletSettingsPageID = "WalletSettings"
 
 type clickableRowData struct {
-	clickable *decredmaterial.Clickable
+	clickable *cryptomaterial.Clickable
 	labelText string
 	title     string
 }
 
 type accountData struct {
 	*libwallet.Account
-	clickable *decredmaterial.Clickable
+	clickable *cryptomaterial.Clickable
 }
 
 type WalletSettingsPage struct {
@@ -40,23 +40,23 @@ type WalletSettingsPage struct {
 	accounts []*accountData
 
 	pageContainer layout.List
-	accountsList  *decredmaterial.ClickableList
+	accountsList  *cryptomaterial.ClickableList
 
-	changePass, rescan, resetDexData           *decredmaterial.Clickable
-	changeAccount, checklog, checkStats        *decredmaterial.Clickable
-	changeWalletName, addAccount, deleteWallet *decredmaterial.Clickable
-	verifyMessage, validateAddr, signMessage   *decredmaterial.Clickable
-	updateConnectToPeer                        *decredmaterial.Clickable
+	changePass, rescan, resetDexData           *cryptomaterial.Clickable
+	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
+	changeWalletName, addAccount, deleteWallet *cryptomaterial.Clickable
+	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
+	updateConnectToPeer                        *cryptomaterial.Clickable
 
-	chevronRightIcon *decredmaterial.Icon
-	backButton       decredmaterial.IconButton
-	infoButton       decredmaterial.IconButton
+	chevronRightIcon *cryptomaterial.Icon
+	backButton       cryptomaterial.IconButton
+	infoButton       cryptomaterial.IconButton
 
-	fetchProposal     *decredmaterial.Switch
-	proposalNotif     *decredmaterial.Switch
-	spendUnconfirmed  *decredmaterial.Switch
-	spendUnmixedFunds *decredmaterial.Switch
-	connectToPeer     *decredmaterial.Switch
+	fetchProposal     *cryptomaterial.Switch
+	proposalNotif     *cryptomaterial.Switch
+	spendUnconfirmed  *cryptomaterial.Switch
+	spendUnmixedFunds *cryptomaterial.Switch
+	connectToPeer     *cryptomaterial.Switch
 	peerAddr          string
 }
 
@@ -89,7 +89,7 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 	}
 
-	pg.chevronRightIcon = decredmaterial.NewIcon(l.Theme.Icons.ChevronRight)
+	pg.chevronRightIcon = cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight)
 	pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -312,7 +312,7 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 	})
 }
 
-func (pg *WalletSettingsPage) sectionContent(clickable *decredmaterial.Clickable, title string) layout.Widget {
+func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
 	return func(gtx C) D {
 		return clickable.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, title)
@@ -346,7 +346,7 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 	})
 }
 
-func (pg *WalletSettingsPage) subSectionSwitch(title string, option *decredmaterial.Switch) layout.Widget {
+func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
 	return func(gtx C) D {
 		return pg.subSection(gtx, title, option.Layout)
 	}

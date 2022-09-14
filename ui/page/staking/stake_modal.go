@@ -8,7 +8,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -17,7 +17,7 @@ import (
 
 type ticketBuyerModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -25,10 +25,10 @@ type ticketBuyerModal struct {
 	settingsSaved func()
 	onCancel      func()
 
-	cancel          decredmaterial.Button
-	saveSettingsBtn decredmaterial.Button
+	cancel          cryptomaterial.Button
+	saveSettingsBtn cryptomaterial.Button
 
-	balToMaintainEditor decredmaterial.Editor
+	balToMaintainEditor cryptomaterial.Editor
 
 	accountSelector *components.AccountSelector
 	vspSelector     *components.VSPSelector

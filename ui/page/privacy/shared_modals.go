@@ -7,7 +7,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -19,14 +19,14 @@ type sharedModalConfig struct {
 	*load.Load
 	window        app.WindowNavigator
 	pageNavigator app.PageNavigator
-	checkBox      decredmaterial.CheckBoxStyle
+	checkBox      cryptomaterial.CheckBoxStyle
 }
 
 func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError, alignCenter bool) {
-	icon := decredmaterial.NewIcon(decredmaterial.MustIcon(widget.NewIcon(icons.AlertError)))
+	icon := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
 	icon.Color = conf.Theme.Color.DeepBlue
 	if !isError {
-		icon = decredmaterial.NewIcon(conf.Theme.Icons.ActionCheckCircle)
+		icon = cryptomaterial.NewIcon(conf.Theme.Icons.ActionCheckCircle)
 		icon.Color = conf.Theme.Color.Success
 	}
 
@@ -64,7 +64,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	txt := "There are existing accounts named mixed or unmixed. Please change the name to something else for now. You can change them back after the setup."
 	for _, acct := range accounts.Acc {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
-			alert := decredmaterial.NewIcon(decredmaterial.MustIcon(widget.NewIcon(icons.AlertError)))
+			alert := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
 			alert.Color = conf.Theme.Color.DeepBlue
 			info := modal.NewInfoModal(conf.Load).
 				Icon(alert).

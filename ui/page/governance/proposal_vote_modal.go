@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -19,7 +19,7 @@ import (
 
 type voteModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	detailsMu      sync.Mutex
 	detailsCancel  context.CancelFunc
@@ -33,8 +33,8 @@ type voteModal struct {
 	materialLoader material.LoaderStyle
 	yesVote        *inputVoteOptionsWidgets
 	noVote         *inputVoteOptionsWidgets
-	voteBtn        decredmaterial.Button
-	cancelBtn      decredmaterial.Button
+	voteBtn        cryptomaterial.Button
+	cancelBtn      cryptomaterial.Button
 }
 
 func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
@@ -245,7 +245,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 
 								wrap := vm.Theme.Card()
 								wrap.Color = vm.Theme.Color.Green50
-								wrap.Radius = decredmaterial.Radius(8)
+								wrap.Radius = cryptomaterial.Radius(8)
 								if voteDetails.NoVotes > 0 {
 									wrap.Radius.TopRight = 0
 									wrap.Radius.BottomRight = 0
@@ -262,7 +262,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												card := vm.Theme.Card()
 												card.Color = vm.Theme.Color.Green500
-												card.Radius = decredmaterial.Radius(4)
+												card.Radius = cryptomaterial.Radius(4)
 												return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 													gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 													gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)
@@ -286,7 +286,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 
 								wrap := vm.Theme.Card()
 								wrap.Color = vm.Theme.Color.Orange2
-								wrap.Radius = decredmaterial.Radius(8)
+								wrap.Radius = cryptomaterial.Radius(8)
 								if voteDetails.YesVotes > 0 {
 									wrap.Radius.TopLeft = 0
 									wrap.Radius.BottomLeft = 0
@@ -303,7 +303,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												card := vm.Theme.Card()
 												card.Color = vm.Theme.Color.Danger
-												card.Radius = decredmaterial.Radius(4)
+												card.Radius = cryptomaterial.Radius(4)
 												return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 													gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 													gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)
@@ -394,7 +394,7 @@ func (vm *voteModal) inputOptions(gtx layout.Context, wdg *inputVoteOptionsWidge
 						layout.Rigid(func(gtx C) D {
 							card := vm.Theme.Card()
 							card.Color = dotColor
-							card.Radius = decredmaterial.Radius(4)
+							card.Radius = cryptomaterial.Radius(4)
 							return card.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 								gtx.Constraints.Min.X += gtx.Dp(values.MarginPadding8)
 								gtx.Constraints.Min.Y += gtx.Dp(values.MarginPadding8)

@@ -14,7 +14,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -53,14 +53,14 @@ type ProposalDetails struct {
 	rejectedIcon  *widget.Icon
 	successIcon   *widget.Icon
 
-	redirectIcon *decredmaterial.Image
+	redirectIcon *cryptomaterial.Image
 
-	viewInPoliteiaBtn *decredmaterial.Clickable
-	copyRedirectURL   *decredmaterial.Clickable
+	viewInPoliteiaBtn *cryptomaterial.Clickable
+	copyRedirectURL   *cryptomaterial.Clickable
 
-	descriptionCard decredmaterial.Card
-	vote            decredmaterial.Button
-	backButton      decredmaterial.IconButton
+	descriptionCard cryptomaterial.Card
+	vote            cryptomaterial.Button
+	backButton      cryptomaterial.IconButton
 
 	voteBar            *components.VoteBar
 	loadingDescription bool
@@ -266,7 +266,7 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 				if proposal.VoteStatus == val || proposal.VoteStatus < val {
 					c := pg.Theme.Card()
 					c.Color = pg.Theme.Color.Primary
-					c.Radius = decredmaterial.Radius(9)
+					c.Radius = cryptomaterial.Radius(9)
 					lbl := pg.Theme.Body1(fmt.Sprint(val))
 					lbl.Color = pg.Theme.Color.Surface
 					if proposal.VoteStatus < val {
@@ -278,7 +278,7 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 						return layout.Inset{Left: m, Right: m}.Layout(gtx, lbl.Layout)
 					})
 				}
-				icon := decredmaterial.NewIcon(pg.successIcon)
+				icon := cryptomaterial.NewIcon(pg.successIcon)
 				icon.Color = pg.Theme.Color.Primary
 				return layout.Inset{
 					Left:   values.MarginPaddingMinus2,
@@ -327,17 +327,17 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 }
 
 func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
-	var label decredmaterial.Label
-	var icon *decredmaterial.Icon
+	var label cryptomaterial.Label
+	var icon *cryptomaterial.Icon
 	proposal := pg.proposal
 	switch proposal.Category {
 	case libwallet.ProposalCategoryApproved:
 		label = pg.Theme.Body2(values.String(values.StrApproved))
-		icon = decredmaterial.NewIcon(pg.successIcon)
+		icon = cryptomaterial.NewIcon(pg.successIcon)
 		icon.Color = pg.Theme.Color.Success
 	case libwallet.ProposalCategoryRejected:
 		label = pg.Theme.Body2(values.String(values.StrRejected))
-		icon = decredmaterial.NewIcon(pg.rejectedIcon)
+		icon = cryptomaterial.NewIcon(pg.rejectedIcon)
 		icon.Color = pg.Theme.Color.Danger
 	case libwallet.ProposalCategoryAbandoned:
 		label = pg.Theme.Body2(values.String(values.StrAbandoned))
@@ -481,7 +481,7 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	})
 }
 
-func (pg *ProposalDetails) layoutRedirect(text string, icon *decredmaterial.Image, btn *decredmaterial.Clickable) layout.Widget {
+func (pg *ProposalDetails) layoutRedirect(text string, icon *cryptomaterial.Image, btn *cryptomaterial.Clickable) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12})),

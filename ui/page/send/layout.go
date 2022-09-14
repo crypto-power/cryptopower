@@ -8,7 +8,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -121,8 +121,8 @@ func (pg *Page) layoutOptionsMenu(gtx layout.Context) {
 	inset.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding130)
 		return pg.shadowBox.Layout(gtx, func(gtx C) D {
-			optionsMenuCard := decredmaterial.Card{Color: pg.Theme.Color.Surface}
-			optionsMenuCard.Radius = decredmaterial.Radius(5)
+			optionsMenuCard := cryptomaterial.Card{Color: pg.Theme.Color.Surface}
+			optionsMenuCard.Radius = cryptomaterial.Radius(5)
 			return optionsMenuCard.Layout(gtx, func(gtx C) D {
 				return (&layout.List{Axis: layout.Vertical}).Layout(gtx, len(pg.moreItems), func(gtx C, i int) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -346,7 +346,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 							gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding1)
-							return decredmaterial.Fill(gtx, pg.Theme.Color.Gray1)
+							return cryptomaterial.Fill(gtx, pg.Theme.Color.Gray1)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -426,7 +426,7 @@ func (pg *Page) feeSection(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 	c := pg.Theme.Card()
-	c.Radius = decredmaterial.Radius(0)
+	c.Radius = cryptomaterial.Radius(0)
 	return c.Layout(gtx, func(gtx C) D {
 		return components.UniformPadding(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

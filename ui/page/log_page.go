@@ -11,7 +11,7 @@ import (
 
 	"github.com/nxadm/tail"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -32,9 +32,9 @@ type LogPage struct {
 
 	tail *tail.Tail
 
-	copyLog    *decredmaterial.Clickable
-	copyIcon   *decredmaterial.Image
-	backButton decredmaterial.IconButton
+	copyLog    *cryptomaterial.Clickable
+	copyIcon   *cryptomaterial.Image
+	backButton cryptomaterial.IconButton
 
 	logList *widget.List
 	fullLog string

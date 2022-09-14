@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -19,7 +19,7 @@ type TextInputModal struct {
 	showAccountWarnInfo bool
 	isCancelable        bool
 
-	textInput decredmaterial.Editor
+	textInput cryptomaterial.Editor
 	callback  func(string, *TextInputModal) bool
 
 	positiveButtonColor color.NRGBA
@@ -97,7 +97,7 @@ func (tm *TextInputModal) Handle() {
 	// set the positive button state
 	tm.btnPositive.SetEnabled(editorsNotEmpty(tm.textInput.Editor))
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(tm.textInput.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(tm.textInput.Editor)
 	if isChanged {
 		tm.textInput.SetError("")
 	}
@@ -141,7 +141,7 @@ func (tm *TextInputModal) Layout(gtx layout.Context) D {
 		l := func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					img := decredmaterial.NewIcon(tm.Theme.Icons.ActionInfo)
+					img := cryptomaterial.NewIcon(tm.Theme.Icons.ActionInfo)
 					img.Color = tm.Theme.Color.Gray1
 					inset := layout.Inset{Right: values.MarginPadding4}
 					return inset.Layout(gtx, func(gtx C) D {

@@ -11,7 +11,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -39,16 +39,16 @@ type ConsensusPage struct {
 
 	listContainer       *widget.List
 	syncButton          *widget.Clickable
-	viewVotingDashboard *decredmaterial.Clickable
-	copyRedirectURL     *decredmaterial.Clickable
-	redirectIcon        *decredmaterial.Image
+	viewVotingDashboard *cryptomaterial.Clickable
+	copyRedirectURL     *cryptomaterial.Clickable
+	redirectIcon        *cryptomaterial.Image
 
-	walletDropDown *decredmaterial.DropDown
-	orderDropDown  *decredmaterial.DropDown
-	consensusList  *decredmaterial.ClickableList
+	walletDropDown *cryptomaterial.DropDown
+	orderDropDown  *cryptomaterial.DropDown
+	consensusList  *cryptomaterial.ClickableList
 
-	searchEditor decredmaterial.Editor
-	infoButton   decredmaterial.IconButton
+	searchEditor cryptomaterial.Editor
+	infoButton   cryptomaterial.IconButton
 
 	syncCompleted bool
 	isSyncing     bool
@@ -248,7 +248,7 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 
 					//TODO: temp removal till after V1
 					// card := pg.Theme.Card()
-					// card.Radius = decredmaterial.Radius(8)
+					// card.Radius = cryptomaterial.Radius(8)
 					// return card.Layout(gtx, func(gtx C) D {
 					// 	return layout.Inset{
 					// 		Left:   values.MarginPadding10,
@@ -262,7 +262,7 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return card.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
 									return pg.layoutSyncSection(gtx)
@@ -313,7 +313,7 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 					//TODO: temp removal till after V1
 					// card := pg.Theme.Card()
-					// card.Radius = decredmaterial.Radius(8)
+					// card.Radius = cryptomaterial.Radius(8)
 					// return card.Layout(gtx, func(gtx C) D {
 					// 	return layout.Inset{
 					// 		Left:   values.MarginPadding10,
@@ -327,7 +327,7 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 								return card.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
@@ -404,13 +404,13 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return list.Layout(gtx, len(pg.consensusItems), func(gtx C, i int) D {
-						return decredmaterial.LinearLayout{
+						return cryptomaterial.LinearLayout{
 							Orientation: layout.Vertical,
-							Width:       decredmaterial.MatchParent,
-							Height:      decredmaterial.WrapContent,
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
 							Background:  pg.Theme.Color.Surface,
 							Direction:   layout.W,
-							Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
 							Layout2(gtx, func(gtx C) D {
@@ -427,7 +427,7 @@ func (pg *ConsensusPage) layoutSyncSection(gtx C) D {
 	if pg.isSyncing {
 		return pg.layoutIsSyncingSection(gtx)
 	} else if pg.syncCompleted {
-		updatedIcon := decredmaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
+		updatedIcon := cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 		updatedIcon.Color = pg.Theme.Color.Success
 		return updatedIcon.Layout(gtx, values.MarginPadding20)
 	}
@@ -444,6 +444,6 @@ func (pg *ConsensusPage) layoutIsSyncingSection(gtx C) D {
 }
 
 func (pg *ConsensusPage) layoutStartSyncSection(gtx C) D {
-	// TODO: use decredmaterial clickable
+	// TODO: use cryptomaterial clickable
 	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
 }

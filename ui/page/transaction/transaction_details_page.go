@@ -11,7 +11,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -22,12 +22,12 @@ import (
 const TransactionDetailsPageID = "TransactionDetails"
 
 type transactionWdg struct {
-	confirmationIcons    *decredmaterial.Image
-	icon                 *decredmaterial.Image
+	confirmationIcons    *cryptomaterial.Image
+	icon                 *cryptomaterial.Image
 	title                string
-	time, status, wallet decredmaterial.Label
+	time, status, wallet cryptomaterial.Label
 
-	copyTextButtons []decredmaterial.Button
+	copyTextButtons []cryptomaterial.Button
 }
 
 type TxDetailsPage struct {
@@ -43,19 +43,19 @@ type TxDetailsPage struct {
 	transactionDetailsPageContainer layout.List
 	transactionInputsContainer      layout.List
 	transactionOutputsContainer     layout.List
-	associatedTicketClickable       *decredmaterial.Clickable
+	associatedTicketClickable       *cryptomaterial.Clickable
 	hashClickable                   *widget.Clickable
 	destAddressClickable            *widget.Clickable
-	dot                             *decredmaterial.Icon
-	toDcrdata                       *decredmaterial.Clickable
-	outputsCollapsible              *decredmaterial.Collapsible
-	inputsCollapsible               *decredmaterial.Collapsible
-	backButton                      decredmaterial.IconButton
-	infoButton                      decredmaterial.IconButton
-	rebroadcast                     decredmaterial.Label
-	rebroadcastClickable            *decredmaterial.Clickable
-	rebroadcastIcon                 *decredmaterial.Image
-	copyRedirectURL                 *decredmaterial.Clickable
+	dot                             *cryptomaterial.Icon
+	toDcrdata                       *cryptomaterial.Clickable
+	outputsCollapsible              *cryptomaterial.Collapsible
+	inputsCollapsible               *cryptomaterial.Collapsible
+	backButton                      cryptomaterial.IconButton
+	infoButton                      cryptomaterial.IconButton
+	rebroadcast                     cryptomaterial.Label
+	rebroadcastClickable            *cryptomaterial.Clickable
+	rebroadcastIcon                 *cryptomaterial.Image
+	copyRedirectURL                 *cryptomaterial.Clickable
 
 	txnWidgets    transactionWdg
 	transaction   *libwallet.Transaction
@@ -105,7 +105,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction)
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
-	pg.dot = decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 	pg.dot.Color = l.Theme.Color.Gray1
 
 	return pg
@@ -240,9 +240,9 @@ func (pg *TxDetailsPage) layoutMobile(gtx layout.Context, body layout.Widget) la
 }
 
 func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensions {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Padding:     layout.UniformInset(values.MarginPadding16),
 	}.Layout(gtx,
@@ -281,13 +281,13 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 								if !pg.rebroadcastClickable.Enabled() {
 									gtx = pg.rebroadcastClickable.SetEnabled(false, &gtx)
 								}
-								return decredmaterial.LinearLayout{
-									Width:     decredmaterial.WrapContent,
-									Height:    decredmaterial.WrapContent,
+								return cryptomaterial.LinearLayout{
+									Width:     cryptomaterial.WrapContent,
+									Height:    cryptomaterial.WrapContent,
 									Clickable: pg.rebroadcastClickable,
 									Direction: layout.Center,
 									Alignment: layout.Middle,
-									Border:    decredmaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: decredmaterial.Radius(10)},
+									Border:    cryptomaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: cryptomaterial.Radius(10)},
 									Padding:   layout.Inset{Top: values.MarginPadding3, Bottom: values.MarginPadding3, Left: values.MarginPadding8, Right: values.MarginPadding8},
 									Margin:    layout.Inset{Left: values.MarginPadding10},
 								}.Layout(gtx,
@@ -358,9 +358,9 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 }
 
 func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Margin:      layout.Inset{Top: values.MarginPadding12},
 	}.Layout(gtx,
@@ -379,7 +379,7 @@ func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
 			progress.TrackColor = pg.Theme.Color.BlueProgressTint
 			progress.Height = values.MarginPadding8
 			progress.Width = values.MarginPadding80
-			progress.Radius = decredmaterial.Radius(8)
+			progress.Radius = cryptomaterial.Radius(8)
 
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{
@@ -406,9 +406,9 @@ func (pg *TxDetailsPage) ticketDetails(gtx C) D {
 		Axis: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Vertical,
 				Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
 			}.Layout(gtx,
@@ -486,9 +486,9 @@ func (pg *TxDetailsPage) associatedTicket(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.associatedTicketClickable.Layout(gtx, func(gtx C) D {
-				return decredmaterial.LinearLayout{
-					Width:       decredmaterial.MatchParent,
-					Height:      decredmaterial.WrapContent,
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Horizontal,
 					Padding:     layout.Inset{Left: values.MarginPadding16, Top: values.MarginPadding12, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
 				}.Layout(gtx,
@@ -516,9 +516,9 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 func (pg *TxDetailsPage) txnTypeAndID(gtx layout.Context) layout.Dimensions {
 	transaction := pg.transaction
 	m := values.MarginPadding12
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Padding:     layout.UniformInset(values.MarginPadding16),
 	}.Layout(gtx,
@@ -585,7 +585,7 @@ func (pg *TxDetailsPage) txnInfoSection(gtx layout.Context, label, value string,
 				layout.Rigid(func(gtx C) D {
 					if showWalletBadge {
 						card := pg.Theme.Card()
-						card.Radius = decredmaterial.Radius(0)
+						card.Radius = cryptomaterial.Radius(0)
 						card.Color = pg.Theme.Color.Gray4
 						return card.Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
@@ -691,7 +691,7 @@ func (pg *TxDetailsPage) txnIORow(gtx layout.Context, amount int64, acctNum int3
 							}),
 							layout.Rigid(func(gtx C) D {
 								card := pg.Theme.Card()
-								card.Radius = decredmaterial.Radius(0)
+								card.Radius = cryptomaterial.Radius(0)
 								card.Color = pg.Theme.Color.Gray4
 								return card.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
@@ -880,7 +880,7 @@ func initTxnWidgets(l *load.Load, transaction *libwallet.Transaction) transactio
 	txn.icon = txStatus.Icon
 
 	x := len(transaction.Inputs) + len(transaction.Outputs)
-	txn.copyTextButtons = make([]decredmaterial.Button, x)
+	txn.copyTextButtons = make([]cryptomaterial.Button, x)
 	for i := 0; i < x; i++ {
 		btn := l.Theme.OutlineButton("")
 		btn.TextSize = values.TextSize14

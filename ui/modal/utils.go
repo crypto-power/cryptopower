@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/libwallet"
 )
 
@@ -22,7 +22,7 @@ func editorsNotEmpty(editors ...*widget.Editor) bool {
 	return true
 }
 
-func computePasswordStrength(pb *decredmaterial.ProgressBarStyle, th *decredmaterial.Theme, editors ...*widget.Editor) {
+func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
 	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength)

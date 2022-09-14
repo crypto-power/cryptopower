@@ -7,7 +7,7 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -24,11 +24,11 @@ type startPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	addWalletButton decredmaterial.Button
+	addWalletButton cryptomaterial.Button
 
 	// to be removed after full layout migration
-	newlayout    decredmaterial.Button
-	legacyLayout decredmaterial.Button
+	newlayout    cryptomaterial.Button
+	legacyLayout cryptomaterial.Button
 
 	loading bool
 }

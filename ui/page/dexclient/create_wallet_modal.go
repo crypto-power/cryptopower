@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -21,15 +21,15 @@ import (
 
 type createWalletModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
 	sourceAccountSelector *components.AccountSelector
-	submitBtn             decredmaterial.Button
-	cancelBtn             decredmaterial.Button
-	walletPassword        decredmaterial.Editor
+	submitBtn             cryptomaterial.Button
+	cancelBtn             cryptomaterial.Button
+	walletPassword        cryptomaterial.Editor
 	walletInfoWidget      *walletInfoWidget
 	materialLoader        material.LoaderStyle
 	isSending             bool
@@ -39,7 +39,7 @@ type createWalletModal struct {
 }
 
 type walletInfoWidget struct {
-	image    *decredmaterial.Image
+	image    *cryptomaterial.Image
 	coinName string
 	coinID   uint32
 }
@@ -114,7 +114,7 @@ func (md *createWalletModal) validateInputs(isRequiredWalletPassword bool) (bool
 func (md *createWalletModal) Handle() {
 	canSubmit, walletPass := md.validateInputs(md.walletInfoWidget.coinID == dcr.BipID)
 
-	if isWalletPasswordSubmit, _ := decredmaterial.HandleEditorEvents(md.walletPassword.Editor); isWalletPasswordSubmit {
+	if isWalletPasswordSubmit, _ := cryptomaterial.HandleEditorEvents(md.walletPassword.Editor); isWalletPasswordSubmit {
 		if canSubmit {
 			md.doCreateWallet([]byte(walletPass))
 		}

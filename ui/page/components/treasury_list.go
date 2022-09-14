@@ -8,7 +8,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -18,7 +18,7 @@ type TreasuryItem struct {
 	Policy            libwallet.TreasuryKeyPolicy
 	OptionsRadioGroup *widget.Enum
 	VoteChoices       [3]string
-	SetChoiceButton   decredmaterial.Button
+	SetChoiceButton   cryptomaterial.Button
 }
 
 func (t *TreasuryItem) SetVoteChoices(voteChoices [3]string) {
@@ -50,16 +50,16 @@ func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy libwallet.TreasuryKeyPol
 			return lbl.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
+			return cryptomaterial.LinearLayout{
 				Background: backgroundColor,
-				Width:      decredmaterial.WrapContent,
-				Height:     decredmaterial.WrapContent,
+				Width:      cryptomaterial.WrapContent,
+				Height:     cryptomaterial.WrapContent,
 				Direction:  layout.Center,
 				Alignment:  layout.Middle,
-				Border: decredmaterial.Border{
+				Border: cryptomaterial.Border{
 					Color:  backgroundColor,
 					Width:  values.MarginPadding1,
-					Radius: decredmaterial.Radius(4),
+					Radius: cryptomaterial.Radius(4),
 				},
 				Padding: layout.Inset{
 					Top:    values.MarginPadding3,

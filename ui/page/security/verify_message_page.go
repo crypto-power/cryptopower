@@ -7,7 +7,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -24,12 +24,12 @@ type VerifyMessagePage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	addressEditor          decredmaterial.Editor
-	messageEditor          decredmaterial.Editor
-	signatureEditor        decredmaterial.Editor
-	clearBtn, verifyButton decredmaterial.Button
-	backButton             decredmaterial.IconButton
-	infoButton             decredmaterial.IconButton
+	addressEditor          cryptomaterial.Editor
+	messageEditor          cryptomaterial.Editor
+	signatureEditor        cryptomaterial.Editor
+	clearBtn, verifyButton cryptomaterial.Button
+	backButton             cryptomaterial.IconButton
+	infoButton             cryptomaterial.IconButton
 
 	addressIsValid     bool
 	EnableEditorSwitch bool
@@ -118,7 +118,7 @@ func (pg *VerifyMessagePage) layoutMobile(gtx layout.Context, body layout.Widget
 	return components.UniformMobile(gtx, false, false, body)
 }
 
-func (pg *VerifyMessagePage) inputRow(editor decredmaterial.Editor) layout.Widget {
+func (pg *VerifyMessagePage) inputRow(editor cryptomaterial.Editor) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, editor.Layout)
 	}
@@ -158,7 +158,7 @@ func (pg *VerifyMessagePage) verifyAndClearButtons() layout.Widget {
 func (pg *VerifyMessagePage) HandleUserInteractions() {
 	pg.verifyButton.SetEnabled(pg.updateBtn())
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor, pg.signatureEditor.Editor)
 	if isChanged {
 		if pg.addressEditor.Editor.Focused() {
 			pg.validateAddress()
@@ -167,22 +167,22 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 
 	if (pg.verifyButton.Clicked() || isSubmit) && pg.validateAllInputs() {
 
-		var verifyMessageStatus *decredmaterial.Icon
+		var verifyMessageStatus *cryptomaterial.Icon
 		var verifyMessageText string
 
 		valid, err := pg.WL.MultiWallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
 		if err != nil {
 			verifyMessageText = values.StringF(values.StrVerifyMsgError, err)
-			verifyMessageStatus = decredmaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
+			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
 			verifyMessageStatus.Color = pg.Theme.Color.Danger
 
 		} else if !valid {
 			verifyMessageText = values.String(values.StrInvalidSignature)
-			verifyMessageStatus = decredmaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
+			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
 			verifyMessageStatus.Color = pg.Theme.Color.Danger
 
 		} else {
-			verifyMessageStatus = decredmaterial.NewIcon(pg.Theme.Icons.ActionCheck)
+			verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheck)
 			verifyMessageStatus.Color = pg.Theme.Color.Success
 			verifyMessageText = values.String(values.StrValidSignature)
 		}
@@ -208,7 +208,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *VerifyMessagePage) KeysToHandle() key.Set {
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -216,7 +216,7 @@ func (pg *VerifyMessagePage) KeysToHandle() key.Set {
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *VerifyMessagePage) HandleKeyEvent(evt *key.Event) {
 	// Switch editors on tab press.
-	decredmaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
+	cryptomaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.signatureEditor.Editor, pg.messageEditor.Editor)
 }
 
 func (pg *VerifyMessagePage) validateAllInputs() bool {

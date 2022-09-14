@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -36,12 +36,12 @@ type TreasuryPage struct {
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List
-	viewGovernanceKeys *decredmaterial.Clickable
-	copyRedirectURL    *decredmaterial.Clickable
-	redirectIcon       *decredmaterial.Image
+	viewGovernanceKeys *cryptomaterial.Clickable
+	copyRedirectURL    *cryptomaterial.Clickable
+	redirectIcon       *cryptomaterial.Image
 
-	searchEditor decredmaterial.Editor
-	infoButton   decredmaterial.IconButton
+	searchEditor cryptomaterial.Editor
+	infoButton   cryptomaterial.IconButton
 
 	isPolicyFetchInProgress bool
 }
@@ -244,13 +244,13 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return list.Layout(gtx, len(pg.treasuryItems), func(gtx C, i int) D {
-						return decredmaterial.LinearLayout{
+						return cryptomaterial.LinearLayout{
 							Orientation: layout.Vertical,
-							Width:       decredmaterial.MatchParent,
-							Height:      decredmaterial.WrapContent,
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
 							Background:  pg.Theme.Color.Surface,
 							Direction:   layout.W,
-							Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
 							Layout2(gtx, func(gtx C) D {

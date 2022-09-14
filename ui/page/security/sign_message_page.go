@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -39,15 +39,15 @@ type SignMessagePage struct {
 	messageIsValid   bool
 	isEnabled        bool
 
-	titleLabel, errorLabel, signedMessageLabel decredmaterial.Label
-	addressEditor, messageEditor               decredmaterial.Editor
-	clearButton, signButton, copyButton        decredmaterial.Button
-	copySignature                              *decredmaterial.Clickable
-	copyIcon                                   *decredmaterial.Image
+	titleLabel, errorLabel, signedMessageLabel cryptomaterial.Label
+	addressEditor, messageEditor               cryptomaterial.Editor
+	clearButton, signButton, copyButton        cryptomaterial.Button
+	copySignature                              *cryptomaterial.Clickable
+	copyIcon                                   *cryptomaterial.Image
 	gtx                                        *C
 
-	backButton decredmaterial.IconButton
-	infoButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 }
 
 func NewSignMessagePage(l *load.Load) *SignMessagePage {
@@ -154,7 +154,7 @@ func (pg *SignMessagePage) description() layout.Widget {
 	}
 }
 
-func (pg *SignMessagePage) editors(editor decredmaterial.Editor) layout.Widget {
+func (pg *SignMessagePage) editors(editor cryptomaterial.Editor) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, editor.Layout)
 	}
@@ -259,7 +259,7 @@ func (pg *SignMessagePage) updateButtonColors() {
 func (pg *SignMessagePage) HandleUserInteractions() {
 	pg.updateButtonColors()
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor, pg.messageEditor.Editor)
 	if isChanged {
 		if pg.addressEditor.Editor.Focused() {
 			pg.validateAddress()
@@ -307,7 +307,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *SignMessagePage) KeysToHandle() key.Set {
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -315,7 +315,7 @@ func (pg *SignMessagePage) KeysToHandle() key.Set {
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *SignMessagePage) HandleKeyPress(evt *key.Event) {
 	// Switch editors when tab key is pressed.
-	decredmaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.messageEditor.Editor)
+	cryptomaterial.SwitchEditors(evt, pg.addressEditor.Editor, pg.messageEditor.Editor)
 }
 
 func (pg *SignMessagePage) validate() bool {

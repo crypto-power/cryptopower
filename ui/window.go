@@ -13,7 +13,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/assets"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/notification"
 	"gitlab.com/raedah/cryptopower/ui/page"
@@ -79,7 +79,7 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 }
 
 func (win *Window) NewLoad() (*load.Load, error) {
-	th := decredmaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
+	th := cryptomaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
 	}
@@ -216,7 +216,7 @@ func (win *Window) handleRelevantKeyPresses(evt system.FrameEvent) {
 // system.FrameEvent.Frame(ops).
 func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 	backgroundWidget := layout.Expanded(func(gtx C) D {
-		return decredmaterial.Fill(gtx, win.load.Theme.Color.Gray4)
+		return cryptomaterial.Fill(gtx, win.load.Theme.Color.Gray4)
 	})
 
 	currentPageWidget := layout.Stacked(func(gtx C) D {

@@ -9,7 +9,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 )
 
 type cellAlign int
@@ -33,11 +33,11 @@ type row struct {
 }
 
 type table struct {
-	theme *decredmaterial.Theme
+	theme *cryptomaterial.Theme
 	rows  []row
 }
 
-func newTable(theme *decredmaterial.Theme) *table {
+func newTable(theme *cryptomaterial.Theme) *table {
 	return &table{
 		theme: theme,
 	}
@@ -148,7 +148,7 @@ func (t *table) render() layout.Widget {
 				layout.Expanded(func(gtx C) D {
 					border := widget.Border{Color: t.theme.Color.Gray2, CornerRadius: unit.Dp(0), Width: unit.Dp(1)}
 					return border.Layout(gtx, func(gtx C) D {
-						return decredmaterial.Fill(gtx, bgCol)
+						return cryptomaterial.Fill(gtx, bgCol)
 					})
 				}),
 				layout.Stacked(func(gtx C) D {

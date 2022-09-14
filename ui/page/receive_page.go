@@ -17,7 +17,7 @@ import (
 
 	qrcode "github.com/yeqown/go-qrcode"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -45,17 +45,17 @@ type ReceivePage struct {
 	isNewAddr, isInfo bool
 	currentAddress    string
 	qrImage           *image.Image
-	newAddr, copy     decredmaterial.Button
-	info, more        decredmaterial.IconButton
-	card              decredmaterial.Card
-	receiveAddress    decredmaterial.Label
+	newAddr, copy     cryptomaterial.Button
+	info, more        cryptomaterial.IconButton
+	card              cryptomaterial.Card
+	receiveAddress    cryptomaterial.Label
 	ops               *op.Ops
 	selector          *components.AccountSelector
-	copyAddressButton decredmaterial.Button
+	copyAddressButton cryptomaterial.Button
 
 	backdrop   *widget.Clickable
-	backButton decredmaterial.IconButton
-	infoButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 }
 
 func NewReceivePage(l *load.Load) *ReceivePage {
@@ -69,7 +69,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		scrollContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		info:           l.Theme.IconButton(decredmaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
+		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:           l.Theme.Button(values.String(values.StrCopy)),
 		more:           l.Theme.IconButton(l.Theme.Icons.NavMoreIcon),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
@@ -398,14 +398,14 @@ func (pg *ReceivePage) titleLayout(gtx C) D {
 }
 
 func (pg *ReceivePage) addressLayout(gtx C) D {
-	card := decredmaterial.Card{
+	card := cryptomaterial.Card{
 		Color: pg.Theme.Color.Gray4,
 	}
 
 	return layout.Inset{Top: values.MarginPadding14, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				card.Radius = decredmaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
+				card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
 				return card.Layout(gtx, func(gtx C) D {
 					return layout.Inset{
 						Top:    values.MarginPadding16,
@@ -422,7 +422,7 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D { return D{} })
 			}),
 			layout.Rigid(func(gtx C) D {
-				card.Radius = decredmaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
+				card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
 				return card.Layout(gtx, pg.copy.Layout)
 			}),
 		)

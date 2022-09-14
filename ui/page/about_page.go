@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -21,22 +21,22 @@ type AboutPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	card      decredmaterial.Card
+	card      cryptomaterial.Card
 	container *layout.List
 
-	version        decredmaterial.Label
-	versionValue   decredmaterial.Label
-	buildDate      decredmaterial.Label
-	buildDateValue decredmaterial.Label
-	network        decredmaterial.Label
-	networkValue   decredmaterial.Label
-	license        decredmaterial.Label
-	licenseRow     *decredmaterial.Clickable
+	version        cryptomaterial.Label
+	versionValue   cryptomaterial.Label
+	buildDate      cryptomaterial.Label
+	buildDateValue cryptomaterial.Label
+	network        cryptomaterial.Label
+	networkValue   cryptomaterial.Label
+	license        cryptomaterial.Label
+	licenseRow     *cryptomaterial.Clickable
 
-	chevronRightIcon *decredmaterial.Icon
+	chevronRightIcon *cryptomaterial.Icon
 
-	backButton decredmaterial.IconButton
-	shadowBox  *decredmaterial.Shadow
+	backButton cryptomaterial.IconButton
+	shadowBox  *cryptomaterial.Shadow
 }
 
 func NewAboutPage(l *load.Load) *AboutPage {
@@ -53,10 +53,10 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		license:          l.Theme.Body1(values.String(values.StrLicense)),
 		licenseRow:       l.Theme.NewClickable(true),
 		shadowBox:        l.Theme.Shadow(),
-		chevronRightIcon: decredmaterial.NewIcon(l.Theme.Icons.ChevronRight),
+		chevronRightIcon: cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight),
 	}
 
-	pg.licenseRow.Radius = decredmaterial.BottomRadius(14)
+	pg.licenseRow.Radius = cryptomaterial.BottomRadius(14)
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	col := pg.Theme.Color.GrayText2

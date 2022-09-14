@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -22,17 +22,17 @@ const CreateWalletID = "create_wallet"
 const defaultWalletName = "myWallet"
 
 type walletType struct {
-	clickable *decredmaterial.Clickable
-	logo      *decredmaterial.Image
+	clickable *cryptomaterial.Clickable
+	logo      *cryptomaterial.Image
 	name      string
-	border    decredmaterial.Border
+	border    cryptomaterial.Border
 }
 
 type decredAction struct {
 	title     string
-	clickable *decredmaterial.Clickable
+	clickable *cryptomaterial.Clickable
 	action    func()
-	border    decredmaterial.Border
+	border    cryptomaterial.Border
 	width     unit.Dp
 }
 
@@ -51,16 +51,16 @@ type CreateWallet struct {
 	walletTypes   []*walletType
 	decredActions []*decredAction
 
-	walletTypeList *decredmaterial.ClickableList
+	walletTypeList *cryptomaterial.ClickableList
 
-	walletName         decredmaterial.Editor
-	watchOnlyWalletHex decredmaterial.Editor
-	watchOnlyCheckBox  decredmaterial.CheckBoxStyle
+	walletName         cryptomaterial.Editor
+	watchOnlyWalletHex cryptomaterial.Editor
+	watchOnlyCheckBox  cryptomaterial.CheckBoxStyle
 
-	continueBtn decredmaterial.Button
-	restoreBtn  decredmaterial.Button
-	importBtn   decredmaterial.Button
-	backButton  decredmaterial.IconButton
+	continueBtn cryptomaterial.Button
+	restoreBtn  cryptomaterial.Button
+	importBtn   cryptomaterial.Button
+	backButton  cryptomaterial.IconButton
 
 	selectedWalletType         int
 	selectedDecredWalletAction int
@@ -122,12 +122,12 @@ func (pg *CreateWallet) initPageItems() {
 		},
 	}
 
-	leftRadius := decredmaterial.CornerRadius{
+	leftRadius := cryptomaterial.CornerRadius{
 		TopLeft:    8,
 		BottomLeft: 8,
 	}
 
-	rightRadius := decredmaterial.CornerRadius{
+	rightRadius := cryptomaterial.CornerRadius{
 		TopRight:    8,
 		BottomRight: 8,
 	}
@@ -136,7 +136,7 @@ func (pg *CreateWallet) initPageItems() {
 		{
 			title:     values.String(values.StrNewWallet),
 			clickable: pg.Theme.NewClickable(true),
-			border: decredmaterial.Border{
+			border: cryptomaterial.Border{
 				Radius: leftRadius,
 				Color:  pg.Theme.Color.Gray1,
 				Width:  values.MarginPadding2,
@@ -146,7 +146,7 @@ func (pg *CreateWallet) initPageItems() {
 		{
 			title:     values.String(values.StrRestoreExistingWallet),
 			clickable: pg.Theme.NewClickable(true),
-			border: decredmaterial.Border{
+			border: cryptomaterial.Border{
 				Radius: rightRadius,
 				Color:  pg.Theme.Color.Gray1,
 				Width:  values.MarginPadding2,
@@ -187,14 +187,14 @@ func (pg *CreateWallet) Layout(gtx C) D {
 		},
 	}
 
-	return decredmaterial.LinearLayout{
-		Width:     decredmaterial.MatchParent,
-		Height:    decredmaterial.MatchParent,
+	return cryptomaterial.LinearLayout{
+		Width:     cryptomaterial.MatchParent,
+		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Width:     gtx.Dp(values.MarginPadding377),
-			Height:    decredmaterial.MatchParent,
+			Height:    cryptomaterial.MatchParent,
 			Alignment: layout.Middle,
 			Margin: layout.Inset{
 				Top:    values.MarginPadding44,
@@ -232,13 +232,13 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 			backgroundColor = pg.Theme.Color.Gray2
 		}
 
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Width:       gtx.Dp(values.MarginPadding172),
 			Height:      gtx.Dp(values.MarginPadding174),
 			Orientation: layout.Vertical,
 			Alignment:   layout.Middle,
 			Direction:   layout.Center,
-			Border: decredmaterial.Border{
+			Border: cryptomaterial.Border{
 				Color: pg.Theme.Color.Gray2,
 				Width: values.MarginPadding2,
 			},
@@ -276,9 +276,9 @@ func (pg *CreateWallet) decredWalletOptions(gtx C) D {
 					col = pg.Theme.Color.Gray2
 				}
 
-				return decredmaterial.LinearLayout{
+				return cryptomaterial.LinearLayout{
 					Width:       gtx.Dp(item.width),
-					Height:      decredmaterial.WrapContent,
+					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Vertical,
 					Alignment:   layout.Middle,
 					Direction:   layout.Center,
@@ -409,7 +409,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// editor event listener
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(pg.walletName.Editor, pg.watchOnlyWalletHex.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.walletName.Editor, pg.watchOnlyWalletHex.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")

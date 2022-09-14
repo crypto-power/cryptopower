@@ -10,7 +10,7 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -25,9 +25,9 @@ type Page struct {
 
 	multiWallet *libwallet.MultiWallet
 
-	tabCategoryList        *decredmaterial.ClickableList
-	splashScreenInfoButton decredmaterial.IconButton
-	enableGovernanceBtn    decredmaterial.Button
+	tabCategoryList        *cryptomaterial.ClickableList
+	splashScreenInfoButton cryptomaterial.IconButton
+	enableGovernanceBtn    cryptomaterial.Button
 }
 
 var governanceTabTitles = []string{

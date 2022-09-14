@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -32,9 +32,9 @@ type ManualMixerSetupPage struct {
 	mixedAccountSelector   *components.AccountSelector
 	unmixedAccountSelector *components.AccountSelector
 
-	backButton     decredmaterial.IconButton
-	infoButton     decredmaterial.IconButton
-	toPrivacySetup decredmaterial.Button
+	backButton     cryptomaterial.IconButton
+	infoButton     cryptomaterial.IconButton
+	toPrivacySetup cryptomaterial.Button
 }
 
 func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {

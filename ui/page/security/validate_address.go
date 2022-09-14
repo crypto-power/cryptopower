@@ -6,7 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -30,10 +30,10 @@ type ValidateAddressPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	addressEditor         decredmaterial.Editor
-	clearBtn, validateBtn decredmaterial.Button
+	addressEditor         cryptomaterial.Editor
+	clearBtn, validateBtn cryptomaterial.Button
 	stateValidate         int
-	backButton            decredmaterial.IconButton
+	backButton            cryptomaterial.IconButton
 }
 
 func NewValidateAddressPage(l *load.Load) *ValidateAddressPage {
@@ -170,7 +170,7 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 func (pg *ValidateAddressPage) HandleUserInteractions() {
 	pg.validateBtn.SetEnabled(components.StringNotEmpty(pg.addressEditor.Editor.Text()))
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(pg.addressEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor)
 	if isChanged {
 		pg.stateValidate = none
 	}
@@ -198,15 +198,15 @@ func (pg *ValidateAddressPage) validateAddress() {
 		return
 	}
 
-	var verifyMessageStatus *decredmaterial.Icon
+	var verifyMessageStatus *cryptomaterial.Icon
 	var verifyMessageText string
 
 	if !pg.WL.MultiWallet.IsAddressValid(address) {
 		verifyMessageText = values.String(values.StrInvalidAddress)
-		verifyMessageStatus = decredmaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
+		verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
 		verifyMessageStatus.Color = pg.Theme.Color.Danger
 	} else {
-		verifyMessageStatus = decredmaterial.NewIcon(pg.Theme.Icons.ActionCheck)
+		verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheck)
 		verifyMessageStatus.Color = pg.Theme.Color.Success
 
 		if !pg.WL.SelectedWallet.Wallet.HaveAddress(address) {

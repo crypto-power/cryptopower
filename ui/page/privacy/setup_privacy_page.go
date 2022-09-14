@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -35,10 +35,10 @@ type SetupPrivacyPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer  layout.List
-	toPrivacySetup decredmaterial.Button
+	toPrivacySetup cryptomaterial.Button
 
-	backButton decredmaterial.IconButton
-	infoButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 }
 
 func NewSetupPrivacyPage(l *load.Load) *SetupPrivacyPage {

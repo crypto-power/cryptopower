@@ -9,7 +9,7 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -17,8 +17,8 @@ import (
 
 type ProposalItem struct {
 	Proposal     libwallet.Proposal
-	tooltip      *decredmaterial.Tooltip
-	tooltipLabel decredmaterial.Label
+	tooltip      *cryptomaterial.Tooltip
+	tooltipLabel cryptomaterial.Label
 	voteBar      *VoteBar
 }
 
@@ -64,7 +64,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
 
-	var categoryLabel decredmaterial.Label
+	var categoryLabel cryptomaterial.Label
 	var categoryLabelColor color.NRGBA
 	switch proposal.Category {
 	case libwallet.ProposalCategoryApproved:
@@ -131,7 +131,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 									rect.Max.Y = 20
 									layoutInfoTooltip(gtx, rect, *item)
 
-									infoIcon := decredmaterial.NewIcon(l.Theme.Icons.ActionInfo)
+									infoIcon := cryptomaterial.NewIcon(l.Theme.Icons.ActionInfo)
 									infoIcon.Color = l.Theme.Color.GrayText2
 									return infoIcon.Layout(gtx, values.MarginPadding20)
 								})

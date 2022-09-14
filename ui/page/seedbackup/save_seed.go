@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -39,11 +39,11 @@ type SaveSeedPage struct {
 
 	wallet *libwallet.Wallet
 
-	backButton   decredmaterial.IconButton
-	actionButton decredmaterial.Button
+	backButton   cryptomaterial.IconButton
+	actionButton cryptomaterial.Button
 	seedList     *widget.List
-	hexLabel     decredmaterial.Label
-	copy         decredmaterial.Button
+	hexLabel     cryptomaterial.Label
+	copy         cryptomaterial.Button
 
 	infoText   string
 	seed       string
@@ -195,12 +195,12 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 				layout.Flexed(1, func(gtx C) D {
 					label := pg.Theme.Label(values.TextSize14, "Your 33-word seed word")
 					label.Color = pg.Theme.Color.GrayText1
-					return decredmaterial.LinearLayout{
-						Width:       decredmaterial.MatchParent,
-						Height:      decredmaterial.WrapContent,
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Vertical,
 						Background:  pg.Theme.Color.Surface,
-						Border:      decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 						Margin:      layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding2},
 						Padding:     layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
 					}.Layout(gtx,
@@ -245,12 +245,12 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 					label := pg.Theme.Label(values.TextSize14, "Your 33-word seed word")
 					label.Color = pg.Theme.Color.GrayText1
 
-					return decredmaterial.LinearLayout{
-						Width:       decredmaterial.MatchParent,
-						Height:      decredmaterial.WrapContent,
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Vertical,
 						Background:  pg.Theme.Color.Surface,
-						Border:      decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 						// bottom margin accounts for action button's height + components.UniformPadding bottom margin 24dp + 16dp
 						Margin:  layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding120},
 						Padding: layout.Inset{Top: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding8, Left: values.MarginPadding16},
@@ -279,9 +279,9 @@ func (pg *SaveSeedPage) mobileSeedRow(gtx C, row saveSeedRow) D {
 	if row.rowIndex == 1 {
 		topMargin = values.MarginPadding16
 	}
-	return decredmaterial.LinearLayout{
-		Width:  decredmaterial.MatchParent,
-		Height: decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:  cryptomaterial.MatchParent,
+		Height: cryptomaterial.WrapContent,
 		Margin: layout.Inset{Top: topMargin},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -298,16 +298,16 @@ func (pg *SaveSeedPage) mobileSeedRow(gtx C, row saveSeedRow) D {
 
 func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 	pg.handleCopyEvent(gtx)
-	card := decredmaterial.Card{
+	card := cryptomaterial.Card{
 		Color: pg.Theme.Color.Gray4,
 	}
 
-	return decredmaterial.LinearLayout{
-		Width:       decredmaterial.MatchParent,
-		Height:      decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
-		Border:      decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 		Margin:      layout.Inset{Top: values.MarginPadding0, Bottom: values.MarginPadding16},
 		Padding:     layout.Inset{Top: values.MarginPadding5, Right: values.MarginPadding16, Bottom: values.MarginPadding16, Left: values.MarginPadding16},
 	}.Layout(gtx,
@@ -320,7 +320,7 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					card.Radius = decredmaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
+					card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
 
 					return card.Layout(gtx, func(gtx C) D {
 						return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
@@ -335,7 +335,7 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					card.Radius = decredmaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
+					card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
 					return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D {
 						return card.Layout(gtx, pg.copy.Layout)
 					})
@@ -365,9 +365,9 @@ func (pg *SaveSeedPage) desktopSeedRow(gtx C, row saveSeedRow) D {
 	if row.rowIndex == 1 {
 		topMargin = values.MarginPadding16
 	}
-	return decredmaterial.LinearLayout{
-		Width:  decredmaterial.MatchParent,
-		Height: decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:  cryptomaterial.MatchParent,
+		Height: cryptomaterial.WrapContent,
 		Margin: layout.Inset{Top: topMargin},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -382,21 +382,21 @@ func (pg *SaveSeedPage) desktopSeedRow(gtx C, row saveSeedRow) D {
 	)
 }
 
-func seedItem(theme *decredmaterial.Theme, gtx C, width, index int, word string) D {
-	return decredmaterial.LinearLayout{
+func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string) D {
+	return cryptomaterial.LinearLayout{
 		Width:  width,
-		Height: decredmaterial.WrapContent,
+		Height: cryptomaterial.WrapContent,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			indexLabel := theme.Label(values.TextSize16, fmt.Sprint(index))
 			indexLabel.Color = theme.Color.GrayText1
 			indexLabel.Font.Weight = text.Medium
-			return decredmaterial.LinearLayout{
+			return cryptomaterial.LinearLayout{
 				Width:     gtx.Dp(values.MarginPadding30),
 				Height:    gtx.Dp(values.MarginPadding22),
 				Direction: layout.Center,
 				Margin:    layout.Inset{Right: values.MarginPadding8},
-				Border:    decredmaterial.Border{Radius: decredmaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
+				Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 			}.Layout2(gtx, indexLabel.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {

@@ -6,15 +6,15 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
-func getLabel(lbl decredmaterial.Label) decredmaterial.Label {
+func getLabel(lbl cryptomaterial.Label) cryptomaterial.Label {
 	return lbl
 }
 
-func setStyle(lbl *decredmaterial.Label, style string) {
+func setStyle(lbl *cryptomaterial.Label, style string) {
 	var s text.Style
 
 	switch style {
@@ -27,7 +27,7 @@ func setStyle(lbl *decredmaterial.Label, style string) {
 	lbl.Font.Style = s
 }
 
-func setWeight(lbl *decredmaterial.Label, weight string) {
+func setWeight(lbl *cryptomaterial.Label, weight string) {
 	var w text.Weight
 
 	switch weight {
@@ -44,7 +44,7 @@ func setWeight(lbl *decredmaterial.Label, weight string) {
 	lbl.Font.Weight = w
 }
 
-func getHeading(txt string, level int, theme *decredmaterial.Theme) decredmaterial.Label {
+func getHeading(txt string, level int, theme *cryptomaterial.Theme) cryptomaterial.Label {
 	textSize := values.TextSize16
 
 	switch level {
@@ -68,7 +68,7 @@ func getHeading(txt string, level int, theme *decredmaterial.Theme) decredmateri
 	return lbl
 }
 
-func renderStrike(lbl decredmaterial.Label, theme *decredmaterial.Theme) layout.Widget {
+func renderStrike(lbl cryptomaterial.Label, theme *cryptomaterial.Theme) layout.Widget {
 	return func(gtx C) D {
 		var dims D
 		return layout.Stack{}.Layout(gtx,
@@ -90,7 +90,7 @@ func renderStrike(lbl decredmaterial.Label, theme *decredmaterial.Theme) layout.
 	}
 }
 
-func renderBlockQuote(lbl decredmaterial.Label, theme *decredmaterial.Theme) layout.Widget {
+func renderBlockQuote(lbl cryptomaterial.Label, theme *cryptomaterial.Theme) layout.Widget {
 	words := strings.Fields(lbl.Text)
 
 	return func(gtx C) D {
@@ -106,7 +106,7 @@ func renderBlockQuote(lbl decredmaterial.Label, theme *decredmaterial.Theme) lay
 				dims = layout.Inset{
 					Left: unit.Dp(4),
 				}.Layout(gtx, func(gtx C) D {
-					return decredmaterial.GridWrap{
+					return cryptomaterial.GridWrap{
 						Axis:      layout.Horizontal,
 						Alignment: layout.Start,
 					}.Layout(gtx, len(words), func(gtx C, i int) D {
@@ -121,13 +121,13 @@ func renderBlockQuote(lbl decredmaterial.Label, theme *decredmaterial.Theme) lay
 	}
 }
 
-func renderHorizontalLine(theme *decredmaterial.Theme) layout.Widget {
+func renderHorizontalLine(theme *cryptomaterial.Theme) layout.Widget {
 	l := theme.Separator()
 	l.Width = 1
 	return l.Layout
 }
 
-func renderEmptyLine(theme *decredmaterial.Theme, isList bool) layout.Widget {
+func renderEmptyLine(theme *cryptomaterial.Theme, isList bool) layout.Widget {
 	var padding = -5
 
 	if isList {

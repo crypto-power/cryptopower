@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -18,7 +18,7 @@ import (
 
 type agendaVoteModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	// tickets that have not been spent by a vote or revocation (unspent) and that
 	// have not expired (unexpired).
@@ -32,13 +32,13 @@ type agendaVoteModal struct {
 
 	walletSelector    *WalletSelector
 	ticketSelector    *ticketSelector
-	spendingPassword  decredmaterial.Editor
+	spendingPassword  cryptomaterial.Editor
 	materialLoader    material.LoaderStyle
 	voteChoices       []string
 	initialValue      string
 	optionsRadioGroup *widget.Enum
-	voteBtn           decredmaterial.Button
-	cancelBtn         decredmaterial.Button
+	voteBtn           cryptomaterial.Button
+	cancelBtn         cryptomaterial.Button
 }
 
 func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
@@ -127,7 +127,7 @@ func (avm *agendaVoteModal) Handle() {
 		avm.Dismiss()
 	}
 
-	_, isChanged := decredmaterial.HandleEditorEvents(avm.spendingPassword.Editor)
+	_, isChanged := cryptomaterial.HandleEditorEvents(avm.spendingPassword.Editor)
 	if isChanged {
 		avm.spendingPassword.SetError("")
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -28,7 +28,7 @@ type AccountSelector struct {
 	accountIsValid  func(*libwallet.Account) bool
 	callback        func(*libwallet.Account)
 
-	openSelectorDialog *decredmaterial.Clickable
+	openSelectorDialog *cryptomaterial.Clickable
 	selectorModal      *AccountSelectorModal
 
 	dialogTitle  string
@@ -133,14 +133,14 @@ func (as *AccountSelector) SelectedAccount() *libwallet.Account {
 func (as *AccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 	as.Handle(window)
 
-	return decredmaterial.LinearLayout{
-		Width:   decredmaterial.MatchParent,
-		Height:  decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:   cryptomaterial.MatchParent,
+		Height:  cryptomaterial.WrapContent,
 		Padding: layout.UniformInset(values.MarginPadding12),
-		Border: decredmaterial.Border{
+		Border: cryptomaterial.Border{
 			Width:  values.MarginPadding2,
 			Color:  as.Theme.Color.Gray2,
-			Radius: decredmaterial.Radius(8),
+			Radius: cryptomaterial.Radius(8),
 		},
 		Clickable: as.openSelectorDialog,
 	}.Layout(gtx,
@@ -167,7 +167,7 @@ func (as *AccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 							Left: values.MarginPadding15,
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							ic := decredmaterial.NewIcon(as.Theme.Icons.DropDownIcon)
+							ic := cryptomaterial.NewIcon(as.Theme.Icons.DropDownIcon)
 							ic.Color = as.Theme.Color.Gray1
 							return ic.Layout(gtx, values.MarginPadding20)
 						})
@@ -224,13 +224,13 @@ func (as *AccountSelector) ListenForTxNotifications(ctx context.Context, window 
 
 type AccountSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	accountIsValid func(*libwallet.Account) bool
 	callback       func(*libwallet.Account)
 	onExit         func()
 
-	walletInfoButton decredmaterial.IconButton
+	walletInfoButton cryptomaterial.IconButton
 	accountsList     layout.List
 
 	currentSelectedAccount *libwallet.Account
@@ -245,7 +245,7 @@ type AccountSelectorModal struct {
 
 type selectorAccount struct {
 	*libwallet.Account
-	clickable *decredmaterial.Clickable
+	clickable *cryptomaterial.Clickable
 }
 
 func newAccountSelectorModal(l *load.Load, currentSelectedAccount *libwallet.Account) *AccountSelectorModal {
@@ -372,9 +372,9 @@ func (asm *AccountSelectorModal) Layout(gtx C) D {
 func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAccount) D {
 	accountIcon := asm.Theme.Icons.AccountIcon
 
-	return decredmaterial.LinearLayout{
-		Width:     decredmaterial.MatchParent,
-		Height:    decredmaterial.WrapContent,
+	return cryptomaterial.LinearLayout{
+		Width:     cryptomaterial.MatchParent,
+		Height:    cryptomaterial.WrapContent,
 		Margin:    layout.Inset{Bottom: values.MarginPadding4},
 		Padding:   layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8},
 		Clickable: account.clickable,
@@ -415,7 +415,7 @@ func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAcc
 			sections := func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return inset.Layout(gtx, func(gtx C) D {
-						ic := decredmaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
+						ic := cryptomaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
 						ic.Color = asm.Theme.Color.Gray1
 						return ic.Layout(gtx, values.MarginPadding20)
 					})
@@ -435,7 +435,7 @@ func (asm *AccountSelectorModal) walletInfoPopup(gtx C) D {
 	title := "Some accounts are hidden."
 	desc := "Some accounts are disabled by StakeShuffle settings to protect your privacy."
 	card := asm.Theme.Card()
-	card.Radius = decredmaterial.Radius(7)
+	card.Radius = cryptomaterial.Radius(7)
 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding280)
 	return card.Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {

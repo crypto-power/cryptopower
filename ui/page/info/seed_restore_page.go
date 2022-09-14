@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -27,12 +27,12 @@ const (
 
 type seedEditors struct {
 	focusIndex int
-	editors    []decredmaterial.RestoreEditor
+	editors    []cryptomaterial.RestoreEditor
 }
 
 type seedItemMenu struct {
 	text   string
-	button decredmaterial.Button
+	button cryptomaterial.Button
 }
 
 type SeedRestore struct {
@@ -49,9 +49,9 @@ type SeedRestore struct {
 
 	seedList *layout.List
 
-	validateSeed    decredmaterial.Button
-	resetSeedFields decredmaterial.Button
-	optionsMenuCard decredmaterial.Card
+	validateSeed    cryptomaterial.Button
+	resetSeedFields cryptomaterial.Button
+	optionsMenuCard cryptomaterial.Card
 
 	suggestions    []string
 	allSuggestions []string
@@ -83,8 +83,8 @@ func NewSeedRestorePage(l *load.Load, onRestoreComplete func()) *SeedRestore {
 		openPopupIndex:   -1,
 	}
 
-	pg.optionsMenuCard = decredmaterial.Card{Color: pg.Theme.Color.Surface}
-	pg.optionsMenuCard.Radius = decredmaterial.Radius(8)
+	pg.optionsMenuCard = cryptomaterial.Card{Color: pg.Theme.Color.Surface}
+	pg.optionsMenuCard.Radius = cryptomaterial.Radius(8)
 
 	pg.validateSeed = l.Theme.Button(values.String(values.StrValidateWalSeed))
 	pg.validateSeed.Font.Weight = text.Medium
@@ -145,12 +145,12 @@ func (pg *SeedRestore) Layout(gtx C) D {
 func (pg *SeedRestore) restore(gtx C) D {
 	return layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return decredmaterial.LinearLayout{
+			return cryptomaterial.LinearLayout{
 				Orientation: layout.Vertical,
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Background:  pg.Theme.Color.Surface,
-				Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 				Padding:     layout.UniformInset(values.MarginPadding15)}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
@@ -175,12 +175,12 @@ func (pg *SeedRestore) restoreMobile(gtx C) D {
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.N}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
-					return decredmaterial.LinearLayout{
+					return cryptomaterial.LinearLayout{
 						Orientation: layout.Vertical,
-						Width:       decredmaterial.MatchParent,
-						Height:      decredmaterial.WrapContent,
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
 						Background:  pg.Theme.Color.Surface,
-						Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 						Padding:     layout.UniformInset(values.MarginPadding15)}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -211,7 +211,7 @@ func (pg *SeedRestore) restoreMobile(gtx C) D {
 
 func (pg *SeedRestore) restoreButtonSection(gtx C) D {
 	card := pg.Theme.Card()
-	card.Radius = decredmaterial.Radius(0)
+	card.Radius = cryptomaterial.Radius(0)
 	return card.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return pg.validateSeed.Layout(gtx)
@@ -523,7 +523,7 @@ func (pg *SeedRestore) resetSeeds() {
 	}
 }
 
-func switchSeedEditors(editors []decredmaterial.RestoreEditor) {
+func switchSeedEditors(editors []cryptomaterial.RestoreEditor) {
 	for i := 0; i < len(editors); i++ {
 		if editors[i].Edit.Editor.Focused() {
 			if i == len(editors)-1 {
@@ -618,10 +618,10 @@ func (pg *SeedRestore) KeysToHandle() key.Set {
 	}
 	// TODO: Once user starts editing any of the input boxes, the arrow up, down
 	// and enter key signals are no longer received.
-	keySet1 := decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
-	keySet2 := decredmaterial.AnyKey(key.NameUpArrow, key.NameDownArrow)
-	keySet3 := decredmaterial.AnyKey(key.NameReturn, key.NameEnter)
-	return decredmaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
+	keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow)
+	keySet3 := cryptomaterial.AnyKey(key.NameReturn, key.NameEnter)
+	return cryptomaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current

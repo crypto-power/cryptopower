@@ -6,7 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -18,7 +18,7 @@ type ticketSelector struct {
 	dialogTitle string
 
 	changed         bool
-	showTicketModal *decredmaterial.Clickable
+	showTicketModal *cryptomaterial.Clickable
 	selectedTicket  *libwallet.Transaction
 
 	liveTickets []*libwallet.Transaction
@@ -96,7 +96,7 @@ func (ts *ticketSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 								Left: values.MarginPadding15,
 							}
 							return inset.Layout(gtx, func(gtx C) D {
-								ic := decredmaterial.NewIcon(ts.Theme.Icons.DropDownIcon)
+								ic := cryptomaterial.NewIcon(ts.Theme.Icons.DropDownIcon)
 								ic.Color = ts.Theme.Color.Gray1
 								return ic.Layout(gtx, values.MarginPadding20)
 							})
@@ -110,13 +110,13 @@ func (ts *ticketSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 
 type ticketSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
 	liveTickets    []*libwallet.Transaction
 	selectedTicket *libwallet.Transaction
-	ticketList     *decredmaterial.ClickableList
+	ticketList     *cryptomaterial.ClickableList
 
 	ticketSelectedCallback func(*libwallet.Transaction)
 }
@@ -187,7 +187,7 @@ func (tsm *ticketSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 								if tsm.selectedTicket != nil || tsm.selectedTicket != listTickets[i] {
 									return layout.Dimensions{}
 								}
-								ic := decredmaterial.NewIcon(tsm.Theme.Icons.NavigationCheck)
+								ic := cryptomaterial.NewIcon(tsm.Theme.Icons.NavigationCheck)
 								return ic.Layout(gtx, values.MarginPadding20)
 							}),
 						)

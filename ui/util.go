@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
 	"golang.org/x/text/message"
@@ -108,7 +108,7 @@ func goToURL(url string) {
 	}
 }
 
-func computePasswordStrength(pb *decredmaterial.ProgressBarStyle, th *decredmaterial.Theme, editors ...*widget.Editor) {
+func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
 	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength * 100)

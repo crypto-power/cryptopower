@@ -17,7 +17,7 @@ import (
 
 	"github.com/ararog/timeago"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -42,7 +42,7 @@ type (
 
 	TxStatus struct {
 		Title string
-		Icon  *decredmaterial.Image
+		Icon  *cryptomaterial.Image
 
 		// tx purchase only
 		TicketStatus       string
@@ -396,18 +396,18 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	}
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction, ticketSpender)
 
-	return decredmaterial.LinearLayout{
+	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
-		Width:       decredmaterial.MatchParent,
+		Width:       cryptomaterial.MatchParent,
 		Height:      gtx.Dp(values.MarginPadding56),
 		Alignment:   layout.Middle,
 		Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16},
 	}.Layout(gtx,
 		layout.Rigid(txStatus.Icon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.WrapContent,
-				Height:      decredmaterial.MatchParent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 				Padding:     layout.Inset{Left: values.MarginPadding16},
 				Direction:   layout.Center,
@@ -424,9 +424,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return decredmaterial.LinearLayout{
-						Width:       decredmaterial.WrapContent,
-						Height:      decredmaterial.WrapContent,
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Horizontal,
 						Direction:   layout.W,
 						Alignment:   layout.Middle,
@@ -478,9 +478,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 								return D{}
 							}
 
-							return decredmaterial.LinearLayout{
-								Width:       decredmaterial.WrapContent,
-								Height:      decredmaterial.WrapContent,
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.WrapContent,
 								Orientation: layout.Horizontal,
 								Margin:      layout.Inset{Left: values.MarginPadding4},
 								Alignment:   layout.Middle,
@@ -515,9 +515,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				status.Color = l.Theme.Color.GrayText2
 				status.Text = FormatDateOrTime(row.Transaction.Timestamp)
 			}
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.WrapContent,
-				Height:      decredmaterial.MatchParent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 				Padding:     layout.Inset{Left: values.MarginPadding16},
 				Alignment:   layout.End,
@@ -616,7 +616,7 @@ func FormatDateOrTime(timestamp int64) string {
 // walletLabel displays the wallet which a transaction belongs to. It is only displayed on the overview page when there
 //// are transactions from multiple wallets
 func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
-	return decredmaterial.Card{
+	return cryptomaterial.Card{
 		Color: l.Theme.Color.Gray4,
 	}.Layout(gtx, func(gtx C) D {
 		return Container{
@@ -719,12 +719,12 @@ func TimeFormat(secs int, long bool) string {
 
 // createOrUpdateWalletDropDown check for len of wallets to create dropDown,
 // also update the list when create, update, delete a wallet.
-func CreateOrUpdateWalletDropDown(l *load.Load, dwn **decredmaterial.DropDown, wallets []*libwallet.Wallet, grp uint, pos uint) *decredmaterial.DropDown {
-	var walletDropDownItems []decredmaterial.DropDownItem
+func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, wallets []*libwallet.Wallet, grp uint, pos uint) *cryptomaterial.DropDown {
+	var walletDropDownItems []cryptomaterial.DropDownItem
 	walletIcon := l.Theme.Icons.WalletIcon
 	walletIcon.Scale = 1
 	for _, wal := range wallets {
-		item := decredmaterial.DropDownItem{
+		item := cryptomaterial.DropDownItem{
 			Text: wal.Name,
 			Icon: walletIcon,
 		}
@@ -734,8 +734,8 @@ func CreateOrUpdateWalletDropDown(l *load.Load, dwn **decredmaterial.DropDown, w
 	return *dwn
 }
 
-func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *decredmaterial.DropDown {
-	return l.Theme.DropDown([]decredmaterial.DropDownItem{{Text: values.String(values.StrNewest)},
+func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
+	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)}}, grp, pos)
 }
 
@@ -749,7 +749,7 @@ func TranslateErr(err error) string {
 }
 
 // CoinImageBySymbol returns image widget for supported asset coins.
-func CoinImageBySymbol(l *load.Load, coinName string) *decredmaterial.Image {
+func CoinImageBySymbol(l *load.Load, coinName string) *cryptomaterial.Image {
 	switch strings.ToLower(coinName) {
 	case "btc":
 		return l.Theme.Icons.BTC

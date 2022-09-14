@@ -13,7 +13,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -28,7 +28,7 @@ const (
 type moreItem struct {
 	text     string
 	id       string
-	button   *decredmaterial.Clickable
+	button   *cryptomaterial.Clickable
 	action   func()
 	separate bool
 }
@@ -50,15 +50,15 @@ type Page struct {
 	sendDestination       *destination
 	amount                *sendAmount
 
-	backButton    decredmaterial.IconButton
-	infoButton    decredmaterial.IconButton
-	moreOption    decredmaterial.IconButton
-	retryExchange decredmaterial.Button
-	nextButton    decredmaterial.Button
+	backButton    cryptomaterial.IconButton
+	infoButton    cryptomaterial.IconButton
+	moreOption    cryptomaterial.IconButton
+	retryExchange cryptomaterial.Button
+	nextButton    cryptomaterial.Button
 
-	txFeeCollapsible *decredmaterial.Collapsible
-	shadowBox        *decredmaterial.Shadow
-	optionsMenuCard  decredmaterial.Card
+	txFeeCollapsible *cryptomaterial.Collapsible
+	shadowBox        *cryptomaterial.Shadow
+	optionsMenuCard  cryptomaterial.Card
 	moreItems        []moreItem
 	backdrop         *widget.Clickable
 
@@ -482,7 +482,7 @@ func (pg *Page) HandleUserInteractions() {
 // called when any of these key combinations is pressed.
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *Page) KeysToHandle() key.Set {
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -497,17 +497,17 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 	if currencyValue != values.USDExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			decredmaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
 		default:
-			decredmaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
 		}
 	} else {
 		switch {
 		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			decredmaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
 		default:
-			decredmaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
 		}
 	}
 }

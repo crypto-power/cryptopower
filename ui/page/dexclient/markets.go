@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -33,8 +33,8 @@ type Page struct {
 
 	ctx            context.Context
 	ctxCancel      context.CancelFunc
-	addDexBtn      decredmaterial.Button
-	syncBtn        decredmaterial.Button
+	addDexBtn      cryptomaterial.Button
+	syncBtn        cryptomaterial.Button
 	materialLoader material.LoaderStyle
 }
 
@@ -87,7 +87,7 @@ func (pg *Page) pageSections(gtx layout.Context, body layout.Widget) layout.Dime
 	})
 }
 
-func (pg *Page) welcomeLayout(button *decredmaterial.Button) layout.Widget {
+func (pg *Page) welcomeLayout(button *cryptomaterial.Button) layout.Widget {
 	return func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

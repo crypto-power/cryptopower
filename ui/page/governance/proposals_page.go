@@ -11,7 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -42,15 +42,15 @@ type ProposalsPage struct {
 
 	multiWallet      *libwallet.MultiWallet
 	listContainer    *widget.List
-	orderDropDown    *decredmaterial.DropDown
-	categoryDropDown *decredmaterial.DropDown
-	proposalsList    *decredmaterial.ClickableList
+	orderDropDown    *cryptomaterial.DropDown
+	categoryDropDown *cryptomaterial.DropDown
+	proposalsList    *cryptomaterial.ClickableList
 	syncButton       *widget.Clickable
-	searchEditor     decredmaterial.Editor
+	searchEditor     cryptomaterial.Editor
 
-	infoButton decredmaterial.IconButton
+	infoButton cryptomaterial.IconButton
 
-	updatedIcon *decredmaterial.Icon
+	updatedIcon *cryptomaterial.Icon
 
 	proposalItems []*components.ProposalItem
 
@@ -70,7 +70,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
 
-	pg.updatedIcon = decredmaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
+	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
 
 	pg.syncButton = new(widget.Clickable)
@@ -84,7 +84,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	// orderDropDown is the first dropdown when page is laid out. Its
 	// position should be 0 for consistent backdrop.
 	pg.orderDropDown = components.CreateOrderDropDown(l, values.ProposalDropdownGroup, 0)
-	pg.categoryDropDown = l.Theme.DropDown([]decredmaterial.DropDownItem{
+	pg.categoryDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{
 			Text: values.String(values.StrUnderReview),
 		},
@@ -196,7 +196,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		})
 	}
 
-	decredmaterial.DisplayOneDropdown(pg.orderDropDown, pg.categoryDropDown)
+	cryptomaterial.DisplayOneDropdown(pg.orderDropDown, pg.categoryDropDown)
 
 	for pg.infoButton.Button.Clicked() {
 		//TODO: proposal info modal
@@ -239,7 +239,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 					// 	card := pg.Theme.Card()
-					// 	card.Radius = decredmaterial.Radius(8)
+					// 	card.Radius = cryptomaterial.Radius(8)
 					// 	return card.Layout(gtx, func(gtx C) D {
 					// 		return layout.Inset{
 					// 			Left:   values.MarginPadding10,
@@ -253,7 +253,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return card.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
 							})
@@ -288,7 +288,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 					// 	card := pg.Theme.Card()
-					// 	card.Radius = decredmaterial.Radius(8)
+					// 	card.Radius = cryptomaterial.Radius(8)
 					// 	return card.Layout(gtx, func(gtx C) D {
 					// 		return layout.Inset{
 					// 			Left:   values.MarginPadding10,
@@ -302,7 +302,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
 							card := pg.Theme.Card()
-							card.Radius = decredmaterial.Radius(8)
+							card.Radius = cryptomaterial.Radius(8)
 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 								return card.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
@@ -370,7 +370,7 @@ func (pg *ProposalsPage) layoutIsSyncingSection(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
-	// TODO: use decredmaterial clickable
+	// TODO: use cryptomaterial clickable
 	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
 }
 

@@ -11,7 +11,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -36,7 +36,7 @@ type StatPage struct {
 	startupTime   string
 	netType       string
 
-	backButton decredmaterial.IconButton
+	backButton cryptomaterial.IconButton
 }
 
 func NewStatPage(l *load.Load) *StatPage {

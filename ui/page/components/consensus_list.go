@@ -8,7 +8,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -16,7 +16,7 @@ import (
 
 type ConsensusItem struct {
 	Agenda     libwallet.Agenda
-	VoteButton decredmaterial.Button
+	VoteButton cryptomaterial.Button
 }
 
 func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
@@ -36,46 +36,46 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 
 func layoutAgendaStatus(gtx C, l *load.Load, agenda libwallet.Agenda) D {
 
-	var statusLabel decredmaterial.Label
-	var statusIcon *decredmaterial.Icon
+	var statusLabel cryptomaterial.Label
+	var statusIcon *cryptomaterial.Icon
 	var backgroundColor color.NRGBA
 
 	switch agenda.Status {
 	case libwallet.AgendaStatusFinished.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.GreenText
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCheck)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCheck)
 		statusIcon.Color = l.Theme.Color.Green500
 		backgroundColor = l.Theme.Color.Green50
 	case libwallet.AgendaStatusLockedIn.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.GreenText
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCheck)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCheck)
 		statusIcon.Color = l.Theme.Color.Green500
 		backgroundColor = l.Theme.Color.Green50
 	case libwallet.AgendaStatusFailed.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavigationCancel)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCancel)
 		statusIcon.Color = l.Theme.Color.Gray1
 		backgroundColor = l.Theme.Color.Gray2
 	case libwallet.AgendaStatusInProgress.String():
 		clr := l.Theme.Color.Primary
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = clr
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
 		statusIcon.Color = clr
 		backgroundColor = l.Theme.Color.LightBlue
 	case libwallet.AgendaStatusUpcoming.String():
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.PlayIcon)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.PlayIcon)
 		statusIcon.Color = l.Theme.Color.DeepBlue
 		backgroundColor = l.Theme.Color.Gray2
 	default:
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
-		statusIcon = decredmaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
 		statusIcon.Color = l.Theme.Color.Gray1
 		backgroundColor = l.Theme.Color.Gray2
 	}
@@ -89,13 +89,13 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda libwallet.Agenda) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
+			return cryptomaterial.LinearLayout{
 				Background: backgroundColor,
-				Width:      decredmaterial.WrapContent,
-				Height:     decredmaterial.WrapContent,
+				Width:      cryptomaterial.WrapContent,
+				Height:     cryptomaterial.WrapContent,
 				Direction:  layout.Center,
 				Alignment:  layout.Middle,
-				Border:     decredmaterial.Border{Color: backgroundColor, Width: values.MarginPadding1, Radius: decredmaterial.Radius(10)},
+				Border:     cryptomaterial.Border{Color: backgroundColor, Width: values.MarginPadding1, Radius: cryptomaterial.Radius(10)},
 				Padding:    layout.Inset{Top: values.MarginPadding3, Bottom: values.MarginPadding3, Left: values.MarginPadding8, Right: values.MarginPadding8},
 				Margin:     layout.Inset{Left: values.MarginPadding10},
 			}.Layout(gtx,

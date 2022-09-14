@@ -12,7 +12,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -30,11 +30,11 @@ type transactionItem struct {
 	purchaseTime  string
 	ticketAge     string
 
-	statusTooltip     *decredmaterial.Tooltip
-	walletNameTooltip *decredmaterial.Tooltip
-	dateTooltip       *decredmaterial.Tooltip
-	daysBehindTooltip *decredmaterial.Tooltip
-	durationTooltip   *decredmaterial.Tooltip
+	statusTooltip     *cryptomaterial.Tooltip
+	walletNameTooltip *cryptomaterial.Tooltip
+	dateTooltip       *cryptomaterial.Tooltip
+	daysBehindTooltip *cryptomaterial.Tooltip
+	durationTooltip   *cryptomaterial.Tooltip
 }
 
 type Stake struct {
@@ -304,7 +304,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 				Right: values.MarginPadding5,
 				Left:  values.MarginPadding5,
 			}.Layout(gtx, func(gtx C) D {
-				ic := decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+				ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 				ic.Color = col
 				return ic.Layout(gtx, values.MarginPadding6)
 			})
@@ -317,7 +317,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 	)
 }
 
-func ticketCardTooltip(gtx C, rectLayout layout.Dimensions, tooltip *decredmaterial.Tooltip, leftInset unit.Dp, body layout.Widget) {
+func ticketCardTooltip(gtx C, rectLayout layout.Dimensions, tooltip *cryptomaterial.Tooltip, leftInset unit.Dp, body layout.Widget) {
 	inset := layout.Inset{
 		Top:  values.MarginPadding15,
 		Left: leftInset,
@@ -359,18 +359,18 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 	// add this data to transactionItem so it can be shared with list
 	maturity := l.WL.MultiWallet.TicketMaturity()
 
-	return decredmaterial.LinearLayout{
+	return cryptomaterial.LinearLayout{
 		Width:       gtx.Dp(values.MarginPadding168),
-		Height:      decredmaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Shadow:      l.Theme.Shadow(),
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:      decredmaterial.MatchParent,
-				Height:     decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:      cryptomaterial.MatchParent,
+				Height:     cryptomaterial.WrapContent,
 				Background: txStatus.Background,
-				Border:     decredmaterial.Border{Radius: decredmaterial.TopRadius(8)},
+				Border:     cryptomaterial.Border{Radius: cryptomaterial.TopRadius(8)},
 			}.Layout2(gtx, func(gtx C) D {
 				return layout.Stack{}.Layout(gtx,
 					layout.Stacked(func(gtx C) D {
@@ -389,7 +389,7 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 
 						return layout.NE.Layout(gtx, func(gtx C) D {
 							timeWrapper := l.Theme.Card()
-							timeWrapper.Radius = decredmaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 0, BottomLeft: 8}
+							timeWrapper.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 0, BottomLeft: 8}
 							return timeWrapper.Layout(gtx, func(gtx C) D {
 								return layout.Inset{
 									Top:    values.MarginPadding4,
@@ -447,9 +447,9 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return decredmaterial.LinearLayout{
-				Width:       decredmaterial.MatchParent,
-				Height:      decredmaterial.WrapContent,
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Vertical,
 				Padding:     layout.UniformInset(values.MarginPadding16),
 			}.Layout(gtx,
@@ -537,7 +537,7 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 										Left:  values.MarginPadding4,
 										Right: values.MarginPadding4,
 									}.Layout(gtx, func(gtx C) D {
-										ic := decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+										ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 										return ic.Layout(gtx, values.MarginPadding5)
 									})
 								}),
@@ -568,7 +568,7 @@ func ticketListLayout(gtx C, l *load.Load, ticket *transactionItem) layout.Dimen
 					layout.Rigid(func(gtx C) D {
 						wrapIcon := l.Theme.Card()
 						wrapIcon.Color = ticket.status.Background
-						wrapIcon.Radius = decredmaterial.Radius(8)
+						wrapIcon.Radius = cryptomaterial.Radius(8)
 						dims := wrapIcon.Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding10).Layout(gtx, ticket.status.Icon.Layout24dp)
 						})
@@ -589,8 +589,8 @@ func ticketListLayout(gtx C, l *load.Load, ticket *transactionItem) layout.Dimen
 }
 
 // todo: cleanup
-func createOrderDropDown(th *decredmaterial.Theme) *decredmaterial.DropDown {
-	return th.DropDown([]decredmaterial.DropDownItem{{Text: values.String(values.StrNewest)},
+func createOrderDropDown(th *cryptomaterial.Theme) *cryptomaterial.DropDown {
+	return th.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)}}, values.StakingDropdownGroup, 1)
 }
 

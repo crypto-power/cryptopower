@@ -13,7 +13,7 @@ import (
 	"gioui.org/unit"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -39,11 +39,11 @@ type VoteBar struct {
 	yesColor color.NRGBA
 	noColor  color.NRGBA
 
-	passTooltip   *decredmaterial.Tooltip
-	quorumTooltip *decredmaterial.Tooltip
+	passTooltip   *cryptomaterial.Tooltip
+	quorumTooltip *cryptomaterial.Tooltip
 
-	legendIcon *decredmaterial.Icon
-	infoButton decredmaterial.IconButton
+	legendIcon *cryptomaterial.Icon
+	infoButton cryptomaterial.IconButton
 }
 
 var voteBarThumbWidth = 2
@@ -56,7 +56,7 @@ func NewVoteBar(l *load.Load) *VoteBar {
 		noColor:       l.Theme.Color.Danger,
 		passTooltip:   l.Theme.Tooltip(),
 		quorumTooltip: l.Theme.Tooltip(),
-		legendIcon:    decredmaterial.NewIcon(l.Theme.Icons.ImageBrightness1),
+		legendIcon:    cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1),
 	}
 
 	_, vb.infoButton = SubpageHeaderButtons(l)
@@ -246,7 +246,7 @@ func (v *VoteBar) infoButtonModal() *modal.InfoModal {
 		})
 }
 
-func (v *VoteBar) layoutIconAndText(gtx C, lbl decredmaterial.Label, count int, col color.NRGBA) D {
+func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, col color.NRGBA) D {
 	return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

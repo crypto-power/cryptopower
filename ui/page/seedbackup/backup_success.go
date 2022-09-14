@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -20,7 +20,7 @@ type BackupSuccessPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	actionButton decredmaterial.Button
+	actionButton cryptomaterial.Button
 }
 
 func NewBackupSuccessPage(l *load.Load) *BackupSuccessPage {
@@ -67,21 +67,21 @@ func (pg *BackupSuccessPage) OnNavigatedFrom() {}
 func (pg *BackupSuccessPage) Layout(gtx C) D {
 
 	return components.UniformPadding(gtx, func(gtx C) D {
-		return decredmaterial.LinearLayout{
-			Width:       decredmaterial.MatchParent,
-			Height:      decredmaterial.MatchParent,
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.MatchParent,
 			Orientation: layout.Vertical,
 		}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
-				return decredmaterial.LinearLayout{
-					Width:       decredmaterial.MatchParent,
-					Height:      decredmaterial.MatchParent,
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.MatchParent,
 					Orientation: layout.Vertical,
 					Alignment:   layout.Middle,
 					Direction:   layout.Center,
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						successIcon := decredmaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
+						successIcon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
 						return successIcon.Layout(gtx, values.MarginPadding64)
 					}),
 					layout.Rigid(func(gtx C) D {

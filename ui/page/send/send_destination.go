@@ -7,7 +7,7 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -18,11 +18,11 @@ type destination struct {
 	*load.Load
 
 	addressChanged             func()
-	destinationAddressEditor   decredmaterial.Editor
+	destinationAddressEditor   cryptomaterial.Editor
 	destinationAccountSelector *components.AccountSelector
 
 	sendToAddress bool
-	accountSwitch *decredmaterial.SwitchButtonText
+	accountSwitch *cryptomaterial.SwitchButtonText
 }
 
 func newSendDestination(l *load.Load) *destination {
@@ -34,7 +34,7 @@ func newSendDestination(l *load.Load) *destination {
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")
 
-	dst.accountSwitch = l.Theme.SwitchButtonText([]decredmaterial.SwitchItem{
+	dst.accountSwitch = l.Theme.SwitchButtonText([]cryptomaterial.SwitchItem{
 		{Text: values.String(values.StrAddress)},
 		{Text: values.String(values.StrMyAcct)},
 	})

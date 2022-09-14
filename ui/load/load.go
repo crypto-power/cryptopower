@@ -10,7 +10,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/assets"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/notification"
 	"gitlab.com/raedah/cryptopower/wallet"
 	"gitlab.com/raedah/libwallet"
@@ -21,7 +21,7 @@ type DCRUSDTBittrex struct {
 }
 
 type Load struct {
-	Theme *decredmaterial.Theme
+	Theme *cryptomaterial.Theme
 
 	WL              *WalletLoad
 	Printer         *message.Printer

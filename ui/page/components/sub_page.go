@@ -5,7 +5,7 @@ import (
 
 	"gioui.org/layout"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -19,16 +19,16 @@ type SubPage struct {
 	Back         func()
 	Body         layout.Widget
 	InfoTemplate string
-	ExtraItem    *decredmaterial.Clickable
+	ExtraItem    *cryptomaterial.Clickable
 	Extra        layout.Widget
 	ExtraText    string
 	HandleExtra  func()
 
-	BackButton decredmaterial.IconButton
-	InfoButton decredmaterial.IconButton
+	BackButton cryptomaterial.IconButton
+	InfoButton cryptomaterial.IconButton
 }
 
-func SubpageHeaderButtons(l *load.Load) (decredmaterial.IconButton, decredmaterial.IconButton) {
+func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomaterial.IconButton) {
 	backButton := l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack)
 	infoButton := l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 
@@ -79,7 +79,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			if sp.WalletName != "" {
 				return layout.Inset{Left: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return decredmaterial.Card{
+					return cryptomaterial.Card{
 						Color: sp.Theme.Color.Surface,
 					}.Layout(gtx, func(gtx C) D {
 						return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {

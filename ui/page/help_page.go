@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -25,10 +25,10 @@ type HelpPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	documentation   *decredmaterial.Clickable
-	copyRedirectURL *decredmaterial.Clickable
-	shadowBox       *decredmaterial.Shadow
-	backButton      decredmaterial.IconButton
+	documentation   *cryptomaterial.Clickable
+	copyRedirectURL *cryptomaterial.Clickable
+	shadowBox       *cryptomaterial.Shadow
+	backButton      cryptomaterial.IconButton
 }
 
 func NewHelpPage(l *load.Load) *HelpPage {
@@ -42,7 +42,7 @@ func NewHelpPage(l *load.Load) *HelpPage {
 	pg.shadowBox = l.Theme.Shadow()
 	pg.shadowBox.SetShadowRadius(14)
 
-	pg.documentation.Radius = decredmaterial.Radius(14)
+	pg.documentation.Radius = cryptomaterial.Radius(14)
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
 	return pg
@@ -148,17 +148,17 @@ func (pg *HelpPage) document() layout.Widget {
 	}
 }
 
-func (pg *HelpPage) pageSections(gtx C, icon *decredmaterial.Image, action *decredmaterial.Clickable, title string) D {
+func (pg *HelpPage) pageSections(gtx C, icon *cryptomaterial.Image, action *cryptomaterial.Clickable, title string) D {
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Orientation: layout.Vertical,
-			Width:       decredmaterial.MatchParent,
-			Height:      decredmaterial.WrapContent,
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
 			Background:  pg.Theme.Color.Surface,
 			Clickable:   action,
 			Alignment:   layout.Middle,
 			Shadow:      pg.shadowBox,
-			Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 			Padding:     layout.UniformInset(values.MarginPadding15),
 			Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -173,17 +173,17 @@ func (pg *HelpPage) pageSections(gtx C, icon *decredmaterial.Image, action *decr
 	})
 }
 
-func (pg *HelpPage) pageSectionsMobile(gtx C, icon *decredmaterial.Image, action *decredmaterial.Clickable, title string) D {
+func (pg *HelpPage) pageSectionsMobile(gtx C, icon *cryptomaterial.Image, action *cryptomaterial.Clickable, title string) D {
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Orientation: layout.Horizontal,
-			Width:       decredmaterial.MatchParent,
-			Height:      decredmaterial.WrapContent,
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
 			Background:  pg.Theme.Color.Surface,
 			Clickable:   action,
 			Direction:   layout.W,
 			Shadow:      pg.shadowBox,
-			Border:      decredmaterial.Border{Radius: decredmaterial.Radius(14)},
+			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 			Padding:     layout.UniformInset(values.MarginPadding15),
 			Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

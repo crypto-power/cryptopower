@@ -10,7 +10,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -31,14 +31,14 @@ type UTXOPage struct {
 	*app.GenericPageModal
 
 	utxoListContainer      layout.List
-	backButton             decredmaterial.IconButton
-	useUTXOButton          decredmaterial.Button
+	backButton             cryptomaterial.IconButton
+	useUTXOButton          cryptomaterial.Button
 	unspentOutputs         **wallet.UnspentOutputs
 	unspentOutputsSelected *map[int]map[int32]map[string]*wallet.UnspentOutput
-	checkboxes             []decredmaterial.CheckBoxStyle
-	copyButtons            []decredmaterial.IconButton
-	selectAllChexBox       decredmaterial.CheckBoxStyle
-	separator              decredmaterial.Line
+	checkboxes             []cryptomaterial.CheckBoxStyle
+	copyButtons            []cryptomaterial.IconButton
+	selectAllChexBox       cryptomaterial.CheckBoxStyle
+	separator              cryptomaterial.Line
 
 	txnFee            string
 	txnAmount         string
@@ -84,8 +84,8 @@ func (pg *UTXOPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *UTXOPage) HandleUserInteractions() {
 	if len(pg.checkboxes) != len((*pg.unspentOutputs).List) {
-		pg.checkboxes = make([]decredmaterial.CheckBoxStyle, len((*pg.unspentOutputs).List))
-		pg.copyButtons = make([]decredmaterial.IconButton, len((*pg.unspentOutputs).List))
+		pg.checkboxes = make([]cryptomaterial.CheckBoxStyle, len((*pg.unspentOutputs).List))
+		pg.copyButtons = make([]cryptomaterial.IconButton, len((*pg.unspentOutputs).List))
 
 		for i := 0; i < len((*pg.unspentOutputs).List); i++ {
 			utxo := (*pg.unspentOutputs).List[i]
@@ -93,7 +93,7 @@ func (pg *UTXOPage) HandleUserInteractions() {
 			if (*pg.unspentOutputsSelected)[pg.selectedWalletID][pg.selectedAccountID][utxo.UTXO.OutputKey] != nil {
 				pg.checkboxes[i].CheckBox.Value = true
 			}
-			icoBtn := pg.Theme.IconButton(decredmaterial.MustIcon(widget.NewIcon(icons.ContentContentCopy)))
+			icoBtn := pg.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ContentContentCopy)))
 			icoBtn.Inset, icoBtn.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
 			icoBtn.ChangeColorStyle(&values.ColorStyle{Background: pg.Theme.Color.Gray4})
 			pg.copyButtons[i] = icoBtn
@@ -126,7 +126,7 @@ func (pg *UTXOPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *UTXOPage) handlerCheckboxes(cb *decredmaterial.CheckBoxStyle, utxo *wallet.UnspentOutput) {
+func (pg *UTXOPage) handlerCheckboxes(cb *cryptomaterial.CheckBoxStyle, utxo *wallet.UnspentOutput) {
 	if cb.CheckBox.Changed() {
 		if cb.CheckBox.Value {
 			(*pg.unspentOutputsSelected)[pg.selectedWalletID][pg.selectedAccountID][utxo.UTXO.OutputKey] = utxo

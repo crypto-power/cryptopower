@@ -11,7 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
@@ -30,10 +30,10 @@ type (
 // walletSyncDetails contains sync data for each wallet when a sync
 // is in progress.
 type walletSyncDetails struct {
-	name               decredmaterial.Label
-	status             decredmaterial.Label
-	blockHeaderFetched decredmaterial.Label
-	syncingProgress    decredmaterial.Label
+	name               cryptomaterial.Label
+	status             cryptomaterial.Label
+	blockHeaderFetched cryptomaterial.Label
+	syncingProgress    cryptomaterial.Label
 }
 
 type WalletInfo struct {
@@ -56,10 +56,10 @@ type WalletInfo struct {
 
 	container *widget.List
 
-	walletStatusIcon *decredmaterial.Icon
-	syncSwitch       *decredmaterial.Switch
-	toBackup         decredmaterial.Button
-	checkBox         decredmaterial.CheckBoxStyle
+	walletStatusIcon *cryptomaterial.Icon
+	syncSwitch       *cryptomaterial.Switch
+	toBackup         cryptomaterial.Button
+	checkBox         cryptomaterial.CheckBoxStyle
 
 	remainingSyncTime    string
 	syncStepLabel        string

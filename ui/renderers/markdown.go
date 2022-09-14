@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/gomarkdown/markdown/ast"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -28,11 +28,11 @@ type layoutRow struct {
 
 type MarkdownProvider struct {
 	containers     []layoutRow
-	theme          *decredmaterial.Theme
+	theme          *cryptomaterial.Theme
 	listItemNumber int // should be negative when not rendering a list
 	links          map[string]*widget.Clickable
 	table          *table
-	label          *decredmaterial.Label
+	label          *cryptomaterial.Label
 	prefix         string
 
 	stringBuilder strings.Builder
@@ -41,7 +41,7 @@ type MarkdownProvider struct {
 	shouldRemoveBold bool
 }
 
-func RenderMarkdown(gtx C, theme *decredmaterial.Theme, source string) *MarkdownProvider {
+func RenderMarkdown(gtx C, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
 	lbl := theme.Body1("")
 	source = strings.Replace(source, " \n*", " \n\n *", -1)
 
@@ -70,7 +70,7 @@ func (p *MarkdownProvider) Layout() ([]layout.Widget, map[string]*widget.Clickab
 		max := gtx.Constraints.Max.X
 		rows := layout.List{Axis: layout.Vertical}
 		return rows.Layout(gtx, len(p.containers), func(gtx C, i int) D {
-			return decredmaterial.GridWrap{
+			return cryptomaterial.GridWrap{
 				Axis:      layout.Horizontal,
 				Alignment: layout.Start,
 			}.Layout(gtx, len(p.containers[i].widgets), func(gtx C, j int) D {
@@ -96,10 +96,10 @@ func (p *MarkdownProvider) prepareCodeBlock(node *ast.CodeBlock, entering bool) 
 	content := string(node.Literal)
 	p.createNewRow()
 	wdg := func(gtx C) D {
-		return decredmaterial.LinearLayout{
+		return cryptomaterial.LinearLayout{
 			Orientation: layout.Vertical,
-			Width:       decredmaterial.WrapContent,
-			Height:      decredmaterial.WrapContent,
+			Width:       cryptomaterial.WrapContent,
+			Height:      cryptomaterial.WrapContent,
 			Background:  p.theme.Color.Background,
 			Padding:     layout.UniformInset(values.MarginPadding16),
 		}.Layout(gtx,
@@ -270,7 +270,7 @@ func (p *MarkdownProvider) renderBlock() {
 	}
 }
 
-func (p *MarkdownProvider) getLabel() decredmaterial.Label {
+func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 	lbl := p.theme.Body1("")
 	if len(p.tagStack) > 0 {
 		for i := range p.tagStack {
@@ -325,7 +325,7 @@ func (p *MarkdownProvider) appendToLastRow(wdgt layout.Widget) {
 }
 
 func (p *MarkdownProvider) drawLineRow(axis layout.Axis) {
-	var l decredmaterial.Line
+	var l cryptomaterial.Line
 
 	if axis == layout.Vertical {
 		l = p.theme.SeparatorVertical(1, 10)

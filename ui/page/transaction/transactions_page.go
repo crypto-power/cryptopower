@@ -12,7 +12,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -37,17 +37,17 @@ type TransactionsPage struct {
 	*listeners.TxAndBlockNotificationListener
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
-	separator decredmaterial.Line
+	separator cryptomaterial.Line
 
-	walletTabList         *decredmaterial.ClickableList // Tab list of all loaded wallets.
+	walletTabList         *cryptomaterial.ClickableList // Tab list of all loaded wallets.
 	selectedCategoryIndex int
 	walletTabTitles       []string
 	changed               bool
 
-	orderDropDown   *decredmaterial.DropDown
-	txTypeDropDown  *decredmaterial.DropDown
-	walletDropDown  *decredmaterial.DropDown
-	transactionList *decredmaterial.ClickableList
+	orderDropDown   *cryptomaterial.DropDown
+	txTypeDropDown  *cryptomaterial.DropDown
+	walletDropDown  *cryptomaterial.DropDown
+	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
 	transactions    []libwallet.Transaction
 	wallets         []*libwallet.Wallet
@@ -66,7 +66,7 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 	}
 
 	pg.walletTabList.IsHoverable = false
-	pg.transactionList.Radius = decredmaterial.Radius(14)
+	pg.transactionList.Radius = cryptomaterial.Radius(14)
 	pg.transactionList.IsShadowEnabled = true
 
 	pg.orderDropDown = components.CreateOrderDropDown(l, values.TxDropdownGroup, 1)
@@ -103,7 +103,7 @@ func (pg *TransactionsPage) refreshAvailableTxType(l *load.Load) {
 	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterMixed)
 	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterStaking)
 
-	pg.txTypeDropDown = l.Theme.DropDown([]decredmaterial.DropDownItem{
+	pg.txTypeDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{
 			Text: fmt.Sprintf("%s (%d)", values.String(values.StrAll), txCount),
 		},
@@ -374,7 +374,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &pg.transactions[selectedItem]))
 	}
-	decredmaterial.DisplayOneDropdown(pg.walletDropDown, pg.txTypeDropDown, pg.orderDropDown)
+	cryptomaterial.DisplayOneDropdown(pg.walletDropDown, pg.txTypeDropDown, pg.orderDropDown)
 
 	if clicked, selectedItem := pg.walletTabList.ItemClicked(); clicked {
 		if pg.selectedCategoryIndex != selectedItem {

@@ -5,7 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -19,9 +19,9 @@ const SettingsPageID = "Settings"
 
 type row struct {
 	title     string
-	clickable *decredmaterial.Clickable
-	icon      *decredmaterial.Icon
-	label     decredmaterial.Label
+	clickable *cryptomaterial.Clickable
+	icon      *cryptomaterial.Icon
+	label     cryptomaterial.Label
 }
 
 type SettingsPage struct {
@@ -35,20 +35,20 @@ type SettingsPage struct {
 	pageContainer *widget.List
 	wal           *wallet.Wallet
 
-	changeStartupPass *decredmaterial.Clickable
-	language          *decredmaterial.Clickable
-	currency          *decredmaterial.Clickable
-	help              *decredmaterial.Clickable
-	about             *decredmaterial.Clickable
-	appearanceMode    *decredmaterial.Clickable
+	changeStartupPass *cryptomaterial.Clickable
+	language          *cryptomaterial.Clickable
+	currency          *cryptomaterial.Clickable
+	help              *cryptomaterial.Clickable
+	about             *cryptomaterial.Clickable
+	appearanceMode    *cryptomaterial.Clickable
 
-	chevronRightIcon *decredmaterial.Icon
-	backButton       decredmaterial.IconButton
-	infoButton       decredmaterial.IconButton
+	chevronRightIcon *cryptomaterial.Icon
+	backButton       cryptomaterial.IconButton
+	infoButton       cryptomaterial.IconButton
 
 	isDarkModeOn            bool
-	startupPassword         *decredmaterial.Switch
-	transactionNotification *decredmaterial.Switch
+	startupPassword         *cryptomaterial.Switch
+	transactionNotification *cryptomaterial.Switch
 
 	isStartupPassword bool
 	errorReceiver     chan error
@@ -68,7 +68,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
 
-		chevronRightIcon: decredmaterial.NewIcon(chevronRightIcon),
+		chevronRightIcon: cryptomaterial.NewIcon(chevronRightIcon),
 
 		errorReceiver: make(chan error),
 
@@ -290,7 +290,7 @@ func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	})
 }
 
-func (pg *SettingsPage) subSectionSwitch(gtx C, title string, option *decredmaterial.Switch) D {
+func (pg *SettingsPage) subSectionSwitch(gtx C, title string, option *cryptomaterial.Switch) D {
 	return pg.subSection(gtx, title, option.Layout)
 }
 
@@ -527,7 +527,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 }
 
 func (pg *SettingsPage) showNoticeSuccess(title string) {
-	icon := decredmaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
+	icon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
 	icon.Color = pg.Theme.Color.Green500
 	info := modal.NewInfoModal2(pg.Load).
 		SetContentAlignment(layout.Center, layout.Center).

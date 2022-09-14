@@ -9,7 +9,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -30,11 +30,11 @@ type AcctDetailsPage struct {
 	wallet  *libwallet.Wallet
 	account *libwallet.Account
 
-	theme                    *decredmaterial.Theme
+	theme                    *cryptomaterial.Theme
 	acctDetailsPageContainer layout.List
 	list                     *widget.List
-	backButton               decredmaterial.IconButton
-	renameAccount            *decredmaterial.Clickable
+	backButton               cryptomaterial.IconButton
+	renameAccount            *cryptomaterial.Clickable
 
 	stakingBalance   int64
 	totalBalance     string

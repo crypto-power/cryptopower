@@ -9,7 +9,7 @@ import (
 	"gioui.org/op/paint"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -31,9 +31,9 @@ type Restore struct {
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
 	restoreComplete func()
-	tabList         *decredmaterial.ClickableList
+	tabList         *cryptomaterial.ClickableList
 	tabIndex        int
-	backButton      decredmaterial.IconButton
+	backButton      cryptomaterial.IconButton
 	seedRestorePage *SeedRestore
 }
 

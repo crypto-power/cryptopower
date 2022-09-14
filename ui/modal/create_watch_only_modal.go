@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -17,15 +17,15 @@ import (
 
 type CreateWatchOnlyModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	materialLoader material.LoaderStyle
 
-	walletName     decredmaterial.Editor
-	extendedPubKey decredmaterial.Editor
+	walletName     cryptomaterial.Editor
+	extendedPubKey cryptomaterial.Editor
 
-	btnPositve  decredmaterial.Button
-	btnNegative decredmaterial.Button
+	btnPositve  cryptomaterial.Button
+	btnNegative cryptomaterial.Button
 
 	serverError string
 
@@ -106,7 +106,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 		cm.isEnabled = false
 	}
 
-	isSubmit, isChanged := decredmaterial.HandleEditorEvents(cm.walletName.Editor, cm.extendedPubKey.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.walletName.Editor, cm.extendedPubKey.Editor)
 	if isChanged {
 		// reset editor errors
 		cm.serverError = ""
@@ -169,7 +169,7 @@ func (cm *CreateWatchOnlyModal) KeysToHandle() key.Set {
 	if !cm.walletNameEnabled {
 		return ""
 	}
-	return decredmaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
+	return cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 }
 
 // HandleKeyPress is called when one or more keys are pressed on the current
@@ -177,7 +177,7 @@ func (cm *CreateWatchOnlyModal) KeysToHandle() key.Set {
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (cm *CreateWatchOnlyModal) HandleKeyPress(evt *key.Event) {
 	if cm.walletNameEnabled {
-		decredmaterial.SwitchEditors(evt, cm.walletName.Editor, cm.extendedPubKey.Editor)
+		cryptomaterial.SwitchEditors(evt, cm.walletName.Editor, cm.extendedPubKey.Editor)
 	}
 }
 

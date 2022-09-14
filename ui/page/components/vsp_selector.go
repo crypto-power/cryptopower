@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/libwallet"
@@ -22,7 +22,7 @@ type VSPSelector struct {
 	dialogTitle string
 
 	changed      bool
-	showVSPModal *decredmaterial.Clickable
+	showVSPModal *cryptomaterial.Clickable
 	selectedVSP  *libwallet.VSP
 }
 
@@ -106,7 +106,7 @@ func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) lay
 										Left: values.MarginPadding15,
 									}
 									return inset.Layout(gtx, func(gtx C) D {
-										ic := decredmaterial.NewIcon(v.Theme.Icons.DropDownIcon)
+										ic := cryptomaterial.NewIcon(v.Theme.Icons.DropDownIcon)
 										ic.Color = v.Theme.Color.Gray1
 										return ic.Layout(gtx, values.MarginPadding20)
 									})
@@ -122,15 +122,15 @@ func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) lay
 
 type vspSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
-	inputVSP decredmaterial.Editor
-	addVSP   decredmaterial.Button
+	inputVSP cryptomaterial.Editor
+	addVSP   cryptomaterial.Button
 
 	selectedVSP *libwallet.VSP
-	vspList     *decredmaterial.ClickableList
+	vspList     *cryptomaterial.ClickableList
 
 	vspSelectedCallback func(*libwallet.VSP)
 }
@@ -232,7 +232,7 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 								if v.selectedVSP == nil || v.selectedVSP.Host != vsps[i].Host {
 									return layout.Dimensions{}
 								}
-								ic := decredmaterial.NewIcon(v.Theme.Icons.NavigationCheck)
+								ic := cryptomaterial.NewIcon(v.Theme.Icons.NavigationCheck)
 								return ic.Layout(gtx, values.MarginPadding20)
 							}),
 						)

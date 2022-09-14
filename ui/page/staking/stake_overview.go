@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -45,10 +45,10 @@ type Page struct {
 
 	ticketOverview *libwallet.StakingOverview
 
-	ticketsList   *decredmaterial.ClickableList
-	stakeSettings *decredmaterial.Clickable
-	stake         *decredmaterial.Switch
-	infoButton    decredmaterial.IconButton
+	ticketsList   *cryptomaterial.ClickableList
+	stakeSettings *cryptomaterial.Clickable
+	stake         *cryptomaterial.Switch
+	infoButton    cryptomaterial.IconButton
 
 	ticketPrice  string
 	totalRewards string
@@ -321,15 +321,15 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 					return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, label.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return decredmaterial.LinearLayout{
-						Width:      decredmaterial.MatchParent,
-						Height:     decredmaterial.WrapContent,
+					return cryptomaterial.LinearLayout{
+						Width:      cryptomaterial.MatchParent,
+						Height:     cryptomaterial.WrapContent,
 						Background: pg.Theme.Color.LightBlue,
 						Padding: layout.Inset{
 							Top:    values.MarginPadding12,
 							Bottom: values.MarginPadding12,
 						},
-						Border:    decredmaterial.Border{Radius: decredmaterial.Radius(8)},
+						Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 						Direction: layout.Center,
 						Alignment: layout.Middle,
 					}.Layout2(gtx, func(gtx C) D {

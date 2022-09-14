@@ -9,7 +9,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -34,11 +34,11 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer         layout.List
-	dangerZoneCollapsible *decredmaterial.Collapsible
+	dangerZoneCollapsible *cryptomaterial.Collapsible
 
-	backButton  decredmaterial.IconButton
-	infoButton  decredmaterial.IconButton
-	toggleMixer *decredmaterial.Switch
+	backButton  cryptomaterial.IconButton
+	infoButton  cryptomaterial.IconButton
+	toggleMixer *cryptomaterial.Switch
 
 	mixerCompleted bool
 }

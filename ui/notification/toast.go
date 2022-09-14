@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -18,7 +18,7 @@ type (
 
 type Toast struct {
 	sync.Mutex
-	theme   *decredmaterial.Theme
+	theme   *cryptomaterial.Theme
 	success bool
 	message string
 	timer   *time.Timer
@@ -31,7 +31,7 @@ const (
 	Long
 )
 
-func NewToast(th *decredmaterial.Theme) *Toast {
+func NewToast(th *cryptomaterial.Theme) *Toast {
 	return &Toast{
 		theme: th,
 	}

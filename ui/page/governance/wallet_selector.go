@@ -9,7 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -24,7 +24,7 @@ type WalletSelector struct {
 	walletIsValid func(*libwallet.Wallet) bool
 	callback      func(*libwallet.Wallet)
 
-	openSelectorDialog *decredmaterial.Clickable
+	openSelectorDialog *cryptomaterial.Clickable
 
 	wallets        []*libwallet.Wallet
 	selectedWallet *libwallet.Wallet
@@ -135,7 +135,7 @@ func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 										Left: values.MarginPadding15,
 									}
 									return inset.Layout(gtx, func(gtx C) D {
-										ic := decredmaterial.NewIcon(as.Theme.Icons.DropDownIcon)
+										ic := cryptomaterial.NewIcon(as.Theme.Icons.DropDownIcon)
 										return ic.Layout(gtx, values.MarginPadding20)
 									})
 								}),
@@ -150,7 +150,7 @@ func (as *WalletSelector) Layout(gtx layout.Context, window app.WindowNavigator)
 
 type WalletSelectorModal struct {
 	*load.Load
-	*decredmaterial.Modal
+	*cryptomaterial.Modal
 
 	dialogTitle string
 
@@ -159,7 +159,7 @@ type WalletSelectorModal struct {
 	walletIsValid func(*libwallet.Wallet) bool
 	callback      func(*libwallet.Wallet)
 
-	walletsList *decredmaterial.ClickableList
+	walletsList *cryptomaterial.ClickableList
 
 	currentSelectedWallet *libwallet.Wallet
 	filteredWallets       []*libwallet.Wallet
@@ -304,7 +304,7 @@ func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *
 						sections := func(gtx layout.Context) layout.Dimensions {
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return inset.Layout(gtx, func(gtx C) D {
-									ic := decredmaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
+									ic := cryptomaterial.NewIcon(asm.Theme.Icons.NavigationCheck)
 									return ic.Layout(gtx, values.MarginPadding20)
 								})
 							})

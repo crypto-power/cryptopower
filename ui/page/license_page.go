@@ -6,7 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/decredmaterial"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -31,7 +31,7 @@ type LicensePage struct {
 	*app.GenericPageModal
 
 	pageContainer *widget.List
-	backButton    decredmaterial.IconButton
+	backButton    cryptomaterial.IconButton
 }
 
 func NewLicensePage(l *load.Load) *LicensePage {
