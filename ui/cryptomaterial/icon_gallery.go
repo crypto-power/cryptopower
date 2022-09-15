@@ -50,7 +50,6 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ImageBrightness1 = MustIcon(widget.NewIcon(icons.ImageBrightness1))
 	i.ChevronRight = MustIcon(widget.NewIcon(icons.NavigationChevronRight))
 	i.ContentClear = MustIcon(widget.NewIcon(icons.ContentClear))
-	// i.NavMoreIcon = MustIcon(widget.NewIcon(icons.NavigationMoreVert))
 	i.DropDownIcon = MustIcon(widget.NewIcon(icons.NavigationArrowDropDown))
 	i.Cached = MustIcon(widget.NewIcon(icons.ActionCached))
 	i.ContentRemove = MustIcon(widget.NewIcon(icons.ContentRemove))
