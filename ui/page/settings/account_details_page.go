@@ -347,8 +347,8 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 				successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrAcctRenamed), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(successModal)
 				return true
-			}).
-			Title(values.String(values.StrRenameAcct)).
+			})
+		textModal.Title(values.String(values.StrRenameAcct)).
 			SetPositiveButtonText(values.String(values.StrRename))
 
 		pg.ParentWindow().ShowModal(textModal)

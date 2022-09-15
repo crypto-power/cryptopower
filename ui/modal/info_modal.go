@@ -112,6 +112,10 @@ func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 	in.btnPositive.Font.Weight = text.Medium
 	in.btnNegative.Font.Weight = text.Medium
 
+	// Set the default click functions
+	in.positiveButtonClicked = DefaultClickFunc()
+	in.negativeButtonClicked = func() {}
+
 	in.materialLoader = material.Loader(l.Theme.Base)
 
 	return in
@@ -352,7 +356,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 		w = append(w, in.customWidget)
 	}
 
-	if in.btnPositive.Text != "" || in.btnPositive.Text != "" {
+	if in.btnNegative.Text != "" || in.btnPositive.Text != "" {
 		w = append(w, in.actionButtonsLayout())
 	}
 
@@ -372,7 +376,7 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 		return in.btnAlignment.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if in.btnPositive.Text == "" || in.isLoading {
+					if in.btnNegative.Text == "" || in.isLoading {
 						return layout.Dimensions{}
 					}
 

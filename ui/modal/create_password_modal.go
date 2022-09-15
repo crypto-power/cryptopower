@@ -76,6 +76,10 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrConfirmSpendingPassword))
 	cm.confirmPasswordEditor.Editor.SingleLine, cm.confirmPasswordEditor.Editor.Submit = true, true
 
+	// Set the default click functions
+	cm.negativeButtonClicked = func() {}
+	cm.positiveButtonClicked = func(walletName, password string, m *CreatePasswordModal) bool { return true }
+
 	cm.materialLoader = material.Loader(l.Theme.Base)
 
 	return cm

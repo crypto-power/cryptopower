@@ -465,8 +465,8 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 			pg.ParentWindow().ShowModal(walletPasswordModal)
 			return false
 
-		}).
-		Title(values.String(values.StrRemoveWallet)).
+		})
+	textModal.Title(values.String(values.StrRemoveWallet)).
 		SetPositiveButtonText(values.String(values.StrRemove))
 	pg.ParentWindow().ShowModal(textModal)
 }
@@ -483,8 +483,8 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 				return false
 			}
 			return true
-		}).
-		Title(values.String(values.StrRenameWalletSheetTitle)).
+		})
+	textModal.Title(values.String(values.StrRenameWalletSheetTitle)).
 		SetPositiveButtonText(values.String(values.StrRename))
 	pg.ParentWindow().ShowModal(textModal)
 }
@@ -498,8 +498,8 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
-		}).
-		Title(values.String(values.StrConnectToSpecificPeer)).
+		})
+	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
 		SetPositiveButtonText(values.String(values.StrRename))
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
@@ -654,8 +654,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						tim.Dismiss()
 					}
 					return false
-				}).
-				Title(values.String(values.StrConfirmUmixedSpending)).
+				})
+			textModal.Title(values.String(values.StrConfirmUmixedSpending)).
 				SetPositiveButtonText(values.String(values.StrConfirm)).
 				SetNegativeButtonCallback(func() {
 					pg.spendUnconfirmed.SetChecked(false)

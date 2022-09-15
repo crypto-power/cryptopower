@@ -36,6 +36,9 @@ func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm.textInput = l.Theme.Editor(new(widget.Editor), values.String(values.StrHint))
 	tm.textInput.Editor.SingleLine, tm.textInput.Editor.Submit = true, true
 
+	// Set the default click functions
+	tm.callback = func(string, *TextInputModal) bool { return true }
+
 	return tm
 }
 

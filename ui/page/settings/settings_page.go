@@ -514,8 +514,8 @@ func (pg *SettingsPage) showSPVPeerDialog() {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
-		}).
-		Title(values.String(values.StrConnectToSpecificPeer)).
+		})
+	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
 		SetPositiveButtonText(values.String(values.StrConfirm))
 	pg.ParentWindow().ShowModal(textModal)
 }
@@ -529,8 +529,8 @@ func (pg *SettingsPage) showUserAgentDialog() {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.UserAgentConfigKey, userAgent)
 			}
 			return true
-		}).
-		Title(values.String(values.StrChangeUserAgent)).
+		})
+	textModal.Title(values.String(values.StrChangeUserAgent)).
 		SetPositiveButtonText(values.String(values.StrConfirm))
 	pg.ParentWindow().ShowModal(textModal)
 }
