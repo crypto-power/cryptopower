@@ -6,10 +6,10 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/planetdecred/dcrlibwallet"
-	"github.com/planetdecred/godcr/ui/decredmaterial"
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -33,17 +33,17 @@ type AccountMixerPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	wallet *dcrlibwallet.Wallet
+	wallet *libwallet.Wallet
 
-	toggleMixer *decredmaterial.Switch
+	toggleMixer *cryptomaterial.Switch
 
 	mixerCompleted bool
 
 	totalBalance                                    dcrutil.Amount
-	mixerProgress                                   decredmaterial.ProgressBarStyle
-	settingsCollapsible                             *decredmaterial.Collapsible
-	chevronRightIcon                                decredmaterial.Icon
-	changeAccount, mixedAccount, coordinationServer *decredmaterial.Clickable
+	mixerProgress                                   cryptomaterial.ProgressBarStyle
+	settingsCollapsible                             *cryptomaterial.Collapsible
+	chevronRightIcon                                cryptomaterial.Icon
+	changeAccount, mixedAccount, coordinationServer *cryptomaterial.Clickable
 
 	pageContainer layout.List
 }
@@ -56,7 +56,7 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 		toggleMixer:         l.Theme.Switch(),
 		mixerProgress:       l.Theme.ProgressBar(0),
 		settingsCollapsible: l.Theme.Collapsible(),
-		chevronRightIcon:    *decredmaterial.NewIcon(l.Theme.Icons.ChevronRight),
+		chevronRightIcon:    *cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight),
 		changeAccount:       l.Theme.NewClickable(false),
 		mixedAccount:        l.Theme.NewClickable(false),
 		coordinationServer:  l.Theme.NewClickable(false),
@@ -76,12 +76,12 @@ func (pg *AccountMixerPage) OnNavigatedTo() {
 	pg.listenForMixerNotifications()
 	pg.toggleMixer.SetChecked(pg.WL.SelectedWallet.Wallet.IsAccountMixerActive())
 	pg.mixerProgress.Height = values.MarginPadding18
-	pg.mixerProgress.Radius = decredmaterial.Radius(2)
+	pg.mixerProgress.Radius = cryptomaterial.Radius(2)
 	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load) // TODO - handle error
 	pg.totalBalance = totalBalance.Total
 }
 
-func (pg *AccountMixerPage) bottomSectionLabel(clickable *decredmaterial.Clickable, title string) layout.Widget {
+func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickable, title string) layout.Widget {
 	return func(gtx C) D {
 		return clickable.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Body1(title)
@@ -152,7 +152,7 @@ func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Wi
 	})
 }
 
-func (pg *AccountMixerPage) balanceInfo(l *load.Load, balanceLabel, balanceValue string, balanceIcon *decredmaterial.Image) layout.FlexChild {
+func (pg *AccountMixerPage) balanceInfo(l *load.Load, balanceLabel, balanceValue string, balanceIcon *cryptomaterial.Image) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(balanceIcon.Layout12dp),
