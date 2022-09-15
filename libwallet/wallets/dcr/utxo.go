@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
+	"gitlab.com/raedah/libwallet/txhelper"
 )
 
 type nextAddressFunc func() (address string, err error)
@@ -67,7 +67,7 @@ func (tx *TxAuthor) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
 	// if no change destination is provided and
 	// no recipient is set to receive max amount.
 	nextInternalAddress := func() (string, error) {
-		ctx := tx.sourceWallet.shutdownContext()
+		ctx := tx.sourceWallet.ShutdownContext()
 		addr, err := tx.sourceWallet.Internal().NewChangeAddress(ctx, tx.sourceAccountNumber)
 		if err != nil {
 			return "", err

@@ -22,7 +22,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/uniformprng"
+	"gitlab.com/raedah/libwallet/internal/uniformprng"
 )
 
 var prng lockedRand

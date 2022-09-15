@@ -16,6 +16,8 @@ import (
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
+
+	"gitlab.com/raedah/libwallet/wallets/dcr"
 )
 
 const (
@@ -32,7 +34,7 @@ var (
 )
 
 func (mw *MultiWallet) batchDbTransaction(dbOp func(node storm.Node) error) (err error) {
-	dbTx, err := mw.db.Begin(true)
+	dbTx, err := mw.db .Begin(true)
 	if err != nil {
 		return err
 	}
@@ -88,7 +90,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
 	wallet.HasDiscoveredAccounts = true
-	err := mw.db.Save(wallet)
+	err := mw.db .Save(wallet)
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 // multiwallet's root directory in bytes.
 func (mw *MultiWallet) RootDirFileSizeInBytes() (int64, error) {
 	var size int64
-	err := filepath.Walk(mw.rootDir, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(mw.rootDir , func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -134,7 +136,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 	ctx, cancel := mw.contextWithShutdownCancel()
 	defer cancel()
 
-	for _, w := range mw.wallets {
+	for _, w := range mw.Assets.DCR.Wallets {
 		if !w.WalletOpened() {
 			return -1, errors.Errorf("wallet %d is not open and cannot be checked", w.ID)
 		}
@@ -143,7 +145,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 			return -1, err
 		}
 		for _, account := range accounts.Accounts {
-			if account.AccountNumber == ImportedAccountNumber {
+			if account.AccountNumber == dcr.ImportedAccountNumber {
 				continue
 			}
 			acctXPub, err := w.Internal().AccountXpub(ctx, account.AccountNumber)
@@ -166,12 +168,12 @@ func (mw *MultiWallet) WalletWithSeed(seedMnemonic string) (int, error) {
 		return -1, errors.New(ErrEmptySeed)
 	}
 
-	newSeedLegacyXPUb, newSeedSLIP0044XPUb, err := deriveBIP44AccountXPubs(seedMnemonic, DefaultAccountNum, mw.chainParams)
+	newSeedLegacyXPUb, newSeedSLIP0044XPUb, err := deriveBIP44AccountXPubs(seedMnemonic, dcr.DefaultAccountNum, mw.chainParams)
 	if err != nil {
 		return -1, err
 	}
 
-	for _, wallet := range mw.wallets {
+	for _, wallet := range mw.Assets.DCR.Wallets {
 		if !wallet.WalletOpened() {
 			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.ID)
 		}
@@ -180,7 +182,7 @@ func (mw *MultiWallet) WalletWithSeed(seedMnemonic string) (int, error) {
 		// incorrect result from the check below. But this would return true
 		// if the watch-only wallet was created using the xpub of the default
 		// account of the provided seed.
-		usesSameSeed, err := wallet.AccountXPubMatches(DefaultAccountNum, newSeedLegacyXPUb, newSeedSLIP0044XPUb)
+		usesSameSeed, err := wallet.AccountXPubMatches(dcr.DefaultAccountNum, newSeedLegacyXPUb, newSeedSLIP0044XPUb)
 		if err != nil {
 			return -1, err
 		}

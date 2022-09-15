@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/certs"
+	"gitlab.com/raedah/libwallet/internal/certs"
 )
 
 const (
@@ -23,23 +23,23 @@ const (
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
-func (mw *MultiWallet) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
-	mw.notificationListenersMu.Lock()
-	defer mw.notificationListenersMu.Unlock()
+func (wallet *Wallet) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
+	wallet.notificationListenersMu.Lock()
+	defer wallet.notificationListenersMu.Unlock()
 
-	if _, ok := mw.accountMixerNotificationListener[uniqueIdentifier]; ok {
+	if _, ok := wallet.accountMixerNotificationListener[uniqueIdentifier]; ok {
 		return errors.New(ErrListenerAlreadyExist)
 	}
 
-	mw.accountMixerNotificationListener[uniqueIdentifier] = accountMixerNotificationListener
+	wallet.accountMixerNotificationListener[uniqueIdentifier] = accountMixerNotificationListener
 	return nil
 }
 
-func (mw *MultiWallet) RemoveAccountMixerNotificationListener(uniqueIdentifier string) {
-	mw.notificationListenersMu.Lock()
-	defer mw.notificationListenersMu.Unlock()
+func (wallet *Wallet) RemoveAccountMixerNotificationListener(uniqueIdentifier string) {
+	wallet.notificationListenersMu.Lock()
+	defer wallet.notificationListenersMu.Unlock()
 
-	delete(mw.accountMixerNotificationListener, uniqueIdentifier)
+	delete(wallet.accountMixerNotificationListener, uniqueIdentifier)
 }
 
 // CreateMixerAccounts creates the two accounts needed for the account mixer. This function
@@ -133,8 +133,7 @@ func (wallet *Wallet) ClearMixerConfig() {
 	wallet.SetBoolConfigValueForKey(AccountMixerConfigSet, false)
 }
 
-func (mw *MultiWallet) ReadyToMix(walletID int) (bool, error) {
-	wallet := mw.WalletWithID(walletID)
+func (wallet *Wallet) ReadyToMix(walletID int) (bool, error) {
 	if wallet == nil {
 		return false, errors.New(ErrNotExist)
 	}
@@ -150,12 +149,11 @@ func (mw *MultiWallet) ReadyToMix(walletID int) (bool, error) {
 }
 
 // StartAccountMixer starts the automatic account mixer
-func (mw *MultiWallet) StartAccountMixer(walletID int, walletPassphrase string) error {
-	if !mw.IsConnectedToDecredNetwork() {
+func (wallet *Wallet) StartAccountMixer(walletID int, walletPassphrase string) error {
+	if !wallet.IsConnectedToDecredNetwork() {
 		return errors.New(ErrNotConnected)
 	}
 
-	wallet := mw.WalletWithID(walletID)
 	if wallet == nil {
 		return errors.New(ErrNotExist)
 	}
@@ -192,20 +190,20 @@ func (mw *MultiWallet) StartAccountMixer(walletID int, walletPassphrase string) 
 
 	go func() {
 		log.Info("Running account mixer")
-		if mw.accountMixerNotificationListener != nil {
-			mw.publishAccountMixerStarted(walletID)
+		if wallet.accountMixerNotificationListener != nil {
+			wallet.publishAccountMixerStarted(walletID)
 		}
 
-		ctx, cancel := mw.contextWithShutdownCancel()
-		wallet.cancelAccountMixer = cancel
+		ctx, cancel := wallet.contextWithShutdownCancel()
+		wallet.CancelAccountMixer = cancel
 		err = tb.Run(ctx, []byte(walletPassphrase))
 		if err != nil {
 			log.Errorf("AccountMixer instance errored: %v", err)
 		}
 
-		wallet.cancelAccountMixer = nil
-		if mw.accountMixerNotificationListener != nil {
-			mw.publishAccountMixerEnded(walletID)
+		wallet.CancelAccountMixer = nil
+		if wallet.accountMixerNotificationListener != nil {
+			wallet.publishAccountMixerEnded(walletID)
 		}
 	}()
 
@@ -256,19 +254,17 @@ func (wallet *Wallet) readCSPPConfig() *CSPPConfig {
 }
 
 // StopAccountMixer stops the active account mixer
-func (mw *MultiWallet) StopAccountMixer(walletID int) error {
-
-	wallet := mw.WalletWithID(walletID)
+func (wallet *Wallet) StopAccountMixer() error {
 	if wallet == nil {
 		return errors.New(ErrNotExist)
 	}
 
-	if wallet.cancelAccountMixer == nil {
+	if wallet.CancelAccountMixer == nil {
 		return errors.New(ErrInvalid)
 	}
 
-	wallet.cancelAccountMixer()
-	wallet.cancelAccountMixer = nil
+	wallet.CancelAccountMixer()
+	wallet.CancelAccountMixer = nil
 	return nil
 }
 
@@ -281,7 +277,7 @@ func (wallet *Wallet) accountHasMixableOutput(accountNumber int32) (bool, error)
 
 	// fetch all utxos in account to extract details for the utxos selected by user
 	// use targetAmount = 0 to fetch ALL utxos in account
-	inputDetail, err := wallet.Internal().SelectInputs(wallet.shutdownContext(), dcrutil.Amount(0), policy)
+	inputDetail, err := wallet.Internal().SelectInputs(wallet.ShutdownContext(), dcrutil.Amount(0), policy)
 	if err != nil {
 		return false, nil
 	}
@@ -300,7 +296,7 @@ func (wallet *Wallet) accountHasMixableOutput(accountNumber int32) (bool, error)
 			return hasMixableOutput, nil
 		}
 
-		lockedOutpoints, err := wallet.Internal().LockedOutpoints(wallet.shutdownContext(), accountName)
+		lockedOutpoints, err := wallet.Internal().LockedOutpoints(wallet.ShutdownContext(), accountName)
 		if err != nil {
 			return hasMixableOutput, nil
 		}
@@ -312,23 +308,23 @@ func (wallet *Wallet) accountHasMixableOutput(accountNumber int32) (bool, error)
 
 // IsAccountMixerActive returns true if account mixer is active
 func (wallet *Wallet) IsAccountMixerActive() bool {
-	return wallet.cancelAccountMixer != nil
+	return wallet.CancelAccountMixer != nil
 }
 
-func (mw *MultiWallet) publishAccountMixerStarted(walletID int) {
-	mw.notificationListenersMu.RLock()
-	defer mw.notificationListenersMu.RUnlock()
+func (wallet *Wallet) publishAccountMixerStarted(walletID int) {
+	wallet.notificationListenersMu.RLock()
+	defer wallet.notificationListenersMu.RUnlock()
 
-	for _, accountMixerNotificationListener := range mw.accountMixerNotificationListener {
+	for _, accountMixerNotificationListener := range wallet.accountMixerNotificationListener {
 		accountMixerNotificationListener.OnAccountMixerStarted(walletID)
 	}
 }
 
-func (mw *MultiWallet) publishAccountMixerEnded(walletID int) {
-	mw.notificationListenersMu.RLock()
-	defer mw.notificationListenersMu.RUnlock()
+func (wallet *Wallet) publishAccountMixerEnded(walletID int) {
+	wallet.notificationListenersMu.RLock()
+	defer wallet.notificationListenersMu.RUnlock()
 
-	for _, accountMixerNotificationListener := range mw.accountMixerNotificationListener {
+	for _, accountMixerNotificationListener := range wallet.accountMixerNotificationListener {
 		accountMixerNotificationListener.OnAccountMixerEnded(walletID)
 	}
 }

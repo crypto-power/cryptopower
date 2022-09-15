@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 	var blockHeight int32 = BlockHeightInvalid
 	if blockHash != nil {
 		blockIdentifier := w.NewBlockIdentifierFromHash(blockHash)
-		blockInfo, err := wallet.Internal().BlockInfo(wallet.shutdownContext(), blockIdentifier)
+		blockInfo, err := wallet.Internal().BlockInfo(wallet.ShutdownContext(), blockIdentifier)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -104,7 +104,7 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
-		wallet.walletDataDB.SaveOrUpdate(&Transaction{}, ticketPurchaseTx)
+		wallet.WalletDataDB.SaveOrUpdate(&Transaction{}, ticketPurchaseTx)
 	}
 
 	return decodedTx, nil

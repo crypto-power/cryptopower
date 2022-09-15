@@ -3,7 +3,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package libwallet
+package dcr
 
 import (
 	"os"
@@ -17,9 +17,7 @@ import (
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"gitlab.com/raedah/libwallet/ext"
 	"gitlab.com/raedah/libwallet/internal/loader"
-	"gitlab.com/raedah/libwallet/internal/politeia"
 	"gitlab.com/raedah/libwallet/internal/vsp"
 	"gitlab.com/raedah/libwallet/spv"
 )
@@ -62,8 +60,6 @@ var (
 	cmgrLog      = backendLog.Logger("CMGR")
 	amgrLog      = backendLog.Logger("AMGR")
 	vspcLog      = backendLog.Logger("VSPC")
-	politeiaLog  = backendLog.Logger("POLT")
-	extLog       = backendLog.Logger("EXT")
 )
 
 // Initialize package-global logger variables.
@@ -77,8 +73,6 @@ func init() {
 	connmgr.UseLogger(cmgrLog)
 	addrmgr.UseLogger(amgrLog)
 	vsp.UseLogger(vspcLog)
-	politeia.UseLogger(politeiaLog)
-	ext.UseLogger(extLog)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -93,8 +87,6 @@ var subsystemLoggers = map[string]slog.Logger{
 	"CMGR": cmgrLog,
 	"AMGR": amgrLog,
 	"VSPC": vspcLog,
-	"POLT": politeiaLog,
-	"EXT":  extLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -108,6 +100,25 @@ func initLogRotator(logFile string) error {
 
 	logRotator = r
 	return nil
+}
+
+// UseLoggers sets the subsystem logs to use the provided loggers.
+func UseLoggers(main, loaderLog, walletLog, tkbyLog,
+	syncLog, cmgrLog, amgrLog slog.Logger) {
+	log = main
+	loader.UseLogger(loaderLog)
+	wallet.UseLogger(walletLog)
+	udb.UseLogger(walletLog)
+	ticketbuyer.UseLogger(tkbyLog)
+	spv.UseLogger(syncLog)
+	p2p.UseLogger(syncLog)
+	connmgr.UseLogger(cmgrLog)
+	addrmgr.UseLogger(amgrLog)
+}
+
+// UseLogger sets the subsystem logs to use the provided logger.
+func UseLogger(logger slog.Logger) {
+	UseLoggers(logger, logger, logger, logger, logger, logger, logger)
 }
 
 // RegisterLogger should be called before logRotator is initialized.

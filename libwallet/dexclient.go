@@ -13,7 +13,7 @@ import (
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/cryptopower/libwallet/dexdcr"
+	"gitlab.com/raedah/libwallet/dexdcr"
 )
 
 const (
@@ -44,7 +44,7 @@ func (mw *MultiWallet) initDexClient() error {
 
 	mw.dexClient = &DexClient{
 		log:        dex.NewLogger("DEXC", log.Level(), logWriter{}, true),
-		dexDataDir: filepath.Join(mw.rootDir, "dex"),
+		dexDataDir: filepath.Join(mw.rootDir , "dex"),
 	}
 
 	err := os.MkdirAll(mw.dexClient.dexDataDir, os.ModePerm)
@@ -105,7 +105,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("account error: %v", err)
 		}
 
-		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.dataDir)
+		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir)
 		return dexdcr.NewSpvWallet(wallet.Internal(), walletDesc, chainParams, logger.SubLogger("DLWL")), nil
 	}
 

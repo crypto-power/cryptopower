@@ -1,13 +1,13 @@
-package libwallet
+package dcr
 
 import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/walletdata"
+	"gitlab.com/raedah/libwallet/wallets/dcr/walletdata"
 )
 
 func (wallet *Wallet) IndexTransactions() error {
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 
 	var totalIndex int32
 	var txEndHeight uint32
@@ -27,7 +27,7 @@ func (wallet *Wallet) IndexTransactions() error {
 				return false, err
 			}
 
-			_, err = wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tx)
+			_, err = wallet.WalletDataDB.SaveOrUpdate(&Transaction{}, tx)
 			if err != nil {
 				log.Errorf("[%d] Index tx replace tx err : %v", wallet.ID, err)
 				return false, err
@@ -38,7 +38,7 @@ func (wallet *Wallet) IndexTransactions() error {
 
 		if block.Header != nil {
 			txEndHeight = block.Header.Height
-			err := wallet.walletDataDB.SaveLastIndexPoint(int32(txEndHeight))
+			err := wallet.WalletDataDB.SaveLastIndexPoint(int32(txEndHeight))
 			if err != nil {
 				log.Errorf("[%d] Set tx index end block height error: ", wallet.ID, err)
 				return false, err
@@ -55,26 +55,26 @@ func (wallet *Wallet) IndexTransactions() error {
 		}
 	}
 
-	beginHeight, err := wallet.walletDataDB.ReadIndexingStartBlock()
+	beginHeight, err := wallet.WalletDataDB.ReadIndexingStartBlock()
 	if err != nil {
 		log.Errorf("[%d] Get tx indexing start point error: %v", wallet.ID, err)
 		return err
 	}
 
-	endHeight := wallet.GetBestBlock()
+	endHeight := wallet.getBestBlock()
 
 	startBlock := w.NewBlockIdentifierFromHeight(beginHeight)
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)
 
 	defer func() {
-		count, err := wallet.walletDataDB.Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &Transaction{})
+		count, err := wallet.WalletDataDB.Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &Transaction{})
 		if err != nil {
 			log.Errorf("[%d] Post-indexing tx count error :%v", wallet.ID, err)
 		} else if count > 0 {
 			log.Infof("[%d] Transaction index finished at %d, %d transaction(s) indexed in total", wallet.ID, endHeight, count)
 		}
 
-		err = wallet.walletDataDB.SaveLastIndexPoint(endHeight)
+		err = wallet.WalletDataDB.SaveLastIndexPoint(endHeight)
 		if err != nil {
 			log.Errorf("[%d] Set tx index end block height error: ", wallet.ID, err)
 		}
@@ -84,8 +84,8 @@ func (wallet *Wallet) IndexTransactions() error {
 	return wallet.Internal().GetTransactions(ctx, rangeFn, startBlock, endBlock)
 }
 
-func (wallet *Wallet) reindexTransactions() error {
-	err := wallet.walletDataDB.ClearSavedTransactions(&Transaction{})
+func (wallet *Wallet) ReindexTransactions() error {
+	err := wallet.WalletDataDB.ClearSavedTransactions(&Transaction{})
 	if err != nil {
 		return err
 	}

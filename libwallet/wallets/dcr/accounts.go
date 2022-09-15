@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
+	"gitlab.com/raedah/libwallet/addresshelper"
 )
 
 const (
@@ -31,7 +31,7 @@ func (wallet *Wallet) GetAccounts() (string, error) {
 }
 
 func (wallet *Wallet) GetAccountsRaw() (*Accounts, error) {
-	resp, err := wallet.Internal().Accounts(wallet.shutdownContext())
+	resp, err := wallet.Internal().Accounts(wallet.ShutdownContext())
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (wallet *Wallet) GetAccount(accountNumber int32) (*Account, error) {
 }
 
 func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balance, error) {
-	balance, err := wallet.Internal().AccountBalance(wallet.shutdownContext(), uint32(accountNumber), wallet.RequiredConfirmations())
+	balance, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(accountNumber), wallet.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balance, error) {
 }
 
 func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
-	bals, err := wallet.Internal().AccountBalance(wallet.shutdownContext(), uint32(account), wallet.RequiredConfirmations())
+	bals, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(account), wallet.RequiredConfirmations())
 	if err != nil {
 		log.Error(err)
 		return 0, translateError(err)
@@ -138,7 +138,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 
 	// fetch all utxos in account to extract details for the utxos selected by user
 	// use targetAmount = 0 to fetch ALL utxos in account
-	inputDetail, err := wallet.Internal().SelectInputs(wallet.shutdownContext(), dcrutil.Amount(0), policy)
+	inputDetail, err := wallet.Internal().SelectInputs(wallet.ShutdownContext(), dcrutil.Amount(0), policy)
 
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 	unspentOutputs := make([]*UnspentOutput, len(inputDetail.Inputs))
 
 	for i, input := range inputDetail.Inputs {
-		outputInfo, err := wallet.Internal().OutputInfo(wallet.shutdownContext(), &input.PreviousOutPoint)
+		outputInfo, err := wallet.Internal().OutputInfo(wallet.ShutdownContext(), &input.PreviousOutPoint)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +160,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 		var confirmations int32
 		inputBlockHeight := int32(input.BlockHeight)
 		if inputBlockHeight != -1 {
-			confirmations = wallet.GetBestBlock() - inputBlockHeight + 1
+			confirmations = wallet.getBestBlock() - inputBlockHeight + 1
 		}
 
 		unspentOutputs[i] = &UnspentOutput{
@@ -197,7 +197,7 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 		return -1, errors.New(ErrWalletLocked)
 	}
 
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 
 	accountNumber, err := wallet.Internal().NextAccount(ctx, accountName)
 	if err != nil {
@@ -208,7 +208,7 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 }
 
 func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
-	err := wallet.Internal().RenameAccount(wallet.shutdownContext(), uint32(accountNumber), newName)
+	err := wallet.Internal().RenameAccount(wallet.ShutdownContext(), uint32(accountNumber), newName)
 	if err != nil {
 		return translateError(err)
 	}
@@ -225,21 +225,21 @@ func (wallet *Wallet) AccountName(accountNumber int32) (string, error) {
 }
 
 func (wallet *Wallet) AccountNameRaw(accountNumber uint32) (string, error) {
-	return wallet.Internal().AccountName(wallet.shutdownContext(), accountNumber)
+	return wallet.Internal().AccountName(wallet.ShutdownContext(), accountNumber)
 }
 
 func (wallet *Wallet) AccountNumber(accountName string) (int32, error) {
-	accountNumber, err := wallet.Internal().AccountNumber(wallet.shutdownContext(), accountName)
+	accountNumber, err := wallet.Internal().AccountNumber(wallet.ShutdownContext(), accountName)
 	return int32(accountNumber), translateError(err)
 }
 
 func (wallet *Wallet) HasAccount(accountName string) bool {
-	_, err := wallet.Internal().AccountNumber(wallet.shutdownContext(), accountName)
+	_, err := wallet.Internal().AccountNumber(wallet.ShutdownContext(), accountName)
 	return err == nil
 }
 
 func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
-	cointype, err := wallet.Internal().CoinType(wallet.shutdownContext())
+	cointype, err := wallet.Internal().CoinType(wallet.ShutdownContext())
 	if err != nil {
 		return "", translateError(err)
 	}

@@ -1,15 +1,18 @@
-package libwallet
+package dcr
 
 import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"sync"
 
 	"decred.org/dcrwallet/v2/wallet/udb"
 
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	www "github.com/decred/politeia/politeiawww/api/www/v1"
+	"gitlab.com/raedah/libwallet/internal/vsp"
 )
 
 // WalletConfig defines options for configuring wallet behaviour.
@@ -400,6 +403,86 @@ type VSPTicketInfo struct {
 
 /** end ticket-related types */
 
+/** begin politeia types */
+type Politeia struct {
+	WalletRef               *Wallet
+	Host                    string
+	mu                      sync.RWMutex
+	ctx                     context.Context
+	cancelSync              context.CancelFunc
+	Client                  *politeiaClient
+	notificationListenersMu sync.RWMutex
+	NotificationListeners   map[string]ProposalNotificationListener
+}
+
+type politeiaClient struct {
+	host       string
+	httpClient *http.Client
+
+	version *www.VersionReply
+	policy  *www.PolicyReply
+	cookies []*http.Cookie
+}
+
+type Proposal struct {
+	ID               int    `storm:"id,increment"`
+	Token            string `json:"token" storm:"unique"`
+	Category         int32  `json:"category" storm:"index"`
+	Name             string `json:"name"`
+	State            int32  `json:"state"`
+	Status           int32  `json:"status"`
+	Timestamp        int64  `json:"timestamp"`
+	UserID           string `json:"userid"`
+	Username         string `json:"username"`
+	NumComments      int32  `json:"numcomments"`
+	Version          string `json:"version"`
+	PublishedAt      int64  `json:"publishedat"`
+	IndexFile        string `json:"indexfile"`
+	IndexFileVersion string `json:"fileversion"`
+	VoteStatus       int32  `json:"votestatus"`
+	VoteApproved     bool   `json:"voteapproved"`
+	YesVotes         int32  `json:"yesvotes"`
+	NoVotes          int32  `json:"novotes"`
+	EligibleTickets  int32  `json:"eligibletickets"`
+	QuorumPercentage int32  `json:"quorumpercentage"`
+	PassPercentage   int32  `json:"passpercentage"`
+}
+
+type ProposalOverview struct {
+	All        int32
+	Discussion int32
+	Voting     int32
+	Approved   int32
+	Rejected   int32
+	Abandoned  int32
+}
+
+type ProposalVoteDetails struct {
+	EligibleTickets []*EligibleTicket
+	Votes           []*ProposalVote
+	YesVotes        int32
+	NoVotes         int32
+}
+
+type EligibleTicket struct {
+	Hash    string
+	Address string
+}
+
+type ProposalVote struct {
+	Ticket *EligibleTicket
+	Bit    string
+}
+
+type ProposalNotificationListener interface {
+	OnProposalsSynced()
+	OnNewProposal(proposal *Proposal)
+	OnProposalVoteStarted(proposal *Proposal)
+	OnProposalVoteFinished(proposal *Proposal)
+}
+
+/** end politea proposal types */
+
 type UnspentOutput struct {
 	TransactionHash []byte
 	OutputIndex     uint32
@@ -468,12 +551,3 @@ type DcrdataAgenda struct {
 }
 
 /** end agenda types */
-
-// TreasuryKeyPolicy records the voting policy for treasury spend transactions
-// by a particular key, and possibly for a particular ticket being voted on by a
-// VSP.
-type TreasuryKeyPolicy struct {
-	PiKey      string `json:"pi_key"`
-	TicketHash string `json:"ticket_hash"` // nil unless for per-ticket VSP policies
-	Policy     string `json:"policy"`
-}

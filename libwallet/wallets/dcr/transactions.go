@@ -1,13 +1,12 @@
-package libwallet
+package dcr
 
 import (
 	"encoding/json"
-	"sort"
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
-	"gitlab.com/raedah/cryptopower/libwallet/walletdata"
+	"gitlab.com/raedah/libwallet/txhelper"
+	"gitlab.com/raedah/libwallet/wallets/dcr/walletdata"
 )
 
 const (
@@ -55,7 +54,7 @@ func (wallet *Wallet) PublishUnminedTransactions() error {
 		return err
 	}
 
-	return wallet.Internal().PublishUnminedTransactions(wallet.shutdownContext(), n)
+	return wallet.Internal().PublishUnminedTransactions(wallet.ShutdownContext(), n)
 }
 
 func (wallet *Wallet) GetTransaction(txHash string) (string, error) {
@@ -80,7 +79,7 @@ func (wallet *Wallet) GetTransactionRaw(txHash string) (*Transaction, error) {
 		return nil, err
 	}
 
-	txSummary, _, blockHash, err := wallet.Internal().TransactionSummary(wallet.shutdownContext(), hash)
+	txSummary, _, blockHash, err := wallet.Internal().TransactionSummary(wallet.ShutdownContext(), hash)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -104,57 +103,16 @@ func (wallet *Wallet) GetTransactions(offset, limit, txFilter int32, newestFirst
 }
 
 func (wallet *Wallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []Transaction, err error) {
-	err = wallet.walletDataDB.Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.GetBestBlock(), &transactions)
+	err = wallet.WalletDataDB.Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.getBestBlock(), &transactions)
 	return
 }
 
-func (mw *MultiWallet) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
-
-	transactions, err := mw.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
-	if err != nil {
-		return "", err
-	}
-
-	jsonEncodedTransactions, err := json.Marshal(&transactions)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonEncodedTransactions), nil
-}
-
-func (mw *MultiWallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]Transaction, error) {
-	transactions := make([]Transaction, 0)
-	for _, wallet := range mw.wallets {
-		walletTransactions, err := wallet.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
-		if err != nil {
-			return nil, err
-		}
-
-		transactions = append(transactions, walletTransactions...)
-	}
-
-	// sort transaction by timestamp in descending order
-	sort.Slice(transactions[:], func(i, j int) bool {
-		if newestFirst {
-			return transactions[i].Timestamp > transactions[j].Timestamp
-		}
-		return transactions[i].Timestamp < transactions[j].Timestamp
-	})
-
-	if len(transactions) > int(limit) && limit > 0 {
-		transactions = transactions[:limit]
-	}
-
-	return transactions, nil
-}
-
 func (wallet *Wallet) CountTransactions(txFilter int32) (int, error) {
-	return wallet.walletDataDB.Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlock(), &Transaction{})
+	return wallet.WalletDataDB.Count(txFilter, wallet.RequiredConfirmations(), wallet.getBestBlock(), &Transaction{})
 }
 
 func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
-	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &Transaction{})
+	err := wallet.WalletDataDB.FindOne("TicketSpentHash", ticketHash, &Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return false, nil
@@ -167,7 +125,7 @@ func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
 
 func (wallet *Wallet) TicketSpender(ticketHash string) (*Transaction, error) {
 	var spender Transaction
-	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &spender)
+	err := wallet.WalletDataDB.FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return nil, nil
@@ -219,7 +177,7 @@ func (wallet *Wallet) TransactionOverview() (txOverview *TransactionOverview, er
 }
 
 func (wallet *Wallet) TxMatchesFilter(tx *Transaction, txFilter int32) bool {
-	bestBlock := wallet.GetBestBlock()
+	bestBlock := wallet.getBestBlock()
 
 	// tickets with block height less than this are matured.
 	maturityBlock := bestBlock - int32(wallet.chainParams.TicketMaturity)
