@@ -277,7 +277,6 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 			Right:  values.MarginPadding24,
 			Bottom: values.MarginPadding30,
 		},
-		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
@@ -289,24 +288,74 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrStatus)+": ").Layout),
-								layout.Rigid(pg.Theme.Label(values.TextSize16, pg.txnWidgets.txStatus.Title).Layout),
-								layout.Rigid(func(gtx C) D {
-									// immature tx section
-									if pg.txnWidgets.txStatus.TicketStatus == libwallet.TicketStatusImmature {
-										p := pg.Theme.ProgressBarCirle(pg.getTimeToMatureOrExpire())
-										p.Color = pg.txnWidgets.txStatus.ProgressBarColor
-										return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-											sz := gtx.Dp(values.MarginPadding22)
-											gtx.Constraints.Max = image.Point{X: sz, Y: sz}
-											gtx.Constraints.Min = gtx.Constraints.Max
-											return p.Layout(gtx)
-										})
-									}
-									return D{}
-								}),
-							)
+							if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+								return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrStatus)+": ").Layout),
+									layout.Rigid(pg.Theme.Label(values.TextSize16, pg.txnWidgets.txStatus.Title).Layout),
+									layout.Rigid(func(gtx C) D {
+										// immature tx section
+										if pg.txnWidgets.txStatus.TicketStatus == libwallet.TicketStatusImmature {
+											p := pg.Theme.ProgressBarCirle(pg.getTimeToMatureOrExpire())
+											p.Color = pg.txnWidgets.txStatus.ProgressBarColor
+											return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+												sz := gtx.Dp(values.MarginPadding22)
+												gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+												gtx.Constraints.Min = gtx.Constraints.Max
+												return p.Layout(gtx)
+											})
+										}
+										return D{}
+									}),
+								)
+							} else {
+								// regular transaction
+								col := pg.Theme.Color.GrayText2
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										title := dcrutil.Amount(pg.transaction.Amount).String()
+										switch pg.transaction.Type {
+										case libwallet.TxTypeMixed:
+											title = dcrutil.Amount(pg.transaction.MixDenomination).String()
+										case libwallet.TxTypeRegular:
+											if pg.transaction.Direction == libwallet.TxDirectionSent {
+												title = "-" + title
+											}
+										case libwallet.TxTypeRevocation, libwallet.TxTypeVote:
+											title = pg.txnWidgets.txStatus.Title
+										default:
+										}
+
+										return pg.Theme.Label(values.TextSize20, title).Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										date := time.Unix(pg.transaction.Timestamp, 0).Format("Jan 2, 2006")
+										timeSplit := time.Unix(pg.transaction.Timestamp, 0).Format("03:04:05 PM")
+										dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
+
+										lbl := pg.Theme.Label(values.TextSize16, dateTime)
+										lbl.Color = col
+										return layout.Inset{
+											Top:    values.MarginPadding7,
+											Bottom: values.MarginPadding7,
+										}.Layout(gtx, lbl.Layout)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// immature tx section
+										if pg.transaction.Type == libwallet.TxTypeVote || pg.transaction.Type == libwallet.TxTypeRevocation {
+											title := values.String(values.StrRevoke)
+											if pg.transaction.Type == libwallet.TxTypeVote {
+												title = values.String(values.StrVote)
+											}
+
+											lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}
+
+										return D{}
+									}),
+								)
+							}
 						}),
 						layout.Rigid(func(gtx C) D {
 							col := pg.Theme.Color.GrayText2
@@ -565,9 +614,9 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			timeString := func(timestamp int64) string {
-				return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")
-			}
+			// timeString := func(timestamp int64) string {
+			// 	return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")
+			// }
 
 			if pg.ticketSpender != nil { // voted or revoked
 				if pg.ticketSpender.Type == libwallet.TxTypeVote {
@@ -903,4 +952,8 @@ func splitSingleString(text string, index int) string {
 	first := text[0 : len(text)-index]
 	second := text[len(text)-index:]
 	return fmt.Sprintf("%s %s", first, second)
+}
+
+func timeString(timestamp int64) string {
+	return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")
 }
