@@ -52,7 +52,7 @@ type TxDetailsPage struct {
 	transactionInputsContainer  layout.List
 	transactionOutputsContainer layout.List
 
-	destAddressClickable      *widget.Clickable
+	destAddressClickable      *cryptomaterial.Clickable
 	associatedTicketClickable *cryptomaterial.Clickable
 	hashClickable             *cryptomaterial.Clickable
 	rebroadcastClickable      *cryptomaterial.Clickable
@@ -75,9 +75,10 @@ type TxDetailsPage struct {
 	moreItems  []moreItem
 	txnWidgets transactionWdg
 
-	txSourceAccount string
-	title           string
-	vspHost         string
+	txSourceAccount      string
+	txDestinationAddress string
+	title                string
+	vspHost              string
 
 	moreOptionIsOpen bool
 }
@@ -104,7 +105,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction,
 
 		associatedTicketClickable: l.Theme.NewClickable(true),
 		hashClickable:             l.Theme.NewClickable(true),
-		destAddressClickable:      new(widget.Clickable),
+		destAddressClickable:      l.Theme.NewClickable(true),
 		moreOption:                l.Theme.NewClickable(false),
 		shadowBox:                 l.Theme.Shadow(),
 
@@ -137,6 +138,39 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 				} else {
 					pg.txSourceAccount = accountName
 				}
+				break
+			}
+		}
+	}
+
+	// find destination address
+	for _, output := range pg.transaction.Outputs {
+		switch pg.transaction.Direction {
+		case libwallet.TxDirectionSent:
+			// mixed account number
+			if pg.transaction.Type == libwallet.TxTypeMixed &&
+				output.AccountNumber == pg.WL.SelectedWallet.Wallet.UnmixedAccountNumber() {
+				accountName, err := pg.wallet.AccountName(output.AccountNumber)
+				if err != nil {
+					log.Error(err)
+				} else {
+					pg.txDestinationAddress = accountName
+				}
+				break
+			}
+			if output.AccountNumber == -1 {
+				pg.txDestinationAddress = output.Address
+				break
+			}
+		case libwallet.TxDirectionReceived:
+			if output.AccountNumber != -1 {
+				accountName, err := pg.wallet.AccountName(output.AccountNumber)
+				if err != nil {
+					log.Error(err)
+				} else {
+					pg.txDestinationAddress = accountName
+				}
+				break
 			}
 		}
 	}
@@ -591,9 +625,42 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.keyValue(gtx, values.String(values.StrAccount), pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
+			if pg.transaction.Direction == libwallet.TxDirectionReceived {
+				return D{}
+			}
+			label := values.String(values.StrFrom)
+			if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+				label = values.String(values.StrAccount)
+			}
+			return pg.keyValue(gtx, label, pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
+			if pg.transaction.Type == libwallet.TxTypeRegular || pg.transaction.Type == libwallet.TxTypeMixed {
+				dim := func(gtx C) D {
+					lbl := pg.Theme.Label(values.TextSize14, splitSingleString(pg.txDestinationAddress, 0))
+
+					if pg.transaction.Direction == libwallet.TxDirectionReceived {
+						return lbl.Layout(gtx)
+					}
+
+					lbl.Color = pg.Theme.Color.Primary
+					// copy destination Address
+					if pg.destAddressClickable.Clicked() {
+						clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
+						pg.Toast.Notify(values.String(values.StrTxHashCopied))
+					}
+					return pg.destAddressClickable.Layout(gtx, lbl.Layout)
+				}
+
+				return pg.keyValue(gtx, values.String(values.StrTo), dim)
+			}
+			return D{}
+		}),
+		layout.Rigid(func(gtx C) D {
+			if pg.transaction.Direction == libwallet.TxDirectionReceived {
+				return D{}
+			}
+
 			key := values.String(values.StrTicketPrice)
 			if pg.transaction.Type == values.String(values.StrTicket) {
 				key = values.String(values.StrAmount)
@@ -608,16 +675,22 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, key, pg.Theme.Label(values.TextSize14, amount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
+			// revocation and vote transaction reward
+			if pg.transaction.Type == libwallet.TxTypeVote {
+				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, dcrutil.Amount(pg.transaction.VoteReward).String()).Layout)
+			}
+			return D{}
+		}),
+		layout.Rigid(func(gtx C) D {
 			if transaction.BlockHeight != -1 {
 				return pg.keyValue(gtx, values.String(values.StrIncludedInBlock), pg.Theme.Label(values.TextSize14, fmt.Sprintf("%d", transaction.BlockHeight)).Layout)
 			}
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			// timeString := func(timestamp int64) string {
-			// 	return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")
-			// }
-
+			return pg.keyValue(gtx, values.String(values.StrType), pg.Theme.Label(values.TextSize14, pg.transaction.Type).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
 			if pg.ticketSpender != nil { // voted or revoked
 				if pg.ticketSpender.Type == libwallet.TxTypeVote {
 					return pg.keyValue(gtx, values.String(values.StrVotedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
