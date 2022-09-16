@@ -334,7 +334,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		selectMixedAccModal := preference.NewListPreference(pg.Load,
 			"", values.String(values.StrDefault), values.ArrMixerAccounts).Subtitle(values.StrSelectMixedAcc).
 			UpdateValues(func() {
-				// alues.SetUserLanguage(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey))
+				// pg.wallet.SetStringConfigValueForKey(libwallet.AccountMixerMixedAccount,)
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
 		break
@@ -356,7 +356,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 		selectChangeAccModal := preference.NewListPreference(pg.Load,
 			"", values.String(values.StrDefault), values.ArrMixerAccounts).Subtitle(values.StrSelectChangeAcc).
 			UpdateValues(func() {
-				// alues.SetUserLanguage(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey))
+				// pg.wallet.SetStringConfigValueForKey(libwallet.AccountMixerUnmixedAccount,)
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
 		break
