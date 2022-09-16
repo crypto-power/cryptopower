@@ -11,10 +11,17 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/page/root"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const StartPageID = "start_page"
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
 
 type startPage struct {
 	*load.Load
@@ -50,6 +57,8 @@ func NewStartPage(l *load.Load) app.Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (sp *startPage) OnNavigatedTo() {
+	sp.setLanguageSetting()
+
 	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
@@ -75,7 +84,7 @@ func (sp *startPage) unlock() {
 			go func() {
 				err := sp.openWallets(password)
 				if err != nil {
-					m.SetError(translateErr(err))
+					m.SetError(components.TranslateErr(err))
 					m.SetLoading(false)
 					return
 				}
@@ -96,12 +105,12 @@ func (sp *startPage) openWallets(password string) error {
 	}
 
 	onWalSelected := func() {
-		sp.ParentNavigator().ClearStackAndDisplay(NewMainPage(sp.Load))
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewMainPage(sp.Load))
 	}
 	onDexServerSelected := func(server string) {
 		log.Info("Not implemented yet...", server)
 	}
-	sp.ParentNavigator().ClearStackAndDisplay(NewWalletDexServerSelector(sp.Load, onWalSelected, onDexServerSelected))
+	sp.ParentNavigator().ClearStackAndDisplay(root.NewWalletDexServerSelector(sp.Load, onWalSelected, onDexServerSelected))
 	return nil
 }
 
@@ -112,7 +121,7 @@ func (sp *startPage) openWallets(password string) error {
 // Part of the load.Page interface.
 func (sp *startPage) HandleUserInteractions() {
 	for sp.addWalletButton.Clicked() {
-		sp.ParentNavigator().Display(NewCreateWallet(sp.Load))
+		sp.ParentNavigator().Display(root.NewCreateWallet(sp.Load))
 	}
 }
 
@@ -226,4 +235,12 @@ func (sp *startPage) layoutMobile(gtx C) D {
 			}.Layout(gtx, sp.addWalletButton.Layout)
 		}),
 	)
+}
+
+func (sp *startPage) setLanguageSetting() {
+	langPre := sp.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)
+	if langPre == "" {
+		sp.WL.MultiWallet.SaveUserConfigValue(load.LanguagePreferenceKey, values.DefaultLangauge)
+	}
+	values.SetUserLanguage(langPre)
 }

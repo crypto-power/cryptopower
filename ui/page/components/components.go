@@ -62,6 +62,10 @@ type (
 		VotingAuthority         dcrutil.Amount
 		UnConfirmed             dcrutil.Amount
 	}
+
+	DexServer struct {
+		SavedHosts map[string][]byte
+	}
 )
 
 // Container is simply a wrapper for the Inset type. Its purpose is to differentiate the use of an inset as a padding or

@@ -16,11 +16,11 @@ import (
 	"gitlab.com/raedah/cryptopower/ui"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/governance"
 	"gitlab.com/raedah/cryptopower/ui/page/info"
 	"gitlab.com/raedah/cryptopower/ui/page/privacy"
+	"gitlab.com/raedah/cryptopower/ui/page/root"
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
 	"gitlab.com/raedah/cryptopower/wallet"
@@ -66,7 +66,7 @@ var (
 func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
-	page.UseLogger(winLog)
+	root.UseLogger(winLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
 	components.UseLogger(winLog)

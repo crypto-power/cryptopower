@@ -1,4 +1,4 @@
-package page
+package root
 
 import (
 	"sync"
@@ -17,9 +17,10 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
-const CreateWalletID = "create_wallet"
-
-const defaultWalletName = "myWallet"
+const (
+	CreateWalletID    = "create_wallet"
+	defaultWalletName = "myWallet"
+)
 
 type walletType struct {
 	clickable *cryptomaterial.Clickable

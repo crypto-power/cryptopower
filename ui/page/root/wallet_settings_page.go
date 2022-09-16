@@ -1,4 +1,4 @@
-package page
+package root
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/security"
+	s "gitlab.com/raedah/cryptopower/ui/page/settings"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -686,11 +687,11 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.checklog.Clicked() {
-		pg.ParentNavigator().Display(NewLogPage(pg.Load))
+		pg.ParentNavigator().Display(s.NewLogPage(pg.Load))
 	}
 
 	if pg.checkStats.Clicked() {
-		pg.ParentNavigator().Display(NewStatPage(pg.Load))
+		pg.ParentNavigator().Display(s.NewStatPage(pg.Load))
 	}
 
 	if pg.proposalNotif.Changed() {
@@ -727,7 +728,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
+		pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
 	}
 }
 

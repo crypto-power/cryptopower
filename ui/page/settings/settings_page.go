@@ -1,4 +1,4 @@
-package page
+package settings
 
 import (
 	"gioui.org/layout"
@@ -16,6 +16,11 @@ import (
 )
 
 const SettingsPageID = "Settings"
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
 
 type row struct {
 	title     string

@@ -1,4 +1,4 @@
-package page
+package root
 
 import (
 	"context"
@@ -38,11 +38,6 @@ const (
 	MainPageID = "Main"
 )
 
-type (
-	C = layout.Context
-	D = layout.Dimensions
-)
-
 var (
 	NavDrawerWidth          = unit.Dp(160)
 	NavDrawerMinimizedWidth = unit.Dp(72)
@@ -70,12 +65,8 @@ type MainPage struct {
 	bottomNavigationBar  components.BottomNavigationBar
 	floatingActionButton components.BottomNavigationBar
 
-	sendPage    *send.Page   // reuse value to keep data persistent onresume.
-	receivePage *ReceivePage // pointer to receive page. to avoid duplication.
-
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
-	darkmode               *cryptomaterial.Clickable
 	openWalletSelector     *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
 
@@ -99,30 +90,14 @@ func NewMainPage(l *load.Load) *MainPage {
 	}
 
 	mp.hideBalanceButton = mp.Theme.NewClickable(false)
-	mp.darkmode = mp.Theme.NewClickable(false)
 	mp.openWalletSelector = mp.Theme.NewClickable(false)
-
-	// init shared page functions
-	toggleSync := func() {
-		if mp.WL.MultiWallet.IsConnectedToDecredNetwork() {
-			mp.WL.MultiWallet.CancelSync()
-		} else {
-			mp.StartSyncing()
-		}
-	}
-	l.ToggleSync = toggleSync
-
-	mp.setLanguageSetting()
-
-	mp.initNavItems()
-
 	mp.refreshExchangeRateBtn = mp.Theme.NewClickable(true)
-
 	mp.setNavExpanded = func() {
 		mp.drawerNav.DrawerToggled(mp.drawerNav.IsNavExpanded)
 	}
 
 	mp.bottomNavigationBar.OnViewCreated()
+	mp.initNavItems()
 
 	return mp
 }
@@ -281,31 +256,12 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 	mp.CurrentPage().OnNavigatedTo()
 
-	if mp.sendPage != nil {
-		mp.sendPage.OnNavigatedTo()
-	}
-	if mp.receivePage != nil {
-		mp.receivePage.OnNavigatedTo()
-	}
-
-	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
-		mp.StartSyncing()
-		if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
-			go mp.WL.MultiWallet.Politeia.Sync(context.Background())
-		}
+	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+		go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 	}
 
 	mp.updateBalance()
 	mp.updateExchangeSetting()
-
-}
-
-func (mp *MainPage) setLanguageSetting() {
-	langPre := mp.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)
-	if langPre == "" {
-		mp.WL.MultiWallet.SaveUserConfigValue(load.LanguagePreferenceKey, values.DefaultLangauge)
-	}
-	values.SetUserLanguage(langPre)
 }
 
 func (mp *MainPage) updateExchangeSetting() {
@@ -362,47 +318,6 @@ func (mp *MainPage) updateBalance() {
 	}
 }
 
-func (mp *MainPage) StartSyncing() {
-	for _, wal := range mp.WL.SortedWalletList() {
-		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			mp.UnlockWalletForSyncing(wal)
-			return
-		}
-	}
-
-	err := mp.WL.MultiWallet.SpvSync()
-	if err != nil {
-		// show error dialog
-		log.Info("Error starting sync:", err)
-	}
-}
-
-func (mp *MainPage) UnlockWalletForSyncing(wal *libwallet.Wallet) {
-	spendingPasswordModal := modal.NewPasswordModal(mp.Load).
-		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-		Hint(values.String(values.StrSpendingPassword)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := mp.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
-				if err != nil {
-					errText := err.Error()
-					if err.Error() == libwallet.ErrInvalidPassphrase {
-						errText = values.String(values.StrInvalidPassphrase)
-					}
-					pm.SetError(errText)
-					pm.SetLoading(false)
-					return
-				}
-				pm.Dismiss()
-				mp.StartSyncing()
-			}()
-
-			return false
-		})
-	mp.ParentWindow().ShowModal(spendingPasswordModal)
-}
-
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
 // to enable restyling UI elements where necessary.
 // Satisfies the load.AppSettingsChangeHandler interface.
@@ -418,10 +333,6 @@ func (mp *MainPage) OnDarkModeChanged(isDarkModeOn bool) {
 	mp.initNavItems()
 	mp.setNavExpanded()
 	mp.bottomNavigationBar.OnViewCreated()
-}
-
-func (mp *MainPage) OnLanguageChanged() {
-	mp.setLanguageSetting()
 }
 
 func (mp *MainPage) OnCurrencyChanged() {
@@ -440,18 +351,6 @@ func (mp *MainPage) HandleUserInteractions() {
 
 	if mp.refreshExchangeRateBtn.Clicked() {
 		go mp.fetchExchangeRate()
-	}
-
-	// darkmode settings
-	for mp.darkmode.Clicked() {
-		isDarkModeOn := mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false)
-		if isDarkModeOn {
-			mp.WL.MultiWallet.SaveUserConfigValue(load.DarkModeConfigKey, false)
-		} else {
-			mp.WL.MultiWallet.SaveUserConfigValue(load.DarkModeConfigKey, true)
-		}
-
-		mp.RefreshTheme(mp.ParentWindow())
 	}
 
 	for mp.openWalletSelector.Clicked() {
@@ -548,15 +447,9 @@ func (mp *MainPage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			if i == 0 {
-				if mp.sendPage == nil {
-					mp.sendPage = send.NewSendPage(mp.Load)
-				}
-				pg = mp.sendPage
+				pg = send.NewSendPage(mp.Load)
 			} else {
-				if mp.receivePage == nil {
-					mp.receivePage = NewReceivePage(mp.Load)
-				}
-				pg = mp.receivePage
+				pg = NewReceivePage(mp.Load)
 			}
 
 			if mp.ID() == mp.CurrentPageID() {
@@ -616,15 +509,8 @@ func (mp *MainPage) OnNavigatedFrom() {
 	if mp.CurrentPage() != nil {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
-	if mp.sendPage != nil {
-		mp.sendPage.OnNavigatedFrom()
-	}
-	if mp.receivePage != nil {
-		mp.receivePage.OnNavigatedFrom()
-	}
 
 	mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
-
 	mp.ctxCancel()
 }
 
@@ -879,7 +765,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 }
 
 func initializeBeepNotification(n string) {
-	absoluteWdPath, err := GetAbsolutePath()
+	absoluteWdPath, err := components.GetAbsolutePath()
 	if err != nil {
 		log.Error(err.Error())
 	}

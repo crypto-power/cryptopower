@@ -1,22 +1,35 @@
-package page
+package root
 
 import (
 	"context"
+	"sync"
 
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/dexclient"
+	"gitlab.com/raedah/cryptopower/ui/page/settings"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const WalletDexServerSelectorID = "wallet_dex_server_selector"
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
+type badWalletListItem struct {
+	*libwallet.Wallet
+	deleteBtn cryptomaterial.Button
+}
 
 type WalletDexServerSelector struct {
 	*load.Load
@@ -25,17 +38,29 @@ type WalletDexServerSelector struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	*listeners.SyncProgressListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	scrollContainer   *widget.List
-	shadowBox         *cryptomaterial.Shadow
-	walletSelector    *components.WalletSelector
-	dexServerSelector *components.DexServerSelector
-	addWalClickable   *cryptomaterial.Clickable
-	addDexClickable   *cryptomaterial.Clickable
-	settings          *cryptomaterial.Clickable
+	scrollContainer *widget.List
+	shadowBox       *cryptomaterial.Shadow
+	addWalClickable *cryptomaterial.Clickable
+	addDexClickable *cryptomaterial.Clickable
+	settings        *cryptomaterial.Clickable
+
+	// wallet selector options
+	listLock             sync.Mutex
+	mainWalletList       []*load.WalletItem
+	watchOnlyWalletList  []*load.WalletItem
+	badWalletsList       []*badWalletListItem
+	walletsList          *cryptomaterial.ClickableList
+	watchOnlyWalletsList *cryptomaterial.ClickableList
+	walletSelected       func()
+
+	// dex selector options
+	knownDexServers   *cryptomaterial.ClickableList
+	dexServerSelected func(server string)
 }
 
 func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServerSelected func(server string)) *WalletDexServerSelector {
@@ -50,17 +75,31 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 		Load:      l,
 		shadowBox: l.Theme.Shadow(),
 
-		walletSelector:    components.NewWalletSelector(l, onWalletSelected),
-		dexServerSelector: components.NewDexServerSelector(l, onDexServerSelected),
+		walletSelected:    onWalletSelected,
+		dexServerSelected: onDexServerSelected,
 	}
 
+	rad := cryptomaterial.Radius(14)
 	pg.addWalClickable = l.Theme.NewClickable(false)
-	pg.addWalClickable.Radius = cryptomaterial.Radius(14)
+	pg.addWalClickable.Radius = rad
 
 	pg.addDexClickable = l.Theme.NewClickable(false)
-	pg.addDexClickable.Radius = cryptomaterial.Radius(14)
+	pg.addDexClickable.Radius = rad
 
 	pg.settings = l.Theme.NewClickable(false)
+
+	pg.initWalletSelectorOptions()
+	pg.initDexServerSelectorOption()
+
+	// init shared page functions
+	toggleSync := func() {
+		if pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
+			pg.WL.MultiWallet.CancelSync()
+		} else {
+			pg.startSyncing()
+		}
+	}
+	l.ToggleSync = toggleSync
 
 	return pg
 }
@@ -71,8 +110,10 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 // Part of the load.Page interface.
 func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	pg.walletSelector.Expose(pg.ctx)
-	pg.dexServerSelector.Expose()
+
+	pg.listenForNotifications()
+	pg.loadWallets()
+	pg.startDexClient()
 
 	if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
 		pg.startSyncing()
@@ -85,8 +126,26 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *WalletDexServerSelector) HandleUserInteractions() {
-	pg.walletSelector.HandleUserInteractions()
-	pg.dexServerSelector.HandleUserInteractions()
+	pg.listLock.Lock()
+	mainWalletList := pg.mainWalletList
+	watchOnlyWalletList := pg.watchOnlyWalletList
+	pg.listLock.Unlock()
+
+	if ok, selectedItem := pg.walletsList.ItemClicked(); ok {
+		pg.WL.SelectedWallet = mainWalletList[selectedItem]
+		pg.walletSelected()
+	}
+
+	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
+		pg.WL.SelectedWallet = watchOnlyWalletList[selectedItem]
+		pg.walletSelected()
+	}
+
+	for _, badWallet := range pg.badWalletsList {
+		if badWallet.deleteBtn.Clicked() {
+			pg.deleteBadWallet(badWallet.ID)
+		}
+	}
 
 	if pg.addWalClickable.Clicked() {
 		pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
@@ -102,7 +161,13 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	}
 
 	if pg.settings.Clicked() {
-		pg.ParentNavigator().Display(NewSettingsPage(pg.Load))
+		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
+	}
+
+	if ok, index := pg.knownDexServers.ItemClicked(); ok {
+		knownDexServers := pg.mapKnowDexServers()
+		dexServers := sortDexExchanges(knownDexServers)
+		pg.dexServerSelected(dexServers[index])
 	}
 }
 
@@ -172,10 +237,10 @@ func (pg *WalletDexServerSelector) sectionTitle(title string) layout.Widget {
 func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.walletSelector.WalletListLayout,
+		pg.walletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.dexServerSelector.DexServersLayout,
+		pg.dexServersLayout,
 		pg.layoutAddMoreRowSection(pg.addDexClickable, values.String(values.StrAddDexServer), pg.Theme.Icons.DexIcon.Layout16dp),
 	}
 
@@ -233,7 +298,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 func (pg *WalletDexServerSelector) startSyncing() {
 	for _, wal := range pg.WL.SortedWalletList() {
 		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			pg.UnlockWalletForSyncing(wal)
+			pg.unlockWalletForSyncing(wal)
 			return
 		}
 	}
@@ -245,7 +310,7 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
-func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		Hint(values.String(values.StrSpendingPassword)).
