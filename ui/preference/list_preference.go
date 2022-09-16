@@ -147,11 +147,11 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 		},
 	}
 
-	if len(lp.title) > 1 {
+	if lp.title != "" {
 		w = append(w, title)
 	}
 
-	if len(lp.subtitle) > 1 {
+	if lp.subtitle != "" {
 		w = append(w, subtitle)
 	}
 

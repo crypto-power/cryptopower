@@ -18,17 +18,7 @@ const (
 )
 
 func init() {
-	ArrLanguages = make(map[string]string)
-	ArrLanguages[localizable.ENGLISH] = StrEnglish
-	ArrLanguages[localizable.FRENCH] = StrFrench
-	ArrLanguages[localizable.SPANISH] = StrSpanish
-
-	ArrExchangeCurrencies = make(map[string]string)
-	ArrExchangeCurrencies[DefaultExchangeValue] = StrNone
-	ArrExchangeCurrencies[USDExchangeValue] = StrUsdBittrex
-
-	ArrMixerAccounts = make(map[string]string)
-	ArrMixerAccounts[DefaultAccount] = StrDefault
-	ArrMixerAccounts[MixedAcc] = StrMixed
-	ArrMixerAccounts[UnmixedAcc] = StrUnmixed
+	ArrLanguages = map[string]string{localizable.ENGLISH: StrEnglish, localizable.FRENCH: StrFrench, localizable.SPANISH: StrSpanish}
+	ArrExchangeCurrencies = map[string]string{DefaultExchangeValue: StrNone, USDExchangeValue: StrUsdBittrex}
+	ArrMixerAccounts = map[string]string{StrDefault: StrDefault, StrMixed: StrMixed, StrUnmixed: StrUnmixed}
 }
