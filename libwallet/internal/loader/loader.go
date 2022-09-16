@@ -17,7 +17,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
-	_ "gitlab.com/raedah/libwallet/badgerdb" // initialize badger driver
+	_ "gitlab.com/raedah/cryptopower/libwallet/badgerdb" // initialize badger driver
 )
 
 const (

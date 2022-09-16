@@ -12,7 +12,7 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/libwallet/internal/certs"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/certs"
 )
 
 const (

@@ -8,8 +8,8 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/libwallet/utils"
-	"gitlab.com/raedah/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	bolt "go.etcd.io/bbolt"
 )
 

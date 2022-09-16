@@ -15,9 +15,9 @@ import (
 	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/libwallet/internal/loader"
-	"gitlab.com/raedah/libwallet/internal/vsp"
-	"gitlab.com/raedah/libwallet/wallets/dcr/walletdata"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 )
 
 type Wallet struct {

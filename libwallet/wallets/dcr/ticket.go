@@ -12,8 +12,8 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/libwallet/internal/vsp"
-	"gitlab.com/raedah/libwallet/utils"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (wallet *Wallet) TotalStakingRewards() (int64, error) {

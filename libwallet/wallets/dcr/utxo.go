@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/libwallet/txhelper"
+	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 type nextAddressFunc func() (address string, err error)

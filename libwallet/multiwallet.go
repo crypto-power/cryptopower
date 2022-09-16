@@ -12,13 +12,13 @@ import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/libwallet/ext"
-	"gitlab.com/raedah/libwallet/internal/politeia"
-	"gitlab.com/raedah/libwallet/utils"
+	"gitlab.com/raedah/cryptopower/libwallet/ext"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
-	// "gitlab.com/raedah/libwallet/wallets/dcr/walletdata"
+	// "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 
-	"gitlab.com/raedah/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 
 	"golang.org/x/crypto/bcrypt"
 )

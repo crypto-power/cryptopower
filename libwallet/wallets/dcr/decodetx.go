@@ -10,7 +10,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrdata/v7/txhelpers"
-	"gitlab.com/raedah/libwallet/txhelper"
+	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const BlockValid = 1 << 0

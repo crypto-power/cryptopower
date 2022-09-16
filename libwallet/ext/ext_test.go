@@ -12,7 +12,7 @@ import (
 	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v3"
 	apiTypes "github.com/decred/dcrdata/v7/api/types"
 	"github.com/decred/dcrdata/v7/db/dbtypes"
-	"gitlab.com/raedah/libwallet/utils"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 var (

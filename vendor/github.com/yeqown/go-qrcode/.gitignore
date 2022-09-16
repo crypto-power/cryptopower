@@ -1,0 +1,12 @@
+vendor/
+draft/
+# example/
+*.png
+default.jpeg
+# *.json
+*.log
+.DS_store
+js/
+default.jpeg
+.idea/
+tmp.png

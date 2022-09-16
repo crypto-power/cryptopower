@@ -13,7 +13,7 @@ import (
 	"decred.org/dcrwallet/v2/p2p"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
-	"gitlab.com/raedah/libwallet/spv"
+	"gitlab.com/raedah/cryptopower/libwallet/spv"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x

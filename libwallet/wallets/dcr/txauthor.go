@@ -17,7 +17,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/libwallet/txhelper"
+	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 type TxAuthor struct {

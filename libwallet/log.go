@@ -17,11 +17,11 @@ import (
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"gitlab.com/raedah/libwallet/ext"
-	"gitlab.com/raedah/libwallet/internal/loader"
-	"gitlab.com/raedah/libwallet/internal/politeia"
-	"gitlab.com/raedah/libwallet/internal/vsp"
-	"gitlab.com/raedah/libwallet/spv"
+	"gitlab.com/raedah/cryptopower/libwallet/ext"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/spv"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

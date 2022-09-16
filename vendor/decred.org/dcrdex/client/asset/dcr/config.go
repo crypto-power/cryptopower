@@ -1,0 +1,83 @@
+// This code is available on the terms of the project LICENSE.md file,
+// also available online at https://blueoakcouncil.org/license/1.0.0.
+
+package dcr
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+
+	"decred.org/dcrdex/dex"
+	"decred.org/dcrdex/dex/config"
+	"github.com/decred/dcrd/chaincfg/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
+)
+
+const (
+	defaultMainnet  = "localhost:9110"
+	defaultTestnet3 = "localhost:19110"
+	defaultSimnet   = "localhost:19557"
+)
+
+var (
+	// A global *chaincfg.Params will be set if loadConfig completes without
+	// error.
+	dcrwHomeDir       = dcrutil.AppDataDir("dcrwallet", false)
+	defaultRPCCert    = filepath.Join(dcrwHomeDir, "rpc.cert")
+	defaultConfigPath = filepath.Join(dcrwHomeDir, "dcrwallet.conf")
+)
+
+// Config holds the parameters needed to initialize an RPC connection to a dcr
+// wallet. Default values are used for RPCListen and/or RPCCert if not set.
+type Config struct {
+	Account          string  `ini:"account"`
+	RPCUser          string  `ini:"username"`
+	RPCPass          string  `ini:"password"`
+	RPCListen        string  `ini:"rpclisten"`
+	RPCCert          string  `ini:"rpccert"`
+	UseSplitTx       bool    `ini:"txsplit"`
+	FallbackFeeRate  float64 `ini:"fallbackfee"`
+	FeeRateLimit     float64 `ini:"feeratelimit"`
+	RedeemConfTarget uint64  `ini:"redeemconftarget"`
+	// Context should be canceled when the application exits. This will cause
+	// some cleanup to be performed during shutdown.
+	Context context.Context `ini:"-"`
+}
+
+// loadConfig loads the Config from a settings map. If no values are found for
+// RPCListen or RPCCert in the specified file, default values will be used. If
+// there is no error, the module-level chainParams variable will be set
+// appropriately for the network.
+func loadConfig(settings map[string]string, network dex.Network) (*Config, *chaincfg.Params, error) {
+	cfg := new(Config)
+	if err := config.Unmapify(settings, cfg); err != nil {
+		return nil, nil, fmt.Errorf("error parsing config: %w", err)
+	}
+
+	// Get network settings. Zero value is mainnet, but unknown non-zero cfg.Net
+	// is an error.
+	var defaultServer string
+	var chainParams *chaincfg.Params
+	switch network {
+	case dex.Simnet:
+		chainParams = chaincfg.SimNetParams()
+		defaultServer = defaultSimnet
+	case dex.Testnet:
+		chainParams = chaincfg.TestNet3Params()
+		defaultServer = defaultTestnet3
+	case dex.Mainnet:
+		chainParams = chaincfg.MainNetParams()
+		defaultServer = defaultMainnet
+	default:
+		return nil, nil, fmt.Errorf("unknown network ID: %d", uint8(network))
+	}
+	if cfg.RPCListen == "" {
+		cfg.RPCListen = defaultServer
+	}
+	if cfg.RPCCert == "" {
+		cfg.RPCCert = defaultRPCCert
+	}
+
+	return cfg, chainParams, nil
+}

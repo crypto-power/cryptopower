@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
-	"gitlab.com/raedah/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.

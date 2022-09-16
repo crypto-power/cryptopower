@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"gitlab.com/raedah/libwallet/spv"
+	"gitlab.com/raedah/cryptopower/libwallet/spv"
 	"golang.org/x/sync/errgroup"
 )
 

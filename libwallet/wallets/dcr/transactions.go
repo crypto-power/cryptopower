@@ -5,8 +5,8 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/libwallet/txhelper"
-	"gitlab.com/raedah/libwallet/wallets/dcr/walletdata"
+	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 )
 
 const (

@@ -11,7 +11,7 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/libwallet/addresshelper"
+	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
 )
 
 const (

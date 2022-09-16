@@ -25,7 +25,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 )
 
 const (

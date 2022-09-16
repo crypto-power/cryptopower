@@ -13,7 +13,7 @@ import (
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/libwallet/dexdcr"
+	"gitlab.com/raedah/cryptopower/libwallet/dexdcr"
 )
 
 const (

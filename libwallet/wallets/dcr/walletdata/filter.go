@@ -3,7 +3,7 @@ package walletdata
 import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"gitlab.com/raedah/libwallet/txhelper"
+	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	www "github.com/decred/politeia/politeiawww/api/www/v1"
-	"gitlab.com/raedah/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
 // WalletConfig defines options for configuring wallet behaviour.
