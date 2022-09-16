@@ -73,32 +73,32 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	}
 }
 
-func (ws *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
-	warningModal := modal.NewCustomModal(ws.Load).
+func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
+	warningModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrRemoveWallet)).
 		Body(values.String(values.StrWalletRestoreMsg)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
-		PositiveButtonStyle(ws.Load.Theme.Color.Surface, ws.Load.Theme.Color.Danger).
+		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
 		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
 			go func() {
-				err := ws.WL.MultiWallet.DeleteBadWallet(badWalletID)
+				err := pg.WL.MultiWallet.DeleteBadWallet(badWalletID)
 				if err != nil {
-					errorModal := modal.NewErrorModal(ws.Load, err.Error(), modal.DefaultClickFunc())
-					ws.ParentWindow().ShowModal(errorModal)
+					errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errorModal)
 					return
 				}
-				infoModal := modal.NewSuccessModal(ws.Load, values.String(values.StrWalletRemoved), func(_ bool, _ *modal.InfoModal) bool {
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRemoved), func(_ bool, _ *modal.InfoModal) bool {
 					im.Dismiss()
 					return true
 				})
-				ws.ParentWindow().ShowModal(infoModal)
-				ws.loadBadWallets() // refresh bad wallets list
-				ws.ParentWindow().Reload()
+				pg.ParentWindow().ShowModal(infoModal)
+				pg.loadBadWallets() // refresh bad wallets list
+				pg.ParentWindow().Reload()
 			}()
 			return true
 		})
-	ws.ParentWindow().ShowModal(warningModal)
+	pg.ParentWindow().ShowModal(warningModal)
 }
 
 func (pg *WalletDexServerSelector) syncStatusIcon(gtx C) D {
