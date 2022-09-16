@@ -298,7 +298,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 func (pg *WalletDexServerSelector) startSyncing() {
 	for _, wal := range pg.WL.SortedWalletList() {
 		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			pg.UnlockWalletForSyncing(wal)
+			pg.unlockWalletForSyncing(wal)
 			return
 		}
 	}
@@ -310,7 +310,7 @@ func (pg *WalletDexServerSelector) startSyncing() {
 	}
 }
 
-func (pg *WalletDexServerSelector) UnlockWalletForSyncing(wal *libwallet.Wallet) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
