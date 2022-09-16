@@ -253,23 +253,21 @@ func (pg *AccountMixerPage) LayoutMixerPage(gtx C, l *load.Load, mixerActive boo
 	}
 
 	return l.Theme.Card().Layout(gtx, func(gtx C) D {
-		wdg := []func(gtx C) D{
-			func(gtx C) D {
-				return layout.UniformInset(values.MarginPadding25).Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						pg.toggleMixerAndProgres(l, button),
-						pg.balanceInfo(l, values.String(values.StrMixed), mixedBalance, l.Theme.Icons.MixedTxIcon),
-						pg.mixerImage(l),
-						pg.balanceInfo(l, values.String(values.StrUnmixed), unmixedBalance, l.Theme.Icons.UnmixedTxIcon),
+		wdg := func(gtx C) D {
+			return layout.UniformInset(values.MarginPadding25).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					pg.toggleMixerAndProgres(l, button),
+					pg.balanceInfo(l, values.String(values.StrMixed), mixedBalance, l.Theme.Icons.MixedTxIcon),
+					pg.mixerImage(l),
+					pg.balanceInfo(l, values.String(values.StrUnmixed), unmixedBalance, l.Theme.Icons.UnmixedTxIcon),
 
-						pg.mixerSettings(l),
-					)
-				})
-			},
+					pg.mixerSettings(l),
+				)
+			})
 		}
 
-		return pg.pageContainer.Layout(gtx, len(wdg), func(gtx C, i int) D {
-			return wdg[i](gtx)
+		return pg.pageContainer.Layout(gtx, 1, func(gtx C, i int) D {
+			return wdg(gtx)
 		})
 	})
 }
@@ -286,7 +284,13 @@ func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 
 func (pg *AccountMixerPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	return components.UniformPadding(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding50).Layout(gtx, func(gtx C) D {
+		in := values.MarginPadding50
+		return layout.Inset{
+			Top:    values.MarginPadding25,
+			Left:   in,
+			Right:  in,
+			Bottom: in,
+		}.Layout(gtx, func(gtx C) D {
 			return pg.LayoutMixerPage(gtx, pg.Load, pg.wallet.IsAccountMixerActive(), pg.toggleMixer.Layout)
 		})
 	})

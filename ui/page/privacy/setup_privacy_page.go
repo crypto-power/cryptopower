@@ -75,44 +75,46 @@ func (pg *SetupPrivacyPage) privacyIntroLayout(gtx layout.Context) layout.Dimens
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Bottom: values.MarginPadding24,
-								}.Layout(gtx, func(gtx C) D {
-									return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						return layout.Inset{Top: values.MarginPadding25}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Bottom: values.MarginPadding24,
+									}.Layout(gtx, func(gtx C) D {
+										return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{
+													Left: values.MarginPadding5,
+												}.Layout(gtx, pg.Theme.Icons.TransactionFingerprint.Layout48dp)
+											}),
+											layout.Rigid(pg.Theme.Icons.ArrowForward.Layout24dp),
+											layout.Rigid(func(gtx C) D {
+												return pg.Theme.Icons.Mixer.LayoutSize(gtx, values.MarginPadding120)
+											}),
+											layout.Rigid(pg.Theme.Icons.ArrowForward.Layout24dp),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{
+													Left: values.MarginPadding5,
+												}.Layout(gtx, pg.Theme.Icons.TransactionsIcon.Layout48dp)
+											}),
+										)
+									})
+								}),
+								layout.Rigid(func(gtx C) D {
+									txt := pg.Theme.H6(values.String(values.StrStakeShuffle))
+									txt2 := pg.Theme.Body1(values.String(values.StrSetUpPrivacy))
+
+									txt.Alignment, txt2.Alignment = text.Middle, text.Middle
+
+									return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+										layout.Rigid(txt.Layout),
 										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Left: values.MarginPadding5,
-											}.Layout(gtx, pg.Theme.Icons.TransactionFingerprint.Layout48dp)
-										}),
-										layout.Rigid(pg.Theme.Icons.ArrowForward.Layout24dp),
-										layout.Rigid(func(gtx C) D {
-											return pg.Theme.Icons.Mixer.LayoutSize(gtx, values.MarginPadding120)
-										}),
-										layout.Rigid(pg.Theme.Icons.ArrowForward.Layout24dp),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Left: values.MarginPadding5,
-											}.Layout(gtx, pg.Theme.Icons.TransactionsIcon.Layout48dp)
+											return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, txt2.Layout)
 										}),
 									)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.H6(values.String(values.StrStakeShuffle))
-								txt2 := pg.Theme.Body1(values.String(values.StrSetUpPrivacy))
-
-								txt.Alignment, txt2.Alignment = text.Middle, text.Middle
-
-								return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-									layout.Rigid(txt.Layout),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, txt2.Layout)
-									}),
-								)
-							}),
-						)
+								}),
+							)
+						})
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
