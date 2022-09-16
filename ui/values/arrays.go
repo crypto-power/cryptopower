@@ -12,9 +12,9 @@ const (
 	DefaultExchangeValue = "none"
 	USDExchangeValue     = "USD (Bittrex)"
 
-	DefaultAccount = StrDefault
-	MixedAcc       = StrMixed
-	UnmixedAcc     = StrUnmixed
+	DefaultAccount = "default"
+	MixedAcc       = "mixed"
+	UnmixedAcc     = "unmixed"
 )
 
 func init() {
