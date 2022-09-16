@@ -6,6 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
@@ -64,6 +65,8 @@ type CreateWallet struct {
 
 	selectedWalletType         int
 	selectedDecredWalletAction int
+
+	showLoader bool
 }
 
 func NewCreateWallet(l *load.Load) *CreateWallet {
@@ -104,6 +107,7 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *CreateWallet) OnNavigatedTo() {
+	pg.showLoader = false
 	pg.initPageItems()
 }
 
@@ -372,6 +376,11 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
+						if pg.showLoader {
+							loader := material.Loader(pg.Theme.Base)
+							loader.Color = pg.Theme.Color.Gray1
+							return loader.Layout(gtx)
+						}
 						if pg.watchOnlyCheckBox.CheckBox.Value {
 							return pg.importBtn.Layout(gtx)
 						}
@@ -455,10 +464,12 @@ func (pg *CreateWallet) HandleUserInteractions() {
 
 	// imported wallet click action control
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
+		pg.showLoader = true
 		go func() {
 			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
 				pg.watchOnlyWalletHex.SetError(err.Error())
+				pg.showLoader = false
 				return
 			}
 			pg.handlerWalletDexServerSelectorCallBacks()
