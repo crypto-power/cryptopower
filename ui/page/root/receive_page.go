@@ -1,4 +1,4 @@
-package page
+package root
 
 import (
 	"bytes"

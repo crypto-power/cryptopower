@@ -1,4 +1,4 @@
-package page
+package settings
 
 import (
 	"gioui.org/layout"

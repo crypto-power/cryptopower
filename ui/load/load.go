@@ -32,11 +32,10 @@ type Load struct {
 
 	SelectedUTXO map[int]map[int32]map[string]*wallet.UnspentOutput
 
-	ToggleSync func()
-
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
 	CurrencySettingChanged func()
+	ToggleSync             func()
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {
