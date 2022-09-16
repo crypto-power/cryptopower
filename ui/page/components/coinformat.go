@@ -54,10 +54,10 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := l.Theme.Label(values.TextSize20, unitText)
-			txt.Color = col
-			txt.Font.Weight = text.SemiBold
 			if displayUnitText {
+				txt := l.Theme.Label(values.TextSize20, unitText)
+				txt.Color = col
+				txt.Font.Weight = text.SemiBold
 				return txt.Layout(gtx)
 			}
 
