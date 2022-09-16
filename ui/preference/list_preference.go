@@ -13,6 +13,11 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
 type ListPreferenceModal struct {
 	*load.Load
 	*cryptomaterial.Modal
@@ -112,30 +117,46 @@ func (lp *ListPreferenceModal) Handle() {
 	}
 }
 
-func (lp *ListPreferenceModal) Layout(gtx layout.Context) layout.Dimensions {
-	w := []layout.Widget{
-		func(gtx layout.Context) layout.Dimensions {
-			txt := lp.Theme.H6(values.String(lp.title))
-			txt.Color = lp.Theme.Color.Text
-			return txt.Layout(gtx)
-		},
-		func(gtx layout.Context) layout.Dimensions {
-			text := values.StringF(lp.subtitle, `<span style="text-color: text">`, `<span style="font-weight: bold">`, `</span><span style="text-color: danger">`, `</span></span>`)
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(renderers.RenderHTML(text, lp.Load.Theme).Layout),
-			)
-		},
-		func(gtx layout.Context) layout.Dimensions {
+func (lp *ListPreferenceModal) Layout(gtx C) D {
+	var w []layout.Widget
+
+	title := func(gtx C) D {
+		txt := lp.Theme.H6(values.String(lp.title))
+		txt.Color = lp.Theme.Color.Text
+		return txt.Layout(gtx)
+	}
+
+	subtitle := func(gtx C) D {
+		text := values.StringF(lp.subtitle, `<span style="text-color: text">`, `<span style="font-weight: bold">`, `</span><span style="text-color: danger">`, `</span></span>`)
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(renderers.RenderHTML(text, lp.Load.Theme).Layout),
+		)
+	}
+
+	items := []layout.Widget{
+		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lp.layoutItems()...)
 		},
-		func(gtx layout.Context) layout.Dimensions {
-			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(lp.btnCancel.Layout),
 					layout.Rigid(lp.btnSave.Layout),
 				)
 			})
 		},
+	}
+
+	if len(lp.title) > 1 {
+		w = append(w, title)
+	}
+
+	if len(lp.subtitle) > 1 {
+		w = append(w, subtitle)
+	}
+
+	for i := 0; i < len(items); i++ {
+		w = append(w, items[i])
 	}
 
 	return lp.Modal.Layout(gtx, w)
