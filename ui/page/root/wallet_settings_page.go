@@ -490,7 +490,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) showSPVPeerDialog() {
+func (pg *WalletSettingsPage) showSPVPeerDialog(cancelfunc func()) {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -502,7 +502,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		})
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		NegativeButton(values.String(values.StrCancel), cancelfunc)
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -660,7 +660,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	specificPeerKey := libwallet.SpvPersistentPeerAddressesConfigKey
 	if pg.connectToPeer.Changed() {
 		if pg.connectToPeer.IsChecked() {
-			pg.showSPVPeerDialog()
+			cancelfunc := func() { pg.connectToPeer.SetChecked(false) }
+			pg.showSPVPeerDialog(cancelfunc)
 			return
 		}
 
@@ -670,7 +671,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.updateConnectToPeer.Clicked() {
-		pg.showSPVPeerDialog()
+		pg.showSPVPeerDialog(func() {})
 		break
 	}
 
