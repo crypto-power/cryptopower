@@ -162,9 +162,6 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		func(gtx C) D {
 			return pg.toSection(gtx)
 		},
-		func(gtx C) D {
-			return pg.feeSection(gtx)
-		},
 	}
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
@@ -220,9 +217,6 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 		},
 		func(gtx C) D {
 			return pg.toSection(gtx)
-		},
-		func(gtx C) D {
-			return pg.feeSection(gtx)
 		},
 	}
 
@@ -374,56 +368,6 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *Page) feeSection(gtx layout.Context) layout.Dimensions {
-	collapsibleHeader := func(gtx C) D {
-		feeText := pg.txFee
-		if pg.exchangeRate != -1 && pg.usdExchangeSet {
-			feeText = fmt.Sprintf("%s (%s)", pg.txFee, pg.txFeeUSD)
-		}
-		return pg.Theme.Body1(feeText).Layout(gtx)
-	}
-
-	collapsibleBody := func(gtx C) D {
-		card := pg.Theme.Card()
-		card.Color = pg.Theme.Color.Gray4
-		inset := layout.Inset{
-			Top: values.MarginPadding10,
-		}
-		return inset.Layout(gtx, func(gtx C) D {
-			return card.Layout(gtx, func(gtx C) D {
-				return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							//TODO
-							return pg.contentRow(gtx, values.String(values.StrEstimatedTime), "10 minutes (2 blocks)")
-						}),
-						layout.Rigid(func(gtx C) D {
-							inset := layout.Inset{
-								Top:    values.MarginPadding5,
-								Bottom: values.MarginPadding5,
-							}
-							return inset.Layout(gtx, func(gtx C) D {
-								return pg.contentRow(gtx, values.String(values.StrEstimatedSize), pg.estSignedSize)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return pg.contentRow(gtx, values.String(values.StrFee)+" "+values.String(values.StrRate), "10 atoms/Byte")
-						}),
-					)
-				})
-			})
-		})
-	}
-	inset := layout.Inset{
-		Bottom: values.MarginPadding75,
-	}
-	return inset.Layout(gtx, func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrFee), false, func(gtx C) D {
-			return pg.txFeeCollapsible.Layout(gtx, collapsibleHeader, collapsibleBody)
-		})
-	})
-}
-
 func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 	c := pg.Theme.Card()
 	c.Radius = cryptomaterial.Radius(0)
@@ -436,6 +380,18 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 					}
 					return inset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								inset := layout.Inset{
+									Bottom: values.MarginPadding10,
+								}
+								return inset.Layout(gtx, func(gtx C) D {
+									feeText := pg.txFee
+									if pg.exchangeRate != -1 && pg.usdExchangeSet {
+										feeText = fmt.Sprintf("%s (%s)", pg.txFee, pg.txFeeUSD)
+									}
+									return pg.contentRow(gtx, values.String(values.StrFee), feeText)
+								})
+							}),
 							layout.Rigid(func(gtx C) D {
 								inset := layout.Inset{
 									Bottom: values.MarginPadding10,

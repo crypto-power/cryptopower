@@ -317,12 +317,12 @@ func (pg *Page) feeEstimationError(err string) {
 
 func (pg *Page) clearEstimates() {
 	pg.txAuthor = nil
-	pg.txFee = " - "
+	pg.txFee = " - DCR"
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
-	pg.totalCost = " - "
+	pg.totalCost = " - DCR"
 	pg.totalCostUSD = " - "
-	pg.balanceAfterSend = " - "
+	pg.balanceAfterSend = " - DCR"
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
