@@ -417,7 +417,12 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					if row.Transaction.Type == libwallet.TxTypeRegular {
 						amount := dcrutil.Amount(row.Transaction.Amount).String()
 						if row.Transaction.Direction == libwallet.TxDirectionSent {
-							amount = "-" + amount
+							// hide extra minus (-) signs
+							if strings.Contains(amount, "-") {
+								amount = amount
+							} else {
+								amount = "-" + amount
+							}
 						}
 						return LayoutBalance(gtx, l, amount)
 					}

@@ -627,5 +627,5 @@ const (
 	StrConfStatus                      = "confStatus"
 	StrTxFee                           = "txFee"
 	StrVsp                             = "vsp"
-	StrVspFees                         = "vspFees"
+	StrVspFee                          = "vspFee"
 )

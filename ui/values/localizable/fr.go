@@ -477,4 +477,5 @@ const FR = `
 "confStatus" = "Confirmation Status"
 "txFee" = "Transaction Fee"
 "vsp" = "VSP"
+"vspFee" = "VSP Fee"
 `

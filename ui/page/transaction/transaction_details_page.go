@@ -128,18 +128,16 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction,
 
 func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 	// find source account
-	if pg.transaction.Direction == libwallet.TxDirectionSent ||
-		pg.transaction.Direction == libwallet.TxDirectionTransferred {
-		for _, input := range pg.transaction.Inputs {
-			if input.AccountNumber != -1 {
-				accountName, err := pg.wallet.AccountName(input.AccountNumber)
-				if err != nil {
-					log.Error(err)
-				} else {
-					pg.txSourceAccount = accountName
-				}
-				break
+	for _, input := range pg.transaction.Inputs {
+		fmt.Println(input.AccountNumber, "input.AccountNumber")
+		if input.AccountNumber != -1 {
+			accountName, err := pg.wallet.AccountName(input.AccountNumber)
+			if err != nil {
+				log.Error(err)
+			} else {
+				pg.txSourceAccount = accountName
 			}
+			break
 		}
 	}
 
@@ -352,14 +350,17 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 											title = dcrutil.Amount(pg.transaction.MixDenomination).String()
 										case libwallet.TxTypeRegular:
 											if pg.transaction.Direction == libwallet.TxDirectionSent {
-												title = "-" + title
+												// hide extra minus (-) signs
+												if strings.Contains(title, "-") {
+													title = title
+												} else {
+													title = "-" + title
+												}
 											}
 										case libwallet.TxTypeRevocation, libwallet.TxTypeVote:
-											title = pg.txnWidgets.txStatus.Title
-										default:
+											return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
 										}
-
-										return pg.Theme.Label(values.TextSize20, title).Layout(gtx)
+										return components.LayoutBalanceWithUnit(gtx, pg.Load, title)
 									}),
 									layout.Rigid(func(gtx C) D {
 										date := time.Unix(pg.transaction.Timestamp, 0).Format("Jan 2, 2006")
@@ -437,29 +438,6 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 											}),
 										)
 									}
-								}
-
-								// vote transaction
-								if pg.transaction.Type == libwallet.TxTypeVote {
-									maturity := pg.WL.MultiWallet.TicketMaturity()
-									confirmations := pg.transaction.Confirmations(pg.wallet.GetBestBlock())
-									blockTime := pg.WL.MultiWallet.TargetTimePerBlockMinutes()
-
-									timeRemaining := time.Duration(float64(maturity-confirmations)*blockTime) * time.Minute
-									maturityDuration := components.TimeFormat(int(timeRemaining.Seconds()), false)
-
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrDaysToVote)+": ")
-											lbl.Color = col
-											return lbl.Layout(gtx)
-										}),
-										layout.Rigid(func(gtx C) D {
-											lbl := pg.Theme.Label(values.TextSize16, maturityDuration)
-											lbl.Color = col
-											return lbl.Layout(gtx)
-										}),
-									)
 								}
 								return D{}
 							default:
@@ -625,9 +603,11 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if pg.transaction.Direction == libwallet.TxDirectionReceived {
+			// hide section for recieved transactions
+			if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionReceived {
 				return D{}
 			}
+
 			label := values.String(values.StrFrom)
 			if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
 				label = values.String(values.StrAccount)
@@ -635,7 +615,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, label, pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if pg.transaction.Type == libwallet.TxTypeRegular || pg.transaction.Type == libwallet.TxTypeMixed {
+			if (pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction != libwallet.TxDirectionTransferred) || pg.transaction.Type == libwallet.TxTypeMixed {
 				dim := func(gtx C) D {
 					lbl := pg.Theme.Label(values.TextSize14, splitSingleString(pg.txDestinationAddress, 0))
 
@@ -657,13 +637,12 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			if pg.transaction.Direction == libwallet.TxDirectionReceived {
+			// hide this section for sent, received and mixed transaction
+			if pg.transaction.Type == libwallet.TxTypeRegular &&
+				pg.transaction.Direction == libwallet.TxDirectionSent ||
+				pg.transaction.Direction == libwallet.TxDirectionReceived ||
+				pg.transaction.Type == libwallet.TxTypeMixed {
 				return D{}
-			}
-
-			key := values.String(values.StrTicketPrice)
-			if pg.transaction.Type == values.String(values.StrTicket) {
-				key = values.String(values.StrAmount)
 			}
 
 			amount := dcrutil.Amount(pg.transaction.Amount).String()
@@ -672,7 +651,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			} else if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionSent {
 				amount = "-" + amount
 			}
-			return pg.keyValue(gtx, key, pg.Theme.Label(values.TextSize14, amount).Layout)
+			return pg.keyValue(gtx, values.String(values.StrTicketPrice), pg.Theme.Label(values.TextSize14, amount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// revocation and vote transaction reward
@@ -688,9 +667,18 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
+			// hide section for tickets
+			if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+				return D{}
+			}
 			return pg.keyValue(gtx, values.String(values.StrType), pg.Theme.Label(values.TextSize14, pg.transaction.Type).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
+			// hide section for non ticket transactions
+			if pg.transaction.Type != libwallet.TxTypeTicketPurchase {
+				return D{}
+			}
+
 			if pg.ticketSpender != nil { // voted or revoked
 				if pg.ticketSpender.Type == libwallet.TxTypeVote {
 					return pg.keyValue(gtx, values.String(values.StrVotedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
@@ -747,23 +735,26 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					}),
 				)
 			}
+
 			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, dcrutil.Amount(transaction.Fee).String()).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterStaking) {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, pg.vspHost).Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.keyValue(gtx, values.String(values.StrVspFees), pg.Theme.Label(values.TextSize14, values.String(values.StrNotAvailable)).Layout)
-					}),
-				)
+			// hide section for non ticket transactions
+			if pg.transaction.Type != libwallet.TxTypeTicketPurchase {
+				return D{}
 			}
-			return D{}
+
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, pg.vspHost).Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.keyValue(gtx, values.String(values.StrVspFee), pg.Theme.Label(values.TextSize14, values.String(values.StrNotAvailable)).Layout)
+				}),
+			)
 		}),
 		layout.Rigid(func(gtx C) D {
 			dim := func(gtx C) D {
@@ -795,7 +786,8 @@ func (pg *TxDetailsPage) txnInputs(gtx C) D {
 	collapsibleBody := func(gtx C) D {
 		return pg.transactionInputsContainer.Layout(gtx, len(transaction.Inputs), func(gtx C, i int) D {
 			input := transaction.Inputs[i]
-			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, input.PreviousOutpoint, i)
+			addr := splitSingleString(input.PreviousOutpoint, 20)
+			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, addr, i)
 		})
 	}
 	return pg.pageSections(gtx, func(gtx C) D {
@@ -863,7 +855,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 						}
 
 						return layout.W.Layout(gtx, func(gtx C) D {
-							lbl := pg.Theme.Label(values.TextSize14, splitSingleString(address, 13))
+							lbl := pg.Theme.Label(values.TextSize14, address)
 							lbl.Color = pg.Theme.Color.Primary
 							return pg.txnWidgets.copyTextButtons[i].Layout(gtx, lbl.Layout)
 						})

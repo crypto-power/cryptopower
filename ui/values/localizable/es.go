@@ -500,5 +500,5 @@ syncCompTime" = "Est. Sync completion time"
 "confStatus" = "Confirmation Status"
 "txFee" = "Transaction Fee"
 "vsp" = "VSP"
-StrVspFees = "vspFees"
+"vspFee" = "VSP Fee"
 `
