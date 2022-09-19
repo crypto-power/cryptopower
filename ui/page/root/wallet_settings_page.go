@@ -13,6 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/security"
 	s "gitlab.com/raedah/cryptopower/ui/page/settings"
+	"gitlab.com/raedah/cryptopower/ui/uiutils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -477,6 +478,12 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrRename), func(newName string, tim *modal.TextInputModal) bool {
+
+			if !uiutils.ValidateLengthName(newName) {
+				tim.SetError(values.String(values.StrWalletNameLengthError))
+				tim.SetLoading(false)
+				return false
+			}
 			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, newName)
 			if err != nil {
 				pg.Toast.NotifyError(err.Error())

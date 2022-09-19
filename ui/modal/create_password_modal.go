@@ -13,6 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/uiutils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -31,9 +32,10 @@ type CreatePasswordModal struct {
 	showWalletWarnInfo     bool
 	confirmPasswordEnabled bool
 
-	dialogTitle string
-	serverError string
-	description string
+	dialogTitle       string
+	serverError       string
+	description       string
+	invalidWalletName string
 
 	parent app.Page
 
@@ -55,6 +57,7 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable:           true,
 		confirmPasswordEnabled: true,
+		invalidWalletName:      "",
 	}
 
 	cm.btnPositve.Font.Weight = text.Medium
@@ -301,6 +304,8 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 		// set wallet name editor error if wallet name already exist
 		if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
+		} else if !uiutils.ValidateLengthName(cm.walletName.Editor.Text()) {
+			cm.walletName.SetError(values.String(values.StrWalletNameLengthError))
 		} else {
 			t := cm.Theme.Body2(cm.serverError)
 			t.Color = cm.Theme.Color.Danger

@@ -613,4 +613,5 @@ const (
 	StrConfirmUmixedSpending           = "confirmUmixedSpending"
 	StrOK                              = "ok"
 	StrAccountMixer                    = "accountMixer"
+	StrWalletNameLengthError           = "walletLengthError"
 )

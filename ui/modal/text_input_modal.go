@@ -22,8 +22,7 @@ type TextInputModal struct {
 	textInput cryptomaterial.Editor
 	callback  func(string, *TextInputModal) bool
 
-	positiveButtonColor color.NRGBA
-	textCustomTemplate  []layout.Widget
+	textCustomTemplate []layout.Widget
 }
 
 func NewTextInputModal(l *load.Load) *TextInputModal {

@@ -14,6 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/info"
+	"gitlab.com/raedah/cryptopower/ui/uiutils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -472,6 +473,11 @@ func (pg *CreateWallet) validInputs() bool {
 	pg.watchOnlyWalletHex.SetError("")
 	if !components.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))
+		return false
+	}
+
+	if !uiutils.ValidateLengthName(pg.walletName.Editor.Text()) {
+		pg.walletName.SetError(values.String(values.StrWalletNameLengthError))
 		return false
 	}
 
