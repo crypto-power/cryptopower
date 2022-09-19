@@ -133,7 +133,7 @@ func (cm *CreatePasswordModal) ShowWalletInfoTip(show bool) *CreatePasswordModal
 }
 
 func (cm *CreatePasswordModal) SetPositiveButtonText(text string) *CreatePasswordModal {
-	cm.btnNegative.Text = text
+	cm.btnPositive.Text = text
 	return cm
 }
 
@@ -143,7 +143,7 @@ func (cm *CreatePasswordModal) SetPositiveButtonCallback(callback func(walletNam
 }
 
 func (cm *CreatePasswordModal) SetNegativeButtonText(text string) *CreatePasswordModal {
-	cm.btnPositive.Text = text
+	cm.btnNegative.Text = text
 	return cm
 }
 
@@ -316,7 +316,9 @@ func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 func (cm *CreatePasswordModal) Layout(gtx C) D {
 	w := []layout.Widget{}
 
-	w = append(w, cm.titleLayout())
+	if cm.dialogTitle != "" {
+		w = append(w, cm.titleLayout())
+	}
 
 	if cm.description != "" {
 		w = append(w, cm.Theme.Body2(cm.description).Layout)

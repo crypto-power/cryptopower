@@ -180,26 +180,24 @@ func (md *AddDexModal) payFeeAndRegister(dexServer *core.Exchange, cert []byte) 
 			SetPositiveButtonText(strRegister).
 			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				md.ParentWindow().ShowModal(assetSelectorModal)
-				go func() {
-					assetSelectorModal.SetLoading(true)
-					assetSelectorModal.Modal.SetDisabled(true) // prevent re-selecting a fee asset
-					regFeeAsset := dexServer.RegFees[feeAsset.Symbol]
-					_, err := md.Load.Dexc().RegisterWithDEXServer(dexServer.Host,
-						cert,
-						int64(regFeeAsset.Amt),
-						int32(regFeeAsset.ID),
-						[]byte(DEXClientPass))
-					if err != nil {
-						assetSelectorModal.SetLoading(false)
-						assetSelectorModal.Modal.SetDisabled(false) // re-enable fee asset selection
-						assetSelectorModal.Toast.NotifyError(err.Error())
-						return
-					}
-					assetSelectorModal.Dismiss()
-					md.onDexAdded()
-					md.saveDexServer(dexServer.Host, cert)
-				}()
-				return true
+				assetSelectorModal.SetLoading(true)
+				assetSelectorModal.Modal.SetDisabled(true) // prevent re-selecting a fee asset
+				regFeeAsset := dexServer.RegFees[feeAsset.Symbol]
+				_, err := md.Load.Dexc().RegisterWithDEXServer(dexServer.Host,
+					cert,
+					int64(regFeeAsset.Amt),
+					int32(regFeeAsset.ID),
+					[]byte(DEXClientPass))
+				if err != nil {
+					assetSelectorModal.SetLoading(false)
+					assetSelectorModal.Modal.SetDisabled(false) // re-enable fee asset selection
+					assetSelectorModal.Toast.NotifyError(err.Error())
+					return false
+				}
+				assetSelectorModal.Dismiss()
+				md.onDexAdded()
+				md.saveDexServer(dexServer.Host, cert)
+				return false
 			})
 
 		md.ParentWindow().ShowModal(infoModal)

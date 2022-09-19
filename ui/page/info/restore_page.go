@@ -223,47 +223,43 @@ func (pg *Restore) showHexRestoreModal() {
 		Hint(values.String(values.StrEnterHex)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(hex string, hm *modal.TextInputModal) bool {
-			go func() {
-				if !pg.verifyHex(hex) {
-					hm.SetError(values.String(values.StrInvalidHex))
-					hm.SetLoading(false)
-					return
-				}
+			if !pg.verifyHex(hex) {
+				hm.SetError(values.String(values.StrInvalidHex))
+				hm.SetLoading(false)
+				return false
+			}
 
-				passwordModal := modal.NewCreatePasswordModal(pg.Load).
-					Title(values.String(values.StrEnterWalDetails)).
-					EnableName(true).
-					ShowWalletInfoTip(true).
-					SetParent(pg).
-					SetNegativeButtonCallback(func() {
-						pg.tabIndex = 0
-						pg.switchTab(pg.tabIndex)
-					}).
-					SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-						go func() {
-							_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
-							if err != nil {
-								m.SetError(err.Error())
-								m.SetLoading(false)
-								return
-							}
-
-							successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
-							pg.ParentWindow().ShowModal(successModal)
-							m.Dismiss()
-							if pg.restoreComplete == nil {
-								pg.ParentNavigator().CloseCurrentPage()
-							} else {
-								pg.restoreComplete()
-							}
-						}()
+			passwordModal := modal.NewCreatePasswordModal(pg.Load).
+				Title(values.String(values.StrEnterWalDetails)).
+				EnableName(true).
+				ShowWalletInfoTip(true).
+				SetParent(pg).
+				SetNegativeButtonCallback(func() {
+					pg.tabIndex = 0
+					pg.switchTab(pg.tabIndex)
+				}).
+				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+					_, err := pg.WL.MultiWallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
 						return false
-					})
-				pg.ParentWindow().ShowModal(passwordModal)
+					}
 
-				hm.Dismiss()
-			}()
-			return false
+					successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(successModal)
+					m.Dismiss()
+					if pg.restoreComplete == nil {
+						pg.ParentNavigator().CloseCurrentPage()
+					} else {
+						pg.restoreComplete()
+					}
+					return true
+				})
+			pg.ParentWindow().ShowModal(passwordModal)
+
+			hm.Dismiss()
+			return true
 		})
 	hexModal.Title(values.String(values.StrRestoreWithHex)).
 		SetPositiveButtonText(values.String(values.StrSubmit)).

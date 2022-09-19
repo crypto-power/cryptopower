@@ -318,18 +318,15 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet)
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			go func() {
-				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pm.Dismiss()
-				pg.startSyncing()
-			}()
-
-			return false
+			err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pm.Dismiss()
+			pg.startSyncing()
+			return true
 		})
 	pg.ParentWindow().ShowModal(spendingPasswordModal)
 }

@@ -153,12 +153,14 @@ func (vm *voteModal) sendVotes() {
 		Title(values.String(values.StrVoteConfirm)).
 		SetNegativeButtonCallback(func() { vm.isVoting = false }).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			go func() {
+			isSuccess := true
+			go func(isClosing *bool) {
 				w := vm.walletSelector.selectedWallet.Internal()
 				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
+					*isClosing = false
 					return
 				}
 				pm.Dismiss()
@@ -166,9 +168,9 @@ func (vm *voteModal) sendVotes() {
 				vm.ParentWindow().ShowModal(infoModal)
 				go vm.WL.MultiWallet.Politeia.Sync(ctx)
 				vm.Dismiss()
-			}()
+			}(&isSuccess)
 
-			return false
+			return isSuccess
 		})
 	vm.ParentWindow().ShowModal(passwordModal)
 }

@@ -64,30 +64,29 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			go func() {
-				err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
+			err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+
+			if movefundsChecked {
+				err := moveFundsFromDefaultToUnmixed(conf, password)
 				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
+					log.Error(err)
+					txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
+					showInfoModal(conf, values.String(values.StrMoveToUnmixed), txt, values.String(values.StrGotIt), true)
+					return false
 				}
-				conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+			}
 
-				if movefundsChecked {
-					err := moveFundsFromDefaultToUnmixed(conf, password)
-					if err != nil {
-						log.Error(err)
-						txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
-						showInfoModal(conf, values.String(values.StrMoveToUnmixed), txt, values.String(values.StrGotIt), true)
-					}
-				}
+			pm.Dismiss()
 
-				pm.Dismiss()
+			conf.pageNavigator.Display(NewAccountMixerPage(conf.Load))
 
-				conf.pageNavigator.Display(NewAccountMixerPage(conf.Load))
-			}()
-
-			return false
+			return true
 		})
 	conf.window.ShowModal(passwordModal)
 }

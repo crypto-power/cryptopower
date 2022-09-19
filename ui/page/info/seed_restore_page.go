@@ -565,26 +565,24 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				go func() {
-					_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						pg.isRestoring = false
-						return
-					}
+				_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+					pg.isRestoring = false
+					return false
+				}
 
-					infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(infoModal)
-					pg.resetSeeds()
-					m.Dismiss()
-					if pg.restoreComplete == nil {
-						pg.ParentNavigator().CloseCurrentPage()
-					} else {
-						pg.restoreComplete()
-					}
-				}()
-				return false
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
+				pg.resetSeeds()
+				m.Dismiss()
+				if pg.restoreComplete == nil {
+					pg.ParentNavigator().CloseCurrentPage()
+				} else {
+					pg.restoreComplete()
+				}
+				return true
 			})
 		pg.ParentWindow().ShowModal(walletPasswordModal)
 	}

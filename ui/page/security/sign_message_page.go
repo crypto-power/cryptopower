@@ -284,19 +284,16 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToSign)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					go func() {
-						sig, err := pg.wallet.SignMessage([]byte(password), address, message)
-						if err != nil {
-							pm.SetError(err.Error())
-							pm.SetLoading(false)
-							return
-						}
+					sig, err := pg.wallet.SignMessage([]byte(password), address, message)
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
 
-						pm.Dismiss()
-						pg.signedMessageLabel.Text = libwallet.EncodeBase64(sig)
-
-					}()
-					return false
+					pm.Dismiss()
+					pg.signedMessageLabel.Text = libwallet.EncodeBase64(sig)
+					return true
 				})
 			pg.ParentWindow().ShowModal(walletPasswordModal)
 		}

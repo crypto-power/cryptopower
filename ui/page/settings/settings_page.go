@@ -417,38 +417,33 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			Title(values.String(values.StrConfirmStartupPass)).
 			PasswordHint(values.String(values.StrCurrentStartupPass)).
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				go func() {
-					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
-					if err != nil {
-						pm.SetError(err.Error())
-						pm.SetLoading(false)
-						return
-					}
-					pm.Dismiss()
+				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
+				if err != nil {
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
+					return false
+				}
+				pm.Dismiss()
 
-					// change password
-					newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-						Title(values.String(values.StrCreateStartupPassword)).
-						EnableName(false).
-						PasswordHint(values.String(values.StrNewStartupPass)).
-						ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
-						SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-							go func() {
-								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
-								if err != nil {
-									m.SetError(err.Error())
-									m.SetLoading(false)
-									return
-								}
-								pg.showNoticeSuccess(values.String(values.StrStartupPassConfirm))
-								m.Dismiss()
-							}()
+				// change password
+				newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+					Title(values.String(values.StrCreateStartupPassword)).
+					EnableName(false).
+					PasswordHint(values.String(values.StrNewStartupPass)).
+					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
+					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
+						if err != nil {
+							m.SetError(err.Error())
+							m.SetLoading(false)
 							return false
-						})
-					pg.ParentWindow().ShowModal(newPasswordModal)
-				}()
-
-				return false
+						}
+						pg.showNoticeSuccess(values.String(values.StrStartupPassConfirm))
+						m.Dismiss()
+						return true
+					})
+				pg.ParentWindow().ShowModal(newPasswordModal)
+				return true
 			})
 		pg.ParentWindow().ShowModal(currentPasswordModal)
 		break
@@ -462,17 +457,15 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					go func() {
-						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
-						if err != nil {
-							m.SetError(err.Error())
-							m.SetLoading(false)
-							return
-						}
-						pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
-						m.Dismiss()
-					}()
-					return false
+					err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
+						return false
+					}
+					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
+					m.Dismiss()
+					return true
 				})
 			pg.ParentWindow().ShowModal(createPasswordModal)
 		} else {
@@ -482,18 +475,15 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					go func() {
-						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
-						if err != nil {
-							pm.SetError(err.Error())
-							pm.SetLoading(false)
-							return
-						}
-						pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrDisabled)))
-						pm.Dismiss()
-					}()
-
-					return false
+					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
+					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrDisabled)))
+					pm.Dismiss()
+					return true
 				})
 			pg.ParentWindow().ShowModal(currentPasswordModal)
 		}

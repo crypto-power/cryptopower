@@ -197,35 +197,36 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 		EnableConfirmPassword(false).
 		Title("Confirm to set mixer accounts").
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			go func() {
-				mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
-				unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
-				err := pg.WL.SelectedWallet.Wallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+			errfunc := func(err error) bool {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
+			unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
+			err := pg.WL.SelectedWallet.Wallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+			if err != nil {
+				return errfunc(err)
+			}
+			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
 
-				// rename mixed account
-				err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")
-				if err != nil {
-					log.Error(err)
-				}
+			// rename mixed account
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")
+			if err != nil {
+				return errfunc(err)
+			}
 
-				// rename unmixed account
-				err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, "unmixed")
-				if err != nil {
-					log.Error(err)
-				}
+			// rename unmixed account
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, "unmixed")
+			if err != nil {
+				return errfunc(err)
+			}
 
-				pm.Dismiss()
+			pm.Dismiss()
 
-				pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load))
-			}()
+			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load))
 
-			return false
+			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }

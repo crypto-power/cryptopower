@@ -359,40 +359,38 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			go func() {
-				err := pg.wallet.UnlockWallet([]byte(password))
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pg.wallet.LockWallet()
-				pm.Dismiss()
+			err := pg.wallet.UnlockWallet([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pg.wallet.LockWallet()
+			pm.Dismiss()
 
-				// change password
-				newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-					Title(values.String(values.StrChangeSpendingPass)).
-					EnableName(false).
-					PasswordHint(values.String(values.StrNewSpendingPassword)).
-					ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-						go func() {
-							err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
-								[]byte(newPassword), libwallet.PassphraseTypePass)
-							if err != nil {
-								m.SetError(err.Error())
-								m.SetLoading(false)
-								return
-							}
-							m.Dismiss()
-						}()
+			// change password
+			newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				Title(values.String(values.StrChangeSpendingPass)).
+				EnableName(false).
+				PasswordHint(values.String(values.StrNewSpendingPassword)).
+				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
+				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+					err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
+						[]byte(newPassword), libwallet.PassphraseTypePass)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
 						return false
-					})
-				pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+					}
+					m.Dismiss()
 
-			}()
-
-			return false
+					info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
+						modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(info)
+					return true
+				})
+			pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+			return true
 		})
 	pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
 }
@@ -427,17 +425,14 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 			}
 
 			if pg.wallet.IsWatchingOnlyWallet() {
-				m.SetLoading(true)
-				go func() {
-					// no password is required for watching only wallets.
-					err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, nil)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-					} else {
-						walletDeleted()
-					}
-				}()
+				// no password is required for watching only wallets.
+				err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, nil)
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+				} else {
+					walletDeleted()
+				}
 				return false
 			}
 
@@ -449,21 +444,19 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					go func() {
-						err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, []byte(password))
-						if err != nil {
-							pm.SetError(err.Error())
-							pm.SetLoading(false)
-							return
-						}
+					err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, []byte(password))
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
 
-						walletDeleted()
-						pm.Dismiss() // calls RefreshWindow.
-					}()
-					return false
+					walletDeleted()
+					pm.Dismiss() // calls RefreshWindow.
+					return true
 				})
 			pg.ParentWindow().ShowModal(walletPasswordModal)
-			return false
+			return true
 
 		})
 	textModal.Title(values.String(values.StrRemoveWallet)).
@@ -500,7 +493,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 			return true
 		})
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		SetPositiveButtonText(values.String(values.StrRename))
+		SetPositiveButtonText(values.String(values.StrConfirm))
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
@@ -720,17 +713,19 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			EnableConfirmPassword(false).
 			PasswordHint(values.String(values.StrSpendingPassword)).
 			SetPositiveButtonCallback(func(accountName, password string, m *modal.CreatePasswordModal) bool {
-				go func() {
-					_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return
-					}
-					pg.loadWalletAccount()
-					m.Dismiss()
-				}()
-				return false
+				_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+					return false
+				}
+				pg.loadWalletAccount()
+				m.Dismiss()
+
+				info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrAcctCreated),
+					modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(info)
+				return true
 			})
 		pg.ParentWindow().ShowModal(newPasswordModal)
 		break
