@@ -104,8 +104,8 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
-	pg.fetchProposal.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
-	pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
+	pg.fetchProposal.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
+	pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
@@ -184,7 +184,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
 			layout.Rigid(pg.subSectionSwitch(values.String(values.StrFetchProposals), pg.fetchProposal)),
 			layout.Rigid(func(gtx C) D {
-				if !pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+				if !pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
 					return D{}
 				}
 				return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
@@ -600,8 +600,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		if pg.fetchProposal.IsChecked() {
 			go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 			// set proposal notification config when proposal fetching is enabled
-			pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
-			pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
+			pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
 		} else {
 			info := modal.NewInfoModal(pg.Load).
 				Title(values.String(values.StrGovernance)).
@@ -615,10 +615,9 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						go pg.WL.MultiWallet.Politeia.StopSync()
 					}
 
-					pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, false)
-					pg.WL.MultiWallet.Politeia.ClearSavedProposals()
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, false)
 					// set proposal notification config when proposal fetching is disabled
-					pg.WL.MultiWallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, false)
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, false)
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -695,7 +694,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.proposalNotif.Changed() {
-		pg.WL.MultiWallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
 	}
 
 	if pg.resetDexData.Clicked() {

@@ -64,7 +64,7 @@ func (pg *Page) OnNavigatedTo() {
 }
 
 func (pg *Page) isGovernanceFeatureEnabled() bool {
-	return pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false)
+	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -92,7 +92,7 @@ func (pg *Page) HandleUserInteractions() {
 	for pg.enableGovernanceBtn.Clicked() {
 		go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
-		pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
 	}
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {
