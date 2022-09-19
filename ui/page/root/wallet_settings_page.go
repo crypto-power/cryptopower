@@ -490,7 +490,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) showSPVPeerDialog(cancelfunc func()) {
+func (pg *WalletSettingsPage) showSPVPeerDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -502,7 +502,9 @@ func (pg *WalletSettingsPage) showSPVPeerDialog(cancelfunc func()) {
 		})
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		NegativeButton(values.String(values.StrCancel), cancelfunc)
+		NegativeButton(values.String(values.StrCancel), func() {
+			pg.connectToPeer.SetChecked(false)
+		})
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -527,7 +529,9 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
 	info := modal.NewInfoModal(pg.Load).
 		Title(title).
 		Body(msg).
-		NegativeButton(values.String(values.StrCancel), func() {}).
+		NegativeButton(values.String(values.StrCancel), func() {
+			pg.connectToPeer.SetChecked(true)
+		}).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 		PositiveButton(values.String(values.StrRemove), func(isChecked bool) bool {
 			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
@@ -660,8 +664,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	specificPeerKey := libwallet.SpvPersistentPeerAddressesConfigKey
 	if pg.connectToPeer.Changed() {
 		if pg.connectToPeer.IsChecked() {
-			cancelfunc := func() { pg.connectToPeer.SetChecked(false) }
-			pg.showSPVPeerDialog(cancelfunc)
+			pg.showSPVPeerDialog()
 			return
 		}
 
@@ -671,7 +674,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.updateConnectToPeer.Clicked() {
-		pg.showSPVPeerDialog(func() {})
+		pg.showSPVPeerDialog()
 		break
 	}
 
