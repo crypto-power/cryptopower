@@ -502,7 +502,9 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		})
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		NegativeButton(values.String(values.StrCancel), func() {
+			pg.connectToPeer.SetChecked(false)
+		})
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -527,7 +529,9 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
 	info := modal.NewInfoModal(pg.Load).
 		Title(title).
 		Body(msg).
-		NegativeButton(values.String(values.StrCancel), func() {}).
+		NegativeButton(values.String(values.StrCancel), func() {
+			pg.connectToPeer.SetChecked(true)
+		}).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 		PositiveButton(values.String(values.StrRemove), func(isChecked bool) bool {
 			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
