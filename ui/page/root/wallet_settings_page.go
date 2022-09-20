@@ -475,6 +475,8 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 				tm.SetLoading(false)
 				return false
 			}
+			info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrWalletRenamed), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(info)
 			return true
 		})
 	textModal.Title(values.String(values.StrRenameWalletSheetTitle)).
