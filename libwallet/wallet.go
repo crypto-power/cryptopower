@@ -57,19 +57,24 @@ type Wallet struct {
 	// This function is ideally assigned when the `wallet.prepare` method is
 	// called from a MultiWallet instance.
 	readUserConfigValue configReadFn
+
+	// deleteUserConfigValue deletes the value found associated with the provided
+	// key in the databse.
+	deleteUserConfigValue configDeleteFn
 }
 
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
 func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
-	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
+	configFn *walletConfigFn) (err error) {
 
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.vspClients = make(map[string]*vsp.Client)
-	wallet.setUserConfigValue = setUserConfigValueFn
-	wallet.readUserConfigValue = readUserConfigValueFn
+	wallet.setUserConfigValue = configFn.saveFn
+	wallet.readUserConfigValue = configFn.readFn
+	wallet.deleteUserConfigValue = configFn.deleteFn
 
 	// open database for indexing transactions for faster loading
 	walletDataDBPath := filepath.Join(wallet.dataDir, walletdata.DbName)

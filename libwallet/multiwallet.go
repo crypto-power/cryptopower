@@ -122,7 +122,10 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
-		err = wallet.prepare(rootDir, chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+		configFn, err := newWalletConfigFns(mw, wallet.ID)
+		if err == nil {
+			err = wallet.prepare(rootDir, chainParams, configFn)
+		}
 		if err == nil && !WalletExistsAt(wallet.dataDir) {
 			err = fmt.Errorf("missing wallet database file")
 		}
@@ -309,13 +312,30 @@ func (mw *MultiWallet) CreateWatchOnlyWallet(walletName, extendedPublicKey strin
 	}
 
 	return mw.saveNewWallet(wallet, func() error {
-		err := wallet.prepare(mw.rootDir, mw.chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+		configFn, err := newWalletConfigFns(mw, wallet.ID)
+		if err == nil {
+			err = wallet.prepare(mw.rootDir, mw.chainParams, configFn)
+		}
+
 		if err != nil {
 			return err
 		}
 
 		return wallet.createWatchingOnlyWallet(extendedPublicKey)
 	})
+}
+
+func (mw *MultiWallet) createWallet(wallet *Wallet, privatePassphrase, seed string) error {
+	configFn, err := newWalletConfigFns(mw, wallet.ID)
+	if err == nil {
+		err = wallet.prepare(mw.rootDir, mw.chainParams, configFn)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return wallet.createWallet(privatePassphrase, seed)
 }
 
 func (mw *MultiWallet) CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
@@ -337,12 +357,7 @@ func (mw *MultiWallet) CreateNewWallet(walletName, privatePassphrase string, pri
 	}
 
 	return mw.saveNewWallet(wallet, func() error {
-		err := wallet.prepare(mw.rootDir, mw.chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
-		if err != nil {
-			return err
-		}
-
-		return wallet.createWallet(privatePassphrase, seed)
+		return mw.createWallet(wallet, privatePassphrase, seed)
 	})
 }
 
@@ -356,12 +371,7 @@ func (mw *MultiWallet) RestoreWallet(walletName, seedMnemonic, privatePassphrase
 	}
 
 	return mw.saveNewWallet(wallet, func() error {
-		err := wallet.prepare(mw.rootDir, mw.chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
-		if err != nil {
-			return err
-		}
-
-		return wallet.createWallet(privatePassphrase, seedMnemonic)
+		return mw.createWallet(wallet, privatePassphrase, seedMnemonic)
 	})
 }
 
@@ -401,7 +411,11 @@ func (mw *MultiWallet) LinkExistingWallet(walletName, walletDataDir, originalPub
 
 		// prepare the wallet for use and open it
 		err := (func() error {
-			err := wallet.prepare(mw.rootDir, mw.chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+			configFn, err := newWalletConfigFns(mw, wallet.ID)
+			if err != nil {
+				return err
+			}
+			err = wallet.prepare(mw.rootDir, mw.chainParams, configFn)
 			if err != nil {
 				return err
 			}

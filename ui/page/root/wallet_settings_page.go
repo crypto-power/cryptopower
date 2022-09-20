@@ -109,13 +109,16 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
-	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
+	pg.loadConnectedPeers()
+	pg.loadWalletAccount()
+}
+
+func (pg *WalletSettingsPage) loadConnectedPeers() {
+	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey, "")
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
 	}
-
-	pg.loadWalletAccount()
 }
 
 func (pg *WalletSettingsPage) loadWalletAccount() {
@@ -144,6 +147,8 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) Layout(gtx C) D {
+	pg.loadConnectedPeers()
+
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
 			func(gtx C) D {
@@ -195,7 +200,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey) == "" {
+						if pg.peerAddr == "" {
 							return D{}
 						}
 
@@ -490,7 +495,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
 			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})

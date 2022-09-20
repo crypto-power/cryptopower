@@ -535,4 +535,5 @@ const EN = `
 "moveToUnmixed" = "Move funds to unmixed account"
 "seedValidationFailed" = "Failed to verify. Please go through every wallet seed and try again."
 "invalidAmount" = "Invalid amount"
+"missingWallets" = "Missing initialized wallet instances"
 `

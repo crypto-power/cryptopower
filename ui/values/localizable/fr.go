@@ -488,4 +488,5 @@ const FR = `
 "moveToUnmixed" = "Déplacer des fonds vers un compte non mixte"
 "seedValidationFailed" = "Échec de la vérification. Veuillez parcourir chaque graine de portefeuille et réessayer"
 "invalidAmount" = "montant invalide"
+"missingWallets" = "Instances de portefeuille initialisées manquantes"
 `
