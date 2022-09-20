@@ -66,6 +66,8 @@ type Page struct {
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
+	coinSelectionLabel  *cryptomaterial.Clickable
+	chevronRightIcon    *cryptomaterial.Icon
 
 	*authoredTxData
 }

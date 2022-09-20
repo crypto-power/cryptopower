@@ -567,4 +567,5 @@ const EN = `
 "pageWarningNotSync" = "Page cannot be accessed because the wallet is not synced, please sync your wallet and try again"
 "pageWarningSync" = "Page cannot be accessed because the wallet sync is in progress, please wait for the sync to complete"
 "backToWallets" = "Back to Wallets"
+"coinSelection" = "Coin Selection"
 `

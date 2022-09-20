@@ -50,6 +50,10 @@ func (pg *Page) initLayoutWidgets() {
 		Left:   values.MarginPadding8,
 	}
 
+	pg.chevronRightIcon = cryptomaterial.NewIcon(pg.Theme.Icons.ChevronRight)
+	pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
+	pg.coinSelectionLabel = pg.Theme.NewClickable(false)
+
 	pg.moreItems = pg.getMoreItem()
 }
 
@@ -162,6 +166,9 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		func(gtx C) D {
 			return pg.toSection(gtx)
 		},
+		func(gtx C) D {
+			return pg.coinSelectionSection(gtx)
+		},
 	}
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
@@ -217,6 +224,9 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 		},
 		func(gtx C) D {
 			return pg.toSection(gtx)
+		},
+		func(gtx C) D {
+			return pg.coinSelectionSection(gtx)
 		},
 	}
 
@@ -365,6 +375,41 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 				)
 			}),
 		)
+	})
+}
+
+func (pg *Page) coinSelectionSection(gtx layout.Context) D {
+	m := values.MarginPadding20
+	inset := layout.Inset{
+		Bottom: values.MarginPadding100,
+	}
+	return inset.Layout(gtx, func(gtx C) D {
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			return components.UniformPadding(gtx, func(gtx C) D {
+				return pg.coinSelectionLabel.Layout(gtx, func(gtx C) D {
+					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
+					return layout.Inset{}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(textLabel.Layout),
+							layout.Flexed(1, func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(pg.Theme.Label(values.TextSize16, "Automatic").Layout),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{Left: m}.Layout(gtx, func(gtx C) D {
+
+												return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
+
+											})
+										}),
+									)
+								})
+							}),
+						)
+					})
+				})
+			})
+		})
 	})
 }
 
