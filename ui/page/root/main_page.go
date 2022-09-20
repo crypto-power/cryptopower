@@ -256,7 +256,10 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 	mp.CurrentPage().OnNavigatedTo()
 
-	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+	if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+		if mp.WL.MultiWallet.Politeia.IsSyncing() {
+			return
+		}
 		go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 	}
 
@@ -746,7 +749,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 
 		initializeBeepNotification(notification)
 	case wallet.Proposal:
-		proposalNotification := mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false)
+		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false)
 		if !proposalNotification {
 			return
 		}
