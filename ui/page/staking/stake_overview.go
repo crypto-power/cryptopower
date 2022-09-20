@@ -101,7 +101,8 @@ func (pg *Page) fetchTicketPrice() {
 	if err != nil && !pg.WL.MultiWallet.IsSynced() {
 		log.Error(err)
 		pg.ticketPrice = values.String(values.StrNotAvailable)
-		pg.Toast.NotifyError(values.String(values.StrWalletNotSynced))
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletNotSynced), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 	} else {
 		pg.ticketPrice = dcrutil.Amount(ticketPrice.TicketPrice).String()
 	}
@@ -123,14 +124,16 @@ func (pg *Page) loadPageData() {
 
 		totalRewards, err := pg.WL.SelectedWallet.Wallet.TotalStakingRewards()
 		if err != nil {
-			pg.Toast.NotifyError(err.Error())
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
 		} else {
 			pg.totalRewards = dcrutil.Amount(totalRewards).String()
 		}
 
 		overview, err := pg.WL.SelectedWallet.Wallet.StakingOverview()
 		if err != nil {
-			pg.Toast.NotifyError(err.Error())
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
 		} else {
 			pg.ticketOverview = overview
 		}
@@ -225,13 +228,15 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.stakeSettings.Clicked() && !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
 		if pg.WL.SelectedWallet.Wallet.IsAutoTicketsPurchaseActive() {
-			pg.Toast.NotifyError(values.String(values.StrAutoTicketWarn))
+			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrAutoTicketWarn), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
 			return
 		}
 
 		ticketBuyerModal := newTicketBuyerModal(pg.Load).
 			OnSettingsSaved(func() {
-				pg.Toast.Notify(values.String(values.StrTicketSettingSaved))
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrTicketSettingSaved), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
 			}).
 			OnCancel(func() {
 				pg.stake.SetChecked(false)
@@ -277,15 +282,13 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		backupNowOrLaterModal := modal.NewInfoModal(pg.Load).
+		backupNowOrLaterModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrStatistics)).
 			SetCancelable(true).
 			UseCustomWidget(func(gtx C) D {
 				return pg.stakingRecordStatistics(gtx)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(backupNowOrLaterModal)
 	}
 }
@@ -297,7 +300,8 @@ func (pg *Page) ticketBuyerSettingsModal() {
 		}).
 		OnSettingsSaved(func() {
 			pg.startTicketBuyerPasswordModal()
-			pg.Toast.Notify(values.String(values.StrTicketSettingSaved))
+			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrTicketSettingSaved), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(infoModal)
 		})
 	pg.ParentWindow().ShowModal(ticketBuyerModal)
 }
@@ -307,11 +311,14 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 	balToMaintain := libwallet.AmountCoin(tbConfig.BalanceToMaintain)
 	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
-		pg.Toast.NotifyError(values.StringF(values.StrTicketError, err))
+		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTicketError, err), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
 
-	walletPasswordModal := modal.NewPasswordModal(pg.Load).
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmPurchase)).
 		SetCancelable(false).
 		UseCustomWidget(func(gtx C) D {
@@ -349,28 +356,25 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 				}),
 			)
 		}).
-		NegativeButton(values.String(values.StrCancel), func() {
-			pg.stake.SetChecked(false)
-		}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
-				pg.Toast.NotifyError(values.String(values.StrNotConnected))
+				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)
 				pg.stake.SetChecked(false)
 				return false
 			}
 
-			go func() {
-				err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer([]byte(password))
-				if err != nil {
-					pg.Toast.NotifyError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
+			err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
 
-				pg.stake.SetChecked(pg.WL.SelectedWallet.Wallet.IsAutoTicketsPurchaseActive())
-				pg.ParentWindow().Reload()
-			}()
+			pg.stake.SetChecked(pg.WL.SelectedWallet.Wallet.IsAutoTicketsPurchaseActive())
+			pg.ParentWindow().Reload()
+
 			pm.Dismiss()
 
 			return false

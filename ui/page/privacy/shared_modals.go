@@ -3,16 +3,12 @@ package privacy
 import (
 	"fmt"
 
-	"gioui.org/layout"
-	"gioui.org/widget"
-
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 
 type sharedModalConfig struct {
@@ -22,37 +18,25 @@ type sharedModalConfig struct {
 	checkBox      cryptomaterial.CheckBoxStyle
 }
 
-func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError, alignCenter bool) {
-	icon := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
-	icon.Color = conf.Theme.Color.DeepBlue
-	if !isError {
-		icon = cryptomaterial.NewIcon(conf.Theme.Icons.ActionCheckCircle)
-		icon.Color = conf.Theme.Color.Success
+func showInfoModal(conf *sharedModalConfig, title, body, btnText string, isError bool) {
+	var info *modal.InfoModal
+	if isError {
+		info = modal.NewErrorModal(conf.Load, title, modal.DefaultClickFunc())
+	} else {
+		info = modal.NewSuccessModal(conf.Load, title, modal.DefaultClickFunc())
 	}
-
-	info := modal.NewInfoModal(conf.Load).
-		Icon(icon).
-		Title(title).
-		Body(body).
-		PositiveButton(btnText, func(isChecked bool) bool {
-			return true
-		})
-
-	if alignCenter {
-		align := layout.Center
-		info.SetContentAlignment(align, align)
-	}
-
+	info.Body(body).SetPositiveButtonText(btnText)
 	conf.window.ShowModal(info)
 }
 
 func showModalSetupMixerInfo(conf *sharedModalConfig) {
-	info := modal.NewInfoModal(conf.Load).
-		Title("Set up mixer by creating two needed accounts").
+	info := modal.NewCustomModal(conf.Load).
+		Title(values.String(values.StrMultipleMixerAccNeeded)).
 		SetupWithTemplate(modal.SetupMixerInfoTemplate).
 		CheckBox(conf.checkBox, false).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton("Begin setup", func(movefundsChecked bool) bool {
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrInitiateSetup)).
+		SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
 			showModalSetupMixerAcct(conf, movefundsChecked)
 			return true
 		})
@@ -61,16 +45,12 @@ func showModalSetupMixerInfo(conf *sharedModalConfig) {
 
 func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	accounts, _ := conf.WL.SelectedWallet.Wallet.GetAccountsRaw()
-	txt := "There are existing accounts named mixed or unmixed. Please change the name to something else for now. You can change them back after the setup."
 	for _, acct := range accounts.Acc {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
-			alert := cryptomaterial.NewIcon(cryptomaterial.MustIcon(widget.NewIcon(icons.AlertError)))
-			alert.Color = conf.Theme.Color.DeepBlue
-			info := modal.NewInfoModal(conf.Load).
-				Icon(alert).
-				Title("Account name is taken").
-				Body(txt).
-				PositiveButton("Go back & rename", func(movefundsChecked bool) bool {
+			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
+				Body(values.String(values.StrMixerAccErrorMsg)).
+				SetPositiveButtonText(values.String(values.StrBackAndRename)).
+				SetPositiveButtonCallback(func(movefundsChecked bool, _ *modal.InfoModal) bool {
 					conf.pageNavigator.CloseCurrentPage()
 					return true
 				})
@@ -79,34 +59,34 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		}
 	}
 
-	passwordModal := modal.NewPasswordModal(conf.Load).
+	passwordModal := modal.NewCreatePasswordModal(conf.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
-		NegativeButton("Cancel", func() {}).
-		PositiveButton("Confirm", func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+
+			if movefundsChecked {
+				err := moveFundsFromDefaultToUnmixed(conf, password)
 				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
+					log.Error(err)
+					txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
+					showInfoModal(conf, values.String(values.StrMoveToUnmixed), txt, values.String(values.StrGotIt), true)
+					return false
 				}
-				conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+			}
 
-				if movefundsChecked {
-					err := moveFundsFromDefaultToUnmixed(conf, password)
-					if err != nil {
-						log.Error(err)
-						txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
-						showInfoModal(conf, "Move funds to unmixed account", txt, "Got it", true, false)
-					}
-				}
+			pm.Dismiss()
 
-				pm.Dismiss()
+			conf.pageNavigator.Display(NewAccountMixerPage(conf.Load))
 
-				conf.pageNavigator.Display(NewAccountMixerPage(conf.Load))
-			}()
-
-			return false
+			return true
 		})
 	conf.window.ShowModal(passwordModal)
 }
@@ -152,7 +132,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	showInfoModal(conf, "Transaction sent!", "", "Got it", false, true)
+	showInfoModal(conf, values.String(values.StrTxSent), "", values.String(values.StrGotIt), false)
 
 	return err
 }

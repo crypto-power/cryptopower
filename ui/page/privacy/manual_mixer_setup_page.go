@@ -187,43 +187,46 @@ func (pg *ManualMixerSetupPage) mixerAccountSections(gtx layout.Context, title s
 
 func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	if pg.mixedAccountSelector.SelectedAccount().Number == pg.unmixedAccountSelector.SelectedAccount().Number {
-		pg.Toast.NotifyError("Cannot use same account for mixed & unmixed")
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotSameAccoutMixUnmix), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
 
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to set mixer accounts").
-		NegativeButton("Cancel", func() {}).
-		PositiveButton("Confirm", func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
-				unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
-				err := pg.WL.SelectedWallet.Wallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			errfunc := func(err error) bool {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
+			unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
+			err := pg.WL.SelectedWallet.Wallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+			if err != nil {
+				return errfunc(err)
+			}
+			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
 
-				// rename mixed account
-				err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")
-				if err != nil {
-					log.Error(err)
-				}
+			// rename mixed account
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")
+			if err != nil {
+				return errfunc(err)
+			}
 
-				// rename unmixed account
-				err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, "unmixed")
-				if err != nil {
-					log.Error(err)
-				}
+			// rename unmixed account
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, "unmixed")
+			if err != nil {
+				return errfunc(err)
+			}
 
-				pm.Dismiss()
+			pm.Dismiss()
 
-				pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load))
-			}()
+			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load))
 
-			return false
+			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }

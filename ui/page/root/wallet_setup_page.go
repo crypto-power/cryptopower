@@ -429,27 +429,25 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.continueBtn.Clicked() || isSubmit) && pg.validInputs() {
 		spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrSpendingPassword)).
-			NegativeButton(func() {}).
-			PasswordCreated(func(_, password string, m *modal.CreatePasswordModal) bool {
-				go func() {
-					wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, libwallet.PassphraseTypePass)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return
-					}
-					err = wal.CreateMixerAccounts("mixed", "unmixed", password)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return
-					}
-					wal.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
-					m.Dismiss()
+			SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
+				errFunc := func(err error) bool {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+					return false
+				}
+				wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, libwallet.PassphraseTypePass)
+				if err != nil {
+					return errFunc(err)
+				}
+				err = wal.CreateMixerAccounts("mixed", "unmixed", password)
+				if err != nil {
+					return errFunc(err)
+				}
+				wal.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+				m.Dismiss()
 
-					pg.handlerWalletDexServerSelectorCallBacks()
-				}()
-				return false
+				pg.handlerWalletDexServerSelectorCallBacks()
+				return true
 			})
 		pg.ParentWindow().ShowModal(spendingPasswordModal)
 	}

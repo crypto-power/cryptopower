@@ -132,15 +132,12 @@ func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx layout.Context
 func (sp *SubPage) EventHandler(window app.WindowNavigator) {
 	if sp.InfoTemplate != "" {
 		if sp.InfoButton.Button.Clicked() {
-			infoModal := modal.NewInfoModal(sp.Load).
+			infoModal := modal.NewCustomModal(sp.Load).
 				Title(sp.Title).
 				SetupWithTemplate(sp.InfoTemplate).
 				SetContentAlignment(layout.W, layout.Center).
 				SetCancelable(true).
-				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface).
-				PositiveButton(values.String(values.StrOk), func(isChecked bool) bool {
-					return true
-				})
+				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface)
 			window.ShowModal(infoModal)
 		}
 	}

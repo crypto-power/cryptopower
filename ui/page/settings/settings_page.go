@@ -56,7 +56,6 @@ type SettingsPage struct {
 	transactionNotification *cryptomaterial.Switch
 
 	isStartupPassword bool
-	errorReceiver     chan error
 }
 
 func NewSettingsPage(l *load.Load) *SettingsPage {
@@ -74,8 +73,6 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		transactionNotification: l.Theme.Switch(),
 
 		chevronRightIcon: cryptomaterial.NewIcon(chevronRightIcon),
-
-		errorReceiver: make(chan error),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -340,12 +337,13 @@ func (pg *SettingsPage) lineSeparator() layout.Widget {
 }
 
 func (pg *SettingsPage) showWarningModalDialog(title, msg, key string) {
-	info := modal.NewInfoModal(pg.Load).
+	info := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
-		NegativeButton(values.String(values.StrCancel), func() {}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-		PositiveButton(values.String(values.StrRemove), func(isChecked bool) bool {
+		SetPositiveButtonText(values.String(values.StrRemove)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
 			return true
 		})
@@ -394,21 +392,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		go func() {
 			pg.WL.MultiWallet.SaveUserConfigValue(load.TransactionNotificationConfigKey, pg.transactionNotification.IsChecked())
 		}()
-		if pg.transactionNotification.IsChecked() {
-			pg.Toast.Notify(values.StringF(values.StrTxNotification, values.String(values.StrEnabled)))
-		} else {
-			pg.Toast.Notify(values.StringF(values.StrTxNotification, values.String(values.StrDisabled)))
-		}
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal2(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
-			PositiveButtonWidth(values.MarginPadding100).
-			PositiveButton(values.String(values.StrOk), func(isChecked bool) bool {
-				return true
-			})
+			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -421,49 +411,39 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.changeStartupPass.Clicked() {
-		currentPasswordModal := modal.NewPasswordModal(pg.Load).
+		currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+			EnableName(false).
+			EnableConfirmPassword(false).
 			Title(values.String(values.StrConfirmStartupPass)).
-			Hint(values.String(values.StrCurrentStartupPass)).
-			NegativeButton(values.String(values.StrCancel), func() {}).
-			PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-				go func() {
-					var error string
-					err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
-					if err != nil {
-						if err.Error() == libwallet.ErrInvalidPassphrase {
-							error = values.String(values.StrInvalidPassphrase)
-						} else {
-							error = err.Error()
-						}
-						pm.SetError(error)
-						pm.SetLoading(false)
-						return
-					}
-					pm.Dismiss()
+			PasswordHint(values.String(values.StrCurrentStartupPass)).
+			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
+				if err != nil {
+					pm.SetError(err.Error())
+					pm.SetLoading(false)
+					return false
+				}
+				pm.Dismiss()
 
-					// change password
-					newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-						Title(values.String(values.StrCreateStartupPassword)).
-						EnableName(false).
-						PasswordHint(values.String(values.StrNewStartupPass)).
-						ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
-						PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-							go func() {
-								err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
-								if err != nil {
-									m.SetError(err.Error())
-									m.SetLoading(false)
-									return
-								}
-								pg.showNoticeSuccess(values.String(values.StrStartupPassConfirm))
-								m.Dismiss()
-							}()
+				// change password
+				newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+					Title(values.String(values.StrCreateStartupPassword)).
+					EnableName(false).
+					PasswordHint(values.String(values.StrNewStartupPass)).
+					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
+					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
+						if err != nil {
+							m.SetError(err.Error())
+							m.SetLoading(false)
 							return false
-						})
-					pg.ParentWindow().ShowModal(newPasswordModal)
-				}()
-
-				return false
+						}
+						pg.showNoticeSuccess(values.String(values.StrStartupPassConfirm))
+						m.Dismiss()
+						return true
+					})
+				pg.ParentWindow().ShowModal(newPasswordModal)
+				return true
 			})
 		pg.ParentWindow().ShowModal(currentPasswordModal)
 		break
@@ -476,72 +456,42 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				EnableName(false).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
-				NegativeButton(func() {}).
-				PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					go func() {
-						err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
-						if err != nil {
-							m.SetError(err.Error())
-							m.SetLoading(false)
-							return
-						}
-						pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
-						m.Dismiss()
-					}()
-					return false
+				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+					err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
+						return false
+					}
+					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
+					m.Dismiss()
+					return true
 				})
 			pg.ParentWindow().ShowModal(createPasswordModal)
 		} else {
-			currentPasswordModal := modal.NewPasswordModal(pg.Load).
+			currentPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				EnableName(false).
+				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
-				Hint(values.String(values.StrStartupPassword)).
-				NegativeButton(values.String(values.StrCancel), func() {}).
-				PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-					go func() {
-						var error string
-						err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
-						if err != nil {
-							if err.Error() == libwallet.ErrInvalidPassphrase {
-								error = values.String(values.StrInvalidPassphrase)
-							} else {
-								error = err.Error()
-							}
-							pm.SetError(error)
-							pm.SetLoading(false)
-							return
-						}
-						pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrDisabled)))
-						pm.Dismiss()
-					}()
-
-					return false
+				PasswordHint(values.String(values.StrStartupPassword)).
+				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
+					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrDisabled)))
+					pm.Dismiss()
+					return true
 				})
 			pg.ParentWindow().ShowModal(currentPasswordModal)
 		}
 	}
-
-	select {
-	case err := <-pg.errorReceiver:
-		if err.Error() == libwallet.ErrInvalidPassphrase {
-			pg.Toast.NotifyError(values.String(values.StrInvalidPassphrase))
-			return
-		}
-		pg.Toast.NotifyError(err.Error())
-	default:
-	}
 }
 
 func (pg *SettingsPage) showNoticeSuccess(title string) {
-	icon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
-	icon.Color = pg.Theme.Color.Green500
-	info := modal.NewInfoModal2(pg.Load).
-		SetContentAlignment(layout.Center, layout.Center).
-		Title(title).
-		Icon(icon).
-		PositiveButtonWidth(values.MarginPadding100).
-		PositiveButton(values.String(values.StrOk), func(isChecked bool) bool {
-			return true
-		})
+	info := modal.NewSuccessModal(pg.Load, title, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(info)
 }
 
@@ -549,15 +499,14 @@ func (pg *SettingsPage) showSPVPeerDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
+		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
 			if ipAddress != "" {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})
-
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		SetPositiveButtonText(values.String(values.StrConfirm))
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -565,15 +514,14 @@ func (pg *SettingsPage) showUserAgentDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrUserAgent)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrConfirm), func(userAgent string, tim *modal.TextInputModal) bool {
+		SetPositiveButtonCallback(func(userAgent string, tim *modal.TextInputModal) bool {
 			if userAgent != "" {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.UserAgentConfigKey, userAgent)
 			}
 			return true
 		})
-
 	textModal.Title(values.String(values.StrChangeUserAgent)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		SetPositiveButtonText(values.String(values.StrConfirm))
 	pg.ParentWindow().ShowModal(textModal)
 }
 

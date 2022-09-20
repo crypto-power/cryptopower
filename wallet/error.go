@@ -1,19 +1,5 @@
 package wallet
 
-import (
-	"errors"
-
-	"gitlab.com/raedah/cryptopower/libwallet"
-)
-
-var (
-	// ErrIDNotExist is returned when a given ID does not exist
-	ErrIDNotExist = errors.New("ID does not exist")
-
-	// ErrBadPass wraps libwallet.ErrInvalidPassphrase
-	ErrBadPass = errors.New(libwallet.ErrInvalidPassphrase)
-)
-
 // InternalWalletError wraps errors encountered with individual Wallets and Accounts
 type InternalWalletError struct {
 	Message  string

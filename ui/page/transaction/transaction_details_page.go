@@ -2,10 +2,11 @@ package transaction
 
 import (
 	"fmt"
-	"gioui.org/op"
 	"image"
 	"strings"
 	"time"
+
+	"gioui.org/op"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -16,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -943,7 +945,8 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
 			if !pg.Load.WL.MultiWallet.IsConnectedToDecredNetwork() {
 				// if user is not conected to the network, notify the user
-				pg.Toast.NotifyError(values.String(values.StrNotConnected))
+				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(errModal)
 				if !pg.rebroadcastClickable.Enabled() {
 					pg.rebroadcastClickable.SetEnabled(true, nil)
 				}
@@ -953,9 +956,11 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			err := pg.wallet.PublishUnminedTransactions()
 			if err != nil {
 				// If transactions are not published, notify the user
-				pg.Toast.NotifyError(err.Error())
+				errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(errModal)
 			} else {
-				pg.Toast.Notify(values.String(values.StrRepublished))
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrRepublished), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
 			}
 			if !pg.rebroadcastClickable.Enabled() {
 				pg.rebroadcastClickable.SetEnabled(true, nil)

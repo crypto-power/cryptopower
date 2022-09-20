@@ -39,25 +39,30 @@ type CreatePasswordModal struct {
 
 	materialLoader material.LoaderStyle
 
-	btnPositve            cryptomaterial.Button
+	customWidget layout.Widget
+
+	//positiveButtonText string
+	btnPositive cryptomaterial.Button
+	// Returns true to dismiss dialog
+	positiveButtonClicked func(walletName, password string, m *CreatePasswordModal) bool
+
+	//negativeButtonText    string
 	btnNegative           cryptomaterial.Button
 	negativeButtonClicked func()
-
-	callback func(walletName, password string, m *CreatePasswordModal) bool // return true to dismiss dialog
 }
 
 func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm := &CreatePasswordModal{
 		Load:                   l,
-		Modal:                  l.Theme.ModalFloatTitle("create_wallet_modal"),
+		Modal:                  l.Theme.ModalFloatTitle("create_password_modal"),
 		passwordStrength:       l.Theme.ProgressBar(0),
-		btnPositve:             l.Theme.Button(values.String(values.StrConfirm)),
+		btnPositive:            l.Theme.Button(values.String(values.StrConfirm)),
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable:           true,
 		confirmPasswordEnabled: true,
 	}
 
-	cm.btnPositve.Font.Weight = text.Medium
+	cm.btnPositive.Font.Weight = text.Medium
 
 	cm.btnNegative.Font.Weight = text.Medium
 	cm.btnNegative.Margin = layout.Inset{Right: values.MarginPadding8}
@@ -71,6 +76,10 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 	cm.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrConfirmSpendingPassword))
 	cm.confirmPasswordEditor.Editor.SingleLine, cm.confirmPasswordEditor.Editor.Submit = true, true
 
+	// Set the default click functions
+	cm.negativeButtonClicked = func() {}
+	cm.positiveButtonClicked = func(walletName, password string, m *CreatePasswordModal) bool { return true }
+
 	cm.materialLoader = material.Loader(l.Theme.Base)
 
 	return cm
@@ -83,7 +92,7 @@ func (cm *CreatePasswordModal) OnResume() {
 		cm.passwordEditor.Editor.Focus()
 	}
 
-	cm.btnPositve.SetEnabled(cm.validToCreate())
+	cm.btnPositive.SetEnabled(cm.validToCreate())
 }
 
 func (cm *CreatePasswordModal) OnDismiss() {}
@@ -123,12 +132,22 @@ func (cm *CreatePasswordModal) ShowWalletInfoTip(show bool) *CreatePasswordModal
 	return cm
 }
 
-func (cm *CreatePasswordModal) PasswordCreated(callback func(walletName, password string, m *CreatePasswordModal) bool) *CreatePasswordModal {
-	cm.callback = callback
+func (cm *CreatePasswordModal) SetPositiveButtonText(text string) *CreatePasswordModal {
+	cm.btnPositive.Text = text
 	return cm
 }
 
-func (cm *CreatePasswordModal) NegativeButton(callback func()) *CreatePasswordModal {
+func (cm *CreatePasswordModal) SetPositiveButtonCallback(callback func(walletName, password string, m *CreatePasswordModal) bool) *CreatePasswordModal {
+	cm.positiveButtonClicked = callback
+	return cm
+}
+
+func (cm *CreatePasswordModal) SetNegativeButtonText(text string) *CreatePasswordModal {
+	cm.btnNegative.Text = text
+	return cm
+}
+
+func (cm *CreatePasswordModal) SetNegativeButtonCallback(callback func()) *CreatePasswordModal {
 	cm.negativeButtonClicked = callback
 	return cm
 }
@@ -149,7 +168,12 @@ func (cm *CreatePasswordModal) SetDescription(description string) *CreatePasswor
 }
 
 func (cm *CreatePasswordModal) SetError(err string) {
-	cm.serverError = err
+	cm.serverError = values.TranslateErr(err)
+}
+
+func (cm *CreatePasswordModal) UseCustomWidget(layout layout.Widget) *CreatePasswordModal {
+	cm.customWidget = layout
+	return cm
 }
 
 func (cm *CreatePasswordModal) validToCreate() bool {
@@ -165,7 +189,6 @@ func (cm *CreatePasswordModal) validToCreate() bool {
 	}
 
 	return nameValid && editorsNotEmpty(cm.passwordEditor.Editor) && validPassword && passwordsMatch
-
 }
 
 // SetParent sets the page that created PasswordModal as it's parent.
@@ -175,7 +198,7 @@ func (cm *CreatePasswordModal) SetParent(parent app.Page) *CreatePasswordModal {
 }
 
 func (cm *CreatePasswordModal) Handle() {
-	cm.btnPositve.SetEnabled(cm.validToCreate())
+	cm.btnPositive.SetEnabled(cm.validToCreate())
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor, cm.walletName.Editor)
 	if isChanged {
@@ -186,7 +209,7 @@ func (cm *CreatePasswordModal) Handle() {
 		cm.confirmPasswordEditor.SetError("")
 	}
 
-	if cm.btnPositve.Clicked() || isSubmit {
+	if cm.btnPositive.Clicked() || isSubmit {
 
 		if cm.walletNameEnabled {
 			if !editorsNotEmpty(cm.walletName.Editor) {
@@ -209,14 +232,14 @@ func (cm *CreatePasswordModal) Handle() {
 			if cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor) {
 
 				cm.SetLoading(true)
-				if cm.callback(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
+				if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
 					cm.Dismiss()
 				}
 			}
 		}
 
 		cm.SetLoading(true)
-		if cm.callback(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
+		if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
 			cm.Dismiss()
 		}
 	}
@@ -237,7 +260,9 @@ func (cm *CreatePasswordModal) Handle() {
 		}
 	}
 
-	computePasswordStrength(&cm.passwordStrength, cm.Theme, cm.passwordEditor.Editor)
+	if cm.confirmPasswordEnabled {
+		computePasswordStrength(&cm.passwordStrength, cm.Theme, cm.passwordEditor.Editor)
+	}
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations
@@ -291,10 +316,16 @@ func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 func (cm *CreatePasswordModal) Layout(gtx C) D {
 	w := []layout.Widget{}
 
-	w = append(w, cm.titleLayout())
+	if cm.dialogTitle != "" {
+		w = append(w, cm.titleLayout())
+	}
 
 	if cm.description != "" {
 		w = append(w, cm.Theme.Body2(cm.description).Layout)
+	}
+
+	if cm.customWidget != nil {
+		w = append(w, cm.customWidget)
 	}
 
 	if cm.serverError != "" {
@@ -376,7 +407,7 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 						return cm.materialLoader.Layout(gtx)
 					}
 
-					return cm.btnPositve.Layout(gtx)
+					return cm.btnPositive.Layout(gtx)
 				}),
 			)
 		})

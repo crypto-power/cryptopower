@@ -6,6 +6,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -46,7 +47,8 @@ func (pg *Page) listenForTxNotifications() {
 func (pg *Page) fetchTickets() {
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterTickets, true)
 	if err != nil {
-		pg.Toast.NotifyError(err.Error())
+		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
 
@@ -54,7 +56,8 @@ func (pg *Page) fetchTickets() {
 		return filter == libwallet.TxFilterTickets
 	})
 	if err != nil {
-		pg.Toast.NotifyError(err.Error())
+		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 		return
 	}
 

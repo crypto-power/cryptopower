@@ -746,15 +746,6 @@ func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropD
 		{Text: values.String(values.StrOldest)}}, grp, pos)
 }
 
-func TranslateErr(err error) string {
-	switch err.Error() {
-	case libwallet.ErrInvalidPassphrase:
-		return values.String(values.StrInvalidPassphrase)
-	}
-
-	return err.Error()
-}
-
 // CoinImageBySymbol returns image widget for supported asset coins.
 func CoinImageBySymbol(l *load.Load, coinName string) *cryptomaterial.Image {
 	switch strings.ToLower(coinName) {

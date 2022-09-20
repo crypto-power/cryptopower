@@ -91,11 +91,12 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 }
 
 func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.WindowNavigator) {
-	infoModal := modal.NewInfoModal(load).
+	infoModal := modal.NewCustomModal(load).
 		Title("Exit?").
 		Body("Are you sure you want to exit the seed backup process?").
-		NegativeButton("No", func() {}).
-		PositiveButton("Yes", func(isChecked bool) bool {
+		SetNegativeButtonText(values.String(values.StrNo)).
+		SetPositiveButtonText(values.String(values.StrYes)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			pageNavigator.CloseCurrentPage()
 			return true
 		})

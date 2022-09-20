@@ -11,6 +11,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -62,6 +63,10 @@ func (tb *ticketBuyerModal) OnCancel(cancel func()) *ticketBuyerModal {
 	return tb
 }
 
+func (tb *ticketBuyerModal) SetError(err string) {
+	tb.balToMaintainEditor.SetError(values.TranslateErr(err))
+}
+
 func (tb *ticketBuyerModal) OnResume() {
 	tb.initializeAccountSelector()
 	tb.ctx, tb.ctxCancel = context.WithCancel(context.TODO())
@@ -79,7 +84,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		tbConfig := tb.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
 		acct, err := tb.WL.SelectedWallet.Wallet.GetAccount(tbConfig.PurchaseAccount)
 		if err != nil {
-			tb.Toast.NotifyError(err.Error())
+			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
+			tb.ParentWindow().ShowModal(errModal)
 		}
 
 		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
@@ -87,9 +93,9 @@ func (tb *ticketBuyerModal) OnResume() {
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			err := tb.accountSelector.SelectFirstWalletValidAccount()
-			if err != nil {
-				tb.Toast.NotifyError(err.Error())
+			if err := tb.accountSelector.SelectFirstWalletValidAccount(); err != nil {
+				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
+				tb.ParentWindow().ShowModal(errModal)
 			}
 		}
 
@@ -100,7 +106,8 @@ func (tb *ticketBuyerModal) OnResume() {
 	if tb.accountSelector.SelectedAccount() == nil {
 		err := tb.accountSelector.SelectFirstWalletValidAccount()
 		if err != nil {
-			tb.Toast.NotifyError(err.Error())
+			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
+			tb.ParentWindow().ShowModal(errModal)
 		}
 	}
 }
@@ -200,7 +207,7 @@ func (tb *ticketBuyerModal) Handle() {
 		vspHost := tb.vspSelector.SelectedVSP().Host
 		amount, err := strconv.ParseFloat(tb.balToMaintainEditor.Editor.Text(), 64)
 		if err != nil {
-			tb.Toast.NotifyError(err.Error())
+			tb.SetError(err.Error())
 			return
 		}
 

@@ -12,6 +12,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -92,7 +93,8 @@ func (avm *agendaVoteModal) FetchUnspentUnexpiredTickets(walletID int) {
 		wallet := avm.WL.MultiWallet.WalletWithID(walletID)
 		tickets, err := wallet.UnspentUnexpiredTickets()
 		if err != nil {
-			avm.Toast.NotifyError(err.Error())
+			errorModal := modal.NewErrorModal(avm.Load, err.Error(), modal.DefaultClickFunc())
+			avm.ParentWindow().ShowModal(errorModal)
 			return
 		}
 
@@ -231,15 +233,11 @@ func (avm *agendaVoteModal) sendVotes() {
 		choiceID := avm.optionsRadioGroup.Value
 		err := avm.walletSelector.selectedWallet.SetVoteChoice(avm.agenda.AgendaID, choiceID, "", password)
 		if err != nil {
-			if err.Error() == libwallet.ErrInvalidPassphrase {
-				avm.spendingPassword.SetError(values.String(values.StrInvalidPassphrase))
-			} else {
-				avm.Toast.NotifyError(err.Error())
-			}
+			avm.spendingPassword.SetError(err.Error())
 			return
 		}
-		avm.Toast.Notify(values.String(values.StrVoteUpdated))
-
+		successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
+		avm.ParentWindow().ShowModal(successModal)
 		avm.Dismiss()
 		avm.onPreferenceUpdated()
 	}()

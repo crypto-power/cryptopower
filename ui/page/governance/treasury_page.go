@@ -92,13 +92,11 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		infoModal := modal.NewInfoModal(pg.Load).
+		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrTreasurySpending)).
 			Body(values.String(values.StrTreasurySpendingInfo)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
@@ -108,7 +106,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrVerifyGovernanceKeys)).
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
@@ -149,9 +147,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -264,29 +260,29 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 }
 
 func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.TreasuryItem) {
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			isSuccess := true
+			go func(isClosing bool) {
 				selectedWallet := pg.WL.SelectedWallet.Wallet
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
 				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
 				if err != nil {
-					if err.Error() == libwallet.ErrInvalidPassphrase {
-						pm.SetError(values.String(values.StrInvalidPassphrase))
-					} else {
-						pm.Toast.NotifyError(err.Error())
-					}
+					pm.SetError(err.Error())
 					pm.SetLoading(false)
+					isClosing = false
 					return
 				}
 				go pg.FetchPolicies() // re-fetch policies when voting is done.
-				pm.Toast.Notify(values.String(values.StrPolicySetSuccessful))
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
 				pm.Dismiss()
-			}()
+			}(isSuccess)
 
-			return false
+			return isSuccess
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }

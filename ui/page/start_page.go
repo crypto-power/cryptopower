@@ -11,7 +11,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/root"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -73,25 +72,27 @@ func (sp *startPage) OnNavigatedTo() {
 }
 
 func (sp *startPage) unlock() {
-	startupPasswordModal := modal.NewPasswordModal(sp.Load).
+	startupPasswordModal := modal.NewCreatePasswordModal(sp.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrUnlockWithPassword)).
-		Hint(values.String(values.StrStartupPassword)).
-		NegativeButton(values.String(values.StrExit), func() {
+		PasswordHint(values.String(values.StrStartupPassword)).
+		SetNegativeButtonText(values.String(values.StrExit)).
+		SetNegativeButtonCallback(func() {
 			sp.WL.MultiWallet.Shutdown()
 			os.Exit(0)
 		}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, m *modal.PasswordModal) bool {
-			go func() {
-				err := sp.openWallets(password)
-				if err != nil {
-					m.SetError(components.TranslateErr(err))
-					m.SetLoading(false)
-					return
-				}
+		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
+			err := sp.openWallets(password)
+			if err != nil {
+				m.SetError(err.Error())
+				m.SetLoading(false)
+				return false
+			}
 
-				m.Dismiss()
-			}()
-			return false
+			m.Dismiss()
+			return true
 		})
 	sp.ParentWindow().ShowModal(startupPasswordModal)
 }

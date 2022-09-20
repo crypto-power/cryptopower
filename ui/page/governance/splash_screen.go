@@ -62,11 +62,9 @@ func (pg *Page) splashScreenLayout(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) showInfoModal() {
-	info := modal.NewInfoModal(pg.Load).
+	info := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrGovernance)).
 		Body(values.String(values.StrProposalInfo)).
-		PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-			return true
-		})
+		SetPositiveButtonText(values.String(values.StrGotIt))
 	pg.ParentWindow().ShowModal(info)
 }

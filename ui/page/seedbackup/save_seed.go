@@ -86,58 +86,58 @@ func NewSaveSeedPage(l *load.Load, wallet *libwallet.Wallet) *SaveSeedPage {
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) OnNavigatedTo() {
 
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to show seed").
-		PositiveButton("Confirm", func(password string, m *modal.PasswordModal) bool {
-			go func() {
-				seed, err := pg.wallet.DecryptSeed([]byte(password))
-				if err != nil {
-					m.SetLoading(false)
-					m.SetError(err.Error())
-					return
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
+			seed, err := pg.wallet.DecryptSeed([]byte(password))
+			if err != nil {
+				m.SetLoading(false)
+				m.SetError(err.Error())
+				return false
+			}
+
+			m.Dismiss()
+
+			pg.seed = seed
+
+			wordList := strings.Split(seed, " ")
+			row1 := wordList[:11]
+			row2 := wordList[11:22]
+			row3 := wordList[22:]
+
+			//for mobile
+			rowMobile1 := wordList[:17]
+			rowMobile2 := wordList[17:]
+			mobileRows := make([]saveSeedRow, 0)
+			for i := range rowMobile1 {
+				r2 := ""
+				if i < len(rowMobile2) {
+					r2 = rowMobile2[i]
 				}
+				mobileRows = append(mobileRows, saveSeedRow{
+					rowIndex: i + 1,
+					word1:    rowMobile1[i],
+					word2:    r2,
+				})
+			}
 
-				m.Dismiss()
+			rows := make([]saveSeedRow, 0)
+			for i := range row1 {
+				rows = append(rows, saveSeedRow{
+					rowIndex: i + 1,
+					word1:    row1[i],
+					word2:    row2[i],
+					word3:    row3[i],
+				})
+			}
+			pg.rows = rows
+			pg.mobileRows = mobileRows
 
-				pg.seed = seed
-
-				wordList := strings.Split(seed, " ")
-				row1 := wordList[:11]
-				row2 := wordList[11:22]
-				row3 := wordList[22:]
-
-				//for mobile
-				rowMobile1 := wordList[:17]
-				rowMobile2 := wordList[17:]
-				mobileRows := make([]saveSeedRow, 0)
-				for i := range rowMobile1 {
-					r2 := ""
-					if i < len(rowMobile2) {
-						r2 = rowMobile2[i]
-					}
-					mobileRows = append(mobileRows, saveSeedRow{
-						rowIndex: i + 1,
-						word1:    rowMobile1[i],
-						word2:    r2,
-					})
-				}
-
-				rows := make([]saveSeedRow, 0)
-				for i := range row1 {
-					rows = append(rows, saveSeedRow{
-						rowIndex: i + 1,
-						word1:    row1[i],
-						word2:    row2[i],
-						word3:    row3[i],
-					})
-				}
-				pg.rows = rows
-				pg.mobileRows = mobileRows
-			}()
-
-			return false
+			return true
 		}).
-		NegativeButton("Cancel", func() {
+		SetNegativeButtonCallback(func() {
 			pg.ParentNavigator().ClosePagesAfter(components.WalletsPageID)
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
