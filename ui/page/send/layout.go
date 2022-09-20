@@ -314,7 +314,19 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 					Bottom: values.MarginPadding16,
 				}.Layout(gtx, func(gtx C) D {
 					if !pg.sendDestination.sendToAddress {
-						return pg.sendDestination.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+							Margin:      layout.Inset{Bottom: values.MarginPadding16},
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.sendDestination.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								return pg.sendDestination.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)
+							}),
+						)
 					}
 					return pg.sendDestination.destinationAddressEditor.Layout(gtx)
 				})

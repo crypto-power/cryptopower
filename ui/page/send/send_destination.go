@@ -20,6 +20,7 @@ type destination struct {
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
 	destinationAccountSelector *components.AccountSelector
+	destinationWalletSelector  *components.WalletSelector
 
 	sendToAddress bool
 	accountSwitch *cryptomaterial.SwitchButtonText
@@ -36,8 +37,12 @@ func newSendDestination(l *load.Load) *destination {
 
 	dst.accountSwitch = l.Theme.SwitchButtonText([]cryptomaterial.SwitchItem{
 		{Text: values.String(values.StrAddress)},
-		{Text: values.String(values.StrMyAcct)},
+		{Text: values.String(values.StrWallets)},
 	})
+
+	// Destination wallet picker
+	dst.destinationWalletSelector = components.NewWalletSelector(dst.Load).
+		Title(values.String(values.StrWallets))
 
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
