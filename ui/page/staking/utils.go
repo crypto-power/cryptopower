@@ -87,7 +87,7 @@ func stakeToTransactionItems(l *load.Load, txs []libwallet.Transaction, newestFi
 		}
 
 		ticketCopy := tx
-		txStatus := components.TransactionTitleIcon(l, w, &tx, ticketSpender)
+		txStatus := components.TransactionTitleIcon(l, w, &tx)
 		confirmations := tx.Confirmations(w.GetBestBlock())
 		var ticketAge string
 
@@ -269,8 +269,13 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 			}),
 			layout.Rigid(func(gtx C) D {
 				p := l.Theme.ProgressBarCirle(int(tx.progress))
-				p.Color = tx.status.Background
-				return p.Layout(gtx)
+				p.Color = tx.status.ProgressBarColor
+				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+					sz := gtx.Dp(values.MarginPadding22)
+					gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+					gtx.Constraints.Min = gtx.Constraints.Max
+					return p.Layout(gtx)
+				})
 			}),
 		)
 	case libwallet.TicketStatusLive:
@@ -351,6 +356,7 @@ func toolTipContent(inset layout.Inset, body layout.Widget) layout.Widget {
 	}
 }
 
+// deprecated to be removed in subsequent code clean uo
 // ticketCard layouts out Stake info with the shadow box, use for list horizontal or list grid
 func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalletName bool) layout.Dimensions {
 	wal := l.WL.MultiWallet.WalletWithID(tx.transaction.WalletID)

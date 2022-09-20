@@ -130,7 +130,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Transaction, ticketSpender *libwallet.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
@@ -159,19 +159,19 @@ func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Tra
 				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterImmature) {
 					txStatus.Title = values.String(values.StrImmature)
 					txStatus.Icon = l.Theme.Icons.TicketImmatureIcon
-					txStatus.Color = l.Theme.Color.LightBlue6
+					txStatus.Color = l.Theme.Color.Yellow
 					txStatus.TicketStatus = libwallet.TicketStatusImmature
-					txStatus.ProgressBarColor = l.Theme.Color.LightBlue5
-					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue3
-					txStatus.Background = l.Theme.Color.LightBlue
+					txStatus.ProgressBarColor = l.Theme.Color.OrangeYellow
+					txStatus.ProgressTrackColor = l.Theme.Color.Gray6
+					txStatus.Background = l.Theme.Color.Yellow
 				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterLive) {
 					txStatus.Title = values.String(values.StrLive)
 					txStatus.Icon = l.Theme.Icons.TicketLiveIcon
-					txStatus.Color = l.Theme.Color.Primary
+					txStatus.Color = l.Theme.Color.Success2
 					txStatus.TicketStatus = libwallet.TicketStatusLive
-					txStatus.ProgressBarColor = l.Theme.Color.Primary
-					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue4
-					txStatus.Background = l.Theme.Color.Primary50
+					txStatus.ProgressBarColor = l.Theme.Color.Success2
+					txStatus.ProgressTrackColor = l.Theme.Color.Success2
+					txStatus.Background = l.Theme.Color.Success2
 				} else if wal.TxMatchesFilter(tx, libwallet.TxFilterExpired) {
 					txStatus.Title = values.String(values.StrExpired)
 					txStatus.Icon = l.Theme.Icons.TicketExpiredIcon
@@ -179,6 +179,7 @@ func TransactionTitleIcon(l *load.Load, wal *libwallet.Wallet, tx *libwallet.Tra
 					txStatus.TicketStatus = libwallet.TicketStatusExpired
 					txStatus.Background = l.Theme.Color.Gray4
 				} else {
+					ticketSpender, _ := wal.TicketSpender(tx.Hash)
 					if ticketSpender != nil {
 						if ticketSpender.Type == libwallet.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)
@@ -394,11 +395,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
-	var ticketSpender *libwallet.Transaction
-	if wal.TxMatchesFilter(&row.Transaction, libwallet.TxFilterStaking) {
-		ticketSpender, _ = wal.TicketSpender(row.Transaction.Hash)
-	}
-	txStatus := TransactionTitleIcon(l, wal, &row.Transaction, ticketSpender)
+	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
@@ -420,7 +417,12 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					if row.Transaction.Type == libwallet.TxTypeRegular {
 						amount := dcrutil.Amount(row.Transaction.Amount).String()
 						if row.Transaction.Direction == libwallet.TxDirectionSent {
-							amount = "-" + amount
+							// hide extra minus (-) signs
+							if strings.Contains(amount, "-") {
+								amount = amount
+							} else {
+								amount = "-" + amount
+							}
 						}
 						return LayoutBalance(gtx, l, amount)
 					}
@@ -617,8 +619,9 @@ func FormatDateOrTime(timestamp int64) string {
 	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
 }
 
-// walletLabel displays the wallet which a transaction belongs to. It is only displayed on the overview page when there
-//// are transactions from multiple wallets
+// walletLabel displays the wallet which a transaction belongs to.
+// It is only displayed on the overview page when there are transactions from multiple wallets
+// deprecated -- todo remove.
 func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
 	return cryptomaterial.Card{
 		Color: l.Theme.Color.Gray4,

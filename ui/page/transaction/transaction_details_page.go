@@ -2,6 +2,8 @@ package transaction
 
 import (
 	"fmt"
+	"gioui.org/op"
+	"image"
 	"strings"
 	"time"
 
@@ -14,20 +16,28 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
-const TransactionDetailsPageID = "TransactionDetails"
+const (
+	TransactionDetailsPageID = "TransactionDetails"
+	viewBlockID              = "viewBlock"
+	copyBlockID              = "copyBlock"
+)
 
 type transactionWdg struct {
 	confirmationIcons    *cryptomaterial.Image
-	icon                 *cryptomaterial.Image
-	title                string
 	time, status, wallet cryptomaterial.Label
 
-	copyTextButtons []cryptomaterial.Button
+	copyTextButtons []*cryptomaterial.Clickable
+	txStatus        *components.TxStatus
+}
+
+type moreItem struct {
+	text   string
+	id     string
+	button *cryptomaterial.Clickable
 }
 
 type TxDetailsPage struct {
@@ -38,37 +48,42 @@ type TxDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	list *widget.List
+	list                        *widget.List
+	transactionInputsContainer  layout.List
+	transactionOutputsContainer layout.List
 
-	transactionDetailsPageContainer layout.List
-	transactionInputsContainer      layout.List
-	transactionOutputsContainer     layout.List
-	associatedTicketClickable       *cryptomaterial.Clickable
-	hashClickable                   *widget.Clickable
-	destAddressClickable            *widget.Clickable
-	dot                             *cryptomaterial.Icon
-	toDcrdata                       *cryptomaterial.Clickable
-	outputsCollapsible              *cryptomaterial.Collapsible
-	inputsCollapsible               *cryptomaterial.Collapsible
-	backButton                      cryptomaterial.IconButton
-	infoButton                      cryptomaterial.IconButton
-	rebroadcast                     cryptomaterial.Label
-	rebroadcastClickable            *cryptomaterial.Clickable
-	rebroadcastIcon                 *cryptomaterial.Image
-	copyRedirectURL                 *cryptomaterial.Clickable
+	destAddressClickable      *cryptomaterial.Clickable
+	associatedTicketClickable *cryptomaterial.Clickable
+	hashClickable             *cryptomaterial.Clickable
+	rebroadcastClickable      *cryptomaterial.Clickable
+	moreOption                *cryptomaterial.Clickable
+	outputsCollapsible        *cryptomaterial.Collapsible
+	inputsCollapsible         *cryptomaterial.Collapsible
+	dot                       *cryptomaterial.Icon
+	rebroadcastIcon           *cryptomaterial.Image
+	shadowBox                 *cryptomaterial.Shadow
 
-	txnWidgets    transactionWdg
+	backButton  cryptomaterial.IconButton
+	rebroadcast cryptomaterial.Label
+
 	transaction   *libwallet.Transaction
 	ticketSpender *libwallet.Transaction // vote or revoke ticket
 	ticketSpent   *libwallet.Transaction // ticket spent in a vote or revoke
 	txBackStack   *libwallet.Transaction // track original transaction
 	wallet        *libwallet.Wallet
 
+	moreItems  []moreItem
+	txnWidgets transactionWdg
+
 	txSourceAccount      string
 	txDestinationAddress string
+	title                string
+	vspHost              string
+
+	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction, isTicket bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -77,9 +92,6 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction)
 		GenericPageModal: app.NewGenericPageModal(TransactionDetailsPageID),
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
-		},
-		transactionDetailsPageContainer: layout.List{
-			Axis: layout.Vertical,
 		},
 		transactionInputsContainer: layout.List{
 			Axis: layout.Vertical,
@@ -92,45 +104,71 @@ func NewTransactionDetailsPage(l *load.Load, transaction *libwallet.Transaction)
 		inputsCollapsible:  l.Theme.Collapsible(),
 
 		associatedTicketClickable: l.Theme.NewClickable(true),
-		hashClickable:             new(widget.Clickable),
-		destAddressClickable:      new(widget.Clickable),
-		toDcrdata:                 l.Theme.NewClickable(true),
-		copyRedirectURL:           l.Theme.NewClickable(false),
+		hashClickable:             l.Theme.NewClickable(true),
+		destAddressClickable:      l.Theme.NewClickable(true),
+		moreOption:                l.Theme.NewClickable(false),
+		shadowBox:                 l.Theme.Shadow(),
 
 		transaction:          transaction,
-		wallet:               l.WL.MultiWallet.WalletWithID(transaction.WalletID),
+		wallet:               l.WL.SelectedWallet.Wallet,
 		rebroadcast:          rebroadcast,
 		rebroadcastClickable: l.Theme.NewClickable(true),
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
 	}
 
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
+	pg.backButton, _ = components.SubpageHeaderButtons(pg.Load)
+
 	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 	pg.dot.Color = l.Theme.Color.Gray1
+
+	pg.moreItems = pg.getMoreItem()
 
 	return pg
 }
 
 func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 	// find source account
-	if pg.transaction.Direction == libwallet.TxDirectionSent ||
-		pg.transaction.Direction == libwallet.TxDirectionTransferred {
-		for _, input := range pg.transaction.Inputs {
-			if input.AccountNumber != -1 {
-				accountName, err := pg.wallet.AccountName(input.AccountNumber)
-				if err != nil {
-					// log.Error(err)
-				} else {
-					pg.txSourceAccount = accountName
-				}
+	for _, input := range pg.transaction.Inputs {
+		fmt.Println(input.AccountNumber, "input.AccountNumber")
+		if input.AccountNumber != -1 {
+			accountName, err := pg.wallet.AccountName(input.AccountNumber)
+			if err != nil {
+				log.Error(err)
+			} else {
+				pg.txSourceAccount = accountName
 			}
+			break
 		}
 	}
-	//	find destination address
-	if pg.transaction.Direction == libwallet.TxDirectionSent {
-		for _, output := range pg.transaction.Outputs {
+
+	// find destination address
+	for _, output := range pg.transaction.Outputs {
+		switch pg.transaction.Direction {
+		case libwallet.TxDirectionSent:
+			// mixed account number
+			if pg.transaction.Type == libwallet.TxTypeMixed &&
+				output.AccountNumber == pg.WL.SelectedWallet.Wallet.UnmixedAccountNumber() {
+				accountName, err := pg.wallet.AccountName(output.AccountNumber)
+				if err != nil {
+					log.Error(err)
+				} else {
+					pg.txDestinationAddress = accountName
+				}
+				break
+			}
 			if output.AccountNumber == -1 {
 				pg.txDestinationAddress = output.Address
+				break
+			}
+		case libwallet.TxDirectionReceived:
+			if output.AccountNumber != -1 {
+				accountName, err := pg.wallet.AccountName(output.AccountNumber)
+				if err != nil {
+					log.Error(err)
+				} else {
+					pg.txDestinationAddress = accountName
+				}
+				break
 			}
 		}
 	}
@@ -141,6 +179,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedTo() {
+	// this tx is a vote transaction
 	if pg.transaction.TicketSpentHash != "" {
 		pg.ticketSpent, _ = pg.wallet.GetTransactionRaw(pg.transaction.TicketSpentHash)
 	}
@@ -149,22 +188,67 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 		pg.ticketSpender, _ = pg.wallet.TicketSpender(pg.transaction.Hash)
 	}
 
+	if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterStaking) {
+		go func() {
+			info, err := pg.WL.MultiWallet.VSPTicketInfo(pg.wallet.ID, pg.transaction.Hash)
+			if err != nil {
+				log.Errorf("VSPTicketInfo error: %v\n", err)
+			}
+
+			pg.vspHost = values.String(values.StrNotAvailable)
+			if info != nil {
+				pg.vspHost = info.VSP
+			}
+		}()
+	}
+
+	pg.title = values.String(values.StrTransactionDetails)
+	if pg.transaction.Type == values.String(values.StrTicket) {
+		pg.title = values.String(values.StrTicketDetails)
+	}
+
 	pg.getTXSourceAccountAndDirection()
 	pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+}
+
+func (pg *TxDetailsPage) getMoreItem() []moreItem {
+	return []moreItem{
+		{
+			text:   values.String(values.StrViewOnExplorer),
+			button: pg.Theme.NewClickable(true),
+			id:     viewBlockID,
+		},
+		{
+			text:   values.String(values.StrCopyBlockLink),
+			button: pg.Theme.NewClickable(true),
+			id:     copyBlockID,
+		},
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *TxDetailsPage) Layout(gtx layout.Context) layout.Dimensions {
-	pg.handleTextCopyEvent(gtx)
-
+func (pg *TxDetailsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      pg.txnWidgets.title,
+			Title:      pg.title,
 			BackButton: pg.backButton,
-			InfoButton: pg.infoButton,
+			ExtraItem:  pg.moreOption,
+			Extra: func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.Theme.Icons.EllipseHoriz.Layout24dp),
+						layout.Rigid(func(gtx C) D {
+							if pg.moreOptionIsOpen {
+								pg.layoutOptionsMenu(gtx)
+							}
+							return D{}
+						}),
+					)
+				})
+			},
 			Back: func() {
 				if pg.txBackStack == nil {
 					pg.ParentNavigator().CloseCurrentPage()
@@ -176,53 +260,29 @@ func (pg *TxDetailsPage) Layout(gtx layout.Context) layout.Dimensions {
 				pg.txBackStack = nil
 				pg.ParentWindow().Reload()
 			},
-			Body: func(gtx layout.Context) layout.Dimensions {
+			Body: func(gtx C) D {
 				widgets := []func(gtx C) D{
-					func(gtx C) D {
-						return pg.txnBalanceAndStatus(gtx)
-					},
-					func(gtx C) D {
-						return pg.Theme.Separator().Layout(gtx)
-					},
-					func(gtx C) D {
-						return pg.ticketDetails(gtx)
-					},
-					func(gtx C) D {
-						return pg.associatedTicket(gtx)
-					},
-					func(gtx C) D {
-						return pg.txnTypeAndID(gtx)
-					},
-					func(gtx C) D {
-						return pg.Theme.Separator().Layout(gtx)
-					},
-					func(gtx C) D {
-						return pg.txnInputs(gtx)
-					},
-					func(gtx C) D {
-						return pg.Theme.Separator().Layout(gtx)
-					},
-					func(gtx C) D {
-						return pg.txnOutputs(gtx)
-					},
-					func(gtx C) D {
-						return pg.Theme.Separator().Layout(gtx)
-					},
-					func(gtx C) D {
-						return pg.viewTxn(gtx)
-					},
+					// pg.associatedTicket, // TODO currently not part of the v2 update
+					pg.txnTypeAndID,
+					pg.txnInputs,
+					pg.txnOutputs,
 				}
-				return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
-					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-						return pg.transactionDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-							return layout.Inset{}.Layout(gtx, widgets[i])
-						})
-					})
+
+				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.txDetailsHeader),
+						layout.Rigid(pg.Theme.Separator().Layout),
+						layout.Rigid(func(gtx C) D {
+							return pg.Theme.List(pg.list).Layout(gtx, len(widgets), func(gtx C, i int) D {
+								return layout.Inset{}.Layout(gtx, widgets[i])
+							})
+						}),
+					)
 				})
 			},
-			InfoTemplate: modal.TransactionDetailsInfoTemplate,
 		}
-		return sp.Layout(pg.ParentWindow(), gtx)
+
+		return sp.CombinedLayout(pg.ParentWindow(), gtx)
 	}
 
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -231,50 +291,158 @@ func (pg *TxDetailsPage) Layout(gtx layout.Context) layout.Dimensions {
 	return pg.layoutDesktop(gtx, body)
 }
 
-func (pg *TxDetailsPage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *TxDetailsPage) layoutDesktop(gtx C, body layout.Widget) D {
 	return components.UniformPadding(gtx, body)
 }
 
-func (pg *TxDetailsPage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func (pg *TxDetailsPage) layoutMobile(gtx C, body layout.Widget) D {
 	return components.UniformMobile(gtx, false, false, body)
 }
 
-func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensions {
+func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
-		Padding:     layout.UniformInset(values.MarginPadding16),
+		Padding: layout.Inset{
+			Left:   values.MarginPadding24,
+			Right:  values.MarginPadding24,
+			Bottom: values.MarginPadding30,
+		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
-				Right: values.MarginPadding16,
-				Top:   values.MarginPadding12,
-			}.Layout(gtx, pg.txnWidgets.icon.Layout24dp)
+				Right: values.MarginPadding22,
+			}.Layout(gtx, pg.txnWidgets.txStatus.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					amount := dcrutil.Amount(pg.transaction.Amount).String()
-					if pg.transaction.Type == libwallet.TxTypeMixed {
-						amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
-					} else if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionSent {
-						amount = "-" + amount
-					}
-					return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return components.LayoutBalanceSize(gtx, pg.Load, amount, values.TextSize34)
+							if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+								return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrStatus)+": ").Layout),
+									layout.Rigid(pg.Theme.Label(values.TextSize16, pg.txnWidgets.txStatus.Title).Layout),
+									layout.Rigid(func(gtx C) D {
+										// immature tx section
+										if pg.txnWidgets.txStatus.TicketStatus == libwallet.TicketStatusImmature {
+											p := pg.Theme.ProgressBarCirle(pg.getTimeToMatureOrExpire())
+											p.Color = pg.txnWidgets.txStatus.ProgressBarColor
+											return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+												sz := gtx.Dp(values.MarginPadding22)
+												gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+												gtx.Constraints.Min = gtx.Constraints.Max
+												return p.Layout(gtx)
+											})
+										}
+										return D{}
+									}),
+								)
+							} else {
+								// regular transaction
+								col := pg.Theme.Color.GrayText2
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										title := dcrutil.Amount(pg.transaction.Amount).String()
+										switch pg.transaction.Type {
+										case libwallet.TxTypeMixed:
+											title = dcrutil.Amount(pg.transaction.MixDenomination).String()
+										case libwallet.TxTypeRegular:
+											if pg.transaction.Direction == libwallet.TxDirectionSent {
+												// hide extra minus (-) signs
+												if strings.Contains(title, "-") {
+													title = title
+												} else {
+													title = "-" + title
+												}
+											}
+										case libwallet.TxTypeRevocation, libwallet.TxTypeVote:
+											return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
+										}
+										return components.LayoutBalanceWithUnit(gtx, pg.Load, title)
+									}),
+									layout.Rigid(func(gtx C) D {
+										date := time.Unix(pg.transaction.Timestamp, 0).Format("Jan 2, 2006")
+										timeSplit := time.Unix(pg.transaction.Timestamp, 0).Format("03:04:05 PM")
+										dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
+
+										lbl := pg.Theme.Label(values.TextSize16, dateTime)
+										lbl.Color = col
+										return layout.Inset{
+											Top:    values.MarginPadding7,
+											Bottom: values.MarginPadding7,
+										}.Layout(gtx, lbl.Layout)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// immature tx section
+										if pg.transaction.Type == libwallet.TxTypeVote || pg.transaction.Type == libwallet.TxTypeRevocation {
+											title := values.String(values.StrRevoke)
+											if pg.transaction.Type == libwallet.TxTypeVote {
+												title = values.String(values.StrVote)
+											}
+
+											lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}
+
+										return D{}
+									}),
+								)
+							}
 						}),
 						layout.Rigid(func(gtx C) D {
-							if pg.transaction.Type == libwallet.TxTypeMixed && pg.transaction.MixCount > 1 {
+							col := pg.Theme.Color.GrayText2
 
-								label := pg.Theme.H5(fmt.Sprintf("x%d", pg.transaction.MixCount))
-								label.Color = pg.Theme.Color.GrayText2
-								return layout.Inset{
-									Left: values.MarginPadding8,
-								}.Layout(gtx, label.Layout)
+							switch pg.txnWidgets.txStatus.TicketStatus {
+							case libwallet.TicketStatusImmature:
+								maturity := pg.WL.MultiWallet.TicketMaturity()
+								blockTime := pg.WL.MultiWallet.TargetTimePerBlockMinutes()
+								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
+
+								lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo,
+									pg.getTimeToMatureOrExpire(), maturity, maturityDuration.String()))
+								lbl.Color = col
+								return lbl.Layout(gtx)
+
+							case libwallet.TicketStatusLive:
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrLifeSpan)+": ")
+										lbl.Color = col
+										return lbl.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										expiry := pg.WL.MultiWallet.TicketExpiry()
+										lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc,
+											expiry, pg.getTimeToMatureOrExpire(), expiry))
+										lbl.Color = col
+										return lbl.Layout(gtx)
+									}),
+								)
+
+							case libwallet.TicketStatusVotedOrRevoked:
+								if pg.ticketSpender != nil { // voted or revoked
+									if pg.ticketSpender.Type == libwallet.TxTypeVote {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
+												lbl.Color = col
+												return lbl.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												lbl := pg.Theme.Label(values.TextSize16, dcrutil.Amount(pg.ticketSpender.VoteReward).String())
+												lbl.Color = col
+												return lbl.Layout(gtx)
+											}),
+										)
+									}
+								}
+								return D{}
+							default:
+								return D{}
 							}
-							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
 							if pg.transaction.BlockHeight == -1 {
@@ -287,74 +455,47 @@ func (pg *TxDetailsPage) txnBalanceAndStatus(gtx layout.Context) layout.Dimensio
 									Clickable: pg.rebroadcastClickable,
 									Direction: layout.Center,
 									Alignment: layout.Middle,
-									Border:    cryptomaterial.Border{Color: pg.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: cryptomaterial.Radius(10)},
-									Padding:   layout.Inset{Top: values.MarginPadding3, Bottom: values.MarginPadding3, Left: values.MarginPadding8, Right: values.MarginPadding8},
-									Margin:    layout.Inset{Left: values.MarginPadding10},
+									Border: cryptomaterial.Border{
+										Color:  pg.Theme.Color.Gray2,
+										Width:  values.MarginPadding1,
+										Radius: cryptomaterial.Radius(10),
+									},
+									Padding: layout.Inset{
+										Top:    values.MarginPadding3,
+										Bottom: values.MarginPadding3,
+										Left:   values.MarginPadding8,
+										Right:  values.MarginPadding8,
+									},
+									Margin: layout.Inset{Left: values.MarginPadding10},
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-											return pg.rebroadcastIcon.Layout16dp(gtx)
-										})
+										return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, pg.rebroadcastIcon.Layout16dp)
 									}),
-									layout.Rigid(func(gtx C) D {
-										return pg.rebroadcast.Layout(gtx)
-									}))
+									layout.Rigid(pg.rebroadcast.Layout),
+								)
 							}
 							return D{}
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					m := values.MarginPadding10
-					return layout.Inset{
-						Top:    m,
-						Bottom: m,
-					}.Layout(gtx, func(gtx C) D {
-						pg.txnWidgets.time.Color = pg.Theme.Color.Gray1
-						return pg.txnWidgets.time.Layout(gtx)
-					})
-				}),
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Right: values.MarginPadding4,
-								Top:   values.MarginPadding4,
-							}.Layout(gtx, func(gtx C) D {
-								return pg.txnWidgets.confirmationIcons.Layout12dp(gtx)
-							})
-						}),
-						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							txt := pg.Theme.Body1("")
-							if pg.txConfirmations() > 1 {
-								txt.Text = strings.Title(values.String(values.StrConfirmed))
-								txt.Color = pg.Theme.Color.Success
-							} else {
-								txt.Text = strings.Title(values.String(values.StrPending))
-								txt.Color = pg.Theme.Color.GrayText2
-							}
-							return txt.Layout(gtx)
-						}),
-						layout.Rigid(func(gtx C) D {
-							m := values.MarginPadding10
-							return layout.Inset{
-								Left:  m,
-								Right: m,
-								Top:   m,
-							}.Layout(gtx, func(gtx C) D {
-								return pg.dot.Layout(gtx, values.MarginPadding2)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Body1(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
-							txt.Color = pg.Theme.Color.GrayText2
-							return txt.Layout(gtx)
 						}),
 					)
 				}),
 			)
 		}),
 	)
+}
+
+func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
+	progressMax := pg.WL.MultiWallet.TicketMaturity()
+	if pg.txnWidgets.txStatus.TicketStatus == libwallet.TicketStatusLive {
+		progressMax = pg.WL.MultiWallet.TicketExpiry()
+	}
+
+	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlock())
+	if pg.ticketSpender != nil {
+		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlock())
+	}
+
+	progress := (float32(confs) / float32(progressMax)) * 100
+	return int(progress)
 }
 
 func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
@@ -396,84 +537,19 @@ func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
 	)
 }
 
-func (pg *TxDetailsPage) ticketDetails(gtx C) D {
-	if !pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterStaking) ||
-		pg.transaction.Type == libwallet.TxTypeRevocation {
-		return D{}
-	}
-
-	return layout.Flex{
-		Axis: layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.WrapContent,
-				Orientation: layout.Vertical,
-				Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
-			}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
-						var status string
-						if pg.ticketSpender != nil {
-							if pg.ticketSpender.Type == libwallet.TxTypeVote {
-								status = values.String(values.StrVoted)
-							} else {
-								status = values.String(values.StrRevoked)
-							}
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterLive) {
-							status = values.String(values.StrLive)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterImmature) {
-							status = values.String(values.StrImmature)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterUnmined) {
-							status = values.String(values.StrUmined)
-						} else if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterExpired) {
-							status = values.String(values.StrExpired)
-						} else {
-							status = values.String(values.StrUnknown)
-						}
-
-						return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-							return pg.txnInfoSection(gtx, values.String(values.StrStatus), status, false, nil)
-						})
-					}
-
-					return D{}
-				}),
-				layout.Rigid(func(gtx C) D {
-					// TODO spendable progress bar
-
-					if false {
-						return pg.maturityProgressBar(gtx)
-					}
-
-					return D{}
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == libwallet.TxTypeVote {
-						return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-							txt := values.String(values.StrDaysToVote)
-							return pg.txnInfoSection(gtx, txt, fmt.Sprintf("%d %s", pg.transaction.DaysToVoteOrRevoke, values.String(values.StrDays)), false, nil)
-						})
-					}
-
-					return D{}
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.transaction.Type == libwallet.TxTypeVote {
-						return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-							txt := values.String(values.StrReward)
-							return pg.txnInfoSection(gtx, txt, dcrutil.Amount(pg.transaction.VoteReward).String(), false, nil)
-						})
-					}
-					return D{}
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Separator().Layout(gtx)
-		}),
-	)
+func (pg *TxDetailsPage) keyValue(gtx C, key string, value layout.Widget) D {
+	return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Flexed(.4, func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding35}.Layout(gtx, func(gtx C) D {
+					lbl := pg.Theme.Label(values.TextSize14, key)
+					lbl.Color = pg.Theme.Color.GrayText2
+					return lbl.Layout(gtx)
+				})
+			}),
+			layout.Flexed(.6, value),
+		)
+	})
 }
 
 func (pg *TxDetailsPage) associatedTicket(gtx C) D {
@@ -513,114 +589,196 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 	return 0
 }
 
-func (pg *TxDetailsPage) txnTypeAndID(gtx layout.Context) layout.Dimensions {
+func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 	transaction := pg.transaction
-	m := values.MarginPadding12
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding16),
+		Padding: layout.Inset{
+			Top:    values.MarginPadding30,
+			Left:   values.MarginPadding70,
+			Right:  values.MarginPadding24,
+			Bottom: values.MarginPadding18,
+		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.txnInfoSection(gtx, values.String(values.StrFrom), pg.txSourceAccount, true, nil)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if transaction.Direction == libwallet.TxDirectionSent {
-				return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
-					return pg.txnInfoSection(gtx, values.String(values.StrTo), pg.txDestinationAddress, false, pg.destAddressClickable)
-				})
+			// hide section for recieved transactions
+			if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionReceived {
+				return D{}
 			}
-			return layout.Dimensions{}
+
+			label := values.String(values.StrFrom)
+			if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+				label = values.String(values.StrAccount)
+			}
+			return pg.keyValue(gtx, label, pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
-				return pg.txnInfoSection(gtx, values.String(values.StrFee), dcrutil.Amount(transaction.Fee).String(), false, nil)
-			})
+			if (pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction != libwallet.TxDirectionTransferred) || pg.transaction.Type == libwallet.TxTypeMixed {
+				dim := func(gtx C) D {
+					lbl := pg.Theme.Label(values.TextSize14, splitSingleString(pg.txDestinationAddress, 0))
+
+					if pg.transaction.Direction == libwallet.TxDirectionReceived {
+						return lbl.Layout(gtx)
+					}
+
+					lbl.Color = pg.Theme.Color.Primary
+					// copy destination Address
+					if pg.destAddressClickable.Clicked() {
+						clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
+						pg.Toast.Notify(values.String(values.StrTxHashCopied))
+					}
+					return pg.destAddressClickable.Layout(gtx, lbl.Layout)
+				}
+
+				return pg.keyValue(gtx, values.String(values.StrTo), dim)
+			}
+			return D{}
+		}),
+		layout.Rigid(func(gtx C) D {
+			// hide this section for sent, received and mixed transaction
+			if pg.transaction.Type == libwallet.TxTypeRegular &&
+				pg.transaction.Direction == libwallet.TxDirectionSent ||
+				pg.transaction.Direction == libwallet.TxDirectionReceived ||
+				pg.transaction.Type == libwallet.TxTypeMixed {
+				return D{}
+			}
+
+			amount := dcrutil.Amount(pg.transaction.Amount).String()
+			if pg.transaction.Type == libwallet.TxTypeMixed {
+				amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
+			} else if pg.transaction.Type == libwallet.TxTypeRegular && pg.transaction.Direction == libwallet.TxDirectionSent {
+				amount = "-" + amount
+			}
+			return pg.keyValue(gtx, values.String(values.StrTicketPrice), pg.Theme.Label(values.TextSize14, amount).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			// revocation and vote transaction reward
+			if pg.transaction.Type == libwallet.TxTypeVote {
+				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, dcrutil.Amount(pg.transaction.VoteReward).String()).Layout)
+			}
+			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
 			if transaction.BlockHeight != -1 {
-				return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
-					return pg.txnInfoSection(gtx, values.String(values.StrIncludedInBlock), fmt.Sprintf("%d", transaction.BlockHeight), false, nil)
-				})
+				return pg.keyValue(gtx, values.String(values.StrIncludedInBlock), pg.Theme.Label(values.TextSize14, fmt.Sprintf("%d", transaction.BlockHeight)).Layout)
 			}
-			return layout.Dimensions{}
+			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
-				return pg.txnInfoSection(gtx, values.String(values.StrType), transaction.Type, false, nil)
-			})
+			// hide section for tickets
+			if pg.transaction.Type == libwallet.TxTypeTicketPurchase {
+				return D{}
+			}
+			return pg.keyValue(gtx, values.String(values.StrType), pg.Theme.Label(values.TextSize14, pg.transaction.Type).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: m}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			// hide section for non ticket transactions
+			if pg.transaction.Type != libwallet.TxTypeTicketPurchase {
+				return D{}
+			}
+
+			if pg.ticketSpender != nil { // voted or revoked
+				if pg.ticketSpender.Type == libwallet.TxTypeVote {
+					return pg.keyValue(gtx, values.String(values.StrVotedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
+				} else if pg.ticketSpender.Type == libwallet.TxTypeRevocation {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return pg.keyValue(gtx, values.String(values.StrMissedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return pg.keyValue(gtx, values.String(values.StrRevokeCause), pg.Theme.Label(values.TextSize14, values.String(values.StrMissedTickets)).Layout)
+						}),
+					)
+				}
+			}
+
+			if pg.wallet.TxMatchesFilter(pg.transaction, libwallet.TxFilterExpired) {
+				return pg.keyValue(gtx, values.String(values.StrExpiredOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
+			}
+
+			// TODO vote transaction progress bar (V2 UI missing)
+			// missed tickets currently not implemented on libwallet
+			return pg.keyValue(gtx, values.String(values.StrPurchasedOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			stat := func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						t := pg.Theme.Label(values.TextSize14, values.String(values.StrTransactionID))
-						t.Color = pg.Theme.Color.GrayText2
-						return t.Layout(gtx)
+						return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, pg.txnWidgets.confirmationIcons.Layout12dp)
 					}),
 					layout.Rigid(func(gtx C) D {
-						btn := pg.Theme.OutlineButton(transaction.Hash)
-						btn.TextSize = values.TextSize14
-						btn.SetClickable(pg.hashClickable)
-						btn.Inset = layout.UniformInset(values.MarginPadding0)
-						return btn.Layout(gtx)
+						txt := pg.Theme.Body2("")
+						if pg.txConfirmations() > 1 {
+							txt.Text = strings.Title(values.String(values.StrConfirmed))
+							txt.Color = pg.Theme.Color.Success
+						} else {
+							txt.Text = strings.Title(values.String(values.StrPending))
+							txt.Color = pg.Theme.Color.GrayText2
+						}
+						return txt.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						m := values.MarginPadding10
+						return layout.Inset{
+							Left:  m,
+							Right: m,
+						}.Layout(gtx, func(gtx C) D {
+							return pg.dot.Layout(gtx, values.MarginPadding6)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
+						txt.Color = pg.Theme.Color.GrayText2
+						return txt.Layout(gtx)
 					}),
 				)
-			})
-		}),
-	)
-}
+			}
 
-func (pg *TxDetailsPage) txnInfoSection(gtx layout.Context, label, value string, showWalletBadge bool, clickable *widget.Clickable) layout.Dimensions {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			t := pg.Theme.Label(values.TextSize14, label)
-			t.Color = pg.Theme.Color.GrayText2
-			return t.Layout(gtx)
+			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
+			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, dcrutil.Amount(transaction.Fee).String()).Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			// hide section for non ticket transactions
+			if pg.transaction.Type != libwallet.TxTypeTicketPurchase {
+				return D{}
+			}
+
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if showWalletBadge {
-						card := pg.Theme.Card()
-						card.Radius = cryptomaterial.Radius(0)
-						card.Color = pg.Theme.Color.Gray4
-						return card.Layout(gtx, func(gtx C) D {
-							return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-								txt := pg.Theme.Body2(pg.wallet.Name)
-								txt.Color = pg.Theme.Color.GrayText2
-								return txt.Layout(gtx)
-							})
-						})
-					}
-					return layout.Dimensions{}
+					return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, pg.vspHost).Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						if clickable == nil {
-							txt := pg.Theme.Body1(value)
-							return txt.Layout(gtx)
-						}
-
-						btn := pg.Theme.OutlineButton(value)
-						btn.TextSize = values.TextSize14
-						btn.SetClickable(clickable)
-						btn.Inset = layout.UniformInset(values.MarginPadding0)
-						return btn.Layout(gtx)
-					})
+					return pg.keyValue(gtx, values.String(values.StrVspFee), pg.Theme.Label(values.TextSize14, values.String(values.StrNotAvailable)).Layout)
 				}),
 			)
 		}),
+		layout.Rigid(func(gtx C) D {
+			dim := func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSize14, splitSingleString(transaction.Hash, 30))
+				lbl.Color = pg.Theme.Color.Primary
+
+				// copy transaction hash
+				if pg.hashClickable.Clicked() {
+					clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
+					pg.Toast.Notify(values.String(values.StrTxHashCopied))
+				}
+				return pg.hashClickable.Layout(gtx, lbl.Layout)
+			}
+
+			return pg.keyValue(gtx, values.String(values.StrTransactionID), dim)
+		}),
 	)
 }
 
-func (pg *TxDetailsPage) txnInputs(gtx layout.Context) layout.Dimensions {
+func (pg *TxDetailsPage) txnInputs(gtx C) D {
 	transaction := pg.transaction
 
 	collapsibleHeader := func(gtx C) D {
-		t := pg.Theme.Body1(values.StringF(values.StrXInputsConsumed, len(transaction.Inputs)))
+		t := pg.Theme.Label(values.TextSize14, values.StringF(values.StrXInputsConsumed, len(transaction.Inputs)))
 		t.Color = pg.Theme.Color.GrayText2
 		return t.Layout(gtx)
 	}
@@ -628,7 +786,8 @@ func (pg *TxDetailsPage) txnInputs(gtx layout.Context) layout.Dimensions {
 	collapsibleBody := func(gtx C) D {
 		return pg.transactionInputsContainer.Layout(gtx, len(transaction.Inputs), func(gtx C, i int) D {
 			input := transaction.Inputs[i]
-			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, input.PreviousOutpoint, i)
+			addr := splitSingleString(input.PreviousOutpoint, 20)
+			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, addr, i)
 		})
 	}
 	return pg.pageSections(gtx, func(gtx C) D {
@@ -636,11 +795,11 @@ func (pg *TxDetailsPage) txnInputs(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *TxDetailsPage) txnOutputs(gtx layout.Context) layout.Dimensions {
+func (pg *TxDetailsPage) txnOutputs(gtx C) D {
 	transaction := pg.transaction
 
 	collapsibleHeader := func(gtx C) D {
-		t := pg.Theme.Body1(values.StringF(values.StrXOutputCreated, len(transaction.Outputs)))
+		t := pg.Theme.Label(values.TextSize14, values.StringF(values.StrXOutputCreated, len(transaction.Outputs)))
 		t.Color = pg.Theme.Color.GrayText2
 		return t.Layout(gtx)
 	}
@@ -657,15 +816,12 @@ func (pg *TxDetailsPage) txnOutputs(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *TxDetailsPage) txnIORow(gtx layout.Context, amount int64, acctNum int32, address string, i int) layout.Dimensions {
-
+func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address string, i int) D {
 	accountName := values.String(values.StrExternal)
-	walletName := ""
 	if acctNum != -1 {
 		name, err := pg.wallet.AccountName(acctNum)
 		if err == nil {
 			accountName = name
-			walletName = pg.wallet.Name
 		}
 	}
 
@@ -681,32 +837,28 @@ func (pg *TxDetailsPage) txnIORow(gtx layout.Context, amount int64, acctNum int3
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(pg.Theme.Body1(amt).Layout),
+							layout.Rigid(pg.Theme.Label(values.TextSize14, amt).Layout),
 							layout.Rigid(func(gtx C) D {
 								m := values.MarginPadding5
 								return layout.Inset{
 									Left:  m,
 									Right: m,
-								}.Layout(gtx, pg.Theme.Body1(accountName).Layout)
-							}),
-							layout.Rigid(func(gtx C) D {
-								card := pg.Theme.Card()
-								card.Radius = cryptomaterial.Radius(0)
-								card.Color = pg.Theme.Color.Gray4
-								return card.Layout(gtx, func(gtx C) D {
-									return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-										txt := pg.Theme.Body2(walletName)
-										txt.Color = pg.Theme.Color.GrayText2
-										return txt.Layout(gtx)
-									})
-								})
+								}.Layout(gtx, pg.Theme.Label(values.TextSize14, accountName).Layout)
 							}),
 						)
 					}),
 					layout.Rigid(func(gtx C) D {
-						pg.txnWidgets.copyTextButtons[i].Text = address
+						// copy address
+						if pg.txnWidgets.copyTextButtons[i].Clicked() {
+							clipboard.WriteOp{Text: address}.Add(gtx.Ops)
+							pg.Toast.Notify(values.String(values.StrCopied))
+						}
 
-						return layout.W.Layout(gtx, pg.txnWidgets.copyTextButtons[i].Layout)
+						return layout.W.Layout(gtx, func(gtx C) D {
+							lbl := pg.Theme.Label(values.TextSize14, address)
+							lbl.Color = pg.Theme.Color.Primary
+							return pg.txnWidgets.copyTextButtons[i].Layout(gtx, lbl.Layout)
+						})
 					}),
 				)
 			})
@@ -714,20 +866,56 @@ func (pg *TxDetailsPage) txnIORow(gtx layout.Context, amount int64, acctNum int3
 	})
 }
 
-func (pg *TxDetailsPage) viewTxn(gtx layout.Context) layout.Dimensions {
-	return pg.pageSections(gtx, func(gtx C) D {
-		return pg.toDcrdata.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-				layout.Rigid(pg.Theme.Body1(values.String(values.StrViewOnDcrdata)).Layout),
-				layout.Rigid(pg.Theme.Icons.RedirectIcon.Layout24dp),
-			)
+func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
+	inset := layout.Inset{
+		Left: values.MarginPaddingMinus145,
+	}
+
+	m := op.Record(gtx.Ops)
+	inset.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding168)
+		return pg.shadowBox.Layout(gtx, func(gtx C) D {
+			optionsMenuCard := cryptomaterial.Card{Color: pg.Theme.Color.Surface}
+			optionsMenuCard.Radius = cryptomaterial.Radius(5)
+			return optionsMenuCard.Layout(gtx, func(gtx C) D {
+				return (&layout.List{Axis: layout.Vertical}).Layout(gtx, len(pg.moreItems), func(gtx C, i int) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+									redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
+									if pg.moreItems[i].button.Clicked() {
+										switch pg.moreItems[i].id {
+										case copyBlockID: // copy the redirect url
+											clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
+											pg.Toast.Notify(values.String(values.StrCopied))
+											pg.moreOptionIsOpen = false
+										case viewBlockID: // redirect to browser
+											components.GoToURL(redirectURL)
+											pg.moreOptionIsOpen = false
+										default:
+										}
+									}
+
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.Theme.Label(values.TextSize14, pg.moreItems[i].text).Layout(gtx)
+								})
+							})
+						}),
+					)
+				})
+			})
 		})
 	})
+	op.Defer(gtx.Ops, m.Stop())
 }
 
-func (pg *TxDetailsPage) pageSections(gtx layout.Context, body layout.Widget) layout.Dimensions {
-	return layout.UniformInset(values.MarginPadding16).Layout(gtx, body)
+func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
+	return layout.Inset{
+		Left:   values.MarginPadding70,
+		Right:  values.MarginPadding24,
+		Bottom: values.MarginPadding30,
+	}.Layout(gtx, body)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -736,55 +924,8 @@ func (pg *TxDetailsPage) pageSections(gtx layout.Context, body layout.Widget) la
 // displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions() {
-	for pg.toDcrdata.Clicked() {
-		redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
-		info := modal.NewInfoModal(pg.Load).
-			Title("View on Dcrdata").
-			Body("Copy and paste the link below in your browser, to view transaction on dcrdata dashboard.").
-			SetCancelable(true).
-			UseCustomWidget(func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Stacked(func(gtx C) D {
-						border := widget.Border{Color: pg.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-						wrapper := pg.Theme.Card()
-						wrapper.Color = pg.Theme.Color.Gray4
-						return border.Layout(gtx, func(gtx C) D {
-							return wrapper.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									return layout.Flex{}.Layout(gtx,
-										layout.Flexed(0.9, pg.Theme.Body1(redirectURL).Layout),
-										layout.Flexed(0.1, func(gtx C) D {
-											return layout.E.Layout(gtx, func(gtx C) D {
-												return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
-													if pg.copyRedirectURL.Clicked() {
-														clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
-														pg.Toast.Notify("URL copied")
-													}
-													return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)
-												})
-											})
-										}),
-									)
-								})
-							})
-						})
-					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-						return layout.Inset{
-							Top:  values.MarginPaddingMinus10,
-							Left: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							label := pg.Theme.Body2("Web URL")
-							label.Color = pg.Theme.Color.GrayText2
-							return label.Layout(gtx)
-						})
-					}),
-				)
-			}).
-			PositiveButton("Got it", func(isChecked bool) bool {
-				return true
-			})
-		pg.ParentWindow().ShowModal(info)
+	for pg.moreOption.Clicked() {
+		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
 	for pg.associatedTicketClickable.Clicked() {
@@ -821,24 +962,14 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			}
 		}()
 	}
-}
 
-func (pg *TxDetailsPage) handleTextCopyEvent(gtx layout.Context) {
-	for _, b := range pg.txnWidgets.copyTextButtons {
-		for b.Clicked() {
-			clipboard.WriteOp{Text: b.Text}.Add(gtx.Ops)
-			pg.Toast.Notify(values.String(values.StrCopied))
+	redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
+	for _, menu := range pg.moreItems {
+		if menu.button.Clicked() && menu.id == viewBlockID {
+			components.GoToURL(redirectURL)
+			pg.moreOptionIsOpen = false
+			break
 		}
-	}
-
-	for pg.hashClickable.Clicked() {
-		clipboard.WriteOp{Text: pg.transaction.Hash}.Add(gtx.Ops)
-		pg.Toast.Notify(values.String(values.StrTxHashCopied))
-	}
-
-	for pg.destAddressClickable.Clicked() {
-		clipboard.WriteOp{Text: pg.txDestinationAddress}.Add(gtx.Ops)
-		pg.Toast.Notify(values.String(values.StrAddressCopied))
 	}
 }
 
@@ -854,10 +985,10 @@ func (pg *TxDetailsPage) OnNavigatedFrom() {}
 func initTxnWidgets(l *load.Load, transaction *libwallet.Transaction) transactionWdg {
 
 	var txn transactionWdg
-	wal := l.WL.MultiWallet.WalletWithID(transaction.WalletID)
+	wal := l.WL.SelectedWallet.Wallet
 
 	t := time.Unix(transaction.Timestamp, 0).UTC()
-	txn.time = l.Theme.Body1(t.Format(time.UnixDate))
+	txn.time = l.Theme.Body2(t.Format(time.UnixDate))
 	txn.status = l.Theme.Body1("")
 	txn.wallet = l.Theme.Body2(wal.Name)
 
@@ -870,23 +1001,24 @@ func initTxnWidgets(l *load.Load, transaction *libwallet.Transaction) transactio
 		txn.confirmationIcons = l.Theme.Icons.PendingIcon
 	}
 
-	var ticketSpender *libwallet.Transaction
-	if wal.TxMatchesFilter(transaction, libwallet.TxFilterStaking) {
-		ticketSpender, _ = wal.TicketSpender(transaction.Hash)
-	}
-	txStatus := components.TransactionTitleIcon(l, wal, transaction, ticketSpender)
-
-	txn.title = txStatus.Title
-	txn.icon = txStatus.Icon
+	txStatus := components.TransactionTitleIcon(l, wal, transaction)
+	txn.txStatus = txStatus
 
 	x := len(transaction.Inputs) + len(transaction.Outputs)
-	txn.copyTextButtons = make([]cryptomaterial.Button, x)
+	txn.copyTextButtons = make([]*cryptomaterial.Clickable, x)
 	for i := 0; i < x; i++ {
-		btn := l.Theme.OutlineButton("")
-		btn.TextSize = values.TextSize14
-		btn.Inset = layout.UniformInset(values.MarginPadding0)
-		txn.copyTextButtons[i] = btn
+		txn.copyTextButtons[i] = l.Theme.NewClickable(false)
 	}
 
 	return txn
+}
+
+func splitSingleString(text string, index int) string {
+	first := text[0 : len(text)-index]
+	second := text[len(text)-index:]
+	return fmt.Sprintf("%s %s", first, second)
+}
+
+func timeString(timestamp int64) string {
+	return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")
 }

@@ -15,11 +15,11 @@ type Icons struct {
 
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
-	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward,
+	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
 	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly,
 	Next, SettingsIcon, SecurityIcon, HelpIcon, AboutIcon, DebugIcon, VerifyMessageIcon, LocationPinIcon, SignMessageIcon,
 	HeaderSettingsIcon, AlertGray, ArrowDownIcon, WatchOnlyWalletIcon, CurrencySwapIcon, SyncingIcon, TransactionFingerprint,
-	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, DecredLogo,
+	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, DecredLogo, EllipseVert,
 	DecredSymbol2, GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast,
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon, ConcealIcon,
@@ -50,7 +50,6 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ImageBrightness1 = MustIcon(widget.NewIcon(icons.ImageBrightness1))
 	i.ChevronRight = MustIcon(widget.NewIcon(icons.NavigationChevronRight))
 	i.ContentClear = MustIcon(widget.NewIcon(icons.ContentClear))
-	i.NavMoreIcon = MustIcon(widget.NewIcon(icons.NavigationMoreHoriz))
 	i.DropDownIcon = MustIcon(widget.NewIcon(icons.NavigationArrowDropDown))
 	i.Cached = MustIcon(widget.NewIcon(icons.ActionCached))
 	i.ContentRemove = MustIcon(widget.NewIcon(icons.ContentRemove))
@@ -154,6 +153,8 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.DarkMode = NewImage(decredIcons["ic_moon"])
 	i.LightMode = NewImage(decredIcons["ic_sun"])
 	i.AddIcon = NewImage(decredIcons["addIcon"])
+	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
+	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
 
 	return i
 }
