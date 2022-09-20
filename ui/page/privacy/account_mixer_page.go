@@ -106,6 +106,37 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 	}
 }
 
+func (pg *AccountMixerPage) mixerProgressLayout(gtx C) D {
+	items := []cryptomaterial.ProgressBarItem{
+		{
+			Value: 1200,
+			Color: pg.Theme.Color.Green500,
+		},
+		{
+			Value: 800,
+			Color: pg.Theme.Color.Danger,
+		},
+	}
+
+	labelWdg := func(gtx C) D {
+		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutIconAndText(pg.Load, gtx, "Mixed: ", "1200", items[0].Color)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutIconAndText(pg.Load, gtx, "Unmixed: ", "800", items[1].Color)
+				}),
+			)
+		})
+	}
+
+	pb := pg.Theme.MultiLayerProgressBar(2000, items)
+	pb.Height = values.MarginPadding16
+	pb.Width = values.MarginPadding100
+	return pb.Layout(gtx, labelWdg)
+}
+
 func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Widget) layout.FlexChild {
 	return layout.Rigid(func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -134,6 +165,7 @@ func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Wi
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding10, Right: values.MarginPadding10}.Layout(gtx, l.Theme.Separator().Layout)
 			}),
+
 			layout.Rigid(func(gtx C) D {
 				return layout.UniformInset(values.MarginPadding22).Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
@@ -142,9 +174,7 @@ func (pg *AccountMixerPage) toggleMixerAndProgres(l *load.Load, button layout.Wi
 							txt.Color = l.Theme.Color.GrayText3
 							return txt.Layout(gtx)
 						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: values.MarginPadding20}.Layout(gtx, pg.mixerProgress.Layout)
-						}),
+						layout.Rigid(pg.mixerProgressLayout),
 					)
 				})
 			}),
