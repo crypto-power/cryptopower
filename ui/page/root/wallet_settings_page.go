@@ -285,11 +285,10 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 							}
 							if title == values.String(values.StrAccount) {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									mGtx := gtx
 									if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										mGtx = gtx.Disabled()
+										return D{}
 									}
-									return pg.addAccount.Layout(mGtx, pg.Theme.Icons.AddIcon.Layout24dp)
+									return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
 								})
 							}
 
