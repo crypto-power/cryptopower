@@ -614,4 +614,5 @@ const (
 	StrOK                              = "ok"
 	StrAccountMixer                    = "accountMixer"
 	StrWalletNameLengthError           = "walletLengthError"
+	StrValidateHostErr                 = "validateHostErr"
 )

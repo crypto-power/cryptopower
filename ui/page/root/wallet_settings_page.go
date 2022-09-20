@@ -59,7 +59,6 @@ type WalletSettingsPage struct {
 	spendUnconfirmed  *cryptomaterial.Switch
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
-	peerAddr          string
 }
 
 func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
@@ -110,13 +109,16 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
-	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
 	pg.connectToPeer.SetChecked(false)
-	if pg.peerAddr != "" {
+	if pg.getPeerAddress() != "" {
 		pg.connectToPeer.SetChecked(true)
 	}
 
 	pg.loadWalletAccount()
+}
+
+func (pg *WalletSettingsPage) getPeerAddress() string {
+	return pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
 }
 
 func (pg *WalletSettingsPage) loadWalletAccount() {
@@ -203,7 +205,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 						peerAddrRow := clickableRowData{
 							title:     values.String(values.StrPeer),
 							clickable: pg.updateConnectToPeer,
-							labelText: pg.peerAddr,
+							labelText: pg.getPeerAddress(),
 						}
 						return pg.clickableRow(gtx, peerAddrRow)
 					}),
@@ -502,6 +504,12 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
+			if !uiutils.ValidateHost(ipAddress) {
+				tim.SetError(values.StringF(values.StrValidateHostErr, ipAddress))
+				tim.SetLoading(false)
+				return false
+			}
+
 			if ipAddress != "" {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}

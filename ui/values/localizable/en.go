@@ -508,4 +508,5 @@ unlockWithPassword = "Unlock with password"
 "ok" = "OK"
 "accountMixer" = "AccountMixer"
 "walletLengthError" = "Wallet name must be less than 30 characters"
+"validateHostErr" = "%s is not IP or URL address"
 `
