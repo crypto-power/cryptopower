@@ -27,12 +27,16 @@ type TextInputModal struct {
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
 	tm := &TextInputModal{
-		InfoModal:    NewInfoModalWithKey(l, "text_input_modal", false),
+		InfoModal:    newInfoModalWithKey(l, "text_input_modal", InfoBtn),
 		isCancelable: true,
 	}
+	tm.btnNegative = l.Theme.OutlineButton(values.String(values.StrCancel))
 
 	tm.textInput = l.Theme.Editor(new(widget.Editor), values.String(values.StrHint))
 	tm.textInput.Editor.SingleLine, tm.textInput.Editor.Submit = true, true
+
+	// Set the default click functions
+	tm.callback = func(string, *TextInputModal) bool { return true }
 
 	return tm
 }
@@ -58,8 +62,7 @@ func (tm *TextInputModal) ShowAccountInfoTip(show bool) *TextInputModal {
 	return tm
 }
 
-func (tm *TextInputModal) PositiveButton(text string, callback func(string, *TextInputModal) bool) *TextInputModal {
-	tm.positiveButtonText = text
+func (tm *TextInputModal) SetPositiveButtonCallback(callback func(string, *TextInputModal) bool) *TextInputModal {
 	tm.callback = callback
 	return tm
 }
@@ -73,7 +76,7 @@ func (tm *TextInputModal) SetError(err string) {
 	if err == "" {
 		tm.textInput.ClearError()
 	} else {
-		tm.textInput.SetError(err)
+		tm.textInput.SetError(values.TranslateErr(err))
 	}
 }
 
@@ -162,7 +165,7 @@ func (tm *TextInputModal) Layout(gtx layout.Context) D {
 
 	w = append(w, tm.textInput.Layout)
 
-	if tm.negativeButtonText != "" || tm.positiveButtonText != "" {
+	if tm.btnNegative.Text != "" || tm.btnPositive.Text != "" {
 		w = append(w, tm.actionButtonsLayout())
 	}
 

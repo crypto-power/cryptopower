@@ -117,13 +117,11 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		infoModal := modal.NewInfoModal(pg.Load).
+		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrConsensusChange)).
 			Body(values.String(values.StrOnChainVote)).
 			SetCancelable(true).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(infoModal)
 	}
 
@@ -133,7 +131,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 			host = "https://voting.decred.org/testnet"
 		}
 
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrConsensusDashboard)).
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
@@ -174,9 +172,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 					}),
 				)
 			}).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 

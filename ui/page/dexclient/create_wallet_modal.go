@@ -75,13 +75,17 @@ func (md *createWalletModal) OnDismiss() {
 	md.ctxCancel()
 }
 
+func (md *createWalletModal) SetError(errStr string) {
+	md.walletPassword.SetError(values.TranslateErr(errStr))
+}
+
 func (md *createWalletModal) OnResume() {
 	md.ctx, md.ctxCancel = context.WithCancel(context.TODO())
 	md.sourceAccountSelector.ListenForTxNotifications(md.ctx, md.ParentWindow())
 
 	err := md.sourceAccountSelector.SelectFirstWalletValidAccount()
 	if err != nil {
-		md.Toast.NotifyError(err.Error())
+		md.SetError(err.Error())
 	}
 }
 
@@ -146,7 +150,7 @@ func (md *createWalletModal) doCreateWallet(walletPass []byte) {
 		coinID := md.walletInfoWidget.coinID
 		coinName := md.walletInfoWidget.coinName
 		if md.Dexc().HasWallet(int32(coinID)) {
-			md.Toast.NotifyError(fmt.Sprintf(nStrAlreadyConnectWallet, coinName))
+			md.SetError(values.StringF(nStrAlreadyConnectWallet, coinName))
 			return
 		}
 
@@ -166,7 +170,7 @@ func (md *createWalletModal) doCreateWallet(walletPass []byte) {
 
 		err := md.Dexc().AddWallet(coinID, walletType, settings, []byte(DEXClientPass), walletPass)
 		if err != nil {
-			md.Toast.NotifyError(err.Error())
+			md.SetError(err.Error())
 			return
 		}
 

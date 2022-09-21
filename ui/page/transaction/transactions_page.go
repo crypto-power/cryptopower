@@ -372,7 +372,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &pg.transactions[selectedItem]))
+		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &pg.transactions[selectedItem], false))
 	}
 	cryptomaterial.DisplayOneDropdown(pg.walletDropDown, pg.txTypeDropDown, pg.orderDropDown)
 

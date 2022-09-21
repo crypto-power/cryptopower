@@ -104,8 +104,8 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
-	pg.fetchProposal.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
-	pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
+	pg.fetchProposal.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
+	pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
@@ -187,7 +187,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
 			layout.Rigid(pg.subSectionSwitch(values.String(values.StrFetchProposals), pg.fetchProposal)),
 			layout.Rigid(func(gtx C) D {
-				if !pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+				if !pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
 					return D{}
 				}
 				return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
@@ -288,11 +288,10 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 							}
 							if title == values.String(values.StrAccount) {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									mGtx := gtx
 									if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										mGtx = gtx.Disabled()
+										return D{}
 									}
-									return pg.addAccount.Layout(mGtx, pg.Theme.Icons.AddIcon.Layout24dp)
+									return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
 								})
 							}
 
@@ -357,66 +356,63 @@ func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomater
 }
 
 func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
-	currentSpendingPasswordModal := modal.NewPasswordModal(pg.Load).
+	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		Title(values.String(values.StrChangeSpendingPass)).
-		Hint(values.String(values.StrCurrentSpendingPassword)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := pg.wallet.UnlockWallet([]byte(password))
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pg.wallet.LockWallet()
-				pm.Dismiss()
+		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.wallet.UnlockWallet([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pg.wallet.LockWallet()
+			pm.Dismiss()
 
-				// change password
-				newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-					Title(values.String(values.StrChangeSpendingPass)).
-					EnableName(false).
-					PasswordHint(values.String(values.StrNewSpendingPassword)).
-					ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-					PasswordCreated(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-						go func() {
-							err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
-								[]byte(newPassword), libwallet.PassphraseTypePass)
-							if err != nil {
-								m.SetError(err.Error())
-								m.SetLoading(false)
-								return
-							}
-							pg.Toast.Notify(values.String(values.StrSpendingPasswordUpdated))
-							m.Dismiss()
-						}()
+			// change password
+			newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				Title(values.String(values.StrChangeSpendingPass)).
+				EnableName(false).
+				PasswordHint(values.String(values.StrNewSpendingPassword)).
+				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
+				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+					err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
+						[]byte(newPassword), libwallet.PassphraseTypePass)
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
 						return false
-					})
-				pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+					}
+					m.Dismiss()
 
-			}()
-
-			return false
+					info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
+						modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(info)
+					return true
+				})
+			pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+			return true
 		})
 	pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
 }
 
 func (pg *WalletSettingsPage) deleteWalletModal() {
-	textModal := modal.NewTextInputModal(pg.Load)
-	textModal.Hint(values.String(values.StrWalletName)).
+	textModal := modal.NewTextInputModal(pg.Load).
+		Hint(values.String(values.StrWalletName)).
 		SetTextWithTemplate(modal.RemoveWalletInfoTemplate).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
-		PositiveButton(values.String(values.StrRemove), func(walletName string, tim *modal.TextInputModal) bool {
+		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
 			if walletName != pg.WL.SelectedWallet.Wallet.Name {
-				pg.Toast.NotifyError("Wallet name entered does not match selected wallet.")
-				textModal.SetLoading(false)
+				m.SetError(values.String(values.StrWalletNameMismatch))
+				m.SetLoading(false)
 				return false
 			}
 
 			walletDeleted := func() {
 				if pg.WL.MultiWallet.LoadedWalletsCount() > 0 {
-					pg.Toast.Notify(values.String(values.StrWalletRemoved))
-					textModal.Dismiss()
+					m.Dismiss()
 					pg.ParentNavigator().CloseCurrentPage()
 					onWalSelected := func() {
 						pg.ParentWindow().CloseCurrentPage()
@@ -426,52 +422,48 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					}
 					pg.ParentWindow().Display(NewWalletDexServerSelector(pg.Load, onWalSelected, onDexServerSelected))
 				} else {
-					textModal.Dismiss()
+					m.Dismiss()
 					pg.ParentWindow().CloseAllPages()
 				}
 			}
 
 			if pg.wallet.IsWatchingOnlyWallet() {
-				textModal.SetLoading(true)
-				go func() {
-					// no password is required for watching only wallets.
-					err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, nil)
-					if err != nil {
-						pg.Toast.NotifyError(err.Error())
-						textModal.SetLoading(false)
-					} else {
-						walletDeleted()
-					}
-				}()
+				// no password is required for watching only wallets.
+				err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, nil)
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+				} else {
+					walletDeleted()
+				}
 				return false
 			}
 
-			walletPasswordModal := modal.NewPasswordModal(pg.Load).
+			walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				EnableName(false).
+				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToRemove)).
-				NegativeButton(values.String(values.StrCancel), func() {
-					textModal.SetLoading(false)
+				SetNegativeButtonCallback(func() {
+					m.SetLoading(false)
 				}).
-				PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-					go func() {
-						err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, []byte(password))
-						if err != nil {
-							pm.SetError(err.Error())
-							pm.SetLoading(false)
-							return
-						}
+				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+					err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, []byte(password))
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
 
-						walletDeleted()
-						pm.Dismiss() // calls RefreshWindow.
-					}()
-					return false
+					walletDeleted()
+					pm.Dismiss() // calls RefreshWindow.
+					return true
 				})
 			pg.ParentWindow().ShowModal(walletPasswordModal)
-			return false
+			return true
 
 		})
-
 	textModal.Title(values.String(values.StrRemoveWallet)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		SetPositiveButtonText(values.String(values.StrRemove))
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -479,23 +471,24 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrRename), func(newName string, tim *modal.TextInputModal) bool {
-
+		SetPositiveButtonCallback(func(newName string, tm *modal.TextInputModal) bool {
 			if !uiutils.ValidateLengthName(newName) {
-				tim.SetError(values.String(values.StrWalletNameLengthError))
-				tim.SetLoading(false)
+				tm.SetError(values.String(values.StrWalletNameLengthError))
+				tm.SetLoading(false)
 				return false
 			}
 			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, newName)
 			if err != nil {
-				pg.Toast.NotifyError(err.Error())
+				tm.SetError(err.Error())
+				tm.SetLoading(false)
 				return false
 			}
+			info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrWalletRenamed), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(info)
 			return true
 		})
-
 	textModal.Title(values.String(values.StrRenameWalletSheetTitle)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		SetPositiveButtonText(values.String(values.StrRename))
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -503,21 +496,25 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrConfirm), func(ipAddress string, tim *modal.TextInputModal) bool {
+		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
 			if !uiutils.ValidateHost(ipAddress) {
 				tim.SetError(values.StringF(values.StrValidateHostErr, ipAddress))
 				tim.SetLoading(false)
 				return false
 			}
-
 			if ipAddress != "" {
 				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
 			}
 			return true
 		})
+	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
+		SetPositiveButtonText(values.String(values.StrConfirm))
 
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		NegativeButton(values.String(values.StrCancel), func() {})
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetNegativeButtonCallback(func() {
+			pg.connectToPeer.SetChecked(false)
+		})
 	pg.ParentWindow().ShowModal(textModal)
 }
 
@@ -539,16 +536,22 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 }
 
 func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
-	info := modal.NewInfoModal(pg.Load).
+	warningModal := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
-		NegativeButton(values.String(values.StrCancel), func() {}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetNegativeButtonCallback(func() {
+			pg.connectToPeer.SetChecked(true)
+		}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-		PositiveButton(values.String(values.StrRemove), func(isChecked bool) bool {
+		SetPositiveButtonText(values.String(values.StrRemove)).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			// TODO: Check if deletion happened successfully
 			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
 			return true
 		})
-	pg.ParentWindow().ShowModal(info)
+	pg.ParentWindow().ShowModal(warningModal)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -564,23 +567,25 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	for pg.rescan.Clicked() {
 		go func() {
-			info := modal.NewInfoModal(pg.Load).
+			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrRescanBlockchain)).
 				Body(values.String(values.StrRescanInfo)).
-				NegativeButton(values.String(values.StrCancel), func() {}).
+				SetNegativeButtonText(values.String(values.StrCancel)).
 				PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-				PositiveButton(values.String(values.StrRescan), func(isChecked bool) bool {
+				SetPositiveButtonText(values.String(values.StrRescan)).
+				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
 					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
 					if err != nil {
-						if err.Error() == libwallet.ErrNotConnected {
-							pg.Toast.NotifyError(values.String(values.StrNotConnected))
-							return true
-						}
-						pg.Toast.NotifyError(err.Error())
-						return true
+						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+						pg.ParentWindow().ShowModal(errorModal)
+						return false
 					}
 					msg := values.String(values.StrRescanProgressNotification)
-					pg.Toast.Notify(msg)
+					infoModal := modal.NewSuccessModal(pg.Load, msg, func(_ bool, _ *modal.InfoModal) bool {
+						im.Dismiss() // close the parent modal too
+						return true
+					})
+					pg.ParentWindow().ShowModal(infoModal)
 					return true
 				})
 
@@ -600,14 +605,11 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal(pg.Load).
+		info := modal.NewCustomModal(pg.Load).
 			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.Center).
 			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
-			Title(values.String(values.StrSecurityTools)).
-			PositiveButton(values.String(values.StrOK), func(isChecked bool) bool {
-				return true
-			})
+			Title(values.String(values.StrSecurityTools))
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -615,25 +617,26 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		if pg.fetchProposal.IsChecked() {
 			go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 			// set proposal notification config when proposal fetching is enabled
-			pg.proposalNotif.SetChecked(pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
-			pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
+			pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
 		} else {
-			info := modal.NewInfoModal(pg.Load).
+			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrGovernance)).
 				Body(values.String(values.StrGovernanceSettingsInfo)).
-				NegativeButton(values.String(values.StrCancel), func() {
+				SetNegativeButtonText(values.String(values.StrCancel)).
+				SetNegativeButtonCallback(func() {
 					pg.fetchProposal.SetChecked(true)
 				}).
 				PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-				PositiveButton(values.String(values.StrDisable), func(isChecked bool) bool {
+				SetPositiveButtonText(values.String(values.StrDisable)).
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					if pg.WL.MultiWallet.Politeia.IsSyncing() {
 						go pg.WL.MultiWallet.Politeia.StopSync()
 					}
 
-					pg.WL.MultiWallet.SaveUserConfigValue(load.FetchProposalConfigKey, false)
-					pg.WL.MultiWallet.Politeia.ClearSavedProposals()
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, false)
 					// set proposal notification config when proposal fetching is disabled
-					pg.WL.MultiWallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, false)
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, false)
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -648,11 +651,11 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		if pg.spendUnconfirmed.IsChecked() {
 			textModal := modal.NewTextInputModal(pg.Load).
 				SetTextWithTemplate(modal.AllowUnmixedSpendingTemplate).
-				Hint("").
+				//Hint(""). Code not deleted because a proper hint is required.
 				PositiveButtonStyle(pg.Load.Theme.Color.Danger, pg.Load.Theme.Color.InvText).
-				PositiveButton(values.String(values.StrConfirm), func(textInput string, tim *modal.TextInputModal) bool {
+				SetPositiveButtonCallback(func(textInput string, tim *modal.TextInputModal) bool {
 					if textInput != values.String(values.StrAwareOfRisk) {
-						tim.SetError("confirmation text is incorrect")
+						tim.SetError(values.String(values.StrConfirmPending))
 						tim.SetLoading(false)
 					} else {
 						pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(load.SpendUnmixedFundsKey, true)
@@ -660,9 +663,9 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 					}
 					return false
 				})
-
 			textModal.Title(values.String(values.StrConfirmUmixedSpending)).
-				NegativeButton(values.String(values.StrCancel), func() {
+				SetPositiveButtonText(values.String(values.StrConfirm)).
+				SetNegativeButtonCallback(func() {
 					pg.spendUnconfirmed.SetChecked(false)
 				})
 			pg.ParentWindow().ShowModal(textModal)
@@ -710,7 +713,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.proposalNotif.Changed() {
-		pg.WL.MultiWallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
 	}
 
 	if pg.resetDexData.Clicked() {
@@ -724,19 +727,20 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			NameHint(values.String(values.StrAcctName)).
 			EnableConfirmPassword(false).
 			PasswordHint(values.String(values.StrSpendingPassword)).
-			PasswordCreated(func(accountName, password string, m *modal.CreatePasswordModal) bool {
-				go func() {
-					_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return
-					}
-					pg.Toast.Notify(values.String(values.StrAcctCreated))
-					pg.loadWalletAccount()
-					m.Dismiss()
-				}()
-				return false
+			SetPositiveButtonCallback(func(accountName, password string, m *modal.CreatePasswordModal) bool {
+				_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+					return false
+				}
+				pg.loadWalletAccount()
+				m.Dismiss()
+
+				info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrAcctCreated),
+					modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(info)
+				return true
 			})
 		pg.ParentWindow().ShowModal(newPasswordModal)
 		break
@@ -749,18 +753,23 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 func (pg *WalletSettingsPage) resetDexDataModal() {
 	// Show confirm modal before resetting dex client data.
-	confirmModal := modal.NewInfoModal(pg.Load).
+	confirmModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrConfirmDexReset)).
 		Body(values.String(values.StrDexResetInfo)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
 		NegativeButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-		PositiveButton(values.String(values.StrResetDexClient), func(isChecked bool) bool {
+		SetPositiveButtonText(values.String(values.StrResetDexClient)).
+		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
+			var info *modal.InfoModal
 			if pg.Dexc().Reset() {
-				pg.Toast.Notify("DEX client data reset complete.")
-			} else {
-				pg.Toast.NotifyError("DEX client data reset failed. Check the logs.")
+				info = modal.NewSuccessModal(pg.Load, values.String(values.StrDexDataReset), func(_ bool, _ *modal.InfoModal) bool {
+					im.Dismiss() // close the parent modal too
+					return true
+				})
 			}
-			return true
+			info = modal.NewErrorModal(pg.Load, values.String(values.StrDexDataResetFalse), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(info)
+			return false
 		})
 	pg.ParentWindow().ShowModal(confirmModal)
 }

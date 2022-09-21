@@ -16,7 +16,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -496,7 +495,8 @@ func (pg *SeedRestore) verifySeeds() bool {
 	if isValid {
 		pg.seedPhrase = seedphrase
 		if !libwallet.VerifySeed(pg.seedPhrase) {
-			pg.Toast.NotifyError(values.String(values.StrInvalidSeedPhrase))
+			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
 			return false
 		}
 	}
@@ -510,7 +510,8 @@ func (pg *SeedRestore) verifySeeds() bool {
 	}
 
 	if walletWithSameSeed != -1 {
-		pg.Toast.NotifyError(values.String(values.StrSeedAlreadyExist))
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
 		return false
 	}
 
@@ -563,26 +564,25 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			EnableName(true).
 			ShowWalletInfoTip(true).
 			SetParent(pg).
-			PasswordCreated(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				go func() {
-					_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
-					if err != nil {
-						m.SetError(components.TranslateErr(err))
-						m.SetLoading(false)
-						pg.isRestoring = false
-						return
-					}
+			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+				_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+					pg.isRestoring = false
+					return false
+				}
 
-					pg.Toast.Notify(values.String(values.StrWalletRestored))
-					pg.resetSeeds()
-					m.Dismiss()
-					if pg.restoreComplete == nil {
-						pg.ParentNavigator().CloseCurrentPage()
-					} else {
-						pg.restoreComplete()
-					}
-				}()
-				return false
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
+				pg.resetSeeds()
+				m.Dismiss()
+				if pg.restoreComplete == nil {
+					pg.ParentNavigator().CloseCurrentPage()
+				} else {
+					pg.restoreComplete()
+				}
+				return true
 			})
 		pg.ParentWindow().ShowModal(walletPasswordModal)
 	}

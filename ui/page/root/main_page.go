@@ -256,7 +256,10 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 	mp.CurrentPage().OnNavigatedTo()
 
-	if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+	if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+		if mp.WL.MultiWallet.Politeia.IsSyncing() {
+			return
+		}
 		go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 	}
 
@@ -410,9 +413,11 @@ func (mp *MainPage) HandleUserInteractions() {
 				if mp.WL.MultiWallet.IsSynced() {
 					mp.Display(pg)
 				} else if mp.WL.MultiWallet.IsSyncing() {
-					mp.Toast.NotifyError(values.String(values.StrNotConnected))
+					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
+					mp.ParentWindow().ShowModal(errModal)
 				} else {
-					mp.Toast.NotifyError(values.String(values.StrWalletSyncing))
+					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
+					mp.ParentWindow().ShowModal(errModal)
 				}
 			} else {
 				mp.Display(pg)
@@ -459,9 +464,11 @@ func (mp *MainPage) HandleUserInteractions() {
 			if mp.WL.MultiWallet.IsSynced() {
 				mp.Display(pg)
 			} else if mp.WL.MultiWallet.IsSyncing() {
-				mp.Toast.NotifyError(values.String(values.StrWalletSyncing))
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
+				mp.ParentWindow().ShowModal(errModal)
 			} else {
-				mp.Toast.NotifyError(values.String(values.StrNotConnected))
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
+				mp.ParentWindow().ShowModal(errModal)
 			}
 		}
 	}
@@ -746,7 +753,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 
 		initializeBeepNotification(notification)
 	case wallet.Proposal:
-		proposalNotification := mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false)
+		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false)
 		if !proposalNotification {
 			return
 		}
@@ -871,16 +878,18 @@ func (mp *MainPage) listenForNotifications() {
 }
 
 func (mp *MainPage) showBackupInfo() {
-	backupNowOrLaterModal := modal.NewInfoModal(mp.Load).
+	backupNowOrLaterModal := modal.NewCustomModal(mp.Load).
 		SetupWithTemplate(modal.WalletBackupInfoTemplate).
 		SetCancelable(false).
 		SetContentAlignment(layout.W, layout.Center).
 		CheckBox(mp.checkBox, true).
-		NegativeButton(values.String(values.StrBackupLater), func() {
+		SetNegativeButtonText(values.String(values.StrBackupLater)).
+		SetNegativeButtonCallback(func() {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 		}).
 		PositiveButtonStyle(mp.Load.Theme.Color.Primary, mp.Load.Theme.Color.InvText).
-		PositiveButton(values.String(values.StrBackupNow), func(isChecked bool) bool {
+		SetPositiveButtonText(values.String(values.StrBackupNow)).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
 			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet))
 			return true

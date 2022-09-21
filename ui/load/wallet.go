@@ -10,9 +10,6 @@ import (
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
-// ErrIDNotExist is returned when a given ID does not exist
-var ErrIDNotExist = errors.New("ID does not exist")
-
 type WalletItem struct {
 	Wallet       *libwallet.Wallet
 	TotalBalance string

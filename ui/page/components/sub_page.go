@@ -1,8 +1,6 @@
 package components
 
 import (
-	"image/color"
-
 	"gioui.org/layout"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -35,7 +33,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	m24 := values.MarginPadding24
 	backButton.Size, infoButton.Size = m24, m24
 
-	buttonInset := layout.UniformInset(values.MarginPadding4)
+	buttonInset := layout.UniformInset(values.MarginPadding0)
 	backButton.Inset, infoButton.Inset = buttonInset, buttonInset
 
 	return backButton, infoButton
@@ -44,7 +42,7 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding22}.Layout(gtx, func(gtx C) D {
 				return sp.Header(window, gtx)
 			})
 		}),
@@ -55,11 +53,10 @@ func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout
 func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
 	sp.EventHandler(window)
 
-	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
-				Right: values.MarginPadding16,
-				Top:   values.MarginPaddingMinus2,
+				Right: values.MarginPadding20,
 			}.Layout(gtx, sp.BackButton.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -78,7 +75,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			if sp.WalletName != "" {
-				return layout.Inset{Left: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 					return cryptomaterial.Card{
 						Color: sp.Theme.Color.Surface,
 					}.Layout(gtx, func(gtx C) D {
@@ -100,7 +97,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 							if sp.ExtraText != "" {
-								return layout.Inset{Right: values.MarginPadding10, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 									return sp.Theme.Caption(sp.ExtraText).Layout(gtx)
 								})
 							}
@@ -117,29 +114,30 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 	)
 }
 
-func (sp *SubPage) SplitLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
-	card := sp.Theme.Card()
-	card.Color = color.NRGBA{}
-	return card.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return sp.Header(window, gtx) }),
-			layout.Rigid(sp.Body),
-		)
+func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+	return sp.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.UniformInset(values.MarginPadding24).Layout(gtx, func(gtx C) D {
+						return sp.Header(window, gtx)
+					})
+				}),
+				layout.Rigid(sp.Body),
+			)
+		})
 	})
 }
 
 func (sp *SubPage) EventHandler(window app.WindowNavigator) {
 	if sp.InfoTemplate != "" {
 		if sp.InfoButton.Button.Clicked() {
-			infoModal := modal.NewInfoModal(sp.Load).
+			infoModal := modal.NewCustomModal(sp.Load).
 				Title(sp.Title).
 				SetupWithTemplate(sp.InfoTemplate).
 				SetContentAlignment(layout.W, layout.Center).
 				SetCancelable(true).
-				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface).
-				PositiveButton(values.String(values.StrOk), func(isChecked bool) bool {
-					return true
-				})
+				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface)
 			window.ShowModal(infoModal)
 		}
 	}

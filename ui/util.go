@@ -14,18 +14,8 @@ import (
 	"gioui.org/widget"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/values"
 	"golang.org/x/text/message"
 )
-
-func translateErr(err error) string {
-	switch err.Error() {
-	case libwallet.ErrInvalidPassphrase:
-		return values.String(values.StrInvalidPassphrase)
-	}
-
-	return err.Error()
-}
 
 func editorsNotEmpty(editors ...*widget.Editor) bool {
 	for _, e := range editors {

@@ -1,8 +1,6 @@
 package modal
 
 import (
-	"fmt"
-
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -88,7 +86,7 @@ func (cm *CreateWatchOnlyModal) SetCancelable(min bool) *CreateWatchOnlyModal {
 }
 
 func (cm *CreateWatchOnlyModal) SetError(err string) {
-	cm.serverError = err
+	cm.serverError = values.TranslateErr(err)
 }
 
 func (cm *CreateWatchOnlyModal) WatchOnlyCreated(callback func(walletName, extPubKey string, m *CreateWatchOnlyModal) bool) *CreateWatchOnlyModal {
@@ -132,12 +130,12 @@ func (cm *CreateWatchOnlyModal) Handle() {
 		matchedWalletID, err := cm.WL.MultiWallet.WalletWithXPub(cm.extendedPubKey.Editor.Text())
 		if err != nil {
 			log.Errorf("Error checking xpub: %v", err)
-			cm.Toast.NotifyError(values.StringF(values.StrXpubKeyErr, err)) // Error maybe useful to user.
+			cm.SetError(values.StringF(values.StrXpubKeyErr, err))
 			return
 		}
 
 		if matchedWalletID != -1 {
-			cm.Toast.NotifyError(values.String(values.StrXpubWalletExist))
+			cm.SetError(values.String(values.StrXpubWalletExist))
 			return
 		}
 
@@ -192,7 +190,7 @@ func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
 			if cm.serverError != "" {
 				// set wallet name editor error if wallet name already exist
 				if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
-					cm.walletName.SetError(fmt.Sprintf("Wallet with name: %s already exist", cm.walletName.Editor.Text()))
+					cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
 				} else {
 					cm.extendedPubKey.SetError(cm.serverError)
 				}

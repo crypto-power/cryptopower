@@ -100,7 +100,8 @@ func (md *AddDexModal) doAddDexServer(serverAddr string) {
 
 		dexServer, paid, err := md.Dexc().Core().DiscoverAccount(serverAddr, []byte(DEXClientPass), cert)
 		if err != nil {
-			md.Toast.NotifyError(err.Error())
+			errorModal := modal.NewErrorModal(md.Load, err.Error(), modal.DefaultClickFunc())
+			md.ParentWindow().ShowModal(errorModal)
 			return
 		}
 
@@ -168,35 +169,35 @@ func (md *AddDexModal) payFeeAndRegister(dexServer *core.Exchange, cert []byte) 
 	assetSelectorModal := newFeeAssetSelectorModal(md.Load, dexServer)
 
 	confirmAndRegister := func(feeAsset *core.SupportedAsset) {
-		infoModal := modal.NewInfoModal(md.Load).
+		infoModal := modal.NewCustomModal(md.Load).
 			Title(strConfirmReg).
 			Body(confirmRegisterModalDesc(dexServer, feeAsset.Symbol)).
 			SetCancelable(false).
-			NegativeButton(values.String(values.StrCancel), func() {
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			SetNegativeButtonCallback(func() {
 				md.ParentWindow().ShowModal(assetSelectorModal)
 			}).
-			PositiveButton(strRegister, func(_ bool) bool {
+			SetPositiveButtonText(strRegister).
+			SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 				md.ParentWindow().ShowModal(assetSelectorModal)
-				go func() {
-					assetSelectorModal.SetLoading(true)
-					assetSelectorModal.Modal.SetDisabled(true) // prevent re-selecting a fee asset
-					regFeeAsset := dexServer.RegFees[feeAsset.Symbol]
-					_, err := md.Load.Dexc().RegisterWithDEXServer(dexServer.Host,
-						cert,
-						int64(regFeeAsset.Amt),
-						int32(regFeeAsset.ID),
-						[]byte(DEXClientPass))
-					if err != nil {
-						assetSelectorModal.SetLoading(false)
-						assetSelectorModal.Modal.SetDisabled(false) // re-enable fee asset selection
-						assetSelectorModal.Toast.NotifyError(err.Error())
-						return
-					}
-					assetSelectorModal.Dismiss()
-					md.onDexAdded()
-					md.saveDexServer(dexServer.Host, cert)
-				}()
-				return true
+				assetSelectorModal.SetLoading(true)
+				assetSelectorModal.Modal.SetDisabled(true) // prevent re-selecting a fee asset
+				regFeeAsset := dexServer.RegFees[feeAsset.Symbol]
+				_, err := md.Load.Dexc().RegisterWithDEXServer(dexServer.Host,
+					cert,
+					int64(regFeeAsset.Amt),
+					int32(regFeeAsset.ID),
+					[]byte(DEXClientPass))
+				if err != nil {
+					assetSelectorModal.SetLoading(false)
+					assetSelectorModal.Modal.SetDisabled(false) // re-enable fee asset selection
+					assetSelectorModal.Toast.NotifyError(err.Error())
+					return false
+				}
+				assetSelectorModal.Dismiss()
+				md.onDexAdded()
+				md.saveDexServer(dexServer.Host, cert)
+				return false
 			})
 
 		md.ParentWindow().ShowModal(infoModal)

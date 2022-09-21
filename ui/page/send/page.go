@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"gioui.org/io/key"
@@ -314,15 +313,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 }
 
 func (pg *Page) feeEstimationError(err string) {
-	if err == libwallet.ErrInsufficientBalance {
-		pg.amount.setError(values.String(values.StrInsufficentFund))
-	} else if strings.Contains(err, invalidAmountErr) {
-		pg.amount.setError(invalidAmountErr)
-	} else {
-		pg.amount.setError(err)
-		pg.Toast.NotifyError(values.StringF(values.StrTxEstimateErr, err))
-	}
-
+	pg.amount.setError(err)
 	pg.clearEstimates()
 }
 
@@ -360,12 +351,10 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		info := modal.NewInfoModal(pg.Load).
-			Title(values.String(values.StrSend)+" DCR").
+		info := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrSend) + " DCR").
 			Body(values.String(values.StrSendInfo)).
-			PositiveButton(values.String(values.StrGotIt), func(isChecked bool) bool {
-				return true
-			})
+			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
 	}
 

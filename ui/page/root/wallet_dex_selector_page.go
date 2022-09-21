@@ -311,27 +311,22 @@ func (pg *WalletDexServerSelector) startSyncing() {
 }
 
 func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
-	spendingPasswordModal := modal.NewPasswordModal(pg.Load).
+	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-		Hint(values.String(values.StrSpendingPassword)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
-				if err != nil {
-					errText := err.Error()
-					if err.Error() == libwallet.ErrInvalidPassphrase {
-						errText = values.String(values.StrInvalidPassphrase)
-					}
-					pm.SetError(errText)
-					pm.SetLoading(false)
-					return
-				}
-				pm.Dismiss()
-				pg.startSyncing()
-			}()
-
-			return false
+		PasswordHint(values.String(values.StrSpendingPassword)).
+		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pm.Dismiss()
+			pg.startSyncing()
+			return true
 		})
 	pg.ParentWindow().ShowModal(spendingPasswordModal)
 }

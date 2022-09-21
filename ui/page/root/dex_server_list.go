@@ -10,6 +10,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -28,24 +29,27 @@ func (pg *WalletDexServerSelector) isLoadingDexClient() bool {
 // initialize and login to DEX,
 // since Dex client UI not required for app password, initialize and login should be done at libwallet.
 func (pg *WalletDexServerSelector) startDexClient() {
-	_, err := pg.WL.MultiWallet.StartDexClient()
-	if err != nil {
-		pg.Toast.NotifyError(err.Error())
+	var err error
+	defer func() {
+		if err != nil {
+			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+		}
+	}()
+
+	if _, err = pg.WL.MultiWallet.StartDexClient(); err != nil {
 		return
 	}
 
 	// TODO: move to libwallet sine bypass Dex password by DEXClientPass
 	if !pg.Dexc().Initialized() {
-		err = pg.Dexc().InitializeWithPassword([]byte(values.DEXClientPass))
-		if err != nil {
-			pg.Toast.NotifyError(err.Error())
+		if err = pg.Dexc().InitializeWithPassword([]byte(values.DEXClientPass)); err != nil {
 			return
 		}
 	}
 
 	if !pg.Dexc().IsLoggedIn() {
-		err := pg.Dexc().Login([]byte(values.DEXClientPass))
-		if err != nil {
+		if err = pg.Dexc().Login([]byte(values.DEXClientPass)); err != nil {
 			// todo fix  dex password error
 			// pg.Toast.NotifyError(err.Error())
 			return

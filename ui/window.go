@@ -100,6 +100,9 @@ func (win *Window) NewLoad() (*load.Load, error) {
 			TxAuthor:       win.txAuthor,
 		},
 
+		// NB: Toasts implementation is maintained here for the cases where its
+		// very essential to have a toast UI component implementation otherwise
+		// restraints should be exercised when planning to reuse it else where.
 		Toast: notification.NewToast(th),
 
 		Printer: message.NewPrinter(language.English),

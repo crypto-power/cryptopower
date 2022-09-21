@@ -18,21 +18,19 @@ type InfoModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	enterKeyPressed bool
-
-	dialogIcon *cryptomaterial.Icon
+	dialogIcon *cryptomaterial.Image
 
 	dialogTitle    string
 	subtitle       string
 	customTemplate []layout.Widget
 	customWidget   layout.Widget
 
-	positiveButtonText    string
-	positiveButtonClicked func(isChecked bool) bool
+	// positiveButtonText    string
+	positiveButtonClicked ClickFunc
 	btnPositive           cryptomaterial.Button
 	btnPositiveWidth      unit.Dp
 
-	negativeButtonText    string
+	// negativeButtonText    string
 	negativeButtonClicked func()
 	btnNegative           cryptomaterial.Button
 
@@ -46,39 +44,92 @@ type InfoModal struct {
 	isLoading    bool
 }
 
-func NewInfoModal(l *load.Load) *InfoModal {
-	return NewInfoModalWithKey(l, "info_modal", false)
+// ButtonType is the type of button in modal.
+type ButtonType uint8
+
+// ClickFunc defines the positive button click method signature.
+// Adding the InfoModal parameter allow reference of the parent info modal
+// qualities inside the positive button function call.
+type ClickFunc func(isChecked bool, im *InfoModal) bool
+
+const (
+	// CustomBtn defines the bare metal custom modal button type.
+	CustomBtn ButtonType = iota
+	// DangerBtn defines the default danger modal button type
+	DangerBtn
+	// InfoBtn defines the default info modal button type
+	InfoBtn
+)
+
+// NewCustomModal returns a modal that can be customized.
+func NewCustomModal(l *load.Load) *InfoModal {
+	return newInfoModalWithKey(l, "info_modal", InfoBtn)
 }
 
-// This function for normal positive button
-func NewInfoModal2(l *load.Load) *InfoModal {
-	return NewInfoModalWithKey(l, "info_modal", true)
+// NewSuccessModal returns the default success modal UI component.
+func NewSuccessModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
+	icon := l.Theme.Icons.SuccessIcon
+	return newModal(l, title, icon, clicked)
 }
 
-func NewInfoModalWithKey(l *load.Load, key string, isPositiveButtonNormal bool) *InfoModal {
+// NewErrorModal returns the default error modal UI component.
+func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
+	icon := l.Theme.Icons.FailedIcon
+	return newModal(l, values.TranslateErr(title), icon, clicked)
+}
 
+// DefaultClickFunc returns the default click function satisfying the positive
+// btn click function.
+func DefaultClickFunc() ClickFunc {
+	return func(isChecked bool, in *InfoModal) bool {
+		return true
+	}
+}
+
+func newModal(l *load.Load, title string, icon *cryptomaterial.Image, clicked ClickFunc) *InfoModal {
+	info := newInfoModalWithKey(l, "info_modal", InfoBtn)
+	info.positiveButtonClicked = clicked
+	info.btnPositiveWidth = values.MarginPadding100
+	info.dialogIcon = icon
+	info.dialogTitle = title
+	info.titleAlignment = layout.Center
+	info.btnAlignment = layout.Center
+	return info
+}
+
+func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *InfoModal {
 	in := &InfoModal{
 		Load:             l,
 		Modal:            l.Theme.ModalFloatTitle(key),
-		btnNegative:      l.Theme.OutlineButton(values.String(values.StrNo)),
+		btnNegative:      l.Theme.OutlineButton(""),
 		isCancelable:     true,
 		isLoading:        false,
 		btnAlignment:     layout.E,
 		btnPositiveWidth: 0,
 	}
 
-	if isPositiveButtonNormal {
-		in.btnPositive = l.Theme.Button(values.String(values.StrYes))
-	} else {
-		in.btnPositive = l.Theme.OutlineButton(values.String(values.StrYes))
-	}
-
+	in.btnPositive = getPositiveButtonType(l, btnPositiveType)
 	in.btnPositive.Font.Weight = text.Medium
 	in.btnNegative.Font.Weight = text.Medium
+
+	// Set the default click functions
+	in.positiveButtonClicked = DefaultClickFunc()
+	in.negativeButtonClicked = func() {}
 
 	in.materialLoader = material.Loader(l.Theme.Base)
 
 	return in
+}
+
+func getPositiveButtonType(l *load.Load, btnType ButtonType) cryptomaterial.Button {
+	switch btnType {
+	case InfoBtn:
+		return l.Theme.Button(values.String(values.StrOk))
+	case DangerBtn:
+		return l.Theme.DangerButton(values.String(values.StrOk))
+	default:
+		return l.Theme.OutlineButton(values.String(values.StrOk))
+	}
 }
 
 func (in *InfoModal) OnResume() {}
@@ -96,7 +147,7 @@ func (in *InfoModal) SetContentAlignment(title, btn layout.Direction) *InfoModal
 	return in
 }
 
-func (in *InfoModal) Icon(icon *cryptomaterial.Icon) *InfoModal {
+func (in *InfoModal) Icon(icon *cryptomaterial.Image) *InfoModal {
 	in.dialogIcon = icon
 	return in
 }
@@ -122,8 +173,12 @@ func (in *InfoModal) Body(subtitle string) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) PositiveButton(text string, clicked func(isChecked bool) bool) *InfoModal {
-	in.positiveButtonText = text
+func (in *InfoModal) SetPositiveButtonText(text string) *InfoModal {
+	in.btnPositive.Text = text
+	return in
+}
+
+func (in *InfoModal) SetPositiveButtonCallback(clicked ClickFunc) *InfoModal {
 	in.positiveButtonClicked = clicked
 	return in
 }
@@ -138,8 +193,12 @@ func (in *InfoModal) PositiveButtonWidth(width unit.Dp) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) NegativeButton(text string, clicked func()) *InfoModal {
-	in.negativeButtonText = text
+func (in *InfoModal) SetNegativeButtonText(text string) *InfoModal {
+	in.btnNegative.Text = text
+	return in
+}
+
+func (in *InfoModal) SetNegativeButtonCallback(clicked func()) *InfoModal {
 	in.negativeButtonClicked = clicked
 	return in
 }
@@ -210,7 +269,7 @@ func (in *InfoModal) Handle() {
 			isChecked = in.checkbox.CheckBox.Value
 		}
 
-		if in.positiveButtonClicked(isChecked) {
+		if in.positiveButtonClicked(isChecked, in) {
 			in.Dismiss()
 		}
 	}
@@ -243,7 +302,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
-				return in.dialogIcon.Layout(gtx, values.MarginPadding50)
+				return in.dialogIcon.LayoutSize(gtx, values.MarginPadding50)
 			})
 		})
 	}
@@ -297,7 +356,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 		w = append(w, in.customWidget)
 	}
 
-	if in.negativeButtonText != "" || in.positiveButtonText != "" {
+	if in.btnNegative.Text != "" || in.btnPositive.Text != "" {
 		w = append(w, in.actionButtonsLayout())
 	}
 
@@ -317,11 +376,10 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 		return in.btnAlignment.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if in.negativeButtonText == "" || in.isLoading {
+					if in.btnNegative.Text == "" || in.isLoading {
 						return layout.Dimensions{}
 					}
 
-					in.btnNegative.Text = in.negativeButtonText
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
 					return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, in.btnNegative.Layout)
 				}),
@@ -330,11 +388,10 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 						return in.materialLoader.Layout(gtx)
 					}
 
-					if in.positiveButtonText == "" {
+					if in.btnPositive.Text == "" {
 						return layout.Dimensions{}
 					}
 
-					in.btnPositive.Text = in.positiveButtonText
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
 					if in.btnPositiveWidth > 0 {
 						gtx.Constraints.Min.X = gtx.Dp(in.btnPositiveWidth)

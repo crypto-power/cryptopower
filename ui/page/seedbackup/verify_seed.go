@@ -156,31 +156,32 @@ func (pg *VerifySeedPage) selectedSeedPhrase() string {
 }
 
 func (pg *VerifySeedPage) verifySeed() {
-	passwordModal := modal.NewPasswordModal(pg.Load).
+	passwordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
 		Title("Confirm to verify seed").
-		PositiveButton("Confirm", func(password string, m *modal.PasswordModal) bool {
-			go func() {
-				seed := pg.selectedSeedPhrase()
-				_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
-				if err != nil {
-					if err.Error() == libwallet.ErrInvalid {
-						pg.Toast.NotifyError("Failed to verify. Please go through every word and try again.")
-						m.Dismiss()
-						return
-					}
-
-					m.SetLoading(false)
-					m.SetError(err.Error())
-					return
+		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
+			seed := pg.selectedSeedPhrase()
+			_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
+			if err != nil {
+				if err.Error() == libwallet.ErrInvalid {
+					msg := values.String(values.StrSeedValidationFailed)
+					errModal := modal.NewErrorModal(pg.Load, msg, modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					m.Dismiss()
+					return false
 				}
-				m.Dismiss()
 
-				pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load))
-			}()
+				m.SetLoading(false)
+				m.SetError(err.Error())
+				return false
+			}
+			m.Dismiss()
 
-			return false
-		}).
-		NegativeButton("Cancel", func() {})
+			pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load))
+
+			return true
+		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 

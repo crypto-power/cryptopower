@@ -198,32 +198,21 @@ func (pg *ValidateAddressPage) validateAddress() {
 		return
 	}
 
-	var verifyMessageStatus *cryptomaterial.Icon
-	var verifyMessageText string
+	var verifyMsgAddr string
+	var info *modal.InfoModal
 
 	if !pg.WL.MultiWallet.IsAddressValid(address) {
-		verifyMessageText = values.String(values.StrInvalidAddress)
-		verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCancel)
-		verifyMessageStatus.Color = pg.Theme.Color.Danger
+		verifyMsgAddr = values.String(values.StrInvalidAddress)
+		info = modal.NewErrorModal(pg.Load, verifyMsgAddr, modal.DefaultClickFunc())
 	} else {
-		verifyMessageStatus = cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheck)
-		verifyMessageStatus.Color = pg.Theme.Color.Success
-
 		if !pg.WL.SelectedWallet.Wallet.HaveAddress(address) {
-			verifyMessageText = values.String(values.StrNotOwned)
+			verifyMsgAddr = values.String(values.StrNotOwned)
 		} else {
-			verifyMessageText = values.String(values.StrOwned)
+			verifyMsgAddr = values.String(values.StrOwned)
 		}
+		info = modal.NewSuccessModal(pg.Load, verifyMsgAddr, modal.DefaultClickFunc())
 	}
 
-	info := modal.NewInfoModal(pg.Load).
-		Icon(verifyMessageStatus).
-		Title(verifyMessageText).
-		SetContentAlignment(layout.Center, layout.Center).
-		PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-		PositiveButton(values.String(values.StrOK), func(isChecked bool) bool {
-			return true
-		})
 	pg.ParentWindow().ShowModal(info)
 }
 
