@@ -32,7 +32,7 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (wallet *Wallet) NewUnsignedTx(walletID int, sourceAccountNumber int32) (*TxAuthor, error) {
+func (wallet *Wallet) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error) {
 	sourceWallet := wallet
 	if sourceWallet == nil {
 		return nil, fmt.Errorf(ErrWalletNotFound)

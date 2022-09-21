@@ -7,7 +7,7 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -42,7 +42,7 @@ func newSendDestination(l *load.Load) *destination {
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
 		Title(values.String(values.StrReceivingAddress)).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountValidator(func(account *dcr.Account) bool {
 
 			// Filter out imported account and mixed.
 			wal := dst.Load.WL.MultiWallet.WalletWithID(account.WalletID)
@@ -77,7 +77,7 @@ func (dst *destination) destinationAddress(useDefaultParams bool) (string, error
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
-func (dst *destination) destinationAccount(useDefaultParams bool) *libwallet.Account {
+func (dst *destination) destinationAccount(useDefaultParams bool) *dcr.Account {
 	if useDefaultParams {
 		return dst.destinationAccountSelector.SelectedAccount()
 	}
@@ -99,7 +99,7 @@ func (dst *destination) validateDestinationAddress() (bool, string) {
 		return false, address
 	}
 
-	if dst.WL.MultiWallet.IsAddressValid(address) {
+	if dst.WL.SelectedWallet.Wallet.IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return true, address
 	}

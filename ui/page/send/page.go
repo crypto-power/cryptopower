@@ -12,7 +12,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -74,10 +74,10 @@ type Page struct {
 }
 
 type authoredTxData struct {
-	txAuthor            *libwallet.TxAuthor
+	txAuthor            *dcr.TxAuthor
 	destinationAddress  string
-	destinationAccount  *libwallet.Account
-	sourceAccount       *libwallet.Account
+	destinationAccount  *dcr.Account
+	sourceAccount       *dcr.Account
 	txFee               string
 	txFeeUSD            string
 	estSignedSize       string
@@ -106,16 +106,16 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewAccountSelector(l).
 		Title(values.String(values.StrSendingAcct)).
-		AccountSelected(func(selectedAccount *libwallet.Account) {
+		AccountSelected(func(selectedAccount *dcr.Account) {
 			pg.validateAndConstructTx()
 		}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
 
-			if wal.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
+			if wal.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
 				!wal.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
@@ -127,7 +127,7 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		})
 
-	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *libwallet.Account) {
+	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
 		pg.validateAndConstructTx()
 		pg.sourceAccountSelector.SelectFirstWalletValidAccount() // refresh source account
 	})
@@ -167,7 +167,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sourceAccountSelector.SelectFirstWalletValidAccount()
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
-	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
 	if currencyExchangeValue == values.USDExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
@@ -259,7 +259,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	unsignedTx, err := pg.WL.MultiWallet.NewUnsignedTx(sourceAccount.WalletID, sourceAccount.Number)
+	unsignedTx, err := pg.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -393,7 +393,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
 	if currencyValue != values.USDExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
@@ -483,7 +483,7 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
 	if currencyValue != values.USDExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:

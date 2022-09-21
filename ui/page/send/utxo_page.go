@@ -10,7 +10,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -48,7 +48,7 @@ type UTXOPage struct {
 	selectedAccountID int32
 }
 
-func NewUTXOPage(l *load.Load, account *libwallet.Account) *UTXOPage {
+func NewUTXOPage(l *load.Load, account *dcr.Account) *UTXOPage {
 	pg := &UTXOPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(UTXOPageID),
@@ -138,7 +138,7 @@ func (pg *UTXOPage) handlerCheckboxes(cb *cryptomaterial.CheckBoxStyle, utxo *wa
 }
 
 func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
-	unsignedTx, err := pg.WL.MultiWallet.NewUnsignedTx(pg.selectedWalletID, pg.selectedAccountID)
+	unsignedTx, err := pg.WL.SelectedWallet.Wallet.NewUnsignedTx(pg.selectedAccountID)
 	if err != nil {
 		return
 	}

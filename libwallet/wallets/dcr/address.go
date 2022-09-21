@@ -5,7 +5,6 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 )
 
@@ -18,8 +17,8 @@ type AddressInfo struct {
 	AccountName   string
 }
 
-func (wallet *Wallet) IsAddressValid(address string, chainParams *chaincfg.Params) bool {
-	_, err := stdaddr.DecodeAddress(address, chainParams)
+func (wallet *Wallet) IsAddressValid(address string) bool {
+	_, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	return err == nil
 }
 
