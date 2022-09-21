@@ -160,7 +160,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 		var confirmations int32
 		inputBlockHeight := int32(input.BlockHeight)
 		if inputBlockHeight != -1 {
-			confirmations = wallet.getBestBlock() - inputBlockHeight + 1
+			confirmations = wallet.GetBestBlockInt() - inputBlockHeight + 1
 		}
 
 		unspentOutputs[i] = &UnspentOutput{

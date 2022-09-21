@@ -11,7 +11,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -25,9 +25,9 @@ type AccountSelector struct {
 	*load.Load
 	*listeners.TxAndBlockNotificationListener
 
-	selectedAccount *libwallet.Account
-	accountIsValid  func(*libwallet.Account) bool
-	callback        func(*libwallet.Account)
+	selectedAccount *dcr.Account
+	accountIsValid  func(*dcr.Account) bool
+	callback        func(*dcr.Account)
 
 	openSelectorDialog *cryptomaterial.Clickable
 	selectorModal      *AccountSelectorModal
@@ -43,7 +43,7 @@ type AccountSelector struct {
 func NewAccountSelector(l *load.Load) *AccountSelector {
 	return &AccountSelector{
 		Load:               l,
-		accountIsValid:     func(*libwallet.Account) bool { return true },
+		accountIsValid:     func(*dcr.Account) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 }
@@ -53,12 +53,12 @@ func (as *AccountSelector) Title(title string) *AccountSelector {
 	return as
 }
 
-func (as *AccountSelector) AccountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelector {
+func (as *AccountSelector) AccountValidator(accountIsValid func(*dcr.Account) bool) *AccountSelector {
 	as.accountIsValid = accountIsValid
 	return as
 }
 
-func (as *AccountSelector) AccountSelected(callback func(*libwallet.Account)) *AccountSelector {
+func (as *AccountSelector) AccountSelected(callback func(*dcr.Account)) *AccountSelector {
 	as.callback = callback
 	return as
 }
@@ -74,7 +74,7 @@ func (as *AccountSelector) Handle(window app.WindowNavigator) {
 		as.selectorModal = newAccountSelectorModal(as.Load, as.selectedAccount).
 			title(as.dialogTitle).
 			accountValidator(as.accountIsValid).
-			accountSelected(func(account *libwallet.Account) {
+			accountSelected(func(account *dcr.Account) {
 				if as.selectedAccount.Number != account.Number {
 					as.changed = true
 				}
@@ -116,7 +116,7 @@ func (as *AccountSelector) SelectFirstWalletValidAccount() error {
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (as *AccountSelector) SetSelectedAccount(account *libwallet.Account) {
+func (as *AccountSelector) SetSelectedAccount(account *dcr.Account) {
 	as.selectedAccount = account
 	as.totalBalance = dcrutil.Amount(account.TotalBalance).String()
 }
@@ -128,7 +128,7 @@ func (as *AccountSelector) UpdateSelectedAccountBalance() {
 	}
 }
 
-func (as *AccountSelector) SelectedAccount() *libwallet.Account {
+func (as *AccountSelector) SelectedAccount() *dcr.Account {
 	return as.selectedAccount
 }
 
@@ -185,7 +185,7 @@ func (as *AccountSelector) ListenForTxNotifications(ctx context.Context, window 
 		return
 	}
 	as.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := as.WL.MultiWallet.AddTxAndBlockNotificationListener(as.TxAndBlockNotificationListener, true, AccoutSelectorID)
+	err := as.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(as.TxAndBlockNotificationListener, true, AccoutSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -199,7 +199,7 @@ func (as *AccountSelector) ListenForTxNotifications(ctx context.Context, window 
 				case listeners.BlockAttached:
 					// refresh wallet account and balance on every new block
 					// only if sync is completed.
-					if as.WL.MultiWallet.IsSynced() {
+					if as.WL.SelectedWallet.Wallet.IsSynced() {
 						as.UpdateSelectedAccountBalance()
 						if as.selectorModal != nil {
 							as.selectorModal.setupWalletAccounts()
@@ -215,7 +215,7 @@ func (as *AccountSelector) ListenForTxNotifications(ctx context.Context, window 
 					window.Reload()
 				}
 			case <-ctx.Done():
-				as.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
+				as.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
 				close(as.TxAndBlockNotifChan)
 				as.TxAndBlockNotificationListener = nil
 				return
@@ -228,14 +228,14 @@ type AccountSelectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	accountIsValid func(*libwallet.Account) bool
-	callback       func(*libwallet.Account)
+	accountIsValid func(*dcr.Account) bool
+	callback       func(*dcr.Account)
 	onExit         func()
 
 	walletInfoButton cryptomaterial.IconButton
 	accountsList     layout.List
 
-	currentSelectedAccount *libwallet.Account
+	currentSelectedAccount *dcr.Account
 	accounts               []*selectorAccount // key = wallet id
 	eventQueue             event.Queue
 	walletMu               sync.Mutex
@@ -248,11 +248,11 @@ type AccountSelectorModal struct {
 }
 
 type selectorAccount struct {
-	*libwallet.Account
+	*dcr.Account
 	clickable *cryptomaterial.Clickable
 }
 
-func newAccountSelectorModal(l *load.Load, currentSelectedAccount *libwallet.Account) *AccountSelectorModal {
+func newAccountSelectorModal(l *load.Load, currentSelectedAccount *dcr.Account) *AccountSelectorModal {
 	asm := &AccountSelectorModal{
 		Load:         l,
 		Modal:        l.Theme.ModalFloatTitle("AccountSelectorModal"),
@@ -333,12 +333,12 @@ func (asm *AccountSelectorModal) title(title string) *AccountSelectorModal {
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*libwallet.Account) bool) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *AccountSelectorModal {
 	asm.accountIsValid = accountIsValid
 	return asm
 }
 
-func (asm *AccountSelectorModal) accountSelected(callback func(*libwallet.Account)) *AccountSelectorModal {
+func (asm *AccountSelectorModal) accountSelected(callback func(*dcr.Account)) *AccountSelectorModal {
 	asm.callback = callback
 	return asm
 }

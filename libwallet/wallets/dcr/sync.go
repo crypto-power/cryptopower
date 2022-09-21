@@ -420,7 +420,7 @@ func (wallet *Wallet) GetBestBlock() *BlockInfo {
 		return nil
 	}
 
-	walletBestBLock := wallet.getBestBlock()
+	walletBestBLock := wallet.GetBestBlockInt()
 	if walletBestBLock > bestBlock || bestBlock == -1 {
 		bestBlock = walletBestBLock
 		blockInfo = &BlockInfo{Height: bestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
@@ -435,7 +435,7 @@ func (wallet *Wallet) GetLowestBlock() *BlockInfo {
 	if !wallet.WalletOpened() {
 		return nil
 	}
-	walletBestBLock := wallet.getBestBlock()
+	walletBestBLock := wallet.GetBestBlockInt()
 	if walletBestBLock < lowestBlock || lowestBlock == -1 {
 		lowestBlock = walletBestBLock
 		blockInfo = &BlockInfo{Height: lowestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
@@ -444,7 +444,7 @@ func (wallet *Wallet) GetLowestBlock() *BlockInfo {
 	return blockInfo
 }
 
-func (wallet *Wallet) getBestBlock() int32 {
+func (wallet *Wallet) GetBestBlockInt() int32 {
 	if wallet.Internal() == nil {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block height without a loaded wallet.")

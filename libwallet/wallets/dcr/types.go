@@ -551,3 +551,12 @@ type DcrdataAgenda struct {
 }
 
 /** end agenda types */
+
+// TreasuryKeyPolicy records the voting policy for treasury spend transactions
+// by a particular key, and possibly for a particular ticket being voted on by a
+// VSP.
+type TreasuryKeyPolicy struct {
+	PiKey      string `json:"pi_key"`
+	TicketHash string `json:"ticket_hash"` // nil unless for per-ticket VSP policies
+	Policy     string `json:"policy"`
+}

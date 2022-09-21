@@ -415,3 +415,8 @@ func (mw *MultiWallet) WalletNameExists(walletName string) (bool, error) {
 
 	return false, nil
 }
+
+// PiKeys returns the sanctioned Politeia keys for the current network.
+func (mw *MultiWallet) PiKeys() [][]byte {
+	return mw.Assets.DCR.ChainParams.PiKeys
+}
