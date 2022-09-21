@@ -149,7 +149,7 @@ func (wallet *Wallet) ReadyToMix(walletID int) (bool, error) {
 }
 
 // StartAccountMixer starts the automatic account mixer
-func (wallet *Wallet) StartAccountMixer(walletID int, walletPassphrase string) error {
+func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 	if !wallet.IsConnectedToDecredNetwork() {
 		return errors.New(ErrNotConnected)
 	}
@@ -191,7 +191,7 @@ func (wallet *Wallet) StartAccountMixer(walletID int, walletPassphrase string) e
 	go func() {
 		log.Info("Running account mixer")
 		if wallet.accountMixerNotificationListener != nil {
-			wallet.publishAccountMixerStarted(walletID)
+			wallet.publishAccountMixerStarted(wallet.ID)
 		}
 
 		ctx, cancel := wallet.contextWithShutdownCancel()
@@ -203,7 +203,7 @@ func (wallet *Wallet) StartAccountMixer(walletID int, walletPassphrase string) e
 
 		wallet.CancelAccountMixer = nil
 		if wallet.accountMixerNotificationListener != nil {
-			wallet.publishAccountMixerEnded(walletID)
+			wallet.publishAccountMixerEnded(wallet.ID)
 		}
 	}()
 

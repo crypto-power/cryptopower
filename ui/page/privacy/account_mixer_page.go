@@ -9,6 +9,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -374,7 +375,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				SetPositiveButtonText(values.String(values.StrYes)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
-					go pg.WL.MultiWallet.StopAccountMixer(pg.WL.SelectedWallet.Wallet.ID)
+					go pg.WL.SelectedWallet.Wallet.StopAccountMixer()
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -494,7 +495,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 	}
 
 	pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
-	err := pg.WL.MultiWallet.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding account mixer notification listener: %+v", err)
 		return
@@ -530,8 +531,8 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				}
 
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-				pg.WL.MultiWallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 				close(pg.MixerChan)
 				close(pg.TxAndBlockNotifChan)
 				pg.AccountMixerNotificationListener = nil

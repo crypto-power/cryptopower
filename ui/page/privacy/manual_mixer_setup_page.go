@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -28,7 +28,7 @@ type ManualMixerSetupPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	wallet                 *libwallet.Wallet
+	wallet                 *dcr.Wallet
 	mixedAccountSelector   *components.AccountSelector
 	unmixedAccountSelector *components.AccountSelector
 
@@ -47,8 +47,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewAccountSelector(l).
 		Title("Mixed account").
-		AccountSelected(func(selectedAccount *libwallet.Account) {}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountSelected(func(selectedAccount *dcr.Account) {}).
+		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1
@@ -57,7 +57,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 			}
 
 			// Imported, watch only and default wallet accounts are invalid to use as a mixed account
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != libwallet.DefaultAccountNum
+			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
 
 			if !accountIsValid || account.Number == unmixedAccNo {
 				return false
@@ -69,8 +69,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewAccountSelector(l).
 		Title("Unmixed account").
-		AccountSelected(func(selectedAccount *libwallet.Account) {}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountSelected(func(selectedAccount *dcr.Account) {}).
+		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
@@ -79,7 +79,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 			}
 
 			// Imported, watch only and default wallet accounts are invalid to use as an unmixed account
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != libwallet.DefaultAccountNum
+			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
 
 			// Account is invalid if already selected by mixed account selector.
 			if !accountIsValid || account.Number == mixedAccNo {
@@ -248,8 +248,8 @@ func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 	}
 
 	// Disable set up button if either mixed or unmixed account is the default account.
-	if pg.mixedAccountSelector.SelectedAccount().Number == libwallet.DefaultAccountNum ||
-		pg.unmixedAccountSelector.SelectedAccount().Number == libwallet.DefaultAccountNum {
+	if pg.mixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum ||
+		pg.unmixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum {
 		pg.toPrivacySetup.SetEnabled(false)
 	}
 
