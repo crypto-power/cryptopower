@@ -1,11 +1,13 @@
 package libwallet
 
-// func (mw *MultiWallet) AllWallets() (wallets []*Wallet) {
-// 	for _, wallet := range mw.wallets {
-// 		wallets = append(wallets, wallet)
-// 	}
-// 	return wallets
-// }
+import "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+
+func (mw *MultiWallet) AllDCRWallets() (wallets []*dcr.Wallet) {
+	for _, wallet := range mw.Assets.DCR.Wallets {
+		wallets = append(wallets, wallet)
+	}
+	return wallets
+}
 
 // func (mw *MultiWallet) WalletsIterator() *WalletsIterator {
 // 	return &WalletsIterator{

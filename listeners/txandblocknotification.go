@@ -3,7 +3,7 @@ package listeners
 import (
 	"encoding/json"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
 // TxAndBlockNotificationListener satisfies libwallet
@@ -19,7 +19,7 @@ func NewTxAndBlockNotificationListener() *TxAndBlockNotificationListener {
 }
 
 func (txAndBlk *TxAndBlockNotificationListener) OnTransaction(transaction string) {
-	var tx libwallet.Transaction
+	var tx dcr.Transaction
 	err := json.Unmarshal([]byte(transaction), &tx)
 	if err != nil {
 		log.Errorf("Error unmarshalling transaction: %v", err)
