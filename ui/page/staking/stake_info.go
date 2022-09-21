@@ -160,11 +160,11 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 
 	items := []cryptomaterial.ProgressBarItem{
 		{
-			Value: int(totalBalance.LockedByTickets.ToCoin()),
+			Value: totalBalance.LockedByTickets.ToCoin(),
 			Color: pg.Theme.Color.NavyBlue,
 		},
 		{
-			Value: int(totalBalance.Spendable.ToCoin()),
+			Value: totalBalance.Spendable.ToCoin(),
 			Color: pg.Theme.Color.Turquoise300,
 		},
 	}
@@ -181,10 +181,9 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 			)
 		})
 	}
-	pb := pg.Theme.MultiLayerProgressBar(int((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin()), items)
+	pb := pg.Theme.MultiLayerProgressBar((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin(), items)
 	pb.Height = values.MarginPadding16
 	return pb.Layout(gtx, labelWdg)
-
 }
 
 func (pg *Page) stakingRecordStatistics(gtx C) D {

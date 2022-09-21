@@ -32,11 +32,8 @@ type AboutPage struct {
 	networkValue   cryptomaterial.Label
 	license        cryptomaterial.Label
 	licenseRow     *cryptomaterial.Clickable
-
-	chevronRightIcon *cryptomaterial.Icon
-
-	backButton cryptomaterial.IconButton
-	shadowBox  *cryptomaterial.Shadow
+	backButton     cryptomaterial.IconButton
+	shadowBox      *cryptomaterial.Shadow
 }
 
 func NewAboutPage(l *load.Load) *AboutPage {
@@ -53,7 +50,6 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		license:          l.Theme.Body1(values.String(values.StrLicense)),
 		licenseRow:       l.Theme.NewClickable(true),
 		shadowBox:        l.Theme.Shadow(),
-		chevronRightIcon: cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight),
 	}
 
 	pg.licenseRow.Radius = cryptomaterial.BottomRadius(14)
@@ -167,10 +163,7 @@ func (pg *AboutPage) layoutRows(gtx C) D {
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								return in.Layout(gtx, func(gtx C) D {
-									pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
-									return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-								})
+								return in.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 							})
 						}),
 					)

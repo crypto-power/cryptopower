@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -55,10 +54,7 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 		}),
 		layout.Rigid(func(gtx C) D {
 			if displayUnitText {
-				txt := l.Theme.Label(values.TextSize20, unitText)
-				txt.Color = col
-				txt.Font.Weight = text.SemiBold
-				return txt.Layout(gtx)
+				return l.Theme.Label(mainTextSize, unitText).Layout(gtx)
 			}
 
 			return D{}
@@ -74,6 +70,10 @@ func LayoutBalance(gtx layout.Context, l *load.Load, amount string) layout.Dimen
 
 func LayoutBalanceWithUnit(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
 	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, l.Theme.Color.PageNavText, true)
+}
+
+func LayoutBalanceWithUnitSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
+	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.PageNavText, true)
 }
 
 func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {

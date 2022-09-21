@@ -10,7 +10,7 @@ import (
 
 type Icons struct {
 	ContentAdd, NavigationCheck, NavigationMore, ActionCheckCircle, ActionInfo, NavigationArrowBack,
-	NavigationArrowForward, ActionCheck, ChevronRight, NavigationCancel, NavMoreIcon,
+	NavigationArrowForward, ActionCheck, NavigationCancel, NavMoreIcon,
 	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon *widget.Icon
 
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
@@ -24,7 +24,7 @@ type Icons struct {
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
-	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon *Image
+	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -49,7 +49,6 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ActionCheck = MustIcon(widget.NewIcon(icons.ActionCheckCircle))
 	i.NavigationCancel = MustIcon(widget.NewIcon(icons.NavigationCancel))
 	i.ImageBrightness1 = MustIcon(widget.NewIcon(icons.ImageBrightness1))
-	i.ChevronRight = MustIcon(widget.NewIcon(icons.NavigationChevronRight))
 	i.ContentClear = MustIcon(widget.NewIcon(icons.ContentClear))
 	i.DropDownIcon = MustIcon(widget.NewIcon(icons.NavigationArrowDropDown))
 	i.Cached = MustIcon(widget.NewIcon(icons.ActionCached))
@@ -148,6 +147,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.RedAlert = NewImage(decredIcons["red_alert"])
 	i.ChevronExpand = NewImage(decredIcons["chevron_expand"])
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
+	i.ChevronRight = NewImage(decredIcons["chevron_coll"])
 	i.ChevronLeft = NewImage(decredIcons["chevron_left"])
 	i.NotSynced = NewImage(decredIcons["notSynced"])
 	i.UnmixedTxIcon = NewImage(decredIcons["unmixed_icon"])

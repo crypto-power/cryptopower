@@ -28,7 +28,7 @@ type ProgressCircleStyle struct {
 }
 
 type ProgressBarItem struct {
-	Value   int
+	Value   float64
 	Color   color.NRGBA
 	SubText string
 }
@@ -42,14 +42,14 @@ type MultiLayerProgressBar struct {
 	Radius CornerRadius
 	Height unit.Dp
 	Width  unit.Dp
-	total  int
+	total  float64
 }
 
 func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
 	return ProgressBarStyle{ProgressBarStyle: material.ProgressBar(t.Base, float32(progress)/100)}
 }
 
-func (t *Theme) MultiLayerProgressBar(total int, items []ProgressBarItem) *MultiLayerProgressBar {
+func (t *Theme) MultiLayerProgressBar(total float64, items []ProgressBarItem) *MultiLayerProgressBar {
 	mp := &MultiLayerProgressBar{
 		t: t,
 
@@ -179,13 +179,18 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 		}
 	}
 
-	calProgressWidth := func(progress int) int {
+	calProgressWidth := func(progress float64) float64 {
 		if mp.total != 0 {
 			val := (progress / mp.total) * 100
-			return (int(mp.Width) / 100) * val
+			return (float64(mp.Width) / 100) * val
 		}
 
 		return 0
+	}
+
+	// display empty gray layout when total value passed is zero (0)
+	if mp.total == 0 {
+		return progressScale(int(mp.Width), mp.t.Color.Gray2)
 	}
 
 	// This takes only 2 layers
@@ -195,14 +200,14 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 			if width == 0 {
 				return D{}
 			}
-			return progressScale(width, mp.items[0].Color)
+			return progressScale(int(width), mp.items[0].Color)
 		}),
 		layout.Rigid(func(gtx C) D {
 			width := calProgressWidth(mp.items[1].Value)
 			if width == 0 {
 				return D{}
 			}
-			return progressScale(width, mp.items[1].Color)
+			return progressScale(int(width), mp.items[1].Color)
 		}),
 	)
 }
