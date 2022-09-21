@@ -88,7 +88,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 
 		ticketCopy := tx
 		txStatus := components.TransactionTitleIcon(l, w, &tx)
-		confirmations := tx.Confirmations(w.GetBestBlock())
+		confirmations := tx.Confirmations(w.GetBestBlockInt())
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive

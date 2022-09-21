@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -437,7 +437,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					m.SetLoading(false)
 					return false
 				}
-				wal, err := pg.WL.MultiWallet.CreateNewWallet(pg.walletName.Editor.Text(), password, libwallet.PassphraseTypePass)
+				wal, err := dcr.CreateNewWallet(pg.walletName.Editor.Text(), password, dcr.PassphraseTypePass)
 				if err != nil {
 					return errFunc(err)
 				}
@@ -445,7 +445,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				if err != nil {
 					return errFunc(err)
 				}
-				wal.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+				wal.SetBoolConfigValueForKey(dcr.AccountMixerConfigSet, true)
 				m.Dismiss()
 
 				pg.handlerWalletDexServerSelectorCallBacks()
@@ -467,8 +467,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
 		pg.showLoader = true
 		go func() {
-			walletName := strings.TrimSpace(pg.walletName.Editor.Text())
-			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(walletName, pg.watchOnlyWalletHex.Editor.Text())
+			_, err := dcr.CreateWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
 				pg.watchOnlyWalletHex.SetError(err.Error())
 				pg.showLoader = false

@@ -187,4 +187,3 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 	}
 	return res, nil
 }
-

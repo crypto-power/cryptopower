@@ -14,7 +14,7 @@ import (
 )
 
 // initializeDCRWalletParameters initializes the fields each DCR wallet is going to need to be setup
-// such as chainparams, root directory, network and database references 
+// such as chainparams, root directory, network and database references
 func initializeDCRWallet(rootDir, dbDriver, netType string) (*storm.DB, *chaincfg.Params, string, error) {
 	var db *storm.DB
 

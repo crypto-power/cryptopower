@@ -68,7 +68,7 @@ func (sp *SyncProgressListener) OnSyncCanceled(willRestart bool) {
 		Stage: wallet.SyncCanceled,
 	})
 }
-func (sp *SyncProgressListener) OnSyncEndedWithError(err error)       {}
+func (sp *SyncProgressListener) OnSyncEndedWithError(err error) {}
 func (sp *SyncProgressListener) Debug(debugInfo *dcr.DebugInfo) {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {

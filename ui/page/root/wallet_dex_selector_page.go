@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -303,7 +304,7 @@ func (pg *WalletDexServerSelector) startSyncing() {
 		}
 	}
 
-	err := pg.WL.MultiWallet.SpvSync()
+	err := pg.WL.SelectedWallet.Wallet.SpvSync()
 	if err != nil {
 		// show error dialog
 		log.Info("Error starting sync:", err)
@@ -318,7 +319,7 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet)
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
+			err := wal.UnlockWallet(wal.ID, []byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)

@@ -34,7 +34,7 @@ var (
 )
 
 func (mw *MultiWallet) batchDbTransaction(dbOp func(node storm.Node) error) (err error) {
-	dbTx, err := mw.db .Begin(true)
+	dbTx, err := mw.db.Begin(true)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
 	wallet.HasDiscoveredAccounts = true
-	err := mw.db .Save(wallet)
+	err := mw.db.Save(wallet)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 // multiwallet's root directory in bytes.
 func (mw *MultiWallet) RootDirFileSizeInBytes() (int64, error) {
 	var size int64
-	err := filepath.Walk(mw.rootDir , func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(mw.rootDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/text/message"
 )
@@ -49,8 +49,8 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 }
 
 // getLockWallet returns a list of locked wallets
-func GetLockedWallets(wallets []*libwallet.Wallet) []*libwallet.Wallet {
-	var walletsLocked []*libwallet.Wallet
+func GetLockedWallets(wallets []*dcr.Wallet) []*dcr.Wallet {
+	var walletsLocked []*dcr.Wallet
 	for _, wl := range wallets {
 		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
 			walletsLocked = append(walletsLocked, wl)
@@ -148,7 +148,7 @@ func goToURL(url string) {
 
 func ComputePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
-	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
+	strength := dcr.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength)
 
 	//set progress bar color

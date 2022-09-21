@@ -18,7 +18,6 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	tkv1 "github.com/decred/politeia/politeiawww/api/ticketvote/v1"
 	www "github.com/decred/politeia/politeiawww/api/www/v1"
-
 )
 
 const (

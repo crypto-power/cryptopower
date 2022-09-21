@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -27,7 +27,7 @@ type clickableRowData struct {
 }
 
 type accountData struct {
-	*libwallet.Account
+	*dcr.Account
 	clickable *cryptomaterial.Clickable
 }
 
@@ -39,7 +39,7 @@ type WalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *libwallet.Wallet
+	wallet   *dcr.Wallet
 	accounts []*accountData
 
 	pageContainer layout.List
@@ -105,7 +105,7 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
 	pg.fetchProposal.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
 	pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
-	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
+	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
 	pg.loadPeerAddress()
@@ -114,7 +114,7 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 }
 
 func (pg *WalletSettingsPage) loadPeerAddress() {
-	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey, "")
+	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(dcr.SpvPersistentPeerAddressesConfigKey, "")
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
@@ -130,7 +130,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 	}
 
 	for _, acct := range accounts.Acc {
-		if acct.Number == libwallet.ImportedAccountNumber {
+		if acct.Number == dcr.ImportedAccountNumber {
 			continue
 		}
 
@@ -198,7 +198,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey, "") == "" {
+						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(dcr.SpvPersistentPeerAddressesConfigKey, "") == "" {
 							return D{}
 						}
 
@@ -374,8 +374,8 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 				PasswordHint(values.String(values.StrNewSpendingPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
-						[]byte(newPassword), libwallet.PassphraseTypePass)
+					err := pg.wallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
+						[]byte(newPassword), dcr.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -425,7 +425,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, nil)
+				err := pg.WL.SelectedWallet.Wallet.DeleteWallet(nil)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -443,7 +443,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteWallet(pg.wallet.ID, []byte(password))
+					err := pg.WL.SelectedWallet.Wallet.DeleteWallet(nil)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -475,7 +475,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 				return false
 			}
 
-			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, name)
+			err := pg.WL.SelectedWallet.Wallet.RenameWallet(pg.wallet.ID, name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -501,7 +501,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				return false
 			}
 			if ipAddress != "" {
-				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcr.SpvPersistentPeerAddressesConfigKey, ipAddress)
 				pg.loadPeerAddress()
 			}
 			return true
@@ -547,7 +547,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, "")
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcr.SpvPersistentPeerAddressesConfigKey, "")
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)
@@ -573,7 +573,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 				SetPositiveButtonText(values.String(values.StrRescan)).
 				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-					err := pg.WL.MultiWallet.RescanBlocks(pg.wallet.ID)
+					err := pg.WL.SelectedWallet.Wallet.RescanBlocks()
 					if err != nil {
 						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
@@ -643,7 +643,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.spendUnconfirmed.Changed() {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcr.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
 	if pg.spendUnconfirmed.Changed() {

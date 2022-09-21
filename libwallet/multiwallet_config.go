@@ -45,7 +45,7 @@ type configReadFn = func(multiwallet bool, key string, valueOut interface{}) err
 func (mw *MultiWallet) walletConfigSetFn(walletID int) configSaveFn {
 	return func(key string, value interface{}) error {
 		walletUniqueKey := WalletUniqueConfigKey(walletID, key)
-		return mw.db .Set(userConfigBucketName, walletUniqueKey, value)
+		return mw.db.Set(userConfigBucketName, walletUniqueKey, value)
 	}
 }
 
@@ -54,19 +54,19 @@ func (mw *MultiWallet) walletConfigReadFn(walletID int) configReadFn {
 		if !multiwallet {
 			key = WalletUniqueConfigKey(walletID, key)
 		}
-		return mw.db .Get(userConfigBucketName, key, valueOut)
+		return mw.db.Get(userConfigBucketName, key, valueOut)
 	}
 }
 
 func (mw *MultiWallet) SaveUserConfigValue(key string, value interface{}) {
-	err := mw.db .Set(userConfigBucketName, key, value)
+	err := mw.db.Set(userConfigBucketName, key, value)
 	if err != nil {
 		log.Errorf("error setting config value for key: %s, error: %v", key, err)
 	}
 }
 
 func (mw *MultiWallet) ReadUserConfigValue(key string, valueOut interface{}) error {
-	err := mw.db .Get(userConfigBucketName, key, valueOut)
+	err := mw.db.Get(userConfigBucketName, key, valueOut)
 	if err != nil && err != storm.ErrNotFound {
 		log.Errorf("error reading config value for key: %s, error: %v", key, err)
 	}
@@ -74,14 +74,14 @@ func (mw *MultiWallet) ReadUserConfigValue(key string, valueOut interface{}) err
 }
 
 func (mw *MultiWallet) DeleteUserConfigValueForKey(key string) {
-	err := mw.db .Delete(userConfigBucketName, key)
+	err := mw.db.Delete(userConfigBucketName, key)
 	if err != nil {
 		log.Errorf("error deleting config value for key: %s, error: %v", key, err)
 	}
 }
 
 func (mw *MultiWallet) ClearConfig() {
-	err := mw.db .Drop(userConfigBucketName)
+	err := mw.db.Drop(userConfigBucketName)
 	if err != nil {
 		log.Errorf("error deleting config bucket: %v", err)
 	}

@@ -9,11 +9,11 @@ import (
 	w "decred.org/dcrwallet/v2/wallet"
 )
 
-func (wallet *Wallet) RescanBlocks(walletID int) error {
-	return wallet.RescanBlocksFromHeight(walletID, 0)
+func (wallet *Wallet) RescanBlocks() error {
+	return wallet.RescanBlocksFromHeight(0)
 }
 
-func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) error {
+func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 
 	netBackend, err := wallet.Internal().NetworkBackend()
 	if err != nil {
@@ -40,7 +40,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 		wallet.syncData.mu.Unlock()
 
 		if wallet.blocksRescanProgressListener != nil {
-			wallet.blocksRescanProgressListener.OnBlocksRescanStarted(walletID)
+			wallet.blocksRescanProgressListener.OnBlocksRescanStarted(wallet.ID)
 		}
 
 		progress := make(chan w.RescanProgress, 1)
@@ -52,7 +52,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 			if p.Err != nil {
 				log.Error(p.Err)
 				if wallet.blocksRescanProgressListener != nil {
-					wallet.blocksRescanProgressListener.OnBlocksRescanEnded(walletID, p.Err)
+					wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, p.Err)
 				}
 				return
 			}
@@ -60,7 +60,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 			rescanProgressReport := &HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
 				TotalHeadersToScan:  wallet.GetBestBlockInt(),
-				WalletID:            walletID,
+				WalletID:            wallet.ID,
 			}
 
 			elapsedRescanTime := time.Now().Unix() - rescanStartTime
@@ -85,9 +85,9 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 
 				if wallet.blocksRescanProgressListener != nil {
 					if ctx.Err() != nil && ctx.Err() != context.Canceled {
-						wallet.blocksRescanProgressListener.OnBlocksRescanEnded(walletID, ctx.Err())
+						wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, ctx.Err())
 					} else {
-						wallet.blocksRescanProgressListener.OnBlocksRescanEnded(walletID, nil)
+						wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, nil)
 					}
 				}
 
@@ -104,7 +104,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 			err = wallet.WalletDataDB.SaveLastIndexPoint(startHeight)
 			if err != nil {
 				if wallet.blocksRescanProgressListener != nil {
-					wallet.blocksRescanProgressListener.OnBlocksRescanEnded(walletID, err)
+					wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, err)
 				}
 				return
 			}
@@ -112,7 +112,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(walletID int, startHeight int32) er
 			err = wallet.IndexTransactions()
 		}
 		if wallet.blocksRescanProgressListener != nil {
-			wallet.blocksRescanProgressListener.OnBlocksRescanEnded(walletID, err)
+			wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, err)
 		}
 	}()
 

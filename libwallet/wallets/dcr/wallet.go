@@ -230,15 +230,15 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 	return nil
 }
 
-func (wallet *Wallet) CreateWatchOnlyWallet(walletName, extendedPublicKey string) (*Wallet, error) {
-	wal := &Wallet{
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string) (*Wallet, error) {
+	wallet := &Wallet{
 		Name:                  walletName,
 		IsRestored:            true,
 		HasDiscoveredAccounts: true,
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wal.ID), wallet.walletConfigReadFn(wal.ID))
+		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 		if err != nil {
 			return err
 		}

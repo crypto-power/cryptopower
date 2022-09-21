@@ -18,6 +18,7 @@ import (
 	qrcode "github.com/yeqown/go-qrcode"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -101,7 +102,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 	pg.selector = components.NewAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *libwallet.Account) {
+		AccountSelected(func(selectedAccount *dcr.Account) {
 			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
 			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
@@ -112,7 +113,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 			pg.generateQRForAddress()
 		}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountValidator(func(account *dcr.Account) bool {
 
 			// Filter out imported account and mixed.
 			wal := pg.multiWallet.WalletWithID(account.WalletID)
