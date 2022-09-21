@@ -1,10 +1,7 @@
 package libwallet
 
 import (
-	"errors"
-
 	"github.com/asdine/storm"
-	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 const (
@@ -42,36 +39,8 @@ const (
 	PassphraseTypePass int32 = 1
 )
 
-// walletConfigFn helps export function to enable CRUD operations on the wallet
-// level.
-type walletConfigFn struct {
-	deleteFn configDeleteFn
-	saveFn   configSaveFn
-	readFn   configReadFn
-}
-
-type configDeleteFn = func(key string) error
 type configSaveFn = func(key string, value interface{}) error
 type configReadFn = func(multiwallet bool, key string, valueOut interface{}) error
-
-func newWalletConfigFns(mw *MultiWallet, walletID int) (*walletConfigFn, error) {
-	if mw == nil {
-		return nil, errors.New(values.StringF(values.StrMissingWallets))
-	}
-	conf := &walletConfigFn{
-		saveFn:   mw.walletConfigSetFn(walletID),
-		readFn:   mw.walletConfigReadFn(walletID),
-		deleteFn: mw.walletConfigDeleteFn(walletID),
-	}
-	return conf, nil
-}
-
-func (mw *MultiWallet) walletConfigDeleteFn(walletID int) configDeleteFn {
-	return func(key string) error {
-		walletUniqueKey := WalletUniqueConfigKey(walletID, key)
-		return mw.db.Delete(userConfigBucketName, walletUniqueKey)
-	}
-}
 
 func (mw *MultiWallet) walletConfigSetFn(walletID int) configSaveFn {
 	return func(key string, value interface{}) error {

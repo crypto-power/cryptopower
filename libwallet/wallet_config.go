@@ -37,19 +37,6 @@ func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) erro
 	return err
 }
 
-func (wallet *Wallet) DeleteUserConfigValueForKey(key string) error {
-	if wallet.deleteUserConfigValue == nil {
-		log.Errorf("call wallet.prepare before setting wallet config values")
-		return errors.New(ErrFailedPrecondition)
-	}
-
-	err := wallet.deleteUserConfigValue(key)
-	if err != nil {
-		log.Errorf("error deleting config value for key: %s, error: %v", key, err)
-	}
-	return err
-}
-
 func (wallet *Wallet) SetBoolConfigValueForKey(key string, value bool) {
 	wallet.SaveUserConfigValue(key, value)
 }

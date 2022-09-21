@@ -641,5 +641,4 @@ const (
 	StrMoveToUnmixed                   = "moveToUnmixed"
 	StrSeedValidationFailed            = "seedValidationFailed"
 	StrInvalidAmount                   = "invalidAmount"
-	StrMissingWallets                  = "missingWallets"
 )
