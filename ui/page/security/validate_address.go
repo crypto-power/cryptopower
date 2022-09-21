@@ -201,7 +201,7 @@ func (pg *ValidateAddressPage) validateAddress() {
 	var verifyMsgAddr string
 	var info *modal.InfoModal
 
-	if !pg.WL.MultiWallet.IsAddressValid(address) {
+	if !pg.WL.SelectedWallet.Wallet.IsAddressValid(address) {
 		verifyMsgAddr = values.String(values.StrInvalidAddress)
 		info = modal.NewErrorModal(pg.Load, verifyMsgAddr, modal.DefaultClickFunc())
 	} else {

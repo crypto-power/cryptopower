@@ -152,7 +152,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
-func (wallet *Wallet) VSPTicketInfo(walletID int, hash string) (*VSPTicketInfo, error) {
+func (wallet *Wallet) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	ticketHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
@@ -488,7 +488,7 @@ func (wallet *Wallet) IsAutoTicketsPurchaseActive() bool {
 }
 
 // StopAutoTicketsPurchase stops the automatic ticket buyer.
-func (wallet *Wallet) StopAutoTicketsPurchase(walletID int) error {
+func (wallet *Wallet) StopAutoTicketsPurchase() error {
 
 	wallet.cancelAutoTicketBuyerMu.Lock()
 	defer wallet.cancelAutoTicketBuyerMu.Unlock()

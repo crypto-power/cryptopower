@@ -9,6 +9,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -32,7 +33,7 @@ type SignMessagePage struct {
 	*app.GenericPageModal
 
 	container layout.List
-	wallet    *libwallet.Wallet
+	wallet    *dcr.Wallet
 
 	isSigningMessage bool
 	addressIsValid   bool
@@ -333,7 +334,7 @@ func (pg *SignMessagePage) validateAddress() bool {
 	switch {
 	case !components.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
-	case !pg.WL.MultiWallet.IsAddressValid(address):
+	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)
 	case !pg.wallet.HaveAddress(address):
 		errorMessage = values.String(values.StrAddrNotOwned)

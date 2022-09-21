@@ -3,7 +3,6 @@ package dcr
 import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 )
 
@@ -40,10 +39,10 @@ func (wallet *Wallet) SignMessageDirect(address string, message string) ([]byte,
 	return sig, nil
 }
 
-func (wallet *Wallet) VerifyMessage(address string, message string, signatureBase64 string, chainParams *chaincfg.Params) (bool, error) {
+func (wallet *Wallet) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
 	var valid bool
 
-	addr, err := stdaddr.DecodeAddress(address, chainParams)
+	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
 		return false, translateError(err)
 	}
@@ -62,7 +61,7 @@ func (wallet *Wallet) VerifyMessage(address string, message string, signatureBas
 		return false, errors.New(ErrInvalidAddress)
 	}
 
-	valid, err = w.VerifyMessage(message, addr, signature, chainParams)
+	valid, err = w.VerifyMessage(message, addr, signature, wallet.chainParams)
 	if err != nil {
 		return false, translateError(err)
 	}

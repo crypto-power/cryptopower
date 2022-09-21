@@ -108,7 +108,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	unsignedTx, err := conf.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.WalletID, sourceAccount.Number)
+	unsignedTx, err := conf.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		return err
 	}

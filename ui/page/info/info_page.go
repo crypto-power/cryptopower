@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -161,8 +162,8 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
 	if pg.syncSwitch.Changed() {
-		if pg.WL.MultiWallet.IsRescanning() {
-			pg.WL.MultiWallet.CancelRescan()
+		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
+			pg.WL.SelectedWallet.Wallet.CancelRescan()
 		} else {
 			pg.WL.MultiWallet.SaveUserConfigValue(load.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
 			go func() {
@@ -193,21 +194,21 @@ func (pg *WalletInfo) listenForNotifications() {
 	}
 
 	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := pg.WL.MultiWallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
+	err := pg.WL.SelectedWallet.Wallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.WL.MultiWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
+	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
 
 	pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
-	pg.WL.MultiWallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
+	pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
 
 	go func() {
 		for {
@@ -216,18 +217,18 @@ func (pg *WalletInfo) listenForNotifications() {
 				// Update sync progress fields which will be displayed
 				// when the next UI invalidation occurs.
 				switch t := n.ProgressReport.(type) {
-				case *libwallet.HeadersFetchProgressReport:
+				case *dcr.HeadersFetchProgressReport:
 					pg.stepFetchProgress = t.HeadersFetchProgress
 					pg.headersToFetchOrScan = t.TotalHeadersToFetch
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.FetchHeadersSteps
-				case *libwallet.AddressDiscoveryProgressReport:
+				case *dcr.AddressDiscoveryProgressReport:
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.AddressDiscoveryStep
 					pg.stepFetchProgress = t.AddressDiscoveryProgress
-				case *libwallet.HeadersRescanProgressReport:
+				case *dcr.HeadersRescanProgressReport:
 					pg.headersToFetchOrScan = t.TotalHeadersToScan
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
@@ -259,9 +260,9 @@ func (pg *WalletInfo) listenForNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveSyncProgressListener(InfoID)
-				pg.WL.MultiWallet.RemoveTxAndBlockNotificationListener(InfoID)
-				pg.WL.MultiWallet.SetBlocksRescanProgressListener(nil)
+				pg.WL.SelectedWallet.Wallet.RemoveSyncProgressListener(InfoID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(InfoID)
+				pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(nil)
 
 				close(pg.SyncStatusChan)
 				close(pg.TxAndBlockNotifChan)
