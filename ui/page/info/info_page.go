@@ -102,7 +102,7 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	autoSync := pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
-	pg.listenForNotifications()
+	// pg.listenForNotifications()
 }
 
 // Layout draws the page UI components into the provided layout context

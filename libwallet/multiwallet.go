@@ -99,7 +99,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	mw := &MultiWallet{
 		dbDriver:    dbDriver,
 		rootDir:     rootDir,
-		db:          dcrDB,
+		db:          mwDB,
 		chainParams: chainParams,
 		Politeia:    politeia,
 		Assets: &Assets{
@@ -135,7 +135,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
-		err = wallet.Prepare(mw.rootDir, mw.chainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
 		if err == nil && !WalletExistsAt(wallet.DataDir) {
 			err = fmt.Errorf("missing wallet database file")
 		}

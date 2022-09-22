@@ -242,7 +242,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	mp.listenForNotifications()
+	// mp.listenForNotifications()
 
 	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
 	// reset the checkbox

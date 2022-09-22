@@ -304,11 +304,19 @@ func (pg *WalletDexServerSelector) startSyncing() {
 		}
 	}
 
-	err := pg.WL.SelectedWallet.Wallet.SpvSync()
-	if err != nil {
-		// show error dialog
-		log.Info("Error starting sync:", err)
-	}
+	// for _, wal := range pg.WL.SortedWalletList() {
+	// 	err := pg.WL.SelectedWallet.Wallet.SpvSync()
+	// 	if err != nil {
+	// 		// show error dialog
+	// 		log.Info("Error starting sync:", err)
+	// 	}
+	// }
+
+	// err := pg.WL.SelectedWallet.Wallet.SpvSync()
+	// if err != nil {
+	// 	// show error dialog
+	// 	log.Info("Error starting sync:", err)
+	// }
 }
 
 func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {

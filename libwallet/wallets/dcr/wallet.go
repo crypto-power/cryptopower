@@ -98,9 +98,11 @@ func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
 		return err
 	}
 
-	// wallet.syncData = &SyncData{
-	// 	SyncProgressListeners: make(map[string]SyncProgressListener),
-	// }
+	wallet.syncData = &SyncData{
+		SyncProgressListeners: make(map[string]SyncProgressListener),
+	}
+	wallet.txAndBlockNotificationListeners = make(map[string]TxAndBlockNotificationListener)
+	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	// init loader
 	wallet.loader = initWalletLoader(wallet.chainParams, wallet.DataDir, wallet.dbDriver)
