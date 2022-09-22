@@ -160,7 +160,7 @@ func (mp *MainPage) initNavItems() {
 				Clickable:     mp.Theme.NewClickable(true),
 				Image:         mp.Theme.Icons.GovernanceActiveIcon,
 				ImageInactive: mp.Theme.Icons.GovernanceInactiveIcon,
-				Title:         values.String(values.StrGovernance),
+				Title:         values.String(values.StrVoting),
 				PageID:        governance.GovernancePageID,
 			},
 			{

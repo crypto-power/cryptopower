@@ -2,6 +2,7 @@ package governance
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"gioui.org/font/gofont"
@@ -43,9 +44,8 @@ type ConsensusPage struct {
 	copyRedirectURL     *cryptomaterial.Clickable
 	redirectIcon        *cryptomaterial.Image
 
-	walletDropDown *cryptomaterial.DropDown
-	orderDropDown  *cryptomaterial.DropDown
-	consensusList  *cryptomaterial.ClickableList
+	orderDropDown *cryptomaterial.DropDown
+	consensusList *cryptomaterial.ClickableList
 
 	searchEditor cryptomaterial.Editor
 	infoButton   cryptomaterial.IconButton
@@ -73,11 +73,11 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
+	pg.searchEditor.IsTitleLabel = false
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	pg.walletDropDown = components.CreateOrUpdateWalletDropDown(pg.Load, &pg.walletDropDown, pg.wallets, values.TxDropdownGroup, 0)
 	pg.orderDropDown = components.CreateOrderDropDown(l, values.ConsensusDropdownGroup, 0)
 
 	return pg
@@ -94,21 +94,56 @@ func (pg *ConsensusPage) OnNavigatedFrom() {
 	}
 }
 
-func (pg *ConsensusPage) HandleUserInteractions() {
-	for pg.walletDropDown.Changed() {
-		pg.FetchAgendas()
+func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *libwallet.Agenda) {
+	var voteChoices []string
+	consensusItems := components.LoadAgendas(pg.Load, pg.WL.SelectedWallet.Wallet, false)
+	if len(consensusItems) > 0 {
+		consensusItem := consensusItems[0]
+		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
+		for i := range consensusItem.Agenda.Choices {
+			voteChoices[i] = strings.Title(consensusItem.Agenda.Choices[i].Id)
+		}
 	}
 
+	radiogroupbtns := new(widget.Enum)
+	items := make([]layout.FlexChild, 0)
+	for i, voteChoice := range voteChoices {
+		radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, voteChoice, voteChoice, pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
+		radioItem := layout.Rigid(radioBtn.Layout)
+		items = append(items, radioItem)
+
+		if i == 0 { // set the first one as the default value.
+			radiogroupbtns.Value = voteChoice
+		}
+	}
+
+	voteModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrVoteChoice)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		}).
+		SetCancelable(true).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrSave)).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			im.Dismiss()
+			voteModal := newAgendaVoteModal(pg.Load, agenda, radiogroupbtns.Value, func() {
+				go pg.FetchAgendas() // re-fetch agendas when modal is dismissed
+			})
+			pg.ParentWindow().ShowModal(voteModal)
+			return true
+		})
+	pg.ParentWindow().ShowModal((voteModal))
+}
+
+func (pg *ConsensusPage) HandleUserInteractions() {
 	for pg.orderDropDown.Changed() {
 		pg.FetchAgendas()
 	}
 
-	for i := range pg.consensusItems {
-		if pg.consensusItems[i].VoteButton.Clicked() {
-			voteModal := newAgendaVoteModal(pg.Load, &pg.consensusItems[i].Agenda, func() {
-				go pg.FetchAgendas() // re-fetch agendas when modal is dismissed
-			})
-			pg.ParentWindow().ShowModal(voteModal)
+	for _, item := range pg.consensusItems {
+		if item.VoteButton.Clicked() {
+			pg.agendaVoteChoiceModal(&item.Agenda)
 		}
 	}
 
@@ -190,7 +225,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
-	selectedWallet := pg.wallets[pg.walletDropDown.SelectedIndex()]
+	selectedWallet := pg.WL.SelectedWallet.Wallet
 
 	pg.isSyncing = true
 
@@ -238,39 +273,23 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 							Top: values.MarginPadding60,
 						}.Layout(gtx, pg.layoutContent)
 					}),
-					// layout.Expanded(func(gtx C) D {
-					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150)
-					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-					//TODO: temp removal till after V1
-					// card := pg.Theme.Card()
-					// card.Radius = cryptomaterial.Radius(8)
-					// return card.Layout(gtx, func(gtx C) D {
-					// 	return layout.Inset{
-					// 		Left:   values.MarginPadding10,
-					// 		Right:  values.MarginPadding10,
-					// 		Top:    values.MarginPadding2,
-					// 		Bottom: values.MarginPadding2,
-					// 	}.Layout(gtx, pg.searchEditor.Layout)
-					// })
-					// }),
 					layout.Expanded(func(gtx C) D {
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding410)
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.E.Layout(gtx, func(gtx C) D {
-							card := pg.Theme.Card()
-							card.Radius = cryptomaterial.Radius(8)
-							return card.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
-									return pg.layoutSyncSection(gtx)
-								})
-							})
+
+						card := pg.Theme.Card()
+						card.Radius = cryptomaterial.Radius(8)
+						return card.Layout(gtx, func(gtx C) D {
+							return layout.Inset{
+								Left:   values.MarginPadding10,
+								Right:  values.MarginPadding10,
+								Top:    values.MarginPadding2,
+								Bottom: values.MarginPadding2,
+							}.Layout(gtx, pg.searchEditor.Layout)
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.orderDropDown.Layout(gtx, 45, true)
-					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.walletDropDown.Layout(gtx, pg.orderDropDown.Width+41, true)
+						return pg.orderDropDown.Layout(gtx, 10, true)
 					}),
 				)
 			})
@@ -298,11 +317,11 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding60,
-						}.Layout(gtx, pg.layoutContent)
-					}),
+					// layout.Expanded(func(gtx C) D {
+					// 	return layout.Inset{
+					// 		Top: values.MarginPadding60,
+					// 	}.Layout(gtx, pg.layoutContent)
+					// }),
 					// layout.Expanded(func(gtx C) D {
 					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150)
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -336,9 +355,9 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 					layout.Expanded(func(gtx C) D {
 						return pg.orderDropDown.Layout(gtx, 55, true)
 					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.walletDropDown.Layout(gtx, pg.orderDropDown.Width+51, true)
-					}),
+					// layout.Expanded(func(gtx C) D {
+					// 	return pg.walletDropDown.Layout(gtx, pg.orderDropDown.Width+51, true)
+					// }),
 				)
 			})
 		}),

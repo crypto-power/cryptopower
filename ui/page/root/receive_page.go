@@ -194,11 +194,11 @@ func (pg *ReceivePage) Layout(gtx C) D {
 
 func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	pageContent := []func(gtx C) D{
-		func(gtx C) D {
-			return pg.pageSections(gtx, func(gtx C) D {
-				return pg.selector.Layout(pg.ParentWindow(), gtx)
-			})
-		},
+		// func(gtx C) D {
+		// 	return pg.pageSections(gtx, func(gtx C) D {
+		// 		return pg.selector.Layout(pg.ParentWindow(), gtx)
+		// 	})
+		// },
 		func(gtx C) D {
 			return pg.Theme.Separator().Layout(gtx)
 		},

@@ -324,7 +324,7 @@ const FR = `
 "stakeAge" = "Âge de la mise"
 "selectOption" = "Sélectionnez l'une des options ci-dessous pour voter"
 "updateVotePref" = "Mettre à jour les préférences de vote"
-"voteUpdated" = "Préférence de vote mise à jour avec succès"
+"voteUpdated" = "Choix de vote mis à jour avec succès"
 "votingWallet" = "Portefeuille de vote"
 "voteConfirm" = "Confirmer pour voter"
 "voteSent" = "Vote envoyé avec succès, propositions rafraîchissantes!"
@@ -488,4 +488,7 @@ const FR = `
 "moveToUnmixed" = "Déplacer des fonds vers un compte non mixte"
 "seedValidationFailed" = "Échec de la vérification. Veuillez parcourir chaque graine de portefeuille et réessayer"
 "invalidAmount" = "montant invalide"
+"setchoice" = "Définir le choix"
+"votechoice" = "Choix de vote"
+"selectAcc" = "Sélectionnez un compte"
 `

@@ -641,4 +641,7 @@ const (
 	StrMoveToUnmixed                   = "moveToUnmixed"
 	StrSeedValidationFailed            = "seedValidationFailed"
 	StrInvalidAmount                   = "invalidAmount"
+	StrSetChoice                       = "setchoice"
+	StrVoteChoice                      = "votechoice"
+	StrSelectAcc                       = "selectAcc"
 )
