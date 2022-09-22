@@ -75,6 +75,7 @@ func (avm *agendaVoteModal) sendVotes(_, password string, m *modal.CreatePasswor
 	err := avm.CreatePasswordModal.WL.SelectedWallet.Wallet.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", []byte(password))
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())
+		avm.CreatePasswordModal.SetLoading(false)
 		return false
 	}
 	successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
