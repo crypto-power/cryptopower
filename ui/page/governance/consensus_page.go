@@ -219,12 +219,30 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
-		//TODO: consensus search functionality
+		pg.isSyncing = true
+		newestFirst := pg.orderDropDown.SelectedIndex() == 0
+		selectedWallet := pg.WL.SelectedWallet.Wallet
+		searchText := pg.searchEditor.Editor.Text()
+
+		go func() {
+			items := components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
+			pg.consensusItems = []*components.ConsensusItem{}
+
+			for _, item := range items {
+				if strings.Contains(item.Agenda.AgendaID, searchText) {
+					pg.consensusItems = append(pg.consensusItems, item)
+				}
+			}
+			pg.isSyncing = false
+			pg.syncCompleted = true
+			pg.ParentWindow().Reload()
+		}()
 	}
 }
 
 func (pg *ConsensusPage) FetchAgendas() {
-	newestFirst := pg.orderDropDown.SelectedIndex() == 0
+	selectedType := pg.orderDropDown.Selected()
+	newestFirst := selectedType == values.String(values.StrNewest)
 	selectedWallet := pg.WL.SelectedWallet.Wallet
 
 	pg.isSyncing = true
@@ -232,7 +250,18 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		pg.consensusItems = components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
+		pg.consensusItems = []*components.ConsensusItem{}
+		items := components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
+
+		if newestFirst { // no need to sort further
+			pg.consensusItems = items
+		} else {
+			for _, item := range items {
+				if item.Agenda.Status == libwallet.AgendaStatusFromStr(selectedType).String() {
+					pg.consensusItems = append(pg.consensusItems, item)
+				}
+			}
+		}
 		pg.isSyncing = false
 		pg.syncCompleted = true
 		pg.ParentWindow().Reload()
