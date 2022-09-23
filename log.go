@@ -68,13 +68,9 @@ var (
 func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
-<<<<<<< HEAD
 	root.UseLogger(winLog)
-=======
 	libwallet.UseLogger(dlwlLog)
 	dcr.UseLogger(dcrLog)
-	page.UseLogger(winLog)
->>>>>>> fix issues with sync
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
 	components.UseLogger(winLog)

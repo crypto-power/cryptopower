@@ -565,7 +565,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
+				_, err := pg.WL.SelectedWallet.Wallet.RestoreWallet(walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)

@@ -70,7 +70,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 				pm.SetLoading(false)
 				return false
 			}
-			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(dcr.AccountMixerConfigSet, true)
 
 			if movefundsChecked {
 				err := moveFundsFromDefaultToUnmixed(conf, password)

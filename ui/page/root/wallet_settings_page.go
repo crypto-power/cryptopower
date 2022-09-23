@@ -374,7 +374,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 				PasswordHint(values.String(values.StrNewSpendingPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-					err := pg.wallet.ChangePrivatePassphraseForWallet(pg.wallet.ID, []byte(password),
+					err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
 						[]byte(newPassword), dcr.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())

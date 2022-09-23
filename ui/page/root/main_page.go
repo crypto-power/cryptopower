@@ -258,23 +258,9 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 	mp.CurrentPage().OnNavigatedTo()
 
-<<<<<<< HEAD:ui/page/root/main_page.go
 	if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
 		if mp.WL.MultiWallet.Politeia.IsSyncing() {
 			return
-=======
-	if mp.sendPage != nil {
-		mp.sendPage.OnNavigatedTo()
-	}
-	if mp.receivePage != nil {
-		mp.receivePage.OnNavigatedTo()
-	}
-
-	if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
-		mp.StartSyncing(mp.WL.SelectedWallet.Wallet)
-		if mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
-			go mp.WL.MultiWallet.Politeia.Sync(context.Background())
->>>>>>> fix issues with sync:ui/page/main_page.go
 		}
 		go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 	}
@@ -337,48 +323,6 @@ func (mp *MainPage) updateBalance() {
 	}
 }
 
-<<<<<<< HEAD:ui/page/root/main_page.go
-=======
-func (mp *MainPage) StartSyncing(wallet *dcr.Wallet) {
-	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
-		mp.UnlockWalletForSyncing(wallet)
-		return
-	}
-
-	err := wallet.SpvSync()
-	if err != nil {
-		// show error dialog
-		log.Info("Error starting sync:", err)
-	}
-}
-
-func (mp *MainPage) UnlockWalletForSyncing(wal *dcr.Wallet) {
-	spendingPasswordModal := modal.NewPasswordModal(mp.Load).
-		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-		Hint(values.String(values.StrSpendingPassword)).
-		NegativeButton(values.String(values.StrCancel), func() {}).
-		PositiveButton(values.String(values.StrUnlock), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := mp.WL.SelectedWallet.Wallet.UnlockWallet([]byte(password))
-				if err != nil {
-					errText := err.Error()
-					if err.Error() == dcr.ErrInvalidPassphrase {
-						errText = values.String(values.StrInvalidPassphrase)
-					}
-					pm.SetError(errText)
-					pm.SetLoading(false)
-					return
-				}
-				pm.Dismiss()
-				mp.StartSyncing(wal)
-			}()
-
-			return false
-		})
-	mp.ParentWindow().ShowModal(spendingPasswordModal)
-}
-
->>>>>>> fix issues with sync:ui/page/main_page.go
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
 // to enable restyling UI elements where necessary.
 // Satisfies the load.AppSettingsChangeHandler interface.

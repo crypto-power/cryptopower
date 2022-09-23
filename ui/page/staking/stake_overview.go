@@ -211,7 +211,7 @@ func (pg *Page) HandleUserInteractions() {
 				//if not set, check if the saved account is mixed before opening modal
 				// if it is not, open stake config modal
 				tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
+				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
 					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 					(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 					pg.startTicketBuyerPasswordModal()
@@ -222,7 +222,7 @@ func (pg *Page) HandleUserInteractions() {
 				pg.ticketBuyerSettingsModal()
 			}
 		} else {
-			pg.WL.MultiWallet.StopAutoTicketsPurchase(pg.WL.SelectedWallet.Wallet.ID)
+			pg.WL.SelectedWallet.Wallet.StopAutoTicketsPurchase()
 		}
 	}
 
@@ -347,7 +347,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 							txt := pg.Theme.Label(values.TextSize14, msg)
 							txt.Alignment = text.Middle
 							txt.Color = pg.Theme.Color.GrayText3
-							if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
+							if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
 								txt.Color = pg.Theme.Color.Gray3
 							}
 							return txt.Layout(gtx)
@@ -358,7 +358,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		}).
 		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
+			if !pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)
 				pg.stake.SetChecked(false)

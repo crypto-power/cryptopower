@@ -4,6 +4,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -96,23 +97,23 @@ func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
-func (pg *WalletDexServerSelector) syncStatusIcon(gtx C) D {
+func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet *dcr.Wallet) D {
 	var (
 		syncStatusIcon *cryptomaterial.Image
 		syncStatus     string
 	)
 
-	switch {
-	case pg.WL.MultiWallet.IsSynced():
-		syncStatusIcon = pg.Theme.Icons.SuccessIcon
-		syncStatus = values.String(values.StrSynced)
-	case pg.WL.MultiWallet.IsSyncing():
-		syncStatusIcon = pg.Theme.Icons.SyncingIcon
-		syncStatus = values.String(values.StrSyncingState)
-	default:
-		syncStatusIcon = pg.Theme.Icons.NotSynced
-		syncStatus = values.String(values.StrWalletNotSynced)
-	}
+		switch {
+		case wallet.IsSynced():
+			syncStatusIcon = pg.Theme.Icons.SuccessIcon
+			syncStatus = values.String(values.StrSynced)
+		case wallet.IsSyncing():
+			syncStatusIcon = pg.Theme.Icons.SyncingIcon
+			syncStatus = values.String(values.StrSyncingState)
+		default:
+			syncStatusIcon = pg.Theme.Icons.NotSynced
+			syncStatus = values.String(values.StrWalletNotSynced)
+		}
 
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(syncStatusIcon.Layout16dp),
@@ -123,6 +124,7 @@ func (pg *WalletDexServerSelector) syncStatusIcon(gtx C) D {
 		}),
 	)
 }
+
 
 func (pg *WalletDexServerSelector) walletListLayout(gtx C) D {
 	walletSections := []func(gtx C) D{
@@ -265,7 +267,9 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, item *load.WalletItem, i
 						}
 						return D{}
 					}),
-					layout.Rigid(pg.syncStatusIcon),
+					layout.Rigid(func(gtx C) D {
+						return pg.syncStatusIcon(gtx, item.Wallet)
+					}),
 				)
 			})
 		}),
@@ -279,25 +283,29 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 	}
 
 	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := pg.WL.MultiWallet.AddSyncProgressListener(pg.SyncProgressListener, WalletDexServerSelectorID)
-	if err != nil {
-		log.Errorf("Error adding sync progress listener: %v", err)
-		return
+
+	for _, w := range pg.WL.SortedWalletList() {
+		err := w.AddSyncProgressListener(pg.SyncProgressListener, WalletDexServerSelectorID)
+		if err != nil {
+			log.Errorf("Error adding sync progress listener: %v", err)
+			return
+		}
+
+		go func(w *dcr.Wallet) {
+			for {
+				select {
+				case n := <-pg.SyncStatusChan:
+					if n.Stage == wallet.SyncCompleted {
+						pg.ParentWindow().Reload()
+					}
+				case <-pg.ctx.Done():
+					w.RemoveSyncProgressListener(WalletDexServerSelectorID)
+					// close(pg.SyncStatusChan)
+					pg.SyncProgressListener = nil
+					return
+				}
+			}
+		}(w)
 	}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.SyncStatusChan:
-				if n.Stage == wallet.SyncCompleted {
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveSyncProgressListener(WalletDexServerSelectorID)
-				close(pg.SyncStatusChan)
-				pg.SyncProgressListener = nil
-				return
-			}
-		}
-	}()
 }

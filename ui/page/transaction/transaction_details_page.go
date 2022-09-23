@@ -192,7 +192,7 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 
 	if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterStaking) {
 		go func() {
-			info, err := pg.WL.MultiWallet.VSPTicketInfo(pg.wallet.ID, pg.transaction.Hash)
+			info, err := pg.wallet.VSPTicketInfo(pg.transaction.Hash)
 			if err != nil {
 				log.Errorf("VSPTicketInfo error: %v\n", err)
 			}
@@ -399,7 +399,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 
 							switch pg.txnWidgets.txStatus.TicketStatus {
 							case dcr.TicketStatusImmature:
-								maturity := pg.WL.MultiWallet.TicketMaturity()
+								maturity := pg.wallet.TicketMaturity()
 								blockTime := pg.WL.MultiWallet.TargetTimePerBlockMinutes()
 								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 
@@ -416,7 +416,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 										return lbl.Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										expiry := pg.WL.MultiWallet.TicketExpiry()
+										expiry := pg.wallet.TicketExpiry()
 										lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc,
 											expiry, pg.getTimeToMatureOrExpire(), expiry))
 										lbl.Color = col
@@ -486,14 +486,14 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 }
 
 func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
-	progressMax := pg.WL.MultiWallet.TicketMaturity()
+	progressMax := pg.wallet.TicketMaturity()
 	if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusLive {
-		progressMax = pg.WL.MultiWallet.TicketExpiry()
+		progressMax = pg.wallet.TicketExpiry()
 	}
 
-	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlock())
+	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlockInt())
 	if pg.ticketSpender != nil {
-		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlock())
+		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlockInt())
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100

@@ -8,7 +8,6 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -28,7 +27,7 @@ type (
 )
 
 type badWalletListItem struct {
-	*libwallet.Wallet
+	*dcr.Wallet
 	deleteBtn cryptomaterial.Button
 }
 
@@ -94,10 +93,10 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	// init shared page functions
 	toggleSync := func() {
-		if pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
-			pg.WL.MultiWallet.CancelSync()
+		if pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
+			pg.WL.SelectedWallet.Wallet.CancelSync()
 		} else {
-			pg.startSyncing()
+			pg.startSyncing(pg.WL.SelectedWallet.Wallet)
 		}
 	}
 	l.ToggleSync = toggleSync
@@ -300,12 +299,19 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 
 func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.Wallet) {
 	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
-		pg.UnlockWalletForSyncing(wallet)
+		pg.unlockWalletForSyncing(wallet)
 		return
 	}
+
+	err := wallet.SpvSync()
+	if err != nil {
+		// show error dialog
+		log.Info("Error starting sync:", err)
+	}
+
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.Wallet) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -313,14 +319,14 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet)
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := wal.UnlockWallet(wal.ID, []byte(password))
+			err := wal.UnlockWallet([]byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
 			pm.Dismiss()
-			pg.startSyncing()
+			pg.startSyncing(wal)
 			return true
 		})
 	pg.ParentWindow().ShowModal(spendingPasswordModal)

@@ -469,17 +469,14 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		NegativeButton(values.String(values.StrCancel), func() {
 			pg.toggleMixer.SetChecked(false)
 		}).
-		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
-			go func() {
-				err := pg.WL.MultiWallet.StartAccountMixer(pg.WL.SelectedWallet.Wallet.ID, password)
-				if err != nil {
-					pg.Toast.NotifyError(err.Error())
-					pm.SetLoading(false)
-					return
-				}
-				pm.Dismiss()
-			}()
-
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.WL.SelectedWallet.Wallet.StartAccountMixer(password)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pm.Dismiss()
 			return false
 		})
 	pg.ParentWindow().ShowModal(passwordModal)

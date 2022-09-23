@@ -208,7 +208,7 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			if err != nil {
 				return errfunc(err)
 			}
-			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(libwallet.AccountMixerConfigSet, true)
+			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(dcr.AccountMixerConfigSet, true)
 
 			// rename mixed account
 			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")

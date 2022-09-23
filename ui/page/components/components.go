@@ -130,7 +130,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction, ticketSpender *dcr.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
@@ -159,19 +159,19 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction, ti
 				} else if wal.TxMatchesFilter(tx, dcr.TxFilterImmature) {
 					txStatus.Title = values.String(values.StrImmature)
 					txStatus.Icon = l.Theme.Icons.TicketImmatureIcon
-					txStatus.Color = l.Theme.Color.LightBlue6
+					txStatus.Color = l.Theme.Color.Yellow
 					txStatus.TicketStatus = dcr.TicketStatusImmature
-					txStatus.ProgressBarColor = l.Theme.Color.LightBlue5
-					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue3
-					txStatus.Background = l.Theme.Color.LightBlue
+					txStatus.ProgressBarColor = l.Theme.Color.OrangeYellow
+					txStatus.ProgressTrackColor = l.Theme.Color.Gray6
+					txStatus.Background = l.Theme.Color.Yellow
 				} else if wal.TxMatchesFilter(tx, dcr.TxFilterLive) {
 					txStatus.Title = values.String(values.StrLive)
 					txStatus.Icon = l.Theme.Icons.TicketLiveIcon
-					txStatus.Color = l.Theme.Color.Primary
+					txStatus.Color = l.Theme.Color.Success2
 					txStatus.TicketStatus = dcr.TicketStatusLive
-					txStatus.ProgressBarColor = l.Theme.Color.Primary
-					txStatus.ProgressTrackColor = l.Theme.Color.LightBlue4
-					txStatus.Background = l.Theme.Color.Primary50
+					txStatus.ProgressBarColor = l.Theme.Color.Success2
+					txStatus.ProgressTrackColor = l.Theme.Color.Success2
+					txStatus.Background = l.Theme.Color.Success2
 				} else if wal.TxMatchesFilter(tx, dcr.TxFilterExpired) {
 					txStatus.Title = values.String(values.StrExpired)
 					txStatus.Icon = l.Theme.Icons.TicketExpiredIcon
@@ -225,6 +225,7 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction, ti
 
 	return &txStatus
 }
+
 
 func WeekDayHourMinuteCalculator(timestamp int64) string {
 	var dateTimeResult string
@@ -395,6 +396,15 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
+	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
+
+	return cryptomaterial.LinearLayout{
+		Orientation: layout.Horizontal,
+		Width:       cryptomaterial.MatchParent,
+		Height:      gtx.Dp(values.MarginPadding56),
+		Alignment:   layout.Middle,
+		Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16},
+	}.Layout(gtx,
 		layout.Rigid(txStatus.Icon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
