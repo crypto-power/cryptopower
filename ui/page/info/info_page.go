@@ -99,10 +99,10 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 func (pg *WalletInfo) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	autoSync := pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false)
+	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
-	// pg.listenForNotifications()
+	pg.listenForNotifications()
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -165,7 +165,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
 			pg.WL.SelectedWallet.Wallet.CancelRescan()
 		} else {
-			pg.WL.MultiWallet.SaveUserConfigValue(load.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
 			go func() {
 				pg.ToggleSync()
 			}()

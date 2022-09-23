@@ -116,8 +116,10 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadWallets()
 	pg.startDexClient()
 
-	if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
-		pg.startSyncing()
+	for _, wallet := range pg.WL.SortedWalletList() {
+		if wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
+			pg.startSyncing(wallet)
+		}
 	}
 }
 
@@ -296,27 +298,11 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing() {
-	for _, wal := range pg.WL.SortedWalletList() {
-		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			pg.unlockWalletForSyncing(wal)
-			return
-		}
+func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.Wallet) {
+	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
+		pg.UnlockWalletForSyncing(wallet)
+		return
 	}
-
-	// for _, wal := range pg.WL.SortedWalletList() {
-	// 	err := pg.WL.SelectedWallet.Wallet.SpvSync()
-	// 	if err != nil {
-	// 		// show error dialog
-	// 		log.Info("Error starting sync:", err)
-	// 	}
-	// }
-
-	// err := pg.WL.SelectedWallet.Wallet.SpvSync()
-	// if err != nil {
-	// 	// show error dialog
-	// 	log.Info("Error starting sync:", err)
-	// }
 }
 
 func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {

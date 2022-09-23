@@ -4,7 +4,6 @@ import (
 	"context"
 	"math"
 	"time"
-	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
@@ -132,7 +131,6 @@ func (wallet *Wallet) CancelRescan() {
 }
 
 func (wallet *Wallet) IsRescanning() bool {
-	fmt.Println("[][][][] sync data", wallet.syncData)
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 	return wallet.syncData.rescanning

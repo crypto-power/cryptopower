@@ -16,7 +16,6 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
-	// "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 
@@ -126,7 +125,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	mw.ExternalService = ext.NewService(chainParams)
 
 	// read saved wallets info from db and initialize wallets
-	query := mw.db.Select(q.True()).OrderBy("ID")
+	query := mw.Assets.DCR.DB.Select(q.True()).OrderBy("ID")
 	var wallets []*dcr.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {

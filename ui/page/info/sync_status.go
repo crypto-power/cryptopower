@@ -230,7 +230,7 @@ func (pg *WalletInfo) walletSyncRow(gtx C, inset layout.Inset) D {
 		status = values.String(values.StrWaitingState)
 	}
 
-	blockHeightProgress := values.StringF(values.StrBlockHeaderFetchedCount, w.GetBestBlock(), pg.headersToFetchOrScan)
+	blockHeightProgress := values.StringF(values.StrBlockHeaderFetchedCount, w.GetBestBlockInt(), pg.headersToFetchOrScan)
 	daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
 	details := pg.syncDetail(status, blockHeightProgress, daysBehind)
 	col := pg.Theme.Color.GrayText2
