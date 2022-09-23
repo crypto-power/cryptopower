@@ -63,7 +63,7 @@ func (a AgendaStatusType) String() string {
 // is returned then an invalid status string has been passed.
 func AgendaStatusFromStr(status string) AgendaStatusType {
 	switch strings.ToLower(status) {
-	case "defined", "upcoming", "under review":
+	case "defined", "upcoming":
 		return AgendaStatusUpcoming
 	case "started", "in progress":
 		return AgendaStatusInProgress
@@ -71,7 +71,7 @@ func AgendaStatusFromStr(status string) AgendaStatusType {
 		return AgendaStatusFailed
 	case "lockedin", "locked in":
 		return AgendaStatusLockedIn
-	case "active", "finished", "approved":
+	case "active", "finished":
 		return AgendaStatusFinished
 	default:
 		return UnknownStatus

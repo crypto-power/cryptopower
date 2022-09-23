@@ -219,24 +219,25 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
-		pg.isSyncing = true
-		newestFirst := pg.orderDropDown.SelectedIndex() == 0
-		selectedWallet := pg.WL.SelectedWallet.Wallet
-		searchText := pg.searchEditor.Editor.Text()
+		// Commented because the third party plugging was used.
+		// pg.isSyncing = true
+		// newestFirst := pg.orderDropDown.SelectedIndex() == 0
+		// selectedWallet := pg.WL.SelectedWallet.Wallet
+		// searchText := pg.searchEditor.Editor.Text()
 
-		go func() {
-			items := components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
-			pg.consensusItems = []*components.ConsensusItem{}
+		// go func() {
+		// 	items := components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
+		// 	pg.consensusItems = []*components.ConsensusItem{}
 
-			for _, item := range items {
-				if strings.Contains(item.Agenda.AgendaID, searchText) {
-					pg.consensusItems = append(pg.consensusItems, item)
-				}
-			}
-			pg.isSyncing = false
-			pg.syncCompleted = true
-			pg.ParentWindow().Reload()
-		}()
+		// 	for _, item := range items {
+		// 		if strings.Contains(item.Agenda.AgendaID, searchText) {
+		// 			pg.consensusItems = append(pg.consensusItems, item)
+		// 		}
+		// 	}
+		// 	pg.isSyncing = false
+		// 	pg.syncCompleted = true
+		// 	pg.ParentWindow().Reload()
+		// }()
 	}
 }
 
@@ -250,18 +251,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		pg.consensusItems = []*components.ConsensusItem{}
-		items := components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
-
-		if newestFirst { // no need to sort further
-			pg.consensusItems = items
-		} else {
-			for _, item := range items {
-				if item.Agenda.Status == libwallet.AgendaStatusFromStr(selectedType).String() {
-					pg.consensusItems = append(pg.consensusItems, item)
-				}
-			}
-		}
+		pg.consensusItems = components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
 		pg.isSyncing = false
 		pg.syncCompleted = true
 		pg.ParentWindow().Reload()
@@ -286,7 +276,9 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
-						layout.Rigid(pg.infoButton.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+						}),
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
@@ -302,21 +294,23 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 							Top: values.MarginPadding60,
 						}.Layout(gtx, pg.layoutContent)
 					}),
-					layout.Expanded(func(gtx C) D {
-						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding410)
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					// This Search bar has been disabled to avoid use of third party
+					// pluggings
+					// layout.Expanded(func(gtx C) D {
+					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding410)
+					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-						card := pg.Theme.Card()
-						card.Radius = cryptomaterial.Radius(8)
-						return card.Layout(gtx, func(gtx C) D {
-							return layout.Inset{
-								Left:   values.MarginPadding10,
-								Right:  values.MarginPadding10,
-								Top:    values.MarginPadding2,
-								Bottom: values.MarginPadding2,
-							}.Layout(gtx, pg.searchEditor.Layout)
-						})
-					}),
+					// 	card := pg.Theme.Card()
+					// 	card.Radius = cryptomaterial.Radius(8)
+					// 	return card.Layout(gtx, func(gtx C) D {
+					// 		return layout.Inset{
+					// 			Left:   values.MarginPadding10,
+					// 			Right:  values.MarginPadding10,
+					// 			Top:    values.MarginPadding2,
+					// 			Bottom: values.MarginPadding2,
+					// 		}.Layout(gtx, pg.searchEditor.Layout)
+					// 	})
+					// }),
 					layout.Expanded(func(gtx C) D {
 						return pg.orderDropDown.Layout(gtx, 10, true)
 					}),
