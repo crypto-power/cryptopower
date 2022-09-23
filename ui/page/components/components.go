@@ -742,10 +742,8 @@ func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, w
 }
 
 func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
-	return l.Theme.DropDown([]cryptomaterial.DropDownItem{
-		{Text: values.String(values.StrNewest)},
-		{Text: values.String(values.StrOldest)},
-	}, grp, pos)
+	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
+		{Text: values.String(values.StrOldest)}}, grp, pos)
 }
 
 // CoinImageBySymbol returns image widget for supported asset coins.

@@ -73,7 +73,6 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
-	pg.searchEditor.IsTitleLabel = false
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
@@ -219,7 +218,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
-		// Commented because the third party plugging was used.
+		//TODO: Commented because the third party plugging was used.
 		// pg.isSyncing = true
 		// newestFirst := pg.orderDropDown.SelectedIndex() == 0
 		// selectedWallet := pg.WL.SelectedWallet.Wallet
@@ -294,23 +293,22 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 							Top: values.MarginPadding60,
 						}.Layout(gtx, pg.layoutContent)
 					}),
-					// This Search bar has been disabled to avoid use of third party
+					//TODO: This Search bar has been disabled to avoid use of third party
 					// pluggings
 					// layout.Expanded(func(gtx C) D {
 					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding410)
 					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-					// 	card := pg.Theme.Card()
-					// 	card.Radius = cryptomaterial.Radius(8)
-					// 	return card.Layout(gtx, func(gtx C) D {
-					// 		return layout.Inset{
-					// 			Left:   values.MarginPadding10,
-					// 			Right:  values.MarginPadding10,
-					// 			Top:    values.MarginPadding2,
-					// 			Bottom: values.MarginPadding2,
-					// 		}.Layout(gtx, pg.searchEditor.Layout)
-					// 	})
-					// }),
+					// card := pg.Theme.Card()
+					// card.Radius = cryptomaterial.Radius(8)
+					// return card.Layout(gtx, func(gtx C) D {
+					// 	return layout.Inset{
+					// 		Left:   values.MarginPadding10,
+					// 		Right:  values.MarginPadding10,
+					// 		Top:    values.MarginPadding2,
+					// 		Bottom: values.MarginPadding2,
+					// 	}.Layout(gtx, pg.searchEditor.Layout)
+					// })
 					layout.Expanded(func(gtx C) D {
 						return pg.orderDropDown.Layout(gtx, 10, true)
 					}),
@@ -378,9 +376,6 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 					layout.Expanded(func(gtx C) D {
 						return pg.orderDropDown.Layout(gtx, 55, true)
 					}),
-					// layout.Expanded(func(gtx C) D {
-					// 	return pg.walletDropDown.Layout(gtx, pg.orderDropDown.Width+51, true)
-					// }),
 				)
 			})
 		}),
