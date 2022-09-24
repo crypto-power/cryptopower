@@ -316,25 +316,21 @@ func (wallet *Wallet) IsSynced() bool {
 }
 
 func (wallet *Wallet) IsSyncing() bool {
-	return wallet.Syncing
+	wallet.syncData.mu.RLock()
+	defer wallet.syncData.mu.RUnlock()
+	return wallet.syncData.syncing
 }
 
 func (wallet *Wallet) IsConnectedToDecredNetwork() bool {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.syncing || wallet.syncData.synced
+	return wallet.syncData.syncing
 }
 
 func (wallet *Wallet) isSynced() bool {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 	return wallet.syncData.synced
-}
-
-func (wallet *Wallet) isSyncing() bool {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.syncing
 }
 
 func (wallet *Wallet) CurrentSyncStage() int32 {

@@ -185,11 +185,6 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		dbDriver:    dbDriver,
 		rootDir:     rootDir,
 		chainParams: chainParams,
-		syncData: &SyncData{
-			SyncProgressListeners: make(map[string]SyncProgressListener),
-		},
-		txAndBlockNotificationListeners:  make(map[string]TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		cancelFuncs:                      make([]context.CancelFunc, 0),
 		CreatedAt:                        time.Now(),
 		EncryptedSeed:                    encryptedSeed,
