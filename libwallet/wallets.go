@@ -9,23 +9,9 @@ func (mw *MultiWallet) AllDCRWallets() (wallets []*dcr.Wallet) {
 	return wallets
 }
 
-// func (mw *MultiWallet) WalletsIterator() *WalletsIterator {
-// 	return &WalletsIterator{
-// 		currentIndex: 0,
-// 		wallets:      mw.AllWallets(),
-// 	}
-// }
-
-// func (walletsIterator *WalletsIterator) Next() *Wallet {
-// 	if walletsIterator.currentIndex < len(walletsIterator.wallets) {
-// 		wallet := walletsIterator.wallets[walletsIterator.currentIndex]
-// 		walletsIterator.currentIndex++
-// 		return wallet
-// 	}
-
-// 	return nil
-// }
-
-// func (walletsIterator *WalletsIterator) Reset() {
-// 	walletsIterator.currentIndex = 0
-// }
+func (mw *MultiWallet) WalletsIterator() *dcr.WalletsIterator {
+	return &dcr.WalletsIterator{
+		CurrentIndex: 0,
+		Wallets:      mw.AllDCRWallets(),
+	}
+}

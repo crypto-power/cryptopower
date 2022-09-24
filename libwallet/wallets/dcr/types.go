@@ -37,8 +37,8 @@ type CSPPConfig struct {
 }
 
 type WalletsIterator struct {
-	currentIndex int
-	wallets      []*Wallet
+	CurrentIndex int
+	Wallets      []*Wallet
 }
 
 type BlockInfo struct {
