@@ -9,7 +9,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -24,10 +23,10 @@ type voteModal struct {
 
 	detailsMu      sync.Mutex
 	detailsCancel  context.CancelFunc
-	voteDetails    *libwallet.ProposalVoteDetails
+	voteDetails    *dcr.ProposalVoteDetails
 	voteDetailsErr error
 
-	proposal *libwallet.Proposal
+	proposal *dcr.Proposal
 	isVoting bool
 
 	walletSelector *WalletSelector
@@ -38,7 +37,7 @@ type voteModal struct {
 	cancelBtn      cryptomaterial.Button
 }
 
-func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
+func newVoteModal(l *load.Load, proposal *dcr.Proposal) *voteModal {
 	vm := &voteModal{
 		Load:           l,
 		Modal:          l.Theme.ModalFloatTitle("input_vote_modal"),
@@ -79,7 +78,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal(), vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
-					vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
+					vm.voteDetails = &dcr.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
 					vm.voteDetailsErr = err
 				}
 				vm.detailsMu.Unlock()
@@ -128,14 +127,14 @@ func (vm *voteModal) sendVotes() {
 	tickets := vm.voteDetails.EligibleTickets
 	vm.detailsMu.Unlock()
 
-	votes := make([]*libwallet.ProposalVote, 0)
+	votes := make([]*dcr.ProposalVote, 0)
 	addVotes := func(bit string, count int) {
 		for i := 0; i < count; i++ {
 
 			// get and pop
 			tickets = tickets[1:]
 
-			vote := &libwallet.ProposalVote{}
+			vote := &dcr.ProposalVote{}
 			vote.Ticket.Hash = tickets[0].Hash
 			vote.Ticket.Address = tickets[0].Address
 			vote.Bit = bit
@@ -144,8 +143,8 @@ func (vm *voteModal) sendVotes() {
 		}
 	}
 
-	addVotes(libwallet.VoteBitYes, vm.yesVote.voteCount())
-	addVotes(libwallet.VoteBitNo, vm.noVote.voteCount())
+	addVotes(dcr.VoteBitYes, vm.yesVote.voteCount())
+	addVotes(dcr.VoteBitNo, vm.noVote.voteCount())
 
 	ctx := context.Background()
 	passwordModal := modal.NewCreatePasswordModal(vm.Load).
@@ -157,7 +156,7 @@ func (vm *voteModal) sendVotes() {
 			isSuccess := true
 			go func(isClosing *bool) {
 				w := vm.walletSelector.selectedWallet.Internal()
-				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
+				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, dcr.ConvertVotes(votes), vm.proposal.Token, password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
 const (
@@ -63,9 +64,9 @@ func (wal *Wallet) StartupTime() time.Time {
 }
 
 func (wal *Wallet) InitMultiWallet() error {
-	politeiaHost := libwallet.PoliteiaMainnetHost
+	politeiaHost := dcr.PoliteiaMainnetHost
 	if wal.Net == libwallet.Testnet3 {
-		politeiaHost = libwallet.PoliteiaTestnetHost
+		politeiaHost = dcr.PoliteiaTestnetHost
 	}
 	multiWal, err := libwallet.NewMultiWallet(wal.Root, "bdb", wal.Net, politeiaHost)
 	if err != nil {

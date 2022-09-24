@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -40,7 +41,7 @@ type ProposalsPage struct {
 	ctxCancel  context.CancelFunc
 	proposalMu sync.RWMutex
 
-	multiWallet    *libwallet.MultiWallet
+	multiWallet    *dcr.MultiWallet
 	listContainer  *widget.List
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
@@ -107,13 +108,13 @@ func (pg *ProposalsPage) fetchProposals() {
 	var selectedType = pg.statusDropDown.Selected()
 	switch selectedType {
 	case values.String(values.StrApproved):
-		proposalFilter = libwallet.ProposalCategoryApproved
+		proposalFilter = dcr.ProposalCategoryApproved
 	case values.String(values.StrRejected):
-		proposalFilter = libwallet.ProposalCategoryRejected
+		proposalFilter = dcr.ProposalCategoryRejected
 	case values.String(values.StrAbandoned):
-		proposalFilter = libwallet.ProposalCategoryAbandoned
+		proposalFilter = dcr.ProposalCategoryAbandoned
 	default:
-		proposalFilter = libwallet.ProposalCategoryAll
+		proposalFilter = dcr.ProposalCategoryAll
 	}
 
 	proposalItems := components.LoadProposals(proposalFilter, true, pg.Load)
@@ -122,8 +123,8 @@ func (pg *ProposalsPage) fetchProposals() {
 	if selectedType == values.String(values.StrUnderReview) {
 		// group 'In discussion' and 'Active' proposals into under review
 		for _, item := range proposalItems {
-			if item.Proposal.Category == libwallet.ProposalCategoryPre ||
-				item.Proposal.Category == libwallet.ProposalCategoryActive {
+			if item.Proposal.Category == dcr.ProposalCategoryPre ||
+				item.Proposal.Category == dcr.ProposalCategoryActive {
 				listItems = append(listItems, item)
 			}
 		}

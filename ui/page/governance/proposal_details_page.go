@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -46,7 +47,7 @@ type ProposalDetails struct {
 
 	descriptionList *layout.List
 
-	proposal      *libwallet.Proposal
+	proposal      *dcr.Proposal
 	proposalItems map[string]proposalItemWidgets
 
 	scrollbarList *widget.List
@@ -66,7 +67,7 @@ type ProposalDetails struct {
 	loadingDescription bool
 }
 
-func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *ProposalDetails {
+func NewProposalDetailsPage(l *load.Load, proposal *dcr.Proposal) *ProposalDetails {
 	pg := &ProposalDetails{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ProposalDetailsPageID),
@@ -202,7 +203,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 				if notification.ProposalStatus == wallet.Synced {
 					proposal, err := pg.WL.MultiWallet.Politeia.GetProposalRaw(pg.proposal.Token)
 					if err == nil {
-						pg.proposal = &libwallet.Proposal{Proposal: *proposal}
+						pg.proposal = &dcr.Proposal{Proposal: *proposal}
 						pg.ParentWindow().Reload()
 					}
 				}
@@ -329,17 +330,17 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 	var icon *cryptomaterial.Icon
 	proposal := pg.proposal
 	switch proposal.Category {
-	case libwallet.ProposalCategoryApproved:
+	case dcr.ProposalCategoryApproved:
 		label = pg.Theme.Body2(values.String(values.StrApproved))
 		icon = cryptomaterial.NewIcon(pg.successIcon)
 		icon.Color = pg.Theme.Color.Success
-	case libwallet.ProposalCategoryRejected:
+	case dcr.ProposalCategoryRejected:
 		label = pg.Theme.Body2(values.String(values.StrRejected))
 		icon = cryptomaterial.NewIcon(pg.rejectedIcon)
 		icon.Color = pg.Theme.Color.Danger
-	case libwallet.ProposalCategoryAbandoned:
+	case dcr.ProposalCategoryAbandoned:
 		label = pg.Theme.Body2(values.String(values.StrAbandoned))
-	case libwallet.ProposalCategoryActive:
+	case dcr.ProposalCategoryActive:
 		label = pg.Theme.Body2(values.String(values.StrVotingInProgress))
 	}
 	timeagoLabel := pg.Theme.Body2(components.TimeAgo(proposal.Timestamp))
@@ -360,7 +361,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								if proposal.Category == libwallet.ProposalCategoryActive {
+								if proposal.Category == dcr.ProposalCategoryActive {
 									ic := pg.Theme.Icons.TimerIcon
 									if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
 										ic = pg.Theme.Icons.TimerDarkMode
@@ -381,7 +382,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 		layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
 		layout.Rigid(pg.layoutProposalVoteBar),
 		layout.Rigid(func(gtx C) D {
-			if proposal.Category != libwallet.ProposalCategoryActive {
+			if proposal.Category != dcr.ProposalCategoryActive {
 				return D{}
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -397,7 +398,7 @@ func (pg *ProposalDetails) layoutTitle(gtx C) D {
 
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-			if proposal.Category == libwallet.ProposalCategoryPre {
+			if proposal.Category == dcr.ProposalCategoryPre {
 				return pg.layoutInDiscussionState(gtx)
 			}
 			return pg.layoutNormalTitle(gtx)

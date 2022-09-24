@@ -147,9 +147,6 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 		logLevel := wallet.ReadStringConfigValueForKey(LogLevelConfigKey, "")
 		SetLogLevels(logLevel)
-
-		// initialize Politeia.
-		wallet.NewPoliteia(politeiaHost)
 	}
 
 	mw.listenForShutdown()

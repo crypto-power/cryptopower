@@ -46,12 +46,5 @@ func initializeDCRWallet(rootDir, dbDriver, netType string) (*storm.DB, *chaincf
 		return nil, chainParams, "", err
 	}
 
-	// init database for saving/reading proposal objects
-	err = db.Init(&dcr.Proposal{})
-	if err != nil {
-		log.Errorf("Error initializing wallets database: %s", err.Error())
-		return db, chainParams, "", err
-	}
-
 	return db, chainParams, rootDir, nil
 }

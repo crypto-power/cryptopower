@@ -1,11 +1,11 @@
 package listeners
 
 import (
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
-// ProposalNotificationListener satisfies libwallet
+// ProposalNotificationListener satisfies dcr
 // ProposalNotificationListener interface contract.
 type ProposalNotificationListener struct {
 	ProposalNotifChan chan wallet.Proposal
@@ -24,9 +24,9 @@ func (pn *ProposalNotificationListener) OnProposalsSynced() {
 }
 
 func (pn *ProposalNotificationListener) OnNewProposal(proposal interface{}) {
-	p, ok := proposal.(*libwallet.Proposal)
+	p, ok := proposal.(*dcr.Proposal)
 	if !ok {
-		p = &libwallet.Proposal{}
+		p = &dcr.Proposal{}
 	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.NewProposalFound,
@@ -36,9 +36,9 @@ func (pn *ProposalNotificationListener) OnNewProposal(proposal interface{}) {
 }
 
 func (pn *ProposalNotificationListener) OnProposalVoteStarted(proposal interface{}) {
-	p, ok := proposal.(*libwallet.Proposal)
+	p, ok := proposal.(*dcr.Proposal)
 	if !ok {
-		p = &libwallet.Proposal{}
+		p = &dcr.Proposal{}
 	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteStarted,
@@ -47,9 +47,9 @@ func (pn *ProposalNotificationListener) OnProposalVoteStarted(proposal interface
 	pn.sendNotification(update)
 }
 func (pn *ProposalNotificationListener) OnProposalVoteFinished(proposal interface{}) {
-	p, ok := proposal.(*libwallet.Proposal)
+	p, ok := proposal.(*dcr.Proposal)
 	if !ok {
-		p = &libwallet.Proposal{}
+		p = &dcr.Proposal{}
 	}
 	update := wallet.Proposal{
 		ProposalStatus: wallet.VoteFinished,
