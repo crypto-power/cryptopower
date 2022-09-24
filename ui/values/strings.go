@@ -662,4 +662,6 @@ const (
 	StrFailed                          = "failed"
 	StrLockedIn                        = "lockedin"
 	StrFinished                        = "finished"
+	StrMixedAccHidden                  = "mixedAccHidden"
+	StrMixedAccDisabled                = "mixedAccDisabled"
 )

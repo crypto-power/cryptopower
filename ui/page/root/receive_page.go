@@ -5,14 +5,12 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"image/color"
 	"time"
 
 	"gioui.org/io/clipboard"
-	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/unit"
+	"gioui.org/text"
 	"gioui.org/widget"
 
 	qrcode "github.com/yeqown/go-qrcode"
@@ -42,18 +40,17 @@ type ReceivePage struct {
 	multiWallet       *libwallet.MultiWallet
 	pageContainer     layout.List
 	scrollContainer   *widget.List
-	isNewAddr, isInfo bool
+	isCopying, isInfo bool
 	currentAddress    string
 	qrImage           *image.Image
 	newAddr, copy     cryptomaterial.Button
-	info, more        cryptomaterial.IconButton
+	info              cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
 	ops               *op.Ops
 	selector          *components.AccountSelector
 	copyAddressButton cryptomaterial.Button
 
-	backdrop   *widget.Clickable
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 }
@@ -71,33 +68,22 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		},
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:           l.Theme.Button(values.String(values.StrCopy)),
-		more:           l.Theme.IconButton(l.Theme.Icons.NavMoreIcon),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
-		backdrop:       new(widget.Clickable),
 	}
 
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
-	pg.copy.Background = color.NRGBA{}
+	pg.copy.Background = pg.Theme.Color.Primary
 	pg.copy.HighlightColor = pg.Theme.Color.SurfaceHighlight
-	pg.copy.Color = pg.Theme.Color.Primary
-	pg.copy.Inset = layout.Inset{
-		Top:    values.MarginPadding18p5,
-		Bottom: values.MarginPadding18p5,
-		Left:   values.MarginPadding16,
-		Right:  values.MarginPadding16,
-	}
-	pg.more.Inset = layout.UniformInset(values.MarginPadding0)
-	pg.newAddr.Inset = layout.Inset{
-		Top:    values.MarginPadding12,
-		Bottom: values.MarginPadding12,
-		Left:   values.MarginPadding16,
-		Right:  values.MarginPadding16,
-	}
-	pg.newAddr.Color = pg.Theme.Color.Text
+	pg.copy.Color = pg.Theme.Color.Surface
+	pg.copy.Inset = layout.UniformInset(values.MarginPadding10)
+	pg.newAddr.Inset = layout.UniformInset(values.MarginPadding5)
+	pg.newAddr.Color = pg.Theme.Color.Primary
 	pg.newAddr.Background = pg.Theme.Color.Surface
 	pg.newAddr.HighlightColor = pg.Theme.Color.SurfaceHighlight
+	pg.newAddr.ButtonStyle.TextSize = values.TextSize14
+	pg.newAddr.ButtonStyle.Font.Weight = text.Bold
 
 	pg.receiveAddress.MaxLines = 1
 
@@ -109,7 +95,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copyAddressButton.Inset = layout.UniformInset(values.MarginPadding0)
 
 	pg.selector = components.NewAccountSelector(pg.Load).
-		Title(values.String(values.StrReceivingAddress)).
+		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *libwallet.Account) {
 			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
 			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
@@ -144,8 +130,7 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.selector.SelectFirstWalletValidAccount() // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
-	selectedWallet := pg.multiWallet.WalletWithID(pg.selector.SelectedAccount().WalletID)
-	currentAddress, err := selectedWallet.CurrentAddress(pg.selector.SelectedAccount().Number)
+	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
@@ -184,7 +169,6 @@ func (pg *ReceivePage) generateQRForAddress() {
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
 	pg.handleCopyEvent(gtx)
-	pg.pageBackdropLayout(gtx)
 
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
@@ -225,7 +209,7 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 										return D{}
 									}
 
-									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 360)
+									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 180)
 								}),
 							)
 						})
@@ -339,21 +323,6 @@ func (pg *ReceivePage) pageSections(gtx layout.Context, body layout.Widget) layo
 	})
 }
 
-// pageBackdropLayout layout of background overlay when the popup button generate new address is show,
-// click outside of the generate new address button to hide the button
-func (pg *ReceivePage) pageBackdropLayout(gtx C) {
-	if pg.isNewAddr {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-		m := op.Record(gtx.Ops)
-		pg.backdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-			semantic.Button.Add(gtx.Ops)
-			return layout.Dimensions{Size: gtx.Constraints.Min}
-		})
-		op.Defer(gtx.Ops, m.Stop())
-	}
-}
-
 func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding20
 	return layout.Flex{}.Layout(gtx,
@@ -381,38 +350,23 @@ func (pg *ReceivePage) titleLayout(gtx C) D {
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if pg.isNewAddr {
-						m := op.Record(gtx.Ops)
-						layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.Shadow().Layout(gtx, pg.newAddr.Layout)
-						})
-						op.Defer(gtx.Ops, m.Stop())
-					}
-					return D{}
-				}),
-				layout.Rigid(pg.more.Layout),
-			)
+			return pg.newAddr.Layout(gtx)
 		}),
 	)
 }
 
 func (pg *ReceivePage) addressLayout(gtx C) D {
-	card := cryptomaterial.Card{
-		Color: pg.Theme.Color.Gray4,
-	}
-
 	return layout.Inset{Top: values.MarginPadding14, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
+				card := cryptomaterial.Card{Color: pg.Theme.Color.Gray4}
 				card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
 				return card.Layout(gtx, func(gtx C) D {
 					return layout.Inset{
-						Top:    values.MarginPadding16,
-						Bottom: values.MarginPadding16,
-						Left:   values.MarginPadding16,
-						Right:  values.MarginPadding16,
+						Top:    values.MarginPadding8,
+						Bottom: values.MarginPadding8,
+						Left:   values.MarginPadding30,
+						Right:  values.MarginPadding30,
 					}.Layout(gtx, func(gtx C) D {
 						pg.receiveAddress.Text = pg.currentAddress
 						return pg.receiveAddress.Layout(gtx)
@@ -423,6 +377,7 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D { return D{} })
 			}),
 			layout.Rigid(func(gtx C) D {
+				card := cryptomaterial.Card{Color: pg.copy.Background}
 				card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
 				return card.Layout(gtx, pg.copy.Layout)
 			}),
@@ -436,17 +391,6 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) HandleUserInteractions() {
-	if pg.backdrop.Clicked() {
-		pg.isNewAddr = false
-	}
-
-	if pg.more.Button.Clicked() {
-		pg.isNewAddr = !pg.isNewAddr
-		if pg.isInfo {
-			pg.isInfo = false
-		}
-	}
-
 	if pg.newAddr.Clicked() {
 		newAddr, err := pg.generateNewAddress()
 		if err != nil {
@@ -456,14 +400,13 @@ func (pg *ReceivePage) HandleUserInteractions() {
 
 		pg.currentAddress = newAddr
 		pg.generateQRForAddress()
-		pg.isNewAddr = false
 	}
 
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrReceive) + " DCR").
+			Title(values.String(values.StrReceive)+" DCR").
 			Body(values.String(values.StrReceiveInfo)).
-			SetPositiveButtonText(values.String(values.StrGotIt))
+			SetContentAlignment(layout.NW, layout.Center)
 		pg.ParentWindow().ShowModal(info)
 	}
 
@@ -490,14 +433,17 @@ generateAddress:
 }
 
 func (pg *ReceivePage) handleCopyEvent(gtx C) {
-	if pg.copy.Clicked() {
+	// Prevent copying again if the timer hasn't expired
+	if pg.copy.Clicked() && !pg.isCopying {
 		clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
 
 		pg.copy.Text = values.String(values.StrCopied)
-		pg.copy.Color = pg.Theme.Color.Success
-		time.AfterFunc(time.Second*3, func() {
+		pg.copy.Background = pg.Theme.Color.Success
+		pg.isCopying = true
+		time.AfterFunc(time.Second*4, func() {
 			pg.copy.Text = values.String(values.StrCopy)
-			pg.copy.Color = pg.Theme.Color.Primary
+			pg.copy.Background = pg.Theme.Color.Primary
+			pg.isCopying = false
 		})
 	}
 

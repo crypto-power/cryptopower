@@ -15,6 +15,7 @@ import (
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -83,6 +84,7 @@ func (as *AccountSelector) Handle(window app.WindowNavigator) {
 			onModalExit(func() {
 				as.selectorModal = nil
 			})
+		as.selectorModal.window = window
 		window.ShowModal(as.selectorModal)
 	}
 }
@@ -241,6 +243,8 @@ type AccountSelectorModal struct {
 	dialogTitle string
 
 	isCancelable bool
+
+	window app.WindowNavigator
 }
 
 type selectorAccount struct {
@@ -300,6 +304,14 @@ func (asm *AccountSelectorModal) SetCancelable(min bool) *AccountSelectorModal {
 }
 
 func (asm *AccountSelectorModal) Handle() {
+	if asm.walletInfoButton.Button.Clicked() {
+		info := modal.NewCustomModal(asm.Load).
+			Title(values.String(values.StrMixedAccHidden)).
+			Body(values.String(values.StrMixedAccDisabled)).
+			SetContentAlignment(layout.NW, layout.Center)
+		asm.ParentWindow().ShowModal(info)
+	}
+
 	if asm.eventQueue != nil {
 		for _, account := range asm.accounts {
 			for account.clickable.Clicked() {
@@ -342,25 +354,20 @@ func (asm *AccountSelectorModal) Layout(gtx C) D {
 			return title.Layout(gtx)
 		},
 		func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(asm.Theme.Label(values.TextSize14, asm.WL.SelectedWallet.Wallet.Name).Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, asm.walletInfoButton.Layout)
+				}),
+			)
+		},
+		func(gtx C) D {
 			return layout.Stack{Alignment: layout.NW}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
 					accounts := asm.accounts
 					return asm.accountsList.Layout(gtx, len(accounts), func(gtx C, aindex int) D {
 						return asm.walletAccountLayout(gtx, accounts[aindex])
 					})
-				}),
-				layout.Stacked(func(gtx C) D {
-					if false { //TODO
-						inset := layout.Inset{
-							Top:  values.MarginPadding20,
-							Left: values.MarginPaddingMinus75,
-						}
-						return inset.Layout(gtx, func(gtx C) D {
-							// return page.walletInfoPopup(gtx)
-							return D{}
-						})
-					}
-					return D{}
 				}),
 			)
 		},

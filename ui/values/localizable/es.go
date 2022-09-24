@@ -203,7 +203,7 @@ const ES = `
 "viewTicket" = "Ver ticket asociado";
 "external" = "Externo";
 "republished" = "Transacciones no minadas republicadas en la red decretada";
-"copied" = "Copiado";
+"copied" = "Copiado!";
 "txHashCopied" = "Hash de transacción copiado"";
 "addressCopied" = "Dirección copiada";
 "address" = "Dirección";
@@ -523,4 +523,6 @@ syncCompTime" = "Est. Sync completion time"
 "setchoice" = "Establecer elección"
 "votechoice" = "Elección de voto"
 "selectAcc" = "Seleccionar cuenta"
+"mixedAccHidden" = "La cuenta mixta está oculta"
+"mixedAccDisabled" = "La recepción en una cuenta mixta está deshabilitada por la configuración de StakeShuffle para proteger su privacidad"
 `
