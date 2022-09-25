@@ -12,13 +12,13 @@ func ValidateLengthName(name string) bool {
 }
 
 func ValidateHost(host string) bool {
-	adress := strings.Trim(host, " ")
+	address := strings.Trim(host, " ")
 
-	if net.ParseIP(adress) != nil {
+	if net.ParseIP(address) != nil {
 		return true
 	}
 
-	_, err := url.ParseRequestURI(adress)
+	_, err := url.ParseRequestURI(address)
 	return err == nil
 
 }

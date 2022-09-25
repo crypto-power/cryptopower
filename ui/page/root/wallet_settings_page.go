@@ -59,6 +59,8 @@ type WalletSettingsPage struct {
 	spendUnconfirmed  *cryptomaterial.Switch
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
+
+	peerAddr string
 }
 
 func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
@@ -109,16 +111,17 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
-	pg.connectToPeer.SetChecked(false)
-	if pg.getPeerAddress() != "" {
-		pg.connectToPeer.SetChecked(true)
-	}
+	pg.loadPeerAddress()
 
 	pg.loadWalletAccount()
 }
 
-func (pg *WalletSettingsPage) getPeerAddress() string {
-	return pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
+func (pg *WalletSettingsPage) loadPeerAddress() {
+	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
+	pg.connectToPeer.SetChecked(false)
+	if pg.peerAddr != "" {
+		pg.connectToPeer.SetChecked(true)
+	}
 }
 
 func (pg *WalletSettingsPage) loadWalletAccount() {
@@ -147,6 +150,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) Layout(gtx C) D {
+	pg.loadPeerAddress()
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
 			func(gtx C) D {
@@ -205,7 +209,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 						peerAddrRow := clickableRowData{
 							title:     values.String(values.StrPeer),
 							clickable: pg.updateConnectToPeer,
-							labelText: pg.getPeerAddress(),
+							labelText: pg.peerAddr,
 						}
 						return pg.clickableRow(gtx, peerAddrRow)
 					}),

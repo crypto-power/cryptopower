@@ -32,10 +32,9 @@ type CreatePasswordModal struct {
 	showWalletWarnInfo     bool
 	confirmPasswordEnabled bool
 
-	dialogTitle       string
-	serverError       string
-	description       string
-	invalidWalletName string
+	dialogTitle string
+	serverError string
+	description string
 
 	parent app.Page
 
@@ -62,7 +61,6 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 		btnNegative:            l.Theme.OutlineButton(values.String(values.StrCancel)),
 		isCancelable:           true,
 		confirmPasswordEnabled: true,
-		invalidWalletName:      "",
 	}
 
 	cm.btnPositive.Font.Weight = text.Medium
