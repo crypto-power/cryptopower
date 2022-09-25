@@ -5,17 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"gioui.org/widget"
-
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -80,7 +73,7 @@ func SeedWordsToHex(seedWords string) (string, error) {
 
 	seedByte = seedByte[:idx]
 	if checksumByte(seedByte[:len(seedByte)-1]) != seedByte[len(seedByte)-1] {
-		return seedHex, fmt.Errorf("Seed checksum mismatch")
+		return seedHex, fmt.Errorf("seed checksum mismatch")
 	}
 	seedByte = seedByte[:len(seedByte)-1]
 
@@ -89,7 +82,7 @@ func SeedWordsToHex(seedWords string) (string, error) {
 	// maxSeedBytes is the maximum number of bytes allowed for a seed.
 	maxSeedBytes := 64
 	if len(seedByte) < minSeedBytes || len(seedByte) > maxSeedBytes {
-		return seedHex, fmt.Errorf("Invalid seed bytes length")
+		return seedHex, fmt.Errorf("invalid seed bytes length")
 	}
 
 	seedHex = hex.EncodeToString(seedByte)
@@ -101,79 +94,4 @@ func SeedWordsToHex(seedWords string) (string, error) {
 func checksumByte(data []byte) byte {
 	intermediateHash := sha256.Sum256(data)
 	return sha256.Sum256(intermediateHash[:])[0]
-}
-
-func GetAbsolutePath() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("error getting executable path: %s", err.Error())
-	}
-
-	exSym, err := filepath.EvalSymlinks(ex)
-	if err != nil {
-		return "", fmt.Errorf("error getting filepath after evaluating sym links")
-	}
-
-	return path.Dir(exSym), nil
-}
-
-func translateErr(err error) string {
-	switch err.Error() {
-	case libwallet.ErrInvalidPassphrase:
-		return values.String(values.StrInvalidPassphrase)
-	}
-
-	return err.Error()
-}
-
-func EditorsNotEmpty(editors ...*widget.Editor) bool {
-	for _, e := range editors {
-		if e.Text() == "" {
-			return false
-		}
-	}
-	return true
-}
-
-// getLockWallet returns a list of locked wallets
-func getLockedWallets(wallets []*libwallet.Wallet) []*libwallet.Wallet {
-	var walletsLocked []*libwallet.Wallet
-	for _, wl := range wallets {
-		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
-			walletsLocked = append(walletsLocked, wl)
-		}
-	}
-
-	return walletsLocked
-}
-
-func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
-	password := editors[0]
-	strength := libwallet.ShannonEntropy(password.Text()) / 4.0
-	pb.Progress = float32(strength * 100)
-	pb.Color = th.Color.Success
-}
-
-func HandleSubmitEvent(editors ...*widget.Editor) bool {
-	var submit bool
-	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
-				submit = true
-			}
-		}
-	}
-	return submit
-}
-
-func handleSubmitEvent(editors ...*widget.Editor) bool {
-	var submit bool
-	for _, editor := range editors {
-		for _, e := range editor.Events() {
-			if _, ok := e.(widget.SubmitEvent); ok {
-				submit = true
-			}
-		}
-	}
-	return submit
 }

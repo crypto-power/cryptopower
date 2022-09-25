@@ -13,7 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/security"
 	s "gitlab.com/raedah/cryptopower/ui/page/settings"
-	"gitlab.com/raedah/cryptopower/ui/uiutils"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -476,7 +476,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(newName string, tm *modal.TextInputModal) bool {
-			if !uiutils.ValidateLengthName(newName) {
+			if !utils.ValidateLengthName(newName) {
 				tm.SetError(values.String(values.StrWalletNameLengthError))
 				tm.SetLoading(false)
 				return false
@@ -501,7 +501,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
-			if !uiutils.ValidateHost(ipAddress) {
+			if !utils.ValidateHost(ipAddress) {
 				tim.SetError(values.StringF(values.StrValidateHostErr, ipAddress))
 				tim.SetLoading(false)
 				return false

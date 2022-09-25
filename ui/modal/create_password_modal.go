@@ -13,7 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/uiutils"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -180,16 +180,16 @@ func (cm *CreatePasswordModal) UseCustomWidget(layout layout.Widget) *CreatePass
 func (cm *CreatePasswordModal) validToCreate() bool {
 	nameValid := true
 	if cm.walletNameEnabled {
-		nameValid = editorsNotEmpty(cm.walletName.Editor)
+		nameValid = utils.EditorsNotEmpty(cm.walletName.Editor)
 	}
 
 	validPassword, passwordsMatch := true, true
 	if cm.confirmPasswordEnabled {
-		validPassword = editorsNotEmpty(cm.confirmPasswordEditor.Editor)
+		validPassword = utils.EditorsNotEmpty(cm.confirmPasswordEditor.Editor)
 		cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
 	}
 
-	return nameValid && editorsNotEmpty(cm.passwordEditor.Editor) && validPassword && passwordsMatch
+	return nameValid && utils.EditorsNotEmpty(cm.passwordEditor.Editor) && validPassword && passwordsMatch
 }
 
 // SetParent sets the page that created PasswordModal as it's parent.
@@ -213,19 +213,19 @@ func (cm *CreatePasswordModal) Handle() {
 	if cm.btnPositive.Clicked() || isSubmit {
 
 		if cm.walletNameEnabled {
-			if !editorsNotEmpty(cm.walletName.Editor) {
+			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
 				return
 			}
 		}
 
-		if !editorsNotEmpty(cm.passwordEditor.Editor) {
+		if !utils.EditorsNotEmpty(cm.passwordEditor.Editor) {
 			cm.passwordEditor.SetError(values.String(values.StrEnterSpendingPassword))
 			return
 		}
 
 		if cm.confirmPasswordEnabled {
-			if !editorsNotEmpty(cm.confirmPasswordEditor.Editor) {
+			if !utils.EditorsNotEmpty(cm.confirmPasswordEditor.Editor) {
 				cm.confirmPasswordEditor.SetError(values.String(values.StrConfirmSpendingPassword))
 				return
 			}
@@ -262,7 +262,7 @@ func (cm *CreatePasswordModal) Handle() {
 	}
 
 	if cm.confirmPasswordEnabled {
-		computePasswordStrength(&cm.passwordStrength, cm.Theme, cm.passwordEditor.Editor)
+		utils.ComputePasswordStrength(&cm.passwordStrength, cm.Theme, cm.passwordEditor.Editor)
 	}
 }
 
@@ -333,7 +333,7 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 		// set wallet name editor error if wallet name already exist
 		if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
-		} else if !uiutils.ValidateLengthName(cm.walletName.Editor.Text()) {
+		} else if !utils.ValidateLengthName(cm.walletName.Editor.Text()) {
 			cm.walletName.SetError(values.String(values.StrWalletNameLengthError))
 		} else {
 			t := cm.Theme.Body2(cm.serverError)

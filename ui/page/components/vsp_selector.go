@@ -14,7 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/uiutils"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -165,7 +165,7 @@ func (v *vspSelectorModal) OnResume() {
 func (v *vspSelectorModal) Handle() {
 	v.addVSP.SetEnabled(v.editorsNotEmpty(v.inputVSP.Editor))
 	if v.addVSP.Clicked() {
-		if !uiutils.ValidateHost(v.inputVSP.Editor.Text()) {
+		if !utils.ValidateHost(v.inputVSP.Editor.Text()) {
 			v.inputVSP.SetError(values.StringF(values.StrValidateHostErr, v.inputVSP.Editor.Text()))
 			return
 		}
