@@ -308,9 +308,9 @@ func (tx *TxAuthor) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
-	// if len(tx.inputs) != 0 {
-	// 	return tx.constructCustomTransaction()
-	// }
+	if len(tx.inputs) != 0 {
+		return tx.constructCustomTransaction()
+	}
 
 	var err error
 	var outputs = make([]*wire.TxOut, 0)

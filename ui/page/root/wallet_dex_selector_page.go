@@ -8,8 +8,8 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -38,7 +38,8 @@ type WalletDexServerSelector struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	*listeners.SyncProgressListener
+
+	walletSyncListener map[int]*listeners.SyncProgressListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -72,8 +73,9 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 				Alignment: layout.Middle,
 			},
 		},
-		Load:      l,
-		shadowBox: l.Theme.Shadow(),
+		Load:               l,
+		shadowBox:          l.Theme.Shadow(),
+		walletSyncListener: make(map[int]*listeners.SyncProgressListener),
 
 		walletSelected:    onWalletSelected,
 		dexServerSelected: onDexServerSelected,

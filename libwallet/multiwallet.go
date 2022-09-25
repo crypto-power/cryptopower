@@ -288,9 +288,11 @@ func (mw *MultiWallet) StartupSecurityType() int32 {
 }
 
 func (mw *MultiWallet) OpenWallets(startupPassphrase []byte) error {
-	// if mw.IsSyncing() {
-	// 	return errors.New(ErrSyncAlreadyInProgress)
-	// }
+	for _, wallet := range mw.Assets.DCR.Wallets {
+		if wallet.IsSyncing() {
+			return errors.New(ErrSyncAlreadyInProgress)
+		}
+	}
 
 	err := mw.VerifyStartupPassphrase(startupPassphrase)
 	if err != nil {

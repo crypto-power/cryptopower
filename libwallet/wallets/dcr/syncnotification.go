@@ -667,12 +667,10 @@ func (w *Wallet) synced(walletID int, synced bool) {
 		}
 	}
 
-	// if w.OpenedWalletsCount() == w.SyncedWalletsCount() {
 	w.syncData.mu.Lock()
 	w.syncData.syncing = false
 	w.syncData.synced = true
 	w.syncData.mu.Unlock()
 
 	indexTransactions()
-	// }
 }

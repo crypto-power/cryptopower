@@ -103,17 +103,17 @@ func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet *dcr.Wallet) D {
 		syncStatus     string
 	)
 
-		switch {
-		case wallet.IsSynced():
-			syncStatusIcon = pg.Theme.Icons.SuccessIcon
-			syncStatus = values.String(values.StrSynced)
-		case wallet.IsSyncing():
-			syncStatusIcon = pg.Theme.Icons.SyncingIcon
-			syncStatus = values.String(values.StrSyncingState)
-		default:
-			syncStatusIcon = pg.Theme.Icons.NotSynced
-			syncStatus = values.String(values.StrWalletNotSynced)
-		}
+	switch {
+	case wallet.IsSynced():
+		syncStatusIcon = pg.Theme.Icons.SuccessIcon
+		syncStatus = values.String(values.StrSynced)
+	case wallet.IsSyncing():
+		syncStatusIcon = pg.Theme.Icons.SyncingIcon
+		syncStatus = values.String(values.StrSyncingState)
+	default:
+		syncStatusIcon = pg.Theme.Icons.NotSynced
+		syncStatus = values.String(values.StrWalletNotSynced)
+	}
 
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(syncStatusIcon.Layout16dp),
@@ -124,7 +124,6 @@ func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet *dcr.Wallet) D {
 		}),
 	)
 }
-
 
 func (pg *WalletDexServerSelector) walletListLayout(gtx C) D {
 	walletSections := []func(gtx C) D{
@@ -278,34 +277,35 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, item *load.WalletItem, i
 
 // start sync listener
 func (pg *WalletDexServerSelector) listenForNotifications() {
-	if pg.SyncProgressListener != nil {
-		return
-	}
 
-	pg.SyncProgressListener = listeners.NewSyncProgress()
+	for k, w := range pg.WL.SortedWalletList() {
+		if pg.walletSyncListener[k] != nil {
+			return
+		}
 
-	for _, w := range pg.WL.SortedWalletList() {
-		err := w.AddSyncProgressListener(pg.SyncProgressListener, WalletDexServerSelectorID)
+		pg.walletSyncListener[k] = listeners.NewSyncProgress()
+
+		err := w.AddSyncProgressListener(pg.walletSyncListener[k], WalletDexServerSelectorID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
 		}
 
-		go func(w *dcr.Wallet) {
+		go func(wal *dcr.Wallet, k int) {
 			for {
 				select {
-				case n := <-pg.SyncStatusChan:
+				case n := <-pg.walletSyncListener[k].SyncStatusChan:
 					if n.Stage == wallet.SyncCompleted {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
-					w.RemoveSyncProgressListener(WalletDexServerSelectorID)
-					// close(pg.SyncStatusChan)
-					pg.SyncProgressListener = nil
+					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
+					close(pg.walletSyncListener[k].SyncStatusChan)
+					pg.walletSyncListener[k] = nil
 					return
 				}
 			}
-		}(w)
+		}(w, k)
 	}
 
 }

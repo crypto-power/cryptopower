@@ -226,7 +226,6 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *T
 	return &txStatus
 }
 
-
 func WeekDayHourMinuteCalculator(timestamp int64) string {
 	var dateTimeResult string
 	timeStampNow := time.Now().Unix()

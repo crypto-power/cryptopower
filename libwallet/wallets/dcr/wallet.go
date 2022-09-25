@@ -180,16 +180,16 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	}
 
 	wallet := &Wallet{
-		Name:        walletName,
-		db:          db,
-		dbDriver:    dbDriver,
-		rootDir:     rootDir,
-		chainParams: chainParams,
-		cancelFuncs:                      make([]context.CancelFunc, 0),
-		CreatedAt:                        time.Now(),
-		EncryptedSeed:                    encryptedSeed,
-		PrivatePassphraseType:            privatePassphraseType,
-		HasDiscoveredAccounts:            true,
+		Name:                  walletName,
+		db:                    db,
+		dbDriver:              dbDriver,
+		rootDir:               rootDir,
+		chainParams:           chainParams,
+		cancelFuncs:           make([]context.CancelFunc, 0),
+		CreatedAt:             time.Now(),
+		EncryptedSeed:         encryptedSeed,
+		PrivatePassphraseType: privatePassphraseType,
+		HasDiscoveredAccounts: true,
 	}
 
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)

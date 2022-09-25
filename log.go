@@ -60,7 +60,7 @@ var (
 	walletLog  = backendLog.Logger("WALL")
 	winLog     = backendLog.Logger("UI")
 	dlwlLog    = backendLog.Logger("DLWL")
-	dcrLog    = backendLog.Logger("DCR")
+	dcrLog     = backendLog.Logger("DCR")
 	lstnersLog = backendLog.Logger("LSTN")
 )
 
@@ -86,7 +86,7 @@ func init() {
 var subsystemLoggers = map[string]slog.Logger{
 	"WALL": walletLog,
 	"DLWL": dlwlLog,
-	"DCR": dcrLog,
+	"DCR":  dcrLog,
 	"UI":   winLog,
 	"CRPW": log,
 	"LSTN": lstnersLog,

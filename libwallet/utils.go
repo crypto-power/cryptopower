@@ -182,12 +182,12 @@ func ShannonEntropy(text string) (entropy float64) {
 
 func TransactionDirectionName(direction int32) string {
 	switch direction {
-	// case TxDirectionSent:
-	// 	return "Sent"
-	// case TxDirectionReceived:
-	// 	return "Received"
-	// case TxDirectionTransferred:
-	// 	return "Yourself"
+	case dcr.TxDirectionSent:
+		return "Sent"
+	case dcr.TxDirectionReceived:
+		return "Received"
+	case dcr.TxDirectionTransferred:
+		return "Yourself"
 	default:
 		return "invalid"
 	}
