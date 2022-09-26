@@ -183,6 +183,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	}
 	pb := pg.Theme.MultiLayerProgressBar((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin(), items)
 	pb.Height = values.MarginPadding16
+	pb.ShowLedger = true
 	return pb.Layout(gtx, labelWdg)
 }
 

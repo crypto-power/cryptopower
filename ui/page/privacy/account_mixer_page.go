@@ -3,7 +3,6 @@ package privacy
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"gioui.org/layout"
 
@@ -140,14 +139,19 @@ func (pg *AccountMixerPage) progressBarRow(gtx C) D {
 }
 
 func (pg *AccountMixerPage) MixerProgressBarLayout(gtx C) D {
+	totalAmount := (pg.mixedBalance + pg.unmixedBalance).ToCoin()
+	pacentage := (pg.mixedBalance.ToCoin() / totalAmount) * 100
+
 	items := []cryptomaterial.ProgressBarItem{
 		{
 			Value: pg.mixedBalance.ToCoin(),
 			Color: pg.Theme.Color.Success,
+			Label: pg.Theme.Label(values.TextSize14, fmt.Sprintf("%v%% Mixed", int(pacentage))),
 		},
 		{
 			Value: pg.unmixedBalance.ToCoin(),
 			Color: pg.Theme.Color.Gray7,
+			Label: pg.Theme.Label(values.TextSize14, ""),
 		},
 	}
 
@@ -164,8 +168,9 @@ func (pg *AccountMixerPage) MixerProgressBarLayout(gtx C) D {
 		})
 	}
 
-	pb := pg.Theme.MultiLayerProgressBar((pg.mixedBalance + pg.unmixedBalance).ToCoin(), items)
-	pb.Height = values.MarginPadding16
+	pb := pg.Theme.MultiLayerProgressBar(totalAmount, items)
+	pb.ShowOverLayValue = true
+	pb.Height = values.MarginPadding18
 	return pb.Layout(gtx, labelWdg)
 }
 
