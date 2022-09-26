@@ -60,14 +60,14 @@ func New(host string, db *storm.DB) (*Politeia, error) {
 }
 
 func (p *Politeia) saveLastSyncedTimestamp(lastSyncedTimestamp int64) {
-	err := p.db.Set(configDBBkt, LastSyncedTimestampConfigKey, lastSyncedTimestamp)
+	err := p.db.Set(configDBBkt, LastSyncedTimestampConfigKey, &lastSyncedTimestamp)
 	if err != nil {
 		log.Errorf("error setting config value for key: %s, error: %v", LastSyncedTimestampConfigKey, err)
 	}
 }
 
 func (p *Politeia) getLastSyncedTimestamp() (lastSyncedTimestamp int64) {
-	err := p.db.Get(configDBBkt, LastSyncedTimestampConfigKey, lastSyncedTimestamp)
+	err := p.db.Get(configDBBkt, LastSyncedTimestampConfigKey, &lastSyncedTimestamp)
 	if err != nil && err != storm.ErrNotFound {
 		log.Errorf("error reading config value for key: %s, error: %v", LastSyncedTimestampConfigKey, err)
 	}

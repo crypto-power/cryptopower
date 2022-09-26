@@ -188,7 +188,9 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrTreasurySpending)).Layout),
-						layout.Rigid(pg.infoButton.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+						}),
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {

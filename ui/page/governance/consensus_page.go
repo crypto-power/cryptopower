@@ -44,8 +44,8 @@ type ConsensusPage struct {
 	copyRedirectURL     *cryptomaterial.Clickable
 	redirectIcon        *cryptomaterial.Image
 
-	orderDropDown *cryptomaterial.DropDown
-	consensusList *cryptomaterial.ClickableList
+	statusDropDown *cryptomaterial.DropDown
+	consensusList  *cryptomaterial.ClickableList
 
 	infoButton cryptomaterial.IconButton
 
@@ -73,7 +73,8 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	pg.orderDropDown = components.CreateOrderDropDown(l, values.ConsensusDropdownGroup, 0)
+	pg.statusDropDown = components.CreateStatusDropdown(l, components.FetchStrAgendaStatus(),
+		values.ConsensusDropdownGroup, 0)
 
 	return pg
 }
@@ -123,7 +124,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *libwallet.Agenda) {
 		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
 			im.Dismiss()
 			voteModal := newAgendaVoteModal(pg.Load, agenda, radiogroupbtns.Value, func() {
-				go pg.FetchAgendas() // re-fetch agendas when modal is dismissed
+				pg.FetchAgendas() // re-fetch agendas when modal is dismissed
 			})
 			pg.ParentWindow().ShowModal(voteModal)
 			return true
@@ -132,7 +133,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *libwallet.Agenda) {
 }
 
 func (pg *ConsensusPage) HandleUserInteractions() {
-	for pg.orderDropDown.Changed() {
+	for pg.statusDropDown.Changed() {
 		pg.FetchAgendas()
 	}
 
@@ -143,7 +144,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	for pg.syncButton.Clicked() {
-		go pg.FetchAgendas()
+		pg.FetchAgendas()
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -215,8 +216,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 }
 
 func (pg *ConsensusPage) FetchAgendas() {
-	selectedType := pg.orderDropDown.Selected()
-	newestFirst := selectedType == values.String(values.StrNewest)
+	selectedType := pg.statusDropDown.Selected()
 	selectedWallet := pg.WL.SelectedWallet.Wallet
 
 	pg.isSyncing = true
@@ -224,7 +224,17 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		pg.consensusItems = components.LoadAgendas(pg.Load, selectedWallet, newestFirst)
+		items := components.LoadAgendas(pg.Load, selectedWallet, true)
+		agenda := libwallet.AgendaStatusFromStr(selectedType)
+		if agenda == libwallet.UnknownStatus {
+			pg.consensusItems = items
+		} else {
+			for _, item := range items {
+				if libwallet.AgendaStatusType(item.Agenda.Status) == agenda {
+					pg.consensusItems = append(pg.consensusItems, item)
+				}
+			}
+		}
 		pg.isSyncing = false
 		pg.syncCompleted = true
 		pg.ParentWindow().Reload()
@@ -268,7 +278,7 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						}.Layout(gtx, pg.layoutContent)
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.orderDropDown.Layout(gtx, 10, true)
+						return pg.statusDropDown.Layout(gtx, 10, true)
 					}),
 				)
 			})
@@ -311,7 +321,7 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.orderDropDown.Layout(gtx, 55, true)
+						return pg.statusDropDown.Layout(gtx, 55, true)
 					}),
 				)
 			})
