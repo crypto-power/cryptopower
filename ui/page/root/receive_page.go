@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"gioui.org/io/clipboard"
+	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	qrcode "github.com/yeqown/go-qrcode"
@@ -40,17 +42,19 @@ type ReceivePage struct {
 	multiWallet       *libwallet.MultiWallet
 	pageContainer     layout.List
 	scrollContainer   *widget.List
-	isCopying, isInfo bool
+	isNewAddr, isInfo bool
 	currentAddress    string
 	qrImage           *image.Image
 	newAddr, copy     cryptomaterial.Button
-	info              cryptomaterial.IconButton
+	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
 	ops               *op.Ops
 	selector          *components.AccountSelector
 	copyAddressButton cryptomaterial.Button
 
+	isCopying  bool
+	backdrop   *widget.Clickable
 	infoButton cryptomaterial.IconButton
 }
 
@@ -67,9 +71,11 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		},
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:           l.Theme.Button(values.String(values.StrCopy)),
+		more:           l.Theme.IconButton(l.Theme.Icons.NavMoreIcon),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
+		backdrop:       new(widget.Clickable),
 	}
 
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
@@ -77,6 +83,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copy.HighlightColor = pg.Theme.Color.SurfaceHighlight
 	pg.copy.Color = pg.Theme.Color.Surface
 	pg.copy.Inset = layout.UniformInset(values.MarginPadding10)
+	pg.more.Inset = layout.UniformInset(values.MarginPadding0)
 	pg.newAddr.Inset = layout.UniformInset(values.MarginPadding5)
 	pg.newAddr.Color = pg.Theme.Color.Primary
 	pg.newAddr.Background = pg.Theme.Color.Surface
@@ -167,6 +174,7 @@ func (pg *ReceivePage) generateQRForAddress() {
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
 	pg.handleCopyEvent(gtx)
+	pg.pageBackdropLayout(gtx)
 
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
@@ -321,6 +329,21 @@ func (pg *ReceivePage) pageSections(gtx layout.Context, body layout.Widget) layo
 	})
 }
 
+// pageBackdropLayout layout of background overlay when the popup button generate new address is show,
+// click outside of the generate new address button to hide the button
+func (pg *ReceivePage) pageBackdropLayout(gtx C) {
+	if pg.isNewAddr {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+		m := op.Record(gtx.Ops)
+		pg.backdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			semantic.Button.Add(gtx.Ops)
+			return layout.Dimensions{Size: gtx.Constraints.Min}
+		})
+		op.Defer(gtx.Ops, m.Stop())
+	}
+}
+
 func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding20
 	return layout.Flex{}.Layout(gtx,
@@ -341,7 +364,19 @@ func (pg *ReceivePage) titleLayout(gtx C) D {
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.newAddr.Layout(gtx)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if pg.isNewAddr {
+						m := op.Record(gtx.Ops)
+						layout.Inset{Top: values.MarginPadding5, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
+							return pg.Theme.Shadow().Layout(gtx, pg.newAddr.Layout)
+						})
+						op.Defer(gtx.Ops, m.Stop())
+					}
+					return D{}
+				}),
+				layout.Rigid(pg.more.Layout),
+			)
 		}),
 	)
 }
@@ -382,6 +417,17 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) HandleUserInteractions() {
+	if pg.backdrop.Clicked() {
+		pg.isNewAddr = false
+	}
+
+	if pg.more.Button.Clicked() {
+		pg.isNewAddr = !pg.isNewAddr
+		if pg.isInfo {
+			pg.isInfo = false
+		}
+	}
+
 	if pg.newAddr.Clicked() {
 		newAddr, err := pg.generateNewAddress()
 		if err != nil {
@@ -391,6 +437,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 
 		pg.currentAddress = newAddr
 		pg.generateQRForAddress()
+		pg.isNewAddr = false
 	}
 
 	if pg.infoButton.Button.Clicked() {
