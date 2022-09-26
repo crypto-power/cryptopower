@@ -51,7 +51,6 @@ type ReceivePage struct {
 	selector          *components.AccountSelector
 	copyAddressButton cryptomaterial.Button
 
-	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 }
 
@@ -87,8 +86,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 	pg.receiveAddress.MaxLines = 1
 
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.backButton.Icon = pg.Theme.Icons.ContentClear
+	_, pg.infoButton = components.SubpageHeaderButtons(l)
 
 	pg.copyAddressButton = l.Theme.OutlineButton("")
 	pg.copyAddressButton.TextSize = values.TextSize14
@@ -327,14 +325,7 @@ func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding20
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return pg.backButton.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
-				}),
-			)
+			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, pg.infoButton.Layout)
@@ -408,10 +399,6 @@ func (pg *ReceivePage) HandleUserInteractions() {
 			Body(values.String(values.StrReceiveInfo)).
 			SetContentAlignment(layout.NW, layout.Center)
 		pg.ParentWindow().ShowModal(info)
-	}
-
-	if pg.backButton.Button.Clicked() {
-		pg.ParentNavigator().CloseCurrentPage()
 	}
 }
 

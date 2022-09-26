@@ -112,8 +112,8 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget) layout.Dimen
 
 			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(360))
 			inset := layout.Inset{
-				Top:    unit.Dp(50),
-				Bottom: unit.Dp(50),
+				Top:    unit.Dp(30),
+				Bottom: unit.Dp(30),
 			}
 			return inset.Layout(gtx, func(gtx C) D {
 				return LinearLayout{
@@ -136,15 +136,15 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget) layout.Dimen
 							}
 
 							inset := layout.Inset{
-								Top:    unit.Dp(10),
-								Bottom: unit.Dp(10),
+								Top:    unit.Dp(5),
+								Bottom: unit.Dp(5),
 							}
 							return inset.Layout(gtx, title)
 						}
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						mTB := unit.Dp(10)
+						mTB := unit.Dp(5)
 						mLR := unit.Dp(0)
 						if m.padding == unit.Dp(0) {
 							mLR = mTB

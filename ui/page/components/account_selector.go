@@ -357,7 +357,7 @@ func (asm *AccountSelectorModal) Layout(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(asm.Theme.Label(values.TextSize14, asm.WL.SelectedWallet.Wallet.Name).Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, asm.walletInfoButton.Layout)
+					return layout.UniformInset(values.MarginPadding2).Layout(gtx, asm.walletInfoButton.Layout)
 				}),
 			)
 		},
@@ -387,12 +387,8 @@ func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAcc
 		Clickable: account.clickable,
 		Alignment: layout.Middle,
 	}.Layout(gtx,
-		layout.Flexed(0.1, func(gtx C) D {
-			return layout.Inset{
-				Right: values.MarginPadding18,
-			}.Layout(gtx, func(gtx C) D {
-				return accountIcon.Layout24dp(gtx)
-			})
+		layout.Flexed(0.12, func(gtx C) D {
+			return accountIcon.Layout24dp(gtx)
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -435,40 +431,6 @@ func (asm *AccountSelectorModal) walletAccountLayout(gtx C, account *selectorAcc
 			return D{}
 		}),
 	)
-}
-
-func (asm *AccountSelectorModal) walletInfoPopup(gtx C) D {
-	// TODO: currently not used.. skipping str localization
-	title := "Some accounts are hidden."
-	desc := "Some accounts are disabled by StakeShuffle settings to protect your privacy."
-	card := asm.Theme.Card()
-	card.Radius = cryptomaterial.Radius(7)
-	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding280)
-	return card.Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							txt := asm.Theme.Body2(title)
-							txt.Font.Weight = text.SemiBold
-							return txt.Layout(gtx)
-						}),
-						layout.Rigid(func(gtx C) D {
-							txt := asm.Theme.Body2("Tx direction")
-							txt.Color = asm.Theme.Color.GrayText2
-							return txt.Layout(gtx)
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					txt := asm.Theme.Body2(desc)
-					txt.Color = asm.Theme.Color.GrayText2
-					return txt.Layout(gtx)
-				}),
-			)
-		})
-	})
 }
 
 func (asm *AccountSelectorModal) onModalExit(exit func()) *AccountSelectorModal {
