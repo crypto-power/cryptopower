@@ -23,7 +23,8 @@ import (
 
 // the length of name should be 20 characters
 func ValidateLengthName(name string) bool {
-	return len(name) <= 20
+	trimName := strings.TrimSpace(name)
+	return len(trimName) <= 20
 }
 
 func ValidateHost(host string) bool {

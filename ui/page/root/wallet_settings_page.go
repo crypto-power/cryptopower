@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"strings"
 
 	"gioui.org/layout"
 
@@ -117,7 +118,7 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 }
 
 func (pg *WalletSettingsPage) loadPeerAddress() {
-	pg.peerAddr = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey)
+	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey, "")
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
@@ -150,7 +151,6 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) Layout(gtx C) D {
-	pg.loadPeerAddress()
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
 			func(gtx C) D {
@@ -476,12 +476,14 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(newName string, tm *modal.TextInputModal) bool {
-			if !utils.ValidateLengthName(newName) {
+			name := strings.TrimSpace(newName)
+			if !utils.ValidateLengthName(name) {
 				tm.SetError(values.String(values.StrWalletNameLengthError))
 				tm.SetLoading(false)
 				return false
 			}
-			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, newName)
+
+			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -508,6 +510,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 			}
 			if ipAddress != "" {
 				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.loadPeerAddress()
 			}
 			return true
 		})
@@ -539,7 +542,7 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	})
 }
 
-func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
+func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 	warningModal := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
@@ -681,7 +684,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		}
 	}
 
-	specificPeerKey := libwallet.SpvPersistentPeerAddressesConfigKey
 	if pg.connectToPeer.Changed() {
 		if pg.connectToPeer.IsChecked() {
 			pg.showSPVPeerDialog()
@@ -690,7 +692,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 		title := values.String(values.StrRemovePeer)
 		msg := values.String(values.StrRemovePeerWarn)
-		pg.showWarningModalDialog(title, msg, specificPeerKey)
+		pg.showWarningModalDialog(title, msg)
 	}
 
 	for pg.updateConnectToPeer.Clicked() {

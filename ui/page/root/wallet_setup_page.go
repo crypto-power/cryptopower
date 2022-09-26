@@ -1,6 +1,7 @@
 package root
 
 import (
+	"strings"
 	"sync"
 
 	"gioui.org/layout"
@@ -466,7 +467,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
 		pg.showLoader = true
 		go func() {
-			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+			walletName := strings.TrimSpace(pg.walletName.Editor.Text())
+			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(walletName, pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
 				pg.watchOnlyWalletHex.SetError(err.Error())
 				pg.showLoader = false
