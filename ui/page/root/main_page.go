@@ -830,7 +830,7 @@ func (mp *MainPage) listenForNotifications() {
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
-					transactionNotification := mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
+					transactionNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
 					if transactionNotification {
 						update := wallet.NewTransaction{
 							Transaction: n.Transaction,
@@ -839,7 +839,7 @@ func (mp *MainPage) listenForNotifications() {
 					}
 					mp.ParentWindow().Reload()
 				case listeners.BlockAttached:
-					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(dcr.BeepNewBlocksConfigKey, false)
+					beep := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.BeepNewBlocksConfigKey, false)
 					if beep {
 						err := beeep.Beep(5, 1)
 						if err != nil {

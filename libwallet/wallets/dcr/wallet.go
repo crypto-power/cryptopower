@@ -180,16 +180,21 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	}
 
 	wallet := &Wallet{
-		Name:                  walletName,
-		db:                    db,
-		dbDriver:              dbDriver,
-		rootDir:               rootDir,
-		chainParams:           chainParams,
-		cancelFuncs:           make([]context.CancelFunc, 0),
-		CreatedAt:             time.Now(),
-		EncryptedSeed:         encryptedSeed,
-		PrivatePassphraseType: privatePassphraseType,
-		HasDiscoveredAccounts: true,
+		Name:          walletName,
+		db:            db,
+		dbDriver:      dbDriver,
+		rootDir:       rootDir,
+		chainParams:   chainParams,
+		cancelFuncs:   make([]context.CancelFunc, 0),
+		CreatedAt:     time.Now(),
+		EncryptedSeed: encryptedSeed,
+		syncData: &SyncData{
+			SyncProgressListeners: make(map[string]SyncProgressListener),
+		},
+		txAndBlockNotificationListeners:  make(map[string]TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
+		PrivatePassphraseType:            privatePassphraseType,
+		HasDiscoveredAccounts:            true,
 	}
 
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
@@ -204,7 +209,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 }
 
 func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error {
-	// log.Info("Creating Wallet")
+	log.Info("Creating Wallet")
 	if len(seedMnemonic) == 0 {
 		return errors.New(ErrEmptySeed)
 	}
@@ -223,7 +228,7 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 		return err
 	}
 
-	// log.Info("Created Wallet")
+	log.Info("Created Wallet")
 	return nil
 }
 

@@ -311,7 +311,7 @@ func (wallet *Wallet) IsWaiting() bool {
 	return wallet.WaitingForHeaders
 }
 
-func (wallet *Wallet) IsSynced() bool {
+func (wallet *Wallet) isSynced() bool {
 	return wallet.Synced
 }
 
@@ -324,10 +324,10 @@ func (wallet *Wallet) IsSyncing() bool {
 func (wallet *Wallet) IsConnectedToDecredNetwork() bool {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.syncing
+	return wallet.syncData.syncing || wallet.syncData.synced
 }
 
-func (wallet *Wallet) isSynced() bool {
+func (wallet *Wallet) IsSynced() bool {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 	return wallet.syncData.synced

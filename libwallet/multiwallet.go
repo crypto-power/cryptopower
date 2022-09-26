@@ -171,13 +171,7 @@ func (mw *MultiWallet) Shutdown() {
 
 	for _, wallet := range mw.Assets.DCR.Wallets {
 		wallet.CancelRescan()
-	}
-
-	for _, wallet := range mw.Assets.DCR.Wallets {
 		wallet.CancelSync()
-	}
-
-	for _, wallet := range mw.Assets.DCR.Wallets {
 		wallet.Shutdown()
 	}
 
