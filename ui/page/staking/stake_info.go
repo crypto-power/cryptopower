@@ -2,7 +2,6 @@ package staking
 
 import (
 	"fmt"
-	"image/color"
 
 	"gioui.org/layout"
 
@@ -161,11 +160,11 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 
 	items := []cryptomaterial.ProgressBarItem{
 		{
-			Value: int(totalBalance.LockedByTickets.ToCoin()),
+			Value: totalBalance.LockedByTickets.ToCoin(),
 			Color: pg.Theme.Color.NavyBlue,
 		},
 		{
-			Value: int(totalBalance.Spendable.ToCoin()),
+			Value: totalBalance.Spendable.ToCoin(),
 			Color: pg.Theme.Color.Turquoise300,
 		},
 	}
@@ -174,42 +173,18 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return pg.layoutIconAndText(gtx, "Staked"+": ", totalBalance.LockedByTickets.String(), items[0].Color)
+					return components.LayoutIconAndText(pg.Load, gtx, "Staked"+": ", totalBalance.LockedByTickets.String(), items[0].Color)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.layoutIconAndText(gtx, values.String(values.StrLabelSpendable)+": ", totalBalance.Spendable.String(), items[1].Color)
+					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrLabelSpendable)+": ", totalBalance.Spendable.String(), items[1].Color)
 				}),
 			)
 		})
 	}
-	pb := pg.Theme.MultiLayerProgressBar(int((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin()), items)
+	pb := pg.Theme.MultiLayerProgressBar((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin(), items)
 	pb.Height = values.MarginPadding16
+	pb.ShowLedger = true
 	return pb.Layout(gtx, labelWdg)
-
-}
-
-func (pg *Page) layoutIconAndText(gtx C, title string, val string, col color.NRGBA) D {
-	return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Right: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					ic := cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
-					ic.Color = col
-					return ic.Layout(gtx, values.MarginPadding8)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				txt := pg.Theme.Label(values.TextSize14, title)
-				txt.Color = pg.Theme.Color.GrayText2
-				return txt.Layout(gtx)
-			}),
-			layout.Rigid(func(gtx C) D {
-				txt := pg.Theme.Label(values.TextSize14, val)
-				txt.Color = pg.Theme.Color.GrayText2
-				return txt.Layout(gtx)
-			}),
-		)
-	})
 }
 
 func (pg *Page) stakingRecordStatistics(gtx C) D {

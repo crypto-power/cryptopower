@@ -394,7 +394,11 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				pg = privacy.NewAccountMixerPage(mp.Load)
+				if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
+					pg = privacy.NewSetupPrivacyPage(mp.Load)
+				} else {
+					pg = privacy.NewAccountMixerPage(mp.Load)
+				}
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
 			case governance.GovernancePageID:

@@ -13,12 +13,14 @@ const (
 )
 
 func init() {
-	ArrLanguages = make(map[string]string)
-	ArrLanguages[localizable.ENGLISH] = StrEnglish
-	ArrLanguages[localizable.FRENCH] = StrFrench
-	ArrLanguages[localizable.SPANISH] = StrSpanish
+	ArrLanguages = map[string]string{
+		localizable.ENGLISH: StrEnglish,
+		localizable.FRENCH:  StrFrench,
+		localizable.SPANISH: StrSpanish,
+	}
 
-	ArrExchangeCurrencies = make(map[string]string)
-	ArrExchangeCurrencies[DefaultExchangeValue] = StrNone
-	ArrExchangeCurrencies[USDExchangeValue] = StrUsdBittrex
+	ArrExchangeCurrencies = map[string]string{
+		DefaultExchangeValue: StrNone,
+		USDExchangeValue:     StrUsdBittrex,
+	}
 }

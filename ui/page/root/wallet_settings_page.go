@@ -51,9 +51,8 @@ type WalletSettingsPage struct {
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
 	updateConnectToPeer                        *cryptomaterial.Clickable
 
-	chevronRightIcon *cryptomaterial.Icon
-	backButton       cryptomaterial.IconButton
-	infoButton       cryptomaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 
 	fetchProposal     *cryptomaterial.Switch
 	proposalNotif     *cryptomaterial.Switch
@@ -92,9 +91,6 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		pageContainer: layout.List{Axis: layout.Vertical},
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 	}
-
-	pg.chevronRightIcon = cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight)
-	pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -226,9 +222,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 func (pg *WalletSettingsPage) account() layout.Widget {
 	dim := func(gtx C) D {
 		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
-			return pg.subSection(gtx, pg.accounts[a].Name, func(gtx C) D {
-				return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-			})
+			return pg.subSection(gtx, pg.accounts[a].Name, pg.Theme.Icons.ChevronRight.Layout24dp)
 		})
 	}
 	return func(gtx C) D {
@@ -332,9 +326,7 @@ func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(textLabel.Layout),
 					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-						})
+						return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 					}),
 				)
 			})
@@ -533,9 +525,7 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(lbl.Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-					})
+					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 				}),
 			)
 		})

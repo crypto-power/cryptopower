@@ -251,6 +251,7 @@ func (cm *CreatePasswordModal) Handle() {
 			if cm.parent != nil {
 				cm.parent.OnNavigatedTo()
 			}
+			cm.negativeButtonClicked()
 			cm.Dismiss()
 		}
 	}

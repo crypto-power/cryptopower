@@ -12,24 +12,31 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
 type ListPreferenceModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
 	optionsRadioGroup *widget.Enum
 
-	btnSave   cryptomaterial.Button
-	btnCancel cryptomaterial.Button
+	btnSave      cryptomaterial.Button
+	btnCancel    cryptomaterial.Button
+	customWidget layout.Widget
 
-	items         map[string]string //[key]str-key
-	itemKeys      []string
-	title         string
-	preferenceKey string
-	defaultValue  string // str-key
-	initialValue  string
-	currentValue  string
+	items           map[string]string //[key]str-key
+	itemKeys        []string
+	title           string
+	preferenceKey   string
+	defaultValue    string // str-key
+	initialValue    string
+	currentValue    string
+	isWalletAccount bool
 
-	updateButtonClicked func()
+	updateButtonClicked func(string)
 }
 
 func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items map[string]string) *ListPreferenceModal {
@@ -82,7 +89,17 @@ func (lp *ListPreferenceModal) Title(title string) *ListPreferenceModal {
 	return lp
 }
 
-func (lp *ListPreferenceModal) UpdateValues(clicked func()) *ListPreferenceModal {
+func (lp *ListPreferenceModal) UseCustomWidget(layout layout.Widget) *ListPreferenceModal {
+	lp.customWidget = layout
+	return lp
+}
+
+func (lp *ListPreferenceModal) IsWallet(setAccount bool) *ListPreferenceModal {
+	lp.isWalletAccount = setAccount
+	return lp
+}
+
+func (lp *ListPreferenceModal) UpdateValues(clicked func(val string)) *ListPreferenceModal {
 	lp.updateButtonClicked = clicked
 	return lp
 }
@@ -91,7 +108,7 @@ func (lp *ListPreferenceModal) Handle() {
 	for lp.btnSave.Button.Clicked() {
 		lp.currentValue = lp.optionsRadioGroup.Value
 		lp.WL.MultiWallet.SaveUserConfigValue(lp.preferenceKey, lp.optionsRadioGroup.Value)
-		lp.updateButtonClicked()
+		lp.updateButtonClicked(lp.optionsRadioGroup.Value)
 		lp.RefreshTheme(lp.ParentWindow())
 		lp.Dismiss()
 	}
@@ -105,24 +122,39 @@ func (lp *ListPreferenceModal) Handle() {
 	}
 }
 
-func (lp *ListPreferenceModal) Layout(gtx layout.Context) layout.Dimensions {
-	w := []layout.Widget{
-		func(gtx layout.Context) layout.Dimensions {
-			txt := lp.Theme.H6(values.String(lp.title))
-			txt.Color = lp.Theme.Color.Text
-			return txt.Layout(gtx)
-		},
-		func(gtx layout.Context) layout.Dimensions {
+func (lp *ListPreferenceModal) Layout(gtx C) D {
+	var w []layout.Widget
+
+	title := func(gtx C) D {
+		txt := lp.Theme.H6(values.String(lp.title))
+		txt.Color = lp.Theme.Color.Text
+		return txt.Layout(gtx)
+	}
+
+	items := []layout.Widget{
+		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lp.layoutItems()...)
 		},
-		func(gtx layout.Context) layout.Dimensions {
-			return layout.E.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(lp.btnCancel.Layout),
 					layout.Rigid(lp.btnSave.Layout),
 				)
 			})
 		},
+	}
+
+	if lp.title != "" {
+		w = append(w, title)
+	}
+
+	if lp.customWidget != nil {
+		w = append(w, lp.customWidget)
+	}
+
+	for i := 0; i < len(items); i++ {
+		w = append(w, items[i])
 	}
 
 	return lp.Modal.Layout(gtx, w)
@@ -132,8 +164,12 @@ func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 
 	items := make([]layout.FlexChild, 0)
 	for _, k := range lp.itemKeys {
-		radioItem := layout.Rigid(lp.Theme.RadioButton(lp.optionsRadioGroup, k, values.String(lp.items[k]), lp.Theme.Color.DeepBlue, lp.Theme.Color.Primary).Layout)
+		text := values.String(lp.items[k])
+		if lp.isWalletAccount {
+			text = lp.items[k]
+		}
 
+		radioItem := layout.Rigid(lp.Theme.RadioButton(lp.optionsRadioGroup, k, text, lp.Theme.Color.DeepBlue, lp.Theme.Color.Primary).Layout)
 		items = append(items, radioItem)
 	}
 

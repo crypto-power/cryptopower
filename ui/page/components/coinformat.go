@@ -19,9 +19,10 @@ var (
 	noDecimal                 = regexp.MustCompile(`([0-9]{1,3},*)+`)
 )
 
-func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, withUnit bool) D {
+func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, displayUnitText bool) D {
 
 	startIndex := 0
+	stopIndex := 0
 
 	if doubleOrMoreDecimalPlaces.MatchString(amount) {
 		decimalIndex := strings.Index(amount, ".")
@@ -34,12 +35,9 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 		startIndex = loc[1] // start scaling from the end
 	}
 
-	indexUnit := len(amount) - 4
-	if !withUnit {
-		indexUnit = len(amount)
-	}
+	stopIndex = strings.Index(amount, " DCR")
 
-	mainText, subText, unitValue := amount[:startIndex], amount[startIndex:indexUnit], amount[indexUnit:]
+	mainText, subText, unitText := amount[:startIndex], amount[startIndex:stopIndex], amount[stopIndex:]
 
 	subTextSize := unit.Sp(float32(mainTextSize) * scale)
 
@@ -55,12 +53,11 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := l.Theme.Label(mainTextSize, unitValue)
-			txt.Color = col
-			if withUnit {
-				return txt.Layout(gtx)
+			if displayUnitText {
+				return l.Theme.Label(mainTextSize, unitText).Layout(gtx)
 			}
-			return layout.Dimensions{}
+
+			return D{}
 		}),
 	)
 }
@@ -73,6 +70,10 @@ func LayoutBalance(gtx layout.Context, l *load.Load, amount string) layout.Dimen
 
 func LayoutBalanceWithUnit(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
 	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, l.Theme.Color.PageNavText, true)
+}
+
+func LayoutBalanceWithUnitSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
+	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.PageNavText, true)
 }
 
 func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {

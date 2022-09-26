@@ -28,9 +28,9 @@ type ProgressCircleStyle struct {
 }
 
 type ProgressBarItem struct {
-	Value   int
-	Color   color.NRGBA
-	SubText string
+	Value float64
+	Color color.NRGBA
+	Label Label
 }
 
 // MultiLayerProgressBar shows the percentage of the mutiple progress layer
@@ -38,18 +38,20 @@ type ProgressBarItem struct {
 type MultiLayerProgressBar struct {
 	t *Theme
 
-	items  []ProgressBarItem
-	Radius CornerRadius
-	Height unit.Dp
-	Width  unit.Dp
-	total  int
+	items            []ProgressBarItem
+	Radius           CornerRadius
+	Height           unit.Dp
+	Width            unit.Dp
+	total            float64
+	ShowLedger       bool
+	ShowOverLayValue bool
 }
 
 func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
 	return ProgressBarStyle{ProgressBarStyle: material.ProgressBar(t.Base, float32(progress)/100)}
 }
 
-func (t *Theme) MultiLayerProgressBar(total int, items []ProgressBarItem) *MultiLayerProgressBar {
+func (t *Theme) MultiLayerProgressBar(total float64, items []ProgressBarItem) *MultiLayerProgressBar {
 	mp := &MultiLayerProgressBar{
 		t: t,
 
@@ -157,35 +159,41 @@ func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 // TODO: Allow more than just 2 layers and make it dynamic
 func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
-	r := gtx.Dp(values.MarginPadding0)
 	if mp.Width <= 0 {
 		mp.Width = unit.Dp(gtx.Constraints.Max.X)
 	}
 
-	// progressScale represent the different progress bar layers
-	progressScale := func(width int, color color.NRGBA) layout.Dimensions {
-		d := image.Point{X: width, Y: gtx.Dp(mp.Height)}
-
-		defer clip.RRect{
-			Rect: image.Rectangle{Max: image.Point{X: width, Y: gtx.Dp(mp.Height)}},
-			NE:   r, NW: r, SE: r, SW: r,
-		}.Push(gtx.Ops).Pop()
-
-		paint.ColorOp{Color: color}.Add(gtx.Ops)
-		paint.PaintOp{}.Add(gtx.Ops)
-
-		return layout.Dimensions{
-			Size: d,
-		}
+	pg := func(width int, lbl Label, color color.NRGBA) layout.Dimensions {
+		return LinearLayout{
+			Width:      width,
+			Height:     gtx.Dp(mp.Height),
+			Background: color,
+		}.Layout2(gtx, func(gtx C) D {
+			if mp.ShowOverLayValue {
+				lbl.Color = mp.t.Color.Surface
+				return LinearLayout{
+					Width:      width,
+					Height:     gtx.Dp(mp.Height),
+					Background: color,
+					Direction:  layout.Center,
+				}.Layout2(gtx, lbl.Layout)
+			}
+			return D{}
+		})
 	}
 
-	calProgressWidth := func(progress int) int {
+	calProgressWidth := func(progress float64) float64 {
 		if mp.total != 0 {
 			val := (progress / mp.total) * 100
-			return (int(mp.Width) / 100) * val
+			return (float64(mp.Width) / 100) * val
 		}
 
 		return 0
+	}
+
+	// display empty gray layout when total value passed is zero (0)
+	if mp.total == 0 {
+		return pg(int(mp.Width), mp.t.Label(values.TextSize14, ""), mp.t.Color.Gray2)
 	}
 
 	// This takes only 2 layers
@@ -195,14 +203,14 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 			if width == 0 {
 				return D{}
 			}
-			return progressScale(width, mp.items[0].Color)
+			return pg(int(width), mp.items[0].Label, mp.items[0].Color)
 		}),
 		layout.Rigid(func(gtx C) D {
 			width := calProgressWidth(mp.items[1].Value)
 			if width == 0 {
 				return D{}
 			}
-			return progressScale(width, mp.items[1].Color)
+			return pg(int(width), mp.items[1].Label, mp.items[1].Color)
 		}),
 	)
 }
@@ -213,7 +221,10 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, labelWdg layout.Widget) D {
 			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Center.Layout(gtx, labelWdg)
+			if mp.ShowLedger {
+				return layout.Center.Layout(gtx, labelWdg)
+			}
+			return D{}
 		}),
 	)
 }
