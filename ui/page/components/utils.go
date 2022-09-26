@@ -5,10 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"image/color"
 	"strings"
 	"time"
 
+	"gioui.org/layout"
+
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -94,4 +100,28 @@ func SeedWordsToHex(seedWords string) (string, error) {
 func checksumByte(data []byte) byte {
 	intermediateHash := sha256.Sum256(data)
 	return sha256.Sum256(intermediateHash[:])[0]
+}
+
+func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.NRGBA) D {
+	return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+					ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+					ic.Color = col
+					return ic.Layout(gtx, values.MarginPadding8)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				txt := l.Theme.Label(values.TextSize14, title)
+				txt.Color = l.Theme.Color.GrayText2
+				return txt.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				txt := l.Theme.Label(values.TextSize14, val)
+				txt.Color = l.Theme.Color.GrayText2
+				return txt.Layout(gtx)
+			}),
+		)
+	})
 }
