@@ -452,7 +452,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 			SetPositiveButtonCallback(func(newName string, tim *modal.TextInputModal) bool {
 				// Todo - implement custom CSPP server
-				return false
+				return true
 			})
 
 		textModal.SetNegativeButtonCallback(func() {}).
