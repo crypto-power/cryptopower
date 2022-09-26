@@ -101,15 +101,15 @@ func (pg *SetupPrivacyPage) privacyIntroLayout(gtx layout.Context) layout.Dimens
 									})
 								}),
 								layout.Rigid(func(gtx C) D {
-									txt := pg.Theme.H6(values.String(values.StrStakeShuffle))
-									txt2 := pg.Theme.Body1(values.String(values.StrSetUpPrivacy))
+									title := pg.Theme.H6(values.String(values.StrStakeShuffle))
+									subtitle := pg.Theme.Body1(values.String(values.StrSetUpPrivacy))
 
-									txt.Alignment, txt2.Alignment = text.Middle, text.Middle
+									title.Alignment, subtitle.Alignment = text.Middle, text.Middle
 
 									return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-										layout.Rigid(txt.Layout),
+										layout.Rigid(title.Layout),
 										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, txt2.Layout)
+											return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, subtitle.Layout)
 										}),
 									)
 								}),

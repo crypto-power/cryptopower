@@ -483,6 +483,7 @@ const EN = `
 "info" = "Info"
 "changeAccount" = "Change account"
 "mixedAccount" = "Mixed account"
+"unmixedAccount" = "Unmixed account"
 "coordinationServer" = "Coordination server"
 "unmixed" = "Unmixed"
 "allowSpendingFromUnmixedAccount" = "Allow spending from unmixed account"

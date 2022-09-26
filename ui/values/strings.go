@@ -586,6 +586,7 @@ const (
 	StrTicketVotedTitle                = "ticketVotedTitle"
 	StrTicketRevokedTitle              = "ticketRevokedTitle"
 	StrMixedAccount                    = "mixedAccount"
+	StrUnmixedAccount                  = "unmixedAccount"
 	StrChangeAccount                   = "changeAccount"
 	StrCoordinationServer              = "coordinationServer"
 	StrUnmixed                         = "unmixed"

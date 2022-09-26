@@ -344,7 +344,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			load.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
 			Title(values.StrLanguage).
-			UpdateValues(func() {
+			UpdateValues(func(_ string) {
 				values.SetUserLanguage(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey))
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
@@ -360,7 +360,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			values.ArrExchangeCurrencies).
 			Title(values.StrExchangeRate).
-			UpdateValues(func() {})
+			UpdateValues(func(_ string) {})
 		pg.ParentWindow().ShowModal(currencySelectorModal)
 		break
 	}
