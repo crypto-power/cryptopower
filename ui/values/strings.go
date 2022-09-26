@@ -616,6 +616,8 @@ const (
 	StrConfirmUmixedSpending           = "confirmUmixedSpending"
 	StrOK                              = "ok"
 	StrAccountMixer                    = "accountMixer"
+	StrWalletNameLengthError           = "walletLengthError"
+	StrValidateHostErr                 = "validateHostErr"
 	StrCopyBlockLink                   = "copyBlockLink"
 	StrLifeSpan                        = "lifeSpan"
 	StrVotedOn                         = "votedOn"

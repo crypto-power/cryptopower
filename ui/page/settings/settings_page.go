@@ -495,21 +495,6 @@ func (pg *SettingsPage) showNoticeSuccess(title string) {
 	pg.ParentWindow().ShowModal(info)
 }
 
-func (pg *SettingsPage) showSPVPeerDialog() {
-	textModal := modal.NewTextInputModal(pg.Load).
-		Hint(values.String(values.StrIPAddress)).
-		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
-			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
-			}
-			return true
-		})
-	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		SetPositiveButtonText(values.String(values.StrConfirm))
-	pg.ParentWindow().ShowModal(textModal)
-}
-
 func (pg *SettingsPage) showUserAgentDialog() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrUserAgent)).

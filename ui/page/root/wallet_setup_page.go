@@ -1,6 +1,7 @@
 package root
 
 import (
+	"strings"
 	"sync"
 
 	"gioui.org/layout"
@@ -15,6 +16,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/info"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -465,7 +467,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
 		pg.showLoader = true
 		go func() {
-			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+			walletName := strings.TrimSpace(pg.walletName.Editor.Text())
+			_, err := pg.WL.MultiWallet.CreateWatchOnlyWallet(walletName, pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
 				pg.watchOnlyWalletHex.SetError(err.Error())
 				pg.showLoader = false
@@ -481,6 +484,11 @@ func (pg *CreateWallet) validInputs() bool {
 	pg.watchOnlyWalletHex.SetError("")
 	if !components.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))
+		return false
+	}
+
+	if !utils.ValidateLengthName(pg.walletName.Editor.Text()) {
+		pg.walletName.SetError(values.String(values.StrWalletNameLengthError))
 		return false
 	}
 

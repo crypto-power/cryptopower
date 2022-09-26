@@ -8,6 +8,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -124,7 +125,7 @@ func (pm *PasswordModal) Handle() {
 
 	if pm.btnPositve.Button.Clicked() || isSubmit {
 
-		if !editorsNotEmpty(pm.password.Editor) {
+		if !utils.EditorsNotEmpty(pm.password.Editor) {
 			pm.password.SetError(values.String(values.StrEnterSpendingPassword))
 			return
 		}

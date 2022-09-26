@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -82,7 +83,7 @@ func (sa *sendAmount) setAmount(amount int64) {
 	sa.dcrAmountEditor.Editor.SetText(fmt.Sprintf("%.8f", dcrutil.Amount(amount).ToCoin()))
 
 	if sa.exchangeRate != -1 {
-		usdAmount := load.DCRToUSD(sa.exchangeRate, dcrutil.Amount(amount).ToCoin())
+		usdAmount := utils.DCRToUSD(sa.exchangeRate, dcrutil.Amount(amount).ToCoin())
 
 		sa.usdSendMaxChangeEvent = true
 		sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount))
@@ -120,7 +121,7 @@ func (sa *sendAmount) validateDCRAmount() {
 		}
 
 		if sa.exchangeRate != -1 {
-			usdAmount := load.DCRToUSD(sa.exchangeRate, dcrAmount)
+			usdAmount := utils.DCRToUSD(sa.exchangeRate, dcrAmount)
 			sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount)) // 2 decimal places
 		}
 
@@ -145,7 +146,7 @@ func (sa *sendAmount) validateUSDAmount() bool {
 		}
 
 		if sa.exchangeRate != -1 {
-			dcrAmount := load.USDToDCR(sa.exchangeRate, usdAmount)
+			dcrAmount := utils.USDToDCR(sa.exchangeRate, usdAmount)
 			sa.dcrAmountEditor.Editor.SetText(fmt.Sprintf("%.8f", dcrAmount)) // 8 decimal places
 		}
 

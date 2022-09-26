@@ -30,6 +30,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/send"
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
@@ -292,7 +293,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	mp.isFetchingExchangeRate = true
 	desc := "for getting dcrUsdtBittrex exchange rate value"
 	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
-		return load.GetUSDExchangeValue(&mp.dcrUsdtBittrex)
+		return utils.GetUSDExchangeValue(&mp.dcrUsdtBittrex)
 	})
 	if err != nil {
 		log.Errorf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
@@ -315,7 +316,7 @@ func (mp *MainPage) updateBalance() {
 			usdExchangeRate, err := strconv.ParseFloat(mp.dcrUsdtBittrex.LastTradeRate, 64)
 			if err == nil {
 				balanceInUSD := totalBalance.Total.ToCoin() * usdExchangeRate
-				mp.totalBalanceUSD = load.FormatUSDBalance(mp.Printer, balanceInUSD)
+				mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 			}
 		}
 	}
@@ -772,7 +773,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 }
 
 func initializeBeepNotification(n string) {
-	absoluteWdPath, err := components.GetAbsolutePath()
+	absoluteWdPath, err := utils.GetAbsolutePath()
 	if err != nil {
 		log.Error(err.Error())
 	}
