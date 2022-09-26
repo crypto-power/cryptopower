@@ -21,9 +21,9 @@ import (
 	"golang.org/x/text/message"
 )
 
-// the length of name should be 32 characters
+// the length of name should be 20 characters
 func ValidateLengthName(name string) bool {
-	return len(name) <= 32
+	return len(name) <= 20
 }
 
 func ValidateHost(host string) bool {
