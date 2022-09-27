@@ -77,7 +77,7 @@ func (w *Wallet) fetchCFiltersProgress(walletID int, startCFiltersHeight, endCFi
 	// wallet := w.DCRWalletWithID(walletID)
 	w.syncData.activeSyncData.cfiltersFetchProgress.totalFetchedCFiltersCount += endCFiltersHeight - startCFiltersHeight
 
-	totalCFiltersToFetch := w.GetBestBlockInt() - w.syncData.activeSyncData.cfiltersFetchProgress.startCFiltersHeight
+	totalCFiltersToFetch := w.GetBestBlockHeight() - w.syncData.activeSyncData.cfiltersFetchProgress.startCFiltersHeight
 	// cfiltersLeftToFetch := totalCFiltersToFetch - w.syncData.activeSyncData.cfiltersFetchProgress.totalFetchedCFiltersCount
 
 	cfiltersFetchProgress := float64(w.syncData.activeSyncData.cfiltersFetchProgress.totalFetchedCFiltersCount) / float64(totalCFiltersToFetch)
@@ -200,7 +200,7 @@ func (w *Wallet) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastFetched
 
 	// for _, wallet := range w.wallets {
 	if w.WaitingForHeaders {
-		w.WaitingForHeaders = w.GetBestBlockInt() > lastFetchedHeaderHeight
+		w.WaitingForHeaders = w.GetBestBlockHeight() > lastFetchedHeaderHeight
 	}
 	// }
 
@@ -482,7 +482,7 @@ func (w *Wallet) rescanProgress(walletID int, rescannedThrough int32) {
 		return
 	}
 
-	totalHeadersToScan := w.GetBestBlockInt()
+	totalHeadersToScan := w.GetBestBlockHeight()
 
 	rescanRate := float64(rescannedThrough) / float64(totalHeadersToScan)
 

@@ -587,7 +587,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
 		// TODO
-		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockInt() - transaction.BlockHeight) + 1
+		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0

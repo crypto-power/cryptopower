@@ -59,7 +59,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 
 			rescanProgressReport := &HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
-				TotalHeadersToScan:  wallet.GetBestBlockInt(),
+				TotalHeadersToScan:  wallet.GetBestBlockHeight(),
 				WalletID:            wallet.ID,
 			}
 

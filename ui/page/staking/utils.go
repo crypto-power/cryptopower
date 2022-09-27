@@ -88,12 +88,12 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 
 		ticketCopy := tx
 		txStatus := components.TransactionTitleIcon(l, w, &tx)
-		confirmations := tx.Confirmations(w.GetBestBlockInt())
+		confirmations := tx.Confirmations(w.GetBestBlockHeight())
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = ticketSpender.Confirmations(w.GetBestBlockInt()) <= w.TicketMaturity()
+			showProgress = ticketSpender.Confirmations(w.GetBestBlockHeight()) <= w.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -113,7 +113,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 
 			confs := confirmations
 			if ticketSpender != nil {
-				confs = ticketSpender.Confirmations(w.GetBestBlockInt())
+				confs = ticketSpender.Confirmations(w.GetBestBlockHeight())
 			}
 
 			progress = (float32(confs) / float32(progressMax)) * 100
@@ -123,7 +123,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 			transaction:   &ticketCopy,
 			ticketSpender: ticketSpender,
 			status:        txStatus,
-			confirmations: tx.Confirmations(w.GetBestBlockInt()),
+			confirmations: tx.Confirmations(w.GetBestBlockHeight()),
 			progress:      progress,
 			showProgress:  showProgress,
 			showTime:      showTime,
@@ -391,7 +391,7 @@ func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalle
 
 									confirmations := tx.confirmations
 									if tx.ticketSpender != nil {
-										confirmations = tx.ticketSpender.Confirmations(wal.GetBestBlockInt())
+										confirmations = tx.ticketSpender.Confirmations(wal.GetBestBlockHeight())
 									}
 
 									timeRemaining := time.Duration(float64(maturity-confirmations)*l.WL.MultiWallet.TargetTimePerBlockMinutes()) * time.Minute

@@ -491,9 +491,9 @@ func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
 		progressMax = pg.wallet.TicketExpiry()
 	}
 
-	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlockInt())
+	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlockHeight())
 	if pg.ticketSpender != nil {
-		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlockInt())
+		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlockHeight())
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100
@@ -585,7 +585,7 @@ func (pg *TxDetailsPage) associatedTicket(gtx C) D {
 func (pg *TxDetailsPage) txConfirmations() int32 {
 	transaction := pg.transaction
 	if transaction.BlockHeight != -1 {
-		return (pg.WL.SelectedWallet.Wallet.GetBestBlockInt() - transaction.BlockHeight) + 1
+		return (pg.WL.SelectedWallet.Wallet.GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0

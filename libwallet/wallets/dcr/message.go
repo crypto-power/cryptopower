@@ -13,10 +13,10 @@ func (wallet *Wallet) SignMessage(passphrase []byte, address string, message str
 	}
 	defer wallet.LockWallet()
 
-	return wallet.SignMessageDirect(address, message)
+	return wallet.signMessage(address, message)
 }
 
-func (wallet *Wallet) SignMessageDirect(address string, message string) ([]byte, error) {
+func (wallet *Wallet) signMessage(address string, message string) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
 		return nil, translateError(err)

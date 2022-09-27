@@ -315,8 +315,6 @@ func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 		return translateError(err)
 	}
 
-	// delete(wallet.ID)
-
 	return nil
 }
 
