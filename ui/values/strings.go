@@ -644,4 +644,5 @@ const (
 	StrBackupWarning                   = "backupWarning"
 	StrLatestBlock                     = "latestBlock"
 	StrComplete                        = "complete"
+	StrWatchOnly                       = "watchOnly"
 )

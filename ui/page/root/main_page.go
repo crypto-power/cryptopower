@@ -9,6 +9,7 @@ import (
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -679,6 +680,16 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 									Left: values.MarginPadding10,
 								}.Layout(gtx, lbl.Layout)
 							}),
+							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return layout.Inset{
+										Left: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return walletHightlighLabel(mp.Theme, gtx, values.String(values.StrWatchOnly))
+									})
+								}
+								return D{}
+							}),
 						)
 					})
 				}),
@@ -895,4 +906,18 @@ func (mp *MainPage) showBackupInfo() {
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
+}
+
+func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D {
+	indexLabel := theme.Label(values.TextSize16, content)
+	indexLabel.Color = theme.Color.GrayText1
+	indexLabel.Font.Weight = text.Medium
+	return cryptomaterial.LinearLayout{
+		Width:      gtx.Dp(values.MarginPadding100),
+		Height:     gtx.Dp(values.MarginPadding22),
+		Direction:  layout.Center,
+		Background: theme.Color.Gray7,
+		Margin:     layout.Inset{Right: values.MarginPadding8},
+		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
+	}.Layout2(gtx, indexLabel.Layout)
 }

@@ -537,4 +537,5 @@ const EN = `
 "backupWarning" = "Wallet backup needed"
 "latestBlock" = "Latest block"
 "complete" = "complete"
+"watchOnly" = "Watch-Only"
 `
