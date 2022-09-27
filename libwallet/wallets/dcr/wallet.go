@@ -34,18 +34,17 @@ type Wallet struct {
 	PrivatePassphraseType int32
 
 	chainParams  *chaincfg.Params
-	DataDir      string
+	dataDir      string
 	loader       *loader.Loader
-	WalletDataDB *walletdata.DB
+	walletDataDB *walletdata.DB
 
-	Synced            bool
-	Syncing           bool
-	WaitingForHeaders bool
+	synced            bool
+	syncing           bool
+	waitingForHeaders bool
 
 	shuttingDown       chan bool
 	cancelFuncs        []context.CancelFunc
-	cancel             context.CancelFunc
-	CancelAccountMixer context.CancelFunc `json:"-"`
+	cancelAccountMixer context.CancelFunc `json:"-"`
 
 	cancelAutoTicketBuyerMu sync.Mutex
 	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
@@ -81,18 +80,18 @@ func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
 	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
 
 	wallet.chainParams = chainParams
-	wallet.DataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
+	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn
 
 	// open database for indexing transactions for faster loading
-	walletDataDBPath := filepath.Join(wallet.DataDir, walletdata.DbName)
-	oldTxDBPath := filepath.Join(wallet.DataDir, walletdata.OldDbName)
+	walletDataDBPath := filepath.Join(wallet.dataDir, walletdata.DbName)
+	oldTxDBPath := filepath.Join(wallet.dataDir, walletdata.OldDbName)
 	if exists, _ := fileExists(oldTxDBPath); exists {
 		moveFile(oldTxDBPath, walletDataDBPath)
 	}
-	wallet.WalletDataDB, err = walletdata.Initialize(walletDataDBPath, chainParams, &Transaction{})
+	wallet.walletDataDB, err = walletdata.Initialize(walletDataDBPath, chainParams, &Transaction{})
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -105,7 +104,7 @@ func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
 	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	// init loader
-	wallet.loader = initWalletLoader(wallet.chainParams, wallet.DataDir, wallet.dbDriver)
+	wallet.loader = initWalletLoader(wallet.chainParams, wallet.dataDir, wallet.dbDriver)
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -135,8 +134,8 @@ func (wallet *Wallet) Shutdown() {
 		}
 	}
 
-	if wallet.WalletDataDB != nil {
-		err := wallet.WalletDataDB.Close()
+	if wallet.walletDataDB != nil {
+		err := wallet.walletDataDB.Close()
 		if err != nil {
 			log.Errorf("tx db closed with error: %v", err)
 		} else {
@@ -358,7 +357,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 		if wallet.Name == "" {
 			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
 		}
-		wallet.DataDir = walletDataDir
+		wallet.dataDir = walletDataDir
 
 		err = db.Save(wallet) // update database with complete wallet information
 		if err != nil {
@@ -398,13 +397,13 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 	return wallet.saveNewWallet(func() error {
 		// move wallet.db and tx.db files to newly created dir for the wallet
 		currentWalletDbFilePath := filepath.Join(walletDataDir, walletDbName)
-		newWalletDbFilePath := filepath.Join(wal.DataDir, walletDbName)
+		newWalletDbFilePath := filepath.Join(wal.dataDir, walletDbName)
 		if err := moveFile(currentWalletDbFilePath, newWalletDbFilePath); err != nil {
 			return err
 		}
 
 		currentTxDbFilePath := filepath.Join(walletDataDir, walletdata.OldDbName)
-		newTxDbFilePath := filepath.Join(wallet.DataDir, walletdata.DbName)
+		newTxDbFilePath := filepath.Join(wallet.dataDir, walletdata.DbName)
 		if err := moveFile(currentTxDbFilePath, newTxDbFilePath); err != nil {
 			return err
 		}
@@ -420,7 +419,7 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 				return wallet.OpenWallet()
 			}
 
-			err = wallet.loadWalletTemporarily(ctx, wallet.DataDir, originalPubPass, func(tempWallet *w.Wallet) error {
+			err = wallet.loadWalletTemporarily(ctx, wallet.dataDir, originalPubPass, func(tempWallet *w.Wallet) error {
 				return tempWallet.ChangePublicPassphrase(ctx, []byte(originalPubPass), []byte(w.InsecurePubPassphrase))
 			})
 			if err != nil {
@@ -581,7 +580,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 	wallet.Shutdown()
 
 	log.Info("Deleting Wallet")
-	return os.RemoveAll(wallet.DataDir)
+	return os.RemoveAll(wallet.dataDir)
 }
 
 // DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
@@ -637,4 +636,12 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) 
 	}
 
 	return false, errors.New(ErrInvalid)
+}
+
+func (wallet *Wallet) DataDir() string {
+	return wallet.dataDir
+}
+
+func (wallet *Wallet) Synced() bool {
+	return wallet.synced
 }

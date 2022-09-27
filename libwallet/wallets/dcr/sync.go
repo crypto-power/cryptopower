@@ -219,8 +219,8 @@ func (wallet *Wallet) SpvSync() error {
 
 	wallets := make(map[int]*w.Wallet)
 	wallets[0] = wallet.Internal()
-	wallet.WaitingForHeaders = true
-	wallet.Syncing = true
+	wallet.waitingForHeaders = true
+	wallet.syncing = true
 
 	syncer := spv.NewSyncer(wallets, lp)
 	syncer.SetNotifications(wallet.spvSyncNotificationCallbacks())
@@ -308,11 +308,7 @@ func (wallet *Wallet) CancelSync() {
 }
 
 func (wallet *Wallet) IsWaiting() bool {
-	return wallet.WaitingForHeaders
-}
-
-func (wallet *Wallet) isSynced() bool {
-	return wallet.Synced
+	return wallet.waitingForHeaders
 }
 
 func (wallet *Wallet) IsSyncing() bool {

@@ -101,4 +101,3 @@ func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.Wallet {
 	}
 	return nil
 }
-

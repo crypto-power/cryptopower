@@ -104,7 +104,7 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
-		wallet.WalletDataDB.SaveOrUpdate(&Transaction{}, ticketPurchaseTx)
+		wallet.walletDataDB.SaveOrUpdate(&Transaction{}, ticketPurchaseTx)
 	}
 
 	return decodedTx, nil

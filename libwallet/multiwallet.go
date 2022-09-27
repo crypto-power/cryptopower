@@ -135,7 +135,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
 		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
-		if err == nil && !WalletExistsAt(wallet.DataDir) {
+		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
 		}
 		if err != nil {
@@ -334,7 +334,7 @@ func (mw *MultiWallet) DeleteBadWallet(walletID int) error {
 		return translateError(err)
 	}
 
-	os.RemoveAll(wallet.DataDir)
+	os.RemoveAll(wallet.DataDir())
 	delete(mw.Assets.DCR.BadWallets, walletID)
 
 	return nil
@@ -378,7 +378,7 @@ func (mw *MultiWallet) OpenedWalletsCount() int32 {
 func (mw *MultiWallet) SyncedWalletsCount() int32 {
 	var syncedWallets int32
 	for _, wallet := range mw.Assets.DCR.Wallets {
-		if wallet.WalletOpened() && wallet.Synced {
+		if wallet.WalletOpened() && wallet.Synced() {
 			syncedWallets++
 		}
 	}

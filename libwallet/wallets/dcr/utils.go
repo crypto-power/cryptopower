@@ -64,18 +64,6 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 	return DefaultRequiredConfirmations
 }
 
-func (wallet *Wallet) listenForShutdown() {
-
-	wallet.cancelFuncs = make([]context.CancelFunc, 0)
-	wallet.shuttingDown = make(chan bool)
-	go func() {
-		<-wallet.shuttingDown
-		for _, cancel := range wallet.cancelFuncs {
-			cancel()
-		}
-	}()
-}
-
 func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
@@ -275,17 +263,6 @@ func moveFile(sourcePath, destinationPath string) error {
 		return os.Rename(sourcePath, destinationPath)
 	}
 	return nil
-}
-
-// done returns whether the context's Done channel was closed due to
-// cancellation or exceeded deadline.
-func done(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
-		return true
-	default:
-		return false
-	}
 }
 
 func backupFile(fileName string, suffix int) (newName string, err error) {
@@ -491,18 +468,4 @@ func HttpGet(url string, respObj interface{}) (*http.Response, []byte, error) {
 
 	err = json.Unmarshal(respBytes, respObj)
 	return resp, respBytes, err
-}
-
-func marshalResult(result interface{}, err error) (string, error) {
-
-	if err != nil {
-		return "", translateError(err)
-	}
-
-	response, err := json.Marshal(result)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling result: %s", err.Error())
-	}
-
-	return string(response), nil
 }

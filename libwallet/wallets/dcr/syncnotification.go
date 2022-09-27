@@ -16,7 +16,7 @@ func (w *Wallet) spvSyncNotificationCallbacks() *spv.Notifications {
 		PeerDisconnected: func(peerCount int32, addr string) {
 			w.handlePeerCountUpdate(peerCount)
 		},
-		Synced:                       w.synced,
+		Synced:                       w.syncedWallet,
 		FetchHeadersStarted:          w.fetchHeadersStarted,
 		FetchHeadersProgress:         w.fetchHeadersProgress,
 		FetchHeadersFinished:         w.fetchHeadersFinished,
@@ -166,7 +166,7 @@ func (w *Wallet) fetchHeadersStarted(peerInitialHeight int32) {
 		return
 	}
 
-	w.WaitingForHeaders = true
+	w.waitingForHeaders = true
 
 	lowestBlockHeight := w.GetLowestBlock().Height
 
@@ -199,8 +199,8 @@ func (w *Wallet) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastFetched
 	}
 
 	// for _, wallet := range w.wallets {
-	if w.WaitingForHeaders {
-		w.WaitingForHeaders = w.GetBestBlockHeight() > lastFetchedHeaderHeight
+	if w.waitingForHeaders {
+		w.waitingForHeaders = w.GetBestBlockHeight() > lastFetchedHeaderHeight
 	}
 	// }
 
@@ -618,11 +618,11 @@ func (w *Wallet) resetSyncData() {
 	w.syncData.activeSyncData = nil
 	w.syncData.mu.Unlock()
 
-	w.WaitingForHeaders = true
+	w.waitingForHeaders = true
 	w.LockWallet() // lock wallet if previously unlocked to perform account discovery.
 }
 
-func (w *Wallet) synced(walletID int, synced bool) {
+func (w *Wallet) syncedWallet(walletID int, synced bool) {
 
 	indexTransactions := func() {
 		// begin indexing transactions after sync is completed,
@@ -655,8 +655,8 @@ func (w *Wallet) synced(walletID int, synced bool) {
 		return
 	}
 
-	w.Synced = synced
-	w.Syncing = false
+	w.synced = synced
+	w.syncing = false
 	w.listenForTransactions()
 
 	if !w.Internal().Locked() {

@@ -105,7 +105,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("account error: %v", err)
 		}
 
-		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir)
+		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir())
 		return dexdcr.NewSpvWallet(wallet.Internal(), walletDesc, chainParams, logger.SubLogger("DLWL")), nil
 	}
 

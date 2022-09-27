@@ -195,13 +195,13 @@ func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 		}
 
 		ctx, cancel := wallet.contextWithShutdownCancel()
-		wallet.CancelAccountMixer = cancel
+		wallet.cancelAccountMixer = cancel
 		err = tb.Run(ctx, []byte(walletPassphrase))
 		if err != nil {
 			log.Errorf("AccountMixer instance errored: %v", err)
 		}
 
-		wallet.CancelAccountMixer = nil
+		wallet.cancelAccountMixer = nil
 		if wallet.accountMixerNotificationListener != nil {
 			wallet.publishAccountMixerEnded(wallet.ID)
 		}
@@ -259,12 +259,12 @@ func (wallet *Wallet) StopAccountMixer() error {
 		return errors.New(ErrNotExist)
 	}
 
-	if wallet.CancelAccountMixer == nil {
+	if wallet.cancelAccountMixer == nil {
 		return errors.New(ErrInvalid)
 	}
 
-	wallet.CancelAccountMixer()
-	wallet.CancelAccountMixer = nil
+	wallet.cancelAccountMixer()
+	wallet.cancelAccountMixer = nil
 	return nil
 }
 
@@ -308,7 +308,7 @@ func (wallet *Wallet) accountHasMixableOutput(accountNumber int32) (bool, error)
 
 // IsAccountMixerActive returns true if account mixer is active
 func (wallet *Wallet) IsAccountMixerActive() bool {
-	return wallet.CancelAccountMixer != nil
+	return wallet.cancelAccountMixer != nil
 }
 
 func (wallet *Wallet) publishAccountMixerStarted(walletID int) {

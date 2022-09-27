@@ -153,7 +153,7 @@ func (s *Syncer) SetNotifications(ntfns *Notifications) {
 
 // synced checks the atomic that controls wallet syncness and if previously
 // unsynced, updates to synced and notifies the callback, if set.
-func (s *Syncer) synced(walletID int) {
+func (s *Syncer) syncedWallet(walletID int) {
 	if atomic.CompareAndSwapUint32(s.atomicWalletsSynced[walletID], 0, 1) &&
 		s.notifications != nil &&
 		s.notifications.Synced != nil {
@@ -1481,7 +1481,7 @@ func (s *Syncer) startupSync(ctx context.Context, rp *p2p.RemotePeer) error {
 						s.loadedFilters[walletID] = true
 					}
 
-					s.synced(walletID)
+					s.syncedWallet(walletID)
 
 					return nil
 				}
@@ -1520,7 +1520,7 @@ func (s *Syncer) startupSync(ctx context.Context, rp *p2p.RemotePeer) error {
 				}
 				s.rescanFinished(walletID)
 
-				s.synced(walletID)
+				s.syncedWallet(walletID)
 
 				return nil
 			}()

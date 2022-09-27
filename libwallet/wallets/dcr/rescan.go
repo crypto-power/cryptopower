@@ -101,7 +101,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 		if startHeight == 0 {
 			err = wallet.ReindexTransactions()
 		} else {
-			err = wallet.WalletDataDB.SaveLastIndexPoint(startHeight)
+			err = wallet.walletDataDB.SaveLastIndexPoint(startHeight)
 			if err != nil {
 				if wallet.blocksRescanProgressListener != nil {
 					wallet.blocksRescanProgressListener.OnBlocksRescanEnded(wallet.ID, err)

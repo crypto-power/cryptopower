@@ -24,7 +24,7 @@ func (wallet *Wallet) listenForTransactions() {
 						return
 					}
 
-					overwritten, err := wallet.WalletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
+					overwritten, err := wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
 					if err != nil {
 						log.Errorf("[%d] New Tx save err: %v", wallet.ID, err)
 						return
@@ -51,7 +51,7 @@ func (wallet *Wallet) listenForTransactions() {
 							return
 						}
 
-						_, err = wallet.WalletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
+						_, err = wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
 						if err != nil {
 							log.Errorf("[%d] Incoming block replace tx error :%v", wallet.ID, err)
 							return
