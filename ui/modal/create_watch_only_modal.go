@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -95,8 +96,8 @@ func (cm *CreateWatchOnlyModal) WatchOnlyCreated(callback func(walletName, extPu
 }
 
 func (cm *CreateWatchOnlyModal) Handle() {
-	if editorsNotEmpty(cm.walletName.Editor) ||
-		editorsNotEmpty(cm.extendedPubKey.Editor) {
+	if utils.EditorsNotEmpty(cm.walletName.Editor) ||
+		utils.EditorsNotEmpty(cm.extendedPubKey.Editor) {
 		cm.btnPositve.Background = cm.Theme.Color.Primary
 		cm.isEnabled = true
 	} else {
@@ -114,13 +115,13 @@ func (cm *CreateWatchOnlyModal) Handle() {
 
 	for (cm.btnPositve.Clicked() || isSubmit) && cm.isEnabled {
 		if cm.walletNameEnabled {
-			if !editorsNotEmpty(cm.walletName.Editor) {
+			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
 				return
 			}
 		}
 
-		if !editorsNotEmpty(cm.extendedPubKey.Editor) {
+		if !utils.EditorsNotEmpty(cm.extendedPubKey.Editor) {
 			cm.extendedPubKey.SetError(values.String(values.StrEnterExtendedPubKey))
 			return
 		}

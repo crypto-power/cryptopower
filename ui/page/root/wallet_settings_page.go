@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"strings"
 
 	"gioui.org/layout"
 
@@ -13,6 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/page/security"
 	s "gitlab.com/raedah/cryptopower/ui/page/settings"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -49,16 +51,16 @@ type WalletSettingsPage struct {
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
 	updateConnectToPeer                        *cryptomaterial.Clickable
 
-	chevronRightIcon *cryptomaterial.Icon
-	backButton       cryptomaterial.IconButton
-	infoButton       cryptomaterial.IconButton
+	backButton cryptomaterial.IconButton
+	infoButton cryptomaterial.IconButton
 
 	fetchProposal     *cryptomaterial.Switch
 	proposalNotif     *cryptomaterial.Switch
 	spendUnconfirmed  *cryptomaterial.Switch
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
-	peerAddr          string
+
+	peerAddr string
 }
 
 func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
@@ -90,9 +92,6 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 	}
 
-	pg.chevronRightIcon = cryptomaterial.NewIcon(l.Theme.Icons.ChevronRight)
-	pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
-
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
 	return pg
@@ -109,13 +108,17 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
+	pg.loadPeerAddress()
+
+	pg.loadWalletAccount()
+}
+
+func (pg *WalletSettingsPage) loadPeerAddress() {
 	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.SpvPersistentPeerAddressesConfigKey, "")
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
 	}
-
-	pg.loadWalletAccount()
 }
 
 func (pg *WalletSettingsPage) loadWalletAccount() {
@@ -219,9 +222,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 func (pg *WalletSettingsPage) account() layout.Widget {
 	dim := func(gtx C) D {
 		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
-			return pg.subSection(gtx, pg.accounts[a].Name, func(gtx C) D {
-				return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-			})
+			return pg.subSection(gtx, pg.accounts[a].Name, pg.Theme.Icons.ChevronRight.Layout24dp)
 		})
 	}
 	return func(gtx C) D {
@@ -325,9 +326,7 @@ func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(textLabel.Layout),
 					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-						})
+						return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 					}),
 				)
 			})
@@ -469,7 +468,14 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(newName string, tm *modal.TextInputModal) bool {
-			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, newName)
+			name := strings.TrimSpace(newName)
+			if !utils.ValidateLengthName(name) {
+				tm.SetError(values.String(values.StrWalletNameLengthError))
+				tm.SetLoading(false)
+				return false
+			}
+
+			err := pg.WL.MultiWallet.RenameWallet(pg.wallet.ID, name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -489,8 +495,14 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		Hint(values.String(values.StrIPAddress)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
+			if !utils.ValidateHost(ipAddress) {
+				tim.SetError(values.StringF(values.StrValidateHostErr, ipAddress))
+				tim.SetLoading(false)
+				return false
+			}
 			if ipAddress != "" {
 				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.loadPeerAddress()
 			}
 			return true
 		})
@@ -513,16 +525,14 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(lbl.Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-					})
+					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 				}),
 			)
 		})
 	})
 }
 
-func (pg *WalletSettingsPage) showWarningModalDialog(title, msg, key string) {
+func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 	warningModal := modal.NewCustomModal(pg.Load).
 		Title(title).
 		Body(msg).
@@ -664,7 +674,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		}
 	}
 
-	specificPeerKey := libwallet.SpvPersistentPeerAddressesConfigKey
 	if pg.connectToPeer.Changed() {
 		if pg.connectToPeer.IsChecked() {
 			pg.showSPVPeerDialog()
@@ -673,7 +682,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 		title := values.String(values.StrRemovePeer)
 		msg := values.String(values.StrRemovePeerWarn)
-		pg.showWarningModalDialog(title, msg, specificPeerKey)
+		pg.showWarningModalDialog(title, msg)
 	}
 
 	for pg.updateConnectToPeer.Clicked() {

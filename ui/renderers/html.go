@@ -108,7 +108,7 @@ func (p *HTMLProvider) prepareListItem(node *ast.ListItem, entering bool) {
 
 func (p *HTMLProvider) prepareParagraph(node *ast.Paragraph, entering bool) {
 	if !entering {
-		p.render(p.theme.Body1(""))
+		p.render(p.theme.Body2(""))
 		p.renderEmptyLine()
 	}
 }

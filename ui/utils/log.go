@@ -1,14 +1,9 @@
-package modal
+// Copyright (c) 2017, The dcrdata developers
+// See LICENSE for details.
 
-import (
-	"gioui.org/layout"
-	"github.com/decred/slog"
-)
+package utils
 
-type (
-	C = layout.Context
-	D = layout.Dimensions
-)
+import "github.com/decred/slog"
 
 // log is a logger that is initialized with no output filters.  This
 // means the package will not perform any logging by default until the caller

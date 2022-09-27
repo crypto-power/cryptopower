@@ -31,6 +31,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/send"
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
 	"gitlab.com/raedah/cryptopower/ui/page/transaction"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
@@ -293,7 +294,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	mp.isFetchingExchangeRate = true
 	desc := "for getting dcrUsdtBittrex exchange rate value"
 	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
-		return load.GetUSDExchangeValue(&mp.dcrUsdtBittrex)
+		return utils.GetUSDExchangeValue(&mp.dcrUsdtBittrex)
 	})
 	if err != nil {
 		log.Errorf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
@@ -316,7 +317,7 @@ func (mp *MainPage) updateBalance() {
 			usdExchangeRate, err := strconv.ParseFloat(mp.dcrUsdtBittrex.LastTradeRate, 64)
 			if err == nil {
 				balanceInUSD := totalBalance.Total.ToCoin() * usdExchangeRate
-				mp.totalBalanceUSD = load.FormatUSDBalance(mp.Printer, balanceInUSD)
+				mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 			}
 		}
 	}
@@ -394,7 +395,11 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				pg = privacy.NewAccountMixerPage(mp.Load)
+				if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
+					pg = privacy.NewSetupPrivacyPage(mp.Load)
+				} else {
+					pg = privacy.NewAccountMixerPage(mp.Load)
+				}
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
 			case governance.GovernancePageID:
@@ -783,7 +788,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 }
 
 func initializeBeepNotification(n string) {
-	absoluteWdPath, err := components.GetAbsolutePath()
+	absoluteWdPath, err := utils.GetAbsolutePath()
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -916,7 +921,7 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 		Width:      gtx.Dp(values.MarginPadding100),
 		Height:     gtx.Dp(values.MarginPadding22),
 		Direction:  layout.Center,
-		Background: theme.Color.Gray7,
+		Background: theme.Color.Gray8,
 		Margin:     layout.Inset{Right: values.MarginPadding8},
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 	}.Layout2(gtx, indexLabel.Layout)

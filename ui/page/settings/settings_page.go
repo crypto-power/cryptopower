@@ -25,7 +25,6 @@ type (
 type row struct {
 	title     string
 	clickable *cryptomaterial.Clickable
-	icon      *cryptomaterial.Icon
 	label     cryptomaterial.Label
 }
 
@@ -40,27 +39,22 @@ type SettingsPage struct {
 	pageContainer *widget.List
 	wal           *wallet.Wallet
 
-	changeStartupPass *cryptomaterial.Clickable
-	language          *cryptomaterial.Clickable
-	currency          *cryptomaterial.Clickable
-	help              *cryptomaterial.Clickable
-	about             *cryptomaterial.Clickable
-	appearanceMode    *cryptomaterial.Clickable
-
-	chevronRightIcon *cryptomaterial.Icon
-	backButton       cryptomaterial.IconButton
-	infoButton       cryptomaterial.IconButton
-
-	isDarkModeOn            bool
+	changeStartupPass       *cryptomaterial.Clickable
+	language                *cryptomaterial.Clickable
+	currency                *cryptomaterial.Clickable
+	help                    *cryptomaterial.Clickable
+	about                   *cryptomaterial.Clickable
+	appearanceMode          *cryptomaterial.Clickable
 	startupPassword         *cryptomaterial.Switch
 	transactionNotification *cryptomaterial.Switch
+	backButton              cryptomaterial.IconButton
+	infoButton              cryptomaterial.IconButton
 
+	isDarkModeOn      bool
 	isStartupPassword bool
 }
 
 func NewSettingsPage(l *load.Load) *SettingsPage {
-	chevronRightIcon := l.Theme.Icons.ChevronRight
-
 	pg := &SettingsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SettingsPageID),
@@ -71,8 +65,6 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
-
-		chevronRightIcon: cryptomaterial.NewIcon(chevronRightIcon),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -209,7 +201,6 @@ func (pg *SettingsPage) general() layout.Widget {
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
-						icon:      pg.chevronRightIcon,
 						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)),
 					}
 					return pg.clickableRow(gtx, exchangeRate)
@@ -218,7 +209,6 @@ func (pg *SettingsPage) general() layout.Widget {
 					languageRow := row{
 						title:     values.String(values.StrLanguage),
 						clickable: pg.language,
-						icon:      pg.chevronRightIcon,
 						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)),
 					}
 					return pg.clickableRow(gtx, languageRow)
@@ -243,7 +233,6 @@ func (pg *SettingsPage) security() layout.Widget {
 						changeStartupPassRow := row{
 							title:     values.String(values.StrChangeStartupPassword),
 							clickable: pg.changeStartupPass,
-							icon:      pg.chevronRightIcon,
 							label:     pg.Theme.Body1(""),
 						}
 						return pg.clickableRow(gtx, changeStartupPassRow)
@@ -262,7 +251,6 @@ func (pg *SettingsPage) info() layout.Widget {
 					helpRow := row{
 						title:     values.String(values.StrHelp),
 						clickable: pg.help,
-						icon:      pg.chevronRightIcon,
 						label:     pg.Theme.Body2(""),
 					}
 					return pg.clickableRow(gtx, helpRow)
@@ -271,7 +259,6 @@ func (pg *SettingsPage) info() layout.Widget {
 					aboutRow := row{
 						title:     values.String(values.StrAbout),
 						clickable: pg.about,
-						icon:      pg.chevronRightIcon,
 						label:     pg.Theme.Body2(""),
 					}
 					return pg.clickableRow(gtx, aboutRow)
@@ -302,11 +289,7 @@ func (pg *SettingsPage) clickableRow(gtx C, row row) D {
 			return pg.subSection(gtx, row.title, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(row.label.Layout),
-					layout.Rigid(func(gtx C) D {
-						ic := row.icon
-						ic.Color = pg.Theme.Color.Gray1
-						return ic.Layout(gtx, values.MarginPadding22)
-					}),
+					layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
 				)
 			})
 		})
@@ -361,7 +344,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			load.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
 			Title(values.StrLanguage).
-			UpdateValues(func() {
+			UpdateValues(func(_ string) {
 				values.SetUserLanguage(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey))
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
@@ -377,7 +360,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			values.ArrExchangeCurrencies).
 			Title(values.StrExchangeRate).
-			UpdateValues(func() {})
+			UpdateValues(func(_ string) {})
 		pg.ParentWindow().ShowModal(currencySelectorModal)
 		break
 	}
@@ -493,21 +476,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 func (pg *SettingsPage) showNoticeSuccess(title string) {
 	info := modal.NewSuccessModal(pg.Load, title, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(info)
-}
-
-func (pg *SettingsPage) showSPVPeerDialog() {
-	textModal := modal.NewTextInputModal(pg.Load).
-		Hint(values.String(values.StrIPAddress)).
-		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		SetPositiveButtonCallback(func(ipAddress string, tim *modal.TextInputModal) bool {
-			if ipAddress != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.SpvPersistentPeerAddressesConfigKey, ipAddress)
-			}
-			return true
-		})
-	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		SetPositiveButtonText(values.String(values.StrConfirm))
-	pg.ParentWindow().ShowModal(textModal)
 }
 
 func (pg *SettingsPage) showUserAgentDialog() {

@@ -9,6 +9,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -22,8 +23,7 @@ type TextInputModal struct {
 	textInput cryptomaterial.Editor
 	callback  func(string, *TextInputModal) bool
 
-	positiveButtonColor color.NRGBA
-	textCustomTemplate  []layout.Widget
+	textCustomTemplate []layout.Widget
 }
 
 func NewTextInputModal(l *load.Load) *TextInputModal {
@@ -45,7 +45,7 @@ func NewTextInputModal(l *load.Load) *TextInputModal {
 func (tm *TextInputModal) OnResume() {
 	tm.textInput.Editor.Focus()
 	// set the positive button state
-	tm.btnPositive.SetEnabled(editorsNotEmpty(tm.textInput.Editor))
+	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 }
 
 func (tm *TextInputModal) Hint(hint string) *TextInputModal {
@@ -98,7 +98,7 @@ func (tm *TextInputModal) SetTextWithTemplate(template string) *TextInputModal {
 
 func (tm *TextInputModal) Handle() {
 	// set the positive button state
-	tm.btnPositive.SetEnabled(editorsNotEmpty(tm.textInput.Editor))
+	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(tm.textInput.Editor)
 	if isChanged {

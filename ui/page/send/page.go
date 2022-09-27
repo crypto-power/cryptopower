@@ -17,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -194,7 +195,7 @@ func (pg *Page) fetchExchangeRate() {
 
 	var dcrUsdtBittrex load.DCRUSDTBittrex
 	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
-		return load.GetUSDExchangeValue(&dcrUsdtBittrex)
+		return utils.GetUSDExchangeValue(&dcrUsdtBittrex)
 	})
 	if err != nil {
 		pg.exchangeRateMessage = "Exchange rate not fetched. Kindly check internet connection."
@@ -301,12 +302,12 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.txFeeUSD = fmt.Sprintf("$%.4f", load.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.DcrValue))
-		pg.totalCostUSD = load.FormatUSDBalance(pg.Printer, load.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
-		pg.balanceAfterSendUSD = load.FormatUSDBalance(pg.Printer, load.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.DcrValue))
+		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
-		usdAmount := load.DCRToUSD(pg.exchangeRate, dcrutil.Amount(amountAtom).ToCoin())
-		pg.sendAmountUSD = load.FormatUSDBalance(pg.Printer, usdAmount)
+		usdAmount := utils.DCRToUSD(pg.exchangeRate, dcrutil.Amount(amountAtom).ToCoin())
+		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
 
 	pg.txAuthor = unsignedTx
