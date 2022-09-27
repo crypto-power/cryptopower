@@ -103,7 +103,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.selector = components.NewAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *dcr.Account) {
-			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
+			selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
 			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
 				log.Errorf("Error getting current address: %v", err)
@@ -116,7 +116,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		AccountValidator(func(account *dcr.Account) bool {
 
 			// Filter out imported account and mixed.
-			wal := pg.multiWallet.WalletWithID(account.WalletID)
+			wal := pg.multiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
 				account.Number == wal.MixedAccountNumber() {
 				return false
@@ -454,7 +454,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 
 func (pg *ReceivePage) generateNewAddress() (string, error) {
 	selectedAccount := pg.selector.SelectedAccount()
-	selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
+	selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
 
 generateAddress:
 	newAddr, err := selectedWallet.NextAddress(selectedAccount.Number)

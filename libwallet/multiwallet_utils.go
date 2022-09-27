@@ -83,7 +83,7 @@ func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, walletDataDir,
 }
 
 func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
-	wallet := mw.WalletWithID(walletID)
+	wallet := mw.DCRWalletWithID(walletID)
 	if wallet == nil {
 		return errors.New(ErrNotExist)
 	}

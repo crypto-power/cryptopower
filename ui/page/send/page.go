@@ -110,7 +110,7 @@ func NewSendPage(l *load.Load) *Page {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()

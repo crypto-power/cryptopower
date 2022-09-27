@@ -60,7 +60,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {
-		w := multiWallet.WalletWithID(tx.WalletID)
+		w := multiWallet.DCRWalletWithID(tx.WalletID)
 
 		ticketSpender, err := w.TicketSpender(tx.Hash)
 		if err != nil {
@@ -344,7 +344,7 @@ func toolTipContent(inset layout.Inset, body layout.Widget) layout.Widget {
 // deprecated to be removed in subsequent code clean uo
 // ticketCard layouts out Stake info with the shadow box, use for list horizontal or list grid
 func ticketCard(gtx layout.Context, l *load.Load, tx *transactionItem, showWalletName bool) layout.Dimensions {
-	wal := l.WL.MultiWallet.WalletWithID(tx.transaction.WalletID)
+	wal := l.WL.MultiWallet.DCRWalletWithID(tx.transaction.WalletID)
 	txStatus := tx.status
 
 	// add this data to transactionItem so it can be shared with list

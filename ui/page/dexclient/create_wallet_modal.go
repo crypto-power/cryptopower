@@ -61,7 +61,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 		AccountSelected(func(selectedAccount *decred.Account) {}).
 		AccountValidator(func(account *decred.Account) bool {
 			// Filter out imported account and mixed.
-			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := md.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
 				account.Number == wal.MixedAccountNumber() {
 				return false

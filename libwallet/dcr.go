@@ -48,3 +48,57 @@ func initializeDCRWallet(rootDir, dbDriver, netType string) (*storm.DB, *chaincf
 
 	return db, chainParams, rootDir, nil
 }
+
+func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
+	wallet, err := dcr.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.Assets.DCR.DB, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.DCR.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
+	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.DCR.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
+	wallet, err := dcr.RestoreWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.DCR.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) DeleteDCRWallet(walletID int, privPass []byte) error {
+	wallet := mw.DCRWalletWithID(walletID)
+
+	err := wallet.DeleteWallet(privPass)
+	if err != nil {
+		return err
+	}
+
+	delete(mw.Assets.DCR.Wallets, wallet.ID)
+
+	return nil
+}
+
+func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.Wallet {
+	if wallet, ok := mw.Assets.DCR.Wallets[walletID]; ok {
+		return wallet
+	}
+	return nil
+}
+

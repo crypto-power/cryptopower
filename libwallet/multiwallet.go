@@ -340,13 +340,6 @@ func (mw *MultiWallet) DeleteBadWallet(walletID int) error {
 	return nil
 }
 
-func (mw *MultiWallet) WalletWithID(walletID int) *dcr.Wallet {
-	if wallet, ok := mw.Assets.DCR.Wallets[walletID]; ok {
-		return wallet
-	}
-	return nil
-}
-
 // NumWalletsNeedingSeedBackup returns the number of opened wallets whose seed haven't been verified.
 func (mw *MultiWallet) NumWalletsNeedingSeedBackup() int32 {
 	var backupsNeeded int32

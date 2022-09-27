@@ -49,7 +49,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1
 			if unmixedAcc := pg.unmixedAccountSelector.SelectedAccount(); unmixedAcc != nil {
@@ -71,7 +71,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		Title("Unmixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
 			if mixedAcc := pg.mixedAccountSelector.SelectedAccount(); mixedAcc != nil {

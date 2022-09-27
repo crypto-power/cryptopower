@@ -239,7 +239,7 @@ func (pg *Restore) showHexRestoreModal() {
 					pg.switchTab(pg.tabIndex)
 				}).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.SelectedWallet.Wallet.RestoreWallet(walletName, hex, password, libwallet.PassphraseTypePass)
+					_, err := pg.WL.MultiWallet.RestoreDCRWallet(walletName, hex, password, libwallet.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)

@@ -291,7 +291,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 	if rescanUpdate == nil {
 		return D{}
 	}
-	wal := pg.WL.MultiWallet.WalletWithID(rescanUpdate.WalletID)
+	wal := pg.WL.MultiWallet.DCRWalletWithID(rescanUpdate.WalletID)
 	return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		card := pg.Theme.Card()

@@ -437,7 +437,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					m.SetLoading(false)
 					return false
 				}
-				wal, err := dcr.CreateNewWallet(pg.walletName.Editor.Text(), password, dcr.PassphraseTypePass, pg.WL.MultiWallet.Assets.DCR.DB, pg.WL.MultiWallet.Assets.DCR.RootDir, pg.WL.MultiWallet.Assets.DCR.DBDriver, pg.WL.MultiWallet.Assets.DCR.ChainParams)
+				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, dcr.PassphraseTypePass)
 				if err != nil {
 					return errFunc(err)
 				}

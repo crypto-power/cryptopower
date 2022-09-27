@@ -74,7 +74,7 @@ func (w *Wallet) fetchCFiltersProgress(walletID int, startCFiltersHeight, endCFi
 		w.syncData.activeSyncData.cfiltersFetchProgress.startCFiltersHeight = startCFiltersHeight
 	}
 
-	// wallet := w.WalletWithID(walletID)
+	// wallet := w.DCRWalletWithID(walletID)
 	w.syncData.activeSyncData.cfiltersFetchProgress.totalFetchedCFiltersCount += endCFiltersHeight - startCFiltersHeight
 
 	totalCFiltersToFetch := w.GetBestBlockInt() - w.syncData.activeSyncData.cfiltersFetchProgress.startCFiltersHeight

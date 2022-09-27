@@ -45,7 +45,7 @@ func newSendDestination(l *load.Load) *destination {
 		AccountValidator(func(account *dcr.Account) bool {
 
 			// Filter out imported account and mixed.
-			wal := dst.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := dst.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == components.MaxInt32 ||
 				account.Number == wal.MixedAccountNumber() {
 				return false
@@ -59,7 +59,7 @@ func newSendDestination(l *load.Load) *destination {
 
 func (dst *destination) destinationAddress(useDefaultParams bool) (string, error) {
 	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
-	wal := dst.WL.MultiWallet.WalletWithID(destinationAccount.WalletID)
+	wal := dst.WL.MultiWallet.DCRWalletWithID(destinationAccount.WalletID)
 
 	if useDefaultParams {
 		return wal.CurrentAddress(destinationAccount.Number)

@@ -55,7 +55,7 @@ func (wl *WalletLoad) TotalWalletsBalance() (dcrutil.Amount, error) {
 
 func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 	totalBalance := int64(0)
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
 		return -1, errors.New(dcr.ErrNotExist)
 	}
@@ -74,7 +74,7 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 
 func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, error) {
 	spendableBal := int64(0)
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
 		return -1, errors.New(dcr.ErrNotExist)
 	}

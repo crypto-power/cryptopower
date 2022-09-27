@@ -394,7 +394,7 @@ func DurationAgo(timestamp int64) string {
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
+	wal := l.WL.MultiWallet.DCRWalletWithID(row.Transaction.WalletID)
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 
 	return cryptomaterial.LinearLayout{
@@ -587,7 +587,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
 		// TODO
-		return (l.WL.MultiWallet.WalletWithID(transaction.WalletID).GetBestBlockInt() - transaction.BlockHeight) + 1
+		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockInt() - transaction.BlockHeight) + 1
 	}
 
 	return 0

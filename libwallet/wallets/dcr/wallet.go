@@ -277,9 +277,9 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 	return wallet.db.Save(wallet) // update WalletName field
 }
 
-func (wallet *Wallet) RestoreWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
+func RestoreWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
 
-	wal := &Wallet{
+	wallet := &Wallet{
 		Name:                  walletName,
 		PrivatePassphraseType: privatePassphraseType,
 		IsRestored:            true,
@@ -287,7 +287,7 @@ func (wallet *Wallet) RestoreWallet(walletName, seedMnemonic, privatePassphrase 
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wal.ID), wallet.walletConfigReadFn(wal.ID))
+		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 		if err != nil {
 			return err
 		}

@@ -749,7 +749,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 		}
 
 		if mp.WL.MultiWallet.OpenedWalletsCount() > 1 {
-			wallet := mp.WL.MultiWallet.WalletWithID(t.Transaction.WalletID)
+			wallet := mp.WL.MultiWallet.DCRWalletWithID(t.Transaction.WalletID)
 			if wallet == nil {
 				return
 			}
