@@ -321,7 +321,11 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 							Margin:      layout.Inset{Bottom: values.MarginPadding16},
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return pg.sendDestination.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
+								return layout.Inset{
+									Bottom: values.MarginPadding16,
+								}.Layout(gtx, func(gtx C) D {
+									return pg.sendDestination.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
+								})
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.sendDestination.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)

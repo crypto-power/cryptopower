@@ -2,6 +2,7 @@ package components
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"gioui.org/io/event"
@@ -23,69 +24,154 @@ type WalletSelector struct {
 	*load.Load
 	*listeners.TxAndBlockNotificationListener
 
-	selectedWallet *libwallet.Wallet
-	callback       func(*libwallet.Wallet)
+	selectedWallet  *libwallet.Wallet
+	selectedAccount *libwallet.Account
+	accountCallback func(*libwallet.Account)
+	walletCallback  func(*libwallet.Wallet)
+	accountIsValid  func(*libwallet.Account) bool
+	accountSelector bool
 
 	openSelectorDialog *cryptomaterial.Clickable
-	selectorModal      *WalletSelectorModal
+	selectorModal      *SelectorModal
 
 	dialogTitle  string
 	totalBalance string
 	changed      bool
 }
 
-// NewWalletSelector opens up a modal to select the desired wallet. If a
-// nil value is passed for selectedWallet, then wallets for all wallets
-// are shown, otherwise only wallets for the selectedWallet is shown.
+// NewWalletSelector opens up a modal to select the desired wallet, a desired wallet.
+// Or a desired account if ShowAccount is called.
 func NewWalletSelector(l *load.Load) *WalletSelector {
 	return &WalletSelector{
 		Load:               l,
 		openSelectorDialog: l.Theme.NewClickable(true),
+		accountIsValid:     func(*libwallet.Account) bool { return true },
+		selectedWallet:     l.WL.SelectedWallet.Wallet, // Set the default wallet to wallet loaded by cryptopower.
+		accountSelector:    false,
 	}
 }
 
-func (as *WalletSelector) Title(title string) *WalletSelector {
-	as.dialogTitle = title
-	return as
+// ShowAccount transforms this widget into an Account selector. It shows the accounts of
+// *libwallet.Wallet passed into to the method on a modal.
+func (ws *WalletSelector) ShowAccount(wall *libwallet.Wallet) *WalletSelector {
+	ws.SetSelectedWallet(wall)
+	ws.accountSelector = true
+	ws.SelectFirstValidAccount(ws.selectedWallet)
+	return ws
 }
 
-func (as *WalletSelector) WalletSelected(callback func(*libwallet.Wallet)) *WalletSelector {
-	as.callback = callback
-	return as
+func (ws *WalletSelector) UpdateSelectedAccountBalance() {
+	bal, err := ws.WL.SelectedWallet.Wallet.GetAccountBalance(ws.SelectedAccount().Number)
+	if err == nil {
+		ws.totalBalance = dcrutil.Amount(bal.Total).String()
+	}
 }
 
-func (as *WalletSelector) Changed() bool {
-	changed := as.changed
-	as.changed = false
+// SelectedAccount returns the currently selected account.
+func (ws *WalletSelector) SelectedAccount() *libwallet.Account {
+	return ws.selectedAccount
+}
+
+// AccountValidator validates an account according to the rules defined to determine a valid a account.
+func (ws *WalletSelector) AccountValidator(accountIsValid func(*libwallet.Account) bool) *WalletSelector {
+	ws.accountIsValid = accountIsValid
+	return ws
+}
+
+// SelectFirstValidAccount selects the first valid account from the
+// the wallet passed in to the method. This method should only be called after ShowAccount is
+// is called.
+func (ws *WalletSelector) SelectFirstValidAccount(wallet *libwallet.Wallet) error {
+	if !ws.accountSelector {
+		return errors.New("This widget isn't set to show accounts.")
+	}
+	accountsResult, err := wallet.GetAccountsRaw()
+	if err != nil {
+		return err
+	}
+
+	accounts := accountsResult.Acc
+	for _, account := range accounts {
+		if ws.accountIsValid(account) {
+			ws.SetSelectedAccount(account)
+			if ws.accountCallback != nil {
+				ws.accountCallback(account)
+			}
+			return nil
+		}
+	}
+
+	return errors.New(values.String(values.StrNoValidAccountFound))
+}
+
+func (ws *WalletSelector) SetSelectedAccount(account *libwallet.Account) {
+	ws.selectedAccount = account
+	ws.totalBalance = dcrutil.Amount(account.TotalBalance).String()
+}
+
+func (ws *WalletSelector) Clickable() *cryptomaterial.Clickable {
+	return ws.openSelectorDialog
+}
+
+func (ws *WalletSelector) Title(title string) *WalletSelector {
+	ws.dialogTitle = title
+	return ws
+}
+
+func (ws *WalletSelector) WalletSelected(callback func(*libwallet.Wallet)) *WalletSelector {
+	ws.walletCallback = callback
+	return ws
+}
+
+func (ws *WalletSelector) AccountSelected(callback func(*libwallet.Account)) *WalletSelector {
+	ws.accountCallback = callback
+	return ws
+}
+
+func (ws *WalletSelector) Changed() bool {
+	changed := ws.changed
+	ws.changed = false
 	return changed
 }
 
-func (as *WalletSelector) Handle(window app.WindowNavigator) {
-	for as.openSelectorDialog.Clicked() {
-		as.selectorModal = newWalletSelectorModal(as.Load, as.selectedWallet).
-			title(as.dialogTitle).
+func (ws *WalletSelector) Handle(window app.WindowNavigator) {
+	for ws.openSelectorDialog.Clicked() {
+		ws.selectorModal = newSelectorModal(ws.Load, ws).
+			title(ws.dialogTitle).
+			accountValidator(ws.accountIsValid).
 			walletSelected(func(wallet *libwallet.Wallet) {
-				as.changed = true
-				as.SetSelectedWallet(wallet)
-				as.callback(wallet)
+				ws.changed = true
+				ws.SetSelectedWallet(wallet)
+				if ws.walletCallback != nil {
+					ws.walletCallback(wallet)
+				}
+			}).
+			accountSelected(func(account *libwallet.Account) {
+				if ws.selectedAccount.Number != account.Number {
+					ws.changed = true
+				}
+				ws.SetSelectedAccount(account)
+				if ws.accountCallback != nil {
+					ws.accountCallback(account)
+				}
 			}).
 			onModalExit(func() {
-				as.selectorModal = nil
+				ws.selectorModal = nil
 			})
-		window.ShowModal(as.selectorModal)
+		window.ShowModal(ws.selectorModal)
 	}
 }
 
-func (as *WalletSelector) SetSelectedWallet(wallet *libwallet.Wallet) {
-	as.selectedWallet = wallet
+func (ws *WalletSelector) SetSelectedWallet(wallet *libwallet.Wallet) {
+	ws.selectedWallet = wallet
 }
 
-func (as *WalletSelector) SelectedWallet() *libwallet.Wallet {
-	return as.selectedWallet
+func (ws *WalletSelector) SelectedWallet() *libwallet.Wallet {
+	return ws.selectedWallet
 }
 
-func (as *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
-	as.Handle(window)
+func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
+	ws.Handle(window)
 
 	return cryptomaterial.LinearLayout{
 		Width:   cryptomaterial.MatchParent,
@@ -93,13 +179,13 @@ func (as *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 		Padding: layout.UniformInset(values.MarginPadding12),
 		Border: cryptomaterial.Border{
 			Width:  values.MarginPadding2,
-			Color:  as.Theme.Color.Gray2,
+			Color:  ws.Theme.Color.Gray2,
 			Radius: cryptomaterial.Radius(8),
 		},
-		Clickable: as.openSelectorDialog,
+		Clickable: ws.Clickable(),
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			walletIcon := as.Theme.Icons.WalletIcon
+			walletIcon := ws.Theme.Icons.WalletIcon
 			inset := layout.Inset{
 				Right: values.MarginPadding8,
 			}
@@ -108,21 +194,41 @@ func (as *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return as.Theme.Body1("Name").Layout(gtx)
+			if ws.accountSelector {
+				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return ws.Theme.Body1(ws.SelectedAccount().Name).Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						walName := ws.Theme.Label(values.TextSize12, ws.SelectedWallet().Name)
+						walName.Color = ws.Theme.Color.GrayText2
+						return layout.Inset{
+							Left: values.MarginPadding8,
+						}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return walName.Layout(gtx)
+						})
+					}),
+				)
+			}
+			return ws.Theme.Body1(ws.SelectedWallet().Name).Layout(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return as.Theme.Body1(as.totalBalance).Layout(gtx)
+						if ws.accountSelector {
+							return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
+						}
+						tBal, _ := wallBalance(ws.SelectedWallet())
+						return ws.Theme.Body1(dcrutil.Amount(tBal).String()).Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						inset := layout.Inset{
 							Left: values.MarginPadding15,
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							ic := cryptomaterial.NewIcon(as.Theme.Icons.DropDownIcon)
-							ic.Color = as.Theme.Color.Gray1
+							ic := cryptomaterial.NewIcon(ws.Theme.Icons.DropDownIcon)
+							ic.Color = ws.Theme.Color.Gray1
 							return ic.Layout(gtx, values.MarginPadding20)
 						})
 					}),
@@ -132,12 +238,12 @@ func (as *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 	)
 }
 
-func (as *WalletSelector) ListenForTxNotifications(ctx context.Context, window app.WindowNavigator) {
-	if as.TxAndBlockNotificationListener != nil {
+func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window app.WindowNavigator) {
+	if ws.TxAndBlockNotificationListener != nil {
 		return
 	}
-	as.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := as.WL.MultiWallet.AddTxAndBlockNotificationListener(as.TxAndBlockNotificationListener, true, AccoutSelectorID)
+	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
+	err := ws.WL.MultiWallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, AccoutSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -146,173 +252,259 @@ func (as *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 	go func() {
 		for {
 			select {
-			case n := <-as.TxAndBlockNotifChan:
+			case n := <-ws.TxAndBlockNotifChan:
 				switch n.Type {
 				case listeners.BlockAttached:
 					// refresh wallet wallet and balance on every new block
 					// only if sync is completed.
-					if as.WL.MultiWallet.IsSynced() {
-						if as.selectorModal != nil {
-							as.selectorModal.setupWallet()
+					if ws.WL.MultiWallet.IsSynced() {
+						if ws.selectorModal != nil {
+							ws.selectorModal.setupWallet()
 						}
 						window.Reload()
 					}
 				case listeners.NewTransaction:
 					// refresh wallets list when new transaction is received
-					if as.selectorModal != nil {
-						as.selectorModal.setupWallet()
+					if ws.selectorModal != nil {
+						ws.selectorModal.setupWallet()
 					}
 					window.Reload()
 				}
 			case <-ctx.Done():
-				as.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
-				close(as.TxAndBlockNotifChan)
-				as.TxAndBlockNotificationListener = nil
+				ws.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
+				close(ws.TxAndBlockNotifChan)
+				ws.TxAndBlockNotificationListener = nil
 				return
 			}
 		}
 	}()
 }
 
-type WalletSelectorModal struct {
+type SelectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	walletIsValid func(*libwallet.Wallet) bool
-	callback      func(*libwallet.Wallet)
-	onExit        func()
+	walletIsValid   func(*libwallet.Wallet) bool
+	accountIsValid  func(*libwallet.Account) bool
+	walletCallback  func(*libwallet.Wallet)
+	accountCallback func(*libwallet.Account)
+	onExit          func()
 
 	walletInfoButton cryptomaterial.IconButton
 	walletsList      layout.List
 
 	currentSelectedWallet *libwallet.Wallet
-	wallets               []*selectorWallet // key = wallet id
+	wallets               []*selectorWallet
 	eventQueue            event.Queue
 	walletMu              sync.Mutex
 
 	dialogTitle string
 
-	isCancelable bool
+	isCancelable   bool
+	walletSelector *WalletSelector
+	infoButton     cryptomaterial.IconButton
 }
 
 type selectorWallet struct {
-	*libwallet.Wallet
+	Wallet    interface{}
 	clickable *cryptomaterial.Clickable
 }
 
-func newWalletSelectorModal(l *load.Load, currentSelectedWallet *libwallet.Wallet) *WalletSelectorModal {
-	asm := &WalletSelectorModal{
-		Load:        l,
-		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal"),
-		walletsList: layout.List{Axis: layout.Vertical},
-
-		currentSelectedWallet: currentSelectedWallet,
+func newSelectorModal(l *load.Load, ws *WalletSelector) *SelectorModal {
+	sm := &SelectorModal{
+		Load:                  l,
+		Modal:                 l.Theme.ModalFloatTitle("SelectorModal"),
+		walletsList:           layout.List{Axis: layout.Vertical},
+		currentSelectedWallet: ws.selectedWallet,
 		isCancelable:          true,
+		walletSelector:        ws,
 	}
+	sm.walletInfoButton = l.Theme.IconButton(sm.Theme.Icons.ActionInfo)
+	sm.walletInfoButton.Size = values.MarginPadding15
+	sm.walletInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
 
-	asm.walletInfoButton = l.Theme.IconButton(asm.Theme.Icons.ActionInfo)
-	asm.walletInfoButton.Size = values.MarginPadding15
-	asm.walletInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
+	sm.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
+	sm.infoButton.Size = values.MarginPadding14
+	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
-	asm.Modal.ShowScrollbar(true)
-	return asm
+	sm.Modal.ShowScrollbar(true)
+	return sm
 }
 
-func (asm *WalletSelectorModal) OnResume() {
-	asm.setupWallet()
+func (sm *SelectorModal) OnResume() {
+	if sm.walletSelector.accountSelector {
+		sm.setupAccounts(sm.currentSelectedWallet)
+		return
+	}
+	sm.setupWallet()
 }
 
-func (asm *WalletSelectorModal) setupWallet() {
+func (sm *SelectorModal) setupWallet() {
 	wallet := make([]*selectorWallet, 0)
-	wallets := asm.WL.SortedWalletList()
+	wallets := sm.WL.SortedWalletList()
 	for _, wal := range wallets {
-		if !asm.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+		if !sm.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
 			wallet = append(wallet, &selectorWallet{
 				Wallet:    wal,
-				clickable: asm.Theme.NewClickable(true),
+				clickable: sm.Theme.NewClickable(true),
 			})
 		}
 	}
-	asm.wallets = wallet
+	sm.wallets = wallet
 }
 
-func (asm *WalletSelectorModal) SetCancelable(min bool) *WalletSelectorModal {
-	asm.isCancelable = min
-	return asm
+func (sm *SelectorModal) setupAccounts(wal *libwallet.Wallet) {
+	wallet := make([]*selectorWallet, 0)
+	if !wal.IsWatchingOnlyWallet() {
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			log.Errorf("Error getting accounts:", err)
+			return
+		}
+
+		for _, account := range accountsResult.Acc {
+			if sm.accountIsValid(account) {
+				wallet = append(wallet, &selectorWallet{
+					Wallet:    account,
+					clickable: sm.Theme.NewClickable(true),
+				})
+			}
+		}
+	}
+	sm.wallets = wallet
 }
 
-func (asm *WalletSelectorModal) Handle() {
-	if asm.eventQueue != nil {
-		for _, wallet := range asm.wallets {
+func (sm *SelectorModal) SetCancelable(min bool) *SelectorModal {
+	sm.isCancelable = min
+	return sm
+}
+
+func (sm *SelectorModal) accountValidator(accountIsValid func(*libwallet.Account) bool) *SelectorModal {
+	sm.accountIsValid = accountIsValid
+	return sm
+}
+
+func (sm *SelectorModal) Handle() {
+	if sm.eventQueue != nil {
+		for _, wallet := range sm.wallets {
 			for wallet.clickable.Clicked() {
-				asm.callback(wallet.Wallet)
-				asm.onExit()
-				asm.Dismiss()
+				switch item := wallet.Wallet.(type) {
+				case *libwallet.Account:
+					if sm.accountCallback != nil {
+						sm.accountCallback(item)
+					}
+				case *libwallet.Wallet:
+					if sm.walletCallback != nil {
+						sm.walletCallback(item)
+					}
+				}
+				sm.onExit()
+				sm.Dismiss()
 			}
 		}
 	}
 
-	if asm.Modal.BackdropClicked(asm.isCancelable) {
-		asm.onExit()
-		asm.Dismiss()
+	if sm.Modal.BackdropClicked(sm.isCancelable) {
+		sm.onExit()
+		sm.Dismiss()
 	}
 }
 
-func (asm *WalletSelectorModal) title(title string) *WalletSelectorModal {
-	asm.dialogTitle = title
-	return asm
+func (sm *SelectorModal) title(title string) *SelectorModal {
+	sm.dialogTitle = title
+	return sm
 }
 
-func (asm *WalletSelectorModal) walletValidator(walletIsValid func(*libwallet.Wallet) bool) *WalletSelectorModal {
-	asm.walletIsValid = walletIsValid
-	return asm
+func (sm *SelectorModal) walletValidator(walletIsValid func(*libwallet.Wallet) bool) *SelectorModal {
+	sm.walletIsValid = walletIsValid
+	return sm
 }
 
-func (asm *WalletSelectorModal) walletSelected(callback func(*libwallet.Wallet)) *WalletSelectorModal {
-	asm.callback = callback
-	return asm
+func (sm *SelectorModal) walletSelected(callback func(*libwallet.Wallet)) *SelectorModal {
+	sm.walletCallback = callback
+	return sm
 }
 
-func (asm *WalletSelectorModal) Layout(gtx C) D {
-	asm.eventQueue = gtx
+func (sm *SelectorModal) accountSelected(callback func(*libwallet.Account)) *SelectorModal {
+	sm.accountCallback = callback
+	return sm
+}
+
+func (sm *SelectorModal) Layout(gtx C) D {
+	sm.eventQueue = gtx
 
 	w := []layout.Widget{
 		func(gtx C) D {
-			title := asm.Theme.H6(asm.dialogTitle)
-			title.Color = asm.Theme.Color.Text
+			title := sm.Theme.H6(sm.dialogTitle)
+			title.Color = sm.Theme.Color.Text
 			title.Font.Weight = text.SemiBold
 			return title.Layout(gtx)
 		},
 		func(gtx C) D {
-			return layout.Stack{Alignment: layout.NW}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					wallets := asm.wallets
-					return asm.walletsList.Layout(gtx, len(wallets), func(gtx C, aindex int) D {
-						return asm.walletWalletLayout(gtx, wallets[aindex])
-					})
-				}),
-				layout.Stacked(func(gtx C) D {
-					if false { //TODO
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if sm.walletSelector.accountSelector {
 						inset := layout.Inset{
-							Top:  values.MarginPadding20,
-							Left: values.MarginPaddingMinus75,
+							Top: values.MarginPadding15,
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							// return page.walletInfoPopup(gtx)
-							return D{}
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									inset := layout.UniformInset(values.MarginPadding4)
+									return inset.Layout(gtx, func(gtx C) D {
+										return sm.Theme.Label(values.TextSize14, sm.currentSelectedWallet.Name).Layout(gtx)
+									})
+								}),
+								layout.Rigid(sm.infoButton.Layout),
+							)
 						})
 					}
 					return D{}
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Stack{Alignment: layout.NW}.Layout(gtx,
+						layout.Expanded(func(gtx C) D {
+							wallets := sm.wallets
+
+							return sm.walletsList.Layout(gtx, len(wallets), func(gtx C, aindex int) D {
+								return sm.modalListItemLayout(gtx, wallets[aindex])
+							})
+						}),
+						layout.Stacked(func(gtx C) D {
+							if false { //TODO
+								inset := layout.Inset{
+									Top:  values.MarginPadding20,
+									Left: values.MarginPaddingMinus75,
+								}
+								return inset.Layout(gtx, func(gtx C) D {
+									// return page.walletInfoPopup(gtx)
+									return D{}
+								})
+							}
+							return D{}
+						}),
+					)
+
 				}),
 			)
 		},
 	}
 
-	return asm.Modal.Layout(gtx, w)
+	return sm.Modal.Layout(gtx, w)
 }
 
-func (asm *WalletSelectorModal) walletWalletLayout(gtx C, wallet *selectorWallet) D {
-	walletIcon := asm.Theme.Icons.WalletIcon
+func wallBalance(wal *libwallet.Wallet) (bal, spendableBal int64) {
+	var tBal, sBal int64
+	accountsResult, _ := wal.GetAccountsRaw()
+	for _, account := range accountsResult.Acc {
+		tBal += account.TotalBalance
+		sBal += account.Balance.Spendable
+	}
+	return tBal, sBal
+}
+
+func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
+	walletIcon := sm.Theme.Icons.AccountIcon
 
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
@@ -326,37 +518,73 @@ func (asm *WalletSelectorModal) walletWalletLayout(gtx C, wallet *selectorWallet
 			return layout.Inset{
 				Right: values.MarginPadding18,
 			}.Layout(gtx, func(gtx C) D {
-				return walletIcon.Layout24dp(gtx)
+				return walletIcon.Layout16dp(gtx)
 			})
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
+			var name, bal, sbal string
+			switch t := wallet.Wallet.(type) {
+			case *libwallet.Account:
+				bal = dcrutil.Amount(t.TotalBalance).String()
+				sbal = dcrutil.Amount(t.Balance.Spendable).String()
+				name = t.Name
+			case *libwallet.Wallet:
+				tb, sb := wallBalance(t)
+				bal = dcrutil.Amount(tb).String()
+				sbal = dcrutil.Amount(sb).String()
+				name = t.Name
+			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					acct := asm.Theme.Label(values.TextSize18, wallet.Name)
-					acct.Color = asm.Theme.Color.Text
+					acct := sm.Theme.Label(values.TextSize18, name)
+					acct.Color = sm.Theme.Color.Text
 					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
-						return layout.Dimensions{}
+						return LayoutBalance(gtx, sm.Load, bal)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					spendable := asm.Theme.Label(values.TextSize14, values.String(values.StrLabelSpendable))
-					spendable.Color = asm.Theme.Color.GrayText2
-					spendableBal := asm.Theme.Label(values.TextSize14, dcrutil.Amount(1234567).String())
-					spendableBal.Color = asm.Theme.Color.GrayText2
+					spendable := sm.Theme.Label(values.TextSize14, values.String(values.StrLabelSpendable))
+					spendable.Color = sm.Theme.Color.GrayText2
+					spendableBal := sm.Theme.Label(values.TextSize14, sbal)
+					spendableBal.Color = sm.Theme.Color.GrayText2
 					return EndToEndRow(gtx, spendable.Layout, spendableBal.Layout)
 				}),
 			)
 		}),
 
 		layout.Flexed(0.1, func(gtx C) D {
+			inset := layout.Inset{
+				Right: values.MarginPadding2,
+				Top:   values.MarginPadding10,
+				Left:  values.MarginPadding10,
+			}
+			sections := func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return inset.Layout(gtx, func(gtx C) D {
+						ic := cryptomaterial.NewIcon(sm.Theme.Icons.NavigationCheck)
+						ic.Color = sm.Theme.Color.Gray1
+						return ic.Layout(gtx, values.MarginPadding20)
+					})
+				})
+			}
+			switch t := wallet.Wallet.(type) {
+			case *libwallet.Account:
+				if t.Number == sm.walletSelector.selectedAccount.Number {
+					return sections(gtx)
+				}
+			case *libwallet.Wallet:
+				if t.ID == sm.currentSelectedWallet.ID {
+					return sections(gtx)
+				}
+			}
 			return D{}
 		}),
 	)
 }
 
-func (asm *WalletSelectorModal) onModalExit(exit func()) *WalletSelectorModal {
-	asm.onExit = exit
-	return asm
+func (sm *SelectorModal) onModalExit(exit func()) *SelectorModal {
+	sm.onExit = exit
+	return sm
 }
 
-func (asm *WalletSelectorModal) OnDismiss() {}
+func (sm *SelectorModal) OnDismiss() {}

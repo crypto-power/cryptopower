@@ -19,7 +19,7 @@ type destination struct {
 
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
-	destinationAccountSelector *components.AccountSelector
+	destinationAccountSelector *components.WalletSelector
 	destinationWalletSelector  *components.WalletSelector
 
 	sendToAddress bool
@@ -42,13 +42,12 @@ func newSendDestination(l *load.Load) *destination {
 
 	// Destination wallet picker
 	dst.destinationWalletSelector = components.NewWalletSelector(dst.Load).
-		Title(values.String(values.StrWallets))
+		Title(values.String(values.StrTo))
 
 	// Destination account picker
-	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
-		Title(values.String(values.StrReceivingAddress)).
-		AccountValidator(func(account *dcr.Account) bool {
-
+	dst.destinationAccountSelector = components.NewWalletSelector(dst.Load).
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *libwallet.Account) bool {
 			// Filter out imported account and mixed.
 			wal := dst.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == components.MaxInt32 ||
@@ -57,7 +56,8 @@ func newSendDestination(l *load.Load) *destination {
 			}
 
 			return true
-		})
+		}).
+		ShowAccount(dst.destinationWalletSelector.SelectedWallet())
 
 	return dst
 }

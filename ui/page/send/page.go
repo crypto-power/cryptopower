@@ -44,7 +44,7 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	sourceAccountSelector *components.AccountSelector
+	sourceAccountSelector *components.WalletSelector
 	sendDestination       *destination
 	amount                *sendAmount
 
@@ -103,9 +103,9 @@ func NewSendPage(l *load.Load) *Page {
 	}
 
 	// Source account picker
-	pg.sourceAccountSelector = components.NewAccountSelector(l).
-		Title(values.String(values.StrSendingAcct)).
-		AccountSelected(func(selectedAccount *dcr.Account) {
+	pg.sourceAccountSelector = components.NewWalletSelector(l).
+		Title(values.String(values.StrFrom)).
+		AccountSelected(func(selectedAccount *libwallet.Account) {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -124,16 +124,21 @@ func NewSendPage(l *load.Load) *Page {
 				}
 			}
 			return accountIsValid
-		})
+		}).
+		ShowAccount(l.WL.SelectedWallet.Wallet)
 
 	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
 		pg.validateAndConstructTx()
-		pg.sourceAccountSelector.SelectFirstWalletValidAccount() // refresh source account
+		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet) // refresh source account
+	})
+
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *libwallet.Wallet) {
+		pg.sendDestination.destinationAccountSelector.ShowAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstWalletValidAccount()
+		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -162,8 +167,8 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.sendDestination.destinationAccountSelector.SelectFirstWalletValidAccount()
-	pg.sourceAccountSelector.SelectFirstWalletValidAccount()
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
