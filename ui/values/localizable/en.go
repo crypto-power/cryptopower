@@ -487,7 +487,6 @@ const EN = `
 "unmixed" = "unmixed"
 "allowSpendingFromUnmixedAccount" = "Allow spending from unmixed account"
 "walletSettings" = "Wallet settings"
-"syncCompTime" = "Est. Sync completion time"
 "info" = "Info"
 "changeWalletName" = "Change wallet name"
 "account" = "Account"
@@ -535,4 +534,7 @@ const EN = `
 "moveToUnmixed" = "Move funds to unmixed account"
 "seedValidationFailed" = "Failed to verify. Please go through every wallet seed and try again."
 "invalidAmount" = "Invalid amount"
+"backupWarning" = "Wallet backup needed"
+"latestBlock" = "Latest block"
+"complete" = "complete"
 `

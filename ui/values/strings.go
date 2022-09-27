@@ -641,4 +641,7 @@ const (
 	StrMoveToUnmixed                   = "moveToUnmixed"
 	StrSeedValidationFailed            = "seedValidationFailed"
 	StrInvalidAmount                   = "invalidAmount"
+	StrBackupWarning                   = "backupWarning"
+	StrLatestBlock                     = "latestBlock"
+	StrComplete                        = "complete"
 )

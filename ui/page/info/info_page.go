@@ -2,8 +2,6 @@ package info
 
 import (
 	"context"
-	"image/color"
-	"sync"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -27,15 +25,6 @@ type (
 	D = layout.Dimensions
 )
 
-// walletSyncDetails contains sync data for each wallet when a sync
-// is in progress.
-type walletSyncDetails struct {
-	name               cryptomaterial.Label
-	status             cryptomaterial.Label
-	blockHeaderFetched cryptomaterial.Label
-	syncingProgress    cryptomaterial.Label
-}
-
 type WalletInfo struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -49,7 +38,6 @@ type WalletInfo struct {
 	*listeners.TxAndBlockNotificationListener
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
-	listLock  sync.Mutex
 
 	multiWallet  *libwallet.MultiWallet
 	rescanUpdate *wallet.RescanUpdate
@@ -62,12 +50,10 @@ type WalletInfo struct {
 	checkBox         cryptomaterial.CheckBoxStyle
 
 	remainingSyncTime    string
-	syncStepLabel        string
 	headersToFetchOrScan int32
 	stepFetchProgress    int32
 	syncProgress         int
 	syncStep             int
-	isBackupModalOpened  bool
 }
 
 func NewInfoPage(l *load.Load) *WalletInfo {
@@ -82,9 +68,8 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 	}
 
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
-	pg.toBackup.Color = pg.Theme.Color.Primary
+	pg.toBackup.Font.Weight = text.Medium
 	pg.toBackup.TextSize = values.TextSize14
-	pg.toBackup.Background = color.NRGBA{}
 
 	pg.initWalletStatusWidgets()
 
@@ -134,8 +119,9 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 											layout.Rigid(pg.Theme.Icons.RedAlert.Layout24dp),
 											layout.Rigid(func(gtx C) D {
 												return layout.Inset{
-													Left: values.MarginPadding9,
-												}.Layout(gtx, pg.Theme.Body2("Backup your wallet now to avoid losses").Layout)
+													Left:  values.MarginPadding9,
+													Right: values.MarginPadding16,
+												}.Layout(gtx, pg.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
 											}),
 											layout.Rigid(pg.toBackup.Layout),
 										)
