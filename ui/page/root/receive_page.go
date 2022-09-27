@@ -71,7 +71,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		},
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		copy:           l.Theme.Button(values.String(values.StrCopy)),
-		more:           l.Theme.IconButton(l.Theme.Icons.NavMoreIcon),
+		more:           l.Theme.IconButton(l.Theme.Icons.NavigationMore),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
@@ -84,12 +84,12 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copy.Color = pg.Theme.Color.Surface
 	pg.copy.Inset = layout.UniformInset(values.MarginPadding10)
 	pg.more.Inset = layout.UniformInset(values.MarginPadding0)
-	pg.newAddr.Inset = layout.UniformInset(values.MarginPadding5)
-	pg.newAddr.Color = pg.Theme.Color.Primary
+	pg.newAddr.Inset = layout.UniformInset(values.MarginPadding10)
+	pg.newAddr.Color = pg.Theme.Color.Text
 	pg.newAddr.Background = pg.Theme.Color.Surface
 	pg.newAddr.HighlightColor = pg.Theme.Color.SurfaceHighlight
 	pg.newAddr.ButtonStyle.TextSize = values.TextSize14
-	pg.newAddr.ButtonStyle.Font.Weight = text.Bold
+	pg.newAddr.ButtonStyle.Font.Weight = text.SemiBold
 
 	pg.receiveAddress.MaxLines = 1
 
@@ -345,7 +345,7 @@ func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 }
 
 func (pg *ReceivePage) topNav(gtx C) D {
-	m := values.MarginPadding20
+	m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
@@ -368,7 +368,7 @@ func (pg *ReceivePage) titleLayout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					if pg.isNewAddr {
 						m := op.Record(gtx.Ops)
-						layout.Inset{Top: values.MarginPadding5, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
+						layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
 							return pg.Theme.Shadow().Layout(gtx, pg.newAddr.Layout)
 						})
 						op.Defer(gtx.Ops, m.Stop())
