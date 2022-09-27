@@ -425,7 +425,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.SelectedWallet.Wallet.DeleteWallet(nil)
+				err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, nil)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -443,7 +443,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.SelectedWallet.Wallet.DeleteWallet(nil)
+					err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, []byte(password))
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)

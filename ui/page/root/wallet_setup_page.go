@@ -467,7 +467,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
 		pg.showLoader = true
 		go func() {
-			_, err := dcr.CreateWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+			_, err := pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
 				pg.watchOnlyWalletHex.SetError(err.Error())
 				pg.showLoader = false
