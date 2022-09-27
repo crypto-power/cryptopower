@@ -538,4 +538,9 @@ const EN = `
 "setchoice" = "Set Choice"
 "votechoice" = "Vote Choice"
 "selectAcc" = "Select Account"
+"upcomming" = "Upcoming"
+"inprogress" = "In Progress"
+"failed" = "Failed"
+"lockedin" = "Locked In"
+"finished" = "Finished"
 `

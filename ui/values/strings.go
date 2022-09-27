@@ -644,4 +644,9 @@ const (
 	StrSetChoice                       = "setchoice"
 	StrVoteChoice                      = "votechoice"
 	StrSelectAcc                       = "selectAcc"
+	StrUpcoming                        = "upcomming"
+	StrInProgress                      = "inprogress"
+	StrFailed                          = "failed"
+	StrLockedIn                        = "lockedin"
+	StrFinished                        = "finished"
 )

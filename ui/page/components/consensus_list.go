@@ -6,8 +6,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -167,19 +165,4 @@ func LoadAgendas(l *load.Load, selectedWallet *libwallet.Wallet, newestFirst boo
 		}
 	}
 	return consensusItems
-}
-
-// FetchStrAgendaStatus helps in manipulating what statuses to show and how to show
-// them on a dropdown.
-func FetchStrAgendaStatus() []string {
-	strAgendas := make([]string, len(libwallet.AgendasList))
-	for i, v := range libwallet.AgendasList {
-		if v == libwallet.UnknownStatus {
-			strAgendas[i] = "All"
-			continue
-		}
-		// Capitalizes the first letter.
-		strAgendas[i] = cases.Title(language.English).String(v.String())
-	}
-	return strAgendas
 }

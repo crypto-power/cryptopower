@@ -31,15 +31,6 @@ const (
 	ProposalCategoryAbandoned = politeia.ProposalCategoryAbandoned
 )
 
-var ProposalStatuses = []int32{
-	ProposalCategoryAll,
-	ProposalCategoryPre,
-	ProposalCategoryActive,
-	ProposalCategoryApproved,
-	ProposalCategoryRejected,
-	ProposalCategoryAbandoned,
-}
-
 type Proposal struct {
 	politeia.Proposal
 }
@@ -76,23 +67,4 @@ func ConvertVotes(votes []*ProposalVote) []*politeia.ProposalVote {
 		}
 	}
 	return eligibleTickets
-}
-
-func ProposalToStr(proposaltype int32) string {
-	switch proposaltype {
-	case ProposalCategoryAll:
-		return "All"
-	case ProposalCategoryPre:
-		return "In Discusion"
-	case ProposalCategoryActive:
-		return "Active"
-	case ProposalCategoryApproved:
-		return "Approved"
-	case ProposalCategoryRejected:
-		return "Rejected"
-	case ProposalCategoryAbandoned:
-		return "Abandoned"
-	default:
-		return "Unknown"
-	}
 }

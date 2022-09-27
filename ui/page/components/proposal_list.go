@@ -233,13 +233,3 @@ func LoadProposals(category int32, newestFirst bool, l *load.Load) []*ProposalIt
 	}
 	return proposalItems
 }
-
-// FetchStrProposalStatus helps in manipulating what status to show and how to
-// show them on a drop down.
-func FetchStrProposalStatus() []string {
-	var statuses = make([]string, len(libwallet.ProposalStatuses))
-	for i, v := range libwallet.ProposalStatuses {
-		statuses[i] = libwallet.ProposalToStr(v)
-	}
-	return statuses
-}

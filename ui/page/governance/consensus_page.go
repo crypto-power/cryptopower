@@ -73,8 +73,14 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	pg.statusDropDown = components.CreateStatusDropdown(l, components.FetchStrAgendaStatus(),
-		values.ConsensusDropdownGroup, 0)
+	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrAll)},
+		{Text: values.String(values.StrUpcoming)},
+		{Text: values.String(values.StrInProgress)},
+		{Text: values.String(values.StrFailed)},
+		{Text: values.String(values.StrLockedIn)},
+		{Text: values.String(values.StrFinished)},
+	}, values.ConsensusDropdownGroup, 0)
 
 	return pg
 }
@@ -226,17 +232,20 @@ func (pg *ConsensusPage) FetchAgendas() {
 	go func() {
 		items := components.LoadAgendas(pg.Load, selectedWallet, true)
 		agenda := libwallet.AgendaStatusFromStr(selectedType)
+		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == libwallet.UnknownStatus {
-			pg.consensusItems = items
+			listItems = items
 		} else {
 			for _, item := range items {
 				if libwallet.AgendaStatusType(item.Agenda.Status) == agenda {
-					pg.consensusItems = append(pg.consensusItems, item)
+					listItems = append(listItems, item)
 				}
 			}
 		}
+
 		pg.isSyncing = false
 		pg.syncCompleted = true
+		pg.consensusItems = listItems
 		pg.ParentWindow().Reload()
 	}()
 

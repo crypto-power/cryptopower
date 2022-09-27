@@ -741,14 +741,6 @@ func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, w
 	return *dwn
 }
 
-func CreateStatusDropdown(l *load.Load, items []string, grp uint, pos uint) *cryptomaterial.DropDown {
-	statusDropdownItems := make([]cryptomaterial.DropDownItem, len(items))
-	for i, item := range items {
-		statusDropdownItems[i] = cryptomaterial.DropDownItem{Text: item}
-	}
-	return l.Theme.DropDown(statusDropdownItems, grp, pos)
-}
-
 func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
 	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)}}, grp, pos)

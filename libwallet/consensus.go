@@ -42,15 +42,6 @@ const (
 	UnknownStatus AgendaStatusType = "unknown"
 )
 
-var AgendasList = []AgendaStatusType{
-	UnknownStatus,
-	AgendaStatusUpcoming,
-	AgendaStatusInProgress,
-	AgendaStatusFailed,
-	AgendaStatusLockedIn,
-	AgendaStatusFinished,
-}
-
 func (a AgendaStatusType) String() string {
 	switch a {
 	case AgendaStatusUpcoming:

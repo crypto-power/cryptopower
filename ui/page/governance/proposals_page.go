@@ -80,10 +80,14 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	// orderDropDown is the first dropdown when page is laid out. Its
-	// position should be 0 for consistent backdrop.
-	statuses := components.FetchStrProposalStatus()
-	pg.statusDropDown = components.CreateStatusDropdown(l, statuses, values.ProposalDropdownGroup, 0)
+	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrAll)},
+		{Text: values.String(values.StrUnderReview)},
+		{Text: values.String(values.StrApproved)},
+		{Text: values.String(values.StrRejected)},
+		{Text: values.String(values.StrAbandoned)},
+	}, values.ProposalDropdownGroup, 0)
+
 	return pg
 }
 
@@ -100,16 +104,36 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 
 func (pg *ProposalsPage) fetchProposals() {
 	var proposalFilter int32
-	for _, v := range libwallet.ProposalStatuses {
-		if libwallet.ProposalToStr(v) == pg.statusDropDown.Selected() {
-			proposalFilter = v
-			break
+	var selectedType = pg.statusDropDown.Selected()
+	switch selectedType {
+	case values.String(values.StrApproved):
+		proposalFilter = libwallet.ProposalCategoryApproved
+	case values.String(values.StrRejected):
+		proposalFilter = libwallet.ProposalCategoryRejected
+	case values.String(values.StrAbandoned):
+		proposalFilter = libwallet.ProposalCategoryAbandoned
+	default:
+		proposalFilter = libwallet.ProposalCategoryAll
+	}
+
+	proposalItems := components.LoadProposals(proposalFilter, true, pg.Load)
+	listItems := make([]*components.ProposalItem, 0)
+
+	if selectedType == values.String(values.StrUnderReview) {
+		// group 'In discussion' and 'Active' proposals into under review
+		for _, item := range proposalItems {
+			if item.Proposal.Category == libwallet.ProposalCategoryPre ||
+				item.Proposal.Category == libwallet.ProposalCategoryActive {
+				listItems = append(listItems, item)
+			}
 		}
+	} else {
+		listItems = proposalItems
 	}
 
 	pg.proposalMu.Lock()
 	defer pg.proposalMu.Unlock()
-	pg.proposalItems = components.LoadProposals(proposalFilter, true, pg.Load)
+	pg.proposalItems = listItems
 }
 
 // HandleUserInteractions is called just before Layout() to determine
