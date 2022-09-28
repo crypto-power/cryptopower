@@ -90,7 +90,7 @@ func (mw *MultiWallet) DeleteDCRWallet(walletID int, privPass []byte) error {
 		return err
 	}
 
-	delete(mw.Assets.DCR.Wallets, wallet.ID)
+	delete(mw.Assets.DCR.Wallets, walletID)
 
 	return nil
 }

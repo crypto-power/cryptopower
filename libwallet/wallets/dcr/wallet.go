@@ -310,11 +310,6 @@ func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 		return translateError(err)
 	}
 
-	err = wallet.db.DeleteStruct(wallet)
-	if err != nil {
-		return translateError(err)
-	}
-
 	return nil
 }
 
@@ -579,6 +574,11 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 	}
 
 	wallet.Shutdown()
+
+	err := wallet.db.DeleteStruct(wallet)
+	if err != nil {
+		return translateError(err)
+	}
 
 	log.Info("Deleting Wallet")
 	return os.RemoveAll(wallet.dataDir)
