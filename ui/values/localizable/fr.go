@@ -180,7 +180,7 @@ const FR = `
 "viewTicket" = "Voir le ticket associé";
 "external" = "Externe";
 "republished" = "Transactions non minées republiées sur le réseau décrété";
-"copied" = "Copié";
+"copied" = "Copié!";
 "txHashCopied" = "Hachage de la transaction copié";
 "addressCopied" = "Adresse copiée";
 "address" = "Adresse";
@@ -500,4 +500,6 @@ const FR = `
 "setchoice" = "Définir le choix"
 "votechoice" = "Choix de vote"
 "selectAcc" = "Sélectionnez un compte"
+"mixedAccHidden" = "Le compte mixte est caché"
+"mixedAccDisabled" = "La réception sur un compte mixte est désactivée par les paramètres StakeShuffle pour protéger votre vie privée"
 `
