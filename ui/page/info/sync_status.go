@@ -109,6 +109,7 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 
 // syncContent lays out sync status content when the wallet is syncing, synced, not connected
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
+	isInprogress := pg.WL.MultiWallet.IsSyncing() || pg.WL.MultiWallet.IsRescanning()
 	bestBlock := pg.WL.MultiWallet.GetBestBlock()
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -120,6 +121,9 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if !isInprogress {
+							return D{}
+						}
 						blockHeaderFetched := pg.Theme.Body1(values.String(values.StrBlockHeaderFetched))
 						blockHeaderFetched.Color = pg.Theme.Color.GrayText2
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeaderFetched.Layout)
@@ -130,6 +134,9 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgress.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if !isInprogress {
+							return D{}
+						}
 						estTime := pg.Theme.Body1(values.String(values.StrSyncCompTime))
 						estTime.Color = pg.Theme.Color.GrayText2
 						return estTime.Layout(gtx)
@@ -144,6 +151,9 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
+							if !isInprogress {
+								return D{}
+							}
 							blockHeightFetchedText := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.headersToFetchOrScan)
 							blockHeightFetched := pg.Theme.Body1(blockHeightFetchedText)
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeightFetched.Layout)
@@ -166,6 +176,9 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgressBody.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
+							if !isInprogress {
+								return D{}
+							}
 							_, timeLeft := pg.progressStatusDetails()
 							estTime := pg.Theme.Body1(timeLeft)
 							return estTime.Layout(gtx)
