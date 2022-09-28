@@ -351,7 +351,9 @@ func (pg *ReceivePage) topNav(gtx C) D {
 			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, pg.infoButton.Layout)
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, pg.infoButton.Layout)
+			})
 		}),
 	)
 }
