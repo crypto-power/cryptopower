@@ -82,7 +82,7 @@ func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
 		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
-			err := pg.WL.MultiWallet.DeleteBadWallet(badWalletID)
+			err := pg.WL.MultiWallet.DeleteBadDCRWallet(badWalletID)
 			if err != nil {
 				errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errorModal)

@@ -81,6 +81,7 @@ func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
 
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
+	wallet.rootDir = rootDir
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn

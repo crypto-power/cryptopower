@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -319,25 +318,6 @@ func (mw *MultiWallet) AllWalletsAreWatchOnly() (bool, error) {
 
 func (mw *MultiWallet) BadWallets() map[int]*dcr.Wallet {
 	return mw.Assets.DCR.BadWallets
-}
-
-func (mw *MultiWallet) DeleteBadWallet(walletID int) error {
-	wallet := mw.Assets.DCR.BadWallets[walletID]
-	if wallet == nil {
-		return errors.New(ErrNotExist)
-	}
-
-	log.Info("Deleting bad wallet")
-
-	err := mw.db.DeleteStruct(wallet)
-	if err != nil {
-		return translateError(err)
-	}
-
-	os.RemoveAll(wallet.DataDir())
-	delete(mw.Assets.DCR.BadWallets, walletID)
-
-	return nil
 }
 
 // NumWalletsNeedingSeedBackup returns the number of opened wallets whose seed haven't been verified.

@@ -95,6 +95,25 @@ func (mw *MultiWallet) DeleteDCRWallet(walletID int, privPass []byte) error {
 	return nil
 }
 
+func (mw *MultiWallet) DeleteBadDCRWallet(walletID int) error {
+	wallet := mw.Assets.DCR.BadWallets[walletID]
+	if wallet == nil {
+		return errors.New(ErrNotExist)
+	}
+
+	log.Info("Deleting bad wallet")
+
+	err := mw.Assets.DCR.DB.DeleteStruct(wallet)
+	if err != nil {
+		return translateError(err)
+	}
+
+	os.RemoveAll(wallet.DataDir())
+	delete(mw.Assets.DCR.BadWallets, walletID)
+
+	return nil
+}
+
 func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.Wallet {
 	if wallet, ok := mw.Assets.DCR.Wallets[walletID]; ok {
 		return wallet
