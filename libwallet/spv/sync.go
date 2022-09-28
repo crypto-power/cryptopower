@@ -151,7 +151,7 @@ func (s *Syncer) SetNotifications(ntfns *Notifications) {
 	s.notifications = ntfns
 }
 
-// synced checks the atomic that controls wallet syncness and if previously
+// syncedWallet checks the atomic that controls wallet syncness and if previously
 // unsynced, updates to synced and notifies the callback, if set.
 func (s *Syncer) syncedWallet(walletID int) {
 	if atomic.CompareAndSwapUint32(s.atomicWalletsSynced[walletID], 0, 1) &&

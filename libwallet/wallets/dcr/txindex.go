@@ -84,7 +84,7 @@ func (wallet *Wallet) IndexTransactions() error {
 	return wallet.Internal().GetTransactions(ctx, rangeFn, startBlock, endBlock)
 }
 
-func (wallet *Wallet) ReindexTransactions() error {
+func (wallet *Wallet) reindexTransactions() error {
 	err := wallet.walletDataDB.ClearSavedTransactions(&Transaction{})
 	if err != nil {
 		return err

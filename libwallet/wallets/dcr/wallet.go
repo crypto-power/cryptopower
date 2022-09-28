@@ -53,13 +53,13 @@ type Wallet struct {
 	vspClients   map[string]*vsp.Client
 
 	// setUserConfigValue saves the provided key-value pair to a config database.
-	// This function is ideally assigned when the `wallet.prepare` method is
+	// This function is ideally assigned when the `wallet.Prepare` method is
 	// called from a MultiWallet instance.
 	setUserConfigValue configSaveFn
 
 	// readUserConfigValue returns the previously saved value for the provided
 	// key from a config database. Returns nil if the key wasn't previously set.
-	// This function is ideally assigned when the `wallet.prepare` method is
+	// This function is ideally assigned when the `wallet.Prepare` method is
 	// called from a MultiWallet instance.
 	readUserConfigValue configReadFn
 
@@ -99,7 +99,7 @@ func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
 	}
 
 	wallet.syncData = &SyncData{
-		SyncProgressListeners: make(map[string]SyncProgressListener),
+		syncProgressListeners: make(map[string]SyncProgressListener),
 	}
 	wallet.txAndBlockNotificationListeners = make(map[string]TxAndBlockNotificationListener)
 	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
@@ -189,7 +189,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
 		syncData: &SyncData{
-			SyncProgressListeners: make(map[string]SyncProgressListener),
+			syncProgressListeners: make(map[string]SyncProgressListener),
 		},
 		txAndBlockNotificationListeners:  make(map[string]TxAndBlockNotificationListener),
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),

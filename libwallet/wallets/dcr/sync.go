@@ -20,7 +20,7 @@ import (
 type SyncData struct {
 	mu sync.RWMutex
 
-	SyncProgressListeners map[string]SyncProgressListener
+	syncProgressListeners map[string]SyncProgressListener
 	showLogs              bool
 
 	synced       bool
@@ -104,7 +104,7 @@ func (wallet *Wallet) initActiveSyncData() {
 
 func (wallet *Wallet) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string) bool {
 	wallet.syncData.mu.RLock()
-	_, exists := wallet.syncData.SyncProgressListeners[uniqueIdentifier]
+	_, exists := wallet.syncData.syncProgressListeners[uniqueIdentifier]
 	wallet.syncData.mu.RUnlock()
 	return exists
 }
@@ -115,7 +115,7 @@ func (wallet *Wallet) AddSyncProgressListener(syncProgressListener SyncProgressL
 	}
 
 	wallet.syncData.mu.Lock()
-	wallet.syncData.SyncProgressListeners[uniqueIdentifier] = syncProgressListener
+	wallet.syncData.syncProgressListeners[uniqueIdentifier] = syncProgressListener
 	wallet.syncData.mu.Unlock()
 
 	// If sync is already on, notify this newly added listener of the current progress report.
@@ -124,7 +124,7 @@ func (wallet *Wallet) AddSyncProgressListener(syncProgressListener SyncProgressL
 
 func (wallet *Wallet) RemoveSyncProgressListener(uniqueIdentifier string) {
 	wallet.syncData.mu.Lock()
-	delete(wallet.syncData.SyncProgressListeners, uniqueIdentifier)
+	delete(wallet.syncData.syncProgressListeners, uniqueIdentifier)
 	wallet.syncData.mu.Unlock()
 }
 
@@ -132,8 +132,8 @@ func (wallet *Wallet) syncProgressListeners() []SyncProgressListener {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 
-	listeners := make([]SyncProgressListener, 0, len(wallet.syncData.SyncProgressListeners))
-	for _, listener := range wallet.syncData.SyncProgressListeners {
+	listeners := make([]SyncProgressListener, 0, len(wallet.syncData.syncProgressListeners))
+	for _, listener := range wallet.syncData.syncProgressListeners {
 		listeners = append(listeners, listener)
 	}
 
@@ -144,7 +144,7 @@ func (wallet *Wallet) PublishLastSyncProgress(uniqueIdentifier string) error {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 
-	syncProgressListener, exists := wallet.syncData.SyncProgressListeners[uniqueIdentifier]
+	syncProgressListener, exists := wallet.syncData.syncProgressListeners[uniqueIdentifier]
 	if !exists {
 		return errors.New(ErrInvalid)
 	}

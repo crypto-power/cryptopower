@@ -66,7 +66,7 @@ func (wallet *Wallet) walletConfigReadFn(walletID int) configReadFn {
 
 func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.prepare before setting wallet config values")
+		log.Errorf("call wallet.Prepare before setting wallet config values")
 		return
 	}
 
@@ -78,7 +78,7 @@ func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 
 func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) error {
 	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.prepare before reading wallet config values")
+		log.Errorf("call wallet.Prepare before reading wallet config values")
 		return errors.New(ErrFailedPrecondition)
 	}
 

@@ -99,7 +99,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 
 		var err error
 		if startHeight == 0 {
-			err = wallet.ReindexTransactions()
+			err = wallet.reindexTransactions()
 		} else {
 			err = wallet.walletDataDB.SaveLastIndexPoint(startHeight)
 			if err != nil {
