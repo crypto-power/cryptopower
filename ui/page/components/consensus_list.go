@@ -2,7 +2,6 @@ package components
 
 import (
 	"image/color"
-	"strings"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -26,8 +25,12 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 			return layoutAgendaStatus(gtx, l, consensusItem.Agenda)
 		}),
 		layout.Rigid(layoutAgendaDetails(l, consensusItem.Agenda.Description)),
-		layout.Rigid(layoutAgendaDetails(l, "ID: #"+consensusItem.Agenda.AgendaID)),
-		layout.Rigid(layoutAgendaDetails(l, values.String(values.StrVotingPreference)+" "+consensusItem.Agenda.VotingPreference)),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(layoutAgendaDetails(l, values.String(values.StrVotingPreference), text.SemiBold)),
+				layout.Rigid(layoutAgendaDetails(l, " "+consensusItem.Agenda.VotingPreference)),
+			)
+		}),
 		layout.Rigid(func(gtx C) D {
 			return layoutAgendaVoteAction(gtx, l, consensusItem)
 		}),
@@ -82,7 +85,7 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda libwallet.Agenda) D {
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lbl := l.Theme.Label(values.TextSize14, (strings.Title(strings.ToLower(agenda.AgendaID))))
+			lbl := l.Theme.Label(values.TextSize20, agenda.AgendaID)
 			lbl.Font.Weight = text.SemiBold
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(lbl.Layout),
@@ -109,15 +112,21 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda libwallet.Agenda) D {
 	)
 }
 
-func layoutAgendaDetails(l *load.Load, data string) layout.Widget {
+func layoutAgendaDetails(l *load.Load, data string, weight ...text.Weight) layout.Widget {
 	return func(gtx C) D {
-		lbl := l.Theme.Label(values.TextSize14, data)
+		lbl := l.Theme.Label(values.TextSize16, data)
 		lbl.Font.Weight = text.Light
+		if len(weight) > 0 {
+			lbl.Font.Weight = weight[0]
+		}
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, lbl.Layout)
 	}
 }
 
 func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
+	if item.Agenda.Status == libwallet.AgendaStatusFinished.String() {
+		return D{}
+	}
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)
@@ -152,7 +161,7 @@ func LoadAgendas(l *load.Load, selectedWallet *libwallet.Wallet, newestFirst boo
 	for i := 0; i < len(agendas); i++ {
 		consensusItems[i] = &ConsensusItem{
 			Agenda:     *agendas[i],
-			VoteButton: l.Theme.Button(values.String(values.StrUpdatePreference)),
+			VoteButton: l.Theme.Button(values.String(values.StrSetChoice)),
 		}
 	}
 	return consensusItems

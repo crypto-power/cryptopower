@@ -38,15 +38,14 @@ type ProposalsPage struct {
 	*listeners.ProposalNotificationListener
 	ctx        context.Context // page context
 	ctxCancel  context.CancelFunc
-	proposalMu sync.Mutex
+	proposalMu sync.RWMutex
 
-	multiWallet      *libwallet.MultiWallet
-	listContainer    *widget.List
-	orderDropDown    *cryptomaterial.DropDown
-	categoryDropDown *cryptomaterial.DropDown
-	proposalsList    *cryptomaterial.ClickableList
-	syncButton       *widget.Clickable
-	searchEditor     cryptomaterial.Editor
+	multiWallet    *libwallet.MultiWallet
+	listContainer  *widget.List
+	statusDropDown *cryptomaterial.DropDown
+	proposalsList  *cryptomaterial.ClickableList
+	syncButton     *widget.Clickable
+	searchEditor   cryptomaterial.Editor
 
 	infoButton cryptomaterial.IconButton
 
@@ -81,23 +80,13 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	// orderDropDown is the first dropdown when page is laid out. Its
-	// position should be 0 for consistent backdrop.
-	pg.orderDropDown = components.CreateOrderDropDown(l, values.ProposalDropdownGroup, 0)
-	pg.categoryDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
-		{
-			Text: values.String(values.StrUnderReview),
-		},
-		{
-			Text: values.String(values.StrApproved),
-		},
-		{
-			Text: values.String(values.StrRejected),
-		},
-		{
-			Text: values.String(values.StrAbandoned),
-		},
-	}, values.ProposalDropdownGroup, 1)
+	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrAll)},
+		{Text: values.String(values.StrUnderReview)},
+		{Text: values.String(values.StrApproved)},
+		{Text: values.String(values.StrRejected)},
+		{Text: values.String(values.StrAbandoned)},
+	}, values.ProposalDropdownGroup, 0)
 
 	return pg
 }
@@ -114,35 +103,37 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 }
 
 func (pg *ProposalsPage) fetchProposals() {
-	newestFirst := pg.orderDropDown.SelectedIndex() == 0
-
-	proposalFilter := libwallet.ProposalCategoryAll
-	switch pg.categoryDropDown.SelectedIndex() {
-	case 1:
+	var proposalFilter int32
+	var selectedType = pg.statusDropDown.Selected()
+	switch selectedType {
+	case values.String(values.StrApproved):
 		proposalFilter = libwallet.ProposalCategoryApproved
-	case 2:
+	case values.String(values.StrRejected):
 		proposalFilter = libwallet.ProposalCategoryRejected
-	case 3:
+	case values.String(values.StrAbandoned):
 		proposalFilter = libwallet.ProposalCategoryAbandoned
+	default:
+		proposalFilter = libwallet.ProposalCategoryAll
 	}
 
-	proposalItems := components.LoadProposals(proposalFilter, newestFirst, pg.Load)
-
-	// group 'In discussion' and 'Active' proposals into under review
+	proposalItems := components.LoadProposals(proposalFilter, true, pg.Load)
 	listItems := make([]*components.ProposalItem, 0)
-	for _, item := range proposalItems {
-		if item.Proposal.Category == libwallet.ProposalCategoryPre ||
-			item.Proposal.Category == libwallet.ProposalCategoryActive {
-			listItems = append(listItems, item)
+
+	if selectedType == values.String(values.StrUnderReview) {
+		// group 'In discussion' and 'Active' proposals into under review
+		for _, item := range proposalItems {
+			if item.Proposal.Category == libwallet.ProposalCategoryPre ||
+				item.Proposal.Category == libwallet.ProposalCategoryActive {
+				listItems = append(listItems, item)
+			}
 		}
+	} else {
+		listItems = proposalItems
 	}
 
 	pg.proposalMu.Lock()
-	pg.proposalItems = proposalItems
-	if proposalFilter == libwallet.ProposalCategoryAll {
-		pg.proposalItems = listItems
-	}
-	pg.proposalMu.Unlock()
+	defer pg.proposalMu.Unlock()
+	pg.proposalItems = listItems
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -151,11 +142,7 @@ func (pg *ProposalsPage) fetchProposals() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
-	for pg.categoryDropDown.Changed() {
-		pg.fetchProposals()
-	}
-
-	for pg.orderDropDown.Changed() {
+	for pg.statusDropDown.Changed() {
 		pg.fetchProposals()
 	}
 
@@ -164,9 +151,9 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
-		pg.proposalMu.Lock()
+		pg.proposalMu.RLock()
 		selectedProposal := pg.proposalItems[selectedItem].Proposal
-		pg.proposalMu.Unlock()
+		pg.proposalMu.RUnlock()
 
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
@@ -193,8 +180,6 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			pg.ParentWindow().Reload()
 		})
 	}
-
-	cryptomaterial.DisplayOneDropdown(pg.orderDropDown, pg.categoryDropDown)
 
 	for pg.infoButton.Button.Clicked() {
 		//TODO: proposal info modal
@@ -231,37 +216,8 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					layout.Expanded(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
 					}),
-					//TODO: temp removal till after V1
-					// layout.Expanded(func(gtx C) D {
-					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150)
-					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-					// 	card := pg.Theme.Card()
-					// 	card.Radius = cryptomaterial.Radius(8)
-					// 	return card.Layout(gtx, func(gtx C) D {
-					// 		return layout.Inset{
-					// 			Left:   values.MarginPadding10,
-					// 			Right:  values.MarginPadding10,
-					// 			Top:    values.MarginPadding2,
-					// 			Bottom: values.MarginPadding2,
-					// 		}.Layout(gtx, pg.searchEditor.Layout)
-					// 	})
-					// }),
 					layout.Expanded(func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.E.Layout(gtx, func(gtx C) D {
-							card := pg.Theme.Card()
-							card.Radius = cryptomaterial.Radius(8)
-							return card.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
-							})
-						})
-					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.orderDropDown.Layout(gtx, 45, true)
-					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.categoryDropDown.Layout(gtx, pg.orderDropDown.Width+41, true)
+						return pg.statusDropDown.Layout(gtx, 10, true)
 					}),
 				)
 			})
@@ -280,22 +236,6 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 					layout.Expanded(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
 					}),
-					//TODO: temp removal till after V1
-					// layout.Expanded(func(gtx C) D {
-					// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150)
-					// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-					// 	card := pg.Theme.Card()
-					// 	card.Radius = cryptomaterial.Radius(8)
-					// 	return card.Layout(gtx, func(gtx C) D {
-					// 		return layout.Inset{
-					// 			Left:   values.MarginPadding10,
-					// 			Right:  values.MarginPadding10,
-					// 			Top:    values.MarginPadding2,
-					// 			Bottom: values.MarginPadding2,
-					// 		}.Layout(gtx, pg.searchEditor.Layout)
-					// 	})
-					// }),
 					layout.Expanded(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.E.Layout(gtx, func(gtx C) D {
@@ -309,10 +249,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.orderDropDown.Layout(gtx, 55, true)
-					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.categoryDropDown.Layout(gtx, pg.orderDropDown.Width+51, true)
+						return pg.statusDropDown.Layout(gtx, 55, true)
 					}),
 				)
 			})
@@ -323,15 +260,15 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 func (pg *ProposalsPage) layoutContent(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			pg.proposalMu.Lock()
+			pg.proposalMu.RLock()
 			proposalItems := pg.proposalItems
-			pg.proposalMu.Unlock()
+			pg.proposalMu.RUnlock()
 
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 						if len(proposalItems) == 0 {
-							return components.LayoutNoProposalsFound(gtx, pg.Load, pg.isSyncing, int32(pg.categoryDropDown.SelectedIndex()))
+							return components.LayoutNoProposalsFound(gtx, pg.Load, pg.isSyncing, 0)
 						}
 						return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -377,7 +314,9 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
-				layout.Rigid(pg.infoButton.Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+				}),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {

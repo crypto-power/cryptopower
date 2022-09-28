@@ -1,16 +1,10 @@
 package governance
 
 import (
-	"sort"
-
-	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/text"
-	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -18,227 +12,75 @@ import (
 )
 
 type agendaVoteModal struct {
-	*load.Load
-	*cryptomaterial.Modal
+	// This modal inherits most of the CreatePasswordModal implementation
+	*modal.CreatePasswordModal
 
-	// tickets that have not been spent by a vote or revocation (unspent) and that
-	// have not expired (unexpired).
-	votableTickets []*libwallet.Transaction
-
-	agenda           *libwallet.Agenda
-	isVoting         bool
-	modalUpdateCount int // this keeps track of the number of times the modal has been updated.
+	agenda     *libwallet.Agenda
+	voteChoice string
 
 	onPreferenceUpdated func()
 
-	walletSelector    *WalletSelector
-	ticketSelector    *ticketSelector
-	spendingPassword  cryptomaterial.Editor
-	materialLoader    material.LoaderStyle
-	voteChoices       []string
-	initialValue      string
-	optionsRadioGroup *widget.Enum
-	voteBtn           cryptomaterial.Button
-	cancelBtn         cryptomaterial.Button
+	accountSelector *components.AccountSelector
+	accountSelected *libwallet.Account
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, onPreferenceUpdated func()) *agendaVoteModal {
+func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
-		Load:                l,
-		Modal:               l.Theme.ModalFloatTitle("input_vote_modal"),
 		agenda:              agenda,
+		CreatePasswordModal: modal.NewCreatePasswordModal(l),
+		voteChoice:          votechoice,
 		onPreferenceUpdated: onPreferenceUpdated,
-		materialLoader:      material.Loader(material.NewTheme(gofont.Collection())),
-		optionsRadioGroup:   new(widget.Enum),
-		spendingPassword:    l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword)),
-		voteBtn:             l.Theme.Button(values.String(values.StrUpdatePreference)),
-		cancelBtn:           l.Theme.OutlineButton(values.String(values.StrCancel)),
 	}
+	avm.EnableName(false)
+	avm.EnableConfirmPassword(false)
+	avm.SetPositiveButtonText(values.String(values.StrVote))
+	avm.SetPositiveButtonCallback(avm.sendVotes)
 
-	avm.voteBtn.Background = l.Theme.Color.Gray3
-	avm.voteBtn.Color = l.Theme.Color.Surface
-
-	avm.walletSelector = NewWalletSelector(l).
-		Title(values.String(values.StrSelectWallet)).
-		WalletSelected(func(w *libwallet.Wallet) {
-			avm.modalUpdateCount = 0 // modal just opened.
-
-			avm.FetchUnspentUnexpiredTickets(w.ID)
-			avm.modalUpdateCount++
-
-			// update agenda options prefrence to that of the selected wallet
-			consensusItems := components.LoadAgendas(avm.Load, w, false)
-			for _, consensusItem := range consensusItems {
-				if consensusItem.Agenda.AgendaID == agenda.AgendaID {
-					voteChoices := make([]string, len(consensusItem.Agenda.Choices))
-					for i := range consensusItem.Agenda.Choices {
-						voteChoices[i] = consensusItem.Agenda.Choices[i].Id
-					}
-
-					avm.voteChoices = voteChoices
-					avm.initialValue = consensusItem.Agenda.VotingPreference
-					avm.optionsRadioGroup.Value = avm.initialValue
-				}
-			}
+	// Source account picker
+	avm.accountSelector = components.NewAccountSelector(l).
+		Title(values.String(values.StrSelectAcc)).
+		AccountSelected(func(selectedAccount *libwallet.Account) {
+			avm.accountSelected = selectedAccount
 		}).
-		WalletValidator(func(w *libwallet.Wallet) bool {
-			return !w.IsWatchingOnlyWallet()
+		AccountValidator(func(account *libwallet.Account) bool {
+			return true
 		})
 
 	return avm
 }
 
-func (avm *agendaVoteModal) FetchUnspentUnexpiredTickets(walletID int) {
-	go func() {
-		wallet := avm.WL.MultiWallet.WalletWithID(walletID)
-		tickets, err := wallet.UnspentUnexpiredTickets()
-		if err != nil {
-			errorModal := modal.NewErrorModal(avm.Load, err.Error(), modal.DefaultClickFunc())
-			avm.ParentWindow().ShowModal(errorModal)
-			return
-		}
-
-		// sort by newest first
-		sort.Slice(tickets[:], func(i, j int) bool {
-			var timeStampI = tickets[i].Timestamp
-			var timeStampJ = tickets[j].Timestamp
-			return timeStampI > timeStampJ
-		})
-		avm.votableTickets = make([]*libwallet.Transaction, len(tickets))
-		for i := range tickets {
-			avm.votableTickets[i] = &tickets[i]
-		}
-		avm.ParentWindow().Reload()
-	}()
-}
-
 func (avm *agendaVoteModal) OnResume() {
-	avm.walletSelector.SelectFirstValidWallet()
-
-	avm.initialValue = avm.agenda.VotingPreference
-	avm.optionsRadioGroup.Value = avm.initialValue
-}
-
-func (avm *agendaVoteModal) OnDismiss() {}
-
-func (avm *agendaVoteModal) Handle() {
-	for avm.cancelBtn.Clicked() {
-		if avm.isVoting {
-			continue
-		}
-		avm.Dismiss()
-	}
-
-	_, isChanged := cryptomaterial.HandleEditorEvents(avm.spendingPassword.Editor)
-	if isChanged {
-		avm.spendingPassword.SetError("")
-	}
-
-	if len(avm.votableTickets) != 0 {
-		if avm.modalUpdateCount == 1 { // modal window has been updated once.
-			avm.modalUpdateCount++
-			avm.ticketSelector = newTicketSelector(avm.Load, avm.votableTickets).Title("Select a ticket")
-		}
-	}
-
-	validToVote := avm.optionsRadioGroup.Value != "" && avm.optionsRadioGroup.Value != avm.initialValue && avm.spendingPassword.Editor.Text() != ""
-	avm.voteBtn.SetEnabled(validToVote)
-	if avm.voteBtn.Enabled() {
-		avm.voteBtn.Background = avm.Theme.Color.Primary
-	}
-
-	for avm.voteBtn.Clicked() {
-		if avm.isVoting {
-			break
-		}
-
-		if !validToVote {
-			break
-		}
-
-		avm.isVoting = true
-		avm.sendVotes()
-	}
-
-	if avm.Modal.BackdropClicked(true) {
-		avm.Dismiss()
-	}
+	avm.accountSelector.SelectFirstWalletValidAccount()
 }
 
 // - Layout
-
 func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
 		func(gtx C) D {
-			t := avm.Theme.H6(values.String(values.StrUpdatevotePref))
+			t := avm.Theme.H6(values.String(values.StrSettings))
 			t.Font.Weight = text.SemiBold
 			return t.Layout(gtx)
 		},
-		avm.Theme.Body1(values.String(values.StrSelectOption)).Layout,
 		func(gtx layout.Context) layout.Dimensions {
-			return avm.walletSelector.Layout(gtx, avm.ParentWindow())
-		},
-		func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, avm.layoutItems()...)
-				}),
-			)
-		},
-		func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(avm.spendingPassword.Layout),
-			)
-		},
-		func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, avm.cancelBtn.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if avm.isVoting {
-							return avm.materialLoader.Layout(gtx)
-						}
-						return avm.voteBtn.Layout(gtx)
-					}),
-				)
-			})
+			return avm.accountSelector.Layout(avm.ParentWindow(), gtx)
 		},
 	}
+
+	w = append(w, avm.CreatePasswordModal.LayoutComponents(gtx)...)
 
 	return avm.Modal.Layout(gtx, w)
 }
 
-func (avm *agendaVoteModal) layoutItems() []layout.FlexChild {
-
-	items := make([]layout.FlexChild, 0)
-	for _, voteChoice := range avm.voteChoices {
-		radioBtn := avm.Load.Theme.RadioButton(avm.optionsRadioGroup, voteChoice, voteChoice, avm.Load.Theme.Color.DeepBlue, avm.Load.Theme.Color.Primary)
-		radioItem := layout.Rigid(radioBtn.Layout)
-		items = append(items, radioItem)
+func (avm *agendaVoteModal) sendVotes(_, password string, m *modal.CreatePasswordModal) bool {
+	err := avm.CreatePasswordModal.WL.SelectedWallet.Wallet.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", []byte(password))
+	if err != nil {
+		avm.CreatePasswordModal.SetError(err.Error())
+		avm.CreatePasswordModal.SetLoading(false)
+		return false
 	}
-
-	return items
-}
-
-func (avm *agendaVoteModal) sendVotes() {
-	go func() {
-		password := []byte(avm.spendingPassword.Editor.Text())
-
-		defer func() {
-			avm.isVoting = false
-		}()
-
-		choiceID := avm.optionsRadioGroup.Value
-		err := avm.walletSelector.selectedWallet.SetVoteChoice(avm.agenda.AgendaID, choiceID, "", password)
-		if err != nil {
-			avm.spendingPassword.SetError(err.Error())
-			return
-		}
-		successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
-		avm.ParentWindow().ShowModal(successModal)
-		avm.Dismiss()
-		avm.onPreferenceUpdated()
-	}()
+	successModal := modal.NewSuccessModal(avm.Load, values.String(values.StrVoteUpdated), modal.DefaultClickFunc())
+	avm.ParentWindow().ShowModal(successModal)
+	avm.Dismiss()
+	avm.onPreferenceUpdated()
+	return true
 }
