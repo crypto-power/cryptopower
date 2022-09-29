@@ -144,7 +144,7 @@ func LoadPolicies(l *load.Load, selectedWallet *libwallet.Wallet, pikey string) 
 		treasuryItems[i] = &TreasuryItem{
 			Policy:            *policies[i],
 			OptionsRadioGroup: new(widget.Enum),
-			SetChoiceButton:   l.Theme.Button(values.String(values.StrUpdatePreference)),
+			SetChoiceButton:   l.Theme.Button(values.String(values.StrSetChoice)),
 		}
 
 		treasuryItems[i].OptionsRadioGroup.Value = treasuryItems[i].Policy.Policy

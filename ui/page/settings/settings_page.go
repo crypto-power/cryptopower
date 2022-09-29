@@ -449,6 +449,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					pg.showNoticeSuccess(values.StringF(values.StrStartupPasswordEnabled, values.String(values.StrEnabled)))
 					m.Dismiss()
 					return true
+				}).
+				SetNegativeButtonCallback(func() {
+					pg.startupPassword.SetChecked(false)
 				})
 			pg.ParentWindow().ShowModal(createPasswordModal)
 		} else {

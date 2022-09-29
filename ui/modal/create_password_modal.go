@@ -316,6 +316,10 @@ func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 }
 
 func (cm *CreatePasswordModal) Layout(gtx C) D {
+	return cm.Modal.Layout(gtx, cm.LayoutComponents(gtx))
+}
+
+func (cm *CreatePasswordModal) LayoutComponents(gtx C) []layout.Widget {
 	w := []layout.Widget{}
 
 	if cm.dialogTitle != "" {
@@ -417,5 +421,5 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 		})
 	})
 
-	return cm.Modal.Layout(gtx, w)
+	return w
 }

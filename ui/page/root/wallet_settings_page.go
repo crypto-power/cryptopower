@@ -507,12 +507,12 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 			return true
 		})
 	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
-		SetPositiveButtonText(values.String(values.StrConfirm))
-
-	textModal.Title(values.String(values.StrConnectToSpecificPeer)).
+		SetPositiveButtonText(values.String(values.StrConfirm)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		SetNegativeButtonCallback(func() {
-			pg.connectToPeer.SetChecked(false)
+			if pg.peerAddr == "" {
+				pg.connectToPeer.SetChecked(false)
+			}
 		})
 	pg.ParentWindow().ShowModal(textModal)
 }
