@@ -208,11 +208,22 @@ func (pg *TransactionsPage) loadTransactions() {
 		txFilter = dcr.TxFilterMixed
 	}
 
-	wallTxs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, txFilter, true)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, txFilter, true)
 	if err != nil {
 		log.Errorf("Error loading transactions: %v", err)
 	} else {
-		pg.transactions = wallTxs
+		txns := make([]libwallet.Transaction, 0)
+		// remove revoked tickets from staking transactions filter
+		if txFilter == libwallet.TxFilterStaking || txFilter == libwallet.TxFilterStaking {
+			for _, txn := range txs {
+				if txn.Type == libwallet.TxTypeRevocation || txn.Type == libwallet.TxTypeVote {
+					txns = append(txns, txn)
+				}
+			}
+			pg.transactions = txns
+		} else {
+			pg.transactions = txs
+		}
 	}
 }
 

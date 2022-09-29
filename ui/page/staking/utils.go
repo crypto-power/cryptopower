@@ -37,6 +37,7 @@ type transactionItem struct {
 	durationTooltip   *cryptomaterial.Tooltip
 }
 
+<<<<<<< HEAD
 // const (
 // 	StakingLive     = "LIVE"
 // 	StakingUnmined  = "UNMINED"
@@ -47,6 +48,9 @@ type transactionItem struct {
 // )
 
 func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+=======
+func stakeToTransactionItems(l *load.Load, txs []libwallet.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+>>>>>>> - remove revoked tickets from staking transactions filter
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {

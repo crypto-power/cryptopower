@@ -423,152 +423,99 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 								amount = "-" + amount
 							}
 						}
-						return LayoutBalanceWithUnit(gtx, l, amount)
+						return LayoutBalanceSize(gtx, l, amount, values.TextSize18)
 					}
 
 					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.WrapContent,
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Horizontal,
-						Direction:   layout.W,
-						Alignment:   layout.Middle,
-						Margin:      layout.Inset{Top: values.MarginPadding4},
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if wal.TxMatchesFilter(&row.Transaction, dcr.TxFilterStaking) {
-								ic := l.Theme.Icons.StakeIconInactive
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, ic.Layout12dp)
-							}
-							return D{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// mix denomination or ticket price
-							if row.Transaction.Type == dcr.TxTypeMixed {
+					if row.Transaction.Type == dcr.TxTypeMixed {
+
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Direction:   layout.W,
+							Alignment:   layout.Middle,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								// mix denomination
 								mixedDenom := dcrutil.Amount(row.Transaction.MixDenomination).String()
 								txt := l.Theme.Label(values.TextSize12, mixedDenom)
 								txt.Color = l.Theme.Color.GrayText2
 								return txt.Layout(gtx)
-							} else if wal.TxMatchesFilter(&row.Transaction, dcr.TxFilterStaking) {
-								ticketPrice := dcrutil.Amount(row.Transaction.Amount).String()
-								txt := l.Theme.Label(values.TextSize12, ticketPrice)
-								txt.Color = l.Theme.Color.GrayText2
-								return txt.Layout(gtx)
-							}
-							return layout.Dimensions{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// Mixed outputs count
-							if row.Transaction.Type == dcr.TxTypeMixed && row.Transaction.MixCount > 1 {
-								label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
-								label.Color = l.Theme.Color.GrayText2
-								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
-							}
-							return layout.Dimensions{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// vote reward
-							if row.Transaction.Type != dcr.TxTypeVote && row.Transaction.Type != dcr.TxTypeRevocation {
+							}),
+							layout.Rigid(func(gtx C) D {
+								// Mixed outputs count
+								if row.Transaction.Type == dcr.TxTypeMixed && row.Transaction.MixCount > 1 {
+									label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
+									label.Color = l.Theme.Color.GrayText2
+									return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
+								}
 								return D{}
-							}
-
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.WrapContent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Horizontal,
-								Margin:      layout.Inset{Left: values.MarginPadding4},
-								Alignment:   layout.Middle,
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									ic := l.Theme.Icons.DecredSymbol2
-
-									return layout.Inset{
-										Left:  values.MarginPadding4,
-										Right: values.MarginPadding4,
-									}.Layout(gtx, ic.Layout16dp)
-								}),
-								layout.Rigid(func(gtx C) D {
-									label := l.Theme.Label(values.TextSize12, dcrutil.Amount(row.Transaction.VoteReward).String())
-									label.Color = l.Theme.Color.Orange
-									if row.Transaction.Type == dcr.TxTypeVote {
-										label.Color = l.Theme.Color.Turquoise800
-									}
-									return label.Layout(gtx)
-								}),
-							)
-						}),
-					)
+							}),
+						)
+					}
+					return D{}
 				}),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			status := l.Theme.Body1(values.String(values.StrPending))
+			status := l.Theme.Label(values.TextSize16, values.String(values.StrPending))
 			if TxConfirmations(l, row.Transaction) <= 1 {
 				status.Color = l.Theme.Color.GrayText1
 			} else {
 				status.Color = l.Theme.Color.GrayText2
-				status.Text = FormatDateOrTime(row.Transaction.Timestamp)
-			}
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.WrapContent,
-				Height:      cryptomaterial.MatchParent,
-				Orientation: layout.Vertical,
-				Padding:     layout.Inset{Left: values.MarginPadding16},
-				Alignment:   layout.End,
-				Direction:   layout.E,
-				Margin:      layout.Inset{Top: values.MarginPadding10},
-			}.Layout(gtx,
-				layout.Rigid(status.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
-								var title string
-								if row.Transaction.Type == dcr.TxTypeVote {
-									title = values.String(values.StrVote)
-								} else {
-									title = values.String(values.StrRevoke)
-								}
-
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return HighlightedText(gtx, l, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
-								})
-							}
-
-							return D{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							currentTimestamp := time.Now().UTC().String()
-							txnTimestamp := time.Unix(row.Transaction.Timestamp, 0).UTC().String()
-							currentTimeSplit := strings.Split(currentTimestamp, " ")
-							txnTimeSplit := strings.Split(txnTimestamp, " ")
-							currentDate := strings.Split(currentTimeSplit[0], "-")
-							txnDate := strings.Split(txnTimeSplit[0], "-")
-
-							currentDay, _ := strconv.Atoi(currentDate[2])
-							txnDay, _ := strconv.Atoi(txnDate[2])
-
-							if currentDate[0] == txnDate[0] && currentDate[1] == txnDate[1] && currentDay-txnDay < 1 {
-								return D{}
-							}
-							duration := l.Theme.Label(values.TextSize12, durationAgo(row.Transaction.Timestamp))
-							duration.Color = l.Theme.Color.GrayText4
-							return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, duration.Layout)
-						}),
-					)
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			statusIcon := l.Theme.Icons.ConfirmIcon
-			if TxConfirmations(l, row.Transaction) <= 1 {
-				statusIcon = l.Theme.Icons.PendingIcon
+				date := time.Unix(row.Transaction.Timestamp, 0).Format("Jan 2, 2006")
+				timeSplit := time.Unix(row.Transaction.Timestamp, 0).Format("03:04:05 PM")
+				status.Text = fmt.Sprintf("%v at %v", date, timeSplit)
 			}
 
-			return layout.Inset{Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-				return statusIcon.Layout12dp(gtx)
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
+							var title string
+							if row.Transaction.Type == dcr.TxTypeVote {
+								title = values.String(values.StrVote)
+							} else {
+								title = values.String(values.StrRevoke)
+							}
+
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									lbl := l.Theme.Label(values.TextSize16, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
+									lbl.Color = l.Theme.Color.GrayText2
+									return lbl.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Right: values.MarginPadding5,
+										Left:  values.MarginPadding5,
+									}.Layout(gtx, func(gtx C) D {
+										ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+										ic.Color = l.Theme.Color.GrayText2
+										return ic.Layout(gtx, values.MarginPadding6)
+									})
+								}),
+							)
+						}
+
+						return D{}
+					}),
+					layout.Rigid(status.Layout),
+					layout.Rigid(func(gtx C) D {
+						statusIcon := l.Theme.Icons.ConfirmIcon
+						if TxConfirmations(l, row.Transaction) <= 1 {
+							statusIcon = l.Theme.Icons.PendingIcon
+						}
+
+						return layout.Inset{
+							Left: values.MarginPadding15,
+							Top:  values.MarginPadding5,
+						}.Layout(gtx, statusIcon.Layout12dp)
+					}),
+				)
 			})
 		}),
 	)
@@ -713,26 +660,6 @@ func TimeFormat(secs int, long bool) string {
 	return fmt.Sprintf("%d %s", secs, val)
 }
 
-<<<<<<< HEAD
-// createOrUpdateWalletDropDown check for len of wallets to create dropDown,
-// also update the list when create, update, delete a wallet.
-func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, wallets []*dcr.Wallet, grp uint, pos uint) *cryptomaterial.DropDown {
-	var walletDropDownItems []cryptomaterial.DropDownItem
-	walletIcon := l.Theme.Icons.WalletIcon
-	walletIcon.Scale = 1
-	for _, wal := range wallets {
-		item := cryptomaterial.DropDownItem{
-			Text: wal.Name,
-			Icon: walletIcon,
-		}
-		walletDropDownItems = append(walletDropDownItems, item)
-	}
-	*dwn = l.Theme.DropDown(walletDropDownItems, grp, pos)
-	return *dwn
-}
-
-=======
->>>>>>> remove redunt codes from project
 func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
 	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)}}, grp, pos)
