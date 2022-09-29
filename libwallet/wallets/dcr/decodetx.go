@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"fmt"

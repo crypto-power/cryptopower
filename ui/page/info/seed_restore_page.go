@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -103,7 +103,7 @@ func NewSeedRestorePage(l *load.Load, onRestoreComplete func()) *SeedRestore {
 	pg.initSeedMenu()
 
 	// set suggestions
-	pg.allSuggestions = libwallet.PGPWordList()
+	pg.allSuggestions = dcr.PGPWordList()
 
 	return pg
 }
@@ -494,7 +494,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	if isValid {
 		pg.seedPhrase = seedphrase
-		if !libwallet.VerifySeed(pg.seedPhrase) {
+		if !dcr.VerifySeed(pg.seedPhrase) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
 			return false
@@ -565,7 +565,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.MultiWallet.RestoreWallet(walletName, pg.seedPhrase, password, libwallet.PassphraseTypePass)
+				_, err := pg.WL.MultiWallet.RestoreDCRWallet(walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)

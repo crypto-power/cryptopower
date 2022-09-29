@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -27,7 +27,7 @@ type (
 )
 
 type badWalletListItem struct {
-	*libwallet.Wallet
+	*dcr.Wallet
 	deleteBtn cryptomaterial.Button
 }
 
@@ -38,7 +38,8 @@ type WalletDexServerSelector struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	*listeners.SyncProgressListener
+
+	walletSyncListener map[int]*listeners.SyncProgressListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -72,8 +73,9 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 				Alignment: layout.Middle,
 			},
 		},
-		Load:      l,
-		shadowBox: l.Theme.Shadow(),
+		Load:               l,
+		shadowBox:          l.Theme.Shadow(),
+		walletSyncListener: make(map[int]*listeners.SyncProgressListener),
 
 		walletSelected:    onWalletSelected,
 		dexServerSelected: onDexServerSelected,
@@ -93,10 +95,10 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	// init shared page functions
 	toggleSync := func() {
-		if pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
-			pg.WL.MultiWallet.CancelSync()
+		if pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
+			pg.WL.SelectedWallet.Wallet.CancelSync()
 		} else {
-			pg.startSyncing()
+			pg.startSyncing(pg.WL.SelectedWallet.Wallet)
 		}
 	}
 	l.ToggleSync = toggleSync
@@ -115,8 +117,10 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadWallets()
 	pg.startDexClient()
 
-	if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
-		pg.startSyncing()
+	for _, wallet := range pg.WL.SortedWalletList() {
+		if wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
+			pg.startSyncing(wallet)
+		}
 	}
 }
 
@@ -295,22 +299,21 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing() {
-	for _, wal := range pg.WL.SortedWalletList() {
-		if !wal.HasDiscoveredAccounts && wal.IsLocked() {
-			pg.unlockWalletForSyncing(wal)
-			return
-		}
+func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.Wallet) {
+	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
+		pg.unlockWalletForSyncing(wallet)
+		return
 	}
 
-	err := pg.WL.MultiWallet.SpvSync()
+	err := wallet.SpvSync()
 	if err != nil {
 		// show error dialog
 		log.Info("Error starting sync:", err)
 	}
+
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.Wallet) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -318,14 +321,14 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *libwallet.Wallet)
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.WL.MultiWallet.UnlockWallet(wal.ID, []byte(password))
+			err := wal.UnlockWallet([]byte(password))
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
 			pm.Dismiss()
-			pg.startSyncing()
+			pg.startSyncing(wal)
 			return true
 		})
 	pg.ParentWindow().ShowModal(spendingPasswordModal)

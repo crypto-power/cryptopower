@@ -56,7 +56,7 @@ func NewMarketPage(l *load.Load) *Page {
 func (pg *Page) Layout(gtx C) D {
 	body := func(gtx C) D {
 		switch {
-		case !pg.WL.MultiWallet.IsConnectedToDecredNetwork():
+		case !pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork():
 			return pg.pageSections(gtx, pg.welcomeLayout(&pg.syncBtn))
 		case pg.isLoadingDexClient(): // Need start DEX client
 			return pg.pageSections(gtx, pg.welcomeLayout(nil))
@@ -160,7 +160,7 @@ func (pg *Page) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	if pg.syncBtn.Button.Clicked() {
-		err := pg.WL.MultiWallet.SpvSync()
+		err := pg.WL.SelectedWallet.Wallet.SpvSync()
 		if err != nil {
 			pg.Toast.NotifyError(err.Error())
 		}

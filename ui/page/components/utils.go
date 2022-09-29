@@ -11,7 +11,7 @@ import (
 
 	"gioui.org/layout"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -51,7 +51,7 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 
 func SeedWordsToHex(seedWords string) (string, error) {
 	var seedHex string
-	wordList := libwallet.PGPWordList()
+	wordList := dcr.PGPWordList()
 	var wordIndexes = make(map[string]uint16, len(wordList))
 	for i, word := range wordList {
 		wordIndexes[strings.ToLower(word)] = uint16(i)

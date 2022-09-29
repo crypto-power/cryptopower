@@ -89,7 +89,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
 		}
 
-		wallet := mw.WalletWithID(walletID)
+		wallet := mw.DCRWalletWithID(walletID)
 		if wallet == nil {
 			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
 		}
@@ -105,7 +105,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("account error: %v", err)
 		}
 
-		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.dataDir)
+		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir())
 		return dexdcr.NewSpvWallet(wallet.Internal(), walletDesc, chainParams, logger.SubLogger("DLWL")), nil
 	}
 

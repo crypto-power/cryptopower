@@ -7,7 +7,7 @@ import "gitlab.com/raedah/cryptopower/libwallet"
 // TODO move method to libwallet
 // HaveAddress checks if the given address is valid for the wallet
 func (wal *Wallet) HaveAddress(address string) (bool, string) {
-	for _, wallet := range wal.multi.AllWallets() {
+	for _, wallet := range wal.multi.AllDCRWallets() {
 		result := wallet.HaveAddress(address)
 		if result {
 			return true, wallet.Name

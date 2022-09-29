@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"decred.org/dcrwallet/v2/errors"
@@ -10,11 +10,63 @@ const (
 	AccountMixerMixedAccount   = "account_mixer_mixed_account"
 	AccountMixerUnmixedAccount = "account_mixer_unmixed_account"
 	AccountMixerMixTxChange    = "account_mixer_mix_tx_change"
+
+	userConfigBucketName = "user_config"
+
+	LogLevelConfigKey = "log_level"
+
+	SpendUnconfirmedConfigKey   = "spend_unconfirmed"
+	CurrencyConversionConfigKey = "currency_conversion_option"
+
+	IsStartupSecuritySetConfigKey = "startup_security_set"
+	StartupSecurityTypeConfigKey  = "startup_security_type"
+	UseBiometricConfigKey         = "use_biometric"
+
+	IncomingTxNotificationsConfigKey = "tx_notification_enabled"
+	BeepNewBlocksConfigKey           = "beep_new_blocks"
+
+	SyncOnCellularConfigKey             = "always_sync"
+	NetworkModeConfigKey                = "network_mode"
+	SpvPersistentPeerAddressesConfigKey = "spv_peer_addresses"
+	UserAgentConfigKey                  = "user_agent"
+
+	PoliteiaNotificationConfigKey = "politeia_notification"
+
+	LastTxHashConfigKey = "last_tx_hash"
+
+	KnownVSPsConfigKey = "known_vsps"
+
+	TicketBuyerVSPHostConfigKey = "tb_vsp_host"
+	TicketBuyerWalletConfigKey  = "tb_wallet_id"
+	TicketBuyerAccountConfigKey = "tb_account_number"
+	TicketBuyerATMConfigKey     = "tb_amount_to_maintain"
+
+	PassphraseTypePin  int32 = 0
+	PassphraseTypePass int32 = 1
 )
+
+type configSaveFn = func(key string, value interface{}) error
+type configReadFn = func(multiwallet bool, key string, valueOut interface{}) error
+
+func (wallet *Wallet) walletConfigSetFn(walletID int) configSaveFn {
+	return func(key string, value interface{}) error {
+		walletUniqueKey := WalletUniqueConfigKey(walletID, key)
+		return wallet.db.Set(userConfigBucketName, walletUniqueKey, value)
+	}
+}
+
+func (wallet *Wallet) walletConfigReadFn(walletID int) configReadFn {
+	return func(multiwallet bool, key string, valueOut interface{}) error {
+		if !multiwallet {
+			key = WalletUniqueConfigKey(walletID, key)
+		}
+		return wallet.db.Get(userConfigBucketName, key, valueOut)
+	}
+}
 
 func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.prepare before setting wallet config values")
+		log.Errorf("call wallet.Prepare before setting wallet config values")
 		return
 	}
 
@@ -26,7 +78,7 @@ func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 
 func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) error {
 	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.prepare before reading wallet config values")
+		log.Errorf("call wallet.Prepare before reading wallet config values")
 		return errors.New(ErrFailedPrecondition)
 	}
 

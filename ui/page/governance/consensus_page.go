@@ -13,6 +13,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -34,8 +35,8 @@ type ConsensusPage struct {
 	ctxCancel context.CancelFunc
 
 	multiWallet    *libwallet.MultiWallet
-	wallets        []*libwallet.Wallet
-	LiveTickets    []*libwallet.Transaction
+	wallets        []*dcr.Wallet
+	LiveTickets    []*dcr.Transaction
 	consensusItems []*components.ConsensusItem
 
 	listContainer       *widget.List
@@ -96,7 +97,7 @@ func (pg *ConsensusPage) OnNavigatedFrom() {
 	}
 }
 
-func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *libwallet.Agenda) {
+func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
 	consensusItems := components.LoadAgendas(pg.Load, pg.WL.SelectedWallet.Wallet, false)
 	if len(consensusItems) > 0 {
@@ -231,13 +232,13 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// a network call. Refresh the window once the call completes.
 	go func() {
 		items := components.LoadAgendas(pg.Load, selectedWallet, true)
-		agenda := libwallet.AgendaStatusFromStr(selectedType)
+		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
-		if agenda == libwallet.UnknownStatus {
+		if agenda == dcr.UnknownStatus {
 			listItems = items
 		} else {
 			for _, item := range items {
-				if libwallet.AgendaStatusType(item.Agenda.Status) == agenda {
+				if dcr.AgendaStatusType(item.Agenda.Status) == agenda {
 					listItems = append(listItems, item)
 				}
 			}

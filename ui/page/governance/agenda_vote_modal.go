@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -15,16 +15,16 @@ type agendaVoteModal struct {
 	// This modal inherits most of the CreatePasswordModal implementation
 	*modal.CreatePasswordModal
 
-	agenda     *libwallet.Agenda
+	agenda     *dcr.Agenda
 	voteChoice string
 
 	onPreferenceUpdated func()
 
 	accountSelector *components.AccountSelector
-	accountSelected *libwallet.Account
+	accountSelected *dcr.Account
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
+func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
 		agenda:              agenda,
 		CreatePasswordModal: modal.NewCreatePasswordModal(l),
@@ -39,10 +39,10 @@ func newAgendaVoteModal(l *load.Load, agenda *libwallet.Agenda, votechoice strin
 	// Source account picker
 	avm.accountSelector = components.NewAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
-		AccountSelected(func(selectedAccount *libwallet.Account) {
+		AccountSelected(func(selectedAccount *dcr.Account) {
 			avm.accountSelected = selectedAccount
 		}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountValidator(func(account *dcr.Account) bool {
 			return true
 		})
 

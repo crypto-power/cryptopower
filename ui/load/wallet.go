@@ -7,17 +7,18 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 type WalletItem struct {
-	Wallet       *libwallet.Wallet
+	Wallet       *dcr.Wallet
 	TotalBalance string
 }
 
 type WalletLoad struct {
 	MultiWallet *libwallet.MultiWallet
-	TxAuthor    libwallet.TxAuthor
+	TxAuthor    dcr.TxAuthor
 
 	UnspentOutputs *wallet.UnspentOutputs
 	Wallet         *wallet.Wallet
@@ -26,8 +27,8 @@ type WalletLoad struct {
 	SelectedAccount *int
 }
 
-func (wl *WalletLoad) SortedWalletList() []*libwallet.Wallet {
-	wallets := wl.MultiWallet.AllWallets()
+func (wl *WalletLoad) SortedWalletList() []*dcr.Wallet {
+	wallets := wl.MultiWallet.AllDCRWallets()
 
 	sort.Slice(wallets, func(i, j int) bool {
 		return wallets[i].ID < wallets[j].ID
@@ -38,7 +39,7 @@ func (wl *WalletLoad) SortedWalletList() []*libwallet.Wallet {
 
 func (wl *WalletLoad) TotalWalletsBalance() (dcrutil.Amount, error) {
 	totalBalance := int64(0)
-	for _, w := range wl.MultiWallet.AllWallets() {
+	for _, w := range wl.MultiWallet.AllDCRWallets() {
 		accountsResult, err := w.GetAccountsRaw()
 		if err != nil {
 			return -1, err
@@ -54,9 +55,9 @@ func (wl *WalletLoad) TotalWalletsBalance() (dcrutil.Amount, error) {
 
 func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 	totalBalance := int64(0)
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(libwallet.ErrNotExist)
+		return -1, errors.New(dcr.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
@@ -73,9 +74,9 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 
 func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, error) {
 	spendableBal := int64(0)
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(libwallet.ErrNotExist)
+		return -1, errors.New(dcr.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()

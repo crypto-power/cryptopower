@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet"
+import "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 
 // NewBlock is sent when a block is attached to the multiwallet.
 type NewBlock struct {
@@ -16,5 +16,5 @@ type TxConfirmed struct {
 }
 
 type NewTransaction struct {
-	Transaction *libwallet.Transaction
+	Transaction *dcr.Transaction
 }

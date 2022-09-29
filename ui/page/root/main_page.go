@@ -17,6 +17,7 @@ import (
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -269,9 +270,9 @@ func (mp *MainPage) OnNavigatedTo() {
 }
 
 func (mp *MainPage) updateExchangeSetting() {
-	currencyExchangeValue := mp.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyExchangeValue := mp.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey, "")
 	if currencyExchangeValue == "" {
-		mp.WL.MultiWallet.SaveUserConfigValue(libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
+		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
 	}
 
 	usdExchangeSet := currencyExchangeValue == values.USDExchangeValue
@@ -415,9 +416,9 @@ func (mp *MainPage) HandleUserInteractions() {
 
 			// check if wallet is synced and clear stack
 			if mp.ID() == send.SendPageID || mp.ID() == ReceivePageID {
-				if mp.WL.MultiWallet.IsSynced() {
+				if mp.WL.SelectedWallet.Wallet.IsSynced() {
 					mp.Display(pg)
-				} else if mp.WL.MultiWallet.IsSyncing() {
+				} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
 					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 					mp.ParentWindow().ShowModal(errModal)
 				} else {
@@ -466,9 +467,9 @@ func (mp *MainPage) HandleUserInteractions() {
 				continue
 			}
 
-			if mp.WL.MultiWallet.IsSynced() {
+			if mp.WL.SelectedWallet.Wallet.IsSynced() {
 				mp.Display(pg)
-			} else if mp.WL.MultiWallet.IsSyncing() {
+			} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
 				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
 				mp.ParentWindow().ShowModal(errModal)
 			} else {
@@ -478,10 +479,10 @@ func (mp *MainPage) HandleUserInteractions() {
 		}
 	}
 
-	mp.isBalanceHidden = mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.HideBalanceConfigKey, false)
+	mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.HideBalanceConfigKey, false)
 	for mp.hideBalanceButton.Clicked() {
 		mp.isBalanceHidden = !mp.isBalanceHidden
-		mp.WL.MultiWallet.SetBoolConfigValueForKey(load.HideBalanceConfigKey, mp.isBalanceHidden)
+		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(load.HideBalanceConfigKey, mp.isBalanceHidden)
 	}
 }
 
@@ -731,24 +732,24 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	case wallet.NewTransaction:
 
 		switch t.Transaction.Type {
-		case libwallet.TxTypeRegular:
-			if t.Transaction.Direction != libwallet.TxDirectionReceived {
+		case dcr.TxTypeRegular:
+			if t.Transaction.Direction != dcr.TxDirectionReceived {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
+			amount := strconv.FormatFloat(dcr.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
-		case libwallet.TxTypeVote:
-			reward := strconv.FormatFloat(libwallet.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
+		case dcr.TxTypeVote:
+			reward := strconv.FormatFloat(dcr.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
-		case libwallet.TxTypeRevocation:
+		case dcr.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)
 		default:
 			return
 		}
 
 		if mp.WL.MultiWallet.OpenedWalletsCount() > 1 {
-			wallet := mp.WL.MultiWallet.WalletWithID(t.Transaction.WalletID)
+			wallet := mp.WL.MultiWallet.DCRWalletWithID(t.Transaction.WalletID)
 			if wallet == nil {
 				return
 			}
@@ -802,14 +803,14 @@ func (mp *MainPage) listenForNotifications() {
 	}
 
 	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := mp.WL.MultiWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := mp.WL.SelectedWallet.Wallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = mp.WL.MultiWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	err = mp.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -829,7 +830,7 @@ func (mp *MainPage) listenForNotifications() {
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
-					transactionNotification := mp.WL.MultiWallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
+					transactionNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
 					if transactionNotification {
 						update := wallet.NewTransaction{
 							Transaction: n.Transaction,
@@ -838,7 +839,7 @@ func (mp *MainPage) listenForNotifications() {
 					}
 					mp.ParentWindow().Reload()
 				case listeners.BlockAttached:
-					beep := mp.WL.MultiWallet.ReadBoolConfigValueForKey(libwallet.BeepNewBlocksConfigKey, false)
+					beep := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.BeepNewBlocksConfigKey, false)
 					if beep {
 						err := beeep.Beep(5, 1)
 						if err != nil {
@@ -864,8 +865,8 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				mp.WL.MultiWallet.RemoveSyncProgressListener(MainPageID)
-				mp.WL.MultiWallet.RemoveTxAndBlockNotificationListener(MainPageID)
+				mp.WL.SelectedWallet.Wallet.RemoveSyncProgressListener(MainPageID)
+				mp.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.MultiWallet.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)

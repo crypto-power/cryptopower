@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -19,7 +19,7 @@ func (pg *Page) listenForTxNotifications() {
 		return
 	}
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.WL.MultiWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, OverviewPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, OverviewPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -34,7 +34,7 @@ func (pg *Page) listenForTxNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveTxAndBlockNotificationListener(OverviewPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 
@@ -45,7 +45,7 @@ func (pg *Page) listenForTxNotifications() {
 }
 
 func (pg *Page) fetchTickets() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterTickets, true)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcr.TxFilterTickets, true)
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
@@ -53,7 +53,7 @@ func (pg *Page) fetchTickets() {
 	}
 
 	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
-		return filter == libwallet.TxFilterTickets
+		return filter == dcr.TxFilterTickets
 	})
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())

@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"decred.org/dcrwallet/v2/errors"
@@ -31,7 +31,7 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 		return nil, errors.New(ErrInvalidAddress)
 	}
 
-	sig, err := wallet.Internal().SignMessage(wallet.shutdownContext(), message, addr)
+	sig, err := wallet.Internal().SignMessage(wallet.ShutdownContext(), message, addr)
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -39,10 +39,10 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 	return sig, nil
 }
 
-func (mw *MultiWallet) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
+func (wallet *Wallet) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
 	var valid bool
 
-	addr, err := stdaddr.DecodeAddress(address, mw.chainParams)
+	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
 		return false, translateError(err)
 	}
@@ -61,7 +61,7 @@ func (mw *MultiWallet) VerifyMessage(address string, message string, signatureBa
 		return false, errors.New(ErrInvalidAddress)
 	}
 
-	valid, err = w.VerifyMessage(message, addr, signature, mw.chainParams)
+	valid, err = w.VerifyMessage(message, addr, signature, wallet.chainParams)
 	if err != nil {
 		return false, translateError(err)
 	}

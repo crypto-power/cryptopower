@@ -1,7 +1,7 @@
 package listeners
 
 import (
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
@@ -26,7 +26,7 @@ func (br *BlocksRescanProgressListener) OnBlocksRescanStarted(walletID int) {
 }
 
 // OnBlocksRescanProgress is a callback func for block rescan progress report.
-func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *libwallet.HeadersRescanProgressReport) {
+func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *dcr.HeadersRescanProgressReport) {
 	br.UpdateNotification(wallet.RescanUpdate{
 		Stage:          wallet.RescanProgress,
 		WalletID:       progress.WalletID,
