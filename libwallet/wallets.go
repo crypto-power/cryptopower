@@ -1,9 +1,19 @@
 package libwallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+import (
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+)
 
 func (mw *MultiWallet) AllDCRWallets() (wallets []*dcr.Wallet) {
 	for _, wallet := range mw.Assets.DCR.Wallets {
+		wallets = append(wallets, wallet)
+	}
+	return wallets
+}
+
+func (mw *MultiWallet) AllBTCWallets() (wallets []*btc.Wallet) {
+	for _, wallet := range mw.Assets.BTC.Wallets {
 		wallets = append(wallets, wallet)
 	}
 	return wallets

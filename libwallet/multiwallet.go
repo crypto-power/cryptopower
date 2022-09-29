@@ -11,12 +11,14 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/ext"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,6 +31,13 @@ type Assets struct {
 		DBDriver    string
 		RootDir     string
 		ChainParams *chaincfg.Params
+	}
+	BTC struct {
+		Wallets     map[int]*btc.Wallet
+		BadWallets  map[int]*btc.Wallet
+		DBDriver    string
+		RootDir     string
+		ChainParams *btccfg.Params
 	}
 }
 
@@ -54,7 +63,14 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
-		return nil, errors.Errorf("failed to create rootDir: %v", err)
+		log.Errorf("error initializing DCR parameters: %s", err.Error())
+		return nil, errors.Errorf("error initializing DCR parameters: %s", err.Error())
+	}
+
+	_, btcRootDir, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
+	if err != nil {
+		log.Errorf("error initializing BTC parameters: %s", err.Error())
+		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
 	chainParams, err := utils.ChainParams(netType)
@@ -114,6 +130,19 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 				DBDriver:    dbDriver,
 				RootDir:     dcrRootDir,
 				ChainParams: dcrChainParams,
+			},
+			BTC: struct {
+				Wallets     map[int]*btc.Wallet
+				BadWallets  map[int]*btc.Wallet
+				DBDriver    string
+				RootDir     string
+				ChainParams *btccfg.Params
+			}{
+				Wallets:     make(map[int]*btc.Wallet),
+				BadWallets:  make(map[int]*btc.Wallet),
+				DBDriver:    dbDriver,
+				RootDir:     btcRootDir,
+				ChainParams: &btccfg.TestNet3Params,
 			},
 		},
 	}
