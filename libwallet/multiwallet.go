@@ -27,7 +27,6 @@ type Assets struct {
 		BadWallets  map[int]*dcr.Wallet
 		DBDriver    string
 		RootDir     string
-		DB          *storm.DB
 		ChainParams *chaincfg.Params
 	}
 }
@@ -62,7 +61,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, errors.Errorf("failed to init logRotator: %v", err.Error())
 	}
 
-	dcrDB, dcrChainParams, dcrRootDir, err := initializeDCRWallet(rootDir, dbDriver, netType)
+	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
@@ -106,14 +105,12 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 				BadWallets  map[int]*dcr.Wallet
 				DBDriver    string
 				RootDir     string
-				DB          *storm.DB
 				ChainParams *chaincfg.Params
 			}{
 				Wallets:     make(map[int]*dcr.Wallet),
 				BadWallets:  make(map[int]*dcr.Wallet),
 				DBDriver:    dbDriver,
 				RootDir:     dcrRootDir,
-				DB:          dcrDB,
 				ChainParams: dcrChainParams,
 			},
 		},
@@ -124,7 +121,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	mw.ExternalService = ext.NewService(chainParams)
 
 	// read saved wallets info from db and initialize wallets
-	query := mw.Assets.DCR.DB.Select(q.True()).OrderBy("ID")
+	query := mw.db.Select(q.True()).OrderBy("ID")
 	var wallets []*dcr.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
@@ -133,7 +130,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
-		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.Assets.DCR.DB, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
 		}
