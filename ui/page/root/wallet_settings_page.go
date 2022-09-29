@@ -365,7 +365,6 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 				return false
 			}
 			pg.wallet.LockWallet()
-			pm.Dismiss()
 
 			// change password
 			newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
@@ -381,7 +380,6 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 						m.SetLoading(false)
 						return false
 					}
-					m.Dismiss()
 
 					info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
 						modal.DefaultClickFunc())

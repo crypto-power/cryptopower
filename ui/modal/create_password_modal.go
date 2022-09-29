@@ -211,7 +211,6 @@ func (cm *CreatePasswordModal) Handle() {
 	}
 
 	if cm.btnPositive.Clicked() || isSubmit {
-
 		if cm.walletNameEnabled {
 			if !utils.EditorsNotEmpty(cm.walletName.Editor) {
 				cm.walletName.SetError(values.String(values.StrEnterWalletName))
@@ -230,19 +229,16 @@ func (cm *CreatePasswordModal) Handle() {
 				return
 			}
 
-			if cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor) {
-
-				cm.SetLoading(true)
-				if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
-					cm.Dismiss()
-				}
+			if !cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor) {
+				return
 			}
 		}
-
 		cm.SetLoading(true)
-		if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
-			cm.Dismiss()
-		}
+		go func() {
+			if cm.positiveButtonClicked(cm.walletName.Editor.Text(), cm.passwordEditor.Editor.Text(), cm) {
+				cm.Dismiss()
+			}
+		}()
 	}
 
 	cm.btnNegative.SetEnabled(!cm.isLoading)
