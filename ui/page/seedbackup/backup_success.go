@@ -28,7 +28,7 @@ func NewBackupSuccessPage(l *load.Load) *BackupSuccessPage {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupSuccessPageID),
 
-		actionButton: l.Theme.OutlineButton("Back to Wallets"),
+		actionButton: l.Theme.OutlineButton(values.String(values.StrBackToWallets)),
 	}
 	pg.actionButton.Font.Weight = text.Medium
 

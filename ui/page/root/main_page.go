@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	MainPageID = "Main"
+	MainPageID = components.WalletsPageID
 )
 
 var (

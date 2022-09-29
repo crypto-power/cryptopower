@@ -24,9 +24,12 @@ import (
 )
 
 const (
-	Uint32Size    = 32 // 32 or 64 ? shifting 32-bit value by 32 bits will always clear it
-	MaxInt32      = 1<<(Uint32Size-1) - 1
-	WalletsPageID = "Wallets"
+	Uint32Size = 32 // 32 or 64 ? shifting 32-bit value by 32 bits will always clear it
+	MaxInt32   = 1<<(Uint32Size-1) - 1
+
+	// WalletsPageID defines the main page ID. It helps pages navigate
+	// back to main page if the immediate parent is not the main page.
+	WalletsPageID = "Main"
 )
 
 var MaxWidth = unit.Dp(800)
