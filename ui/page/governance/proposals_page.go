@@ -99,7 +99,10 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
-	pg.fetchProposals()
+	go func() {
+		pg.fetchProposals()
+		pg.ParentWindow().Reload()
+	}()
 	pg.isSyncing = pg.multiWallet.Politeia.IsSyncing()
 }
 
@@ -144,7 +147,10 @@ func (pg *ProposalsPage) fetchProposals() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	for pg.statusDropDown.Changed() {
-		pg.fetchProposals()
+		go func() {
+			pg.fetchProposals()
+			pg.ParentWindow().Reload()
+		}()
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
