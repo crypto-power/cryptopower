@@ -96,16 +96,15 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
+// Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
-	go func() {
-		pg.fetchProposals()
-		pg.ParentWindow().Reload()
-	}()
 	pg.isSyncing = pg.multiWallet.Politeia.IsSyncing()
 }
 
+// fetchProposals is thread safe and on completing proposals fetch it triggers
+// UI update with the new proposals list.
 func (pg *ProposalsPage) fetchProposals() {
 	var proposalFilter int32
 	var selectedType = pg.statusDropDown.Selected()
@@ -136,8 +135,10 @@ func (pg *ProposalsPage) fetchProposals() {
 	}
 
 	pg.proposalMu.Lock()
-	defer pg.proposalMu.Unlock()
 	pg.proposalItems = listItems
+	pg.proposalMu.Unlock()
+
+	pg.ParentWindow().Reload()
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -147,10 +148,7 @@ func (pg *ProposalsPage) fetchProposals() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	for pg.statusDropDown.Changed() {
-		go func() {
-			pg.fetchProposals()
-			pg.ParentWindow().Reload()
-		}()
+		go pg.fetchProposals()
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
@@ -374,7 +372,6 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.isSyncing = false
 
 					pg.fetchProposals()
-					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
 				pg.WL.MultiWallet.Politeia.RemoveNotificationListener(ProposalsPageID)
