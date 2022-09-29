@@ -53,13 +53,13 @@ type Wallet struct {
 	vspClients   map[string]*vsp.Client
 
 	// setUserConfigValue saves the provided key-value pair to a config database.
-	// This function is ideally assigned when the `wallet.Prepare` method is
+	// This function is ideally assigned when the `wallet.prepare` method is
 	// called from a MultiWallet instance.
 	setUserConfigValue configSaveFn
 
 	// readUserConfigValue returns the previously saved value for the provided
 	// key from a config database. Returns nil if the key wasn't previously set.
-	// This function is ideally assigned when the `wallet.Prepare` method is
+	// This function is ideally assigned when the `wallet.prepare` method is
 	// called from a MultiWallet instance.
 	readUserConfigValue configReadFn
 
@@ -76,12 +76,20 @@ type Wallet struct {
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir string, chainParams *chaincfg.Params,
+func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincfg.Params,
+	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
+
+	wallet.db = db
+	return wallet.prepare(rootDir, chainParams, setUserConfigValueFn, readUserConfigValueFn)
+}
+
+func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
 
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.rootDir = rootDir
+	// wallet.db = db
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn
@@ -200,7 +208,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
+		err := wallet.prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 		if err != nil {
 			return err
 		}
@@ -240,7 +248,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string) (*Wallet, error
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
+		err := wallet.prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 		if err != nil {
 			return err
 		}
@@ -287,7 +295,7 @@ func RestoreWallet(walletName, seedMnemonic, privatePassphrase string, privatePa
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
+		err := wallet.prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 		if err != nil {
 			return err
 		}
@@ -406,7 +414,7 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 
 		// prepare the wallet for use and open it
 		err := (func() error {
-			err := wallet.Prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
+			err := wallet.prepare(wallet.rootDir, wallet.chainParams, wallet.walletConfigSetFn(wallet.ID), wallet.walletConfigReadFn(wallet.ID))
 			if err != nil {
 				return err
 			}

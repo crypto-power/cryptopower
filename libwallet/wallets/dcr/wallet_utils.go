@@ -14,6 +14,10 @@ import (
 	"strings"
 )
 
+const (
+	walletsDbName = "wallets.db"
+)
+
 func (wallet *Wallet) markWalletAsDiscoveredAccounts() error {
 	if wallet == nil {
 		return errors.New(ErrNotExist)
