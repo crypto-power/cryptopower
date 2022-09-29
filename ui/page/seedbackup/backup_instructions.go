@@ -119,7 +119,6 @@ func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 	sp := components.SubPage{
 		Load:       pg.Load,
 		Title:      "Keep in mind",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())

@@ -31,12 +31,6 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
-
-	multiWallet    *libwallet.MultiWallet
-	wallets        []*dcr.Wallet
-	LiveTickets    []*dcr.Transaction
 	consensusItems []*components.ConsensusItem
 
 	listContainer       *widget.List
@@ -58,8 +52,6 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg := &ConsensusPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ConsensusPageID),
-		multiWallet:      l.WL.MultiWallet,
-		wallets:          l.WL.SortedWalletList(),
 		consensusList:    l.Theme.NewClickableList(layout.Vertical),
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
@@ -87,15 +79,10 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 }
 
 func (pg *ConsensusPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.FetchAgendas()
 }
 
-func (pg *ConsensusPage) OnNavigatedFrom() {
-	if pg.ctxCancel != nil {
-		pg.ctxCancel()
-	}
-}
+func (pg *ConsensusPage) OnNavigatedFrom() {}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string

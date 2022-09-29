@@ -230,7 +230,6 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		Load:       pg.Load,
 		Title:      "Verify seed word",
 		SubTitle:   "Step 2/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -269,7 +268,6 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 		Load:       pg.Load,
 		Title:      "Verify seed word",
 		SubTitle:   "Step 2/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())

@@ -37,7 +37,6 @@ type (
 	TransactionRow struct {
 		Transaction dcr.Transaction
 		Index       int
-		ShowBadge   bool
 	}
 
 	TxStatus struct {
@@ -226,7 +225,7 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *T
 	return &txStatus
 }
 
-func WeekDayHourMinuteCalculator(timestamp int64) string {
+func weekDayHourMinuteCalculator(timestamp int64) string {
 	var dateTimeResult string
 	timeStampNow := time.Now().Unix()
 	minutesFromTxn := (timeStampNow - timestamp) / 60
@@ -279,7 +278,7 @@ func WeekDayHourMinuteCalculator(timestamp int64) string {
 	return dateTimeResult
 }
 
-func DurationAgo(timestamp int64) string {
+func durationAgo(timestamp int64) string {
 	var duration string
 
 	//Convert timestamp to date in string format (yyyy:mm:dd hr:m:s +0000 UTC)
@@ -307,7 +306,7 @@ func DurationAgo(timestamp int64) string {
 			if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) < 12 {
 				if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) == 1 {
 					if dayNow < txnDay {
-						duration = WeekDayHourMinuteCalculator(timestamp)
+						duration = weekDayHourMinuteCalculator(timestamp)
 						return duration
 					}
 
@@ -357,7 +356,7 @@ func DurationAgo(timestamp int64) string {
 	if (monthNow - txnMonth) > 0 {
 		if (monthNow - txnMonth) == 1 {
 			if dayNow < txnDay {
-				duration = WeekDayHourMinuteCalculator(timestamp)
+				duration = weekDayHourMinuteCalculator(timestamp)
 				return duration
 			}
 
@@ -384,7 +383,7 @@ func DurationAgo(timestamp int64) string {
 		return duration
 	}
 
-	duration = WeekDayHourMinuteCalculator(timestamp)
+	duration = weekDayHourMinuteCalculator(timestamp)
 
 	return duration
 }
@@ -438,15 +437,6 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						Alignment:   layout.Middle,
 						Margin:      layout.Inset{Top: values.MarginPadding4},
 					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if row.ShowBadge {
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return WalletLabel(gtx, l, wal.Name)
-								})
-							}
-
-							return layout.Dimensions{}
-						}),
 						layout.Rigid(func(gtx C) D {
 							if wal.TxMatchesFilter(&row.Transaction, dcr.TxFilterStaking) {
 								ic := l.Theme.Icons.StakeIconInactive
@@ -543,7 +533,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 								}
 
 								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return WalletLabel(gtx, l, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
+									return HighlightedText(gtx, l, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
 								})
 							}
 
@@ -563,7 +553,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 							if currentDate[0] == txnDate[0] && currentDate[1] == txnDate[1] && currentDay-txnDay < 1 {
 								return D{}
 							}
-							duration := l.Theme.Label(values.TextSize12, DurationAgo(row.Transaction.Timestamp))
+							duration := l.Theme.Label(values.TextSize12, durationAgo(row.Transaction.Timestamp))
 							duration.Color = l.Theme.Color.GrayText4
 							return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, duration.Layout)
 						}),
@@ -619,10 +609,9 @@ func FormatDateOrTime(timestamp int64) string {
 	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
 }
 
-// walletLabel displays the wallet which a transaction belongs to.
-// It is only displayed on the overview page when there are transactions from multiple wallets
-// deprecated -- todo remove.
-func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
+// HighlightedText displays a text in a gray background currently only used
+// on the transaction page for revoked or voted transactions.
+func HighlightedText(gtx layout.Context, l *load.Load, text string) D {
 	return cryptomaterial.Card{
 		Color: l.Theme.Color.Gray4,
 	}.Layout(gtx, func(gtx C) D {
@@ -631,7 +620,7 @@ func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
 				Left:  values.MarginPadding4,
 				Right: values.MarginPadding4,
 			}}.Layout(gtx, func(gtx C) D {
-			name := l.Theme.Label(values.TextSize12, walletName)
+			name := l.Theme.Label(values.TextSize12, text)
 			name.Color = l.Theme.Color.GrayText2
 			return name.Layout(gtx)
 		})
@@ -724,6 +713,7 @@ func TimeFormat(secs int, long bool) string {
 	return fmt.Sprintf("%d %s", secs, val)
 }
 
+<<<<<<< HEAD
 // createOrUpdateWalletDropDown check for len of wallets to create dropDown,
 // also update the list when create, update, delete a wallet.
 func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, wallets []*dcr.Wallet, grp uint, pos uint) *cryptomaterial.DropDown {
@@ -741,6 +731,8 @@ func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, w
 	return *dwn
 }
 
+=======
+>>>>>>> remove redunt codes from project
 func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
 	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)}}, grp, pos)

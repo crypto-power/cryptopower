@@ -110,7 +110,6 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
 			Title:      values.String(values.StrSignMessage),
-			WalletName: pg.wallet.Name,
 			BackButton: pg.backButton,
 			InfoButton: pg.infoButton,
 			Back: func() {

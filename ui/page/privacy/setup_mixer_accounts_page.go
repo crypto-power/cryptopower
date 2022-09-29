@@ -70,7 +70,6 @@ func (pg *SetupMixerAccountsPage) Layout(gtx layout.Context) layout.Dimensions {
 		page := components.SubPage{
 			Load:       pg.Load,
 			Title:      "Set up needed accounts",
-			WalletName: pg.WL.SelectedWallet.Wallet.Name,
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()

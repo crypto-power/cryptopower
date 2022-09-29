@@ -13,7 +13,6 @@ type SubPage struct {
 	*load.Load
 	Title        string
 	SubTitle     string
-	WalletName   string
 	Back         func()
 	Body         layout.Widget
 	InfoTemplate string
@@ -72,22 +71,6 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 					return sub.Layout(gtx)
 				}),
 			)
-		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			if sp.WalletName != "" {
-				return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return cryptomaterial.Card{
-						Color: sp.Theme.Color.Surface,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-							walletText := sp.Theme.Caption(sp.WalletName)
-							walletText.Color = sp.Theme.Color.GrayText2
-							return walletText.Layout(gtx)
-						})
-					})
-				})
-			}
-			return layout.Dimensions{}
 		}),
 		layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 			return layout.E.Layout(gtx, func(gtx C) D {
