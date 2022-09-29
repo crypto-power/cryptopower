@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -51,17 +52,18 @@ type MultiWallet struct {
 func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWallet, error) {
 	errors.Separator = ":: "
 
+	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
+	if err != nil {
+		return nil, errors.Errorf("failed to create rootDir: %v", err)
+	}
+
 	chainParams, err := utils.ChainParams(netType)
 	if err != nil {
 		return nil, err
 	}
 
-	err = initLogRotator(filepath.Join(rootDir, logFileName))
-	if err != nil {
-		return nil, errors.Errorf("failed to init logRotator: %v", err.Error())
-	}
-
-	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
+	rootDir = filepath.Join(rootDir, netType)
+	err = os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
