@@ -124,7 +124,7 @@ func layoutAgendaDetails(l *load.Load, data string, weight ...text.Weight) layou
 }
 
 func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
-	if item.Agenda.Status == libwallet.AgendaStatusFinished.String() {
+	if item.Agenda.Status == dcr.AgendaStatusFinished.String() {
 		return D{}
 	}
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))

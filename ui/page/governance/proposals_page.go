@@ -41,7 +41,7 @@ type ProposalsPage struct {
 	ctxCancel  context.CancelFunc
 	proposalMu sync.RWMutex
 
-	multiWallet    *dcr.MultiWallet
+	multiWallet    *libwallet.MultiWallet
 	listContainer  *widget.List
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList

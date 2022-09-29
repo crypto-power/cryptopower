@@ -242,11 +242,11 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
 	wallet := &Wallet{
-		Name:                  walletName,
-		db:                    db,
-		dbDriver:              dbDriver,
-		rootDir:               rootDir,
-		chainParams:           chainParams,
+		Name:        walletName,
+		db:          db,
+		dbDriver:    dbDriver,
+		rootDir:     rootDir,
+		chainParams: chainParams,
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]SyncProgressListener),
 		},

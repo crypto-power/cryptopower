@@ -8,7 +8,6 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -37,7 +36,7 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer layout.List
-	wallet        *libwallet.Wallet
+	wallet        *dcr.Wallet
 
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable
@@ -416,7 +415,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(libwallet.AccountMixerMixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerMixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
@@ -440,7 +439,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(libwallet.AccountMixerUnmixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerUnmixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
@@ -469,14 +468,17 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		NegativeButton(values.String(values.StrCancel), func() {
 			pg.toggleMixer.SetChecked(false)
 		}).
-		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.WL.SelectedWallet.Wallet.StartAccountMixer(password)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
-			pm.Dismiss()
+		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
+			go func() {
+				err := pg.WL.SelectedWallet.Wallet.StartAccountMixer(password)
+				if err != nil {
+					pg.Toast.NotifyError(err.Error())
+					pm.SetLoading(false)
+					return
+				}
+				pm.Dismiss()
+			}()
+
 			return false
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
@@ -499,7 +501,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.WL.MultiWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
+	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return

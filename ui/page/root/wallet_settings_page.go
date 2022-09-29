@@ -475,7 +475,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 				return false
 			}
 
-			err := pg.WL.SelectedWallet.Wallet.RenameWallet(pg.wallet.ID, name)
+			err := pg.WL.SelectedWallet.Wallet.RenameWallet(name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)

@@ -11,11 +11,9 @@ import (
 
 	"gioui.org/layout"
 
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/values"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 

@@ -5,7 +5,6 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"

@@ -1,7 +1,6 @@
 package root
 
 import (
-	"strings"
 	"sync"
 
 	"gioui.org/layout"
