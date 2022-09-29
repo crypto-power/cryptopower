@@ -41,7 +41,7 @@ func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, 
 }
 
 func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey)
+	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.db, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
 	if err != nil {
 		return nil, err
 	}
