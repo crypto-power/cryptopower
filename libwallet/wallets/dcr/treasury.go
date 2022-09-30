@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"encoding/hex"
@@ -57,7 +57,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 
 	currentVotingPolicy := wallet.Internal().TreasuryKeyPolicy(pikey, ticketHash)
 
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 
 	err = wallet.Internal().SetTreasuryKeyPolicy(ctx, pikey, policy, ticketHash)
 	if err != nil {
@@ -186,9 +186,4 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 		res[i] = r
 	}
 	return res, nil
-}
-
-// PiKeys returns the sanctioned Politeia keys for the current network.
-func (mw *MultiWallet) PiKeys() [][]byte {
-	return mw.chainParams.PiKeys
 }

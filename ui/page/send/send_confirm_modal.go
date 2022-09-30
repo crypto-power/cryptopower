@@ -174,7 +174,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 											return inset.Layout(gtx, func(gtx C) D {
 												return card.Layout(gtx, func(gtx C) D {
 													return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-														destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
+														destinationWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.destinationAccount.WalletID)
 														txt := scm.Theme.Caption(destinationWallet.Name)
 														txt.Color = scm.Theme.Color.GrayText1
 														return txt.Layout(gtx)
@@ -197,7 +197,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					sendWallet := scm.WL.MultiWallet.WalletWithID(scm.sourceAccount.WalletID)
+					sendWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.sourceAccount.WalletID)
 					return scm.contentRow(gtx, values.String(values.StrSendingFrom), scm.sourceAccount.Name, sendWallet.Name)
 				}),
 				layout.Rigid(func(gtx C) D {

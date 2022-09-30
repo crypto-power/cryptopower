@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"

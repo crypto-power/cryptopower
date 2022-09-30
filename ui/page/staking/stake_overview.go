@@ -10,7 +10,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -43,7 +43,7 @@ type Page struct {
 
 	tickets []*transactionItem
 
-	ticketOverview *libwallet.StakingOverview
+	ticketOverview *dcr.StakingOverview
 
 	ticketsList   *cryptomaterial.ClickableList
 	stakeSettings *cryptomaterial.Clickable
@@ -66,7 +66,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
-	pg.ticketOverview = new(libwallet.StakingOverview)
+	pg.ticketOverview = new(dcr.StakingOverview)
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
@@ -98,7 +98,7 @@ func (pg *Page) OnNavigatedTo() {
 // fetch ticket price only when the wallet is synced
 func (pg *Page) fetchTicketPrice() {
 	ticketPrice, err := pg.WL.SelectedWallet.Wallet.TicketPrice()
-	if err != nil && !pg.WL.MultiWallet.IsSynced() {
+	if err != nil && !pg.WL.SelectedWallet.Wallet.IsSynced() {
 		log.Error(err)
 		pg.ticketPrice = values.String(values.StrNotAvailable)
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletNotSynced), modal.DefaultClickFunc())
@@ -110,15 +110,15 @@ func (pg *Page) fetchTicketPrice() {
 
 func (pg *Page) setStakingButtonsState() {
 	//disable auto ticket purchase if wallet is not synced
-	pg.stake.SetEnabled(pg.WL.MultiWallet.IsSynced() || !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
+	pg.stake.SetEnabled(pg.WL.SelectedWallet.Wallet.IsSynced() || !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
 }
 
 func (pg *Page) loadPageData() {
 	go func() {
-		if len(pg.WL.MultiWallet.KnownVSPs()) == 0 {
+		if len(pg.WL.SelectedWallet.Wallet.KnownVSPs()) == 0 {
 			// TODO: Does this page need this list?
 			if pg.ctx != nil {
-				pg.WL.MultiWallet.ReloadVSPList(pg.ctx)
+				pg.WL.SelectedWallet.Wallet.ReloadVSPList(pg.ctx)
 			}
 		}
 
@@ -211,7 +211,7 @@ func (pg *Page) HandleUserInteractions() {
 				//if not set, check if the saved account is mixed before opening modal
 				// if it is not, open stake config modal
 				tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(libwallet.AccountMixerConfigSet, false) &&
+				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
 					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 					(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 					pg.startTicketBuyerPasswordModal()
@@ -222,7 +222,7 @@ func (pg *Page) HandleUserInteractions() {
 				pg.ticketBuyerSettingsModal()
 			}
 		} else {
-			pg.WL.MultiWallet.StopAutoTicketsPurchase(pg.WL.SelectedWallet.Wallet.ID)
+			pg.WL.SelectedWallet.Wallet.StopAutoTicketsPurchase()
 		}
 	}
 
@@ -244,12 +244,12 @@ func (pg *Page) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(ticketBuyerModal)
 	}
 
-	secs, _ := pg.WL.MultiWallet.NextTicketPriceRemaining()
+	secs, _ := pg.WL.SelectedWallet.Wallet.NextTicketPriceRemaining()
 	if secs <= 0 {
 		pg.fetchTicketPrice()
 	}
 
-	if pg.WL.MultiWallet.IsSynced() {
+	if pg.WL.SelectedWallet.Wallet.IsSynced() {
 		pg.fetchTicketPrice()
 	}
 
@@ -266,11 +266,11 @@ func (pg *Page) HandleUserInteractions() {
 		// wallet passphrase should be requested and used to unlock
 		// the wallet before calling this method.
 		// TODO: Use log.Errorf and log.Warnf instead of fmt.Printf.
-		ticketInfo, err := pg.WL.MultiWallet.VSPTicketInfo(ticketTx.WalletID, ticketTx.Hash)
+		ticketInfo, err := pg.WL.SelectedWallet.Wallet.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v\n", err)
 		} else {
-			if ticketInfo.FeeTxStatus != libwallet.VSPFeeProcessConfirmed {
+			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed {
 				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
 					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
@@ -308,7 +308,7 @@ func (pg *Page) ticketBuyerSettingsModal() {
 
 func (pg *Page) startTicketBuyerPasswordModal() {
 	tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-	balToMaintain := libwallet.AmountCoin(tbConfig.BalanceToMaintain)
+	balToMaintain := dcr.AmountCoin(tbConfig.BalanceToMaintain)
 	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTicketError, err), modal.DefaultClickFunc())
@@ -347,7 +347,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 							txt := pg.Theme.Label(values.TextSize14, msg)
 							txt.Alignment = text.Middle
 							txt.Color = pg.Theme.Color.GrayText3
-							if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
+							if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
 								txt.Color = pg.Theme.Color.Gray3
 							}
 							return txt.Layout(gtx)
@@ -358,7 +358,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		}).
 		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			if !pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
+			if !pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)
 				pg.stake.SetChecked(false)

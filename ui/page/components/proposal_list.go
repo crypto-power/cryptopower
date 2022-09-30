@@ -9,14 +9,14 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ProposalItem struct {
-	Proposal     libwallet.Proposal
+	Proposal     dcr.Proposal
 	tooltip      *cryptomaterial.Tooltip
 	tooltipLabel cryptomaterial.Label
 	voteBar      *VoteBar
@@ -34,9 +34,9 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 				return layoutTitle(gtx, l, proposal)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if proposal.Category == libwallet.ProposalCategoryActive ||
-					proposal.Category == libwallet.ProposalCategoryApproved ||
-					proposal.Category == libwallet.ProposalCategoryRejected {
+				if proposal.Category == dcr.ProposalCategoryActive ||
+					proposal.Category == dcr.ProposalCategoryApproved ||
+					proposal.Category == dcr.ProposalCategoryRejected {
 					return layoutProposalVoteBar(window, gtx, prop)
 				}
 				return D{}
@@ -67,19 +67,19 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	var categoryLabel cryptomaterial.Label
 	var categoryLabelColor color.NRGBA
 	switch proposal.Category {
-	case libwallet.ProposalCategoryApproved:
+	case dcr.ProposalCategoryApproved:
 		categoryLabel = l.Theme.Body2(values.String(values.StrApproved))
 		categoryLabelColor = l.Theme.Color.Success
-	case libwallet.ProposalCategoryActive:
+	case dcr.ProposalCategoryActive:
 		categoryLabel = l.Theme.Body2(values.String(values.StrVoting))
 		categoryLabelColor = l.Theme.Color.Primary
-	case libwallet.ProposalCategoryRejected:
+	case dcr.ProposalCategoryRejected:
 		categoryLabel = l.Theme.Body2(values.String(values.StrRejected))
 		categoryLabelColor = l.Theme.Color.Danger
-	case libwallet.ProposalCategoryAbandoned:
+	case dcr.ProposalCategoryAbandoned:
 		categoryLabel = l.Theme.Body2(values.String(values.StrAbandoned))
 		categoryLabelColor = grayCol
-	case libwallet.ProposalCategoryPre:
+	case dcr.ProposalCategoryPre:
 		categoryLabel = l.Theme.Body2(values.String(values.StrInDiscussion))
 		categoryLabelColor = grayCol
 	}
@@ -104,7 +104,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
+							if item.Proposal.Category == dcr.ProposalCategoryPre {
 								return layout.Inset{
 									Right: values.MarginPadding4,
 								}.Layout(gtx, stateLabel.Layout)
@@ -112,7 +112,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryActive {
+							if item.Proposal.Category == dcr.ProposalCategoryActive {
 								return layout.Inset{
 									Right: values.MarginPadding4,
 									Top:   values.MarginPadding3,
@@ -122,7 +122,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 						}),
 						layout.Rigid(timeAgoLabel.Layout),
 						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
+							if item.Proposal.Category == dcr.ProposalCategoryPre {
 								return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 									rect := image.Rectangle{
 										Min: gtx.Constraints.Min,
@@ -145,7 +145,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	)
 }
 
-func layoutTitle(gtx C, l *load.Load, proposal libwallet.Proposal) D {
+func layoutTitle(gtx C, l *load.Load, proposal dcr.Proposal) D {
 	lbl := l.Theme.H6(proposal.Name)
 	lbl.Font.Weight = text.SemiBold
 	return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
@@ -178,11 +178,11 @@ func layoutInfoTooltip(gtx C, rect image.Rectangle, item ProposalItem) {
 func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D {
 	var selectedCategory string
 	switch category {
-	case libwallet.ProposalCategoryApproved:
+	case dcr.ProposalCategoryApproved:
 		selectedCategory = values.String(values.StrApproved)
-	case libwallet.ProposalCategoryRejected:
+	case dcr.ProposalCategoryRejected:
 		selectedCategory = values.String(values.StrRejected)
-	case libwallet.ProposalCategoryAbandoned:
+	case dcr.ProposalCategoryAbandoned:
 		selectedCategory = values.String(values.StrAbandoned)
 	default:
 		selectedCategory = values.String(values.StrUnderReview)
@@ -211,11 +211,11 @@ func LoadProposals(category int32, newestFirst bool, l *load.Load) []*ProposalIt
 		for i := 0; i < len(proposals); i++ {
 			proposal := proposals[i]
 			item := &ProposalItem{
-				Proposal: libwallet.Proposal{Proposal: proposal},
+				Proposal: dcr.Proposal{Proposal: proposal},
 				voteBar:  NewVoteBar(l),
 			}
 
-			if proposal.Category == libwallet.ProposalCategoryPre {
+			if proposal.Category == dcr.ProposalCategoryPre {
 				tooltipLabel := l.Theme.Caption("")
 				tooltipLabel.Color = l.Theme.Color.GrayText2
 				if proposal.VoteStatus == 1 {

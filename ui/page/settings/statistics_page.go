@@ -12,6 +12,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -28,8 +29,8 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	txs      []libwallet.Transaction
-	accounts *libwallet.Accounts
+	txs      []dcr.Transaction
+	accounts *dcr.Accounts
 
 	l             layout.List
 	scrollbarList *widget.List
@@ -65,7 +66,7 @@ func NewStatPage(l *load.Load) *StatPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *StatPage) OnNavigatedTo() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, libwallet.TxFilterAll, true)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcr.TxFilterAll, true)
 	if err != nil {
 		log.Errorf("Error getting txs: %s", err.Error())
 	} else {
@@ -113,7 +114,7 @@ func (pg *StatPage) layoutStats(gtx C) D {
 	items := []layout.Widget{
 		item(values.String(values.StrBuild), pg.netType+", "+time.Now().Format("2006-01-02")),
 		line.Layout,
-		item(values.String(values.StrPeersConnected), strconv.Itoa(int(pg.WL.MultiWallet.ConnectedPeers()))),
+		item(values.String(values.StrPeersConnected), strconv.Itoa(int(pg.WL.SelectedWallet.Wallet.ConnectedPeers()))),
 		line.Layout,
 		item(values.String(values.StrUptime), pg.startupTime),
 		line.Layout,

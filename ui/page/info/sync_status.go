@@ -18,7 +18,7 @@ func (pg *WalletInfo) initWalletStatusWidgets() {
 
 // syncStatusSection lays out content for displaying sync status.
 func (pg *WalletInfo) syncStatusSection(gtx C) D {
-	_, rescanning := pg.WL.MultiWallet.IsSyncing(), pg.WL.MultiWallet.IsRescanning()
+	syncing, rescanning := pg.WL.SelectedWallet.Wallet.IsSyncing(), pg.WL.SelectedWallet.Wallet.IsRescanning()
 	uniform := layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		return components.Container{Padding: layout.Inset{
@@ -30,7 +30,6 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.syncBoxTitleRow)
 				}),
 				layout.Rigid(func(gtx C) D {
-					syncing, rescanning := pg.WL.MultiWallet.IsSyncing(), pg.WL.MultiWallet.IsRescanning()
 					if syncing || rescanning {
 						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
 							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -58,7 +57,7 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 	statusLabel := pg.Theme.Label(values.TextSize14, values.String(values.StrOffline))
 	pg.walletStatusIcon.Color = pg.Theme.Color.Danger
-	if pg.WL.MultiWallet.IsConnectedToDecredNetwork() {
+	if pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
 		statusLabel.Text = values.String(values.StrOnline)
 		pg.walletStatusIcon.Color = pg.Theme.Color.Success
 	}
@@ -76,10 +75,10 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 		}),
 		layout.Rigid(statusLabel.Layout),
 		layout.Rigid(func(gtx C) D {
-			if pg.WL.MultiWallet.IsSyncing() || pg.WL.MultiWallet.IsSynced() {
+			if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsSynced() {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						connectedPeers := fmt.Sprintf("%d", pg.WL.MultiWallet.ConnectedPeers())
+						connectedPeers := fmt.Sprintf("%d", pg.WL.SelectedWallet.Wallet.ConnectedPeers())
 						return pg.Theme.Label(values.TextSize14, values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
 					}),
 				)
@@ -95,9 +94,9 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 
 func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 	icon := pg.Theme.Icons.SyncingIcon
-	if pg.WL.MultiWallet.IsSynced() {
+	if pg.WL.SelectedWallet.Wallet.IsSynced() {
 		icon = pg.Theme.Icons.SuccessIcon
-	} else if pg.WL.MultiWallet.IsSyncing() {
+	} else if pg.WL.SelectedWallet.Wallet.IsSyncing() {
 		icon = pg.Theme.Icons.SyncingIcon
 	}
 
@@ -109,8 +108,8 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 
 // syncContent lays out sync status content when the wallet is syncing, synced, not connected
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
-	isInprogress := pg.WL.MultiWallet.IsSyncing() || pg.WL.MultiWallet.IsRescanning()
-	bestBlock := pg.WL.MultiWallet.GetBestBlock()
+	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -164,11 +163,11 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
 
 							syncProgress := values.String(values.StrWalletNotSynced)
-							if pg.WL.MultiWallet.IsSyncing() {
+							if pg.WL.SelectedWallet.Wallet.IsSyncing() {
 								syncProgress = values.StringF(values.StrSyncingProgressStat, daysBehind)
-							} else if pg.WL.MultiWallet.IsRescanning() {
+							} else if pg.WL.SelectedWallet.Wallet.IsRescanning() {
 								syncProgress = values.String(values.StrRescanningBlocks)
-							} else if pg.WL.MultiWallet.IsSynced() {
+							} else if pg.WL.SelectedWallet.Wallet.IsSynced() {
 								syncProgress = values.String(values.StrComplete)
 							}
 
@@ -229,7 +228,7 @@ func (pg *WalletInfo) progressStatusDetails() (int, string) {
 		timeLeft = components.TimeFormat(int(rescanUpdate.ProgressReport.RescanTimeRemaining), true)
 	}
 
-	if pg.WL.MultiWallet.IsSyncing() || pg.WL.MultiWallet.IsRescanning() {
+	if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() {
 		timeLeftLabel = values.StringF(values.StrTimeLeft, timeLeft)
 		if progress == 0 {
 			timeLeftLabel = values.String(values.StrLoading)
@@ -244,7 +243,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 	if rescanUpdate == nil {
 		return D{}
 	}
-	wal := pg.WL.MultiWallet.WalletWithID(rescanUpdate.WalletID)
+	wal := pg.WL.MultiWallet.DCRWalletWithID(rescanUpdate.WalletID)
 	return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		card := pg.Theme.Card()

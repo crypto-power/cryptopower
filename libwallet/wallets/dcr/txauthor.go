@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"bytes"
@@ -32,8 +32,8 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (mw *MultiWallet) NewUnsignedTx(walletID int, sourceAccountNumber int32) (*TxAuthor, error) {
-	sourceWallet := mw.WalletWithID(walletID)
+func (wallet *Wallet) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error) {
+	sourceWallet := wallet
 	if sourceWallet == nil {
 		return nil, fmt.Errorf(ErrWalletNotFound)
 	}
@@ -194,7 +194,7 @@ func (tx *TxAuthor) UseInputs(utxoKeys []string) error {
 			Hash:  *txHash,
 			Index: uint32(index),
 		}
-		outputInfo, err := tx.sourceWallet.Internal().OutputInfo(tx.sourceWallet.shutdownContext(), op)
+		outputInfo, err := tx.sourceWallet.Internal().OutputInfo(tx.sourceWallet.ShutdownContext(), op)
 		if err != nil {
 			return fmt.Errorf("no valid utxo found for '%s' in the source account", utxoKey)
 		}
@@ -251,7 +251,7 @@ func (tx *TxAuthor) Broadcast(privatePassphrase []byte) ([]byte, error) {
 		lock <- time.Time{}
 	}()
 
-	ctx := tx.sourceWallet.shutdownContext()
+	ctx := tx.sourceWallet.ShutdownContext()
 	err = tx.sourceWallet.Internal().Unlock(ctx, privatePassphrase, lock)
 	if err != nil {
 		log.Error(err)
@@ -317,7 +317,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
 	var changeSource txauthor.ChangeSource
 
-	ctx := tx.sourceWallet.shutdownContext()
+	ctx := tx.sourceWallet.ShutdownContext()
 
 	for _, destination := range tx.destinations {
 		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {

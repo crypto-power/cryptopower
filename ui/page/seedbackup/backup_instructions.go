@@ -5,7 +5,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -28,7 +28,7 @@ type BackupInstructionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *libwallet.Wallet
+	wallet *dcr.Wallet
 
 	backButton  cryptomaterial.IconButton
 	viewSeedBtn cryptomaterial.Button
@@ -36,7 +36,7 @@ type BackupInstructionsPage struct {
 	infoList    *layout.List
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *libwallet.Wallet) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet *dcr.Wallet) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),

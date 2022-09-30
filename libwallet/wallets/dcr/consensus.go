@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"fmt"
@@ -101,7 +101,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	}
 	defer wallet.LockWallet()
 
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 
 	// get choices
 	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
@@ -208,7 +208,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 		ticketHash = hash
 	}
 
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return nil, err

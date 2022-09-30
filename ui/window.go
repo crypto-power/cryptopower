@@ -13,6 +13,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/assets"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -34,7 +35,7 @@ type Window struct {
 
 	load *load.Load
 
-	txAuthor libwallet.TxAuthor
+	txAuthor dcr.TxAuthor
 
 	walletAcctMixerStatus chan *wallet.AccountMixer
 }

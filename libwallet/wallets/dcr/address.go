@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ type AddressInfo struct {
 	AccountName   string
 }
 
-func (mw *MultiWallet) IsAddressValid(address string) bool {
-	_, err := stdaddr.DecodeAddress(address, mw.chainParams)
+func (wallet *Wallet) IsAddressValid(address string) bool {
+	_, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	return err == nil
 }
 
@@ -28,7 +28,7 @@ func (wallet *Wallet) HaveAddress(address string) bool {
 		return false
 	}
 
-	have, err := wallet.Internal().HaveAddress(wallet.shutdownContext(), addr)
+	have, err := wallet.Internal().HaveAddress(wallet.ShutdownContext(), addr)
 	if err != nil {
 		return false
 	}
@@ -42,7 +42,7 @@ func (wallet *Wallet) AccountOfAddress(address string) (string, error) {
 		return "", translateError(err)
 	}
 
-	a, err := wallet.Internal().KnownAddress(wallet.shutdownContext(), addr)
+	a, err := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
 	if err != nil {
 		return "", translateError(err)
 	}
@@ -60,7 +60,7 @@ func (wallet *Wallet) AddressInfo(address string) (*AddressInfo, error) {
 		Address: address,
 	}
 
-	known, _ := wallet.Internal().KnownAddress(wallet.shutdownContext(), addr)
+	known, _ := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
 	if known != nil {
 		addressInfo.IsMine = true
 		addressInfo.AccountName = known.AccountName()
@@ -104,7 +104,7 @@ func (wallet *Wallet) NextAddress(account int32) (string, error) {
 	// the newly incremented index) is returned below by CurrentAddress.
 	// NOTE: This workaround will be unnecessary once this anomaly is corrected
 	// upstream.
-	_, err := wallet.Internal().NewExternalAddress(wallet.shutdownContext(), uint32(account), w.WithGapPolicyWrap())
+	_, err := wallet.Internal().NewExternalAddress(wallet.ShutdownContext(), uint32(account), w.WithGapPolicyWrap())
 	if err != nil {
 		log.Errorf("NewExternalAddress error: %w", err)
 		return "", err
@@ -119,7 +119,7 @@ func (wallet *Wallet) AddressPubKey(address string) (string, error) {
 		return "", err
 	}
 
-	known, err := wallet.Internal().KnownAddress(wallet.shutdownContext(), addr)
+	known, err := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
 	if err != nil {
 		return "", err
 	}

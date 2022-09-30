@@ -1,13 +1,13 @@
-package libwallet
+package dcr
 
 import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/walletdata"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 )
 
 func (wallet *Wallet) IndexTransactions() error {
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 
 	var totalIndex int32
 	var txEndHeight uint32
@@ -61,7 +61,7 @@ func (wallet *Wallet) IndexTransactions() error {
 		return err
 	}
 
-	endHeight := wallet.GetBestBlock()
+	endHeight := wallet.GetBestBlockHeight()
 
 	startBlock := w.NewBlockIdentifierFromHeight(beginHeight)
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)

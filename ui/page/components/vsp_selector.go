@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -25,7 +25,7 @@ type VSPSelector struct {
 
 	changed      bool
 	showVSPModal *cryptomaterial.Clickable
-	selectedVSP  *libwallet.VSP
+	selectedVSP  *dcr.VSP
 }
 
 func NewVSPSelector(l *load.Load) *VSPSelector {
@@ -48,7 +48,7 @@ func (v *VSPSelector) Changed() bool {
 }
 
 func (v *VSPSelector) SelectVSP(vspHost string) {
-	for _, vsp := range v.WL.MultiWallet.KnownVSPs() {
+	for _, vsp := range v.WL.SelectedWallet.Wallet.KnownVSPs() {
 		if vsp.Host == vspHost {
 			v.changed = true
 			v.selectedVSP = vsp
@@ -57,7 +57,7 @@ func (v *VSPSelector) SelectVSP(vspHost string) {
 	}
 }
 
-func (v *VSPSelector) SelectedVSP() *libwallet.VSP {
+func (v *VSPSelector) SelectedVSP() *dcr.VSP {
 	return v.selectedVSP
 }
 
@@ -65,7 +65,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 	if v.showVSPModal.Clicked() {
 		modal := newVSPSelectorModal(v.Load).
 			title(values.String(values.StrVotingServiceProvider)).
-			vspSelected(func(info *libwallet.VSP) {
+			vspSelected(func(info *dcr.VSP) {
 				v.SelectVSP(info.Host)
 			})
 		window.ShowModal(modal)
@@ -131,10 +131,10 @@ type vspSelectorModal struct {
 	inputVSP cryptomaterial.Editor
 	addVSP   cryptomaterial.Button
 
-	selectedVSP *libwallet.VSP
+	selectedVSP *dcr.VSP
 	vspList     *cryptomaterial.ClickableList
 
-	vspSelectedCallback func(*libwallet.VSP)
+	vspSelectedCallback func(*dcr.VSP)
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
@@ -154,9 +154,9 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 }
 
 func (v *vspSelectorModal) OnResume() {
-	if len(v.WL.MultiWallet.KnownVSPs()) == 0 {
+	if len(v.WL.SelectedWallet.Wallet.KnownVSPs()) == 0 {
 		go func() {
-			v.WL.MultiWallet.ReloadVSPList(context.TODO())
+			v.WL.SelectedWallet.Wallet.ReloadVSPList(context.TODO())
 			v.ParentWindow().Reload()
 		}()
 	}
@@ -170,7 +170,7 @@ func (v *vspSelectorModal) Handle() {
 			return
 		}
 		go func() {
-			err := v.WL.MultiWallet.SaveVSP(v.inputVSP.Editor.Text())
+			err := v.WL.SelectedWallet.Wallet.SaveVSP(v.inputVSP.Editor.Text())
 			if err != nil {
 				errModal := modal.NewErrorModal(v.Load, err.Error(), modal.DefaultClickFunc())
 				v.ParentWindow().ShowModal(errModal)
@@ -185,7 +185,7 @@ func (v *vspSelectorModal) Handle() {
 	}
 
 	if clicked, selectedItem := v.vspList.ItemClicked(); clicked {
-		v.selectedVSP = v.WL.MultiWallet.KnownVSPs()[selectedItem]
+		v.selectedVSP = v.WL.SelectedWallet.Wallet.KnownVSPs()[selectedItem]
 		v.vspSelectedCallback(v.selectedVSP)
 		v.Dismiss()
 	}
@@ -196,7 +196,7 @@ func (v *vspSelectorModal) title(title string) *vspSelectorModal {
 	return v
 }
 
-func (v *vspSelectorModal) vspSelected(callback func(*libwallet.VSP)) *vspSelectorModal {
+func (v *vspSelectorModal) vspSelected(callback func(*dcr.VSP)) *vspSelectorModal {
 	v.vspSelectedCallback = callback
 	return v
 }
@@ -219,7 +219,7 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 				}),
 				layout.Rigid(func(gtx C) D {
 					// if no vsp loaded, display a no vsp text
-					vsps := v.WL.MultiWallet.KnownVSPs()
+					vsps := v.WL.SelectedWallet.Wallet.KnownVSPs()
 					if len(vsps) == 0 {
 						noVsp := v.Theme.Label(values.TextSize14, values.String(values.StrNoVSPLoaded))
 						noVsp.Color = v.Theme.Color.GrayText2

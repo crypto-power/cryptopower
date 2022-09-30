@@ -2,6 +2,7 @@ package page
 
 import (
 	"os"
+	"strings"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -182,7 +183,10 @@ func (sp *startPage) loadingSection(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						return sp.Theme.Icons.DecredLogo.LayoutSize(gtx, values.MarginPadding150)
+						welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
+						welcomeText.Alignment = text.Middle
+						welcomeText.Font.Weight = text.Bold
+						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {

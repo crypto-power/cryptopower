@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -34,7 +34,7 @@ type VerifySeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet        *libwallet.Wallet
+	wallet        *dcr.Wallet
 	seed          string
 	multiSeedList []shuffledSeedWords
 
@@ -44,7 +44,7 @@ type VerifySeedPage struct {
 	list          *widget.List
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *libwallet.Wallet, seed string) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet *dcr.Wallet, seed string) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -72,7 +72,7 @@ func NewVerifySeedPage(l *load.Load, wallet *libwallet.Wallet, seed string) *Ver
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) OnNavigatedTo() {
-	allSeeds := libwallet.PGPWordList()
+	allSeeds := dcr.PGPWordList()
 
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
@@ -81,7 +81,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
-		shuffledSeed := pg.getMultiSeed(index, libwallet.PGPWordList()) // using allSeeds here modifies the slice
+		shuffledSeed := pg.getMultiSeed(index, dcr.PGPWordList()) // using allSeeds here modifies the slice
 		multiSeedList = append(multiSeedList, shuffledSeed)
 	}
 
@@ -162,9 +162,9 @@ func (pg *VerifySeedPage) verifySeed() {
 		Title("Confirm to verify seed").
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed := pg.selectedSeedPhrase()
-			_, err := pg.WL.MultiWallet.VerifySeedForWallet(pg.wallet.ID, seed, []byte(password))
+			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, []byte(password))
 			if err != nil {
-				if err.Error() == libwallet.ErrInvalid {
+				if err.Error() == dcr.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)
 					errModal := modal.NewErrorModal(pg.Load, msg, modal.DefaultClickFunc())
 					pg.ParentWindow().ShowModal(errModal)

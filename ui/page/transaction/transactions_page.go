@@ -11,7 +11,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -49,8 +49,8 @@ type TransactionsPage struct {
 	walletDropDown  *cryptomaterial.DropDown
 	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
-	transactions    []libwallet.Transaction
-	wallets         []*libwallet.Wallet
+	transactions    []dcr.Transaction
+	wallets         []*dcr.Wallet
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
@@ -96,12 +96,12 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType(l *load.Load) {
-	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterAll)
-	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterSent)
-	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterReceived)
-	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterTransferred)
-	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterMixed)
-	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(libwallet.TxFilterStaking)
+	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterAll)
+	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterSent)
+	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterReceived)
+	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterTransferred)
+	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterMixed)
+	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterStaking)
 
 	pg.txTypeDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{
@@ -129,18 +129,18 @@ func (pg *TransactionsPage) loadTransactions(selectedWalletIndex int) {
 	selectedWallet := pg.wallets[selectedWalletIndex]
 	newestFirst := pg.orderDropDown.SelectedIndex() == 0
 
-	txFilter := libwallet.TxFilterAll
+	txFilter := dcr.TxFilterAll
 	switch pg.txTypeDropDown.SelectedIndex() {
 	case 1:
-		txFilter = libwallet.TxFilterSent
+		txFilter = dcr.TxFilterSent
 	case 2:
-		txFilter = libwallet.TxFilterReceived
+		txFilter = dcr.TxFilterReceived
 	case 3:
-		txFilter = libwallet.TxFilterTransferred
+		txFilter = dcr.TxFilterTransferred
 	case 4:
-		txFilter = libwallet.TxFilterMixed
+		txFilter = dcr.TxFilterMixed
 	case 5:
-		txFilter = libwallet.TxFilterStaking
+		txFilter = dcr.TxFilterStaking
 	}
 
 	wallTxs, err := selectedWallet.GetTransactionsRaw(0, 0, txFilter, newestFirst) //TODO
@@ -392,7 +392,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 		return
 	}
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.WL.MultiWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -411,7 +411,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 					}
 				}
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

@@ -1,4 +1,4 @@
-package libwallet
+package dcr
 
 import (
 	"context"
@@ -30,26 +30,12 @@ func (wallet *Wallet) TotalStakingRewards() (int64, error) {
 	return totalRewards, nil
 }
 
-func (mw *MultiWallet) TotalStakingRewards() (int64, error) {
-	var totalRewards int64
-	for _, wal := range mw.wallets {
-		walletTotalRewards, err := wal.TotalStakingRewards()
-		if err != nil {
-			return 0, err
-		}
-
-		totalRewards += walletTotalRewards
-	}
-
-	return totalRewards, nil
+func (wallet *Wallet) TicketMaturity() int32 {
+	return int32(wallet.chainParams.TicketMaturity)
 }
 
-func (mw *MultiWallet) TicketMaturity() int32 {
-	return int32(mw.chainParams.TicketMaturity)
-}
-
-func (mw *MultiWallet) TicketExpiry() int32 {
-	return int32(mw.chainParams.TicketExpiry)
+func (wallet *Wallet) TicketExpiry() int32 {
+	return int32(wallet.chainParams.TicketExpiry)
 }
 
 func (wallet *Wallet) StakingOverview() (stOverview *StakingOverview, err error) {
@@ -91,34 +77,11 @@ func (wallet *Wallet) StakingOverview() (stOverview *StakingOverview, err error)
 	return stOverview, nil
 }
 
-func (mw *MultiWallet) StakingOverview() (stOverview *StakingOverview, err error) {
-	stOverview = &StakingOverview{}
-
-	for _, wallet := range mw.wallets {
-		st, err := wallet.StakingOverview()
-		if err != nil {
-			return nil, err
-		}
-
-		stOverview.Unmined += st.Unmined
-		stOverview.Immature += st.Immature
-		stOverview.Live += st.Live
-		stOverview.Voted += st.Voted
-		stOverview.Revoked += st.Revoked
-		stOverview.Expired += st.Expired
-	}
-
-	stOverview.All = stOverview.Unmined + stOverview.Immature + stOverview.Live + stOverview.Voted +
-		stOverview.Revoked + stOverview.Expired
-
-	return stOverview, nil
-}
-
 // TicketPrice returns the price of a ticket for the next block, also known as
 // the stake difficulty. May be incorrect if blockchain sync is ongoing or if
 // blockchain is not up-to-date.
 func (wallet *Wallet) TicketPrice() (*TicketPriceResponse, error) {
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 	sdiff, err := wallet.Internal().NextStakeDifficulty(ctx)
 	if err != nil {
 		return nil, err
@@ -130,22 +93,6 @@ func (wallet *Wallet) TicketPrice() (*TicketPriceResponse, error) {
 		Height:      tipHeight,
 	}
 	return resp, nil
-}
-
-func (mw *MultiWallet) TicketPrice() (*TicketPriceResponse, error) {
-	bestBlock := mw.GetBestBlock()
-	for _, wal := range mw.wallets {
-		resp, err := wal.TicketPrice()
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.Height == bestBlock.Height {
-			return resp, nil
-		}
-	}
-
-	return nil, errors.New(ErrWalletNotFound)
 }
 
 // PurchaseTickets purchases tickets from the wallet.
@@ -194,7 +141,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 		request.MixedSplitAccount = csppCfg.TicketSplitAccount
 	}
 
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 	ticketsResponse, err := wallet.Internal().PurchaseTickets(ctx, networkBackend, request)
 	if err != nil {
 		return nil, err
@@ -205,11 +152,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
-func (mw *MultiWallet) VSPTicketInfo(walletID int, hash string) (*VSPTicketInfo, error) {
-	wallet := mw.WalletWithID(walletID)
-	if wallet == nil {
-		return nil, fmt.Errorf("no wallet with ID %d", walletID)
-	}
+func (wallet *Wallet) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	ticketHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
@@ -217,7 +160,7 @@ func (mw *MultiWallet) VSPTicketInfo(walletID int, hash string) (*VSPTicketInfo,
 	}
 
 	// Read the VSP info for this ticket from the wallet db.
-	ctx := wallet.shutdownContext()
+	ctx := wallet.ShutdownContext()
 	walletTicketInfo, err := wallet.Internal().VSPTicketInfo(ctx, ticketHash)
 	if err != nil {
 		return nil, err
@@ -295,7 +238,7 @@ func (wallet *Wallet) StartTicketBuyer(passphrase []byte) error {
 		return errors.New("Ticket buyer already running")
 	}
 
-	ctx, cancel := wallet.shutdownContextWithCancel()
+	ctx, cancel := wallet.ShutdownContextWithCancel()
 	wallet.cancelAutoTicketBuyer = cancel
 	wallet.cancelAutoTicketBuyerMu.Unlock()
 
@@ -545,11 +488,7 @@ func (wallet *Wallet) IsAutoTicketsPurchaseActive() bool {
 }
 
 // StopAutoTicketsPurchase stops the automatic ticket buyer.
-func (mw *MultiWallet) StopAutoTicketsPurchase(walletID int) error {
-	wallet := mw.WalletWithID(walletID)
-	if wallet == nil {
-		return errors.New(ErrNotExist)
-	}
+func (wallet *Wallet) StopAutoTicketsPurchase() error {
 
 	wallet.cancelAutoTicketBuyerMu.Lock()
 	defer wallet.cancelAutoTicketBuyerMu.Unlock()
@@ -590,28 +529,24 @@ func (wallet *Wallet) TicketBuyerConfigIsSet() bool {
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.
-func (mw *MultiWallet) ClearTicketBuyerConfig(walletID int) error {
-	wallet := mw.WalletWithID(walletID)
-	if wallet == nil {
-		return errors.New(ErrNotExist)
-	}
+func (wallet *Wallet) ClearTicketBuyerConfig(walletID int) error {
 
-	mw.SetLongConfigValueForKey(TicketBuyerATMConfigKey, -1)
-	mw.SetInt32ConfigValueForKey(TicketBuyerAccountConfigKey, -1)
-	mw.SetStringConfigValueForKey(TicketBuyerVSPHostConfigKey, "")
+	wallet.SetLongConfigValueForKey(TicketBuyerATMConfigKey, -1)
+	wallet.SetInt32ConfigValueForKey(TicketBuyerAccountConfigKey, -1)
+	wallet.SetStringConfigValueForKey(TicketBuyerVSPHostConfigKey, "")
 
 	return nil
 }
 
 // NextTicketPriceRemaining returns the remaning time in seconds of a ticket for the next block,
 // if secs equal 0 is imminent
-func (mw *MultiWallet) NextTicketPriceRemaining() (secs int64, err error) {
-	params, er := utils.ChainParams(mw.chainParams.Name)
+func (wallet *Wallet) NextTicketPriceRemaining() (secs int64, err error) {
+	params, er := utils.ChainParams(wallet.chainParams.Name)
 	if er != nil {
 		secs, err = -1, er
 		return
 	}
-	bestBestBlock := mw.GetBestBlock()
+	bestBestBlock := wallet.GetBestBlock()
 	idxBlockInWindow := int(int64(bestBestBlock.Height)%params.StakeDiffWindowSize) + 1
 	blockTime := params.TargetTimePerBlock.Nanoseconds()
 	windowSize := params.StakeDiffWindowSize

@@ -169,7 +169,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 		var verifyMessageText string
 		var info *modal.InfoModal
 
-		valid, err := pg.WL.MultiWallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
+		valid, err := pg.WL.SelectedWallet.Wallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
 		if err != nil {
 			verifyMessageText = values.String(values.StrInvalidAddress)
 			if !valid {
@@ -245,7 +245,7 @@ func (pg *VerifyMessagePage) validateAddress() bool {
 	switch {
 	case !components.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
-	case !pg.WL.MultiWallet.IsAddressValid(address):
+	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)
 	default:
 		valid = true

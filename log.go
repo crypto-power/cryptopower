@@ -12,6 +12,7 @@ import (
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -59,6 +60,7 @@ var (
 	walletLog  = backendLog.Logger("WALL")
 	winLog     = backendLog.Logger("UI")
 	dlwlLog    = backendLog.Logger("DLWL")
+	dcrLog     = backendLog.Logger("DCR")
 	lstnersLog = backendLog.Logger("LSTN")
 )
 
@@ -67,6 +69,8 @@ func init() {
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
 	root.UseLogger(winLog)
+	libwallet.UseLogger(dlwlLog)
+	dcr.UseLogger(dcrLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
 	components.UseLogger(winLog)
@@ -82,6 +86,7 @@ func init() {
 var subsystemLoggers = map[string]slog.Logger{
 	"WALL": walletLog,
 	"DLWL": dlwlLog,
+	"DCR":  dcrLog,
 	"UI":   winLog,
 	"CRPW": log,
 	"LSTN": lstnersLog,

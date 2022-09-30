@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
+	decred "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -57,10 +58,10 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 	md.submitBtn.SetEnabled(false)
 	md.sourceAccountSelector = components.NewAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
-		AccountSelected(func(selectedAccount *libwallet.Account) {}).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountSelected(func(selectedAccount *decred.Account) {}).
+		AccountValidator(func(account *decred.Account) bool {
 			// Filter out imported account and mixed.
-			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
+			wal := md.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
 				account.Number == wal.MixedAccountNumber() {
 				return false

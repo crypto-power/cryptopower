@@ -9,7 +9,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -27,8 +27,8 @@ type AcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *libwallet.Wallet
-	account *libwallet.Account
+	wallet  *dcr.Wallet
+	account *dcr.Account
 
 	theme                    *cryptomaterial.Theme
 	acctDetailsPageContainer layout.List
@@ -47,7 +47,7 @@ type AcctDetailsPage struct {
 	keys             string
 }
 
-func NewAcctDetailsPage(l *load.Load, account *libwallet.Account) *AcctDetailsPage {
+func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
 	pg := &AcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),

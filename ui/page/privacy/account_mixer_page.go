@@ -8,7 +8,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -36,7 +36,7 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer layout.List
-	wallet        *libwallet.Wallet
+	wallet        *dcr.Wallet
 
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable
@@ -374,7 +374,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				SetPositiveButtonText(values.String(values.StrYes)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
-					go pg.WL.MultiWallet.StopAccountMixer(pg.WL.SelectedWallet.Wallet.ID)
+					go pg.WL.SelectedWallet.Wallet.StopAccountMixer()
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -415,7 +415,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(libwallet.AccountMixerMixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerMixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
@@ -439,7 +439,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(libwallet.AccountMixerUnmixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerUnmixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
@@ -470,7 +470,7 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		}).
 		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
 			go func() {
-				err := pg.WL.MultiWallet.StartAccountMixer(pg.WL.SelectedWallet.Wallet.ID, password)
+				err := pg.WL.SelectedWallet.Wallet.StartAccountMixer(password)
 				if err != nil {
 					pg.Toast.NotifyError(err.Error())
 					pm.SetLoading(false)
@@ -494,14 +494,14 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 	}
 
 	pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
-	err := pg.WL.MultiWallet.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding account mixer notification listener: %+v", err)
 		return
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.WL.MultiWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
+	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -530,8 +530,8 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				}
 
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-				pg.WL.MultiWallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 				close(pg.MixerChan)
 				close(pg.TxAndBlockNotifChan)
 				pg.AccountMixerNotificationListener = nil
