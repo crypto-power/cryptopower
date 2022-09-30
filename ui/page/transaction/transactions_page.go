@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"fmt"
 	"image"
 
 	"gioui.org/layout"
@@ -29,7 +30,6 @@ type (
 var txTabs = []string{
 	values.String(values.StrTxOverview),
 	values.String(values.StrStakingActivity),
-	values.String(values.StrMixingActivity),
 }
 
 type TransactionsPage struct {
@@ -144,24 +144,37 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
-	switch pg.selectedTabIndex {
-	case 0:
-		pg.txTypeDropDown = pg.Theme.DropDown([]cryptomaterial.DropDownItem{
-			{
-				Text: values.String(values.StrAll),
-			},
-			{
-				Text: values.String(values.StrSent),
-			},
-			{
-				Text: values.String(values.StrReceived),
-			},
-			{
-				Text: values.String(values.StrTransferred),
-			},
-		}, values.TxDropdownGroup, 2)
-	case 1:
-		pg.txTypeDropDown = pg.Theme.DropDown([]cryptomaterial.DropDownItem{
+	// todo optimize
+	txCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterAll)
+	sentTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterSent)
+	receivedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterReceived)
+	transferredTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterTransferred)
+	mixedTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterMixed)
+	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterStaking)
+
+	items := []cryptomaterial.DropDownItem{
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrAll), txCount),
+		},
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrSent), sentTxCount),
+		},
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrReceived), receivedTxCount),
+		},
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrTransferred), transferredTxCount),
+		},
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrMixed), mixedTxCount),
+		},
+		{
+			Text: fmt.Sprintf("%s (%d)", values.String(values.StrStaking), stakingTxCount),
+		},
+	}
+
+	if pg.selectedTabIndex == 1 {
+		items = []cryptomaterial.DropDownItem{
 			{
 				Text: values.String(values.StrAll),
 			},
@@ -171,31 +184,31 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 			{
 				Text: values.String(values.StrRevocation),
 			},
-		}, values.TxDropdownGroup, 2)
-	case 2:
-		pg.txTypeDropDown = pg.Theme.DropDown([]cryptomaterial.DropDownItem{
-			{
-				Text: values.String(values.StrMixed),
-			},
-		}, values.TxDropdownGroup, 2)
+		}
 	}
+
+	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 }
 
 func (pg *TransactionsPage) loadTransactions() {
 	var txFilter int32
-	switch pg.selectedTabIndex {
-	case 0:
-		switch pg.txTypeDropDown.SelectedIndex() {
-		case 1:
-			txFilter = dcr.TxFilterSent
-		case 2:
-			txFilter = dcr.TxFilterReceived
-		case 3:
-			txFilter = dcr.TxFilterTransferred
-		default:
-			txFilter = dcr.TxFilterRegular
-		}
+
+	switch pg.txTypeDropDown.SelectedIndex() {
 	case 1:
+		txFilter = dcr.TxFilterSent
+	case 2:
+		txFilter = dcr.TxFilterReceived
+	case 3:
+		txFilter = dcr.TxFilterTransferred
+	case 4:
+		txFilter = dcr.TxFilterMixed
+	case 5:
+		txFilter = dcr.TxFilterStaking
+	default:
+		txFilter = dcr.TxFilterAll
+	}
+
+	if pg.selectedTabIndex == 1 {
 		switch pg.txTypeDropDown.SelectedIndex() {
 		case 1:
 			txFilter = dcr.TxFilterVoted
@@ -204,19 +217,20 @@ func (pg *TransactionsPage) loadTransactions() {
 		default:
 			txFilter = dcr.TxFilterStaking
 		}
-	case 2:
-		txFilter = dcr.TxFilterMixed
 	}
 
+	txns := make([]dcr.Transaction, 0)
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, txFilter, true)
 	if err != nil {
+		// log error and return an empty list.
 		log.Errorf("Error loading transactions: %v", err)
+		pg.transactions = txns
 	} else {
-		txns := make([]libwallet.Transaction, 0)
-		// remove revoked tickets from staking transactions filter
-		if txFilter == libwallet.TxFilterStaking || txFilter == libwallet.TxFilterStaking {
+		// remove revoked tickets from staking and all transactions filter
+		if txFilter == dcr.TxFilterStaking || txFilter == dcr.TxFilterStaking ||
+			txFilter == dcr.TxFilterAll {
 			for _, txn := range txs {
-				if txn.Type == libwallet.TxTypeRevocation || txn.Type == libwallet.TxTypeVote {
+				if txn.Type != dcr.TxTypeTicketPurchase /* || txn.Type == dcr.TxTypeVote */ {
 					txns = append(txns, txn)
 				}
 			}
@@ -381,6 +395,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
 		pg.loadTransactions()
+		break
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {

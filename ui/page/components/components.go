@@ -6,6 +6,7 @@ package components
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -225,167 +226,66 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *T
 	return &txStatus
 }
 
-func weekDayHourMinuteCalculator(timestamp int64) string {
-	var dateTimeResult string
-	timeStampNow := time.Now().Unix()
-	minutesFromTxn := (timeStampNow - timestamp) / 60
-	daysFromTxn := minutesFromTxn / 1440 // there are 1440 minutes in 24 hours
-	weeksFromTxn := daysFromTxn / 7
-
-	if weeksFromTxn > 0 {
-		if weeksFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrWeekAgo, weeksFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrWeeksAgo, weeksFromTxn)
-		return dateTimeResult
-	}
-
-	if daysFromTxn > 0 {
-		if daysFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrDayAgo, daysFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrDaysAgo, daysFromTxn)
-		return dateTimeResult
-	}
-
-	hoursFromTxn := minutesFromTxn / 60
-	if hoursFromTxn > 0 {
-		if hoursFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrHourAgo, hoursFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrHoursAgo, hoursFromTxn)
-		return dateTimeResult
-	}
-
-	if minutesFromTxn > 0 {
-		if minutesFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrMinuteAgo, minutesFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrMinutesAgo, minutesFromTxn)
-		return dateTimeResult
-	}
-
-	dateTimeResult = values.String(values.StrJustNow)
-
-	return dateTimeResult
-}
-
+// not used anywhere in the code TODO- deprecate
 func durationAgo(timestamp int64) string {
-	var duration string
+	hrsPerYr := 8760.0  // There are 8760 hrs in a year.
+	hrsPerMnth := 730.0 // There are 730 hrs in a month.
+	hrsPerWk := 168.0   // There are 168 hrs in a Week.
+	HrsPerday := 24.0   // There are 24 hrs in a Day.
 
-	//Convert timestamp to date in string format (yyyy:mm:dd hr:m:s +0000 UTC)
-	currentTimestamp := time.Now().UTC().String()
-	txnTimestamp := time.Unix(timestamp, 0).UTC().String()
-
-	//Split the date so we can sepparate into date and time for current time and time of txn
-	currentTimeSplit := strings.Split(currentTimestamp, " ")
-	txnTimeSplit := strings.Split(txnTimestamp, " ")
-
-	//Split current date and time, and  txn date and time then store in variables
-	currentDate := strings.Split(currentTimeSplit[0], "-")
-	txnDate := strings.Split(txnTimeSplit[0], "-")
-	yearNow, _ := strconv.Atoi(currentDate[0])
-	monthNow, _ := strconv.Atoi(currentDate[1])
-	txnYear, _ := strconv.Atoi(txnDate[0])
-	txnMonth, _ := strconv.Atoi(txnDate[1])
-	dayNow, _ := strconv.Atoi(currentDate[2])
-	txnDay, _ := strconv.Atoi(txnDate[2])
-	currentYearStart := 0
-	txnYearEnd := 12
-
-	if (yearNow - txnYear) > 0 {
-		if (yearNow - txnYear) == 1 {
-			if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) < 12 {
-				if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) == 1 {
-					if dayNow < txnDay {
-						duration = weekDayHourMinuteCalculator(timestamp)
-						return duration
-					}
-
-					duration = values.StringF(values.StrMonthAgo, 1)
-					return duration
-				}
-
-				monthDiff := ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) - 1
-				if dayNow < txnDay {
-					if monthDiff == 1 {
-						duration = values.StringF(values.StrMonthAgo, monthDiff)
-						return duration
-					}
-
-					duration = values.StringF(values.StrMonthsAgo, monthDiff)
-					return duration
-				}
-
-				duration = values.StringF(values.StrMonthsAgo, (txnYearEnd-txnMonth)+(currentYearStart+monthNow))
-				return duration
-			}
-			y := (yearNow - txnYear) - 1
-
-			if dayNow < txnDay {
-				if y == 0 {
-					duration := values.StringF(values.StrMonthsAgo, 11)
-					return duration
-				}
-
-				if y == 1 {
-					duration = values.StringF(values.StrYearAgo, y)
-					return duration
-				}
-
-				duration = values.StringF(values.StrYearsAgo, y)
-				return duration
-			}
-
-			duration = values.StringF(values.StrYearAgo, yearNow-txnYear)
-			return duration
+	getStrDuration := func(opt1, opt2 string, d float64) string {
+		if d == 1 {
+			return values.StringF(opt1, d)
+		} else if d > 1 {
+			return values.StringF(opt2, d)
+		} else {
+			return ""
 		}
-
-		duration = values.StringF(values.StrYearsAgo, yearNow-txnYear)
-		return duration
 	}
 
-	if (monthNow - txnMonth) > 0 {
-		if (monthNow - txnMonth) == 1 {
-			if dayNow < txnDay {
-				duration = weekDayHourMinuteCalculator(timestamp)
-				return duration
-			}
+	d := time.Now().UTC().Sub(time.Unix(timestamp, 0).UTC())
+	hrs := d.Hours()
 
-			duration = values.StringF(values.StrMonthAgo, 1)
-			return duration
+	switch {
+	case hrs >= hrsPerYr:
+		strDuration := getStrDuration(values.StrYearAgo, values.StrYearsAgo, math.Round(hrs/hrsPerYr))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= hrsPerMnth:
+		strDuration := getStrDuration(values.StrMonthAgo, values.StrMonthsAgo, math.Round(hrs/hrsPerMnth))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= hrsPerWk:
+		strDuration := getStrDuration(values.StrWeekAgo, values.StrWeeksAgo, math.Round(hrs/hrsPerWk))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= HrsPerday:
+		strDuration := getStrDuration(values.StrDayAgo, values.StrDaysAgo, math.Round(hrs/HrsPerday))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	default:
+		if strDuration := getStrDuration(values.StrHourAgo, values.StrHoursAgo, hrs); strDuration != "" {
+			return strDuration
 		}
 
-		if dayNow < txnDay {
-			if (monthNow-txnMonth)-1 == 0 {
-				duration := values.StringF(values.StrWeeksAgo, 3)
-				return duration
-			}
-
-			if (monthNow-txnMonth)-1 == 1 {
-				duration = values.StringF(values.StrMonthAgo, (monthNow-txnMonth)-1)
-				return duration
-			}
-
-			duration = values.StringF(values.StrMonthsAgo, (monthNow-txnMonth)-1)
-			return duration
+		if strDuration := getStrDuration(values.StrMinuteAgo, values.StrMinutesAgo, d.Minutes()); strDuration != "" {
+			return strDuration
 		}
 
-		duration = values.StringF(values.StrMonthsAgo, monthNow-txnMonth)
-		return duration
+		return values.StringF(values.String(values.StrSeconds), d.Seconds())
 	}
-
-	duration = weekDayHourMinuteCalculator(timestamp)
-
-	return duration
 }
 
 // transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
@@ -415,13 +315,8 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				layout.Rigid(func(gtx C) D {
 					if row.Transaction.Type == dcr.TxTypeRegular {
 						amount := dcrutil.Amount(row.Transaction.Amount).String()
-						if row.Transaction.Direction == dcr.TxDirectionSent {
-							// hide extra minus (-) signs
-							if strings.Contains(amount, "-") {
-								amount = amount
-							} else {
-								amount = "-" + amount
-							}
+						if row.Transaction.Direction == dcr.TxDirectionSent && !strings.Contains(amount, "-") {
+							amount = "-" + amount
 						}
 						return LayoutBalanceSize(gtx, l, amount, values.TextSize18)
 					}
@@ -523,8 +418,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
-		// TODO
-		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
+		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlock() - transaction.BlockHeight) + 1
 	}
 
 	return 0
@@ -554,24 +448,6 @@ func FormatDateOrTime(timestamp int64) string {
 		t2 = t[3]
 	}
 	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
-}
-
-// HighlightedText displays a text in a gray background currently only used
-// on the transaction page for revoked or voted transactions.
-func HighlightedText(gtx layout.Context, l *load.Load, text string) D {
-	return cryptomaterial.Card{
-		Color: l.Theme.Color.Gray4,
-	}.Layout(gtx, func(gtx C) D {
-		return Container{
-			layout.Inset{
-				Left:  values.MarginPadding4,
-				Right: values.MarginPadding4,
-			}}.Layout(gtx, func(gtx C) D {
-			name := l.Theme.Label(values.TextSize12, text)
-			name.Color = l.Theme.Color.GrayText2
-			return name.Layout(gtx)
-		})
-	})
 }
 
 // EndToEndRow layouts out its content on both ends of its horizontal layout.
