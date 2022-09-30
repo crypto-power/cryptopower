@@ -227,10 +227,9 @@ func (pg *TransactionsPage) loadTransactions() {
 		pg.transactions = txns
 	} else {
 		// remove revoked tickets from staking and all transactions filter
-		if txFilter == dcr.TxFilterStaking || txFilter == dcr.TxFilterStaking ||
-			txFilter == dcr.TxFilterAll {
+		if txFilter == dcr.TxFilterStaking || txFilter == dcr.TxFilterAll {
 			for _, txn := range txs {
-				if txn.Type != dcr.TxTypeTicketPurchase /* || txn.Type == dcr.TxTypeVote */ {
+				if txn.Type != dcr.TxTypeTicketPurchase {
 					txns = append(txns, txn)
 				}
 			}

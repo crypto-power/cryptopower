@@ -370,11 +370,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
-							var title string
+							title := values.String(values.StrRevoke)
 							if row.Transaction.Type == dcr.TxTypeVote {
 								title = values.String(values.StrVote)
-							} else {
-								title = values.String(values.StrRevoke)
 							}
 
 							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -418,7 +416,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
-		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlock() - transaction.BlockHeight) + 1
+		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0
