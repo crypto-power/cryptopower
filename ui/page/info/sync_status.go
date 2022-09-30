@@ -9,7 +9,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 func (pg *WalletInfo) initWalletStatusWidgets() {
@@ -27,23 +26,26 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 			Bottom: values.MarginPadding16,
 		}}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(pg.syncBoxTitleRow),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding20, Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(pg.syncStatusIcon),
-							layout.Rigid(pg.syncStatusTextRow),
-						)
-					})
+					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.syncBoxTitleRow)
+				}),
+				layout.Rigid(func(gtx C) D {
+					if syncing || rescanning {
+						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(pg.syncStatusIcon),
+								layout.Rigid(pg.progressBarRow),
+							)
+						})
+					}
+					return D{}
 				}),
 				layout.Rigid(func(gtx C) D {
 					switch {
-					case syncing:
-						return pg.walletSyncRow(gtx, uniform)
 					case rescanning:
 						return pg.rescanDetailsLayout(gtx, uniform)
 					default:
-						return pg.syncDormantContent(gtx, uniform)
+						return pg.syncContent(gtx, uniform)
 					}
 				}),
 			)
@@ -104,39 +106,87 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 	})
 }
 
-// syncDormantContent lays out sync status content when the wallet is synced or not connected
-func (pg *WalletInfo) syncDormantContent(gtx C, uniform layout.Inset) D {
+// syncContent lays out sync status content when the wallet is syncing, synced, not connected
+func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
+	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
 	return uniform.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, pg.blockInfoRow)
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						latestBlockTitle := pg.Theme.Body1(values.String(values.StrLatestBlock))
+						latestBlockTitle.Color = pg.Theme.Color.GrayText2
+						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !isInprogress {
+							return D{}
+						}
+						blockHeaderFetched := pg.Theme.Body1(values.String(values.StrBlockHeaderFetched))
+						blockHeaderFetched.Color = pg.Theme.Color.GrayText2
+						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeaderFetched.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						syncProgress := pg.Theme.Body1(values.String(values.StrSyncingProgress))
+						syncProgress.Color = pg.Theme.Color.GrayText2
+						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgress.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !isInprogress {
+							return D{}
+						}
+						estTime := pg.Theme.Body1(values.String(values.StrSyncCompTime))
+						estTime.Color = pg.Theme.Color.GrayText2
+						return estTime.Layout(gtx)
+					}),
+				)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Left: values.MarginPadding36}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							latestBlockTitle := pg.Theme.Body1(fmt.Sprintf("%d (%s)", bestBlock.Height, components.TimeAgo(bestBlock.Timestamp)))
+							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							if !isInprogress {
+								return D{}
+							}
+							blockHeightFetchedText := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.headersToFetchOrScan)
+							blockHeightFetched := pg.Theme.Body1(blockHeightFetchedText)
+							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeightFetched.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							currentSeconds := time.Now().UnixNano() / int64(time.Second)
+							w := pg.WL.SelectedWallet.Wallet
+							daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
+
+							syncProgress := values.String(values.StrWalletNotSynced)
+							if pg.WL.SelectedWallet.Wallet.IsSyncing() {
+								syncProgress = values.StringF(values.StrSyncingProgressStat, daysBehind)
+							} else if pg.WL.SelectedWallet.Wallet.IsRescanning() {
+								syncProgress = values.String(values.StrRescanningBlocks)
+							} else if pg.WL.SelectedWallet.Wallet.IsSynced() {
+								syncProgress = values.String(values.StrComplete)
+							}
+
+							syncProgressBody := pg.Theme.Body1(syncProgress)
+							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgressBody.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							if !isInprogress {
+								return D{}
+							}
+							_, timeLeft := pg.progressStatusDetails()
+							estTime := pg.Theme.Body1(timeLeft)
+							return estTime.Layout(gtx)
+						}),
+					)
+				})
 			}),
 		)
 	})
-}
-
-func (pg *WalletInfo) blockInfoRow(gtx C) D {
-	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
-	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			latestBlockTitleLabel := pg.Theme.Body1(values.String(values.StrLastBlockHeight))
-			latestBlockTitleLabel.Color = pg.Theme.Color.GrayText2
-			return latestBlockTitleLabel.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Left:  values.MarginPadding5,
-				Right: values.MarginPadding5,
-			}.Layout(gtx, pg.Theme.Body1(fmt.Sprintf("%d", bestBlock.Height)).Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
-			pg.walletStatusIcon.Color = pg.Theme.Color.Gray1
-			return layout.Inset{Right: values.MarginPadding5, Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-				return pg.walletStatusIcon.Layout(gtx, values.MarginPadding5)
-			})
-		}),
-		layout.Rigid(pg.Theme.Body1(components.TimeAgo(bestBlock.Timestamp)).Layout),
-	)
 }
 
 func (pg *WalletInfo) layoutAutoSyncSection(gtx C) D {
@@ -150,44 +200,9 @@ func (pg *WalletInfo) layoutAutoSyncSection(gtx C) D {
 	})
 }
 
-// syncDetail returns a walletSyncDetails object containing data of a single wallet sync box
-func (pg *WalletInfo) syncDetail(status, headersFetched, progress string) walletSyncDetails {
-	return walletSyncDetails{
-		status:             pg.Theme.Body2(status),
-		blockHeaderFetched: pg.Theme.Body2(headersFetched),
-		syncingProgress:    pg.Theme.Body2(values.StringF(values.StrSyncingProgressStat, progress)),
-	}
-}
-
-// syncStatusTextRow lays out sync status text and sync button.
-func (pg *WalletInfo) syncStatusTextRow(gtx C) D {
-	syncing, rescanning := pg.WL.SelectedWallet.Wallet.IsSyncing(), pg.WL.SelectedWallet.Wallet.IsRescanning()
-
-	syncStatusLabel := pg.Theme.Label(values.TextSize14, values.String(values.StrWalletNotSynced))
-	if pg.WL.SelectedWallet.Wallet.IsSyncing() {
-		syncStatusLabel.Text = values.String(values.StrSyncingState)
-	} else if pg.WL.SelectedWallet.Wallet.IsRescanning() {
-		syncStatusLabel.Text = values.String(values.StrRescanningBlocks)
-	} else if pg.WL.SelectedWallet.Wallet.IsSynced() {
-		syncStatusLabel.Text = values.String(values.StrSynced)
-	}
-
-	var children []layout.FlexChild
-	children = append(children, layout.Rigid(syncStatusLabel.Layout))
-
-	if syncing || rescanning {
-		children = append(children, layout.Rigid(pg.progressBarRow))
-	}
-
-	return layout.Flex{
-		Axis:      layout.Horizontal,
-		Alignment: layout.Middle,
-	}.Layout(gtx, children...)
-}
-
 // progressBarRow lays out the progress bar.
 func (pg *WalletInfo) progressBarRow(gtx C) D {
-	return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 		progress, _ := pg.progressStatusDetails()
 
 		p := pg.Theme.ProgressBar(progress)
@@ -204,6 +219,7 @@ func (pg *WalletInfo) progressBarRow(gtx C) D {
 
 // progressStatusRow lays out the progress status when the wallet is syncing.
 func (pg *WalletInfo) progressStatusDetails() (int, string) {
+	timeLeftLabel := ""
 	timeLeft := pg.remainingSyncTime
 	progress := pg.syncProgress
 	rescanUpdate := pg.rescanUpdate
@@ -212,78 +228,14 @@ func (pg *WalletInfo) progressStatusDetails() (int, string) {
 		timeLeft = components.TimeFormat(int(rescanUpdate.ProgressReport.RescanTimeRemaining), true)
 	}
 
-	timeLeftLabel := values.StringF(values.StrTimeLeft, timeLeft)
-	if progress == 0 {
-		timeLeftLabel = values.String(values.StrLoading)
+	if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() {
+		timeLeftLabel = values.StringF(values.StrTimeLeft, timeLeft)
+		if progress == 0 {
+			timeLeftLabel = values.String(values.StrLoading)
+		}
 	}
 
 	return progress, timeLeftLabel
-}
-
-//	walletSyncRow layouts a list of wallet sync boxes horizontally.
-func (pg *WalletInfo) walletSyncRow(gtx C, inset layout.Inset) D {
-	currentSeconds := time.Now().UnixNano() / int64(time.Second)
-	w := pg.WL.SelectedWallet.Wallet
-
-	status := values.String(values.StrSyncingState)
-	if pg.WL.SelectedWallet.Wallet.IsWaiting() {
-		status = values.String(values.StrWaitingState)
-	}
-
-	blockHeightProgress := values.StringF(values.StrBlockHeaderFetchedCount, w.GetBestBlockHeight(), pg.headersToFetchOrScan)
-	daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
-	details := pg.syncDetail(status, blockHeightProgress, daysBehind)
-	col := pg.Theme.Color.GrayText2
-
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			completedSteps := pg.Theme.Body2(values.StringF(values.StrSyncSteps, pg.syncStep))
-			completedSteps.Color = col
-
-			headersFetched := pg.Theme.Body2(values.StringF(values.StrFetchingBlockHeaders, pg.stepFetchProgress))
-			if pg.syncStep == wallet.AddressDiscoveryStep {
-				headersFetched.Text = values.StringF(values.StrDiscoveringWalletAddress, pg.stepFetchProgress)
-			} else if pg.syncStep == wallet.RescanHeadersStep {
-				headersFetched.Text = values.StringF(values.StrRescanningHeaders, pg.stepFetchProgress)
-			}
-
-			return inset.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, completedSteps.Layout, headersFetched.Layout)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			status := pg.Theme.Body2(values.String(values.StrStatus))
-			status.Color = col
-			return inset.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, status.Layout, details.status.Layout)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			headersFetchedTitleLabel := pg.Theme.Body2(values.String(values.StrBlockHeaderFetched))
-			headersFetchedTitleLabel.Color = col
-			return inset.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, headersFetchedTitleLabel.Layout, details.blockHeaderFetched.Layout)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			progressTitleLabel := pg.Theme.Body2(values.String(values.StrSyncingProgress))
-			progressTitleLabel.Color = col
-			return inset.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, progressTitleLabel.Layout, details.syncingProgress.Layout)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			_, timeLeft := pg.progressStatusDetails()
-			timeLeftLabel := pg.Theme.Body2(timeLeft)
-
-			remainingSyncTime := pg.Theme.Body2(values.String(values.StrSyncCompTime))
-			remainingSyncTime.Color = col
-
-			return inset.Layout(gtx, func(gtx C) D {
-				return components.EndToEndRow(gtx, remainingSyncTime.Layout, timeLeftLabel.Layout)
-			})
-		}),
-	)
 }
 
 func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
