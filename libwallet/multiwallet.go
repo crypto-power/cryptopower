@@ -106,6 +106,12 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, err
 	}
 
+	err = mwDB.Init(&btc.Wallet{})
+	if err != nil {
+		log.Errorf("Error initializing wallets database: %s", err.Error())
+		return nil, err
+	}
+
 	politeia, err := politeia.New(politeiaHost, mwDB)
 	if err != nil {
 		return nil, err
@@ -159,6 +165,16 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, err
 	}
 
+	fmt.Println("[][][][] wallets", wallets)
+
+	// read saved wallets info from db and initialize wallets
+	query = mw.db.Select(q.True()).OrderBy("ID")
+	var BTCwallets []*btc.Wallet
+	err = query.Find(&BTCwallets)
+	if err != nil && err != storm.ErrNotFound {
+		return nil, err
+	}
+
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
 		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
@@ -174,6 +190,19 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 		logLevel := wallet.ReadStringConfigValueForKey(LogLevelConfigKey, "")
 		SetLogLevels(logLevel)
+	}
+
+	for _, wallet := range BTCwallets {
+		err = wallet.Prepare(mw.Assets.BTC.RootDir, "testnet3", nil)
+		if err == nil && !WalletExistsAt(wallet.DataDir()) {
+			err = fmt.Errorf("missing wallet database file")
+		}
+		if err != nil {
+			mw.Assets.BTC.BadWallets[wallet.ID] = wallet
+			log.Warnf("Ignored wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+		} else {
+			mw.Assets.BTC.Wallets[wallet.ID] = wallet
+		}
 	}
 
 	mw.listenForShutdown()
@@ -327,6 +356,13 @@ func (mw *MultiWallet) OpenWallets(startupPassphrase []byte) error {
 		}
 	}
 
+	for _, wallet := range mw.Assets.BTC.Wallets {
+		err = wallet.OpenWallet()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -360,7 +396,7 @@ func (mw *MultiWallet) NumWalletsNeedingSeedBackup() int32 {
 }
 
 func (mw *MultiWallet) LoadedWalletsCount() int32 {
-	return int32(len(mw.Assets.DCR.Wallets))
+	return int32(len(mw.Assets.DCR.Wallets) + len(mw.Assets.BTC.Wallets))
 }
 
 func (mw *MultiWallet) OpenedWalletIDsRaw() []int {

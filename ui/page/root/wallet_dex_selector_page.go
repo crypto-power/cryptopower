@@ -53,9 +53,11 @@ type WalletDexServerSelector struct {
 	// wallet selector options
 	listLock             sync.Mutex
 	mainWalletList       []*load.WalletItem
+	mainBTCWalletList    []*load.BTCWalletItem
 	watchOnlyWalletList  []*load.WalletItem
 	badWalletsList       []*badWalletListItem
 	walletsList          *cryptomaterial.ClickableList
+	BTCwalletsList       *cryptomaterial.ClickableList
 	watchOnlyWalletsList *cryptomaterial.ClickableList
 	walletSelected       func()
 
@@ -115,6 +117,7 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 
 	pg.listenForNotifications()
 	pg.loadWallets()
+	pg.loadBTCWallets()
 	pg.startDexClient()
 
 	for _, wallet := range pg.WL.SortedWalletList() {
@@ -138,6 +141,10 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	if ok, selectedItem := pg.walletsList.ItemClicked(); ok {
 		pg.WL.SelectedWallet = mainWalletList[selectedItem]
 		pg.walletSelected()
+	}
+
+	if ok, _ := pg.BTCwalletsList.ItemClicked(); ok {
+		pg.Toast.NotifyError("Not Yet Implemented")
 	}
 
 	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
@@ -242,6 +249,7 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.walletListLayout,
+		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.dexServersLayout,

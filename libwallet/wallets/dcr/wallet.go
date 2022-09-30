@@ -71,6 +71,8 @@ type Wallet struct {
 
 	vspMu sync.RWMutex
 	vsps  []*VSP
+
+	Type string
 }
 
 // prepare gets a wallet ready for use by opening the transactions index database
@@ -80,6 +82,7 @@ func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincf
 	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
 
 	wallet.db = db
+	wallet.Type = "DCR"
 	return wallet.prepare(rootDir, chainParams, setUserConfigValueFn, readUserConfigValueFn)
 }
 

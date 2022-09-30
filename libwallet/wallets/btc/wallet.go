@@ -61,6 +61,8 @@ type Wallet struct {
 	log         slog.Logger
 	birthday    time.Time
 	// mw dcrlibwallet.MultiWallet
+
+	Type string
 }
 
 // neutrinoService is satisfied by *neutrino.ChainService.
@@ -168,6 +170,7 @@ func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err 
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.log = log
 	wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
+	wallet.Type = "BTC"
 	return nil
 }
 

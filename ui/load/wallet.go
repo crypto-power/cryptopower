@@ -7,12 +7,18 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 type WalletItem struct {
 	Wallet       *dcr.Wallet
+	TotalBalance string
+}
+
+type BTCWalletItem struct {
+	Wallet       *btc.Wallet
 	TotalBalance string
 }
 
@@ -29,6 +35,16 @@ type WalletLoad struct {
 
 func (wl *WalletLoad) SortedWalletList() []*dcr.Wallet {
 	wallets := wl.MultiWallet.AllDCRWallets()
+
+	sort.Slice(wallets, func(i, j int) bool {
+		return wallets[i].ID < wallets[j].ID
+	})
+
+	return wallets
+}
+
+func (wl *WalletLoad) SortedBTCWalletList() []*btc.Wallet {
+	wallets := wl.MultiWallet.AllBTCWallets()
 
 	sort.Slice(wallets, func(i, j int) bool {
 		return wallets[i].ID < wallets[j].ID
