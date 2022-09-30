@@ -58,6 +58,7 @@ func NewRestorePage(l *load.Load, onRestoreComplete func()) *Restore {
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
 	pg.seedRestorePage.OnNavigatedTo()
+	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
 
 // Layout draws the page UI components into the provided C

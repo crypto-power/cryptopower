@@ -52,7 +52,7 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.RestoreWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+	wallet, err := dcr.RestoreWallet(walletName, seedMnemonic, mw.db, mw.rootDir, mw.dbDriver, mw.chainParams, privatePassphrase, privatePassphraseType)
 	if err != nil {
 		return nil, err
 	}

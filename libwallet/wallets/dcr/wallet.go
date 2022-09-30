@@ -292,11 +292,16 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 	return wallet.db.Save(wallet) // update WalletName field
 }
 
-func RestoreWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
-
+func RestoreWallet(walletName, seedMnemonic string, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
 	wallet := &Wallet{
-		Name:                  walletName,
-		PrivatePassphraseType: privatePassphraseType,
+		Name:        walletName,
+		db:          db,
+		dbDriver:    dbDriver,
+		rootDir:     rootDir,
+		chainParams: chainParams,
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]SyncProgressListener),
+		},
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 	}
