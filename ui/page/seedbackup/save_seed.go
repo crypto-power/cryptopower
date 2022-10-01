@@ -138,7 +138,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
-			pg.ParentNavigator().ClosePagesAfter(components.WalletsPageID)
+			pg.ParentNavigator().CloseCurrentPage()
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 
