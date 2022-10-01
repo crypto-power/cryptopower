@@ -255,17 +255,25 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 			case n := <-ws.TxAndBlockNotifChan:
 				switch n.Type {
 				case listeners.BlockAttached:
-					// refresh wallet wallet and balance on every new block
+					// refresh wallet and accoount balance on every new block
 					// only if sync is completed.
 					if ws.WL.MultiWallet.IsSynced() {
 						if ws.selectorModal != nil {
+							if ws.accountSelector {
+								ws.selectorModal.setupAccounts(ws.selectedWallet)
+								break
+							}
 							ws.selectorModal.setupWallet()
 						}
 						window.Reload()
 					}
 				case listeners.NewTransaction:
-					// refresh wallets list when new transaction is received
+					// refresh wallets/Accounts list when new transaction is received
 					if ws.selectorModal != nil {
+						if ws.accountSelector {
+							ws.selectorModal.setupAccounts(ws.selectedWallet)
+							break
+						}
 						ws.selectorModal.setupWallet()
 					}
 					window.Reload()
@@ -438,21 +446,27 @@ func (sm *SelectorModal) Layout(gtx C) D {
 			title := sm.Theme.H6(sm.dialogTitle)
 			title.Color = sm.Theme.Color.Text
 			title.Font.Weight = text.SemiBold
-			return title.Layout(gtx)
+			return layout.Inset{
+				Top: values.MarginPaddingMinus15,
+			}.Layout(gtx, func(gtx C) D {
+				return title.Layout(gtx)
+			})
 		},
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if sm.walletSelector.accountSelector {
 						inset := layout.Inset{
-							Top: values.MarginPadding15,
+							Top: values.MarginPadding0,
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									inset := layout.UniformInset(values.MarginPadding4)
 									return inset.Layout(gtx, func(gtx C) D {
-										return sm.Theme.Label(values.TextSize14, sm.currentSelectedWallet.Name).Layout(gtx)
+										walName := sm.Theme.Label(values.TextSize14, sm.currentSelectedWallet.Name)
+										walName.Color = sm.Theme.Color.GrayText2
+										return walName.Layout(gtx)
 									})
 								}),
 								layout.Rigid(sm.infoButton.Layout),
@@ -538,6 +552,7 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 				layout.Rigid(func(gtx C) D {
 					acct := sm.Theme.Label(values.TextSize18, name)
 					acct.Color = sm.Theme.Color.Text
+					acct.Font.Weight = text.Normal
 					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
 						return LayoutBalance(gtx, sm.Load, bal)
 					})
@@ -554,9 +569,8 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 
 		layout.Flexed(0.1, func(gtx C) D {
 			inset := layout.Inset{
-				Right: values.MarginPadding2,
-				Top:   values.MarginPadding10,
-				Left:  values.MarginPadding10,
+				Top:  values.MarginPadding10,
+				Left: values.MarginPadding10,
 			}
 			sections := func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
