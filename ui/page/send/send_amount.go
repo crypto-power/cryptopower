@@ -46,7 +46,7 @@ func newSendAmount(l *load.Load) *sendAmount {
 	sa.dcrAmountEditor.CustomButton.Text = values.String(values.StrMax)
 	sa.dcrAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
-	sa.usdAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (DCR)")
+	sa.usdAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (USD)")
 	sa.usdAmountEditor.Editor.SetText("")
 	sa.usdAmountEditor.HasCustomButton = true
 	sa.usdAmountEditor.Editor.SingleLine = true

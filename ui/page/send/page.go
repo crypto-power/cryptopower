@@ -48,18 +48,16 @@ type Page struct {
 	sendDestination       *destination
 	amount                *sendAmount
 
-	backButton    cryptomaterial.IconButton
 	infoButton    cryptomaterial.IconButton
-	moreOption    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
 
-	txFeeCollapsible *cryptomaterial.Collapsible
-	shadowBox        *cryptomaterial.Shadow
-	moreItems        []moreItem
-	backdrop         *widget.Clickable
+	txFeeCollapsible       *cryptomaterial.Collapsible
+	shadowBox              *cryptomaterial.Shadow
+	optionsMenuCard        cryptomaterial.Card
+	moreItems              []moreItem
+	backdrop               *widget.Clickable
 
-	moreOptionIsOpen       bool
 	isFetchingExchangeRate bool
 
 	exchangeRate        float64
@@ -174,6 +172,7 @@ func (pg *Page) OnNavigatedTo() {
 	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
 	if currencyExchangeValue == values.USDExchangeValue {
 		pg.usdExchangeSet = true
+		log.Print("fetching Exchange Rate.")
 		go pg.fetchExchangeRate()
 	} else {
 		pg.usdExchangeSet = false
@@ -188,6 +187,7 @@ func (pg *Page) OnDarkModeChanged(isDarkModeOn bool) {
 }
 
 func (pg *Page) fetchExchangeRate() {
+	log.Print("Fetch Exchange rate Called")
 	if pg.isFetchingExchangeRate {
 		return
 	}
@@ -227,7 +227,9 @@ func (pg *Page) validateAndConstructTx() {
 	if pg.validate() {
 		pg.constructTx(false)
 	} else {
+		log.Print("Validate Failed \n")
 		pg.clearEstimates()
+		pg.showBalaceAfterSend()
 	}
 }
 
@@ -317,6 +319,15 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	pg.txAuthor = unsignedTx
 }
 
+func (pg *Page) showBalaceAfterSend() {
+	if pg.sourceAccountSelector != nil {
+		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
+		balanceAfterSend := dcrutil.Amount(sourceAccount.Balance.Spendable)
+		pg.balanceAfterSend = balanceAfterSend.String()
+		pg.balanceAfterSendUSD = load.FormatUSDBalance(pg.Printer, load.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+	}
+}
+
 func (pg *Page) feeEstimationError(err string) {
 	pg.amount.setError(err)
 	pg.clearEstimates()
@@ -351,20 +362,12 @@ func (pg *Page) HandleUserInteractions() {
 	pg.sendDestination.handle()
 	pg.amount.handle()
 
-	if pg.backButton.Button.Clicked() {
-		pg.ParentNavigator().CloseCurrentPage()
-	}
-
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrSend) + " DCR").
 			Body(values.String(values.StrSendInfo)).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
-	}
-
-	for pg.moreOption.Button.Clicked() {
-		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
 	for pg.retryExchange.Clicked() {
@@ -383,10 +386,6 @@ func (pg *Page) HandleUserInteractions() {
 
 			pg.ParentWindow().ShowModal(pg.confirmTxModal)
 		}
-	}
-
-	for pg.backdrop.Clicked() {
-		pg.moreOptionIsOpen = false
 	}
 
 	for _, menu := range pg.moreItems {

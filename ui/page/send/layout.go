@@ -3,7 +3,6 @@ package send
 import (
 	"fmt"
 
-	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
@@ -33,11 +32,7 @@ func (pg *Page) initLayoutWidgets() {
 	pg.nextButton.Inset = layout.Inset{Top: values.MarginPadding15, Bottom: values.MarginPadding15}
 	pg.nextButton.SetEnabled(false)
 
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
-	pg.backButton.Icon = pg.Theme.Icons.ContentClear
-
-	pg.moreOption = pg.Theme.IconButton(pg.Theme.Icons.NavMoreIcon)
-	pg.moreOption.Inset = layout.UniformInset(values.MarginPadding0)
+	_, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
 
 	pg.retryExchange = pg.Theme.Button(values.String(values.StrRetry))
 	pg.retryExchange.Background = pg.Theme.Color.Gray1
@@ -58,15 +53,11 @@ func (pg *Page) initLayoutWidgets() {
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
-	m := values.MarginPadding20
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return pg.backButton.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrSend)+" DCR").Layout)
+					return layout.Inset{}.Layout(gtx, pg.Theme.H6(values.String(values.StrSend)+" DCR").Layout)
 				}),
 			)
 		}),
@@ -74,19 +65,6 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(pg.infoButton.Layout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Left: m}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									if pg.moreOptionIsOpen {
-										pg.layoutOptionsMenu(gtx)
-									}
-									return layout.Dimensions{}
-								}),
-								layout.Rigid(pg.moreOption.Layout),
-							)
-						})
-					}),
 				)
 			})
 		}),
@@ -104,14 +82,6 @@ func (pg *Page) getMoreItem() []moreItem {
 		// 		pg.ChangeFragment(NewUTXOPage(pg.Load, pg.sourceAccountSelector.SelectedAccount()))
 		// 	},
 		// },
-		{
-			text:   values.String(values.StrClearAll),
-			button: pg.Theme.NewClickable(true),
-			action: func() {
-				pg.resetFields()
-				pg.moreOptionIsOpen = false
-			},
-		},
 	}
 }
 
@@ -183,7 +153,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-									return layout.Inset{Bottom: values.MarginPadding16, Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+									return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 										return layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, pageContent[i])
 									})
 								})
@@ -200,15 +170,6 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					return pg.balanceSection(gtx)
 				})
 			})
-		}),
-		layout.Expanded(func(gtx C) D {
-			if pg.moreOptionIsOpen {
-				return pg.backdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-					semantic.Button.Add(gtx.Ops)
-					return layout.Dimensions{Size: gtx.Constraints.Min}
-				})
-			}
-			return D{}
 		}),
 	)
 
@@ -261,15 +222,6 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 				})
 			})
 		}),
-		layout.Expanded(func(gtx C) D {
-			if pg.moreOptionIsOpen {
-				return pg.backdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-					semantic.Button.Add(gtx.Ops)
-					return layout.Dimensions{Size: gtx.Constraints.Min}
-				})
-			}
-			return D{}
-		}),
 	)
 
 	return dims
@@ -285,7 +237,9 @@ func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch
 							inset := layout.Inset{
 								Bottom: values.MarginPadding16,
 							}
-							return inset.Layout(gtx, pg.Theme.Body1(title).Layout)
+							titleTxt := pg.Theme.Body1(title)
+							titleTxt.Color = pg.Theme.Color.Text
+							return inset.Layout(gtx, titleTxt.Layout)
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							if showAccountSwitch {
@@ -401,7 +355,13 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	}
 	return inset.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return components.UniformPadding(gtx, func(gtx C) D {
+			inset := layout.Inset{
+				Top:    values.MarginPadding15,
+				Right:  values.MarginPadding15,
+				Bottom: values.MarginPadding15,
+				Left:   values.MarginPadding15,
+			}
+			return inset.Layout(gtx, func(gtx C) D {
 				return pg.coinSelectionLabel.Layout(gtx, func(gtx C) D {
 					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
 					return layout.Inset{}.Layout(gtx, func(gtx C) D {
@@ -433,7 +393,13 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 	c := pg.Theme.Card()
 	c.Radius = cryptomaterial.Radius(0)
 	return c.Layout(gtx, func(gtx C) D {
-		return components.UniformPadding(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			Top:    values.MarginPadding10,
+			Bottom: values.MarginPadding10,
+			Left:   values.MarginPadding15,
+			Right:  values.MarginPadding15,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Flexed(0.6, func(gtx C) D {
 					inset := layout.Inset{
@@ -443,7 +409,7 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								inset := layout.Inset{
-									Bottom: values.MarginPadding10,
+									Bottom: values.MarginPadding0,
 								}
 								return inset.Layout(gtx, func(gtx C) D {
 									feeText := pg.txFee
@@ -455,7 +421,7 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 							}),
 							layout.Rigid(func(gtx C) D {
 								inset := layout.Inset{
-									Bottom: values.MarginPadding10,
+									Bottom: values.MarginPadding0,
 								}
 								return inset.Layout(gtx, func(gtx C) D {
 									totalCostText := pg.totalCost
@@ -466,7 +432,11 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								return pg.contentRow(gtx, values.String(values.StrBalanceAfter), pg.balanceAfterSend)
+								balanceAfterSendText := pg.balanceAfterSend
+								if pg.exchangeRate != -1 && pg.usdExchangeSet {
+									balanceAfterSendText = fmt.Sprintf("%s (%s)", pg.balanceAfterSend, pg.balanceAfterSendUSD)
+								}
+								return pg.contentRow(gtx, values.String(values.StrBalanceAfter), balanceAfterSendText)
 							}),
 						)
 					})
@@ -489,7 +459,11 @@ func (pg *Page) contentRow(gtx layout.Context, leftValue, rightValue string) lay
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(pg.Theme.Body1(rightValue).Layout),
+					layout.Rigid(func(gtx C) D {
+						rightText := pg.Theme.Body1(rightValue)
+						rightText.Color = pg.Theme.Color.Text
+						return rightText.Layout(gtx)
+					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Dimensions{}
 					}),
