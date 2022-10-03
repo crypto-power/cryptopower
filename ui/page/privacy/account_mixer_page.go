@@ -129,23 +129,6 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 	}
 }
 
-// progressBarRow lays out the progress bar.
-func (pg *AccountMixerPage) progressBarRow(gtx C) D {
-	return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-		progress := pg.progressStatusDetails()
-
-		p := pg.Theme.ProgressBar(progress)
-		p.Height = values.MarginPadding16
-		p.Radius = cryptomaterial.Radius(4)
-		p.Color = pg.Theme.Color.Success
-		p.TrackColor = pg.Theme.Color.Gray2
-
-		progressTitleLabel := pg.Theme.Label(values.TextSize14, fmt.Sprintf("%v%%", progress))
-		progressTitleLabel.Color = pg.Theme.Color.InvText
-		return p.TextLayout(gtx, progressTitleLabel.Layout)
-	})
-}
-
 func (pg *AccountMixerPage) MixerProgressBarLayout(gtx C) D {
 	totalAmount := (pg.mixedBalance + pg.unmixedBalance).ToCoin()
 	pacentage := (pg.mixedBalance.ToCoin() / totalAmount) * 100
@@ -180,16 +163,6 @@ func (pg *AccountMixerPage) MixerProgressBarLayout(gtx C) D {
 	pb.ShowOverLayValue = true
 	pb.Height = values.MarginPadding18
 	return pb.Layout(gtx, labelWdg)
-}
-
-// progressStatusDetails analysis the progress data.
-func (pg *AccountMixerPage) progressStatusDetails() int {
-	progress := 0
-	if pg.WL.SelectedWallet.Wallet.IsAccountMixerActive() {
-		progress = 50
-	}
-
-	return progress
 }
 
 func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
@@ -332,6 +305,11 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
+	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+		gtx.Constraints.Min = gtx.Constraints.Max
+		warning := pg.Theme.Label(values.TextSize18, values.String(values.StrPageWarningSync))
+		return layout.Center.Layout(gtx, warning.Layout)
+	}
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
@@ -419,7 +397,6 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				}
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
-		break
 	}
 
 	for pg.unmixedAccount.Clicked() {
@@ -443,7 +420,6 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
-		break
 	}
 
 	for pg.coordinationServer.Clicked() {
