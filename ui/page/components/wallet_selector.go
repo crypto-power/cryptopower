@@ -185,7 +185,10 @@ func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 		Clickable: ws.Clickable(),
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			walletIcon := ws.Theme.Icons.WalletIcon
+			walletIcon := ws.Theme.Icons.DecredLogo
+			if ws.accountSelector {
+				walletIcon = ws.Theme.Icons.WalletIcon
+			}
 			inset := layout.Inset{
 				Right: values.MarginPadding8,
 			}
@@ -202,11 +205,19 @@ func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						walName := ws.Theme.Label(values.TextSize12, ws.SelectedWallet().Name)
 						walName.Color = ws.Theme.Color.GrayText2
+						card := ws.Theme.Card()
+						card.Radius = cryptomaterial.Radius(0)
+						card.Color = ws.Theme.Color.Gray4
 						return layout.Inset{
 							Left: values.MarginPadding8,
-						}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							return walName.Layout(gtx)
+						}.Layout(gtx, func(gtx C) D {
+							return card.Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
+									return walName.Layout(gtx)
+								})
+							})
 						})
+
 					}),
 				)
 			}
