@@ -12,7 +12,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -177,37 +176,37 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 						})
 					}),*/
 					/*layout.Rigid(func(gtx C) D {
-						if scm.destinationAccount != nil {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								return layout.Flex{}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return scm.Theme.Body2(scm.destinationAccount.Name).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										card := scm.Theme.Card()
-										card.Radius = cryptomaterial.Radius(0)
-										card.Color = scm.Theme.Color.Gray4
-										inset := layout.Inset{
-											Left: values.MarginPadding5,
-										}
-										return inset.Layout(gtx, func(gtx C) D {
-											return card.Layout(gtx, func(gtx C) D {
-												return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
-													destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
-													txt := scm.Theme.Caption(destinationWallet.Name)
-													txt.Color = scm.Theme.Color.GrayText1
-													return txt.Layout(gtx)
->>>>>>> 58c1dda1 (Implement send confirmation modal wallet layout/Background color wallet names on account selectors)
+											if scm.destinationAccount != nil {
+												return layout.E.Layout(gtx, func(gtx C) D {
+													return layout.Flex{}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return scm.Theme.Body2(scm.destinationAccount.Name).Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															card := scm.Theme.Card()
+															card.Radius = cryptomaterial.Radius(0)
+															card.Color = scm.Theme.Color.Gray4
+															inset := layout.Inset{
+																Left: values.MarginPadding5,
+															}
+															return inset.Layout(gtx, func(gtx C) D {
+																return card.Layout(gtx, func(gtx C) D {
+																	return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
+																		destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
+																		txt := scm.Theme.Caption(destinationWallet.Name)
+																		txt.Color = scm.Theme.Color.GrayText1
+																		return txt.Layout(gtx)
+					>>>>>>> 58c1dda1 (Implement send confirmation modal wallet layout/Background color wallet names on account selectors)
+																	})
+																})
+															})
+														}),
+													)
 												})
-											})
-										})
-									}),
-								)
-							})
-						}
-						return D{}
-						//return scm.Theme.Body2(scm.destinationAddress).Layout(gtx)
-					}), */
+											}
+											return D{}
+											//return scm.Theme.Body2(scm.destinationAddress).Layout(gtx)
+										}), */
 
 				}),
 			)
@@ -215,7 +214,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					sendWallet := scm.WL.MultiWallet.WalletWithID(scm.sourceAccount.WalletID)
+					sendWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.sourceAccount.WalletID)
 					//return scm.contentRow(gtx, values.String(values.StrSendingFrom), scm.sourceAccount.Name, sendWallet.Name)
 					return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
@@ -288,7 +287,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{}.Layout(gtx, func(gtx C) D {
-												destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
+												destinationWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.destinationAccount.WalletID)
 												txt := scm.Theme.Label(unit.Sp(16), destinationWallet.Name)
 												txt.Color = scm.Theme.Color.Text
 												txt.Font.Weight = text.Medium

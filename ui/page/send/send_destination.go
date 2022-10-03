@@ -47,7 +47,7 @@ func newSendDestination(l *load.Load) *destination {
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewWalletSelector(dst.Load).
 		Title(values.String(values.StrAccount)).
-		AccountValidator(func(account *libwallet.Account) bool {
+		AccountValidator(func(account *dcr.Account) bool {
 			// Filter out imported account and mixed.
 			wal := dst.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == components.MaxInt32 ||

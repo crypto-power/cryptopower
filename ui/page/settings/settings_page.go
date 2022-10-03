@@ -203,7 +203,6 @@ func (pg *SettingsPage) general() layout.Widget {
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
-						icon:      pg.chevronRightIcon,
 						label:     pg.Theme.Body2(values.String(l)),
 					}
 					return pg.clickableRow(gtx, exchangeRate)

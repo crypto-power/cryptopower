@@ -11,7 +11,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -24,11 +24,11 @@ type WalletSelector struct {
 	*load.Load
 	*listeners.TxAndBlockNotificationListener
 
-	selectedWallet  *libwallet.Wallet
-	selectedAccount *libwallet.Account
-	accountCallback func(*libwallet.Account)
-	walletCallback  func(*libwallet.Wallet)
-	accountIsValid  func(*libwallet.Account) bool
+	selectedWallet  *dcr.Wallet
+	selectedAccount *dcr.Account
+	accountCallback func(*dcr.Account)
+	walletCallback  func(*dcr.Wallet)
+	accountIsValid  func(*dcr.Account) bool
 	accountSelector bool
 
 	openSelectorDialog *cryptomaterial.Clickable
@@ -45,15 +45,15 @@ func NewWalletSelector(l *load.Load) *WalletSelector {
 	return &WalletSelector{
 		Load:               l,
 		openSelectorDialog: l.Theme.NewClickable(true),
-		accountIsValid:     func(*libwallet.Account) bool { return true },
+		accountIsValid:     func(*dcr.Account) bool { return true },
 		selectedWallet:     l.WL.SelectedWallet.Wallet, // Set the default wallet to wallet loaded by cryptopower.
 		accountSelector:    false,
 	}
 }
 
 // ShowAccount transforms this widget into an Account selector. It shows the accounts of
-// *libwallet.Wallet passed into to the method on a modal.
-func (ws *WalletSelector) ShowAccount(wall *libwallet.Wallet) *WalletSelector {
+// *dcr.Wallet passed into to the method on a modal.
+func (ws *WalletSelector) ShowAccount(wall *dcr.Wallet) *WalletSelector {
 	ws.SetSelectedWallet(wall)
 	ws.accountSelector = true
 	ws.SelectFirstValidAccount(ws.selectedWallet)
@@ -68,12 +68,12 @@ func (ws *WalletSelector) UpdateSelectedAccountBalance() {
 }
 
 // SelectedAccount returns the currently selected account.
-func (ws *WalletSelector) SelectedAccount() *libwallet.Account {
+func (ws *WalletSelector) SelectedAccount() *dcr.Account {
 	return ws.selectedAccount
 }
 
 // AccountValidator validates an account according to the rules defined to determine a valid a account.
-func (ws *WalletSelector) AccountValidator(accountIsValid func(*libwallet.Account) bool) *WalletSelector {
+func (ws *WalletSelector) AccountValidator(accountIsValid func(*dcr.Account) bool) *WalletSelector {
 	ws.accountIsValid = accountIsValid
 	return ws
 }
@@ -81,7 +81,7 @@ func (ws *WalletSelector) AccountValidator(accountIsValid func(*libwallet.Accoun
 // SelectFirstValidAccount selects the first valid account from the
 // the wallet passed in to the method. This method should only be called after ShowAccount is
 // is called.
-func (ws *WalletSelector) SelectFirstValidAccount(wallet *libwallet.Wallet) error {
+func (ws *WalletSelector) SelectFirstValidAccount(wallet *dcr.Wallet) error {
 	if !ws.accountSelector {
 		return errors.New("This widget isn't set to show accounts.")
 	}
@@ -104,7 +104,7 @@ func (ws *WalletSelector) SelectFirstValidAccount(wallet *libwallet.Wallet) erro
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (ws *WalletSelector) SetSelectedAccount(account *libwallet.Account) {
+func (ws *WalletSelector) SetSelectedAccount(account *dcr.Account) {
 	ws.selectedAccount = account
 	ws.totalBalance = dcrutil.Amount(account.TotalBalance).String()
 }
@@ -118,12 +118,12 @@ func (ws *WalletSelector) Title(title string) *WalletSelector {
 	return ws
 }
 
-func (ws *WalletSelector) WalletSelected(callback func(*libwallet.Wallet)) *WalletSelector {
+func (ws *WalletSelector) WalletSelected(callback func(*dcr.Wallet)) *WalletSelector {
 	ws.walletCallback = callback
 	return ws
 }
 
-func (ws *WalletSelector) AccountSelected(callback func(*libwallet.Account)) *WalletSelector {
+func (ws *WalletSelector) AccountSelected(callback func(*dcr.Account)) *WalletSelector {
 	ws.accountCallback = callback
 	return ws
 }
@@ -139,14 +139,14 @@ func (ws *WalletSelector) Handle(window app.WindowNavigator) {
 		ws.selectorModal = newSelectorModal(ws.Load, ws).
 			title(ws.dialogTitle).
 			accountValidator(ws.accountIsValid).
-			walletSelected(func(wallet *libwallet.Wallet) {
+			walletSelected(func(wallet *dcr.Wallet) {
 				ws.changed = true
 				ws.SetSelectedWallet(wallet)
 				if ws.walletCallback != nil {
 					ws.walletCallback(wallet)
 				}
 			}).
-			accountSelected(func(account *libwallet.Account) {
+			accountSelected(func(account *dcr.Account) {
 				if ws.selectedAccount.Number != account.Number {
 					ws.changed = true
 				}
@@ -162,11 +162,11 @@ func (ws *WalletSelector) Handle(window app.WindowNavigator) {
 	}
 }
 
-func (ws *WalletSelector) SetSelectedWallet(wallet *libwallet.Wallet) {
+func (ws *WalletSelector) SetSelectedWallet(wallet *dcr.Wallet) {
 	ws.selectedWallet = wallet
 }
 
-func (ws *WalletSelector) SelectedWallet() *libwallet.Wallet {
+func (ws *WalletSelector) SelectedWallet() *dcr.Wallet {
 	return ws.selectedWallet
 }
 
@@ -254,7 +254,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 		return
 	}
 	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := ws.WL.MultiWallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, AccoutSelectorID)
+	err := ws.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, AccoutSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -268,7 +268,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 				case listeners.BlockAttached:
 					// refresh wallet and accoount balance on every new block
 					// only if sync is completed.
-					if ws.WL.MultiWallet.IsSynced() {
+					if ws.WL.SelectedWallet.Wallet.IsSynced() {
 						if ws.selectorModal != nil {
 							if ws.accountSelector {
 								ws.selectorModal.setupAccounts(ws.selectedWallet)
@@ -290,7 +290,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 					window.Reload()
 				}
 			case <-ctx.Done():
-				ws.WL.MultiWallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
+				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
@@ -303,16 +303,16 @@ type SelectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	walletIsValid   func(*libwallet.Wallet) bool
-	accountIsValid  func(*libwallet.Account) bool
-	walletCallback  func(*libwallet.Wallet)
-	accountCallback func(*libwallet.Account)
+	walletIsValid   func(*dcr.Wallet) bool
+	accountIsValid  func(*dcr.Account) bool
+	walletCallback  func(*dcr.Wallet)
+	accountCallback func(*dcr.Account)
 	onExit          func()
 
 	walletInfoButton cryptomaterial.IconButton
 	walletsList      layout.List
 
-	currentSelectedWallet *libwallet.Wallet
+	currentSelectedWallet *dcr.Wallet
 	wallets               []*selectorWallet
 	eventQueue            event.Queue
 	walletMu              sync.Mutex
@@ -372,7 +372,7 @@ func (sm *SelectorModal) setupWallet() {
 	sm.wallets = wallet
 }
 
-func (sm *SelectorModal) setupAccounts(wal *libwallet.Wallet) {
+func (sm *SelectorModal) setupAccounts(wal *dcr.Wallet) {
 	wallet := make([]*selectorWallet, 0)
 	if !wal.IsWatchingOnlyWallet() {
 		accountsResult, err := wal.GetAccountsRaw()
@@ -398,7 +398,7 @@ func (sm *SelectorModal) SetCancelable(min bool) *SelectorModal {
 	return sm
 }
 
-func (sm *SelectorModal) accountValidator(accountIsValid func(*libwallet.Account) bool) *SelectorModal {
+func (sm *SelectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *SelectorModal {
 	sm.accountIsValid = accountIsValid
 	return sm
 }
@@ -408,11 +408,11 @@ func (sm *SelectorModal) Handle() {
 		for _, wallet := range sm.wallets {
 			for wallet.clickable.Clicked() {
 				switch item := wallet.Wallet.(type) {
-				case *libwallet.Account:
+				case *dcr.Account:
 					if sm.accountCallback != nil {
 						sm.accountCallback(item)
 					}
-				case *libwallet.Wallet:
+				case *dcr.Wallet:
 					if sm.walletCallback != nil {
 						sm.walletCallback(item)
 					}
@@ -434,17 +434,17 @@ func (sm *SelectorModal) title(title string) *SelectorModal {
 	return sm
 }
 
-func (sm *SelectorModal) walletValidator(walletIsValid func(*libwallet.Wallet) bool) *SelectorModal {
+func (sm *SelectorModal) walletValidator(walletIsValid func(*dcr.Wallet) bool) *SelectorModal {
 	sm.walletIsValid = walletIsValid
 	return sm
 }
 
-func (sm *SelectorModal) walletSelected(callback func(*libwallet.Wallet)) *SelectorModal {
+func (sm *SelectorModal) walletSelected(callback func(*dcr.Wallet)) *SelectorModal {
 	sm.walletCallback = callback
 	return sm
 }
 
-func (sm *SelectorModal) accountSelected(callback func(*libwallet.Account)) *SelectorModal {
+func (sm *SelectorModal) accountSelected(callback func(*dcr.Account)) *SelectorModal {
 	sm.accountCallback = callback
 	return sm
 }
@@ -518,7 +518,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 	return sm.Modal.Layout(gtx, w)
 }
 
-func wallBalance(wal *libwallet.Wallet) (bal, spendableBal int64) {
+func wallBalance(wal *dcr.Wallet) (bal, spendableBal int64) {
 	var tBal, sBal int64
 	accountsResult, _ := wal.GetAccountsRaw()
 	for _, account := range accountsResult.Acc {
@@ -549,11 +549,11 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, bal, sbal string
 			switch t := wallet.Wallet.(type) {
-			case *libwallet.Account:
+			case *dcr.Account:
 				bal = dcrutil.Amount(t.TotalBalance).String()
 				sbal = dcrutil.Amount(t.Balance.Spendable).String()
 				name = t.Name
-			case *libwallet.Wallet:
+			case *dcr.Wallet:
 				tb, sb := wallBalance(t)
 				bal = dcrutil.Amount(tb).String()
 				sbal = dcrutil.Amount(sb).String()
@@ -593,11 +593,11 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 				})
 			}
 			switch t := wallet.Wallet.(type) {
-			case *libwallet.Account:
+			case *dcr.Account:
 				if t.Number == sm.walletSelector.selectedAccount.Number {
 					return sections(gtx)
 				}
-			case *libwallet.Wallet:
+			case *dcr.Wallet:
 				if t.ID == sm.currentSelectedWallet.ID {
 					return sections(gtx)
 				}

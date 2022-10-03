@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -103,7 +103,7 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletSelector(l).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *libwallet.Account) {
+		AccountSelected(func(selectedAccount *dcr.Account) {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -130,7 +130,7 @@ func NewSendPage(l *load.Load) *Page {
 		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet) // refresh source account
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *libwallet.Wallet) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.Wallet) {
 		pg.sendDestination.destinationAccountSelector.ShowAccount(selectedWallet)
 	})
 
@@ -302,7 +302,7 @@ func (pg *Page) showBalaceAfterSend() {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		balanceAfterSend := dcrutil.Amount(sourceAccount.Balance.Spendable)
 		pg.balanceAfterSend = balanceAfterSend.String()
-		pg.balanceAfterSendUSD = load.FormatUSDBalance(pg.Printer, load.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}
 }
 

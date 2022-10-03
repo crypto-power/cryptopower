@@ -31,7 +31,7 @@ type ticketBuyerModal struct {
 
 	balToMaintainEditor cryptomaterial.Editor
 
-	accountSelector *components.AccountSelector
+	accountSelector *components.WalletSelector
 	vspSelector     *components.VSPSelector
 }
 
@@ -93,7 +93,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			if err := tb.accountSelector.SelectFirstWalletValidAccount(); err != nil {
+			if err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}
@@ -104,7 +104,7 @@ func (tb *ticketBuyerModal) OnResume() {
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
-		err := tb.accountSelector.SelectFirstWalletValidAccount()
+		err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
@@ -174,8 +174,9 @@ func (tb *ticketBuyerModal) canSave() bool {
 }
 
 func (tb *ticketBuyerModal) initializeAccountSelector() {
-	tb.accountSelector = components.NewAccountSelector(tb.Load).
+	tb.accountSelector = components.NewWalletSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
+		ShowAccount(tb.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending

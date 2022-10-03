@@ -28,8 +28,9 @@ type ManualMixerSetupPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	mixedAccountSelector   *components.AccountSelector
-	unmixedAccountSelector *components.AccountSelector
+	wallet                 *dcr.Wallet
+	mixedAccountSelector   *components.WalletSelector
+	unmixedAccountSelector *components.WalletSelector
 
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
@@ -44,9 +45,10 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	}
 
 	// Mixed account picker
-	pg.mixedAccountSelector = components.NewAccountSelector(l).
+	pg.mixedAccountSelector = components.NewWalletSelector(l).
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
+		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
@@ -66,8 +68,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		})
 
 	// Unmixed account picker
-	pg.unmixedAccountSelector = components.NewAccountSelector(l).
+	pg.unmixedAccountSelector = components.NewWalletSelector(l).
 		Title("Unmixed account").
+		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
@@ -100,8 +103,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.mixedAccountSelector.SelectFirstWalletValidAccount()
-	pg.unmixedAccountSelector.SelectFirstWalletValidAccount()
+	pg.mixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
 }
 
 // Layout draws the page UI components into the provided layout context
