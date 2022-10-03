@@ -185,6 +185,16 @@ func (wallet *Wallet) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	}
 }
 
+func (wallet *Wallet) SetSpecificPeer(address string) {
+	wallet.SaveUserConfigValue(SpvPersistentPeerAddressesConfigKey, address)
+	wallet.RestartSpvSync()
+}
+
+func (wallet *Wallet) RemoveSpecificPeer() {
+	wallet.SaveUserConfigValue(SpvPersistentPeerAddressesConfigKey, "")
+	wallet.RestartSpvSync()
+}
+
 func (wallet *Wallet) SpvSync() error {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if wallet.IsSyncing() || wallet.IsSynced() {
