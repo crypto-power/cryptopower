@@ -206,13 +206,13 @@ func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 						walName := ws.Theme.Label(values.TextSize12, ws.SelectedWallet().Name)
 						walName.Color = ws.Theme.Color.GrayText2
 						card := ws.Theme.Card()
-						card.Radius = cryptomaterial.Radius(0)
+						card.Radius = cryptomaterial.Radius(4)
 						card.Color = ws.Theme.Color.Gray4
 						return layout.Inset{
-							Left: values.MarginPadding8,
+							Left: values.MarginPadding4,
 						}.Layout(gtx, func(gtx C) D {
 							return card.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding2).Layout(gtx, func(gtx C) D {
+								return layout.UniformInset(values.MarginPadding0).Layout(gtx, func(gtx C) D {
 									return walName.Layout(gtx)
 								})
 							})

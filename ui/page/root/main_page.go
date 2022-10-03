@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -74,8 +73,9 @@ type MainPage struct {
 	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
-	dcrUsdtBittrex load.DCRUSDTBittrex
-	totalBalance   dcrutil.Amount
+	usdExchangeRate       float64
+	totalBalance          dcrutil.Amount
+	currencyExchangeValue string
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
@@ -311,6 +311,7 @@ func (mp *MainPage) OnNavigatedTo() {
 }
 
 func (mp *MainPage) updateExchangeSetting() {
+<<<<<<< HEAD
 	currencyExchangeValue := mp.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey, "")
 	if currencyExchangeValue == "" {
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue)
@@ -322,6 +323,10 @@ func (mp *MainPage) updateExchangeSetting() {
 	}
 	mp.usdExchangeSet = usdExchangeSet
 	if mp.usdExchangeSet {
+=======
+	mp.usdExchangeSet = false
+	if mp.currencyExchangeValue = mp.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey); mp.currencyExchangeValue != values.DefaultExchangeValue {
+>>>>>>> 6627dcad (Use libwallets external service API to fetch exchange rates.)
 		go mp.fetchExchangeRate()
 	}
 }
@@ -330,27 +335,31 @@ func (mp *MainPage) fetchExchangeRate() {
 	if mp.isFetchingExchangeRate {
 		return
 	}
-	maxAttempts := 5
-	delayBtwAttempts := 2 * time.Second
+
 	mp.isFetchingExchangeRate = true
+<<<<<<< HEAD
 	desc := "for getting dcrUsdtBittrex exchange rate value"
 	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
 		return utils.GetUSDExchangeValue(&mp.dcrUsdtBittrex)
 	})
+=======
+	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, values.DCRUSDTMarket)
+>>>>>>> 6627dcad (Use libwallets external service API to fetch exchange rates.)
 	if err != nil {
-		log.Errorf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
-	} else if mp.dcrUsdtBittrex.LastTradeRate == "" {
-		log.Errorf("no error while fetching usd exchange rate in %d tries, but no rate was fetched", attempts)
-	} else {
-		log.Infof("exchange rate value fetched: %s", mp.dcrUsdtBittrex.LastTradeRate)
-		mp.updateBalance()
-		mp.ParentWindow().Reload()
+		log.Error(err)
+		return
 	}
+	mp.usdExchangeRate = rate.LastTradePrice
+
+	mp.updateBalance()
+	mp.usdExchangeSet = true
+	mp.ParentWindow().Reload()
 	mp.isFetchingExchangeRate = false
 }
 
 func (mp *MainPage) updateBalance() {
 	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
+<<<<<<< HEAD
 	if err == nil {
 		mp.totalBalance = totalBalance.Total
 		if mp.usdExchangeSet && mp.dcrUsdtBittrex.LastTradeRate != "" {
@@ -360,7 +369,14 @@ func (mp *MainPage) updateBalance() {
 				mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 			}
 		}
+=======
+	if err != nil {
+		log.Error(err)
+>>>>>>> 6627dcad (Use libwallets external service API to fetch exchange rates.)
 	}
+	mp.totalBalance = totalBalance.Total
+	balanceInUSD := totalBalance.Total.ToCoin() * mp.usdExchangeRate
+	mp.totalBalanceUSD = load.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -672,7 +688,7 @@ func (mp *MainPage) LayoutUSDBalance(gtx C) D {
 		return D{}
 	}
 	switch {
-	case mp.isFetchingExchangeRate && mp.dcrUsdtBittrex.LastTradeRate == "":
+	case mp.isFetchingExchangeRate && mp.usdExchangeRate == 0:
 		gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding18)
 		gtx.Constraints.Max.X = gtx.Constraints.Max.Y
 		return layout.Inset{
@@ -682,7 +698,7 @@ func (mp *MainPage) LayoutUSDBalance(gtx C) D {
 			loader := material.Loader(mp.Theme.Base)
 			return loader.Layout(gtx)
 		})
-	case !mp.isFetchingExchangeRate && mp.dcrUsdtBittrex.LastTradeRate == "":
+	case !mp.isFetchingExchangeRate && mp.usdExchangeRate == 0:
 		return layout.Inset{
 			Top:  values.MarginPadding7,
 			Left: values.MarginPadding5,

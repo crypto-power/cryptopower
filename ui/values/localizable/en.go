@@ -172,6 +172,7 @@ const EN = `
 "french" = "French";
 "spanish" = "Spanish";
 "usdBittrex" = "USD (Bittrex)";
+"usdBinance" = "USD (Binance)";
 "none" = "None";
 "proposals" = "Proposals";
 "dex" = "Dex";

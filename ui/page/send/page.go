@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
-	"time"
+	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/widget"
@@ -66,6 +65,7 @@ type Page struct {
 	confirmTxModal      *sendConfirmModal
 	coinSelectionLabel  *cryptomaterial.Clickable
 	chevronRightIcon    *cryptomaterial.Icon
+	currencyExchange    string
 
 	*authoredTxData
 }
@@ -169,13 +169,10 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sourceAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
-	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyExchangeValue == values.USDExchangeValue {
+	pg.usdExchangeSet = false
+	if pg.currencyExchange = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey); pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
-		log.Print("fetching Exchange Rate.")
 		go pg.fetchExchangeRate()
-	} else {
-		pg.usdExchangeSet = false
 	}
 }
 
@@ -187,38 +184,20 @@ func (pg *Page) OnDarkModeChanged(isDarkModeOn bool) {
 }
 
 func (pg *Page) fetchExchangeRate() {
-	log.Print("Fetch Exchange rate Called")
 	if pg.isFetchingExchangeRate {
 		return
 	}
-	maxAttempts := 5
-	delayBtwAttempts := 2 * time.Second
 	pg.isFetchingExchangeRate = true
-	desc := "for getting dcrUsdtBittrex exchange rate value"
-	pg.exchangeRateMessage = "fetching exchange rate..."
-
-	var dcrUsdtBittrex load.DCRUSDTBittrex
-	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
-		return utils.GetUSDExchangeValue(&dcrUsdtBittrex)
-	})
+	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, values.DCRUSDTMarket)
 	if err != nil {
-		pg.exchangeRateMessage = "Exchange rate not fetched. Kindly check internet connection."
-		log.Printf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
-	} else if dcrUsdtBittrex.LastTradeRate == "" {
-		log.Printf("no error while fetching usd exchange rate in %d tries, but no rate was fetched", attempts)
-		pg.exchangeRateMessage = "Exchange rate not fetched."
-	} else {
-		log.Printf("exchange rate value fetched: %s", dcrUsdtBittrex.LastTradeRate)
-		pg.exchangeRateMessage = ""
-		exchangeRate, err := strconv.ParseFloat(dcrUsdtBittrex.LastTradeRate, 64)
-		if err != nil {
-			pg.exchangeRateMessage = err.Error()
-		} else {
-			pg.exchangeRate = exchangeRate
-			pg.amount.setExchangeRate(exchangeRate)
-			pg.validateAndConstructTx() // convert estimates to usd
-		}
+		log.Printf("Error fetching exchange rate : %s \n", err)
+		return
 	}
+
+	pg.exchangeRate = rate.LastTradePrice
+	pg.amount.setExchangeRate(pg.exchangeRate)
+	pg.validateAndConstructTx() // convert estimates to usd
+
 	pg.isFetchingExchangeRate = false
 	pg.ParentWindow().Reload()
 }
@@ -227,7 +206,6 @@ func (pg *Page) validateAndConstructTx() {
 	if pg.validate() {
 		pg.constructTx(false)
 	} else {
-		log.Print("Validate Failed \n")
 		pg.clearEstimates()
 		pg.showBalaceAfterSend()
 	}
@@ -396,8 +374,8 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyValue != values.USDExchangeValue {
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
 			if !pg.amount.dcrAmountEditor.Editor.Focused() && !modalShown {
@@ -434,7 +412,7 @@ func (pg *Page) HandleUserInteractions() {
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
-			if currencyValue != values.USDExchangeValue {
+			if currencyValue == values.DefaultExchangeValue {
 				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
@@ -446,7 +424,7 @@ func (pg *Page) HandleUserInteractions() {
 			}
 		}
 	} else {
-		if currencyValue != values.USDExchangeValue {
+		if currencyValue == values.DefaultExchangeValue {
 			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
@@ -486,8 +464,8 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyValue != values.USDExchangeValue {
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
 			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
