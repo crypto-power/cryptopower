@@ -254,7 +254,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 		return
 	}
 	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := ws.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, AccoutSelectorID)
+	err := ws.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -290,7 +290,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 					window.Reload()
 				}
 			case <-ctx.Done():
-				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccoutSelectorID)
+				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(WalletSelectorID)
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
