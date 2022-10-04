@@ -100,13 +100,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	// init database for saving/reading wallet objects
-	err = mwDB.Init(&dcr.Wallet{})
-	if err != nil {
-		log.Errorf("Error initializing wallets database: %s", err.Error())
-		return nil, err
-	}
-
-	err = mwDB.Init(&btc.Wallet{})
+	err = mwDB.Init(&dcr.Wallet{}) // Since BTC and DCR have similar wallet structures,
 	if err != nil {
 		log.Errorf("Error initializing wallets database: %s", err.Error())
 		return nil, err
@@ -157,18 +151,16 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
 	mw.ExternalService = ext.NewService(chainParams)
 
-	// read saved wallets info from db and initialize wallets
-	query := mw.db.Select(q.True()).OrderBy("ID")
+	// read saved dcr wallets info from db and initialize wallets
+	query := mw.db.Select(q.Eq("Type", "DCR")).OrderBy("ID")
 	var wallets []*dcr.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
 		return nil, err
 	}
 
-	fmt.Println("[][][][] wallets", wallets)
-
-	// read saved wallets info from db and initialize wallets
-	query = mw.db.Select(q.True()).OrderBy("ID")
+	// read saved btc wallets info from db and initialize wallets
+	query = mw.db.Select(q.Eq("Type", "BTC")).OrderBy("ID")
 	var BTCwallets []*btc.Wallet
 	err = query.Find(&BTCwallets)
 	if err != nil && err != storm.ErrNotFound {
@@ -183,7 +175,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		}
 		if err != nil {
 			mw.Assets.DCR.BadWallets[wallet.ID] = wallet
-			log.Warnf("Ignored wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 		} else {
 			mw.Assets.DCR.Wallets[wallet.ID] = wallet
 		}
@@ -199,7 +191,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		}
 		if err != nil {
 			mw.Assets.BTC.BadWallets[wallet.ID] = wallet
-			log.Warnf("Ignored wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 		} else {
 			mw.Assets.BTC.Wallets[wallet.ID] = wallet
 		}

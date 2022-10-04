@@ -82,7 +82,6 @@ func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincf
 	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
 
 	wallet.db = db
-	wallet.Type = "DCR"
 	return wallet.prepare(rootDir, chainParams, setUserConfigValueFn, readUserConfigValueFn)
 }
 
@@ -92,7 +91,6 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.rootDir = rootDir
-	// wallet.db = db
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn
@@ -206,6 +204,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		PrivatePassphraseType:            privatePassphraseType,
 		HasDiscoveredAccounts:            true,
+		Type:                             "DCR",
 	}
 
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
@@ -255,6 +254,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 		},
 		IsRestored:            true,
 		HasDiscoveredAccounts: true,
+		Type:                  "DCR",
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -308,6 +308,7 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 		},
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
+		Type:                  "DCR",
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -412,6 +413,7 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 		PrivatePassphraseType: privatePassphraseType,
 		IsRestored:            true,
 		HasDiscoveredAccounts: false, // assume that account discovery hasn't been done
+		Type:                  "DCR",
 	}
 
 	return wallet.saveNewWallet(func() error {

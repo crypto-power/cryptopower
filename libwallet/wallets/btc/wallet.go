@@ -170,7 +170,6 @@ func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err 
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.log = log
 	wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
-	wallet.Type = "BTC"
 	return nil
 }
 
@@ -239,6 +238,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		chainParams:   chainParams,
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
+		Type:          "BTC",
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -300,6 +300,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 	wallet := &Wallet{
 		Name:       walletName,
 		IsRestored: true,
+		Type:       "BTC",
 	}
 
 	return wallet.saveNewWallet(func() error {
