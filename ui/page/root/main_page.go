@@ -388,14 +388,26 @@ func (mp *MainPage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.PageID {
 			case send.SendPageID:
+				if !mp.WL.SelectedWallet.Wallet.IsSynced() {
+					mp.Toast.NotifyError(values.String(values.StrPageWarningSync))
+					return
+				}
 				pg = send.NewSendPage(mp.Load)
 			case ReceivePageID:
+				if !mp.WL.SelectedWallet.Wallet.IsSynced() {
+					mp.Toast.NotifyError(values.String(values.StrPageWarningSync))
+					return
+				}
 				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
+				if !mp.WL.SelectedWallet.Wallet.IsSynced() {
+					mp.Toast.NotifyError(values.String(values.StrPageWarningSync))
+					return
+				}
 				if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
 					pg = privacy.NewSetupPrivacyPage(mp.Load)
 				} else {

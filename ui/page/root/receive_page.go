@@ -174,11 +174,6 @@ func (pg *ReceivePage) generateQRForAddress() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
-	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
-		gtx.Constraints.Min = gtx.Constraints.Max
-		warning := pg.Theme.Label(values.TextSize18, values.String(values.StrPageWarningSync))
-		return layout.Center.Layout(gtx, warning.Layout)
-	}
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
 

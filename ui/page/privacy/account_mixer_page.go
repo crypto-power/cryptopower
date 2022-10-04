@@ -305,11 +305,6 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
-	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
-		gtx.Constraints.Min = gtx.Constraints.Max
-		warning := pg.Theme.Label(values.TextSize18, values.String(values.StrPageWarningSync))
-		return layout.Center.Layout(gtx, warning.Layout)
-	}
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
