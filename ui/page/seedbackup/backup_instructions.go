@@ -20,6 +20,8 @@ type (
 	D = layout.Dimensions
 )
 
+type Redirectfunc func(load *load.Load, pg app.PageNavigator)
+
 type BackupInstructionsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -34,15 +36,19 @@ type BackupInstructionsPage struct {
 	viewSeedBtn cryptomaterial.Button
 	checkBoxes  []cryptomaterial.CheckBoxStyle
 	infoList    *layout.List
+
+	redirectCallback Redirectfunc
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *dcr.Wallet) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet *dcr.Wallet, redirect Redirectfunc) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
 		wallet:           wallet,
 
 		viewSeedBtn: l.Theme.Button("View seed phrase"),
+
+		redirectCallback: redirect,
 	}
 
 	bi.viewSeedBtn.Font.Weight = text.Medium
@@ -84,7 +90,7 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 	for pg.viewSeedBtn.Clicked() {
 		if pg.verifyCheckBoxes() {
 			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
-			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet))
+			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))
 		}
 	}
 

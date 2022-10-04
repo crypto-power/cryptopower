@@ -42,9 +42,11 @@ type VerifySeedPage struct {
 	actionButton  cryptomaterial.Button
 	listGroupSeed []*layout.List
 	list          *widget.List
+
+	redirectCallback Redirectfunc
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *dcr.Wallet, seed string) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet *dcr.Wallet, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -52,6 +54,8 @@ func NewVerifySeedPage(l *load.Load, wallet *dcr.Wallet, seed string) *VerifySee
 		seed:             seed,
 
 		actionButton: l.Theme.Button("Verify"),
+
+		redirectCallback: redirect,
 	}
 	pg.list = &widget.List{
 		List: layout.List{
@@ -177,8 +181,7 @@ func (pg *VerifySeedPage) verifySeed() {
 				return false
 			}
 			m.Dismiss()
-
-			pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load))
+			pg.ParentNavigator().Display(NewBackupSuccessPage(pg.Load, pg.redirectCallback))
 
 			return true
 		})

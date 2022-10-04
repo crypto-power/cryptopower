@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	MainPageID = components.WalletsPageID
+	MainPageID = "Main"
 )
 
 var (
@@ -255,7 +255,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 
 	if mp.CurrentPage() == nil {
-		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page?
+		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
 	}
 	mp.CurrentPage().OnNavigatedTo()
 
@@ -392,7 +392,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case ReceivePageID:
 				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load)
+				pg = info.NewInfoPage(mp.Load, redirect)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
@@ -441,7 +441,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
 			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load)
+				pg = info.NewInfoPage(mp.Load, redirect)
 			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			}
@@ -908,7 +908,7 @@ func (mp *MainPage) showBackupInfo() {
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
-			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet))
+			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
@@ -926,4 +926,14 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 		Margin:     layout.Inset{Right: values.MarginPadding8},
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 	}.Layout2(gtx, indexLabel.Layout)
+}
+
+func redirect(l *load.Load, pg app.PageNavigator) {
+	onWalSelected := func() {
+		pg.ClearStackAndDisplay(NewMainPage(l))
+	}
+	onDexServerSelected := func(server string) {
+		log.Info("Not implemented yet...", server)
+	}
+	pg.Display(NewWalletDexServerSelector(l, onWalSelected, onDexServerSelected))
 }
