@@ -100,6 +100,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
+	go pg.fetchProposals()
 	pg.isSyncing = pg.multiWallet.Politeia.IsSyncing()
 }
 
