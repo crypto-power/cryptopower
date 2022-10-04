@@ -1,8 +1,6 @@
 package root
 
 import (
-	"sync"
-
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -28,13 +26,11 @@ type walletType struct {
 	clickable *cryptomaterial.Clickable
 	logo      *cryptomaterial.Image
 	name      string
-	border    cryptomaterial.Border
 }
 
 type decredAction struct {
 	title     string
 	clickable *cryptomaterial.Clickable
-	action    func()
 	border    cryptomaterial.Border
 	width     unit.Dp
 }
@@ -47,7 +43,6 @@ type CreateWallet struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	listLock        sync.Mutex
 	scrollContainer *widget.List
 	list            layout.List
 
@@ -343,6 +338,9 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 		layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrExistingWalletName)).Layout),
 		layout.Rigid(pg.watchOnlyCheckBox.Layout),
 		layout.Rigid(func(gtx C) D {
+			if !pg.watchOnlyCheckBox.CheckBox.Value {
+				return D{}
+			}
 			return layout.Inset{
 				Top:    values.MarginPadding14,
 				Bottom: values.MarginPadding20,
@@ -358,18 +356,15 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 						return pg.walletName.Layout(mGtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.watchOnlyCheckBox.CheckBox.Value {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Top:    values.MarginPadding10,
-										Bottom: values.MarginPadding8,
-									}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrExtendedPubKey)).Layout)
-								}),
-								layout.Rigid(pg.watchOnlyWalletHex.Layout),
-							)
-						}
-						return D{}
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Top:    values.MarginPadding10,
+									Bottom: values.MarginPadding8,
+								}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrExtendedPubKey)).Layout)
+							}),
+							layout.Rigid(pg.watchOnlyWalletHex.Layout),
+						)
 					}),
 				)
 			})
