@@ -183,7 +183,6 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 		Load:       pg.Load,
 		Title:      "Write down seed word",
 		SubTitle:   "Step 1/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -233,7 +232,6 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 		Load:       pg.Load,
 		Title:      "Write down seed word",
 		SubTitle:   "Step 1/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
