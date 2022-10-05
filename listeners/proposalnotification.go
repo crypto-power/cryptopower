@@ -19,6 +19,7 @@ func NewProposalNotificationListener() *ProposalNotificationListener {
 
 func (pn *ProposalNotificationListener) OnProposalsSynced() {
 	pn.sendNotification(wallet.Proposal{
+		Proposal:       &dcr.Proposal{},
 		ProposalStatus: wallet.Synced,
 	})
 }
