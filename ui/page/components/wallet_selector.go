@@ -492,9 +492,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 													card := sm.Theme.Card()
 													card.Color = sm.Theme.Color.Surface
 													return card.Layout(gtx, func(gtx C) D {
-														return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
-															return renderers.RenderHTML(sm.walletSelector.infoActionText, sm.Theme).Layout(gtx)
-														})
+														return layout.UniformInset(values.MarginPadding12).Layout(gtx, renderers.RenderHTML(sm.walletSelector.infoActionText, sm.Theme).Layout)
 													})
 												})
 												op.Defer(gtx.Ops, m.Stop())
