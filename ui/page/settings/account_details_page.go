@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -35,6 +36,8 @@ type AcctDetailsPage struct {
 	list                     *widget.List
 	backButton               cryptomaterial.IconButton
 	renameAccount            *cryptomaterial.Clickable
+	extendedKeyClickable     *cryptomaterial.Clickable
+	showExtendedKeyButton    *cryptomaterial.Clickable
 
 	stakingBalance   int64
 	totalBalance     string
@@ -45,6 +48,9 @@ type AcctDetailsPage struct {
 	immatureStakeGen string
 	hdPath           string
 	keys             string
+	extendedKey      string
+
+	isHideExtendedKey bool
 }
 
 func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
@@ -59,8 +65,12 @@ func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		backButton:    l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
-		renameAccount: l.Theme.NewClickable(false),
+		backButton:            l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
+		renameAccount:         l.Theme.NewClickable(false),
+		extendedKeyClickable:  l.Theme.NewClickable(true),
+		showExtendedKeyButton: l.Theme.NewClickable(false),
+		extendedKey:           "",
+		isHideExtendedKey:     true,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -98,18 +108,28 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AcctDetailsPage) Layout(gtx C) D {
+	m := values.MarginPadding10
 	widgets := []func(gtx C) D{
 		func(gtx C) D {
 			return pg.accountBalanceLayout(gtx)
 		},
 		func(gtx C) D {
-			m := values.MarginPadding10
 			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, func(gtx C) D {
 				return pg.theme.Separator().Layout(gtx)
 			})
 		},
 		func(gtx C) D {
 			return pg.accountInfoLayout(gtx)
+		},
+		func(gtx C) D {
+			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, func(gtx C) D {
+				return pg.theme.Separator().Layout(gtx)
+			})
+		},
+		func(gtx C) D {
+			return layout.Inset{Bottom: m}.Layout(gtx, func(gtx C) D {
+				return pg.extendedPubkey(gtx)
+			})
 		},
 	}
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -320,6 +340,52 @@ func (pg *AcctDetailsPage) acctInfoLayout(gtx C, leftText, rightText string) D {
 	)
 }
 
+func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
+	return pg.pageSections(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				leftTextLabel := pg.theme.Label(values.TextSize14, values.String(values.StrExtendedKey))
+				leftTextLabel.Color = pg.theme.Color.GrayText2
+				return leftTextLabel.Layout(gtx)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								icon := pg.Theme.Icons.RevealIcon
+								if pg.isHideExtendedKey {
+									icon = pg.Theme.Icons.ConcealIcon
+								}
+								return layout.Inset{
+									Right: values.MarginPadding9,
+								}.Layout(gtx, func(gtx C) D {
+									return pg.showExtendedKeyButton.Layout(gtx, icon.Layout16dp)
+								})
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									text := "********"
+									if !pg.isHideExtendedKey {
+										if pg.extendedKeyClickable.Clicked() {
+											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
+											pg.Toast.Notify(values.String(values.StrExtendedCopied))
+										}
+										text = splitSingleString(pg.extendedKey, 50)
+									}
+									lbl := pg.Theme.Label(values.TextSize14, text)
+									lbl.Color = pg.Theme.Color.Primary
+									return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
+								})
+							}),
+						)
+					})
+				})
+			}),
+		)
+	})
+}
+
 func (pg *AcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	m := values.MarginPadding20
 	mtb := values.MarginPadding5
@@ -353,6 +419,17 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 
 		pg.ParentWindow().ShowModal(textModal)
 	}
+
+	for pg.showExtendedKeyButton.Clicked() {
+		if pg.extendedKey == "" && pg.isHideExtendedKey {
+			xpub, err := pg.WL.SelectedWallet.Wallet.GetAccountExtendedPubKey(uint32(pg.account.Number))
+			if err != nil {
+				pg.Toast.NotifyError(err.Error())
+			}
+			pg.extendedKey = xpub
+		}
+		pg.isHideExtendedKey = !pg.isHideExtendedKey
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -363,3 +440,9 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *AcctDetailsPage) OnNavigatedFrom() {}
+
+func splitSingleString(text string, index int) string {
+	first := text[0 : len(text)-index]
+	second := text[len(text)-index:]
+	return fmt.Sprintf("%s %s", first, second)
+}

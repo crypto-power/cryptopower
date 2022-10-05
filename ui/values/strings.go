@@ -668,4 +668,6 @@ const (
 	StrFinished                        = "finished"
 	StrMixedAccHidden                  = "mixedAccHidden"
 	StrMixedAccDisabled                = "mixedAccDisabled"
+	StrExtendedKey                     = "extendedKey"
+	StrExtendedCopied                  = "extendedKeyCopied"
 )

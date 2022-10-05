@@ -770,7 +770,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				}
 				return pg.hashClickable.Layout(gtx, lbl.Layout)
 			}
-
+			//fdasgasdfasdfasdf
 			return pg.keyValue(gtx, values.String(values.StrTransactionID), dim)
 		}),
 	)

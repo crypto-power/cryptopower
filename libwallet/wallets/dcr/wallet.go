@@ -328,6 +328,14 @@ func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 	return nil
 }
 
+func (wallet *Wallet) GetAccountExtendedPubKey(account uint32) (string, error) {
+	extendedPublicKey, err := wallet.loader.GetAccountExtendedPubKey(wallet.ShutdownContext(), account)
+	if err != nil {
+		return "", err
+	}
+	return extendedPublicKey, nil
+}
+
 func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	exists, err := wallet.WalletNameExists(wallet.Name)
 	if err != nil {

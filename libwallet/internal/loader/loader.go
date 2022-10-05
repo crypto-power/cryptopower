@@ -429,3 +429,11 @@ func fileExists(filePath string) (bool, error) {
 	}
 	return true, nil
 }
+
+func (l *Loader) GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error) {
+	accExtendedPubKey, err := l.wallet.AccountXpub(ctx, account)
+	if err != nil {
+		return "", err
+	}
+	return accExtendedPubKey.String(), nil
+}

@@ -561,4 +561,6 @@ const EN = `
 "finished" = "Finished"
 "mixedAccHidden" = "The Mixed Account is Hidden"
 "mixedAccDisabled" = "Receiving to mixed account is disabled by StakeShuffle settings to protect your privacy"
+"extendedKey" = "Extended Public Key"
+"extendedKeyCopied" = "Extended Public Key copied";
 `
