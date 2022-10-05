@@ -524,7 +524,7 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 		layout.Flexed(0.1, func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding18,
-			}.Layout(gtx, func(gtx, walletIcon.Layout16dp))
+			}.Layout(gtx, walletIcon.Layout16dp)
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, bal, sbal string

@@ -408,28 +408,21 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 					return inset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								inset := layout.Inset{
-									Bottom: values.MarginPadding0,
+
+								feeText := pg.txFee
+								if pg.exchangeRate != -1 && pg.usdExchangeSet {
+									feeText = fmt.Sprintf("%s (%s)", pg.txFee, pg.txFeeUSD)
 								}
-								return inset.Layout(gtx, func(gtx C) D {
-									feeText := pg.txFee
-									if pg.exchangeRate != -1 && pg.usdExchangeSet {
-										feeText = fmt.Sprintf("%s (%s)", pg.txFee, pg.txFeeUSD)
-									}
-									return pg.contentRow(gtx, values.String(values.StrFee), feeText)
-								})
+								return pg.contentRow(gtx, values.String(values.StrFee), feeText)
+
 							}),
 							layout.Rigid(func(gtx C) D {
-								inset := layout.Inset{
-									Bottom: values.MarginPadding0,
+
+								totalCostText := pg.totalCost
+								if pg.exchangeRate != -1 && pg.usdExchangeSet {
+									totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)
 								}
-								return inset.Layout(gtx, func(gtx C) D {
-									totalCostText := pg.totalCost
-									if pg.exchangeRate != -1 && pg.usdExchangeSet {
-										totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)
-									}
-									return pg.contentRow(gtx, values.String(values.StrTotalCost), totalCostText)
-								})
+								return pg.contentRow(gtx, values.String(values.StrTotalCost), totalCostText)
 							}),
 							layout.Rigid(func(gtx C) D {
 								balanceAfterSendText := pg.balanceAfterSend
@@ -463,9 +456,6 @@ func (pg *Page) contentRow(gtx layout.Context, leftValue, rightValue string) lay
 						rightText := pg.Theme.Body1(rightValue)
 						rightText.Color = pg.Theme.Color.Text
 						return rightText.Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Dimensions{}
 					}),
 				)
 			})
