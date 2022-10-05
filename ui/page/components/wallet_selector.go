@@ -5,8 +5,11 @@ import (
 	"errors"
 
 	"gioui.org/io/event"
+	"gioui.org/io/semantic"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/text"
+	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
@@ -14,6 +17,7 @@ import (
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
+	"gitlab.com/raedah/cryptopower/ui/renderers"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -32,6 +36,7 @@ type WalletSelector struct {
 
 	openSelectorDialog *cryptomaterial.Clickable
 	selectorModal      *SelectorModal
+	infoActionText     string
 
 	dialogTitle  string
 	totalBalance string
@@ -67,6 +72,13 @@ func (ws *WalletSelector) SelectedAccount() *dcr.Account {
 // AccountValidator validates an account according to the rules defined to determine a valid a account.
 func (ws *WalletSelector) AccountValidator(accountIsValid func(*dcr.Account) bool) *WalletSelector {
 	ws.accountIsValid = accountIsValid
+	return ws
+}
+
+// SetActionInfoText sets the text that is shown when the info action icon is clicked.
+// the {text} is rendered using a html renderer. So HTML text can be passed in.
+func (ws *WalletSelector) SetActionInfoText(text string) *WalletSelector {
+	ws.infoActionText = text
 	return ws
 }
 
@@ -297,8 +309,7 @@ type SelectorModal struct {
 	accountCallback func(*dcr.Account)
 	onExit          func()
 
-	walletInfoButton cryptomaterial.IconButton
-	walletsList      layout.List
+	walletsList layout.List
 
 	currentSelectedWallet *dcr.Wallet
 	wallets               []*selectorWallet
@@ -309,6 +320,8 @@ type SelectorModal struct {
 	isCancelable   bool
 	walletSelector *WalletSelector
 	infoButton     cryptomaterial.IconButton
+	infoModalOpen  bool
+	infoBackdrop   *widget.Clickable
 }
 
 type selectorWallet struct {
@@ -324,10 +337,8 @@ func newSelectorModal(l *load.Load, ws *WalletSelector) *SelectorModal {
 		currentSelectedWallet: ws.selectedWallet,
 		isCancelable:          true,
 		walletSelector:        ws,
+		infoBackdrop:          new(widget.Clickable),
 	}
-	sm.walletInfoButton = l.Theme.IconButton(sm.Theme.Icons.ActionInfo)
-	sm.walletInfoButton.Size = values.MarginPadding15
-	sm.walletInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
 
 	sm.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	sm.infoButton.Size = values.MarginPadding14
@@ -408,6 +419,14 @@ func (sm *SelectorModal) Handle() {
 				sm.Dismiss()
 			}
 		}
+
+		if sm.infoBackdrop.Clicked() {
+			sm.infoModalOpen = false
+		}
+
+		if sm.infoButton.IconButtonStyle.Button.Clicked() {
+			sm.infoModalOpen = !sm.infoModalOpen
+		}
 	}
 
 	if sm.Modal.BackdropClicked(sm.isCancelable) {
@@ -433,6 +452,7 @@ func (sm *SelectorModal) accountSelected(callback func(*dcr.Account)) *SelectorM
 
 func (sm *SelectorModal) Layout(gtx C) D {
 	sm.eventQueue = gtx
+	sm.infoBackdropLayout(gtx)
 
 	w := []layout.Widget{
 		func(gtx C) D {
@@ -462,7 +482,33 @@ func (sm *SelectorModal) Layout(gtx C) D {
 										return walName.Layout(gtx)
 									})
 								}),
-								layout.Rigid(sm.infoButton.Layout),
+
+								layout.Rigid(func(gtx C) D {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											if sm.infoModalOpen {
+												m := op.Record(gtx.Ops)
+												layout.Inset{Top: values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+													card := sm.Theme.Card()
+													card.Color = sm.Theme.Color.Surface
+													return card.Layout(gtx, func(gtx C) D {
+														return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
+															return renderers.RenderHTML(sm.walletSelector.infoActionText, sm.Theme).Layout(gtx)
+														})
+													})
+												})
+												op.Defer(gtx.Ops, m.Stop())
+											}
+											return D{}
+										}),
+										layout.Rigid(func(gtx C) D {
+											if sm.walletSelector.infoActionText != "" {
+												return sm.infoButton.Layout(gtx)
+											}
+											return D{}
+										}),
+									)
+								}),
 							)
 						})
 					}
@@ -498,6 +544,20 @@ func (sm *SelectorModal) Layout(gtx C) D {
 	}
 
 	return sm.Modal.Layout(gtx, w)
+}
+
+// infoBackdropLayout draws background overlay when the confirmation modal action button is clicked.
+func (sm *SelectorModal) infoBackdropLayout(gtx C) {
+	if sm.infoModalOpen {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+		m := op.Record(gtx.Ops)
+		sm.infoBackdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			semantic.Button.Add(gtx.Ops)
+			return layout.Dimensions{Size: gtx.Constraints.Min}
+		})
+		op.Defer(gtx.Ops, m.Stop())
+	}
 }
 
 func wallBalance(wal *dcr.Wallet) (bal, spendableBal int64) {

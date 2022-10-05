@@ -123,11 +123,11 @@ func NewSendPage(l *load.Load) *Page {
 			}
 			return accountIsValid
 		}).
-		ShowAccount(l.WL.SelectedWallet.Wallet)
+		ShowAccount(l.WL.SelectedWallet.Wallet).
+		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 
 	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
 		pg.validateAndConstructTx()
-		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet) // refresh source account
 	})
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.Wallet) {

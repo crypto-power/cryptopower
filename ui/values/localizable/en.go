@@ -570,4 +570,5 @@ const EN = `
 "backToWallets" = "Back to Wallets"
 "coinSelection" = "Coin Selection"
 "nonAccSelector" = "This widget isn't set to show accounts"
+"txConfModalInfoTxt" = "<b>Unmixed accounts are hidden</b>. Spending from unmixed accounts is disabled by stakeshuffle settings to protect your privacy"
 `

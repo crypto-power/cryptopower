@@ -677,4 +677,5 @@ const (
 	StrBackToWallets                   = "backToWallets"
 	StrCoinSelection                   = "coinSelection"
 	StrNonAccSelector                  = "nonAccSelector"
+	StrTxConfModalInfoTxt              = "txConfModalInfoTxt"
 )
