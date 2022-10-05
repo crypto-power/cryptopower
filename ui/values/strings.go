@@ -676,4 +676,5 @@ const (
 	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrBackToWallets                   = "backToWallets"
 	StrCoinSelection                   = "coinSelection"
+	StrNonAccSelector                  = "nonAccSelector"
 )

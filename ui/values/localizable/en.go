@@ -569,4 +569,5 @@ const EN = `
 "pageWarningSync" = "Page cannot be accessed because the wallet sync is in progress, please wait for the sync to complete"
 "backToWallets" = "Back to Wallets"
 "coinSelection" = "Coin Selection"
+"nonAccSelector" = "This widget isn't set to show accounts"
 `

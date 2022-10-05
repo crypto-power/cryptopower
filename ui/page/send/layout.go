@@ -374,7 +374,6 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 										layout.Rigid(pg.Theme.Label(values.TextSize16, "Automatic").Layout),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{Left: m}.Layout(gtx, func(gtx C) D {
-
 												return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
 
 											})

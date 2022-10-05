@@ -3,7 +3,6 @@ package components
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"gioui.org/io/event"
 	"gioui.org/layout"
@@ -60,13 +59,6 @@ func (ws *WalletSelector) ShowAccount(wall *dcr.Wallet) *WalletSelector {
 	return ws
 }
 
-func (ws *WalletSelector) UpdateSelectedAccountBalance() {
-	bal, err := ws.WL.SelectedWallet.Wallet.GetAccountBalance(ws.SelectedAccount().Number)
-	if err == nil {
-		ws.totalBalance = dcrutil.Amount(bal.Total).String()
-	}
-}
-
 // SelectedAccount returns the currently selected account.
 func (ws *WalletSelector) SelectedAccount() *dcr.Account {
 	return ws.selectedAccount
@@ -83,7 +75,7 @@ func (ws *WalletSelector) AccountValidator(accountIsValid func(*dcr.Account) boo
 // is called.
 func (ws *WalletSelector) SelectFirstValidAccount(wallet *dcr.Wallet) error {
 	if !ws.accountSelector {
-		return errors.New("This widget isn't set to show accounts.")
+		return errors.New(values.String(values.StrNonAccSelector))
 	}
 	accountsResult, err := wallet.GetAccountsRaw()
 	if err != nil {
@@ -199,9 +191,7 @@ func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			if ws.accountSelector {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return ws.Theme.Body1(ws.SelectedAccount().Name).Layout(gtx)
-					}),
+					layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
 					layout.Rigid(func(gtx C) D {
 						walName := ws.Theme.Label(values.TextSize12, ws.SelectedWallet().Name)
 						walName.Color = ws.Theme.Color.GrayText2
@@ -212,9 +202,7 @@ func (ws *WalletSelector) Layout(window app.WindowNavigator, gtx C) D {
 							Left: values.MarginPadding4,
 						}.Layout(gtx, func(gtx C) D {
 							return card.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding0).Layout(gtx, func(gtx C) D {
-									return walName.Layout(gtx)
-								})
+								return layout.UniformInset(values.MarginPadding0).Layout(gtx, walName.Layout)
 							})
 						})
 
@@ -266,7 +254,7 @@ func (ws *WalletSelector) ListenForTxNotifications(ctx context.Context, window a
 			case n := <-ws.TxAndBlockNotifChan:
 				switch n.Type {
 				case listeners.BlockAttached:
-					// refresh wallet and accoount balance on every new block
+					// refresh wallet and account balance on every new block
 					// only if sync is completed.
 					if ws.WL.SelectedWallet.Wallet.IsSynced() {
 						if ws.selectorModal != nil {
@@ -315,7 +303,6 @@ type SelectorModal struct {
 	currentSelectedWallet *dcr.Wallet
 	wallets               []*selectorWallet
 	eventQueue            event.Queue
-	walletMu              sync.Mutex
 
 	dialogTitle string
 
@@ -434,11 +421,6 @@ func (sm *SelectorModal) title(title string) *SelectorModal {
 	return sm
 }
 
-func (sm *SelectorModal) walletValidator(walletIsValid func(*dcr.Wallet) bool) *SelectorModal {
-	sm.walletIsValid = walletIsValid
-	return sm
-}
-
 func (sm *SelectorModal) walletSelected(callback func(*dcr.Wallet)) *SelectorModal {
 	sm.walletCallback = callback
 	return sm
@@ -542,9 +524,7 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, wallet *selectorWallet) D {
 		layout.Flexed(0.1, func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding18,
-			}.Layout(gtx, func(gtx C) D {
-				return walletIcon.Layout16dp(gtx)
-			})
+			}.Layout(gtx, func(gtx, walletIcon.Layout16dp))
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, bal, sbal string
