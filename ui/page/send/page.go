@@ -26,11 +26,9 @@ const (
 )
 
 type moreItem struct {
-	text     string
-	id       string
-	button   *cryptomaterial.Clickable
-	action   func()
-	separate bool
+	text   string
+	button *cryptomaterial.Clickable
+	action func()
 }
 
 type Page struct {
@@ -58,7 +56,6 @@ type Page struct {
 
 	txFeeCollapsible *cryptomaterial.Collapsible
 	shadowBox        *cryptomaterial.Shadow
-	optionsMenuCard  cryptomaterial.Card
 	moreItems        []moreItem
 	backdrop         *widget.Clickable
 

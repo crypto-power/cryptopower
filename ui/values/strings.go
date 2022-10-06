@@ -671,5 +671,7 @@ const (
 	StrFinished                        = "finished"
 	StrMixedAccHidden                  = "mixedAccHidden"
 	StrMixedAccDisabled                = "mixedAccDisabled"
+	StrPageWarningSync                 = "pageWarningSync"
+	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrBackToWallets                   = "backToWallets"
 )
