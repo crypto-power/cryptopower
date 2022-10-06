@@ -193,7 +193,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		layout.Rigid(func(gtx C) D {
 			walletIcon := ws.Theme.Icons.DecredLogo
 			if ws.accountSelector {
-				walletIcon = ws.Theme.Icons.WalletIcon
+				walletIcon = ws.Theme.Icons.AccountIcon
 			}
 			inset := layout.Inset{
 				Right: values.MarginPadding8,
@@ -558,7 +558,7 @@ func walletBalance(wal *dcr.Wallet) (totalBalance, spendableBalance int64) {
 }
 
 func (sm *SelectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
-	walletIcon := sm.Theme.Icons.AccountIcon
+	accountIcon := sm.Theme.Icons.AccountIcon
 
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
@@ -571,7 +571,7 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 		layout.Flexed(0.1, func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding18,
-			}.Layout(gtx, walletIcon.Layout16dp)
+			}.Layout(gtx, accountIcon.Layout16dp)
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, totalBal, spendableBal string

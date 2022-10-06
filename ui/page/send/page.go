@@ -103,6 +103,8 @@ func NewSendPage(l *load.Load) *Page {
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *dcr.Account) {
+			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
+				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -125,12 +127,25 @@ func NewSendPage(l *load.Load) *Page {
 		ShowAccount(l.WL.SelectedWallet.Wallet).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 
+	pg.sendDestination.destinationAccountSelector =
+		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *dcr.Account) bool {
+			// Filter out imported account and mixed.
+			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			// Filter imported account and mixed accounts.
+			accountIsValid := account.Number != load.MaxInt32 && account.Number != wal.MixedAccountNumber()
+			// Filter the sending account.
+			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
+				return false
+			}
+			return true
+		})
+
 	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
 		pg.validateAndConstructTx()
 	})
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.Wallet) {
-		pg.sendDestination.destinationAccountSelector.ShowAccount(selectedWallet)
+		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
