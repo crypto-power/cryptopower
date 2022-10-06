@@ -8,7 +8,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 
-	// "gitlab.com/raedah/cryptopower/libwallet/utils"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 )
 
@@ -19,7 +19,12 @@ func initializeBTCWalletParameters(rootDir, dbDriver, netType string) (*chaincfg
 		return nil, "", errors.Errorf("failed to create btc rootDir: %v", err)
 	}
 
-	return nil, rootDir, nil
+	chainParams, err := utils.BTCChainParams(netType)
+	if err != nil {
+		return chainParams, "", err
+	}
+
+	return chainParams, rootDir, nil
 }
 
 func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {

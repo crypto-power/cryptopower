@@ -866,35 +866,6 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 						)
 					})
 				}),
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								icon := mp.Theme.Icons.RevealIcon
-								if mp.isBalanceHidden {
-									icon = mp.Theme.Icons.ConcealIcon
-								}
-								return layout.Inset{
-									Top:   values.MarginPadding5,
-									Right: values.MarginPadding9,
-								}.Layout(gtx, func(gtx C) D {
-									return mp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								// return mp.totalDCRBalance(gtx)
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								// if !mp.isBalanceHidden {
-								// 	return mp.LayoutUSDBalance(gtx)
-								// }
-								return D{}
-							}),
-						)
-					})
-				}),
 			)
 		}),
 		layout.Rigid(func(gtx C) D {

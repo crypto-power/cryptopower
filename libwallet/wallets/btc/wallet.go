@@ -3,7 +3,6 @@ package btc
 import (
 	"context"
 	"encoding/json"
-	// "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -20,12 +21,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcwallet/chain"
-	// "github.com/btcsuite/btcwallet/wallet"
-	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
-	// "gitlab.com/raedah/libwallet"
-	"decred.org/dcrwallet/v2/errors"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/decred/slog"
@@ -34,7 +31,6 @@ import (
 	"github.com/lightninglabs/neutrino/headerfs"
 
 	"github.com/asdine/storm"
-	// "github.com/asdine/storm/q"
 )
 
 type Wallet struct {
@@ -60,7 +56,6 @@ type Wallet struct {
 	loader      *w.Loader
 	log         slog.Logger
 	birthday    time.Time
-	// mw dcrlibwallet.MultiWallet
 
 	Type string
 }

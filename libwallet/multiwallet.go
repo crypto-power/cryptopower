@@ -67,7 +67,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, errors.Errorf("error initializing DCR parameters: %s", err.Error())
 	}
 
-	_, btcRootDir, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
+	btcChainParams, btcRootDir, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
 		log.Errorf("error initializing BTC parameters: %s", err.Error())
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
@@ -142,7 +142,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 				BadWallets:  make(map[int]*btc.Wallet),
 				DBDriver:    dbDriver,
 				RootDir:     btcRootDir,
-				ChainParams: &btccfg.TestNet3Params,
+				ChainParams: btcChainParams,
 			},
 		},
 	}
@@ -152,7 +152,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	mw.ExternalService = ext.NewService(chainParams)
 
 	// read saved dcr wallets info from db and initialize wallets
-	query := mw.db.Select(q.Eq("Type", "DCR")).OrderBy("ID")
+	query := mw.db.Select(q.Eq("Type", DCRWallet)).OrderBy("ID")
 	var wallets []*dcr.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
@@ -160,7 +160,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	// read saved btc wallets info from db and initialize wallets
-	query = mw.db.Select(q.Eq("Type", "BTC")).OrderBy("ID")
+	query = mw.db.Select(q.Eq("Type", BTCWallet)).OrderBy("ID")
 	var BTCwallets []*btc.Wallet
 	err = query.Find(&BTCwallets)
 	if err != nil && err != storm.ErrNotFound {

@@ -361,27 +361,7 @@ func (pg *WalletDexServerSelector) BTCwalletWrapper(gtx C, item *load.BTCWalletI
 				return layout.Flex{
 					Axis:      layout.Horizontal,
 					Alignment: layout.Middle,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						// if len(item.Wallet.EncryptedSeed) > 0 {
-						// 	return layout.Flex{
-						// 		Axis:      layout.Horizontal,
-						// 		Alignment: layout.Middle,
-						// 	}.Layout(gtx,
-						// 		layout.Rigid(pg.Theme.Icons.RedAlert.Layout16dp),
-						// 		layout.Rigid(func(gtx C) D {
-						// 			return layout.Inset{
-						// 				Right: values.MarginPadding10,
-						// 			}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout)
-						// 		}),
-						// 	)
-						// }
-						return D{}
-					}),
-					// layout.Rigid(func(gtx C) D {
-					// 	return pg.syncStatusIcon(gtx, item.Wallet)
-					// }),
-				)
+				}.Layout(gtx)
 			})
 		}),
 	)

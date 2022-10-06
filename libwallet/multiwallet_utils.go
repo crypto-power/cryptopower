@@ -20,12 +20,17 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
+type walletType string
+
 const (
 	logFileName   = "libwallet.log"
 	walletsDbName = "wallets.db"
 
 	walletsMetadataBucketName    = "metadata"
 	walletstartupPassphraseField = "startup-passphrase"
+
+	BTCWallet walletType = "BTC"
+	DCRWallet walletType = "DCR"
 )
 
 var (
