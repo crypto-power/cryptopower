@@ -262,3 +262,11 @@ func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
 
 	return hdPath + strconv.Itoa(int(accountNumber)), nil
 }
+
+func (wallet *Wallet) GetExtendedPubKey(account int32) (string, error) {
+	extendedPublicKey, err := wallet.loader.GetAccountExtendedPubKey(wallet.ShutdownContext(), uint32(account))
+	if err != nil {
+		return "", err
+	}
+	return extendedPublicKey, nil
+}

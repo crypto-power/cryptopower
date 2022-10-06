@@ -19,6 +19,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -614,7 +615,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			if (pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction != dcr.TxDirectionTransferred) || pg.transaction.Type == dcr.TxTypeMixed {
 				dim := func(gtx C) D {
-					lbl := pg.Theme.Label(values.TextSize14, splitSingleString(pg.txDestinationAddress, 0))
+					lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddress, 0))
 
 					if pg.transaction.Direction == dcr.TxDirectionReceived {
 						return lbl.Layout(gtx)
@@ -755,7 +756,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			dim := func(gtx C) D {
-				lbl := pg.Theme.Label(values.TextSize14, splitSingleString(transaction.Hash, 30))
+				lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(transaction.Hash, 30))
 				lbl.Color = pg.Theme.Color.Primary
 
 				// copy transaction hash
@@ -765,7 +766,6 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				}
 				return pg.hashClickable.Layout(gtx, lbl.Layout)
 			}
-			//fdasgasdfasdfasdf
 			return pg.keyValue(gtx, values.String(values.StrTransactionID), dim)
 		}),
 	)
@@ -783,7 +783,7 @@ func (pg *TxDetailsPage) txnInputs(gtx C) D {
 	collapsibleBody := func(gtx C) D {
 		return pg.transactionInputsContainer.Layout(gtx, len(transaction.Inputs), func(gtx C, i int) D {
 			input := transaction.Inputs[i]
-			addr := splitSingleString(input.PreviousOutpoint, 20)
+			addr := utils.SplitSingleString(input.PreviousOutpoint, 20)
 			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, addr, i)
 		})
 	}
@@ -1011,12 +1011,6 @@ func initTxnWidgets(l *load.Load, transaction *dcr.Transaction) transactionWdg {
 	}
 
 	return txn
-}
-
-func splitSingleString(text string, index int) string {
-	first := text[0 : len(text)-index]
-	second := text[len(text)-index:]
-	return fmt.Sprintf("%s %s", first, second)
 }
 
 func timeString(timestamp int64) string {

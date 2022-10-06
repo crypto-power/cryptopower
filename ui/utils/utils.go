@@ -187,3 +187,9 @@ func GetAbsolutePath() (string, error) {
 
 	return path.Dir(exSym), nil
 }
+
+func SplitSingleString(text string, index int) string {
+	first := text[0 : len(text)-index]
+	second := text[len(text)-index:]
+	return fmt.Sprintf("%s %s", first, second)
+}

@@ -15,6 +15,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -50,7 +51,7 @@ type AcctDetailsPage struct {
 	keys             string
 	extendedKey      string
 
-	isHideExtendedKey bool
+	isHiddenExtendedxPubkey bool
 }
 
 func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
@@ -65,12 +66,12 @@ func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		backButton:            l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
-		renameAccount:         l.Theme.NewClickable(false),
-		extendedKeyClickable:  l.Theme.NewClickable(true),
-		showExtendedKeyButton: l.Theme.NewClickable(false),
-		extendedKey:           "",
-		isHideExtendedKey:     true,
+		backButton:              l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
+		renameAccount:           l.Theme.NewClickable(false),
+		extendedKeyClickable:    l.Theme.NewClickable(true),
+		showExtendedKeyButton:   l.Theme.NewClickable(false),
+		extendedKey:             "",
+		isHiddenExtendedxPubkey: true,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -102,6 +103,7 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 	internal := pg.account.InternalKeyCount
 	imp := pg.account.ImportedKeyCount
 	pg.keys = values.StringF(values.StrAcctDetailsKey, ext, internal, imp)
+	pg.loadExtendedPubKey()
 }
 
 // Layout draws the page UI components into the provided C
@@ -114,22 +116,14 @@ func (pg *AcctDetailsPage) Layout(gtx C) D {
 			return pg.accountBalanceLayout(gtx)
 		},
 		func(gtx C) D {
-			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, func(gtx C) D {
-				return pg.theme.Separator().Layout(gtx)
-			})
+			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, pg.theme.Separator().Layout)
+		},
+		pg.accountInfoLayout,
+		func(gtx C) D {
+			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, pg.theme.Separator().Layout)
 		},
 		func(gtx C) D {
-			return pg.accountInfoLayout(gtx)
-		},
-		func(gtx C) D {
-			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, func(gtx C) D {
-				return pg.theme.Separator().Layout(gtx)
-			})
-		},
-		func(gtx C) D {
-			return layout.Inset{Bottom: m}.Layout(gtx, func(gtx C) D {
-				return pg.extendedPubkey(gtx)
-			})
+			return layout.Inset{Bottom: m}.Layout(gtx, pg.extendedPubkey)
 		},
 	}
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -354,7 +348,7 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								icon := pg.Theme.Icons.RevealIcon
-								if pg.isHideExtendedKey {
+								if pg.isHiddenExtendedxPubkey {
 									icon = pg.Theme.Icons.ConcealIcon
 								}
 								return layout.Inset{
@@ -366,12 +360,12 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
 									text := "********"
-									if !pg.isHideExtendedKey {
+									if !pg.isHiddenExtendedxPubkey {
 										if pg.extendedKeyClickable.Clicked() {
 											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
-										text = splitSingleString(pg.extendedKey, 50)
+										text = utils.SplitSingleString(pg.extendedKey, 50)
 									}
 									lbl := pg.Theme.Label(values.TextSize14, text)
 									lbl.Color = pg.Theme.Color.Primary
@@ -421,15 +415,18 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 	}
 
 	for pg.showExtendedKeyButton.Clicked() {
-		if pg.extendedKey == "" && pg.isHideExtendedKey {
-			xpub, err := pg.WL.SelectedWallet.Wallet.GetAccountExtendedPubKey(uint32(pg.account.Number))
-			if err != nil {
-				pg.Toast.NotifyError(err.Error())
-			}
-			pg.extendedKey = xpub
+		if pg.extendedKey != "" {
+			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
 		}
-		pg.isHideExtendedKey = !pg.isHideExtendedKey
 	}
+}
+
+func (pg *AcctDetailsPage) loadExtendedPubKey() {
+	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	if err != nil {
+		pg.Toast.NotifyError(err.Error())
+	}
+	pg.extendedKey = xpub
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -440,9 +437,3 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *AcctDetailsPage) OnNavigatedFrom() {}
-
-func splitSingleString(text string, index int) string {
-	first := text[0 : len(text)-index]
-	second := text[len(text)-index:]
-	return fmt.Sprintf("%s %s", first, second)
-}
