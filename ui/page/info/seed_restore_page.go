@@ -58,6 +58,7 @@ type SeedRestore struct {
 	seedMenu       []seedItemMenu
 
 	seedPhrase string
+	walletName string
 
 	openPopupIndex  int
 	selected        int
@@ -72,13 +73,14 @@ type SeedRestore struct {
 	selectedSeedEditor       int // stores the current focus index of seed editors
 }
 
-func NewSeedRestorePage(l *load.Load, onRestoreComplete func()) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, onRestoreComplete func()) *SeedRestore {
 	pg := &SeedRestore{
 		Load:            l,
 		restoreComplete: onRestoreComplete,
 		seedList:        &layout.List{Axis: layout.Vertical},
 		suggestionLimit: 3,
 		openPopupIndex:  -1,
+		walletName:      walletName,
 	}
 
 	pg.optionsMenuCard = cryptomaterial.Card{Color: pg.Theme.Color.Surface}
@@ -525,11 +527,11 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		pg.isRestoring = true
 		walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrEnterWalDetails)).
-			EnableName(true).
+			EnableName(false).
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.MultiWallet.RestoreDCRWallet(walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
+				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
