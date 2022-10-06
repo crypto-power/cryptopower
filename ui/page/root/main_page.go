@@ -174,6 +174,43 @@ func (mp *MainPage) initNavItems() {
 				PageID:        WalletSettingsPageID,
 			},
 		},
+		BTCDrawerNavItems: []components.NavHandler{
+			{
+				Clickable:     mp.Theme.NewClickable(true),
+				Image:         mp.Theme.Icons.OverviewIcon,
+				ImageInactive: mp.Theme.Icons.OverviewIconInactive,
+				Title:         values.String(values.StrInfo),
+				PageID:        info.InfoID,
+			},
+			{
+				Clickable:     mp.Theme.NewClickable(true),
+				Image:         mp.Theme.Icons.SendIcon,
+				Title:         values.String(values.StrSend),
+				ImageInactive: mp.Theme.Icons.SendInactiveIcon,
+				PageID:        send.SendPageID,
+			},
+			{
+				Clickable:     mp.Theme.NewClickable(true),
+				Image:         mp.Theme.Icons.ReceiveIcon,
+				ImageInactive: mp.Theme.Icons.ReceiveInactiveIcon,
+				Title:         values.String(values.StrReceive),
+				PageID:        ReceivePageID,
+			},
+			{
+				Clickable:     mp.Theme.NewClickable(true),
+				Image:         mp.Theme.Icons.TransactionsIcon,
+				ImageInactive: mp.Theme.Icons.TransactionsIconInactive,
+				Title:         values.String(values.StrTransactions),
+				PageID:        transaction.TransactionsPageID,
+			},
+			{
+				Clickable:     mp.Theme.NewClickable(true),
+				Image:         mp.Theme.Icons.MoreIcon,
+				ImageInactive: mp.Theme.Icons.MoreIconInactive,
+				Title:         values.String(values.StrSettings),
+				PageID:        WalletSettingsPageID,
+			},
+		},
 		MinimizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowBack),
 		MaximizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowForward),
 	}
@@ -500,8 +537,8 @@ func (mp *MainPage) HandleUserInteractions() {
 		}
 	}
 
-	mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.HideBalanceConfigKey, false)
 	for mp.hideBalanceButton.Clicked() {
+		mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.HideBalanceConfigKey, false)
 		mp.isBalanceHidden = !mp.isBalanceHidden
 		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(load.HideBalanceConfigKey, mp.isBalanceHidden)
 	}
@@ -592,7 +629,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx)
 							}
 							if mp.WL.SelectedWalletType == "BTC" {
-								drawer = D{}
+								drawer = mp.drawerNav.LayoutBTCNavDrawer(gtx)
 							}
 							return drawer
 						}),
@@ -775,8 +812,6 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 			return mp.Theme.Separator().Layout(gtx)
 		}),
 	)
-
-	return D{}
 }
 
 func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
