@@ -669,4 +669,5 @@ const (
 	StrMixedAccHidden                  = "mixedAccHidden"
 	StrMixedAccDisabled                = "mixedAccDisabled"
 	StrPageWarningSync                 = "pageWarningSync"
+	StrPageWarningNotSync              = "pageWarningNotSync"
 )

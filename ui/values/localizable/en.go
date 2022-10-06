@@ -561,5 +561,6 @@ const EN = `
 "finished" = "Finished"
 "mixedAccHidden" = "The Mixed Account is Hidden"
 "mixedAccDisabled" = "Receiving to mixed account is disabled by StakeShuffle settings to protect your privacy"
-"pageWarningSync" = "Sync in progress"
+"pageWarningNotSync" = "Page unavailable because the wallet is not synced"
+"pageWarningSync" = "Page unavailable because wallet sync is in progress"
 `

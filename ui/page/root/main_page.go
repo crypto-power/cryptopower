@@ -346,7 +346,7 @@ func (mp *MainPage) OnCurrencyChanged() {
 }
 
 func (mp *MainPage) isSynced() bool {
-	text := values.String(values.StrWalletNotSynced)
+	text := values.String(values.StrPageWarningNotSync)
 	if mp.WL.SelectedWallet.Wallet.IsSynced() {
 		return true
 	} else if mp.WL.SelectedWallet.Wallet.IsSyncing() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
