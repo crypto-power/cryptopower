@@ -67,15 +67,7 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 	watchOnlyWalletList := make([]*load.BTCWalletItem, 0)
 
 	for _, wal := range wallets {
-		// accountsResult, err := wal.GetAccountsRaw()
-		// if err != nil {
-		// 	continue
-		// }
-
 		var totalBalance int64 = 53
-		// for _, acc := range accountsResult.Acc {
-		// totalBalance += acc.TotalBalance
-		// }
 
 		// sort wallets into normal wallet and watchonly wallets
 		if wal.IsWatchingOnlyWallet() {
@@ -97,7 +89,6 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 
 	pg.listLock.Lock()
 	pg.mainBTCWalletList = mainWalletList
-	// pg.watchOnlyWalletList = watchOnlyWalletList
 	pg.listLock.Unlock()
 
 	pg.loadBadWallets()
@@ -193,13 +184,6 @@ func (pg *WalletDexServerSelector) BTCwalletListLayout(gtx C) D {
 		pg.BTCwalletList,
 	}
 
-	// if len(pg.watchOnlyWalletList) != 0 {
-	// 	walletSections = append(walletSections, pg.watchOnlyWalletSection)
-	// }
-
-	// if len(pg.badWalletsList) != 0 {
-	// 	walletSections = append(walletSections, pg.badWalletsSection)
-	// }
 	list := &layout.List{
 		Axis: layout.Vertical,
 	}

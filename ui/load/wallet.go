@@ -29,8 +29,10 @@ type WalletLoad struct {
 	UnspentOutputs *wallet.UnspentOutputs
 	Wallet         *wallet.Wallet
 
-	SelectedWallet  *WalletItem
-	SelectedAccount *int
+	SelectedWallet     *WalletItem
+	SelectedBTCWallet  *BTCWalletItem
+	SelectedAccount    *int
+	SelectedWalletType string
 }
 
 func (wl *WalletLoad) SortedWalletList() []*dcr.Wallet {

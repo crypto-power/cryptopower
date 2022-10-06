@@ -243,31 +243,33 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	mp.listenForNotifications()
+	if mp.WL.SelectedWalletType == "DCR" {
+		mp.listenForNotifications()
 
-	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
-	// reset the checkbox
-	mp.checkBox.CheckBox.Value = false
+		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
+		// reset the checkbox
+		mp.checkBox.CheckBox.Value = false
 
-	needBackup := mp.WL.SelectedWallet.Wallet.EncryptedSeed != nil
-	if needBackup && !backupLater {
-		mp.showBackupInfo()
-	}
-
-	if mp.CurrentPage() == nil {
-		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
-	}
-	mp.CurrentPage().OnNavigatedTo()
-
-	if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
-		if mp.WL.MultiWallet.Politeia.IsSyncing() {
-			return
+		needBackup := mp.WL.SelectedWallet.Wallet.EncryptedSeed != nil
+		if needBackup && !backupLater {
+			mp.showBackupInfo()
 		}
-		go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
-	}
 
-	mp.updateBalance()
-	mp.updateExchangeSetting()
+		if mp.CurrentPage() == nil {
+			mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
+		}
+		mp.CurrentPage().OnNavigatedTo()
+
+		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+			if mp.WL.MultiWallet.Politeia.IsSyncing() {
+				return
+			}
+			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
+		}
+
+		mp.updateBalance()
+		mp.updateExchangeSetting()
+	}
 }
 
 func (mp *MainPage) updateExchangeSetting() {
@@ -542,7 +544,10 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
+	if mp.WL.SelectedWalletType == "DCR" {
+		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
+	}
+
 	mp.ctxCancel()
 }
 
@@ -565,14 +570,32 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
-				layout.Rigid(mp.LayoutTopBar),
+				layout.Rigid(func(gtx C) D {
+					var topBar D
+					if mp.WL.SelectedWalletType == "DCR" {
+						topBar = mp.LayoutTopBar(gtx)
+					}
+					if mp.WL.SelectedWalletType == "BTC" {
+						topBar = mp.LayoutBTCTopBar(gtx)
+					}
+					return topBar
+				}),
 				layout.Rigid(func(gtx C) D {
 					return cryptomaterial.LinearLayout{
 						Width:       cryptomaterial.MatchParent,
 						Height:      cryptomaterial.MatchParent,
 						Orientation: layout.Horizontal,
 					}.Layout(gtx,
-						layout.Rigid(mp.drawerNav.LayoutNavDrawer),
+						layout.Rigid(func(gtx C) D {
+							var drawer D
+							if mp.WL.SelectedWalletType == "DCR" {
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx)
+							}
+							if mp.WL.SelectedWalletType == "BTC" {
+								drawer = D{}
+							}
+							return drawer
+						}),
 						layout.Rigid(func(gtx C) D {
 							if mp.CurrentPage() == nil {
 								return D{}
@@ -740,6 +763,98 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								if !mp.isBalanceHidden {
 									return mp.LayoutUSDBalance(gtx)
 								}
+								return D{}
+							}),
+						)
+					})
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return mp.Theme.Separator().Layout(gtx)
+		}),
+	)
+
+	return D{}
+}
+
+func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Background:  mp.Theme.Color.Surface,
+		Orientation: layout.Vertical,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			h := values.MarginPadding24
+			v := values.MarginPadding8
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Horizontal,
+				Alignment:   layout.Middle,
+				Padding: layout.Inset{
+					Right:  h,
+					Left:   values.MarginPadding10,
+					Top:    v,
+					Bottom: v,
+				},
+			}.BTCGradientLayout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.W.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   mp.openWalletSelector,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Left:  values.MarginPadding12,
+									Right: values.MarginPadding24,
+								}.Layout(gtx, func(gtx C) D {
+									return mp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding12)
+								})
+							}),
+							layout.Rigid(func(gtx C) D {
+								return mp.Theme.Icons.BTC.Layout24dp(gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								lbl := mp.Theme.H6(mp.WL.SelectedBTCWallet.Wallet.Name)
+								lbl.Color = mp.Theme.Color.PageNavText
+								return layout.Inset{
+									Left: values.MarginPadding10,
+								}.Layout(gtx, lbl.Layout)
+							}),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								icon := mp.Theme.Icons.RevealIcon
+								if mp.isBalanceHidden {
+									icon = mp.Theme.Icons.ConcealIcon
+								}
+								return layout.Inset{
+									Top:   values.MarginPadding5,
+									Right: values.MarginPadding9,
+								}.Layout(gtx, func(gtx C) D {
+									return mp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
+								})
+							}),
+							layout.Rigid(func(gtx C) D {
+								// return mp.totalDCRBalance(gtx)
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								// if !mp.isBalanceHidden {
+								// 	return mp.LayoutUSDBalance(gtx)
+								// }
 								return D{}
 							}),
 						)

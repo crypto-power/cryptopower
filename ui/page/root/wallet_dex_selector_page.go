@@ -135,16 +135,20 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	pg.listLock.Lock()
 	mainWalletList := pg.mainWalletList
+	mainBTCWalletList := pg.mainBTCWalletList
 	watchOnlyWalletList := pg.watchOnlyWalletList
 	pg.listLock.Unlock()
 
 	if ok, selectedItem := pg.walletsList.ItemClicked(); ok {
 		pg.WL.SelectedWallet = mainWalletList[selectedItem]
+		pg.WL.SelectedWalletType = "DCR"
 		pg.walletSelected()
 	}
 
-	if ok, _ := pg.BTCwalletsList.ItemClicked(); ok {
-		pg.Toast.NotifyError("Not Yet Implemented")
+	if ok, selectedItem := pg.BTCwalletsList.ItemClicked(); ok {
+		pg.WL.SelectedBTCWallet = mainBTCWalletList[selectedItem]
+		pg.WL.SelectedWalletType = "BTC"
+		pg.walletSelected()
 	}
 
 	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
