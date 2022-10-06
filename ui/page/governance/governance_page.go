@@ -10,7 +10,6 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -22,8 +21,6 @@ const GovernancePageID = "Governance"
 type Page struct {
 	*load.Load
 	*app.MasterPage
-
-	multiWallet *libwallet.MultiWallet
 
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
@@ -40,7 +37,6 @@ func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(GovernancePageID),
-		multiWallet:     l.WL.MultiWallet,
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
 

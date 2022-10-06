@@ -55,9 +55,11 @@ type WalletInfo struct {
 	stepFetchProgress    int32
 	syncProgress         int
 	syncStep             int
+
+	redirectfunc seedbackup.Redirectfunc
 }
 
-func NewInfoPage(l *load.Load) *WalletInfo {
+func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
@@ -71,6 +73,8 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = text.Medium
 	pg.toBackup.TextSize = values.TextSize14
+
+	pg.redirectfunc = redirect
 
 	pg.initWalletStatusWidgets()
 
@@ -158,8 +162,8 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		}
 	}
 
-	for pg.toBackup.Button.Clicked() {
-		pg.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet))
+	if pg.toBackup.Button.Clicked() {
+		pg.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
 	}
 }
 

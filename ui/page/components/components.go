@@ -6,6 +6,7 @@ package components
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -37,7 +38,6 @@ type (
 	TransactionRow struct {
 		Transaction dcr.Transaction
 		Index       int
-		ShowBadge   bool
 	}
 
 	TxStatus struct {
@@ -226,167 +226,66 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *T
 	return &txStatus
 }
 
-func WeekDayHourMinuteCalculator(timestamp int64) string {
-	var dateTimeResult string
-	timeStampNow := time.Now().Unix()
-	minutesFromTxn := (timeStampNow - timestamp) / 60
-	daysFromTxn := minutesFromTxn / 1440 // there are 1440 minutes in 24 hours
-	weeksFromTxn := daysFromTxn / 7
+// not used anywhere in the code TODO- deprecate
+func durationAgo(timestamp int64) string {
+	hrsPerYr := 8760.0  // There are 8760 hrs in a year.
+	hrsPerMnth := 730.0 // There are 730 hrs in a month.
+	hrsPerWk := 168.0   // There are 168 hrs in a Week.
+	HrsPerday := 24.0   // There are 24 hrs in a Day.
 
-	if weeksFromTxn > 0 {
-		if weeksFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrWeekAgo, weeksFromTxn)
-			return dateTimeResult
+	getStrDuration := func(opt1, opt2 string, d float64) string {
+		if d == 1 {
+			return values.StringF(opt1, d)
+		} else if d > 1 {
+			return values.StringF(opt2, d)
+		} else {
+			return ""
 		}
-
-		dateTimeResult = values.StringF(values.StrWeeksAgo, weeksFromTxn)
-		return dateTimeResult
 	}
 
-	if daysFromTxn > 0 {
-		if daysFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrDayAgo, daysFromTxn)
-			return dateTimeResult
+	d := time.Now().UTC().Sub(time.Unix(timestamp, 0).UTC())
+	hrs := d.Hours()
+
+	switch {
+	case hrs >= hrsPerYr:
+		strDuration := getStrDuration(values.StrYearAgo, values.StrYearsAgo, math.Round(hrs/hrsPerYr))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= hrsPerMnth:
+		strDuration := getStrDuration(values.StrMonthAgo, values.StrMonthsAgo, math.Round(hrs/hrsPerMnth))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= hrsPerWk:
+		strDuration := getStrDuration(values.StrWeekAgo, values.StrWeeksAgo, math.Round(hrs/hrsPerWk))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	case hrs >= HrsPerday:
+		strDuration := getStrDuration(values.StrDayAgo, values.StrDaysAgo, math.Round(hrs/HrsPerday))
+		if strDuration != "" {
+			return strDuration
+		}
+		fallthrough
+
+	default:
+		if strDuration := getStrDuration(values.StrHourAgo, values.StrHoursAgo, hrs); strDuration != "" {
+			return strDuration
 		}
 
-		dateTimeResult = values.StringF(values.StrDaysAgo, daysFromTxn)
-		return dateTimeResult
+		if strDuration := getStrDuration(values.StrMinuteAgo, values.StrMinutesAgo, d.Minutes()); strDuration != "" {
+			return strDuration
+		}
+
+		return values.StringF(values.String(values.StrSeconds), d.Seconds())
 	}
-
-	hoursFromTxn := minutesFromTxn / 60
-	if hoursFromTxn > 0 {
-		if hoursFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrHourAgo, hoursFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrHoursAgo, hoursFromTxn)
-		return dateTimeResult
-	}
-
-	if minutesFromTxn > 0 {
-		if minutesFromTxn == 1 {
-			dateTimeResult = values.StringF(values.StrMinuteAgo, minutesFromTxn)
-			return dateTimeResult
-		}
-
-		dateTimeResult = values.StringF(values.StrMinutesAgo, minutesFromTxn)
-		return dateTimeResult
-	}
-
-	dateTimeResult = values.String(values.StrJustNow)
-
-	return dateTimeResult
-}
-
-func DurationAgo(timestamp int64) string {
-	var duration string
-
-	//Convert timestamp to date in string format (yyyy:mm:dd hr:m:s +0000 UTC)
-	currentTimestamp := time.Now().UTC().String()
-	txnTimestamp := time.Unix(timestamp, 0).UTC().String()
-
-	//Split the date so we can sepparate into date and time for current time and time of txn
-	currentTimeSplit := strings.Split(currentTimestamp, " ")
-	txnTimeSplit := strings.Split(txnTimestamp, " ")
-
-	//Split current date and time, and  txn date and time then store in variables
-	currentDate := strings.Split(currentTimeSplit[0], "-")
-	txnDate := strings.Split(txnTimeSplit[0], "-")
-	yearNow, _ := strconv.Atoi(currentDate[0])
-	monthNow, _ := strconv.Atoi(currentDate[1])
-	txnYear, _ := strconv.Atoi(txnDate[0])
-	txnMonth, _ := strconv.Atoi(txnDate[1])
-	dayNow, _ := strconv.Atoi(currentDate[2])
-	txnDay, _ := strconv.Atoi(txnDate[2])
-	currentYearStart := 0
-	txnYearEnd := 12
-
-	if (yearNow - txnYear) > 0 {
-		if (yearNow - txnYear) == 1 {
-			if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) < 12 {
-				if ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) == 1 {
-					if dayNow < txnDay {
-						duration = WeekDayHourMinuteCalculator(timestamp)
-						return duration
-					}
-
-					duration = values.StringF(values.StrMonthAgo, 1)
-					return duration
-				}
-
-				monthDiff := ((txnYearEnd - txnMonth) + (currentYearStart + monthNow)) - 1
-				if dayNow < txnDay {
-					if monthDiff == 1 {
-						duration = values.StringF(values.StrMonthAgo, monthDiff)
-						return duration
-					}
-
-					duration = values.StringF(values.StrMonthsAgo, monthDiff)
-					return duration
-				}
-
-				duration = values.StringF(values.StrMonthsAgo, (txnYearEnd-txnMonth)+(currentYearStart+monthNow))
-				return duration
-			}
-			y := (yearNow - txnYear) - 1
-
-			if dayNow < txnDay {
-				if y == 0 {
-					duration := values.StringF(values.StrMonthsAgo, 11)
-					return duration
-				}
-
-				if y == 1 {
-					duration = values.StringF(values.StrYearAgo, y)
-					return duration
-				}
-
-				duration = values.StringF(values.StrYearsAgo, y)
-				return duration
-			}
-
-			duration = values.StringF(values.StrYearAgo, yearNow-txnYear)
-			return duration
-		}
-
-		duration = values.StringF(values.StrYearsAgo, yearNow-txnYear)
-		return duration
-	}
-
-	if (monthNow - txnMonth) > 0 {
-		if (monthNow - txnMonth) == 1 {
-			if dayNow < txnDay {
-				duration = WeekDayHourMinuteCalculator(timestamp)
-				return duration
-			}
-
-			duration = values.StringF(values.StrMonthAgo, 1)
-			return duration
-		}
-
-		if dayNow < txnDay {
-			if (monthNow-txnMonth)-1 == 0 {
-				duration := values.StringF(values.StrWeeksAgo, 3)
-				return duration
-			}
-
-			if (monthNow-txnMonth)-1 == 1 {
-				duration = values.StringF(values.StrMonthAgo, (monthNow-txnMonth)-1)
-				return duration
-			}
-
-			duration = values.StringF(values.StrMonthsAgo, (monthNow-txnMonth)-1)
-			return duration
-		}
-
-		duration = values.StringF(values.StrMonthsAgo, monthNow-txnMonth)
-		return duration
-	}
-
-	duration = WeekDayHourMinuteCalculator(timestamp)
-
-	return duration
 }
 
 // transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
@@ -416,169 +315,100 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				layout.Rigid(func(gtx C) D {
 					if row.Transaction.Type == dcr.TxTypeRegular {
 						amount := dcrutil.Amount(row.Transaction.Amount).String()
-						if row.Transaction.Direction == dcr.TxDirectionSent {
-							// hide extra minus (-) signs
-							if strings.Contains(amount, "-") {
-								amount = amount
-							} else {
-								amount = "-" + amount
-							}
+						if row.Transaction.Direction == dcr.TxDirectionSent && !strings.Contains(amount, "-") {
+							amount = "-" + amount
 						}
-						return LayoutBalanceWithUnit(gtx, l, amount)
+						return LayoutBalanceSize(gtx, l, amount, values.TextSize18)
 					}
 
 					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.WrapContent,
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Horizontal,
-						Direction:   layout.W,
-						Alignment:   layout.Middle,
-						Margin:      layout.Inset{Top: values.MarginPadding4},
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if row.ShowBadge {
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return WalletLabel(gtx, l, wal.Name)
-								})
-							}
+					if row.Transaction.Type == dcr.TxTypeMixed {
 
-							return layout.Dimensions{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							if wal.TxMatchesFilter(&row.Transaction, dcr.TxFilterStaking) {
-								ic := l.Theme.Icons.StakeIconInactive
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, ic.Layout12dp)
-							}
-							return D{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// mix denomination or ticket price
-							if row.Transaction.Type == dcr.TxTypeMixed {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Direction:   layout.W,
+							Alignment:   layout.Middle,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								// mix denomination
 								mixedDenom := dcrutil.Amount(row.Transaction.MixDenomination).String()
 								txt := l.Theme.Label(values.TextSize12, mixedDenom)
 								txt.Color = l.Theme.Color.GrayText2
 								return txt.Layout(gtx)
-							} else if wal.TxMatchesFilter(&row.Transaction, dcr.TxFilterStaking) {
-								ticketPrice := dcrutil.Amount(row.Transaction.Amount).String()
-								txt := l.Theme.Label(values.TextSize12, ticketPrice)
-								txt.Color = l.Theme.Color.GrayText2
-								return txt.Layout(gtx)
-							}
-							return layout.Dimensions{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// Mixed outputs count
-							if row.Transaction.Type == dcr.TxTypeMixed && row.Transaction.MixCount > 1 {
-								label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
-								label.Color = l.Theme.Color.GrayText2
-								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
-							}
-							return layout.Dimensions{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							// vote reward
-							if row.Transaction.Type != dcr.TxTypeVote && row.Transaction.Type != dcr.TxTypeRevocation {
+							}),
+							layout.Rigid(func(gtx C) D {
+								// Mixed outputs count
+								if row.Transaction.Type == dcr.TxTypeMixed && row.Transaction.MixCount > 1 {
+									label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
+									label.Color = l.Theme.Color.GrayText2
+									return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
+								}
 								return D{}
-							}
-
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.WrapContent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Horizontal,
-								Margin:      layout.Inset{Left: values.MarginPadding4},
-								Alignment:   layout.Middle,
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									ic := l.Theme.Icons.DecredSymbol2
-
-									return layout.Inset{
-										Left:  values.MarginPadding4,
-										Right: values.MarginPadding4,
-									}.Layout(gtx, ic.Layout16dp)
-								}),
-								layout.Rigid(func(gtx C) D {
-									label := l.Theme.Label(values.TextSize12, dcrutil.Amount(row.Transaction.VoteReward).String())
-									label.Color = l.Theme.Color.Orange
-									if row.Transaction.Type == dcr.TxTypeVote {
-										label.Color = l.Theme.Color.Turquoise800
-									}
-									return label.Layout(gtx)
-								}),
-							)
-						}),
-					)
+							}),
+						)
+					}
+					return D{}
 				}),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			status := l.Theme.Body1(values.String(values.StrPending))
+			status := l.Theme.Label(values.TextSize16, values.String(values.StrPending))
 			if TxConfirmations(l, row.Transaction) <= 1 {
 				status.Color = l.Theme.Color.GrayText1
 			} else {
 				status.Color = l.Theme.Color.GrayText2
-				status.Text = FormatDateOrTime(row.Transaction.Timestamp)
-			}
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.WrapContent,
-				Height:      cryptomaterial.MatchParent,
-				Orientation: layout.Vertical,
-				Padding:     layout.Inset{Left: values.MarginPadding16},
-				Alignment:   layout.End,
-				Direction:   layout.E,
-				Margin:      layout.Inset{Top: values.MarginPadding10},
-			}.Layout(gtx,
-				layout.Rigid(status.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
-								var title string
-								if row.Transaction.Type == dcr.TxTypeVote {
-									title = values.String(values.StrVote)
-								} else {
-									title = values.String(values.StrRevoke)
-								}
-
-								return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return WalletLabel(gtx, l, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
-								})
-							}
-
-							return D{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							currentTimestamp := time.Now().UTC().String()
-							txnTimestamp := time.Unix(row.Transaction.Timestamp, 0).UTC().String()
-							currentTimeSplit := strings.Split(currentTimestamp, " ")
-							txnTimeSplit := strings.Split(txnTimestamp, " ")
-							currentDate := strings.Split(currentTimeSplit[0], "-")
-							txnDate := strings.Split(txnTimeSplit[0], "-")
-
-							currentDay, _ := strconv.Atoi(currentDate[2])
-							txnDay, _ := strconv.Atoi(txnDate[2])
-
-							if currentDate[0] == txnDate[0] && currentDate[1] == txnDate[1] && currentDay-txnDay < 1 {
-								return D{}
-							}
-							duration := l.Theme.Label(values.TextSize12, DurationAgo(row.Transaction.Timestamp))
-							duration.Color = l.Theme.Color.GrayText4
-							return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, duration.Layout)
-						}),
-					)
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			statusIcon := l.Theme.Icons.ConfirmIcon
-			if TxConfirmations(l, row.Transaction) <= 1 {
-				statusIcon = l.Theme.Icons.PendingIcon
+				date := time.Unix(row.Transaction.Timestamp, 0).Format("Jan 2, 2006")
+				timeSplit := time.Unix(row.Transaction.Timestamp, 0).Format("03:04:05 PM")
+				status.Text = fmt.Sprintf("%v at %v", date, timeSplit)
 			}
 
-			return layout.Inset{Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-				return statusIcon.Layout12dp(gtx)
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
+							title := values.String(values.StrRevoke)
+							if row.Transaction.Type == dcr.TxTypeVote {
+								title = values.String(values.StrVote)
+							}
+
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									lbl := l.Theme.Label(values.TextSize16, fmt.Sprintf("%dd to %s", row.Transaction.DaysToVoteOrRevoke, title))
+									lbl.Color = l.Theme.Color.GrayText2
+									return lbl.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Right: values.MarginPadding5,
+										Left:  values.MarginPadding5,
+									}.Layout(gtx, func(gtx C) D {
+										ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+										ic.Color = l.Theme.Color.GrayText2
+										return ic.Layout(gtx, values.MarginPadding6)
+									})
+								}),
+							)
+						}
+
+						return D{}
+					}),
+					layout.Rigid(status.Layout),
+					layout.Rigid(func(gtx C) D {
+						statusIcon := l.Theme.Icons.ConfirmIcon
+						if TxConfirmations(l, row.Transaction) <= 1 {
+							statusIcon = l.Theme.Icons.PendingIcon
+						}
+
+						return layout.Inset{
+							Left: values.MarginPadding15,
+							Top:  values.MarginPadding5,
+						}.Layout(gtx, statusIcon.Layout12dp)
+					}),
+				)
 			})
 		}),
 	)
@@ -586,7 +416,6 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
-		// TODO
 		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
@@ -617,25 +446,6 @@ func FormatDateOrTime(timestamp int64) string {
 		t2 = t[3]
 	}
 	return fmt.Sprintf("%s %s, %s", t[1], t2, year)
-}
-
-// walletLabel displays the wallet which a transaction belongs to.
-// It is only displayed on the overview page when there are transactions from multiple wallets
-// deprecated -- todo remove.
-func WalletLabel(gtx layout.Context, l *load.Load, walletName string) D {
-	return cryptomaterial.Card{
-		Color: l.Theme.Color.Gray4,
-	}.Layout(gtx, func(gtx C) D {
-		return Container{
-			layout.Inset{
-				Left:  values.MarginPadding4,
-				Right: values.MarginPadding4,
-			}}.Layout(gtx, func(gtx C) D {
-			name := l.Theme.Label(values.TextSize12, walletName)
-			name.Color = l.Theme.Color.GrayText2
-			return name.Layout(gtx)
-		})
-	})
 }
 
 // EndToEndRow layouts out its content on both ends of its horizontal layout.
@@ -722,23 +532,6 @@ func TimeFormat(secs int, long bool) string {
 		val = " " + values.String(values.StrSeconds)
 	}
 	return fmt.Sprintf("%d %s", secs, val)
-}
-
-// createOrUpdateWalletDropDown check for len of wallets to create dropDown,
-// also update the list when create, update, delete a wallet.
-func CreateOrUpdateWalletDropDown(l *load.Load, dwn **cryptomaterial.DropDown, wallets []*dcr.Wallet, grp uint, pos uint) *cryptomaterial.DropDown {
-	var walletDropDownItems []cryptomaterial.DropDownItem
-	walletIcon := l.Theme.Icons.WalletIcon
-	walletIcon.Scale = 1
-	for _, wal := range wallets {
-		item := cryptomaterial.DropDownItem{
-			Text: wal.Name,
-			Icon: walletIcon,
-		}
-		walletDropDownItems = append(walletDropDownItems, item)
-	}
-	*dwn = l.Theme.DropDown(walletDropDownItems, grp, pos)
-	return *dwn
 }
 
 func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {

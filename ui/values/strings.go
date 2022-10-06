@@ -179,6 +179,8 @@ const (
 	StrPurchased                       = "purchased"
 	StrRevocation                      = "revocation"
 	StrStaking                         = "staking"
+	StrStakingActivity                 = "stakingActivity"
+	StrMixingActivity                  = "mixingActivity"
 	StrImmatureRewards                 = "immatureRewards"
 	StrLockedByTickets                 = "lockedByTickets"
 	StrVotingAuthority                 = "votingAuthority"
@@ -271,6 +273,7 @@ const (
 	StrCreateStartupPassword           = "createStartupPassword"
 	StrExchangeRate                    = "exchangeRate"
 	StrTransactions                    = "transactions"
+	StrTxOverview                      = "txOverview"
 	StrWallets                         = "wallets"
 	StrTickets                         = "tickets"
 	StrTicket                          = "ticket"
@@ -670,4 +673,5 @@ const (
 	StrMixedAccDisabled                = "mixedAccDisabled"
 	StrExtendedKey                     = "extendedKey"
 	StrExtendedCopied                  = "extendedKeyCopied"
+	StrBackToWallets                   = "backToWallets"
 )

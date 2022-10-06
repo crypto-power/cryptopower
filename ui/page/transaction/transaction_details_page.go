@@ -351,13 +351,8 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 										case dcr.TxTypeMixed:
 											title = dcrutil.Amount(pg.transaction.MixDenomination).String()
 										case dcr.TxTypeRegular:
-											if pg.transaction.Direction == dcr.TxDirectionSent {
-												// hide extra minus (-) signs
-												if strings.Contains(title, "-") {
-													title = title
-												} else {
-													title = "-" + title
-												}
+											if pg.transaction.Direction == dcr.TxDirectionSent && !strings.Contains(title, "-") {
+												title = "-" + title
 											}
 										case dcr.TxTypeRevocation, dcr.TxTypeVote:
 											return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
