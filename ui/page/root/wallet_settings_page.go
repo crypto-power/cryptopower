@@ -499,7 +499,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				return false
 			}
 			if ipAddress != "" {
-				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcr.SpvPersistentPeerAddressesConfigKey, ipAddress)
+				pg.WL.SelectedWallet.Wallet.SetSpecificPeer(ipAddress)
 				pg.loadPeerAddress()
 			}
 			return true
@@ -545,7 +545,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(dcr.SpvPersistentPeerAddressesConfigKey, "")
+			pg.WL.SelectedWallet.Wallet.RemoveSpecificPeer()
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)
@@ -762,8 +762,9 @@ func (pg *WalletSettingsPage) resetDexDataModal() {
 					im.Dismiss() // close the parent modal too
 					return true
 				})
+			} else {
+				info = modal.NewErrorModal(pg.Load, values.String(values.StrDexDataResetFalse), modal.DefaultClickFunc())
 			}
-			info = modal.NewErrorModal(pg.Load, values.String(values.StrDexDataResetFalse), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(info)
 			return false
 		})

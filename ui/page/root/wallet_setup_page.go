@@ -1,8 +1,6 @@
 package root
 
 import (
-	"sync"
-
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -28,13 +26,11 @@ type walletType struct {
 	clickable *cryptomaterial.Clickable
 	logo      *cryptomaterial.Image
 	name      string
-	border    cryptomaterial.Border
 }
 
 type decredAction struct {
 	title     string
 	clickable *cryptomaterial.Clickable
-	action    func()
 	border    cryptomaterial.Border
 	width     unit.Dp
 }
@@ -47,7 +43,6 @@ type CreateWallet struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	listLock        sync.Mutex
 	scrollContainer *widget.List
 	list            layout.List
 

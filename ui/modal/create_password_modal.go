@@ -186,7 +186,9 @@ func (cm *CreatePasswordModal) validToCreate() bool {
 	validPassword, passwordsMatch := true, true
 	if cm.confirmPasswordEnabled {
 		validPassword = utils.EditorsNotEmpty(cm.confirmPasswordEditor.Editor)
-		cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+		if len(cm.confirmPasswordEditor.Editor.Text()) > 0 {
+			passwordsMatch = cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor)
+		}
 	}
 
 	return nameValid && utils.EditorsNotEmpty(cm.passwordEditor.Editor) && validPassword && passwordsMatch
@@ -226,10 +228,6 @@ func (cm *CreatePasswordModal) Handle() {
 		if cm.confirmPasswordEnabled {
 			if !utils.EditorsNotEmpty(cm.confirmPasswordEditor.Editor) {
 				cm.confirmPasswordEditor.SetError(values.String(values.StrConfirmSpendingPassword))
-				return
-			}
-
-			if !cm.passwordsMatch(cm.passwordEditor.Editor, cm.confirmPasswordEditor.Editor) {
 				return
 			}
 		}

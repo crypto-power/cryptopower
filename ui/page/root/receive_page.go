@@ -50,7 +50,6 @@ type ReceivePage struct {
 	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
-	ops               *op.Ops
 	selector          *components.AccountSelector
 	copyAddressButton cryptomaterial.Button
 

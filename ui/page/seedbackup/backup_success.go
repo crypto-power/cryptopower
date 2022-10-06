@@ -20,15 +20,17 @@ type BackupSuccessPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	actionButton cryptomaterial.Button
+	actionButton     cryptomaterial.Button
+	redirectCallback Redirectfunc
 }
 
-func NewBackupSuccessPage(l *load.Load) *BackupSuccessPage {
+func NewBackupSuccessPage(l *load.Load, redirect Redirectfunc) *BackupSuccessPage {
 	pg := &BackupSuccessPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupSuccessPageID),
 
-		actionButton: l.Theme.OutlineButton("Back to Wallets"),
+		actionButton:     l.Theme.OutlineButton(values.String(values.StrBackToWallets)),
+		redirectCallback: redirect,
 	}
 	pg.actionButton.Font.Weight = text.Medium
 
@@ -48,7 +50,7 @@ func (pg *BackupSuccessPage) OnNavigatedTo() {}
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) HandleUserInteractions() {
 	for pg.actionButton.Clicked() {
-		pg.ParentNavigator().ClosePagesAfter(components.WalletsPageID)
+		pg.redirectCallback(pg.Load, pg.ParentNavigator())
 	}
 }
 

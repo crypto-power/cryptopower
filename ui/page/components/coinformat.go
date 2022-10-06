@@ -57,7 +57,7 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 				return l.Theme.Label(mainTextSize, unitText).Layout(gtx)
 			}
 
-			return D{}
+			return l.Theme.Label(subTextSize, unitText).Layout(gtx)
 		}),
 	)
 }

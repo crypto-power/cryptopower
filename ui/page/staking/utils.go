@@ -37,25 +37,6 @@ type transactionItem struct {
 	durationTooltip   *cryptomaterial.Tooltip
 }
 
-type Stake struct {
-	Status     string
-	Fee        string
-	Amount     string
-	DateTime   string
-	MonthDay   string
-	DaysBehind string
-	WalletName string
-}
-
-const (
-	StakingLive     = "LIVE"
-	StakingUnmined  = "UNMINED"
-	StakingImmature = "IMMATURE"
-	StakingRevoked  = "REVOKED"
-	StakingVoted    = "VOTED"
-	StakingExpired  = "EXPIRED"
-)
-
 func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet

@@ -49,9 +49,11 @@ type SaveSeedPage struct {
 	seed       string
 	rows       []saveSeedRow
 	mobileRows []saveSeedRow
+
+	redirectCallback Redirectfunc
 }
 
-func NewSaveSeedPage(l *load.Load, wallet *dcr.Wallet) *SaveSeedPage {
+func NewSaveSeedPage(l *load.Load, wallet *dcr.Wallet, redirect Redirectfunc) *SaveSeedPage {
 	pg := &SaveSeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),
@@ -63,6 +65,8 @@ func NewSaveSeedPage(l *load.Load, wallet *dcr.Wallet) *SaveSeedPage {
 		seedList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
+
+		redirectCallback: redirect,
 	}
 
 	pg.copy.TextSize = values.TextSize12
@@ -138,7 +142,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
-			pg.ParentNavigator().ClosePagesAfter(components.WalletsPageID)
+			pg.ParentNavigator().CloseCurrentPage()
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 
@@ -151,7 +155,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) HandleUserInteractions() {
 	for pg.actionButton.Clicked() {
-		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed))
+		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.redirectCallback))
 	}
 }
 
@@ -179,7 +183,6 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 		Load:       pg.Load,
 		Title:      "Write down seed word",
 		SubTitle:   "Step 1/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -229,7 +232,6 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 		Load:       pg.Load,
 		Title:      "Write down seed word",
 		SubTitle:   "Step 1/2",
-		WalletName: pg.wallet.Name,
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
