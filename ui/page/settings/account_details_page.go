@@ -359,17 +359,18 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 							}),
 							layout.Rigid(func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									text := "********"
+									lbl := pg.Theme.Label(values.TextSize14, "********")
+									lbl.Color = pg.Theme.Color.GrayText1
 									if !pg.isHiddenExtendedxPubkey {
 										if pg.extendedKeyClickable.Clicked() {
 											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
-										text = utils.SplitSingleString(pg.extendedKey, 50)
+										lbl.Text = utils.SplitSingleString(pg.extendedKey, 50)
+										lbl.Color = pg.Theme.Color.Primary
+										return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
 									}
-									lbl := pg.Theme.Label(values.TextSize14, text)
-									lbl.Color = pg.Theme.Color.Primary
-									return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
+									return lbl.Layout(gtx)
 								})
 							}),
 						)
