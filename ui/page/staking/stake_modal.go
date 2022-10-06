@@ -31,7 +31,7 @@ type ticketBuyerModal struct {
 
 	balToMaintainEditor cryptomaterial.Editor
 
-	accountSelector *components.WalletSelector
+	accountSelector *components.WalletAndAccountSelector
 	vspSelector     *components.VSPSelector
 }
 
@@ -174,7 +174,7 @@ func (tb *ticketBuyerModal) canSave() bool {
 }
 
 func (tb *ticketBuyerModal) initializeAccountSelector() {
-	tb.accountSelector = components.NewWalletSelector(tb.Load).
+	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
 		ShowAccount(tb.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).

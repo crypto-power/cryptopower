@@ -20,7 +20,7 @@ type agendaVoteModal struct {
 
 	onPreferenceUpdated func()
 
-	accountSelector *components.WalletSelector
+	accountSelector *components.WalletAndAccountSelector
 	accountSelected *dcr.Account
 }
 
@@ -37,7 +37,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 	avm.SetPositiveButtonCallback(avm.sendVotes)
 
 	// Source account picker
-	avm.accountSelector = components.NewWalletSelector(l).
+	avm.accountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
 		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {

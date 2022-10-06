@@ -19,8 +19,8 @@ type destination struct {
 
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
-	destinationAccountSelector *components.WalletSelector
-	destinationWalletSelector  *components.WalletSelector
+	destinationAccountSelector *components.WalletAndAccountSelector
+	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	sendToAddress bool
 	accountSwitch *cryptomaterial.SwitchButtonText
@@ -41,11 +41,11 @@ func newSendDestination(l *load.Load) *destination {
 	})
 
 	// Destination wallet picker
-	dst.destinationWalletSelector = components.NewWalletSelector(dst.Load).
+	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load).
 		Title(values.String(values.StrTo))
 
 	// Destination account picker
-	dst.destinationAccountSelector = components.NewWalletSelector(dst.Load).
+	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
 		Title(values.String(values.StrAccount)).
 		AccountValidator(func(account *dcr.Account) bool {
 			// Filter out imported account and mixed.

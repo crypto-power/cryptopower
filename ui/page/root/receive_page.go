@@ -51,7 +51,7 @@ type ReceivePage struct {
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
 	ops               *op.Ops
-	selector          *components.WalletSelector
+	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
 
 	isCopying  bool
@@ -100,7 +100,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copyAddressButton.TextSize = values.TextSize14
 	pg.copyAddressButton.Inset = layout.UniformInset(values.MarginPadding0)
 
-	pg.selector = components.NewWalletSelector(pg.Load).
+	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {

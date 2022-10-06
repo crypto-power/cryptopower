@@ -29,8 +29,8 @@ type ManualMixerSetupPage struct {
 	ctxCancel context.CancelFunc
 
 	wallet                 *dcr.Wallet
-	mixedAccountSelector   *components.WalletSelector
-	unmixedAccountSelector *components.WalletSelector
+	mixedAccountSelector   *components.WalletAndAccountSelector
+	unmixedAccountSelector *components.WalletAndAccountSelector
 
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
@@ -45,7 +45,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	}
 
 	// Mixed account picker
-	pg.mixedAccountSelector = components.NewWalletSelector(l).
+	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		ShowAccount(l.WL.SelectedWallet.Wallet).
@@ -68,7 +68,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		})
 
 	// Unmixed account picker
-	pg.unmixedAccountSelector = components.NewWalletSelector(l).
+	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
 		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).

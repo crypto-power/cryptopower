@@ -10,7 +10,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
-	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 
 type (
@@ -45,11 +44,7 @@ func (pg *Page) initLayoutWidgets() {
 		Bottom: values.MarginPadding5,
 		Left:   values.MarginPadding8,
 	}
-	rIc, _ := widget.NewIcon(icons.NavigationChevronRight)
-	pg.chevronRightIcon = cryptomaterial.NewIcon(rIc)
-	pg.chevronRightIcon.Color = pg.Theme.Color.Gray1
 	pg.coinSelectionLabel = pg.Theme.NewClickable(false)
-
 	pg.moreItems = pg.getMoreItem()
 }
 
@@ -373,10 +368,7 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 										layout.Rigid(pg.Theme.Label(values.TextSize16, "Automatic").Layout),
 										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Left: m}.Layout(gtx, func(gtx C) D {
-												return pg.chevronRightIcon.Layout(gtx, values.MarginPadding20)
-
-											})
+											return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 										}),
 									)
 								})

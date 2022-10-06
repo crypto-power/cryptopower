@@ -43,7 +43,7 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	sourceAccountSelector *components.WalletSelector
+	sourceAccountSelector *components.WalletAndAccountSelector
 	sendDestination       *destination
 	amount                *sendAmount
 
@@ -64,7 +64,6 @@ type Page struct {
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
 	coinSelectionLabel  *cryptomaterial.Clickable
-	chevronRightIcon    *cryptomaterial.Icon
 	currencyExchange    string
 
 	*authoredTxData
@@ -101,7 +100,7 @@ func NewSendPage(l *load.Load) *Page {
 	}
 
 	// Source account picker
-	pg.sourceAccountSelector = components.NewWalletSelector(l).
+	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *dcr.Account) {
 			pg.validateAndConstructTx()

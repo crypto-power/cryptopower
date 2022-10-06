@@ -27,7 +27,7 @@ type createWalletModal struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	sourceAccountSelector *components.WalletSelector
+	sourceAccountSelector *components.WalletAndAccountSelector
 	submitBtn             cryptomaterial.Button
 	cancelBtn             cryptomaterial.Button
 	walletPassword        cryptomaterial.Editor
@@ -56,7 +56,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 		walletInfoWidget: wallInfo,
 	}
 	md.submitBtn.SetEnabled(false)
-	md.sourceAccountSelector = components.NewWalletSelector(md.Load).
+	md.sourceAccountSelector = components.NewWalletAndAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
 		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *decred.Account) {}).
