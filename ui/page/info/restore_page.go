@@ -35,16 +35,18 @@ type Restore struct {
 	tabIndex        int
 	backButton      cryptomaterial.IconButton
 	seedRestorePage *SeedRestore
+	walletName      string
 }
 
-func NewRestorePage(l *load.Load, onRestoreComplete func()) *Restore {
+func NewRestorePage(l *load.Load, walletName string, onRestoreComplete func()) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
-		seedRestorePage:  NewSeedRestorePage(l, onRestoreComplete),
+		seedRestorePage:  NewSeedRestorePage(l, walletName, onRestoreComplete),
 		tabIndex:         0,
 		tabList:          l.Theme.NewClickableList(layout.Horizontal),
 		restoreComplete:  onRestoreComplete,
+		walletName:       walletName,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -58,6 +60,7 @@ func NewRestorePage(l *load.Load, onRestoreComplete func()) *Restore {
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
 	pg.seedRestorePage.OnNavigatedTo()
+	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
 
 // Layout draws the page UI components into the provided C
@@ -231,7 +234,7 @@ func (pg *Restore) showHexRestoreModal() {
 
 			passwordModal := modal.NewCreatePasswordModal(pg.Load).
 				Title(values.String(values.StrEnterWalDetails)).
-				EnableName(true).
+				EnableName(false).
 				ShowWalletInfoTip(true).
 				SetParent(pg).
 				SetNegativeButtonCallback(func() {
@@ -239,7 +242,7 @@ func (pg *Restore) showHexRestoreModal() {
 					pg.switchTab(pg.tabIndex)
 				}).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.MultiWallet.RestoreDCRWallet(walletName, hex, password, libwallet.PassphraseTypePass)
+					_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, hex, password, libwallet.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)

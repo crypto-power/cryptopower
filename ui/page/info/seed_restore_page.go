@@ -51,13 +51,14 @@ type SeedRestore struct {
 	validateSeed    cryptomaterial.Button
 	resetSeedFields cryptomaterial.Button
 	optionsMenuCard cryptomaterial.Card
+	window          app.WindowNavigator
 
 	suggestions    []string
 	allSuggestions []string
-	focused        []int
 	seedMenu       []seedItemMenu
 
 	seedPhrase string
+	walletName string
 
 	openPopupIndex  int
 	selected        int
@@ -72,14 +73,14 @@ type SeedRestore struct {
 	selectedSeedEditor       int // stores the current focus index of seed editors
 }
 
-func NewSeedRestorePage(l *load.Load, onRestoreComplete func()) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, onRestoreComplete func()) *SeedRestore {
 	pg := &SeedRestore{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(SeedRestorePageID),
-		restoreComplete:  onRestoreComplete,
-		seedList:         &layout.List{Axis: layout.Vertical},
-		suggestionLimit:  3,
-		openPopupIndex:   -1,
+		Load:            l,
+		restoreComplete: onRestoreComplete,
+		seedList:        &layout.List{Axis: layout.Vertical},
+		suggestionLimit: 3,
+		openPopupIndex:  -1,
+		walletName:      walletName,
 	}
 
 	pg.optionsMenuCard = cryptomaterial.Card{Color: pg.Theme.Color.Surface}
@@ -121,6 +122,10 @@ func (pg *SeedRestore) ID() string {
 // Part of the load.Page interface.
 func (pg *SeedRestore) OnNavigatedTo() {}
 
+func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
+	pg.window = window
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
@@ -151,11 +156,6 @@ func (pg *SeedRestore) restore(gtx C) D {
 				Background:  pg.Theme.Color.Surface,
 				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 				Padding:     layout.UniformInset(values.MarginPadding15)}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding10,
-					}.Layout(gtx, pg.Theme.Body1(values.String(values.StrClearAll)).Layout)
-				}),
 				layout.Rigid(pg.seedEditorViewDesktop),
 				layout.Rigid(pg.resetSeedFields.Layout),
 			)
@@ -315,27 +315,7 @@ func (pg *SeedRestore) onSuggestionSeedsClicked() {
 	}
 }
 
-func diff(a, b []int) []int {
-	temp := map[int]int{}
-	for _, s := range a {
-		temp[s]++
-	}
-	for _, s := range b {
-		temp[s]--
-	}
-
-	var f []int
-	for s, v := range temp {
-		if v != 0 {
-			f = append(f, s)
-		}
-	}
-	return f
-}
-
 func (pg *SeedRestore) editorSeedsEventsHandler() {
-	var focused []int
-
 	seedEvent := func(i int, text string) {
 		if pg.seedClicked {
 			pg.seedEditors.focusIndex = -1
@@ -362,7 +342,6 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 
 		if editor.Edit.Editor.Focused() {
 			seedEvent(i, text)
-			focused = append(focused, i)
 		}
 
 		for _, e := range editor.Edit.Editor.Events() {
@@ -383,11 +362,6 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 			}
 		}
 	}
-
-	if len(diff(pg.focused, focused)) > 0 {
-		pg.seedEditors.focusIndex = -1
-	}
-	pg.focused = focused
 }
 
 func (pg *SeedRestore) initSeedMenu() {
@@ -466,19 +440,11 @@ func (pg *SeedRestore) updateSeedResetBtn() bool {
 }
 
 func (pg *SeedRestore) validateSeeds() (bool, string) {
-	focus := pg.seedEditors.focusIndex
-	seedMatchCounter := 0
 	seedPhrase := ""
-	for j := 0; j < len(pg.allSuggestions); j++ {
-		if focus != -1 {
-			if pg.seedEditors.editors[pg.seedEditors.focusIndex].Edit.Editor.Text() == pg.allSuggestions[j] {
-				seedMatchCounter = 1
-			}
-		}
-	}
+	allSuggesString := strings.Join(pg.allSuggestions, " ")
 
 	for i, editor := range pg.seedEditors.editors {
-		if editor.Edit.Editor.Text() == "" || seedMatchCounter == 0 {
+		if editor.Edit.Editor.Text() == "" || !strings.Contains(allSuggesString, editor.Edit.Editor.Text()) {
 			pg.seedEditors.editors[i].Edit.HintColor = pg.Theme.Color.Danger
 			return false, ""
 		}
@@ -496,7 +462,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 		pg.seedPhrase = seedphrase
 		if !dcr.VerifySeed(pg.seedPhrase) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
-			pg.ParentWindow().ShowModal(errModal)
+			pg.window.ShowModal(errModal)
 			return false
 		}
 	}
@@ -511,7 +477,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	if walletWithSameSeed != -1 {
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(errModal)
+		pg.window.ShowModal(errModal)
 		return false
 	}
 
@@ -561,11 +527,11 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		pg.isRestoring = true
 		walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrEnterWalDetails)).
-			EnableName(true).
+			EnableName(false).
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.MultiWallet.RestoreDCRWallet(walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
+				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -574,7 +540,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				}
 
 				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
-				pg.ParentWindow().ShowModal(infoModal)
+				pg.window.ShowModal(infoModal)
 				pg.resetSeeds()
 				m.Dismiss()
 				if pg.restoreComplete == nil {
@@ -584,7 +550,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				}
 				return true
 			})
-		pg.ParentWindow().ShowModal(walletPasswordModal)
+		pg.window.ShowModal(walletPasswordModal)
 	}
 
 	for pg.resetSeedFields.Clicked() {
