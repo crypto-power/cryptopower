@@ -1,8 +1,6 @@
 package root
 
 import (
-	"sync"
-
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -279,51 +277,34 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, item *load.WalletItem, i
 
 // start sync listener
 func (pg *WalletDexServerSelector) listenForNotifications() {
-	var wg sync.WaitGroup
-	wallets := pg.WL.SortedWalletList()
+	if pg.isWalletSyncing {
+		return
+	}
 
-	for k, w := range wallets {
-		if pg.walletSyncListener[k] != nil {
-			return
-		}
+	pg.isWalletSyncing = true
 
-		wg.Add(1)
-
-		syncChan := listeners.NewSyncProgress()
-
-		err := w.AddSyncProgressListener(syncChan, WalletDexServerSelectorID)
+	for k, w := range pg.WL.SortedWalletList() {
+		syncListener := listeners.NewSyncProgress()
+		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
 		}
 
-		pg.walletSyncListener[k] = syncChan
-
-		go func(wal *dcr.Wallet, SyncStatusChan chan wallet.SyncStatusUpdate) {
+		go func(wal *dcr.Wallet, k int) {
 			for {
 				select {
-				case n := <-SyncStatusChan:
+				case n := <-syncListener.SyncStatusChan:
 					if n.Stage == wallet.SyncCompleted {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
 					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
-					close(SyncStatusChan)
-
-					wg.Done()
+					close(syncListener.SyncStatusChan)
+					pg.isWalletSyncing = false
 					return
 				}
 			}
-		}(w, syncChan.SyncStatusChan)
+		}(w, k)
 	}
-
-	wg.Wait()
-
-	for k := range wallets {
-		if _, ok := <-pg.walletSyncListener[k].SyncStatusChan; !ok {
-			// If the channel is closed drop the listener
-			pg.walletSyncListener[k] = nil
-		}
-	}
-
 }
