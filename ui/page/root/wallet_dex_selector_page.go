@@ -38,9 +38,10 @@ type WalletDexServerSelector struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	isWalletSyncing bool
-	ctx             context.Context // page context
-	ctxCancel       context.CancelFunc
+	isListenerAdded bool
+
+	ctx       context.Context // page context
+	ctxCancel context.CancelFunc
 
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow

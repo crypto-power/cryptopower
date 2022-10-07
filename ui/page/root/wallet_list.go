@@ -277,11 +277,11 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, item *load.WalletItem, i
 
 // start sync listener
 func (pg *WalletDexServerSelector) listenForNotifications() {
-	if pg.isWalletSyncing {
+	if pg.isListenerAdded {
 		return
 	}
 
-	pg.isWalletSyncing = true
+	pg.isListenerAdded = true
 
 	for k, w := range pg.WL.SortedWalletList() {
 		syncListener := listeners.NewSyncProgress()
@@ -301,7 +301,8 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 				case <-pg.ctx.Done():
 					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
 					close(syncListener.SyncStatusChan)
-					pg.isWalletSyncing = false
+					syncListener = nil
+					pg.isListenerAdded = false
 					return
 				}
 			}
