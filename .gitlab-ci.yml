@@ -3,7 +3,7 @@ image: golang:1.17
 workflow:
   rules:
     - if: $CI_MERGE_REQUEST_APPROVED
-    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 stages:
   - setup
