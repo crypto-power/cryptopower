@@ -673,5 +673,7 @@ const (
 	StrMixedAccDisabled                = "mixedAccDisabled"
 	StrExtendedKey                     = "extendedKey"
 	StrExtendedCopied                  = "extendedKeyCopied"
+	StrPageWarningSync                 = "pageWarningSync"
+	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrBackToWallets                   = "backToWallets"
 )

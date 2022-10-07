@@ -379,7 +379,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 			spendable := bal.Spendable
 			if spendable < cfg.BalanceToMaintain {
 				log.Debugf("[%d] Skipping purchase: low available balance", wallet.ID)
-				return nil
+				continue
 			}
 
 			spendable -= cfg.BalanceToMaintain
@@ -391,7 +391,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 			buy := int(dcrutil.Amount(spendable) / sdiff)
 			if buy == 0 {
 				log.Debugf("[%d] Skipping purchase: low available balance", wallet.ID)
-				return nil
+				continue
 			}
 
 			cancelCtx, cancel := context.WithCancel(ctx)

@@ -353,18 +353,18 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 						return pg.walletName.Layout(mGtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.watchOnlyCheckBox.CheckBox.Value {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Top:    values.MarginPadding10,
-										Bottom: values.MarginPadding8,
-									}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrExtendedPubKey)).Layout)
-								}),
-								layout.Rigid(pg.watchOnlyWalletHex.Layout),
-							)
+						if !pg.watchOnlyCheckBox.CheckBox.Value {
+							return D{}
 						}
-						return D{}
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Top:    values.MarginPadding10,
+									Bottom: values.MarginPadding8,
+								}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrExtendedPubKey)).Layout)
+							}),
+							layout.Rigid(pg.watchOnlyWalletHex.Layout),
+						)
 					}),
 				)
 			})
@@ -449,12 +449,12 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// restore wallet actions
-	if pg.restoreBtn.Clicked() {
+	if pg.restoreBtn.Clicked() && pg.validInputs() {
 		afterRestore := func() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
 		}
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, afterRestore))
+		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), afterRestore))
 	}
 
 	// imported wallet click action control

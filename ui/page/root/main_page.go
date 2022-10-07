@@ -345,6 +345,18 @@ func (mp *MainPage) OnCurrencyChanged() {
 	mp.updateExchangeSetting()
 }
 
+func (mp *MainPage) isSynced() bool {
+	text := values.String(values.StrPageWarningNotSync)
+	if mp.WL.SelectedWallet.Wallet.IsSynced() {
+		return true
+	} else if mp.WL.SelectedWallet.Wallet.IsSyncing() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
+		text = values.String(values.StrPageWarningSync)
+	}
+	errModal := modal.NewErrorModal(mp.Load, text, modal.DefaultClickFunc())
+	mp.ParentWindow().ShowModal(errModal)
+	return false
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -388,18 +400,24 @@ func (mp *MainPage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.PageID {
 			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load)
+				if mp.isSynced() {
+					pg = send.NewSendPage(mp.Load)
+				}
 			case ReceivePageID:
-				pg = NewReceivePage(mp.Load)
+				if mp.isSynced() {
+					pg = NewReceivePage(mp.Load)
+				}
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
-					pg = privacy.NewSetupPrivacyPage(mp.Load)
-				} else {
-					pg = privacy.NewAccountMixerPage(mp.Load)
+				if mp.isSynced() {
+					if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
+						pg = privacy.NewSetupPrivacyPage(mp.Load)
+					} else {
+						pg = privacy.NewAccountMixerPage(mp.Load)
+					}
 				}
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
