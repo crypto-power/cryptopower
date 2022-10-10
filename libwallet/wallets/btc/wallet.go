@@ -174,21 +174,11 @@ func (wallet *Wallet) Shutdown(walletDBRef *storm.DB) {
 	// wallet.shuttingDown <- true
 
 	if _, loaded := wallet.loader.LoadedWallet(); loaded {
-		err := wallet.loader.UnloadWallet()
-		if err != nil {
-			// log.Errorf("Failed to close wallet: %v", err)
-		} else {
-			// log.Info("Closed wallet")
-		}
+		wallet.loader.UnloadWallet()
 	}
 
 	if walletDBRef != nil {
-		err := walletDBRef.Close()
-		if err != nil {
-			// log.Errorf("tx db closed with error: %v", err)
-		} else {
-			// log.Info("tx db closed successfully")
-		}
+		walletDBRef.Close()
 	}
 }
 
@@ -216,8 +206,7 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 }
 
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	// seed := "witch collapse practice feed shame open despair"
-	// encryptedSeed := []byte(seed)
+
 	encryptedSeed, err := hdkeychain.GenerateSeed(
 		hdkeychain.RecommendedSeedLen,
 	)
@@ -247,22 +236,16 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 }
 
 func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte) error {
-	// log.Info("Creating Wallet")
+
 	if len(seedMnemonic) == 0 {
 		return errors.New("ErrEmptySeed")
 	}
 
 	pubPass := []byte(w.InsecurePubPassphrase)
 	privPass := []byte(privatePassphrase)
-	// seed, err := walletseed.DecodeUserInput(seedMnemonic)
-	// if err != nil {
-	// 	// log.Error(err)
-	// 	return err
-	// }
 
 	_, err := wallet.loader.CreateNewWallet(pubPass, privPass, seedMnemonic, wallet.CreatedAt)
 	if err != nil {
-		// log.Error(err)
 		return err
 	}
 
@@ -287,7 +270,6 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 		return fmt.Errorf("error unloading wallet: %w", err)
 	}
 
-	// log.Info("Created Wallet")
 	return nil
 }
 
@@ -313,17 +295,14 @@ func (wallet *Wallet) createWatchingOnlyWallet() error {
 
 	_, err := wallet.loader.CreateNewWatchingOnlyWallet(pubPass, time.Now())
 	if err != nil {
-		// log.Error(err)
 		return err
 	}
 
-	// log.Info("Created Watching Only Wallet")
 	return nil
 }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 	if _, ok := wallet.loader.LoadedWallet(); ok {
-		// return w.WatchingOnly()
 		return false
 	}
 
@@ -350,7 +329,6 @@ func (wallet *Wallet) OpenWallet() error {
 
 	_, err := wallet.loader.OpenExistingWallet(pubPass, false)
 	if err != nil {
-		// log.Error(err)
 		return translateError(err)
 	}
 
@@ -422,9 +400,6 @@ func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
 		wallet.Internal().Lock()
 	}
 
-	// wallet.Shutdown()
-
-	// log.Info("Deleting Wallet")
 	return os.RemoveAll(wallet.dataDir)
 }
 
@@ -443,67 +418,8 @@ func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
 		return err
 	}
 
-	// txNotes := wallet.wallet.txNotifications()
-
 	// Nanny for the caches checkpoints and txBlocks caches.
 	wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
-	// 	defer wallet.stop()
-	// 	defer txNotes.Done()
-
-	// 	ticker := time.NewTicker(time.Minute * 20)
-	// 	defer ticker.Stop()
-	// 	expiration := time.Hour * 2
-	// 	for {
-	// 		select {
-	// 		case <-ticker.C:
-	// 			wallet.txBlocksMtx.Lock()
-	// 			for txHash, entry := range wallet.txBlocks {
-	// 				if time.Since(entry.lastAccess) > expiration {
-	// 					delete(wallet.txBlocks, txHash)
-	// 				}
-	// 			}
-	// 			wallet.txBlocksMtx.Unlock()
-
-	// 			wallet.checkpointMtx.Lock()
-	// 			for outPt, check := range wallet.checkpoints {
-	// 				if time.Since(check.lastAccess) > expiration {
-	// 					delete(wallet.checkpoints, outPt)
-	// 				}
-	// 			}
-	// 			wallet.checkpointMtx.Unlock()
-
-	// 		case note := <-txNotes.C:
-	// 			if len(note.AttachedBlocks) > 0 {
-	// 				lastBlock := note.AttachedBlocks[len(note.AttachedBlocks)-1]
-	// 				syncTarget := atomic.LoadInt32(&wallet.syncTarget)
-
-	// 				for ib := range note.AttachedBlocks {
-	// 					for _, nt := range note.AttachedBlocks[ib].Transactions {
-	// 						wallet.log.Debugf("Block %d contains wallet transaction %v", note.AttachedBlocks[ib].Height, nt.Hash)
-	// 					}
-	// 				}
-
-	// 				if syncTarget == 0 || (lastBlock.Height < syncTarget && lastBlock.Height%10_000 != 0) {
-	// 					continue
-	// 				}
-
-	// 				select {
-	// 				case wallet.tipChan <- &block{
-	// 					hash:   *lastBlock.Hash,
-	// 					height: int64(lastBlock.Height),
-	// 				}:
-	// 				default:
-	// 					wallet.log.Warnf("tip report channel was blocking")
-	// 				}
-	// 			}
-
-	// 		case <-ctx.Done():
-	// 			return
-	// 		}
-	// 	}
-	// }()
 
 	return nil
 }
@@ -591,31 +507,6 @@ func (wallet *Wallet) startWallet() error {
 
 	wallet.cl = chainService
 	wallet.chainClient = chain.NewNeutrinoClient(wallet.chainParams, chainService)
-	// wallet.wallet = &walletExtender{btcw, wallet.chainParams}
-
-	// oldBday := btcw.Manager.Birthday()
-	// wdb := btcw.Database()
-
-	// performRescan := wallet.birthday.Before(oldBday)
-	// if performRescan && !wallet.allowAutomaticRescan {
-	// 	bailOnWalletAndDB()
-	// 	return errors.New("cannot set earlier birthday while there are active deals")
-	// }
-
-	// if !oldBday.Equal(wallet.birthday) {
-	// 	err = walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
-	// 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-	// 		return btcw.Manager.SetBirthday(ns, wallet.birthday)
-	// 	})
-	// 	if err != nil {
-	// 		wallet.log.Errorf("Failed to reset wallet manager birthday: %v", err)
-	// 		performRescan = false
-	// 	}
-	// }
-
-	// if performRescan {
-	// 	wallet.forceRescan()
-	// }
 
 	if err = wallet.chainClient.Start(); err != nil { // lazily starts connmgr
 		bailOnEverything()
@@ -648,11 +539,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 		return nil, errors.New(ErrExist)
 	}
 
-	// if btcWallet.IsConnectedToDecredNetwork() {
-	// 	btcWallet.CancelSync()
-	// 	defer btcWallet.SpvSync()
-	// }
-
 	// Perform database save operations in batch transaction
 	// for automatic rollback if error occurs at any point.
 	err = wallet.batchDbTransaction(func(db storm.Node) error {
@@ -673,7 +559,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 				return err
 			}
 
-			// log.Infof("Undocumented file at %s moved to %s", walletDataDir, newDirName)
 		}
 
 		os.MkdirAll(walletDataDir, os.ModePerm) // create wallet dir
