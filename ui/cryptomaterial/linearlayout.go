@@ -39,7 +39,7 @@ func (ll LinearLayout) Layout2(gtx C, wdg layout.Widget) D {
 func (ll LinearLayout) Layout(gtx C, children ...layout.FlexChild) D {
 
 	// draw layout direction
-	return ll.Direction.Layout(gtx, func(gtx C) D {
+	dims := ll.Direction.Layout(gtx, func(gtx C) D {
 		// draw margin
 		return ll.Margin.Layout(gtx, func(gtx C) D {
 
@@ -108,6 +108,11 @@ func (ll LinearLayout) Layout(gtx C, children ...layout.FlexChild) D {
 			return wdg(gtx)
 		})
 	})
+
+	if ll.Width > 0 {
+		dims.Size.X = ll.Width
+	}
+	return dims
 }
 
 func (ll LinearLayout) GradientLayout(gtx C, children ...layout.FlexChild) D {
