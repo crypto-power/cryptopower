@@ -1,0 +1,133 @@
+package loader
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+
+	"decred.org/dcrwallet/errors"
+	dcrW "decred.org/dcrwallet/v2/wallet"
+	btcW "github.com/btcsuite/btcwallet/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+
+	_ "gitlab.com/raedah/cryptopower/libwallet/badgerdb" // initialize badger driver
+)
+
+const defaultDbDriver = "bdb"
+
+type Loader struct {
+	// The full db path required to create the individual wallets follows the
+	// format ~.cryptopower/[network_selected]/[asset_selected]/[wallet_ID].
+	// DbDirPath by default is only expected to hold the path upto the
+	// [network_selected] folder. The other details are added on demand.
+	DbDirPath string
+	// DbDriver defines the type of database driver in use by the individual
+	// wallets.
+	DbDriver string
+}
+
+// LoaderWallets holds all the upstream wallets managed by the loader
+type LoaderWallets struct {
+	BTC *btcW.Wallet
+	DCR *dcrW.Wallet
+}
+
+// AssetLoader defines the interface exported by the loader implementation
+// of each asset.
+type AssetLoader interface {
+	GetDbDirPath() string
+	SetDatabaseDriver(driver string)
+
+	OpenExistingWallet(ctx context.Context, strWalletID string, pubPassphrase []byte) (*LoaderWallets, error)
+	CreateNewWallet(ctx context.Context, strWalletID string, pubPassphrase, privPassphrase, seed []byte) (*LoaderWallets, error)
+	CreateWatchingOnlyWallet(ctx context.Context, strWalletID string, extendedPubKey string, pubPass []byte) (*LoaderWallets, error)
+
+	GetLoadedWallet() (*LoaderWallets, bool)
+	UnloadWallet() error
+	WalletExists(strWalletID string) (bool, error)
+}
+
+func NewLoader(dbDirPath string) *Loader {
+	return &Loader{
+		DbDirPath: dbDirPath,
+		DbDriver:  defaultDbDriver,
+	}
+}
+
+// /SetDatabaseDriver specifies the database to be used by walletdb
+func (l *Loader) SetDatabaseDriver(driver string) {
+	l.DbDriver = driver
+}
+
+// CreateDirPath checks that fully qualified path to the wallet bucket exists.
+// If it doesn't exist its created. It also checks if the actually db file
+// required exists, if it exist an error is returned otherwise its created.
+// Since the fully qualified path the db is as follows:
+// ~.cryptopower/[network_selected]/[asset_selected]/[wallet_ID]/[WalletDbName.db].
+// l.DbDirPath provides the path up the network_selected.
+// assetType provides the asset_selected name,
+// strWalletID provides the wallet Id of the wallet needed.
+// assetType and strWalletID are provided for every new bucket instance needed.
+func (l *Loader) CreateDirPath(strWalletID string, assetType utils.AssetType, walletDbName string) (dbPath string, err error) {
+	folderPath := filepath.Join(l.DbDirPath, string(assetType), strWalletID)
+	// Ensure that the network directory exists.
+	if fi, err := os.Stat(folderPath); err != nil {
+		if os.IsNotExist(err) {
+			// Attempt data directory creation
+			if err = os.MkdirAll(folderPath, 0700); err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
+		}
+	} else {
+		if !fi.IsDir() {
+			return "", errors.Errorf("%q is not a directory", folderPath)
+		}
+	}
+
+	dbPath = filepath.Join(folderPath, walletDbName)
+	exists, err := fileExists(dbPath)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		return "", errors.Errorf("wallet DB already exists")
+	}
+
+	// At this point it is asserted that there is no existing database file, and
+	// deleting anything won't destroy a wallet in use.  Defer a function that
+	// attempts to remove any written database file if this function errors.
+	defer func() {
+		if err != nil {
+			_ = os.Remove(dbPath)
+		}
+	}()
+
+	// Create the wallet database backed by bolt db.
+	err = os.MkdirAll(folderPath, 0700)
+	if err != nil {
+		return "", err
+	}
+
+	return
+}
+
+// FileExists checks if db bucket path identified by the following parameters
+// exists.
+func (l *Loader) FileExists(strWalletID string, assetType utils.AssetType, walletDbName string) (string, bool, error) {
+	path := filepath.Join(l.DbDirPath, string(assetType), strWalletID, walletDbName)
+	b, err := fileExists(path)
+	return path, b, err
+}
+
+func fileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
