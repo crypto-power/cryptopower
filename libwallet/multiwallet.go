@@ -11,12 +11,14 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/ext"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,6 +31,13 @@ type Assets struct {
 		DBDriver    string
 		RootDir     string
 		ChainParams *chaincfg.Params
+	}
+	BTC struct {
+		Wallets     map[int]*btc.Wallet
+		BadWallets  map[int]*btc.Wallet
+		DBDriver    string
+		RootDir     string
+		ChainParams *btccfg.Params
 	}
 }
 
@@ -54,7 +63,14 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
-		return nil, errors.Errorf("failed to create rootDir: %v", err)
+		log.Errorf("error initializing DCR parameters: %s", err.Error())
+		return nil, errors.Errorf("error initializing DCR parameters: %s", err.Error())
+	}
+
+	btcChainParams, btcRootDir, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
+	if err != nil {
+		log.Errorf("error initializing BTC parameters: %s", err.Error())
+		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
 	chainParams, err := utils.ChainParams(netType)
@@ -84,7 +100,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	// init database for saving/reading wallet objects
-	err = mwDB.Init(&dcr.Wallet{})
+	err = mwDB.Init(&dcr.Wallet{}) // Since BTC and DCR have similar wallet structures,
 	if err != nil {
 		log.Errorf("Error initializing wallets database: %s", err.Error())
 		return nil, err
@@ -115,6 +131,19 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 				RootDir:     dcrRootDir,
 				ChainParams: dcrChainParams,
 			},
+			BTC: struct {
+				Wallets     map[int]*btc.Wallet
+				BadWallets  map[int]*btc.Wallet
+				DBDriver    string
+				RootDir     string
+				ChainParams *btccfg.Params
+			}{
+				Wallets:     make(map[int]*btc.Wallet),
+				BadWallets:  make(map[int]*btc.Wallet),
+				DBDriver:    dbDriver,
+				RootDir:     btcRootDir,
+				ChainParams: btcChainParams,
+			},
 		},
 	}
 
@@ -122,10 +151,18 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
 	mw.ExternalService = ext.NewService(chainParams)
 
-	// read saved wallets info from db and initialize wallets
-	query := mw.db.Select(q.True()).OrderBy("ID")
+	// read saved dcr wallets info from db and initialize wallets
+	query := mw.db.Select(q.Eq("Type", DCRWallet)).OrderBy("ID")
 	var wallets []*dcr.Wallet
 	err = query.Find(&wallets)
+	if err != nil && err != storm.ErrNotFound {
+		return nil, err
+	}
+
+	// read saved btc wallets info from db and initialize wallets
+	query = mw.db.Select(q.Eq("Type", BTCWallet)).OrderBy("ID")
+	var BTCwallets []*btc.Wallet
+	err = query.Find(&BTCwallets)
 	if err != nil && err != storm.ErrNotFound {
 		return nil, err
 	}
@@ -138,13 +175,26 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		}
 		if err != nil {
 			mw.Assets.DCR.BadWallets[wallet.ID] = wallet
-			log.Warnf("Ignored wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 		} else {
 			mw.Assets.DCR.Wallets[wallet.ID] = wallet
 		}
 
 		logLevel := wallet.ReadStringConfigValueForKey(LogLevelConfigKey, "")
 		SetLogLevels(logLevel)
+	}
+
+	for _, wallet := range BTCwallets {
+		err = wallet.Prepare(mw.Assets.BTC.RootDir, "testnet3", nil)
+		if err == nil && !WalletExistsAt(wallet.DataDir()) {
+			err = fmt.Errorf("missing wallet database file")
+		}
+		if err != nil {
+			mw.Assets.BTC.BadWallets[wallet.ID] = wallet
+			log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+		} else {
+			mw.Assets.BTC.Wallets[wallet.ID] = wallet
+		}
 	}
 
 	mw.listenForShutdown()
@@ -298,6 +348,13 @@ func (mw *MultiWallet) OpenWallets(startupPassphrase []byte) error {
 		}
 	}
 
+	for _, wallet := range mw.Assets.BTC.Wallets {
+		err = wallet.OpenWallet()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -331,7 +388,7 @@ func (mw *MultiWallet) NumWalletsNeedingSeedBackup() int32 {
 }
 
 func (mw *MultiWallet) LoadedWalletsCount() int32 {
-	return int32(len(mw.Assets.DCR.Wallets))
+	return int32(len(mw.Assets.DCR.Wallets) + len(mw.Assets.BTC.Wallets))
 }
 
 func (mw *MultiWallet) OpenedWalletIDsRaw() []int {

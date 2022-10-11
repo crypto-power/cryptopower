@@ -71,7 +71,13 @@ type Wallet struct {
 
 	vspMu sync.RWMutex
 	vsps  []*VSP
+
+	Type string
 }
+
+const (
+	DCRWallet = "DCR"
+)
 
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
@@ -89,7 +95,6 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.rootDir = rootDir
-	// wallet.db = db
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn
@@ -203,6 +208,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		PrivatePassphraseType:            privatePassphraseType,
 		HasDiscoveredAccounts:            true,
+		Type:                             DCRWallet,
 	}
 
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
@@ -252,6 +258,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 		},
 		IsRestored:            true,
 		HasDiscoveredAccounts: true,
+		Type:                  DCRWallet,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -305,6 +312,7 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 		},
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
+		Type:                  DCRWallet,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -409,6 +417,7 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 		PrivatePassphraseType: privatePassphraseType,
 		IsRestored:            true,
 		HasDiscoveredAccounts: false, // assume that account discovery hasn't been done
+		Type:                  DCRWallet,
 	}
 
 	return wallet.saveNewWallet(func() error {
