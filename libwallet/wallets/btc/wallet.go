@@ -60,6 +60,10 @@ type Wallet struct {
 	Type string
 }
 
+const (
+	BTCWallet = "BTC"
+)
+
 // neutrinoService is satisfied by *neutrino.ChainService.
 type neutrinoService interface {
 	GetBlockHash(int64) (*chainhash.Hash, error)
@@ -222,7 +226,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		chainParams:   chainParams,
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
-		Type:          "BTC",
+		Type:          BTCWallet,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -283,7 +287,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 	wallet := &Wallet{
 		Name:       walletName,
 		IsRestored: true,
-		Type:       "BTC",
+		Type:       BTCWallet,
 	}
 
 	return wallet.saveNewWallet(func() error {
