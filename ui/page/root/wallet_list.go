@@ -369,15 +369,15 @@ func (pg *WalletDexServerSelector) BTCwalletWrapper(gtx C, item *load.BTCWalletI
 
 // start sync listener
 func (pg *WalletDexServerSelector) listenForNotifications() {
+	if pg.isListenerAdded {
+		return
+	}
+
+	pg.isListenerAdded = true
 
 	for k, w := range pg.WL.SortedWalletList() {
-		if pg.walletSyncListener[k] != nil {
-			return
-		}
-
-		pg.walletSyncListener[k] = listeners.NewSyncProgress()
-
-		err := w.AddSyncProgressListener(pg.walletSyncListener[k], WalletDexServerSelectorID)
+		syncListener := listeners.NewSyncProgress()
+		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
@@ -386,18 +386,18 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 		go func(wal *dcr.Wallet, k int) {
 			for {
 				select {
-				case n := <-pg.walletSyncListener[k].SyncStatusChan:
+				case n := <-syncListener.SyncStatusChan:
 					if n.Stage == wallet.SyncCompleted {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
 					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
-					close(pg.walletSyncListener[k].SyncStatusChan)
-					pg.walletSyncListener[k] = nil
+					close(syncListener.SyncStatusChan)
+					syncListener = nil
+					pg.isListenerAdded = false
 					return
 				}
 			}
 		}(w, k)
 	}
-
 }

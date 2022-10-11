@@ -9,7 +9,6 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
-	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -39,7 +38,7 @@ type WalletDexServerSelector struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	walletSyncListener map[int]*listeners.SyncProgressListener
+	isListenerAdded bool
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -75,9 +74,8 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 				Alignment: layout.Middle,
 			},
 		},
-		Load:               l,
-		shadowBox:          l.Theme.Shadow(),
-		walletSyncListener: make(map[int]*listeners.SyncProgressListener),
+		Load:      l,
+		shadowBox: l.Theme.Shadow(),
 
 		walletSelected:    onWalletSelected,
 		dexServerSelected: onDexServerSelected,
