@@ -281,10 +281,10 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
 	if mp.WL.SelectedWalletType == "DCR" {
-	// load wallet account balance first before rendering page contents
-	// TODO update updateBalance() to accommodate BTC balance update as well.
-	mp.updateBalance()
-	mp.updateExchangeSetting()
+		// load wallet account balance first before rendering page contents
+		// TODO update updateBalance() to accommodate BTC balance update as well.
+		mp.updateBalance()
+		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
 		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
