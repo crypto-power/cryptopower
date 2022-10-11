@@ -281,6 +281,10 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
 	if mp.WL.SelectedWalletType == "DCR" {
+		// load wallet account balance first before rendering page contents
+		// TODO update updateBalance() to accommodate BTC balance update as well.
+		mp.updateBalance()
+		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
 		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
@@ -303,9 +307,6 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
-
-		mp.updateBalance()
-		mp.updateExchangeSetting()
 	}
 }
 
@@ -352,7 +353,6 @@ func (mp *MainPage) updateBalance() {
 	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
 	if err == nil {
 		mp.totalBalance = totalBalance.Total
-
 		if mp.usdExchangeSet && mp.dcrUsdtBittrex.LastTradeRate != "" {
 			usdExchangeRate, err := strconv.ParseFloat(mp.dcrUsdtBittrex.LastTradeRate, 64)
 			if err == nil {
