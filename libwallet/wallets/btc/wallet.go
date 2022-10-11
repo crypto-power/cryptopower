@@ -237,6 +237,12 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 
 func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte) error {
 
+	defer func() {
+		for i := range seedMnemonic {
+			seedMnemonic[i] = 0
+		}
+	}()
+
 	if len(seedMnemonic) == 0 {
 		return errors.New("ErrEmptySeed")
 	}
