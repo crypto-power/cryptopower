@@ -15,7 +15,7 @@ var (
 	BTCtestnetParams = &btccfg.TestNet3Params
 )
 
-func ChainParams(netType string) (*chaincfg.Params, error) {
+func DCRChainParams(netType string) (*chaincfg.Params, error) {
 	switch strings.ToLower(netType) {
 	case strings.ToLower(mainnetParams.Name):
 		return mainnetParams, nil
