@@ -58,7 +58,6 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 	md.submitBtn.SetEnabled(false)
 	md.sourceAccountSelector = components.NewWalletAndAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *decred.Account) {}).
 		AccountValidator(func(account *decred.Account) bool {
 			// Filter out imported account and mixed.
@@ -69,6 +68,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 			}
 			return true
 		})
+    md.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return md
 }

@@ -176,7 +176,6 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		ShowAccount(tb.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
@@ -190,6 +189,7 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 
 			return accountIsValid
 		})
+	tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {

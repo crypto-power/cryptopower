@@ -48,7 +48,6 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
@@ -66,11 +65,10 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-
+	pg.mixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
@@ -90,6 +88,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
+	pg.unmixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 

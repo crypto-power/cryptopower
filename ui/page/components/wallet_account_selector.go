@@ -49,19 +49,10 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 	return &WalletAndAccountSelector{
 		Load:               l,
 		openSelectorDialog: l.Theme.NewClickable(true),
-		accountIsValid:     func(*dcr.Account) bool { return true },
+		accountIsValid:     func(*dcr.Account) bool { return false },
 		selectedWallet:     l.WL.SelectedWallet.Wallet, // Set the default wallet to wallet loaded by cryptopower.
 		accountSelector:    false,
 	}
-}
-
-// ShowAccount transforms this widget into an Account selector. It shows the accounts of
-// *dcr.Wallet passed into this method on a modal.
-func (ws *WalletAndAccountSelector) ShowAccount(wall *dcr.Wallet) *WalletAndAccountSelector {
-	ws.SetSelectedWallet(wall)
-	ws.accountSelector = true
-	ws.SelectFirstValidAccount(ws.selectedWallet)
-	return ws
 }
 
 // SelectedAccount returns the currently selected account.
@@ -82,9 +73,8 @@ func (ws *WalletAndAccountSelector) SetActionInfoText(text string) *WalletAndAcc
 	return ws
 }
 
-// SelectFirstValidAccount selects the first valid account from the
-// the wallet passed in to this method. This method should only be called after ShowAccount is
-// is called.
+// SelectFirstValidAccount transforms this widget into an Account selector and selects the first valid account from the
+// the wallet passed to this method.
 func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.Wallet) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
@@ -274,22 +264,24 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 						if ws.selectorModal != nil {
 							if ws.accountSelector {
 								ws.selectorModal.setupAccounts(ws.selectedWallet)
-								break
+							} else {
+								ws.selectorModal.setupWallet()
 							}
-							ws.selectorModal.setupWallet()
+							window.Reload()
 						}
-						window.Reload()
+
 					}
 				case listeners.NewTransaction:
 					// refresh wallets/Accounts list when new transaction is received
 					if ws.selectorModal != nil {
 						if ws.accountSelector {
 							ws.selectorModal.setupAccounts(ws.selectedWallet)
-							break
+						} else {
+							ws.selectorModal.setupWallet()
 						}
-						ws.selectorModal.setupWallet()
+						window.Reload()
 					}
-					window.Reload()
+
 				}
 			case <-ctx.Done():
 				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)

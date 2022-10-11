@@ -102,7 +102,6 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {
 			selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
 			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
@@ -124,6 +123,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			}
 			return true
 		})
+	pg.selector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return pg
 }

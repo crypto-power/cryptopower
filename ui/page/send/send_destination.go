@@ -46,8 +46,8 @@ func newSendDestination(l *load.Load) *destination {
 
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
-		Title(values.String(values.StrAccount)).
-		ShowAccount(dst.destinationWalletSelector.SelectedWallet())
+		Title(values.String(values.StrAccount))
+	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 
 	return dst
 }

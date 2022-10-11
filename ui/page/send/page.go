@@ -124,8 +124,9 @@ func NewSendPage(l *load.Load) *Page {
 			}
 			return accountIsValid
 		}).
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
+	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *dcr.Account) bool {

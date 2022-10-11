@@ -39,13 +39,13 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 	// Source account picker
 	avm.accountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
-		ShowAccount(l.WL.SelectedWallet.Wallet).
 		AccountSelected(func(selectedAccount *dcr.Account) {
 			avm.accountSelected = selectedAccount
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
 			return true
 		})
+	avm.accountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return avm
 }
