@@ -338,15 +338,6 @@ func (mp *MainPage) fetchExchangeRate() {
 
 func (mp *MainPage) updateBalance() {
 	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
-	if err == nil {
-		mp.totalBalance = totalBalance.Total
-		if mp.usdExchangeSet && mp.dcrUsdtBittrex.LastTradeRate != "" {
-			usdExchangeRate, err := strconv.ParseFloat(mp.dcrUsdtBittrex.LastTradeRate, 64)
-			if err == nil {
-				balanceInUSD := totalBalance.Total.ToCoin() * usdExchangeRate
-				mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
-			}
-		}
 	if err != nil {
 		log.Error(err)
 	}
