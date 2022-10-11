@@ -167,7 +167,7 @@ func (pg *AcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx 
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformPadding(gtx, body)
+	return components.UniformHorizontalPadding(gtx, body)
 }
 
 func (pg *AcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
@@ -366,7 +366,7 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
-										lbl.Text = utils.SplitSingleString(pg.extendedKey, 50)
+										lbl.Text = utils.AutoSplitSingleString(*pg.Theme, gtx, pg.extendedKey, lbl.Font, values.TextSize14)
 										lbl.Color = pg.Theme.Color.Primary
 										return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
 									}

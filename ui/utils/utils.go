@@ -15,9 +15,13 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/layout"
+	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"
 )
 
@@ -192,4 +196,72 @@ func SplitSingleString(text string, index int) string {
 	first := text[0 : len(text)-index]
 	second := text[len(text)-index:]
 	return fmt.Sprintf("%s %s", first, second)
+}
+
+func AutoSplitSingleString(theme cryptomaterial.Theme, gtx layout.Context, text string, font text.Font, size unit.Sp) string {
+	textSize := fixed.I(gtx.Sp(size))
+	extend := 0
+	maxWidth := gtx.Constraints.Max.X - extend
+	originLine := theme.Shaper.LayoutString(font, textSize, maxWidth, gtx.Locale, text)
+	sliceString := make([]string, 0)
+	newString := text
+	if len(originLine) > 0 && originLine[0].Width.Round() > maxWidth {
+		strWidth := originLine[0].Width.Round()
+		lines := originLine[0].Width.Round()/maxWidth + 1
+		avd := strWidth / len(text)
+		numStrAllow := maxWidth / avd
+		currentIndex := 0
+		startIndex := 0
+		currentIndexSave := 0
+		startIndexSave := 0
+		for i := 0; i < lines; i++ {
+			startIndex = i * numStrAllow
+			currentIndex = (i + 1) * numStrAllow
+			if currentIndex >= len(text) {
+				currentIndex = len(text) - 1
+			}
+			if startIndex >= len(text) {
+				continue
+			}
+			textSplit := text[i*numStrAllow : currentIndex]
+			if currentIndex+10 < len(text) {
+				reserveText := text[i*numStrAllow : currentIndex+10]
+				skewed, _ := getSkewedText(theme, gtx, textSplit, reserveText, font, textSize)
+				if skewed != 0 {
+					i -= 1
+					numStrAllow += skewed
+					currentIndex = currentIndexSave
+					startIndex = startIndexSave
+					continue
+				}
+			}
+			if len(textSplit) > 0 {
+				sliceString = append(sliceString, textSplit)
+				currentIndexSave = currentIndex
+				startIndexSave = startIndex
+			}
+		}
+		newString = strings.Join(sliceString, " ")
+	}
+	return newString
+}
+
+func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserveText string, font text.Font, size fixed.Int26_6) (int, string) {
+	maxWidth := gtx.Constraints.Max.X
+	str := text
+	skewed := 0
+	loop := true
+	for loop {
+		line := theme.Shaper.LayoutString(font, size, maxWidth, gtx.Locale, str)
+		if (line[0].Width.Round() + 1) > maxWidth {
+			skewed -= 1
+			str = reserveText[0 : len(text)+skewed]
+		} else if (line[0].Width.Round() + 1) < maxWidth-15 {
+			skewed += 1
+			str = reserveText[0 : len(text)+skewed]
+		} else {
+			loop = false
+		}
+	}
+	return skewed, str
 }
