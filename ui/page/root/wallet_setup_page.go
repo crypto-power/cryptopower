@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -58,8 +59,6 @@ type CreateWallet struct {
 	decredActions  []*decredAction
 	bitcoinActions []*bitcoinAction
 
-	walletTypeList *cryptomaterial.ClickableList
-
 	walletName         cryptomaterial.Editor
 	watchOnlyWalletHex cryptomaterial.Editor
 	watchOnlyCheckBox  cryptomaterial.CheckBoxStyle
@@ -93,7 +92,6 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		restoreBtn:                  l.Theme.Button(values.String(values.StrRestore)),
 		importBtn:                   l.Theme.Button(values.String(values.StrImport)),
 		watchOnlyCheckBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrImportWatchingOnlyWallet)),
-		walletTypeList:              l.Theme.NewClickableList(layout.Horizontal),
 		selectedWalletType:          -1,
 		selectedDecredWalletAction:  -1,
 		selectedBitcoinWalletAction: -1,
@@ -122,7 +120,6 @@ func (pg *CreateWallet) OnNavigatedTo() {
 }
 
 func (pg *CreateWallet) initPageItems() {
-
 	walletTypes := []*walletType{
 		{
 			logo:      pg.Theme.Icons.DecredLogo,
@@ -240,17 +237,13 @@ func (pg *CreateWallet) Layout(gtx C) D {
 			},
 		}.Layout2(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return pg.backButton.Layout(gtx)
-				}),
+				layout.Rigid(pg.backButton.Layout),
 				layout.Rigid(func(gtx C) D {
 					return pg.list.Layout(gtx, len(pageContent), func(gtx C, i int) D {
 						return layout.Inset{
 							Top:    values.MarginPadding26,
 							Bottom: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							return pageContent[i](gtx)
-						})
+						}.Layout(gtx, pageContent[i])
 					})
 				}),
 			)
@@ -344,7 +337,6 @@ func (pg *CreateWallet) decredWalletOptions(gtx C) D {
 func (pg *CreateWallet) bitcoinWalletOptions(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-
 			list := layout.List{}
 			return list.Layout(gtx, len(pg.bitcoinActions), func(gtx C, i int) D {
 				item := pg.bitcoinActions[i]
@@ -389,22 +381,12 @@ func (pg *CreateWallet) createNewWallet(gtx C) D {
 			return layout.Inset{
 				Top:    values.MarginPadding14,
 				Bottom: values.MarginPadding20,
-			}.Layout(gtx, func(gtx C) D {
-				mGtx := gtx
-				if pg.WL.MultiWallet.LoadedWalletsCount() == 0 {
-					pg.walletName.Editor.SetText(defaultWalletName)
-					mGtx = gtx.Disabled()
-				}
-
-				return pg.walletName.Layout(mGtx)
-			})
+			}.Layout(gtx, pg.walletName.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return pg.continueBtn.Layout(gtx)
-					})
+					return layout.E.Layout(gtx, pg.continueBtn.Layout)
 				}),
 			)
 		}),
@@ -418,16 +400,12 @@ func (pg *CreateWallet) createNewBTCWallet(gtx C) D {
 			return layout.Inset{
 				Top:    values.MarginPadding14,
 				Bottom: values.MarginPadding20,
-			}.Layout(gtx, func(gtx C) D {
-				return pg.walletName.Layout(gtx)
-			})
+			}.Layout(gtx, pg.walletName.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return pg.BTCcontinueBtn.Layout(gtx)
-					})
+					return layout.E.Layout(gtx, pg.BTCcontinueBtn.Layout)
 				}),
 			)
 		}),
@@ -444,15 +422,7 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 				Bottom: values.MarginPadding20,
 			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						mGtx := gtx
-						if pg.WL.MultiWallet.LoadedWalletsCount() == 0 {
-							pg.walletName.Editor.SetText(defaultWalletName)
-							mGtx = gtx.Disabled()
-						}
-
-						return pg.walletName.Layout(mGtx)
-					}),
+					layout.Rigid(pg.walletName.Layout),
 					layout.Rigid(func(gtx C) D {
 						if !pg.watchOnlyCheckBox.CheckBox.Value {
 							return D{}
@@ -533,18 +503,21 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrSpendingPassword)).
 			SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-				errFunc := func(err error) bool {
-					m.SetError(err.Error())
+				errFunc := func(err string) bool {
+					m.SetError(err)
 					m.SetLoading(false)
 					return false
 				}
 				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, dcr.PassphraseTypePass)
 				if err != nil {
-					return errFunc(err)
+					if err.Error() == libwallet.ErrExist {
+						return errFunc(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+					}
+					return errFunc(err.Error())
 				}
-				err = wal.CreateMixerAccounts("mixed", "unmixed", password)
+				err = wal.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 				if err != nil {
-					return errFunc(err)
+					return errFunc(err.Error())
 				}
 				wal.SetBoolConfigValueForKey(dcr.AccountMixerConfigSet, true)
 				m.Dismiss()
@@ -591,7 +564,11 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		go func() {
 			_, err := pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
-				pg.watchOnlyWalletHex.SetError(err.Error())
+				if err.Error() == libwallet.ErrExist {
+					pg.watchOnlyWalletHex.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+				} else {
+					pg.watchOnlyWalletHex.SetError(err.Error())
+				}
 				pg.showLoader = false
 				return
 			}
