@@ -164,7 +164,6 @@ github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13P
 github.com/btcsuite/btcd v0.21.0-beta.0.20201208033208-6bd4c64a54fa/go.mod h1:Sv4JPQ3/M+teHz9Bo5jBpkNcP0x6r7rdihlNL/7tTAs=
 github.com/btcsuite/btcd v0.21.0-beta.0.20210426180113-7eba688b65e5/go.mod h1:9n5ntfhhHQBIhUvlhDvD3Qg6fRUj4jkN0VB8L8svzOA=
 github.com/btcsuite/btcd v0.22.0-beta.0.20210803133449-f5a1fb9965e4/go.mod h1:9n5ntfhhHQBIhUvlhDvD3Qg6fRUj4jkN0VB8L8svzOA=
-github.com/btcsuite/btcd v0.22.0-beta.0.20211026140004-31791ba4dc6e h1:d0NkvbJGQThTkhypOdtf5Orxe2+dUHLB86pQ4EXwrTo=
 github.com/btcsuite/btcd v0.22.0-beta.0.20211026140004-31791ba4dc6e/go.mod h1:3PH+KbvLFfzBTCevQenPiDedjGQGt6aa70dVjJDWGTA=
 github.com/btcsuite/btcd v0.22.0-beta.0.20220111032746-97732e52810c/go.mod h1:tjmYdS6MLJ5/s0Fj4DbLgSbDHbEqLJrtnHecBFkdz5M=
 github.com/btcsuite/btcd v0.22.1 h1:CnwP9LM/M9xuRrGSCGeMVs9iv09uMqwsVX7EeIpgV2c=

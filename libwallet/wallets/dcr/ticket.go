@@ -541,7 +541,7 @@ func (wallet *Wallet) ClearTicketBuyerConfig(walletID int) error {
 // NextTicketPriceRemaining returns the remaning time in seconds of a ticket for the next block,
 // if secs equal 0 is imminent
 func (wallet *Wallet) NextTicketPriceRemaining() (secs int64, err error) {
-	params, er := utils.ChainParams(wallet.chainParams.Name)
+	params, er := utils.DCRChainParams(wallet.chainParams.Name)
 	if er != nil {
 		secs, err = -1, er
 		return
