@@ -18,17 +18,12 @@ type Wallet struct {
 	*mainW.Wallet
 
 	/* needed to load existing wallets at the multiwallet level */
-	ID int `storm:"id,increment"`
-	// Name      string    `storm:"unique"`
-	// CreatedAt time.Time `storm:"index"`
-	// dbDriver  string
-	// rootDir   string
-	// db *storm.DB
 
-	// EncryptedSeed         []byte
-	// IsRestored            bool
-	// HasDiscoveredAccounts bool
-	// PrivatePassphraseType int32
+	// Order by ID at the multiwallet level fails without this field declared
+	// Here. It introduces a bug where the ID cannot be passed upstream.
+	// It will be fixed once the code at the multiwallet level is optimized.
+	ID int `storm:"id,increment"`
+
 	/* needed to load existing wallets at the multiwallet level */
 
 	rootDir string

@@ -88,7 +88,11 @@ const (
 func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincfg.Params, walletID int) (err error) {
 
 	wallet.db = db
-	fmt.Println(" >>>>> Preparing WalletID", walletID)
+
+	// NB: The ID set before calling this method doesn't reach here.
+	// This issue will be resolved with the optimization of the code in the multiwallet level
+	wallet.ID = walletID
+
 	return wallet.prepare(rootDir, chainParams, wallet.walletConfigSetFn(walletID), wallet.walletConfigReadFn(walletID))
 }
 

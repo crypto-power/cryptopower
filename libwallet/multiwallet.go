@@ -175,7 +175,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		}
 		if err != nil {
 			mw.Assets.DCR.BadWallets[wallet.ID] = wallet
-			log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			log.Warnf("Ignored dcr wallet load error for wallet %d (%s) >>>> Error: %v", wallet.ID, wallet.Name, err)
 		} else {
 			mw.Assets.DCR.Wallets[wallet.ID] = wallet
 		}
