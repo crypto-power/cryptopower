@@ -24,35 +24,66 @@ import (
 const WalletAndAccountSelectorID = "WalletAndAccountSelector"
 
 type WalletAndAccountSelector struct {
-	*load.Load
 	*listeners.TxAndBlockNotificationListener
-
-	selectedWallet  *dcr.Wallet
-	selectedAccount *dcr.Account
-	accountCallback func(*dcr.Account)
-	walletCallback  func(*dcr.Wallet)
-	accountIsValid  func(*dcr.Account) bool
-	accountSelector bool
-
 	openSelectorDialog *cryptomaterial.Clickable
-	selectorModal      *SelectorModal
-	infoActionText     string
+	*selectorModal
 
-	dialogTitle  string
 	totalBalance string
 	changed      bool
+}
+
+type selectorModal struct {
+	*load.Load
+	*cryptomaterial.Modal
+
+	selectedWallet   *dcr.Wallet
+	selectedAccount  *dcr.Account
+	accountCallback  func(*dcr.Account)
+	walletCallback   func(*dcr.Wallet)
+	accountIsValid   func(*dcr.Account) bool
+	accountSelector  bool
+	infoActionText   string
+	dialogTitle      string
+	onWalletClicked  func(*dcr.Wallet)
+	onAccountClicked func(*dcr.Account)
+	onExit           func()
+	walletsList      layout.List
+	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
+	eventQueue       event.Queue
+	isCancelable     bool
+	infoButton       cryptomaterial.IconButton
+	infoModalOpen    bool
+	infoBackdrop     *widget.Clickable
 }
 
 // NewWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
 func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
-	return &WalletAndAccountSelector{
-		Load:               l,
+	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
-		accountIsValid:     func(*dcr.Account) bool { return false },
-		selectedWallet:     l.WL.SelectedWallet.Wallet, // Set the default wallet to wallet loaded by cryptopower.
-		accountSelector:    false,
 	}
+
+	ws.selectorModal = newSelectorModal(l).
+		walletClicked(func(wallet *dcr.Wallet) {
+			if ws.selectedWallet.ID == wallet.ID {
+				ws.changed = true
+			}
+			ws.SetSelectedWallet(wallet)
+			if ws.walletCallback != nil {
+				ws.walletCallback(wallet)
+			}
+		}).
+		accountCliked(func(account *dcr.Account) {
+			if ws.selectedAccount.Number != account.Number {
+				ws.changed = true
+			}
+			ws.SetSelectedAccount(account)
+			if ws.accountCallback != nil {
+				ws.accountCallback(account)
+			}
+		})
+
+	return ws
 }
 
 // SelectedAccount returns the currently selected account.
@@ -132,28 +163,7 @@ func (ws *WalletAndAccountSelector) Changed() bool {
 
 func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 	for ws.openSelectorDialog.Clicked() {
-		ws.selectorModal = newSelectorModal(ws.Load, ws).
-			title(ws.dialogTitle).
-			accountValidator(ws.accountIsValid).
-			walletSelected(func(wallet *dcr.Wallet) {
-				ws.changed = true
-				ws.SetSelectedWallet(wallet)
-				if ws.walletCallback != nil {
-					ws.walletCallback(wallet)
-				}
-			}).
-			accountSelected(func(account *dcr.Account) {
-				if ws.selectedAccount.Number != account.Number {
-					ws.changed = true
-				}
-				ws.SetSelectedAccount(account)
-				if ws.accountCallback != nil {
-					ws.accountCallback(account)
-				}
-			}).
-			onModalExit(func() {
-				ws.selectorModal = nil
-			})
+		ws.title(ws.dialogTitle).accountValidator(ws.accountIsValid)
 		window.ShowModal(ws.selectorModal)
 	}
 }
@@ -293,65 +303,42 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 	}()
 }
 
-type SelectorModal struct {
-	*load.Load
-	*cryptomaterial.Modal
-
-	walletIsValid   func(*dcr.Wallet) bool
-	accountIsValid  func(*dcr.Account) bool
-	walletCallback  func(*dcr.Wallet)
-	accountCallback func(*dcr.Account)
-	onExit          func()
-
-	walletsList layout.List
-
-	currentSelectedWallet *dcr.Wallet
-	selectorItems         []*SelectorItem // A SelectorItem can either be a wallet or account
-	eventQueue            event.Queue
-
-	dialogTitle string
-
-	isCancelable   bool
-	walletSelector *WalletAndAccountSelector
-	infoButton     cryptomaterial.IconButton
-	infoModalOpen  bool
-	infoBackdrop   *widget.Clickable
-}
-
 // SelectorItem models a wallet or an account a long with it's clickable.
 type SelectorItem struct {
 	item      interface{} // Item can either be a wallet or an account.
 	clickable *cryptomaterial.Clickable
 }
 
-func newSelectorModal(l *load.Load, ws *WalletAndAccountSelector) *SelectorModal {
-	sm := &SelectorModal{
-		Load:                  l,
-		Modal:                 l.Theme.ModalFloatTitle("SelectorModal"),
-		walletsList:           layout.List{Axis: layout.Vertical},
-		currentSelectedWallet: ws.selectedWallet,
-		isCancelable:          true,
-		walletSelector:        ws,
-		infoBackdrop:          new(widget.Clickable),
+func newSelectorModal(l *load.Load) *selectorModal {
+	sm := &selectorModal{
+		Load:         l,
+		Modal:        l.Theme.ModalFloatTitle("SelectorModal"),
+		walletsList:  layout.List{Axis: layout.Vertical},
+		isCancelable: true,
+		infoBackdrop: new(widget.Clickable),
 	}
 
 	sm.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	sm.infoButton.Size = values.MarginPadding14
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
+	sm.accountIsValid = func(*dcr.Account) bool { return false }
+	sm.selectedWallet = l.WL.SelectedWallet.Wallet // Set the default wallet to wallet loaded by cryptopower.
+	sm.accountSelector = false
+
 	sm.Modal.ShowScrollbar(true)
 	return sm
 }
 
-func (sm *SelectorModal) OnResume() {
-	if sm.walletSelector.accountSelector {
-		sm.setupAccounts(sm.currentSelectedWallet)
+func (sm *selectorModal) OnResume() {
+	if sm.accountSelector {
+		sm.setupAccounts(sm.selectedWallet)
 		return
 	}
 	sm.setupWallet()
 }
 
-func (sm *SelectorModal) setupWallet() {
+func (sm *selectorModal) setupWallet() {
 	selectorItems := make([]*SelectorItem, 0)
 	wallets := sm.WL.SortedWalletList()
 	for _, wal := range wallets {
@@ -365,7 +352,7 @@ func (sm *SelectorModal) setupWallet() {
 	sm.selectorItems = selectorItems
 }
 
-func (sm *SelectorModal) setupAccounts(wal *dcr.Wallet) {
+func (sm *selectorModal) setupAccounts(wal *dcr.Wallet) {
 	selectorItems := make([]*SelectorItem, 0)
 	if !wal.IsWatchingOnlyWallet() {
 		accountsResult, err := wal.GetAccountsRaw()
@@ -386,31 +373,30 @@ func (sm *SelectorModal) setupAccounts(wal *dcr.Wallet) {
 	sm.selectorItems = selectorItems
 }
 
-func (sm *SelectorModal) SetCancelable(min bool) *SelectorModal {
+func (sm *selectorModal) SetCancelable(min bool) *selectorModal {
 	sm.isCancelable = min
 	return sm
 }
 
-func (sm *SelectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *SelectorModal {
+func (sm *selectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *selectorModal {
 	sm.accountIsValid = accountIsValid
 	return sm
 }
 
-func (sm *SelectorModal) Handle() {
+func (sm *selectorModal) Handle() {
 	if sm.eventQueue != nil {
 		for _, selectorItem := range sm.selectorItems {
 			for selectorItem.clickable.Clicked() {
 				switch item := selectorItem.item.(type) {
 				case *dcr.Account:
-					if sm.accountCallback != nil {
-						sm.accountCallback(item)
+					if sm.onAccountClicked != nil {
+						sm.onAccountClicked(item)
 					}
 				case *dcr.Wallet:
-					if sm.walletCallback != nil {
-						sm.walletCallback(item)
+					if sm.onWalletClicked != nil {
+						sm.onWalletClicked(item)
 					}
 				}
-				sm.onExit()
 				sm.Dismiss()
 			}
 		}
@@ -425,27 +411,26 @@ func (sm *SelectorModal) Handle() {
 	}
 
 	if sm.Modal.BackdropClicked(sm.isCancelable) {
-		sm.onExit()
 		sm.Dismiss()
 	}
 }
 
-func (sm *SelectorModal) title(title string) *SelectorModal {
+func (sm *selectorModal) title(title string) *selectorModal {
 	sm.dialogTitle = title
 	return sm
 }
 
-func (sm *SelectorModal) walletSelected(callback func(*dcr.Wallet)) *SelectorModal {
-	sm.walletCallback = callback
+func (sm *selectorModal) walletClicked(callback func(*dcr.Wallet)) *selectorModal {
+	sm.onWalletClicked = callback
 	return sm
 }
 
-func (sm *SelectorModal) accountSelected(callback func(*dcr.Account)) *SelectorModal {
-	sm.accountCallback = callback
+func (sm *selectorModal) accountCliked(callback func(*dcr.Account)) *selectorModal {
+	sm.onAccountClicked = callback
 	return sm
 }
 
-func (sm *SelectorModal) Layout(gtx C) D {
+func (sm *selectorModal) Layout(gtx C) D {
 	sm.eventQueue = gtx
 	sm.infoBackdropLayout(gtx)
 
@@ -463,7 +448,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if sm.walletSelector.accountSelector {
+					if sm.accountSelector {
 						inset := layout.Inset{
 							Top: values.MarginPadding0,
 						}
@@ -472,7 +457,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 								layout.Rigid(func(gtx C) D {
 									inset := layout.UniformInset(values.MarginPadding4)
 									return inset.Layout(gtx, func(gtx C) D {
-										walName := sm.Theme.Label(values.TextSize14, sm.currentSelectedWallet.Name)
+										walName := sm.Theme.Label(values.TextSize14, sm.selectedWallet.Name)
 										walName.Color = sm.Theme.Color.GrayText2
 										return walName.Layout(gtx)
 									})
@@ -487,7 +472,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 													card := sm.Theme.Card()
 													card.Color = sm.Theme.Color.Surface
 													return card.Layout(gtx, func(gtx C) D {
-														return layout.UniformInset(values.MarginPadding12).Layout(gtx, renderers.RenderHTML(sm.walletSelector.infoActionText, sm.Theme).Layout)
+														return layout.UniformInset(values.MarginPadding12).Layout(gtx, renderers.RenderHTML(sm.infoActionText, sm.Theme).Layout)
 													})
 												})
 												op.Defer(gtx.Ops, m.Stop())
@@ -496,7 +481,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 											return D{}
 										}),
 										layout.Rigid(func(gtx C) D {
-											if sm.walletSelector.infoActionText != "" {
+											if sm.infoActionText != "" {
 												return sm.infoButton.Layout(gtx)
 											}
 											return D{}
@@ -526,7 +511,7 @@ func (sm *SelectorModal) Layout(gtx C) D {
 }
 
 // infoBackdropLayout draws background overlay when the confirmation modal action button is clicked.
-func (sm *SelectorModal) infoBackdropLayout(gtx C) {
+func (sm *selectorModal) infoBackdropLayout(gtx C) {
 	if sm.infoModalOpen {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
@@ -549,7 +534,7 @@ func walletBalance(wal *dcr.Wallet) (totalBalance, spendableBalance int64) {
 	return tBal, sBal
 }
 
-func (sm *SelectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
+func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
 	accountIcon := sm.Theme.Icons.AccountIcon
 
 	return cryptomaterial.LinearLayout{
@@ -613,11 +598,11 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			}
 			switch t := selectorItem.item.(type) {
 			case *dcr.Account:
-				if t.Number == sm.walletSelector.selectedAccount.Number {
+				if t.Number == sm.selectedAccount.Number {
 					return sections(gtx)
 				}
 			case *dcr.Wallet:
-				if t.ID == sm.currentSelectedWallet.ID {
+				if t.ID == sm.selectedWallet.ID {
 					return sections(gtx)
 				}
 			}
@@ -626,9 +611,9 @@ func (sm *SelectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 	)
 }
 
-func (sm *SelectorModal) onModalExit(exit func()) *SelectorModal {
+func (sm *selectorModal) onModalExit(exit func()) *selectorModal {
 	sm.onExit = exit
 	return sm
 }
 
-func (sm *SelectorModal) OnDismiss() {}
+func (sm *selectorModal) OnDismiss() {}
