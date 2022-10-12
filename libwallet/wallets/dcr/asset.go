@@ -8,15 +8,28 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet/walletdata"
 )
 
 // To be renamed to DCRAsset when optimizing the code.
 // type DCRAsset struct {
 type Wallet struct {
-	*wallet.Wallet
+	*mainW.Wallet
 
-	ID int `storm:"id,increment"` // needed to existing wallets at the multiwallet
+	/* needed to load existing wallets at the multiwallet level */
+	ID int `storm:"id,increment"`
+	// Name      string    `storm:"unique"`
+	// CreatedAt time.Time `storm:"index"`
+	// dbDriver  string
+	// rootDir   string
+	// db *storm.DB
+
+	// EncryptedSeed         []byte
+	// IsRestored            bool
+	// HasDiscoveredAccounts bool
+	// PrivatePassphraseType int32
+	/* needed to load existing wallets at the multiwallet level */
 
 	rootDir string
 
@@ -35,17 +48,17 @@ type Wallet struct {
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
 	vspMu        sync.RWMutex
-	vsps         []*wallet.VSP
+	vsps         []*mainW.VSP
 
 	notificationListenersMu          sync.RWMutex
 	syncData                         *SyncData
-	accountMixerNotificationListener map[string]wallet.AccountMixerNotificationListener
-	txAndBlockNotificationListeners  map[string]wallet.TxAndBlockNotificationListener
-	blocksRescanProgressListener     wallet.BlocksRescanProgressListener
+	accountMixerNotificationListener map[string]mainW.AccountMixerNotificationListener
+	txAndBlockNotificationListeners  map[string]mainW.TxAndBlockNotificationListener
+	blocksRescanProgressListener     mainW.BlocksRescanProgressListener
 }
 
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	w, err := wallet.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, db, rootDir, dbDriver, chainParams)
+	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, db, rootDir, dbDriver, chainParams)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +70,10 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		chainParams: chainParams,
 
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
+			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]wallet.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]wallet.AccountMixerNotificationListener),
+		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]mainW.AccountMixerNotificationListener),
 		vspClients:                       make(map[string]*vsp.Client),
 	}
 
@@ -82,7 +95,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 		chainParams: chainParams,
 
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
+			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
 	}
 
@@ -104,7 +117,7 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 		chainParams: chainParams,
 
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
+			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
 		vspClients: make(map[string]*vsp.Client),
 	}
@@ -112,6 +125,22 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
 
 	return dcrWallet, nil
+}
+
+func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *chaincfg.Params) error {
+	wallet.vspClients = make(map[string]*vsp.Client)
+	wallet.rootDir = rootDir
+	wallet.chainParams = chainParams
+
+	wallet.syncData = &SyncData{
+		syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+	}
+	wallet.txAndBlockNotificationListeners = make(map[string]mainW.TxAndBlockNotificationListener)
+	wallet.accountMixerNotificationListener = make(map[string]mainW.AccountMixerNotificationListener)
+
+	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSync)
+
+	return wallet.Prepare(rootDir, db, chainParams, wallet.ID)
 }
 
 func (wallet *Wallet) Synced() bool {

@@ -85,11 +85,11 @@ const (
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincfg.Params,
-	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
+func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, chainParams *chaincfg.Params, walletID int) (err error) {
 
 	wallet.db = db
-	return wallet.prepare(rootDir, chainParams, setUserConfigValueFn, readUserConfigValueFn)
+	fmt.Println(" >>>>> Preparing WalletID", walletID)
+	return wallet.prepare(rootDir, chainParams, wallet.walletConfigSetFn(walletID), wallet.walletConfigReadFn(walletID))
 }
 
 func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
