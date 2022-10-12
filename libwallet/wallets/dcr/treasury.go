@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -51,7 +53,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 	// request(s) for setting this voting policy with the VSP.
 	err = wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 
@@ -132,7 +134,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 // is returned; otherwise the policies for all pi keys are returned.
 // If a ticket hash is provided, the policy(ies) for that ticket
 // is/are returned.
-func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPolicy, error) {
+func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*mainW.TreasuryKeyPolicy, error) {
 	var ticketHash *chainhash.Hash
 	if tixHash != "" {
 		tixHash, err := chainhash.NewHashFromStr(tixHash)
@@ -156,7 +158,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 		default:
 			policy = "abstain"
 		}
-		res := []*TreasuryKeyPolicy{
+		res := []*mainW.TreasuryKeyPolicy{
 			{
 				TicketHash: tixHash,
 				PiKey:      PiKey,
@@ -167,7 +169,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 	}
 
 	policies := wallet.Internal().TreasuryKeyPolicies()
-	res := make([]*TreasuryKeyPolicy, len(policies))
+	res := make([]*mainW.TreasuryKeyPolicy, len(policies))
 	for i := range policies {
 		var policy string
 		switch policies[i].Policy {
@@ -176,7 +178,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 		case stake.TreasuryVoteNo:
 			policy = "no"
 		}
-		r := &TreasuryKeyPolicy{
+		r := &mainW.TreasuryKeyPolicy{
 			PiKey:  hex.EncodeToString(policies[i].PiKey),
 			Policy: policy,
 		}

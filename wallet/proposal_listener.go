@@ -1,6 +1,8 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+import (
+	"gitlab.com/raedah/cryptopower/libwallet"
+)
 
 type ProposalStatus int
 
@@ -12,6 +14,6 @@ const (
 )
 
 type Proposal struct {
-	Proposal       *dcr.Proposal
+	Proposal       *libwallet.Proposal
 	ProposalStatus ProposalStatus
 }

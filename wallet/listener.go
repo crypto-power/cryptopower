@@ -1,8 +1,6 @@
 package wallet
 
-import (
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
-)
+import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 
 type RescanNotificationType int
 
@@ -100,6 +98,6 @@ type (
 	RescanUpdate struct {
 		Stage          RescanNotificationType
 		WalletID       int
-		ProgressReport *dcr.HeadersRescanProgressReport
+		ProgressReport *wallet.HeadersRescanProgressReport
 	}
 )

@@ -13,6 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -83,7 +84,7 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
 
-func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
+func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *wallet.Agenda) {
 	var voteChoices []string
 	consensusItems := components.LoadAgendas(pg.Load, pg.WL.SelectedWallet.Wallet, false)
 	if len(consensusItems) > 0 {

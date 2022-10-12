@@ -9,6 +9,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -392,7 +393,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerMixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
@@ -415,7 +416,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(dcr.AccountMixerUnmixedAccount, acctNum(val))
+					pg.wallet.SetInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, acctNum(val))
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)

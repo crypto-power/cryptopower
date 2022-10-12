@@ -11,6 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -43,7 +44,7 @@ type Page struct {
 
 	tickets []*transactionItem
 
-	ticketOverview *dcr.StakingOverview
+	ticketOverview *wallet.StakingOverview
 
 	ticketsList   *cryptomaterial.ClickableList
 	stakeSettings *cryptomaterial.Clickable
@@ -66,7 +67,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
-	pg.ticketOverview = new(dcr.StakingOverview)
+	pg.ticketOverview = new(wallet.StakingOverview)
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
@@ -211,7 +212,7 @@ func (pg *Page) HandleUserInteractions() {
 				//if not set, check if the saved account is mixed before opening modal
 				// if it is not, open stake config modal
 				tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
-				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
+				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false) &&
 					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 					(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 					pg.startTicketBuyerPasswordModal()
@@ -270,7 +271,7 @@ func (pg *Page) HandleUserInteractions() {
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v\n", err)
 		} else {
-			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed {
+			if ticketInfo.FeeTxStatus != wallet.VSPFeeProcessConfirmed {
 				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
 					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}

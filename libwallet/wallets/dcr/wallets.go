@@ -1,5 +1,10 @@
 package dcr
 
+type WalletsIterator struct {
+	CurrentIndex int
+	Wallets      []*Wallet
+}
+
 func (walletsIterator *WalletsIterator) Next() *Wallet {
 	if walletsIterator.CurrentIndex < len(walletsIterator.Wallets) {
 		wallet := walletsIterator.Wallets[walletsIterator.CurrentIndex]

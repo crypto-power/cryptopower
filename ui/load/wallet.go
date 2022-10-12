@@ -7,6 +7,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
@@ -75,7 +76,7 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
 	totalBalance := int64(0)
 	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(dcr.ErrNotExist)
+		return -1, errors.New(utils.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
@@ -94,7 +95,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, erro
 	spendableBal := int64(0)
 	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(dcr.ErrNotExist)
+		return -1, errors.New(utils.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()

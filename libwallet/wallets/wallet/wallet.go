@@ -1,4 +1,4 @@
-package dcr
+package wallet
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"decred.org/dcrwallet/v2/errors"
@@ -16,9 +15,8 @@ import (
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet/walletdata"
 )
 
 type Wallet struct {
@@ -39,19 +37,23 @@ type Wallet struct {
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
-	synced            bool
-	syncing           bool
-	waitingForHeaders bool
+	networkCancel func()
 
-	shuttingDown       chan bool
-	cancelFuncs        []context.CancelFunc
-	cancelAccountMixer context.CancelFunc `json:"-"`
+	// synced            bool
+	// syncing           bool
+	// waitingForHeaders bool
 
-	cancelAutoTicketBuyerMu sync.Mutex
-	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
+	shuttingDown chan bool
+	cancelFuncs  []context.CancelFunc
+	// cancelAccountMixer context.CancelFunc `json:"-"`
 
-	vspClientsMu sync.Mutex
-	vspClients   map[string]*vsp.Client
+	// cancelAutoTicketBuyerMu sync.Mutex
+	// cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
+
+	// vspClientsMu sync.Mutex
+	// vspClients   map[string]*vsp.Client
+	// vspMu sync.RWMutex
+	// vsps  []*VSP
 
 	// setUserConfigValue saves the provided key-value pair to a config database.
 	// This function is ideally assigned when the `wallet.prepare` method is
@@ -64,14 +66,14 @@ type Wallet struct {
 	// called from a MultiWallet instance.
 	readUserConfigValue configReadFn
 
-	notificationListenersMu          sync.RWMutex
-	syncData                         *SyncData
-	accountMixerNotificationListener map[string]AccountMixerNotificationListener
-	txAndBlockNotificationListeners  map[string]TxAndBlockNotificationListener
-	blocksRescanProgressListener     BlocksRescanProgressListener
+	// notificationListenersMu          sync.RWMutex
+	// syncData                         *SyncData
+	// accountMixerNotificationListener map[string]AccountMixerNotificationListener
+	// txAndBlockNotificationListeners  map[string]TxAndBlockNotificationListener
+	// blocksRescanProgressListener     BlocksRescanProgressListener
 
-	vspMu sync.RWMutex
-	vsps  []*VSP
+	// vspMu sync.RWMutex
+	// vsps  []*VSP
 
 	Type string
 }
@@ -96,7 +98,7 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	wallet.chainParams = chainParams
 	wallet.dataDir = filepath.Join(rootDir, strings.ToLower(wallet.Type), strconv.Itoa(wallet.ID))
 	wallet.rootDir = rootDir
-	wallet.vspClients = make(map[string]*vsp.Client)
+	// wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
 	wallet.readUserConfigValue = readUserConfigValueFn
 
@@ -112,14 +114,20 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 		return err
 	}
 
-	wallet.syncData = &SyncData{
-		syncProgressListeners: make(map[string]SyncProgressListener),
-	}
-	wallet.txAndBlockNotificationListeners = make(map[string]TxAndBlockNotificationListener)
-	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
+	// wallet.syncData = &SyncData{
+	// 	syncProgressListeners: make(map[string]SyncProgressListener),
+	// }
+	// wallet.txAndBlockNotificationListeners = make(map[string]TxAndBlockNotificationListener)
+	// wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	// init loader
 	wallet.loader = initWalletLoader(wallet.chainParams, wallet.rootDir, wallet.dbDriver)
+
+	if wallet.networkCancel == nil {
+		wallet.networkCancel = func() {
+			log.Warnf("Networkc cancel callback missing")
+		}
+	}
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -163,7 +171,7 @@ func (wallet *Wallet) Shutdown() {
 // wallets. Restored wallets would return an error.
 func (wallet *Wallet) WalletCreationTimeInMillis() (int64, error) {
 	if wallet.IsRestored {
-		return 0, errors.New(ErrWalletIsRestored)
+		return 0, errors.New(utils.ErrWalletIsRestored)
 	}
 
 	return wallet.CreatedAt.UnixNano() / int64(time.Millisecond), nil
@@ -176,6 +184,10 @@ func (wallet *Wallet) NetType() string {
 func (wallet *Wallet) Internal() *w.Wallet {
 	lw, _ := wallet.loader.GetLoadedWallet()
 	return lw.DCR
+}
+
+func (wallet *Wallet) SetNetworkCancelCallback(callback func()) {
+	wallet.networkCancel = callback
 }
 
 func (wallet *Wallet) WalletExists() (bool, error) {
@@ -202,14 +214,10 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		cancelFuncs:   make([]context.CancelFunc, 0),
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
-		syncData: &SyncData{
-			syncProgressListeners: make(map[string]SyncProgressListener),
-		},
-		txAndBlockNotificationListeners:  make(map[string]TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
-		PrivatePassphraseType:            privatePassphraseType,
-		HasDiscoveredAccounts:            true,
-		Type:                             DCRWallet,
+
+		PrivatePassphraseType: privatePassphraseType,
+		HasDiscoveredAccounts: true,
+		Type:                  DCRWallet,
 	}
 
 	wallet.cancelFuncs = make([]context.CancelFunc, 0)
@@ -226,7 +234,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error {
 	log.Info("Creating Wallet")
 	if len(seedMnemonic) == 0 {
-		return errors.New(ErrEmptySeed)
+		return errors.New(utils.ErrEmptySeed)
 	}
 
 	seed, err := walletseed.DecodeUserInput(seedMnemonic)
@@ -259,9 +267,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 		dbDriver:    dbDriver,
 		rootDir:     rootDir,
 		chainParams: chainParams,
-		syncData: &SyncData{
-			syncProgressListeners: make(map[string]SyncProgressListener),
-		},
+
 		IsRestored:            true,
 		HasDiscoveredAccounts: true,
 		Type:                  DCRWallet,
@@ -296,13 +302,13 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 
 func (wallet *Wallet) RenameWallet(newName string) error {
 	if strings.HasPrefix(newName, "wallet-") {
-		return errors.E(ErrReservedWalletName)
+		return errors.E(utils.ErrReservedWalletName)
 	}
 
 	if exists, err := wallet.WalletNameExists(newName); err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	} else if exists {
-		return errors.New(ErrExist)
+		return errors.New(utils.ErrExist)
 	}
 
 	wallet.Name = newName
@@ -317,9 +323,7 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 		dbDriver:              dbDriver,
 		rootDir:               rootDir,
 		chainParams:           chainParams,
-		syncData: &SyncData{
-			syncProgressListeners: make(map[string]SyncProgressListener),
-		},
+
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 		Type:                  DCRWallet,
@@ -337,16 +341,19 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 
 func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 
-	if wallet.IsConnectedToDecredNetwork() {
-		wallet.CancelSync()
-		defer func() {
-			wallet.SpvSync()
-		}()
-	}
+	// functions to safely cancel sync before proceeding
+	wallet.networkCancel()
+
+	// if wallet.IsConnectedToDecredNetwork() {
+	// 	wallet.CancelSync()
+	// 	defer func() {
+	// 		wallet.SpvSync()
+	// 	}()
+	// }
 
 	err := wallet.deleteWallet(privPass)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	return nil
@@ -357,13 +364,16 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	if err != nil {
 		return nil, err
 	} else if exists {
-		return nil, errors.New(ErrExist)
+		return nil, errors.New(utils.ErrExist)
 	}
 
-	if wallet.IsConnectedToDecredNetwork() {
-		wallet.CancelSync()
-		defer wallet.SpvSync()
-	}
+	// functions to safely cancel sync before proceeding
+	wallet.networkCancel()
+
+	// if wallet.IsConnectedToDecredNetwork() {
+	// 	wallet.CancelSync()
+	// 	defer wallet.SpvSync()
+	// }
 	// Perform database save operations in batch transaction
 	// for automatic rollback if error occurs at any point.
 	err = wallet.batchDbTransaction(func(db storm.Node) error {
@@ -402,7 +412,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	})
 
 	if err != nil {
-		return nil, translateError(err)
+		return nil, utils.TranslateError(err)
 	}
 
 	return wallet, nil
@@ -411,10 +421,10 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubPass string, privatePassphraseType int32) (*Wallet, error) {
 	// check if `walletDataDir` contains wallet.db
 	if !WalletExistsAt(walletDataDir) {
-		return nil, errors.New(ErrNotExist)
+		return nil, errors.New(utils.ErrNotExist)
 	}
 
-	ctx, _ := wallet.contextWithShutdownCancel()
+	ctx, _ := wallet.ContextWithShutdownCancel()
 
 	// verify the public passphrase for the wallet being linked before proceeding
 	if err := wallet.loadWalletTemporarily(ctx, walletDataDir, originalPubPass, nil); err != nil {
@@ -489,7 +499,7 @@ func (wallet *Wallet) OpenWallet() error {
 	_, err := wallet.loader.OpenExistingWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
 		log.Error(err)
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	return nil
@@ -512,21 +522,10 @@ func (wallet *Wallet) unlockWallet(privPass []byte) error {
 	ctx, _ := wallet.ShutdownContextWithCancel()
 	err := loadedWallet.DCR.Unlock(ctx, privPass, nil)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	return nil
-}
-
-func (wallet *Wallet) LockWallet() {
-	if wallet.IsAccountMixerActive() {
-		log.Error("LockWallet ignored due to active account mixer")
-		return
-	}
-
-	if !wallet.Internal().Locked() {
-		wallet.Internal().Lock()
-	}
 }
 
 func (wallet *Wallet) IsLocked() bool {
@@ -536,7 +535,7 @@ func (wallet *Wallet) IsLocked() bool {
 // ChangePrivatePassphraseForWallet attempts to change the wallet's passphrase and re-encrypts the seed with the new passphrase.
 func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase []byte, privatePassphraseType int32) error {
 	if privatePassphraseType != PassphraseTypePin && privatePassphraseType != PassphraseTypePass {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 	encryptedSeed := wallet.EncryptedSeed
 	if encryptedSeed != nil {
@@ -553,7 +552,7 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 
 	err := wallet.changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	wallet.EncryptedSeed = encryptedSeed
@@ -566,10 +565,10 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 		if err2 != nil {
 			log.Errorf("error undoing wallet passphrase change: %v", err2)
 			log.Errorf("error wallet passphrase was changed but passphrase type and newly encrypted seed could not be saved: %v", err)
-			return errors.New(ErrSavingWallet)
+			return errors.New(utils.ErrSavingWallet)
 		}
 
-		return errors.New(ErrChangingPassphrase)
+		return errors.New(utils.ErrChangingPassphrase)
 	}
 
 	return nil
@@ -588,7 +587,7 @@ func (wallet *Wallet) changePrivatePassphrase(oldPass []byte, newPass []byte) er
 
 	err := wallet.Internal().ChangePrivatePassphrase(wallet.ShutdownContext(), oldPass, newPass)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 	return nil
 }
@@ -601,13 +600,13 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 	}()
 
 	if _, loaded := wallet.loader.GetLoadedWallet(); !loaded {
-		return errors.New(ErrWalletNotLoaded)
+		return errors.New(utils.ErrWalletNotLoaded)
 	}
 
 	if !wallet.IsWatchingOnlyWallet() {
 		err := wallet.Internal().Unlock(wallet.ShutdownContext(), privatePassphrase, nil)
 		if err != nil {
-			return translateError(err)
+			return utils.TranslateError(err)
 		}
 		wallet.Internal().Lock()
 	}
@@ -616,7 +615,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 
 	err := wallet.db.DeleteStruct(wallet)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	log.Info("Deleting Wallet")
@@ -626,7 +625,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 // DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
 func (wallet *Wallet) DecryptSeed(privatePassphrase []byte) (string, error) {
 	if wallet.EncryptedSeed == nil {
-		return "", errors.New(ErrInvalid)
+		return "", errors.New(utils.ErrInvalid)
 	}
 
 	return decryptWalletSeed(privatePassphrase, wallet.EncryptedSeed)
@@ -672,16 +671,12 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) 
 
 	if decryptedSeed == seedMnemonic {
 		wallet.EncryptedSeed = nil
-		return true, translateError(wallet.db.Save(wallet))
+		return true, utils.TranslateError(wallet.db.Save(wallet))
 	}
 
-	return false, errors.New(ErrInvalid)
+	return false, errors.New(utils.ErrInvalid)
 }
 
 func (wallet *Wallet) DataDir() string {
 	return filepath.Join(wallet.rootDir, string(utils.DCRWalletAsset), strconv.Itoa(wallet.ID))
-}
-
-func (wallet *Wallet) Synced() bool {
-	return wallet.synced
 }

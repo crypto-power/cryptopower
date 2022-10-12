@@ -11,6 +11,7 @@ import (
 
 	"gioui.org/widget"
 
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -18,7 +19,7 @@ import (
 
 func translateErr(err error) string {
 	switch err.Error() {
-	case dcr.ErrInvalidPassphrase:
+	case utils.ErrInvalidPassphrase:
 		return values.String(values.StrInvalidPassphrase)
 	}
 

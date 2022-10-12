@@ -6,7 +6,8 @@ import (
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet/walletdata"
 )
 
 const (
@@ -72,7 +73,7 @@ func (wallet *Wallet) GetTransaction(txHash string) (string, error) {
 	return string(result), nil
 }
 
-func (wallet *Wallet) GetTransactionRaw(txHash string) (*Transaction, error) {
+func (wallet *Wallet) GetTransactionRaw(txHash string) (*mainW.Transaction, error) {
 	hash, err := chainhash.NewHashFromStr(txHash)
 	if err != nil {
 		log.Error(err)
@@ -102,17 +103,17 @@ func (wallet *Wallet) GetTransactions(offset, limit, txFilter int32, newestFirst
 	return string(jsonEncodedTransactions), nil
 }
 
-func (wallet *Wallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []Transaction, err error) {
+func (wallet *Wallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []mainW.Transaction, err error) {
 	err = wallet.walletDataDB.Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &transactions)
 	return
 }
 
 func (wallet *Wallet) CountTransactions(txFilter int32) (int, error) {
-	return wallet.walletDataDB.Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &Transaction{})
+	return wallet.walletDataDB.Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &mainW.Transaction{})
 }
 
 func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
-	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &Transaction{})
+	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &mainW.Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return false, nil
@@ -123,8 +124,8 @@ func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
 	return true, nil
 }
 
-func (wallet *Wallet) TicketSpender(ticketHash string) (*Transaction, error) {
-	var spender Transaction
+func (wallet *Wallet) TicketSpender(ticketHash string) (*mainW.Transaction, error) {
+	var spender mainW.Transaction
 	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
 		if err == storm.ErrNotFound {
@@ -136,9 +137,9 @@ func (wallet *Wallet) TicketSpender(ticketHash string) (*Transaction, error) {
 	return &spender, nil
 }
 
-func (wallet *Wallet) TransactionOverview() (txOverview *TransactionOverview, err error) {
+func (wallet *Wallet) TransactionOverview() (txOverview *mainW.TransactionOverview, err error) {
 
-	txOverview = &TransactionOverview{}
+	txOverview = &mainW.TransactionOverview{}
 
 	txOverview.Sent, err = wallet.CountTransactions(TxFilterSent)
 	if err != nil {
@@ -176,7 +177,7 @@ func (wallet *Wallet) TransactionOverview() (txOverview *TransactionOverview, er
 	return txOverview, nil
 }
 
-func (wallet *Wallet) TxMatchesFilter(tx *Transaction, txFilter int32) bool {
+func (wallet *Wallet) TxMatchesFilter(tx *mainW.Transaction, txFilter int32) bool {
 	bestBlock := wallet.GetBestBlockHeight()
 
 	// tickets with block height less than this are matured.
@@ -241,7 +242,7 @@ func (wallet *Wallet) TxMatchesFilter(tx *Transaction, txFilter int32) bool {
 }
 
 func (wallet *Wallet) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
-	tx := Transaction{
+	tx := mainW.Transaction{
 		Type:          txType,
 		Direction:     direction,
 		BlockHeight:   blockHeight,
@@ -250,7 +251,7 @@ func (wallet *Wallet) TxMatchesFilter2(direction, blockHeight int32, txType, tic
 	return wallet.TxMatchesFilter(&tx, txFilter)
 }
 
-func (tx Transaction) Confirmations(bestBlock int32) int32 {
+func Confirmations(bestBlock int32, tx mainW.Transaction) int32 {
 	if tx.BlockHeight == BlockHeightInvalid {
 		return 0
 	}
@@ -258,12 +259,12 @@ func (tx Transaction) Confirmations(bestBlock int32) int32 {
 	return (bestBlock - tx.BlockHeight) + 1
 }
 
-func (tx Transaction) TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32) string {
+func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx mainW.Transaction) string {
 	if tx.Type != TxTypeTicketPurchase {
 		return ""
 	}
 
-	confirmations := tx.Confirmations(bestBlock)
+	confirmations := Confirmations(bestBlock, tx)
 	if confirmations == 0 {
 		return TicketStatusUnmined
 	} else if confirmations <= ticketMaturity {

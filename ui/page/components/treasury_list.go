@@ -9,13 +9,14 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type TreasuryItem struct {
-	Policy            dcr.TreasuryKeyPolicy
+	Policy            wallet.TreasuryKeyPolicy
 	OptionsRadioGroup *widget.Enum
 	VoteChoices       [3]string
 	SetChoiceButton   cryptomaterial.Button
@@ -38,7 +39,7 @@ func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 	)
 }
 
-func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D {
+func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy wallet.TreasuryKeyPolicy) D {
 
 	statusLabel := l.Theme.Label(values.TextSize14, treasuryKeyPolicy.PiKey)
 	backgroundColor := l.Theme.Color.LightBlue

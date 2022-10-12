@@ -20,6 +20,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -37,7 +38,7 @@ type (
 	C              = layout.Context
 	D              = layout.Dimensions
 	TransactionRow struct {
-		Transaction dcr.Transaction
+		Transaction wallet.Transaction
 		Index       int
 	}
 
@@ -142,7 +143,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *dcr.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *wallet.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
@@ -426,7 +427,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 	)
 }
 
-func TxConfirmations(l *load.Load, transaction dcr.Transaction) int32 {
+func TxConfirmations(l *load.Load, transaction wallet.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
 		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}

@@ -7,6 +7,8 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 func (wallet *Wallet) RescanBlocks() error {
@@ -17,11 +19,11 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 
 	netBackend, err := wallet.Internal().NetworkBackend()
 	if err != nil {
-		return errors.E(ErrNotConnected)
+		return errors.E(utils.ErrNotConnected)
 	}
 
 	if wallet.IsRescanning() || !wallet.IsSynced() {
-		return errors.E(ErrInvalid)
+		return errors.E(utils.ErrInvalid)
 	}
 
 	go func() {
@@ -57,7 +59,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 				return
 			}
 
-			rescanProgressReport := &HeadersRescanProgressReport{
+			rescanProgressReport := &mainW.HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
 				TotalHeadersToScan:  wallet.GetBestBlockHeight(),
 				WalletID:            wallet.ID,
@@ -70,7 +72,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 			estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
 			rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
 
-			rescanProgressReport.GeneralSyncProgress = &GeneralSyncProgress{
+			rescanProgressReport.GeneralSyncProgress = &mainW.GeneralSyncProgress{
 				TotalSyncProgress:         rescanProgressReport.RescanProgress,
 				TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
 			}
@@ -136,6 +138,6 @@ func (wallet *Wallet) IsRescanning() bool {
 	return wallet.syncData.rescanning
 }
 
-func (wallet *Wallet) SetBlocksRescanProgressListener(blocksRescanProgressListener BlocksRescanProgressListener) {
+func (wallet *Wallet) SetBlocksRescanProgressListener(blocksRescanProgressListener mainW.BlocksRescanProgressListener) {
 	wallet.blocksRescanProgressListener = blocksRescanProgressListener
 }

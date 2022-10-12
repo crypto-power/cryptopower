@@ -1,4 +1,4 @@
-package dcr
+package utils
 
 import (
 	"decred.org/dcrwallet/v2/errors"
@@ -44,7 +44,7 @@ const (
 )
 
 // todo, should update this method to translate more error kinds.
-func translateError(err error) error {
+func TranslateError(err error) error {
 	if err, ok := err.(*errors.Error); ok {
 		switch err.Kind {
 		case errors.InsufficientBalance:

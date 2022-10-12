@@ -1,11 +1,11 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 
 // TODO: responses.go file to be deprecated with future code clean up
 
 type UnspentOutput struct {
-	UTXO     dcr.UnspentOutput
+	UTXO     wallet.UnspentOutput
 	Amount   string
 	DateTime string
 }

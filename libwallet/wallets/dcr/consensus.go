@@ -11,6 +11,8 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/wire"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 // AgendaStatusType defines the various agenda statuses.
@@ -97,7 +99,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	// request(s) for setting this vote choice with the VSP.
 	err := wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 
@@ -194,7 +196,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 // network and this version of the software. Also returns any saved vote
 // preferences for the agendas of the current stake version. Vote preferences
 // for older agendas cannot currently be retrieved.
-func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
+func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*mainW.Agenda, error) {
 	if wallet.chainParams.Deployments == nil {
 		return nil, nil // no agendas to return
 	}
@@ -223,7 +225,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 	}
 
 	// Fetch high level agenda detail form dcrdata api.
-	var dcrdataAgenda []DcrdataAgenda
+	var dcrdataAgenda []mainW.DcrdataAgenda
 	host := dcrdataAgendasAPIMainnetUrl
 	if wallet.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
@@ -233,7 +235,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 		return nil, err
 	}
 
-	agendas := make([]*Agenda, len(deployments))
+	agendas := make([]*mainW.Agenda, len(deployments))
 	var status string
 	for i := range deployments {
 		d := &deployments[i]
@@ -252,7 +254,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 			}
 		}
 
-		agendas[i] = &Agenda{
+		agendas[i] = &mainW.Agenda{
 			AgendaID:         d.Vote.Id,
 			Description:      d.Vote.Description,
 			Mask:             uint32(d.Vote.Mask),

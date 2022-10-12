@@ -9,6 +9,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
@@ -36,7 +37,7 @@ func (wallet *Wallet) VSPClient(host string, pubKey []byte) (*vsp.Client, error)
 
 // KnownVSPs returns a list of known VSPs. This list may be updated by calling
 // ReloadVSPList. This method is safe for concurrent access.
-func (wallet *Wallet) KnownVSPs() []*VSP {
+func (wallet *Wallet) KnownVSPs() []*mainW.VSP {
 	wallet.vspMu.RLock()
 	defer wallet.vspMu.RUnlock()
 	return wallet.vsps // TODO: Return a copy.
@@ -68,7 +69,7 @@ func (wallet *Wallet) SaveVSP(host string) (err error) {
 	wallet.updateVSPDBData(vspDbData)
 
 	wallet.vspMu.Lock()
-	wallet.vsps = append(wallet.vsps, &VSP{Host: host, VspInfoResponse: info})
+	wallet.vsps = append(wallet.vsps, &mainW.VSP{Host: host, VspInfoResponse: info})
 	wallet.vspMu.Unlock()
 
 	return
@@ -94,12 +95,12 @@ type vspDbData struct {
 
 func (wallet *Wallet) getVSPDBData() *vspDbData {
 	vspDbData := new(vspDbData)
-	wallet.ReadUserConfigValue(KnownVSPsConfigKey, vspDbData)
+	wallet.ReadUserConfigValue(mainW.KnownVSPsConfigKey, vspDbData)
 	return vspDbData
 }
 
 func (wallet *Wallet) updateVSPDBData(data *vspDbData) {
-	wallet.SaveUserConfigValue(KnownVSPsConfigKey, data)
+	wallet.SaveUserConfigValue(mainW.KnownVSPsConfigKey, data)
 }
 
 // ReloadVSPList reloads the list of known VSPs.
@@ -110,7 +111,7 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 	defer log.Debugf("Reloaded list of known VSPs")
 
 	vspDbData := wallet.getVSPDBData()
-	vspList := make(map[string]*VspInfoResponse)
+	vspList := make(map[string]*mainW.VspInfoResponse)
 	for _, host := range vspDbData.SavedHosts {
 		vspInfo, err := vspInfo(host)
 		if err != nil {
@@ -144,15 +145,15 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 	}
 
 	wallet.vspMu.Lock()
-	wallet.vsps = make([]*VSP, 0, len(vspList))
+	wallet.vsps = make([]*mainW.VSP, 0, len(vspList))
 	for host, info := range vspList {
-		wallet.vsps = append(wallet.vsps, &VSP{Host: host, VspInfoResponse: info})
+		wallet.vsps = append(wallet.vsps, &mainW.VSP{Host: host, VspInfoResponse: info})
 	}
 	wallet.vspMu.Unlock()
 }
 
-func vspInfo(vspHost string) (*VspInfoResponse, error) {
-	vspInfoResponse := new(VspInfoResponse)
+func vspInfo(vspHost string) (*mainW.VspInfoResponse, error) {
+	vspInfoResponse := new(mainW.VspInfoResponse)
 	resp, respBytes, err := HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
 	if err != nil {
 		return nil, err
@@ -173,7 +174,7 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 
 // defaultVSPs returns a list of known VSPs.
 func defaultVSPs(network string) ([]string, error) {
-	var vspInfoResponse map[string]*VspInfoResponse
+	var vspInfoResponse map[string]*mainW.VspInfoResponse
 	_, _, err := HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
 	if err != nil {
 		return nil, err

@@ -8,13 +8,14 @@ import (
 	"gioui.org/unit"
 
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type ConsensusItem struct {
-	Agenda     dcr.Agenda
+	Agenda     wallet.Agenda
 	VoteButton cryptomaterial.Button
 }
 
@@ -37,7 +38,7 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 	)
 }
 
-func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
+func layoutAgendaStatus(gtx C, l *load.Load, agenda wallet.Agenda) D {
 
 	var statusLabel cryptomaterial.Label
 	var statusIcon *cryptomaterial.Icon

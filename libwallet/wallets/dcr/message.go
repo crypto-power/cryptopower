@@ -4,12 +4,13 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (wallet *Wallet) SignMessage(passphrase []byte, address string, message string) ([]byte, error) {
 	err := wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 
@@ -19,7 +20,7 @@ func (wallet *Wallet) SignMessage(passphrase []byte, address string, message str
 func (wallet *Wallet) signMessage(address string, message string) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, utils.TranslateError(err)
 	}
 
 	// Addresses must have an associated secp256k1 private key and therefore
@@ -28,12 +29,12 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 	case *stdaddr.AddressPubKeyEcdsaSecp256k1V0:
 	case *stdaddr.AddressPubKeyHashEcdsaSecp256k1V0:
 	default:
-		return nil, errors.New(ErrInvalidAddress)
+		return nil, errors.New(utils.ErrInvalidAddress)
 	}
 
 	sig, err := wallet.Internal().SignMessage(wallet.ShutdownContext(), message, addr)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, utils.TranslateError(err)
 	}
 
 	return sig, nil
@@ -44,7 +45,7 @@ func (wallet *Wallet) VerifyMessage(address string, message string, signatureBas
 
 	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
-		return false, translateError(err)
+		return false, utils.TranslateError(err)
 	}
 
 	signature, err := DecodeBase64(signatureBase64)
@@ -58,12 +59,12 @@ func (wallet *Wallet) VerifyMessage(address string, message string, signatureBas
 	case *stdaddr.AddressPubKeyEcdsaSecp256k1V0:
 	case *stdaddr.AddressPubKeyHashEcdsaSecp256k1V0:
 	default:
-		return false, errors.New(ErrInvalidAddress)
+		return false, errors.New(utils.ErrInvalidAddress)
 	}
 
 	valid, err = w.VerifyMessage(message, addr, signature, wallet.chainParams)
 	if err != nil {
-		return false, translateError(err)
+		return false, utils.TranslateError(err)
 	}
 
 	return valid, nil

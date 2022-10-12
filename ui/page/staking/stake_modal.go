@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -88,7 +89,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			tb.ParentWindow().ShowModal(errModal)
 		}
 
-		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
+		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false) &&
 			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
@@ -176,12 +177,12 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(selectedAccount *dcr.Account) {}).
-		AccountValidator(func(account *dcr.Account) bool {
+		AccountSelected(func(selectedAccount *wallet.Account) {}).
+		AccountValidator(func(account *wallet.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
 
-			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
+			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false) &&
 				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
 				accountIsValid = account.Number == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()

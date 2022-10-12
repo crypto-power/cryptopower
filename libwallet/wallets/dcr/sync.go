@@ -14,13 +14,15 @@ import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x
 type SyncData struct {
 	mu sync.RWMutex
 
-	syncProgressListeners map[string]SyncProgressListener
+	syncProgressListeners map[string]mainW.SyncProgressListener
 	showLogs              bool
 
 	synced       bool
@@ -44,10 +46,10 @@ type activeSyncData struct {
 
 	syncStage int32
 
-	cfiltersFetchProgress    CFiltersFetchProgressReport
-	headersFetchProgress     HeadersFetchProgressReport
-	addressDiscoveryProgress AddressDiscoveryProgressReport
-	headersRescanProgress    HeadersRescanProgressReport
+	cfiltersFetchProgress    mainW.CFiltersFetchProgressReport
+	headersFetchProgress     mainW.HeadersFetchProgressReport
+	addressDiscoveryProgress mainW.AddressDiscoveryProgressReport
+	headersRescanProgress    mainW.HeadersRescanProgressReport
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
@@ -66,29 +68,29 @@ const (
 
 func (wallet *Wallet) initActiveSyncData() {
 
-	cfiltersFetchProgress := CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &GeneralSyncProgress{},
-		beginFetchCFiltersTimeStamp: 0,
-		startCFiltersHeight:         -1,
-		cfiltersFetchTimeSpent:      0,
-		totalFetchedCFiltersCount:   0,
+	cfiltersFetchProgress := mainW.CFiltersFetchProgressReport{
+		GeneralSyncProgress:         &mainW.GeneralSyncProgress{},
+		BeginFetchCFiltersTimeStamp: 0,
+		StartCFiltersHeight:         -1,
+		CfiltersFetchTimeSpent:      0,
+		TotalFetchedCFiltersCount:   0,
 	}
 
-	headersFetchProgress := HeadersFetchProgressReport{
-		GeneralSyncProgress:      &GeneralSyncProgress{},
-		beginFetchTimeStamp:      -1,
-		headersFetchTimeSpent:    -1,
-		totalFetchedHeadersCount: 0,
+	headersFetchProgress := mainW.HeadersFetchProgressReport{
+		GeneralSyncProgress:      &mainW.GeneralSyncProgress{},
+		BeginFetchTimeStamp:      -1,
+		HeadersFetchTimeSpent:    -1,
+		TotalFetchedHeadersCount: 0,
 	}
 
-	addressDiscoveryProgress := AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &GeneralSyncProgress{},
-		addressDiscoveryStartTime: -1,
-		totalDiscoveryTimeSpent:   -1,
+	addressDiscoveryProgress := mainW.AddressDiscoveryProgressReport{
+		GeneralSyncProgress:       &mainW.GeneralSyncProgress{},
+		AddressDiscoveryStartTime: -1,
+		TotalDiscoveryTimeSpent:   -1,
 	}
 
-	headersRescanProgress := HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &GeneralSyncProgress{}
+	headersRescanProgress := mainW.HeadersRescanProgressReport{}
+	headersRescanProgress.GeneralSyncProgress = &mainW.GeneralSyncProgress{}
 
 	wallet.syncData.mu.Lock()
 	wallet.syncData.activeSyncData = &activeSyncData{
@@ -109,9 +111,9 @@ func (wallet *Wallet) IsSyncProgressListenerRegisteredFor(uniqueIdentifier strin
 	return exists
 }
 
-func (wallet *Wallet) AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error {
+func (wallet *Wallet) AddSyncProgressListener(syncProgressListener mainW.SyncProgressListener, uniqueIdentifier string) error {
 	if wallet.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
-		return errors.New(ErrListenerAlreadyExist)
+		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
 	wallet.syncData.mu.Lock()
@@ -128,11 +130,11 @@ func (wallet *Wallet) RemoveSyncProgressListener(uniqueIdentifier string) {
 	wallet.syncData.mu.Unlock()
 }
 
-func (wallet *Wallet) syncProgressListeners() []SyncProgressListener {
+func (wallet *Wallet) syncProgressListeners() []mainW.SyncProgressListener {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 
-	listeners := make([]SyncProgressListener, 0, len(wallet.syncData.syncProgressListeners))
+	listeners := make([]mainW.SyncProgressListener, 0, len(wallet.syncData.syncProgressListeners))
 	for _, listener := range wallet.syncData.syncProgressListeners {
 		listeners = append(listeners, listener)
 	}
@@ -146,7 +148,7 @@ func (wallet *Wallet) PublishLastSyncProgress(uniqueIdentifier string) error {
 
 	syncProgressListener, exists := wallet.syncData.syncProgressListeners[uniqueIdentifier]
 	if !exists {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	if wallet.syncData.syncing && wallet.syncData.activeSyncData != nil {
@@ -186,19 +188,19 @@ func (wallet *Wallet) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 }
 
 func (wallet *Wallet) SetSpecificPeer(address string) {
-	wallet.SaveUserConfigValue(SpvPersistentPeerAddressesConfigKey, address)
+	wallet.SaveUserConfigValue(mainW.SpvPersistentPeerAddressesConfigKey, address)
 	wallet.RestartSpvSync()
 }
 
 func (wallet *Wallet) RemoveSpecificPeer() {
-	wallet.SaveUserConfigValue(SpvPersistentPeerAddressesConfigKey, "")
+	wallet.SaveUserConfigValue(mainW.SpvPersistentPeerAddressesConfigKey, "")
 	wallet.RestartSpvSync()
 }
 
 func (wallet *Wallet) SpvSync() error {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if wallet.IsSyncing() || wallet.IsSynced() {
-		return errors.New(ErrSyncAlreadyInProgress)
+		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
@@ -206,7 +208,7 @@ func (wallet *Wallet) SpvSync() error {
 	lp := p2p.NewLocalPeer(wallet.chainParams, addr, addrManager)
 
 	var validPeerAddresses []string
-	peerAddresses := wallet.ReadStringConfigValueForKey(SpvPersistentPeerAddressesConfigKey, "")
+	peerAddresses := wallet.ReadStringConfigValueForKey(mainW.SpvPersistentPeerAddressesConfigKey, "")
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
@@ -219,7 +221,7 @@ func (wallet *Wallet) SpvSync() error {
 		}
 
 		if len(validPeerAddresses) == 0 {
-			return errors.New(ErrInvalidPeers)
+			return errors.New(utils.ErrInvalidPeers)
 		}
 	}
 
@@ -238,7 +240,7 @@ func (wallet *Wallet) SpvSync() error {
 		syncer.SetPersistentPeers(validPeerAddresses)
 	}
 
-	ctx, cancel := wallet.contextWithShutdownCancel()
+	ctx, cancel := wallet.ContextWithShutdownCancel()
 
 	var restartSyncRequested bool
 
@@ -349,7 +351,7 @@ func (wallet *Wallet) CurrentSyncStage() int32 {
 	return InvalidSyncStage
 }
 
-func (wallet *Wallet) GeneralSyncProgress() *GeneralSyncProgress {
+func (wallet *Wallet) GeneralSyncProgress() *mainW.GeneralSyncProgress {
 	wallet.syncData.mu.RLock()
 	defer wallet.syncData.mu.RUnlock()
 
@@ -375,16 +377,16 @@ func (wallet *Wallet) ConnectedPeers() int32 {
 	return wallet.syncData.connectedPeers
 }
 
-func (wallet *Wallet) PeerInfoRaw() ([]PeerInfo, error) {
+func (wallet *Wallet) PeerInfoRaw() ([]mainW.PeerInfo, error) {
 	if !wallet.IsConnectedToDecredNetwork() {
-		return nil, errors.New(ErrNotConnected)
+		return nil, errors.New(utils.ErrNotConnected)
 	}
 
 	syncer := wallet.syncData.syncer
 
-	infos := make([]PeerInfo, 0, len(syncer.GetRemotePeers()))
+	infos := make([]mainW.PeerInfo, 0, len(syncer.GetRemotePeers()))
 	for _, rp := range syncer.GetRemotePeers() {
-		info := PeerInfo{
+		info := mainW.PeerInfo{
 			ID:             int32(rp.ID()),
 			Addr:           rp.RemoteAddr().String(),
 			AddrLocal:      rp.LocalAddr().String(),
@@ -415,9 +417,9 @@ func (wallet *Wallet) PeerInfo() (string, error) {
 	return string(result), nil
 }
 
-func (wallet *Wallet) GetBestBlock() *BlockInfo {
+func (wallet *Wallet) GetBestBlock() *mainW.BlockInfo {
 	var bestBlock int32 = -1
-	var blockInfo *BlockInfo
+	var blockInfo *mainW.BlockInfo
 	if !wallet.WalletOpened() {
 		return nil
 	}
@@ -425,22 +427,22 @@ func (wallet *Wallet) GetBestBlock() *BlockInfo {
 	walletBestBLock := wallet.GetBestBlockHeight()
 	if walletBestBLock > bestBlock || bestBlock == -1 {
 		bestBlock = walletBestBLock
-		blockInfo = &BlockInfo{Height: bestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
+		blockInfo = &mainW.BlockInfo{Height: bestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo
 }
 
-func (wallet *Wallet) GetLowestBlock() *BlockInfo {
+func (wallet *Wallet) GetLowestBlock() *mainW.BlockInfo {
 	var lowestBlock int32 = -1
-	var blockInfo *BlockInfo
+	var blockInfo *mainW.BlockInfo
 	if !wallet.WalletOpened() {
 		return nil
 	}
 	walletBestBLock := wallet.GetBestBlockHeight()
 	if walletBestBLock < lowestBlock || lowestBlock == -1 {
 		lowestBlock = walletBestBLock
-		blockInfo = &BlockInfo{Height: lowestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
+		blockInfo = &mainW.BlockInfo{Height: lowestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo

@@ -10,8 +10,8 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -72,8 +72,8 @@ type Page struct {
 type authoredTxData struct {
 	txAuthor            *dcr.TxAuthor
 	destinationAddress  string
-	destinationAccount  *dcr.Account
-	sourceAccount       *dcr.Account
+	destinationAccount  *wallet.Account
+	sourceAccount       *wallet.Account
 	txFee               string
 	txFeeUSD            string
 	estSignedSize       string
@@ -102,18 +102,18 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *dcr.Account) {
+		AccountSelected(func(selectedAccount *wallet.Account) {
 			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
 				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
-		AccountValidator(func(account *dcr.Account) bool {
+		AccountValidator(func(account *wallet.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
 
-			if wal.ReadBoolConfigValueForKey(dcr.AccountMixerConfigSet, false) &&
+			if wal.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false) &&
 				!wal.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
@@ -128,7 +128,7 @@ func NewSendPage(l *load.Load) *Page {
 	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	pg.sendDestination.destinationAccountSelector =
-		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *dcr.Account) bool {
+		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *wallet.Account) bool {
 			// Filter out imported account and mixed.
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			// Filter imported account and mixed accounts.
@@ -140,7 +140,7 @@ func NewSendPage(l *load.Load) *Page {
 			return true
 		})
 
-	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
+	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *wallet.Account) {
 		pg.validateAndConstructTx()
 	})
 
@@ -184,7 +184,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	if pg.currencyExchange = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey); pg.currencyExchange != values.DefaultExchangeValue {
+	pg.currencyExchange = pg.WL.MultiWallet.ReadStringConfigValueForKey(wallet.CurrencyConversionConfigKey)
+	if pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
 	}
@@ -390,7 +391,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(wallet.CurrencyConversionConfigKey)
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
@@ -480,7 +481,7 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(wallet.CurrencyConversionConfigKey)
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:

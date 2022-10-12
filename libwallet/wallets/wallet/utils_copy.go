@@ -1,6 +1,7 @@
-package dcr
+package wallet
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -27,7 +28,6 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 const (
@@ -59,29 +59,29 @@ const (
 
 func (wallet *Wallet) RequiredConfirmations() int32 {
 	var spendUnconfirmed bool
-	wallet.ReadUserConfigValue(mainW.SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	wallet.readUserConfigValue(true, SpendUnconfirmedConfigKey, &spendUnconfirmed)
 	if spendUnconfirmed {
 		return 0
 	}
 	return DefaultRequiredConfirmations
 }
 
-// func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	// wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-// 	return ctx, cancel
-// }
+func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
+	return ctx, cancel
+}
 
-// func (wallet *Wallet) ShutdownContext() (ctx context.Context) {
-// 	ctx, _ = wallet.ShutdownContextWithCancel()
-// 	return
-// }
+func (wallet *Wallet) ShutdownContext() (ctx context.Context) {
+	ctx, _ = wallet.ShutdownContextWithCancel()
+	return
+}
 
-// func (wallet *Wallet) contextWithShutdownCancel() (context.Context, context.CancelFunc) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-// 	return ctx, cancel
-// }
+func (wallet *Wallet) ContextWithShutdownCancel() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
+	return ctx, cancel
+}
 
 func (wallet *Wallet) ValidateExtPubKey(extendedPubKey string) error {
 	_, err := hdkeychain.NewKeyFromString(extendedPubKey, wallet.chainParams)
@@ -187,18 +187,18 @@ func ShannonEntropy(text string) (entropy float64) {
 	return entropy
 }
 
-func TransactionDirectionName(direction int32) string {
-	switch direction {
-	case TxDirectionSent:
-		return "Sent"
-	case TxDirectionReceived:
-		return "Received"
-	case TxDirectionTransferred:
-		return "Yourself"
-	default:
-		return "invalid"
-	}
-}
+// func TransactionDirectionName(direction int32) string {
+// 	switch direction {
+// 	case TxDirectionSent:
+// 		return "Sent"
+// 	case TxDirectionReceived:
+// 		return "Received"
+// 	case TxDirectionTransferred:
+// 		return "Yourself"
+// 	default:
+// 		return "invalid"
+// 	}
+// }
 
 func CalculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
 	minutes := timeRemainingInSeconds / 60
@@ -286,7 +286,7 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 
 func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &mainW.WalletConfig{
+	cfg := &WalletConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,

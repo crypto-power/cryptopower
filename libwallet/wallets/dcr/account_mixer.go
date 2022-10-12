@@ -13,6 +13,8 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/certs"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 const (
@@ -23,12 +25,12 @@ const (
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
-func (wallet *Wallet) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
+func (wallet *Wallet) AddAccountMixerNotificationListener(accountMixerNotificationListener mainW.AccountMixerNotificationListener, uniqueIdentifier string) error {
 	wallet.notificationListenersMu.Lock()
 	defer wallet.notificationListenersMu.Unlock()
 
 	if _, ok := wallet.accountMixerNotificationListener[uniqueIdentifier]; ok {
-		return errors.New(ErrListenerAlreadyExist)
+		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
 	wallet.accountMixerNotificationListener[uniqueIdentifier] = accountMixerNotificationListener
@@ -46,13 +48,13 @@ func (wallet *Wallet) RemoveAccountMixerNotificationListener(uniqueIdentifier st
 // is added to ease unlocking the wallet before creating accounts. This function should be
 // used with auto cspp mixer setup.
 func (wallet *Wallet) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass string) error {
-	accountMixerConfigSet := wallet.ReadBoolConfigValueForKey(AccountMixerConfigSet, false)
+	accountMixerConfigSet := wallet.ReadBoolConfigValueForKey(mainW.AccountMixerConfigSet, false)
 	if accountMixerConfigSet {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	if wallet.HasAccount(mixedAccount) || wallet.HasAccount(unmixedAccount) {
-		return errors.New(ErrExist)
+		return errors.New(utils.ErrExist)
 	}
 
 	err := wallet.UnlockWallet([]byte(privPass))
@@ -72,9 +74,9 @@ func (wallet *Wallet) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass
 		return err
 	}
 
-	wallet.SetInt32ConfigValueForKey(AccountMixerMixedAccount, mixedAccountNumber)
-	wallet.SetInt32ConfigValueForKey(AccountMixerUnmixedAccount, unmixedAccountNumber)
-	wallet.SetBoolConfigValueForKey(AccountMixerConfigSet, true)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, mixedAccountNumber)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, unmixedAccountNumber)
+	wallet.SetBoolConfigValueForKey(mainW.AccountMixerConfigSet, true)
 
 	return nil
 }
@@ -84,18 +86,18 @@ func (wallet *Wallet) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass
 func (wallet *Wallet) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, privPass string) error {
 
 	if mixedAccount == unmixedAccount {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	// Verify that account numbers are correct
 	_, err := wallet.GetAccount(mixedAccount)
 	if err != nil {
-		return errors.New(ErrNotExist)
+		return errors.New(utils.ErrNotExist)
 	}
 
 	_, err = wallet.GetAccount(unmixedAccount)
 	if err != nil {
-		return errors.New(ErrNotExist)
+		return errors.New(utils.ErrNotExist)
 	}
 
 	err = wallet.UnlockWallet([]byte(privPass))
@@ -104,45 +106,45 @@ func (wallet *Wallet) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, 
 	}
 	wallet.LockWallet()
 
-	wallet.SetInt32ConfigValueForKey(AccountMixerMixedAccount, mixedAccount)
-	wallet.SetInt32ConfigValueForKey(AccountMixerUnmixedAccount, unmixedAccount)
-	wallet.SetBoolConfigValueForKey(AccountMixerConfigSet, true)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, mixedAccount)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, unmixedAccount)
+	wallet.SetBoolConfigValueForKey(mainW.AccountMixerConfigSet, true)
 
 	return nil
 }
 
 func (wallet *Wallet) AccountMixerMixChange() bool {
-	return wallet.ReadBoolConfigValueForKey(AccountMixerMixTxChange, false)
+	return wallet.ReadBoolConfigValueForKey(mainW.AccountMixerMixTxChange, false)
 }
 
 func (wallet *Wallet) AccountMixerConfigIsSet() bool {
-	return wallet.ReadBoolConfigValueForKey(AccountMixerConfigSet, false)
+	return wallet.ReadBoolConfigValueForKey(mainW.AccountMixerConfigSet, false)
 }
 
 func (wallet *Wallet) MixedAccountNumber() int32 {
-	return wallet.ReadInt32ConfigValueForKey(AccountMixerMixedAccount, -1)
+	return wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, -1)
 }
 
 func (wallet *Wallet) UnmixedAccountNumber() int32 {
-	return wallet.ReadInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
+	return wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 }
 
 func (wallet *Wallet) ClearMixerConfig() {
-	wallet.SetInt32ConfigValueForKey(AccountMixerMixedAccount, -1)
-	wallet.SetInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
-	wallet.SetBoolConfigValueForKey(AccountMixerConfigSet, false)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, -1)
+	wallet.SetInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
+	wallet.SetBoolConfigValueForKey(mainW.AccountMixerConfigSet, false)
 }
 
 func (wallet *Wallet) ReadyToMix(walletID int) (bool, error) {
 	if wallet == nil {
-		return false, errors.New(ErrNotExist)
+		return false, errors.New(utils.ErrNotExist)
 	}
 
-	unmixedAccount := wallet.ReadInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
+	unmixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 
 	hasMixableOutput, err := wallet.accountHasMixableOutput(unmixedAccount)
 	if err != nil {
-		return false, translateError(err)
+		return false, utils.TranslateError(err)
 	}
 
 	return hasMixableOutput, nil
@@ -151,23 +153,23 @@ func (wallet *Wallet) ReadyToMix(walletID int) (bool, error) {
 // StartAccountMixer starts the automatic account mixer
 func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 	if !wallet.IsConnectedToDecredNetwork() {
-		return errors.New(ErrNotConnected)
+		return errors.New(utils.ErrNotConnected)
 	}
 
 	if wallet == nil {
-		return errors.New(ErrNotExist)
+		return errors.New(utils.ErrNotExist)
 	}
 
 	cfg := wallet.readCSPPConfig()
 	if cfg == nil {
-		return errors.New(ErrFailedPrecondition)
+		return errors.New(utils.ErrFailedPrecondition)
 	}
 
 	hasMixableOutput, err := wallet.accountHasMixableOutput(int32(cfg.ChangeAccount))
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	} else if !hasMixableOutput {
-		return errors.New(ErrNoMixableOutput)
+		return errors.New(utils.ErrNoMixableOutput)
 	}
 
 	tb := ticketbuyer.New(wallet.Internal())
@@ -185,7 +187,7 @@ func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 
 	err = wallet.UnlockWallet([]byte(walletPassphrase))
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	go func() {
@@ -194,7 +196,7 @@ func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 			wallet.publishAccountMixerStarted(wallet.ID)
 		}
 
-		ctx, cancel := wallet.contextWithShutdownCancel()
+		ctx, cancel := wallet.ContextWithShutdownCancel()
 		wallet.cancelAccountMixer = cancel
 		err = tb.Run(ctx, []byte(walletPassphrase))
 		if err != nil {
@@ -210,9 +212,9 @@ func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 	return nil
 }
 
-func (wallet *Wallet) readCSPPConfig() *CSPPConfig {
-	mixedAccount := wallet.ReadInt32ConfigValueForKey(AccountMixerMixedAccount, -1)
-	unmixedAccount := wallet.ReadInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
+func (wallet *Wallet) readCSPPConfig() *mainW.CSPPConfig {
+	mixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, -1)
+	unmixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 
 	if mixedAccount == -1 || unmixedAccount == -1 {
 		// not configured for mixing
@@ -243,7 +245,7 @@ func (wallet *Wallet) readCSPPConfig() *CSPPConfig {
 		}
 	}
 
-	return &CSPPConfig{
+	return &mainW.CSPPConfig{
 		CSPPServer:         ShuffleServer + ":" + shufflePort,
 		DialCSPPServer:     dialCSPPServer,
 		MixedAccount:       uint32(mixedAccount),
@@ -256,11 +258,11 @@ func (wallet *Wallet) readCSPPConfig() *CSPPConfig {
 // StopAccountMixer stops the active account mixer
 func (wallet *Wallet) StopAccountMixer() error {
 	if wallet == nil {
-		return errors.New(ErrNotExist)
+		return errors.New(utils.ErrNotExist)
 	}
 
 	if wallet.cancelAccountMixer == nil {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	wallet.cancelAccountMixer()
