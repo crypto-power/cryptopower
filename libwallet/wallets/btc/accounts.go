@@ -6,7 +6,6 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 
-	// w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
@@ -39,11 +38,8 @@ func (wallet *Wallet) GetAccountsRaw() (*AccountsResult, error) {
 
 		accounts[i] = &AccountResult{
 			AccountProperties: AccountProperties{
-				// WalletID:      wallet.ID,
-				AccountNumber: a.AccountNumber,
-				AccountName:   a.AccountName,
-				// Balance:          balance,
-				// TotalBalance:     balance.Total,
+				AccountNumber:    a.AccountNumber,
+				AccountName:      a.AccountName,
 				ExternalKeyCount: a.ExternalKeyCount + AddressGapLimit, // Add gap limit
 				InternalKeyCount: a.InternalKeyCount + AddressGapLimit,
 				ImportedKeyCount: a.ImportedKeyCount,
@@ -53,7 +49,6 @@ func (wallet *Wallet) GetAccountsRaw() (*AccountsResult, error) {
 	}
 
 	return &AccountsResult{
-		// Count:              len(resp.Accounts),
 		CurrentBlockHash:   resp.CurrentBlockHash,
 		CurrentBlockHeight: resp.CurrentBlockHeight,
 		Accounts:           accounts,
@@ -91,15 +86,10 @@ func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balances, error) 
 func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
 	bals, err := wallet.Internal().CalculateAccountBalances(uint32(account), wallet.RequiredConfirmations())
 	if err != nil {
-		// log.Error(err)
 		return 0, translateError(err)
 	}
 	return int64(bals.Spendable), nil
 }
-
-// func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
-
-// }
 
 func (wallet *Wallet) CreateNewAccount(accountName string, privPass []byte) (int32, error) {
 	err := wallet.UnlockWallet(privPass)
