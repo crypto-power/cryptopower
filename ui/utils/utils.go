@@ -217,16 +217,16 @@ func AutoSplitSingleString(theme cryptomaterial.Theme, gtx layout.Context, text 
 		for i := 0; i < lines; i++ {
 			startIndex = i * numStrAllow
 			currentIndex = (i + 1) * numStrAllow
-			if currentIndex >= len(text) {
-				currentIndex = len(text) - 1
+			if currentIndex > len(text) {
+				currentIndex = len(text)
 			}
 			if startIndex >= len(text) {
 				continue
 			}
 			textSplit := text[i*numStrAllow : currentIndex]
-			if currentIndex+10 < len(text) {
-				reserveText := text[i*numStrAllow : currentIndex+10]
-				skewed, _ := getSkewedText(theme, gtx, textSplit, reserveText, font, textSize)
+			if currentIndex <= len(text) {
+				reserveText := text[i*numStrAllow:]
+				skewed, _ := getSkewedText(theme, gtx, textSplit, reserveText, font, textSize, avd)
 				if skewed != 0 {
 					i -= 1
 					numStrAllow += skewed
@@ -246,17 +246,21 @@ func AutoSplitSingleString(theme cryptomaterial.Theme, gtx layout.Context, text 
 	return newString
 }
 
-func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserveText string, font text.Font, size fixed.Int26_6) (int, string) {
+func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserveText string, font text.Font, size fixed.Int26_6, avd int) (int, string) {
 	maxWidth := gtx.Constraints.Max.X
 	str := text
 	skewed := 0
 	loop := true
 	for loop {
 		line := theme.Shaper.LayoutString(font, size, maxWidth, gtx.Locale, str)
-		if (line[0].Width.Round() + 1) > maxWidth {
+		if (line[0].Width.Round() + 1) > maxWidth-avd {
 			skewed -= 1
 			str = reserveText[0 : len(text)+skewed]
-		} else if (line[0].Width.Round() + 1) < maxWidth-15 {
+		} else if (line[0].Width.Round() + 1) < maxWidth-(avd*3) {
+			if len(text) == len(reserveText) {
+				loop = false
+				continue
+			}
 			skewed += 1
 			str = reserveText[0 : len(text)+skewed]
 		} else {
