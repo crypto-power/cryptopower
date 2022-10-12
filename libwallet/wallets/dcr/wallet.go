@@ -236,12 +236,13 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 	}
 
 	params := &loader.CreateWalletParams{
+		WalletID:       strconv.Itoa(wallet.ID),
 		PubPassphrase:  []byte(w.InsecurePubPassphrase),
 		PrivPassphrase: []byte(privatePassphrase),
 		Seed:           seed,
 	}
 
-	_, err = wallet.loader.CreateNewWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), params)
+	_, err = wallet.loader.CreateNewWallet(wallet.ShutdownContext(), params)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -278,11 +279,12 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 
 func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 	params := &loader.WatchOnlyWalletParams{
-		PubPass:        []byte(w.InsecurePubPassphrase),
+		WalletID:       strconv.Itoa(wallet.ID),
+		PubPassphrase:  []byte(w.InsecurePubPassphrase),
 		ExtendedPubKey: extendedPublicKey,
 	}
 
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), params)
+	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), params)
 	if err != nil {
 		log.Error(err)
 		return err

@@ -19,7 +19,7 @@ import (
 var log = loader.Log
 
 // btcLoader implements the creating of new and opening of existing btc wallets.
-// This is primarely intended for use by the RPC servers, to enable
+// This is primarily intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
 // another subsystem.
 //
@@ -89,7 +89,7 @@ func (l *btcLoader) getWalletLoader(walletID string, createIfNotFound bool) (*wa
 
 // CreateNewWallet creates a new wallet using the provided walletID, public and private
 // passphrases.
-func (l *btcLoader) CreateNewWallet(ctx context.Context, walletID string, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
+func (l *btcLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -103,7 +103,7 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, walletID string, params
 		return nil, errors.New("wallet already opened")
 	}
 
-	ldr, err := l.getWalletLoader(walletID, true)
+	ldr, err := l.getWalletLoader(params.WalletID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, walletID string, params
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
 // walletID, extended public key and public passphrase.
-func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID string, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
+func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -133,12 +133,12 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID strin
 		return nil, errors.New("wallet already loaded")
 	}
 
-	ldr, err := l.getWalletLoader(walletID, true)
+	ldr, err := l.getWalletLoader(params.WalletID, true)
 	if err != nil {
 		return nil, err
 	}
 
-	wal, err := ldr.CreateNewWatchingOnlyWallet(params.PubPass, time.Now().UTC())
+	wal, err := ldr.CreateNewWatchingOnlyWallet(params.PubPassphrase, time.Now().UTC())
 	if err != nil {
 		log.Errorf("Failed to create watch only btc wallet: %v", err)
 		return nil, err

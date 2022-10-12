@@ -267,12 +267,13 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 	}
 
 	params := &loader.CreateWalletParams{
+		WalletID:       strconv.Itoa(wallet.ID),
 		PubPassphrase:  []byte(w.InsecurePubPassphrase),
 		PrivPassphrase: []byte(privatePassphrase),
 		Seed:           seedMnemonic,
 	}
 
-	_, err := wallet.loader.CreateNewWallet(wallet.ctx, strconv.Itoa(wallet.ID), params)
+	_, err := wallet.loader.CreateNewWallet(wallet.ctx, params)
 	if err != nil {
 		return err
 	}
@@ -320,10 +321,11 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 
 func (wallet *Wallet) createWatchingOnlyWallet() error {
 	params := &loader.WatchOnlyWalletParams{
-		PubPass: []byte(w.InsecurePubPassphrase),
+		WalletID:      strconv.Itoa(wallet.ID),
+		PubPassphrase: []byte(w.InsecurePubPassphrase),
 	}
 
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, strconv.Itoa(wallet.ID), params)
+	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, params)
 	if err != nil {
 		return err
 	}

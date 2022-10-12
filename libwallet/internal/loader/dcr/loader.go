@@ -27,7 +27,7 @@ var log = loader.Log
 
 // dcrLoader implements the creating of new and opening of existing dcr wallets, while
 // providing a callback system for other subsystems to handle the loading of a
-// wallet.  This is primarely intended for use by the RPC servers, to enable
+// wallet.  This is primarily intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
 // another subsystem.
 //
@@ -113,7 +113,7 @@ func (l *dcrLoader) RunAfterLoad(fn func(*wallet.Wallet)) {
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
 // walletID, extended public key and public passphrase.
-func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID string, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
+func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
 	const op errors.Op = "loader.CreateWatchingOnlyWallet"
 
 	defer l.mu.Unlock()
@@ -123,7 +123,7 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID strin
 		return nil, errors.E(op, errors.Exist, "wallet already loaded")
 	}
 
-	dbPath, err := l.CreateDirPath(walletID, walletDbName, utils.DCRWalletAsset)
+	dbPath, err := l.CreateDirPath(params.WalletID, walletDbName, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -134,7 +134,7 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID strin
 	}
 
 	// Initialize the watch-only database for the wallet before opening.
-	err = wallet.CreateWatchOnly(ctx, db, params.ExtendedPubKey, params.PubPass, l.chainParams)
+	err = wallet.CreateWatchOnly(ctx, db, params.ExtendedPubKey, params.PubPassphrase, l.chainParams)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -143,7 +143,7 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID strin
 	so := l.stakeOptions
 	cfg := &wallet.Config{
 		DB:                      db,
-		PubPassphrase:           params.PubPass,
+		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
 		AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
@@ -171,7 +171,7 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID strin
 // CreateNewWallet creates a new wallet using the provided walletID, public and private
 // passphrases.  The seed is optional.  If non-nil, addresses are derived from
 // this seed.  If nil, a secure random seed is generated.
-func (l *dcrLoader) CreateNewWallet(ctx context.Context, walletID string, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
+func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
 	const op errors.Op = "loader.CreateNewWallet"
 
 	defer l.mu.Unlock()
@@ -181,7 +181,7 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, walletID string, params
 		return nil, errors.E(op, errors.Exist, "wallet already opened")
 	}
 
-	dbPath, err := l.CreateDirPath(walletID, walletDbName, utils.DCRWalletAsset)
+	dbPath, err := l.CreateDirPath(params.WalletID, walletDbName, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

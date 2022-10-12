@@ -33,11 +33,13 @@ type LoaderWallets struct {
 }
 
 type WatchOnlyWalletParams struct {
+	WalletID       string
 	ExtendedPubKey string
-	PubPass        []byte
+	PubPassphrase  []byte
 }
 
 type CreateWalletParams struct {
+	WalletID       string
 	PubPassphrase  []byte
 	PrivPassphrase []byte
 	Seed           []byte
@@ -50,8 +52,8 @@ type AssetLoader interface {
 	SetDatabaseDriver(driver string)
 
 	OpenExistingWallet(ctx context.Context, WalletID string, pubPassphrase []byte) (*LoaderWallets, error)
-	CreateNewWallet(ctx context.Context, WalletID string, params *CreateWalletParams) (*LoaderWallets, error)
-	CreateWatchingOnlyWallet(ctx context.Context, WalletID string, params *WatchOnlyWalletParams) (*LoaderWallets, error)
+	CreateNewWallet(ctx context.Context, params *CreateWalletParams) (*LoaderWallets, error)
+	CreateWatchingOnlyWallet(ctx context.Context, params *WatchOnlyWalletParams) (*LoaderWallets, error)
 
 	GetLoadedWallet() (*LoaderWallets, bool)
 	UnloadWallet() error
