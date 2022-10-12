@@ -35,7 +35,7 @@ type Wallet struct {
 
 	chainParams  *chaincfg.Params
 	dataDir      string
-	loader       *loader.Loader
+	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
 	synced            bool
@@ -93,7 +93,7 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	setUserConfigValueFn configSaveFn, readUserConfigValueFn configReadFn) (err error) {
 
 	wallet.chainParams = chainParams
-	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
+	wallet.dataDir = filepath.Join(rootDir, strings.ToLower(wallet.Type), strconv.Itoa(wallet.ID))
 	wallet.rootDir = rootDir
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.setUserConfigValue = setUserConfigValueFn
@@ -118,7 +118,7 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	// init loader
-	wallet.loader = initWalletLoader(wallet.chainParams, wallet.dataDir, wallet.dbDriver)
+	wallet.loader = initWalletLoader(wallet.chainParams, wallet.rootDir, wallet.dbDriver)
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -139,7 +139,7 @@ func (wallet *Wallet) Shutdown() {
 	// `wallet.ShutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	wallet.shuttingDown <- true
 
-	if _, loaded := wallet.loader.LoadedWallet(); loaded {
+	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
 		err := wallet.loader.UnloadWallet()
 		if err != nil {
 			log.Errorf("Failed to close wallet: %v", err)
@@ -173,12 +173,12 @@ func (wallet *Wallet) NetType() string {
 }
 
 func (wallet *Wallet) Internal() *w.Wallet {
-	lw, _ := wallet.loader.LoadedWallet()
-	return lw
+	lw, _ := wallet.loader.GetLoadedWallet()
+	return lw.DCR
 }
 
 func (wallet *Wallet) WalletExists() (bool, error) {
-	return wallet.loader.WalletExists()
+	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
@@ -236,7 +236,7 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 		return err
 	}
 
-	_, err = wallet.loader.CreateNewWallet(wallet.ShutdownContext(), pubPass, privPass, seed)
+	_, err = wallet.loader.CreateNewWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass, privPass, seed)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -274,7 +274,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 	pubPass := []byte(w.InsecurePubPassphrase)
 
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), extendedPublicKey, pubPass)
+	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), extendedPublicKey, pubPass)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -363,7 +363,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 			return err
 		}
 
-		walletDataDir := filepath.Join(wallet.rootDir, strconv.Itoa(wallet.ID))
+		walletDataDir := wallet.DataDir()
 
 		dirExists, err := fileExists(walletDataDir)
 		if err != nil {
@@ -382,7 +382,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 		if wallet.Name == "" {
 			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
 		}
-		wallet.dataDir = walletDataDir
+		// wallet.dataDir = walletDataDir
 
 		err = db.Save(wallet) // update database with complete wallet information
 		if err != nil {
@@ -467,8 +467,8 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {
-	if w, ok := wallet.loader.LoadedWallet(); ok {
-		return w.WatchingOnly()
+	if w, ok := wallet.loader.GetLoadedWallet(); ok {
+		return w.DCR.WatchingOnly()
 	}
 
 	return false
@@ -477,9 +477,10 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 func (wallet *Wallet) OpenWallet() error {
 	pubPass := []byte(w.InsecurePubPassphrase)
 
-	_, err := wallet.loader.OpenExistingWallet(wallet.ShutdownContext(), pubPass)
+	_, err := wallet.loader.OpenExistingWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
 		log.Error(err)
+		fmt.Println(" <<<<<< ", strconv.Itoa(wallet.ID))
 		return translateError(err)
 	}
 
@@ -495,13 +496,13 @@ func (wallet *Wallet) UnlockWallet(privPass []byte) error {
 }
 
 func (wallet *Wallet) unlockWallet(privPass []byte) error {
-	loadedWallet, ok := wallet.loader.LoadedWallet()
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
 	if !ok {
 		return fmt.Errorf("wallet has not been loaded")
 	}
 
 	ctx, _ := wallet.ShutdownContextWithCancel()
-	err := loadedWallet.Unlock(ctx, privPass, nil)
+	err := loadedWallet.DCR.Unlock(ctx, privPass, nil)
 	if err != nil {
 		return translateError(err)
 	}
@@ -591,7 +592,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 		}
 	}()
 
-	if _, loaded := wallet.loader.LoadedWallet(); !loaded {
+	if _, loaded := wallet.loader.GetLoadedWallet(); !loaded {
 		return errors.New(ErrWalletNotLoaded)
 	}
 
@@ -670,7 +671,7 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) 
 }
 
 func (wallet *Wallet) DataDir() string {
-	return wallet.dataDir
+	return filepath.Join(wallet.rootDir, "dcr", strconv.Itoa(wallet.ID))
 }
 
 func (wallet *Wallet) Synced() bool {

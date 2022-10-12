@@ -25,6 +25,7 @@ import (
 	"github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/decred/dcrd/wire"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	dcrLoader "gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
@@ -276,7 +277,7 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 	return newName, nil
 }
 
-func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) *loader.Loader {
+func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
 	cfg := &dcr.WalletConfig{
 		GapLimit:                20,
@@ -288,12 +289,12 @@ func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDrive
 		MixSplitLimit:           10,
 	}
 
-	stakeOptions := &loader.StakeOptions{
+	stakeOptions := &dcrLoader.StakeOptions{
 		VotingEnabled: false,
 		AddressReuse:  false,
 		VotingAddress: nil,
 	}
-	walletLoader := loader.NewLoader(chainParams, walletDataDir, stakeOptions,
+	walletLoader := dcrLoader.NewLoader(chainParams, walletDataDir, stakeOptions,
 		cfg.GapLimit, cfg.AllowHighFees, cfg.RelayFee, cfg.AccountGapLimit,
 		cfg.DisableCoinTypeUpgrades, cfg.ManualTickets, cfg.MixSplitLimit)
 

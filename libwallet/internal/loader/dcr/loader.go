@@ -7,6 +7,7 @@ package dcr
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -244,9 +245,11 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, strWalletID string, 
 	// Open the database using the boltdb backend.
 	dbPath, _, err := l.FileExists(strWalletID, utils.DCRWalletAsset, walletDbName)
 	if err != nil {
+		log.Warnf("unable to open wallet db at %q: %v", dbPath, err)
 		return nil, errors.E(op, err)
 	}
 
+	fmt.Println(" >>>>>> dbPath <<<<< ", dbPath)
 	db, err := wallet.OpenDB(l.DbDriver, dbPath)
 	if err != nil {
 		log.Errorf("Failed to open database: %v", err)

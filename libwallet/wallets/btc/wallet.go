@@ -29,6 +29,8 @@ import (
 	"github.com/jrick/logrotate/rotator"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
+	ldr "gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 
 	"github.com/asdine/storm"
 )
@@ -49,11 +51,12 @@ type Wallet struct {
 
 	dataDir     string
 	cancelFuncs []context.CancelFunc
+	ctx         context.Context
 
 	Synced bool
 
 	chainParams *chaincfg.Params
-	loader      *w.Loader
+	loader      ldr.AssetLoader
 	log         slog.Logger
 	birthday    time.Time
 
@@ -165,10 +168,17 @@ func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err 
 		return err
 	}
 
+	ctx, cancelfunc := context.WithCancel(context.Background())
+	wallet.ctx = ctx
+
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancelfunc)
+
 	wallet.chainParams = chainParams
+	wallet.rootDir = rootDir
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.log = log
-	wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
+	// wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
+	wallet.loader = btc.NewLoader(chainParams, rootDir, 5*time.Second, 250)
 	return nil
 }
 
@@ -177,8 +187,12 @@ func (wallet *Wallet) Shutdown(walletDBRef *storm.DB) {
 	// `wallet.shutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	// wallet.shuttingDown <- true
 
-	if _, loaded := wallet.loader.LoadedWallet(); loaded {
+	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
 		wallet.loader.UnloadWallet()
+	}
+
+	for _, f := range wallet.cancelFuncs {
+		f()
 	}
 
 	if walletDBRef != nil {
@@ -201,12 +215,12 @@ func (wallet *Wallet) NetType() string {
 }
 
 func (wallet *Wallet) Internal() *w.Wallet {
-	lw, _ := wallet.loader.LoadedWallet()
-	return lw
+	lw, _ := wallet.loader.GetLoadedWallet()
+	return lw.BTC
 }
 
 func (wallet *Wallet) WalletExists() (bool, error) {
-	return wallet.loader.WalletExists()
+	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
@@ -254,7 +268,7 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 	pubPass := []byte(w.InsecurePubPassphrase)
 	privPass := []byte(privatePassphrase)
 
-	_, err := wallet.loader.CreateNewWallet(pubPass, privPass, seedMnemonic, wallet.CreatedAt)
+	_, err := wallet.loader.CreateNewWallet(wallet.ctx, strconv.Itoa(wallet.ID), pubPass, privPass, seedMnemonic)
 	if err != nil {
 		return err
 	}
@@ -303,7 +317,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 func (wallet *Wallet) createWatchingOnlyWallet() error {
 	pubPass := []byte(w.InsecurePubPassphrase)
 
-	_, err := wallet.loader.CreateNewWatchingOnlyWallet(pubPass, time.Now())
+	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, strconv.Itoa(wallet.ID), "", pubPass)
 	if err != nil {
 		return err
 	}
@@ -312,7 +326,7 @@ func (wallet *Wallet) createWatchingOnlyWallet() error {
 }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {
-	if _, ok := wallet.loader.LoadedWallet(); ok {
+	if _, ok := wallet.loader.GetLoadedWallet(); ok {
 		return false
 	}
 
@@ -337,7 +351,7 @@ func (wallet *Wallet) RenameWallet(newName string, walledDbRef *storm.DB) error 
 func (wallet *Wallet) OpenWallet() error {
 	pubPass := []byte(w.InsecurePubPassphrase)
 
-	_, err := wallet.loader.OpenExistingWallet(pubPass, false)
+	_, err := wallet.loader.OpenExistingWallet(wallet.ctx, strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
 		return translateError(err)
 	}
@@ -350,12 +364,12 @@ func (wallet *Wallet) WalletOpened() bool {
 }
 
 func (wallet *Wallet) UnlockWallet(privPass []byte) error {
-	loadedWallet, ok := wallet.loader.LoadedWallet()
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
 	if !ok {
 		return fmt.Errorf("wallet has not been loaded")
 	}
 
-	err := loadedWallet.Unlock(privPass, nil)
+	err := loadedWallet.BTC.Unlock(privPass, nil)
 	if err != nil {
 		return translateError(err)
 	}
@@ -398,7 +412,7 @@ func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
 		}
 	}()
 
-	if _, loaded := wallet.loader.LoadedWallet(); !loaded {
+	if _, loaded := wallet.loader.GetLoadedWallet(); !loaded {
 		return errors.New(ErrWalletNotLoaded)
 	}
 
@@ -438,9 +452,9 @@ func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
 // starts syncing.
 func (wallet *Wallet) startWallet() error {
 	// timeout and recoverWindow arguments borrowed from btcwallet directly.
-	wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
+	wallet.loader = btc.NewLoader(wallet.chainParams, wallet.dataDir, 60*time.Second, 250)
 
-	exists, err := wallet.loader.WalletExists()
+	exists, err := wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 	if err != nil {
 		return fmt.Errorf("error verifying wallet existence: %v", err)
 	}
@@ -449,7 +463,7 @@ func (wallet *Wallet) startWallet() error {
 	}
 
 	wallet.log.Debug("Starting native BTC wallet...")
-	btcw, err := wallet.loader.OpenExistingWallet([]byte(w.InsecurePubPassphrase), false)
+	btcw, err := wallet.loader.OpenExistingWallet(wallet.ctx, strconv.Itoa(wallet.ID), []byte(w.InsecurePubPassphrase))
 	if err != nil {
 		return fmt.Errorf("couldn't load wallet: %w", err)
 	}
@@ -524,7 +538,7 @@ func (wallet *Wallet) startWallet() error {
 	}
 
 	wallet.log.Info("Synchronizing wallet with network...")
-	btcw.SynchronizeRPC(wallet.chainClient)
+	btcw.BTC.SynchronizeRPC(wallet.chainClient)
 
 	return nil
 }
@@ -558,7 +572,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 			return err
 		}
 
-		walletDataDir := filepath.Join(wallet.dataDir, strconv.Itoa(wallet.ID))
+		walletDataDir := wallet.DataDir()
 
 		dirExists, err := fileExists(walletDataDir)
 		if err != nil {
@@ -577,7 +591,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
 		}
 
-		wallet.dataDir = walletDataDir
+		// wallet.dataDir = walletDataDir
 
 		err = db.Save(wallet) // update database with complete wallet information
 		if err != nil {
@@ -596,5 +610,5 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 }
 
 func (wallet *Wallet) DataDir() string {
-	return wallet.dataDir
+	return filepath.Join(wallet.rootDir, "btc", strconv.Itoa(wallet.ID))
 }

@@ -68,13 +68,13 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pub
 	}
 
 	// If the directory path doesn't exists, it creates it.
-	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.DCRWalletAsset, walletDbName)
+	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, walletDbName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Creates the db instance at the provided path.
-	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, true, l.dbTimeout)
+	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
 	}
@@ -108,13 +108,13 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 		return nil, errors.New("wallet already loaded")
 	}
 	// If the directory path doesn't exists, it creates it.
-	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.DCRWalletAsset, walletDbName)
+	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, walletDbName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Creates the db instance at the provided path.
-	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, true, l.dbTimeout)
+	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
 	}
@@ -138,11 +138,12 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.
 func (l *btcLoader) OpenExistingWallet(ctx context.Context, strWalletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
+	fmt.Println(" >>>>>>>> GOT HERE <<<<< ")
 	defer l.mu.Unlock()
 	l.mu.Lock()
-
+	fmt.Println(" >>>>>>>> 111 GOT HERE <<<<< ")
 	// constructs and checks if the file path exists
-	neutrinoDBPath, exists, err := l.FileExists(strWalletID, utils.DCRWalletAsset, walletDbName)
+	neutrinoDBPath, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, walletDbName)
 	if err != nil {
 		return nil, err
 	}
@@ -151,23 +152,27 @@ func (l *btcLoader) OpenExistingWallet(ctx context.Context, strWalletID string, 
 		return nil, fmt.Errorf("missing db at path %v", neutrinoDBPath)
 	}
 
-	db, err := walletdb.Open(l.DbDriver, neutrinoDBPath, true, l.dbTimeout)
+	db, err := walletdb.Open(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
 	}
+	fmt.Println(" >>>>>>>> 22 GOT HERE <<<<< ")
 
-	walletExists := func() (bool, error) { return true, nil }
+	walletExists := func() (bool, error) { return false, nil }
 
 	ldr, err := wallet.NewLoaderWithDB(l.chainParams, l.recoveryWindow, db, walletExists)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(" >>>>>>>> 33 GOT HERE <<<<< ")
 
 	wal, err := ldr.OpenExistingWallet(pubPassphrase, false)
 	if err != nil {
 		log.Errorf("Failed to open existing btc wallet: %v", err)
 		return nil, err
 	}
+
+	fmt.Println(" >>>>>>>> 44 GOT HERE <<<<< ")
 
 	return &loader.LoaderWallets{BTC: wal}, nil
 }
@@ -200,6 +205,12 @@ func (l *btcLoader) UnloadWallet() error {
 		return errors.New("wallet is unopened")
 	}
 
+	err := l.db.Close()
+	if err != nil {
+		return err
+	}
+
+	l.db = nil
 	l.wallet = nil
 	return nil
 }
@@ -210,7 +221,7 @@ func (l *btcLoader) WalletExists(strWalletID string) (bool, error) {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	_, exists, err := l.FileExists(strWalletID, utils.DCRWalletAsset, walletDbName)
+	_, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, walletDbName)
 	if err != nil {
 		return false, err
 	}

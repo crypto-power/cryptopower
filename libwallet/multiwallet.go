@@ -73,7 +73,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
-	chainParams, err := utils.ChainParams(netType)
+	chainParams, err := utils.DCRChainParams(netType)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +171,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	for _, wallet := range wallets {
 		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
+			fmt.Println(" wallet.DataDir() DCR >>>>", wallet.DataDir())
 			err = fmt.Errorf("missing wallet database file")
 		}
 		if err != nil {
@@ -178,6 +179,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 			log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 		} else {
 			mw.Assets.DCR.Wallets[wallet.ID] = wallet
+			fmt.Println(" DCR  wallets >>>>", wallet.ID)
 		}
 
 		logLevel := wallet.ReadStringConfigValueForKey(LogLevelConfigKey, "")
@@ -194,6 +196,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 			log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 		} else {
 			mw.Assets.BTC.Wallets[wallet.ID] = wallet
+			fmt.Println(" BTC  wallets >>>>", wallet.ID)
 		}
 	}
 

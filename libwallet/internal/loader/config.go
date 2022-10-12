@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -117,6 +118,7 @@ func (l *Loader) CreateDirPath(strWalletID string, assetType utils.AssetType, wa
 // exists.
 func (l *Loader) FileExists(strWalletID string, assetType utils.AssetType, walletDbName string) (string, bool, error) {
 	path := filepath.Join(l.DbDirPath, string(assetType), strWalletID, walletDbName)
+	fmt.Println(" ******** WTF *****", path)
 	b, err := fileExists(path)
 	return path, b, err
 }
