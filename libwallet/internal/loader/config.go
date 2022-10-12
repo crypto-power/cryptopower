@@ -71,11 +71,11 @@ func (l *Loader) SetDatabaseDriver(driver string) {
 }
 
 // CreateDirPath checks that fully qualified path to the wallet bucket exists.
-// If it doesn't exist its created. It also checks if the actually db file
-// required exists, if it exist an error is returned otherwise its created.
-// Since the fully qualified path the db is as follows:
+// If it doesn't exist it's created. It also checks if the actual db file
+// required exists, if it exists an error is returned otherwise it's created.
+// Since the fully qualified path of the db is as follows:
 // ~.cryptopower/[network_selected]/[asset_selected]/[wallet_ID]/[WalletDbName.db].
-// l.DbDirPath provides the path up the network_selected.
+// l.DbDirPath provides the path of the network_selected.
 // assetType provides the asset_selected name,
 // WalletID provides the wallet Id of the wallet needed.
 // assetType and WalletID are provided for every new bucket instance needed.

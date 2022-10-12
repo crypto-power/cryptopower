@@ -88,8 +88,7 @@ func (l *btcLoader) getWalletLoader(walletID string, createIfNotFound bool) (*wa
 }
 
 // CreateNewWallet creates a new wallet using the provided walletID, public and private
-// passphrases.  The seed is optional.  If non-nil, addresses are derived from
-// this seed.  If nil, a secure random seed is generated.
+// passphrases.
 func (l *btcLoader) CreateNewWallet(ctx context.Context, walletID string, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
