@@ -17,6 +17,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
 )
 
@@ -382,7 +383,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 		if wallet.Name == "" {
 			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
 		}
-		// wallet.dataDir = walletDataDir
 
 		err = db.Save(wallet) // update database with complete wallet information
 		if err != nil {
@@ -480,7 +480,6 @@ func (wallet *Wallet) OpenWallet() error {
 	_, err := wallet.loader.OpenExistingWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
 		log.Error(err)
-		fmt.Println(" <<<<<< ", strconv.Itoa(wallet.ID))
 		return translateError(err)
 	}
 
@@ -671,7 +670,7 @@ func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) 
 }
 
 func (wallet *Wallet) DataDir() string {
-	return filepath.Join(wallet.rootDir, "dcr", strconv.Itoa(wallet.ID))
+	return filepath.Join(wallet.rootDir, string(utils.DCRWalletAsset), strconv.Itoa(wallet.ID))
 }
 
 func (wallet *Wallet) Synced() bool {

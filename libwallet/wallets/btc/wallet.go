@@ -31,6 +31,7 @@ import (
 	"github.com/lightninglabs/neutrino/headerfs"
 	ldr "gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
 	"github.com/asdine/storm"
 )
@@ -177,8 +178,7 @@ func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err 
 	wallet.rootDir = rootDir
 	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
 	wallet.log = log
-	// wallet.loader = w.NewLoader(wallet.chainParams, wallet.dataDir, true, 60*time.Second, 250)
-	wallet.loader = btc.NewLoader(chainParams, rootDir, 5*time.Second, 250)
+	wallet.loader = btc.NewLoader(chainParams, rootDir, time.Duration(100), 200)
 	return nil
 }
 
@@ -279,7 +279,7 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 		}
 	}
 
-	neutrinoDBPath := filepath.Join(wallet.dataDir, neutrinoDBName)
+	neutrinoDBPath := filepath.Join(wallet.DataDir(), neutrinoDBName)
 	db, err := walletdb.Create("bdb", neutrinoDBPath, true, 5*time.Second)
 	if err != nil {
 		bailOnWallet()
@@ -452,7 +452,7 @@ func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
 // starts syncing.
 func (wallet *Wallet) startWallet() error {
 	// timeout and recoverWindow arguments borrowed from btcwallet directly.
-	wallet.loader = btc.NewLoader(wallet.chainParams, wallet.dataDir, 60*time.Second, 250)
+	wallet.loader = btc.NewLoader(wallet.chainParams, wallet.dataDir, time.Duration(100), 200)
 
 	exists, err := wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 	if err != nil {
@@ -474,7 +474,7 @@ func (wallet *Wallet) startWallet() error {
 		}
 	}
 
-	neutrinoDBPath := filepath.Join(wallet.dataDir, neutrinoDBName)
+	neutrinoDBPath := filepath.Join(wallet.DataDir(), neutrinoDBName)
 	wallet.neutrinoDB, err = walletdb.Create("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
 	if err != nil {
 		bailOnWallet()
@@ -591,8 +591,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
 		}
 
-		// wallet.dataDir = walletDataDir
-
 		err = db.Save(wallet) // update database with complete wallet information
 		if err != nil {
 			return err
@@ -610,5 +608,5 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 }
 
 func (wallet *Wallet) DataDir() string {
-	return filepath.Join(wallet.rootDir, "btc", strconv.Itoa(wallet.ID))
+	return filepath.Join(wallet.rootDir, string(utils.BTCWalletAsset), strconv.Itoa(wallet.ID))
 }

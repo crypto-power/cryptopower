@@ -10,20 +10,16 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcwallet/wallet"
-	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-const walletDbName = "neutrino.db"
-
 var log = loader.Log
 
-// btcLoader implements the creating of new and opening of existing dcr wallets, while
-// providing a callback system for other subsystems to handle the loading of a
-// wallet.  This is primarely intended for use by the RPC servers, to enable
+// btcLoader implements the creating of new and opening of existing dcr wallets. 
+// This is primarely intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
 // another subsystem.
 //
@@ -33,7 +29,6 @@ type btcLoader struct {
 
 	chainParams *chaincfg.Params
 	wallet      *wallet.Wallet
-	db          walletdb.DB
 
 	recoveryWindow uint32
 	dbTimeout      time.Duration
@@ -68,22 +63,25 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pub
 	}
 
 	// If the directory path doesn't exists, it creates it.
-	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, walletDbName)
+	dbpath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Creates the db instance at the provided path.
-	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
-	}
+	// strip the db file name from the path
+	path := filepath.Dir(dbpath)
 
-	walletExists := func() (bool, error) { return true, nil }
+	// Loader takes the db path without the actual db attached it.
+	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
 
-	ldr, err := wallet.NewLoaderWithDB(l.chainParams, l.recoveryWindow, db, walletExists)
-	if err != nil {
-		return nil, err
+	defer func() {
+		for i := range seed {
+			seed[i] = 0
+		}
+	}()
+
+	if len(seed) == 0 {
+		return nil, errors.New("ErrEmptySeed")
 	}
 
 	wal, err := ldr.CreateNewWallet(pubPassphrase, privPassphrase, seed, time.Now().UTC())
@@ -92,7 +90,6 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pub
 		return nil, err
 	}
 
-	l.db = db
 	l.wallet = wal
 
 	return &loader.LoaderWallets{BTC: wal}, nil
@@ -107,24 +104,18 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 	if l.wallet != nil {
 		return nil, errors.New("wallet already loaded")
 	}
+
 	// If the directory path doesn't exists, it creates it.
-	neutrinoDBPath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, walletDbName)
+	dbpath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Creates the db instance at the provided path.
-	db, err := walletdb.Create(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
-	}
+	// strip the db file name from the path
+	path := filepath.Dir(dbpath)
 
-	walletExists := func() (bool, error) { return true, nil }
-
-	ldr, err := wallet.NewLoaderWithDB(l.chainParams, l.recoveryWindow, db, walletExists)
-	if err != nil {
-		return nil, err
-	}
+	// Loader takes the db path without the actual db attached it.
+	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
 
 	wal, err := ldr.CreateNewWatchingOnlyWallet(pubPass, time.Now().UTC())
 	if err != nil {
@@ -138,41 +129,30 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.
 func (l *btcLoader) OpenExistingWallet(ctx context.Context, strWalletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
-	fmt.Println(" >>>>>>>> GOT HERE <<<<< ")
 	defer l.mu.Unlock()
 	l.mu.Lock()
-	fmt.Println(" >>>>>>>> 111 GOT HERE <<<<< ")
+
 	// constructs and checks if the file path exists
-	neutrinoDBPath, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, walletDbName)
+	dbpath, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
 	if err != nil {
 		return nil, err
 	}
 
 	if !exists {
-		return nil, fmt.Errorf("missing db at path %v", neutrinoDBPath)
+		return nil, fmt.Errorf("missing db at path %v", dbpath)
 	}
 
-	db, err := walletdb.Open(l.DbDriver, neutrinoDBPath, false, l.dbTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
-	}
-	fmt.Println(" >>>>>>>> 22 GOT HERE <<<<< ")
+	// strip the db file name from the path
+	path := filepath.Dir(dbpath)
 
-	walletExists := func() (bool, error) { return false, nil }
-
-	ldr, err := wallet.NewLoaderWithDB(l.chainParams, l.recoveryWindow, db, walletExists)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(" >>>>>>>> 33 GOT HERE <<<<< ")
+	// Loader takes the db path without the actual db attached it.
+	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
 
 	wal, err := ldr.OpenExistingWallet(pubPassphrase, false)
 	if err != nil {
 		log.Errorf("Failed to open existing btc wallet: %v", err)
 		return nil, err
 	}
-
-	fmt.Println(" >>>>>>>> 44 GOT HERE <<<<< ")
 
 	return &loader.LoaderWallets{BTC: wal}, nil
 }
@@ -205,12 +185,6 @@ func (l *btcLoader) UnloadWallet() error {
 		return errors.New("wallet is unopened")
 	}
 
-	err := l.db.Close()
-	if err != nil {
-		return err
-	}
-
-	l.db = nil
 	l.wallet = nil
 	return nil
 }
@@ -221,7 +195,7 @@ func (l *btcLoader) WalletExists(strWalletID string) (bool, error) {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	_, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, walletDbName)
+	_, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
 	if err != nil {
 		return false, err
 	}

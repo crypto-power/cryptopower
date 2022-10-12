@@ -7,7 +7,6 @@ package dcr
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -249,7 +248,6 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, strWalletID string, 
 		return nil, errors.E(op, err)
 	}
 
-	fmt.Println(" >>>>>> dbPath <<<<< ", dbPath)
 	db, err := wallet.OpenDB(l.DbDriver, dbPath)
 	if err != nil {
 		log.Errorf("Failed to open database: %v", err)
