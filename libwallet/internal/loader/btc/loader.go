@@ -18,7 +18,7 @@ import (
 
 var log = loader.Log
 
-// btcLoader implements the creating of new and opening of existing dcr wallets. 
+// btcLoader implements the creating of new and opening of existing btc wallets.
 // This is primarely intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
 // another subsystem.
@@ -51,21 +51,32 @@ func NewLoader(chainParams *chaincfg.Params, dbDirPath string, defaultDBTimeout 
 	}
 }
 
-// CreateNewWallet creates a new wallet using the provided walletID, public and private
-// passphrases.  The seed is optional.  If non-nil, addresses are derived from
-// this seed.  If nil, a secure random seed is generated.
-func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pubPassphrase, privPassphrase, seed []byte) (*loader.LoaderWallets, error) {
-	defer l.mu.Unlock()
-	l.mu.Lock()
+// getWalletLoader creates the btc loader by configuring the path with the
+// provided parameters. If createIfNotFound the missing directory path is created.
+// This is mostly done when new wallets are being created. When reading existing
+// wallets createIfNotFound is set to false signifying that if the path doesn't
+// it can't be created. Lack of that path triggers an error.
+func (l *btcLoader) getWalletLoader(walletID string, createIfNotFound bool) (*wallet.Loader, error) {
+	var err error
+	var dbpath string
 
-	if l.wallet != nil {
-		return nil, errors.New("wallet already opened")
-	}
+	if createIfNotFound {
+		// If the directory path doesn't exists, it creates it.
+		dbpath, err = l.CreateDirPath(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var exists bool
+		// constructs and checks if the file path exists
+		dbpath, exists, err = l.FileExists(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
+		if err != nil {
+			return nil, err
+		}
 
-	// If the directory path doesn't exists, it creates it.
-	dbpath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
-	if err != nil {
-		return nil, err
+		if !exists {
+			return nil, fmt.Errorf("missing db at path %v", dbpath)
+		}
 	}
 
 	// strip the db file name from the path
@@ -73,18 +84,36 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pub
 
 	// Loader takes the db path without the actual db attached it.
 	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
+	return ldr, nil
+}
+
+// CreateNewWallet creates a new wallet using the provided walletID, public and private
+// passphrases.  The seed is optional.  If non-nil, addresses are derived from
+// this seed.  If nil, a secure random seed is generated.
+func (l *btcLoader) CreateNewWallet(ctx context.Context, walletID string, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
+	defer l.mu.Unlock()
+	l.mu.Lock()
 
 	defer func() {
-		for i := range seed {
-			seed[i] = 0
+		for i := range params.Seed {
+			params.Seed[i] = 0
 		}
 	}()
 
-	if len(seed) == 0 {
+	if l.wallet != nil {
+		return nil, errors.New("wallet already opened")
+	}
+
+	ldr, err := l.getWalletLoader(walletID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(params.Seed) == 0 {
 		return nil, errors.New("ErrEmptySeed")
 	}
 
-	wal, err := ldr.CreateNewWallet(pubPassphrase, privPassphrase, seed, time.Now().UTC())
+	wal, err := ldr.CreateNewWallet(params.PubPassphrase, params.PrivPassphrase, params.Seed, time.Now().UTC())
 	if err != nil {
 		log.Errorf("Failed to create new wallet btc wallet: %v", err)
 		return nil, err
@@ -97,7 +126,7 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, strWalletID string, pub
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
 // walletID, extended public key and public passphrase.
-func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID string, extendedPubKey string, pubPass []byte) (*loader.LoaderWallets, error) {
+func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, walletID string, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -105,19 +134,12 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 		return nil, errors.New("wallet already loaded")
 	}
 
-	// If the directory path doesn't exists, it creates it.
-	dbpath, err := l.CreateDirPath(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
+	ldr, err := l.getWalletLoader(walletID, true)
 	if err != nil {
 		return nil, err
 	}
 
-	// strip the db file name from the path
-	path := filepath.Dir(dbpath)
-
-	// Loader takes the db path without the actual db attached it.
-	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
-
-	wal, err := ldr.CreateNewWatchingOnlyWallet(pubPass, time.Now().UTC())
+	wal, err := ldr.CreateNewWatchingOnlyWallet(params.PubPass, time.Now().UTC())
 	if err != nil {
 		log.Errorf("Failed to create watch only btc wallet: %v", err)
 		return nil, err
@@ -128,25 +150,14 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, strWalletID st
 
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.
-func (l *btcLoader) OpenExistingWallet(ctx context.Context, strWalletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
+func (l *btcLoader) OpenExistingWallet(ctx context.Context, walletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
-	// constructs and checks if the file path exists
-	dbpath, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
+	ldr, err := l.getWalletLoader(walletID, false)
 	if err != nil {
 		return nil, err
 	}
-
-	if !exists {
-		return nil, fmt.Errorf("missing db at path %v", dbpath)
-	}
-
-	// strip the db file name from the path
-	path := filepath.Dir(dbpath)
-
-	// Loader takes the db path without the actual db attached it.
-	ldr := wallet.NewLoader(l.chainParams, path, true, l.dbTimeout, l.recoveryWindow)
 
 	wal, err := ldr.OpenExistingWallet(pubPassphrase, false)
 	if err != nil {
@@ -191,11 +202,11 @@ func (l *btcLoader) UnloadWallet() error {
 
 // WalletExists returns whether a file exists at the loader's database path.
 // This may return an error for unexpected I/O failures.
-func (l *btcLoader) WalletExists(strWalletID string) (bool, error) {
+func (l *btcLoader) WalletExists(walletID string) (bool, error) {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	_, exists, err := l.FileExists(strWalletID, utils.BTCWalletAsset, wallet.WalletDBName)
+	_, exists, err := l.FileExists(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
 	if err != nil {
 		return false, err
 	}

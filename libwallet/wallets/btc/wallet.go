@@ -29,6 +29,7 @@ import (
 	"github.com/jrick/logrotate/rotator"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	ldr "gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
@@ -265,10 +266,13 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 		return errors.New("ErrEmptySeed")
 	}
 
-	pubPass := []byte(w.InsecurePubPassphrase)
-	privPass := []byte(privatePassphrase)
+	params := &loader.CreateWalletParams{
+		PubPassphrase:  []byte(w.InsecurePubPassphrase),
+		PrivPassphrase: []byte(privatePassphrase),
+		Seed:           seedMnemonic,
+	}
 
-	_, err := wallet.loader.CreateNewWallet(wallet.ctx, strconv.Itoa(wallet.ID), pubPass, privPass, seedMnemonic)
+	_, err := wallet.loader.CreateNewWallet(wallet.ctx, strconv.Itoa(wallet.ID), params)
 	if err != nil {
 		return err
 	}
@@ -315,9 +319,11 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 }
 
 func (wallet *Wallet) createWatchingOnlyWallet() error {
-	pubPass := []byte(w.InsecurePubPassphrase)
+	params := &loader.WatchOnlyWalletParams{
+		PubPass: []byte(w.InsecurePubPassphrase),
+	}
 
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, strconv.Itoa(wallet.ID), "", pubPass)
+	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, strconv.Itoa(wallet.ID), params)
 	if err != nil {
 		return err
 	}

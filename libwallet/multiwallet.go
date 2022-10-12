@@ -153,8 +153,8 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	// read saved dcr wallets info from db and initialize wallets
 	query := mw.db.Select(q.Eq("Type", DCRWallet)).OrderBy("ID")
-	var wallets []*dcr.Wallet
-	err = query.Find(&wallets)
+	var DCRWallets []*dcr.Wallet
+	err = query.Find(&DCRWallets)
 	if err != nil && err != storm.ErrNotFound {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	// prepare the wallets loaded from db for use
-	for _, wallet := range wallets {
+	for _, wallet := range DCRWallets {
 		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
