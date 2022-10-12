@@ -5,6 +5,9 @@ import (
 )
 
 const (
+	TestnetHDPath = "m / 44' / 1' / "  // TODO: confirm if this is the correct HD path for btc
+	MainnetHDPath = "m / 44' / 42' / " // TODO: confirm if this is the correct HD path for btc
+
 	DefaultRequiredConfirmations = 6
 )
 

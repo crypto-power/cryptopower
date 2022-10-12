@@ -2,8 +2,12 @@ package btc
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
+
+	// w "github.com/btcsuite/btcwallet/wallet"
+	"github.com/btcsuite/btcd/chaincfg"
 )
 
 const (
@@ -153,6 +157,13 @@ func (wallet *Wallet) HasAccount(accountName string) bool {
 	return err == nil
 }
 
-// func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
+func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
+	var hdPath string
+	if wallet.chainParams.Name == chaincfg.MainNetParams.Name {
+		hdPath = MainnetHDPath
+	} else {
+		hdPath = TestnetHDPath
+	}
 
-// }
+	return hdPath + strconv.Itoa(int(accountNumber)), nil
+}
