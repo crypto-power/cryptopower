@@ -2,6 +2,7 @@ package btc
 
 import (
 	"encoding/json"
+	"math"
 	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
@@ -89,6 +90,34 @@ func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
 		return 0, translateError(err)
 	}
 	return int64(bals.Spendable), nil
+}
+
+func (wallet *Wallet) UnspentOutputs(account int32) ([]*ListUnspentResult, error) {
+	accountName, err := wallet.AccountName(account)
+	if err != nil {
+		return nil, err
+	}
+
+	unspents, err := wallet.Internal().ListUnspent(0, math.MaxInt32, accountName)
+	if err != nil {
+		return nil, err
+	}
+	resp := make([]*ListUnspentResult, 0, len(unspents))
+
+	for _, utxo := range unspents {
+		resp = append(resp, &ListUnspentResult{
+			TxID:          utxo.TxID,
+			Vout:          utxo.Vout,
+			Address:       utxo.Address,
+			ScriptPubKey:  utxo.ScriptPubKey,
+			RedeemScript:  utxo.RedeemScript,
+			Amount:        utxo.Amount,
+			Confirmations: int64(utxo.Confirmations),
+			Spendable:     utxo.Spendable,
+		})
+	}
+
+	return resp, nil
 }
 
 func (wallet *Wallet) CreateNewAccount(accountName string, privPass []byte) (int32, error) {
