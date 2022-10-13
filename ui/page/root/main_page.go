@@ -74,16 +74,12 @@ type MainPage struct {
 	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
-<<<<<<< HEAD
 	usdExchangeRate       float64
 	totalBalance          dcrutil.Amount
 	currencyExchangeValue string
-=======
-	dcrUsdtBittrex  load.DCRUSDTBittrex
-	btcUsdtBittrex  load.BTCUSDTBittrex
-	totalBalance    dcrutil.Amount
-	totalBalanceBTC btcutil.Amount
->>>>>>> display btc balance on btc top bar
+	dcrUsdtBittrex        load.DCRUSDTBittrex
+	btcUsdtBittrex        load.BTCUSDTBittrex
+	totalBalanceBTC       btcutil.Amount
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
@@ -335,18 +331,13 @@ func (mp *MainPage) fetchExchangeRate() {
 	mp.isFetchingExchangeRate = true
 	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, values.DCRUSDTMarket)
 	if err != nil {
-		log.Errorf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
-	} else if mp.dcrUsdtBittrex.LastTradeRate == "" {
-		log.Errorf("no error while fetching usd exchange rate in %d tries, but no rate was fetched", attempts)
-	} else {
-		log.Infof("exchange rate value fetched: %s", mp.dcrUsdtBittrex.LastTradeRate)
-		mp.updateBalance()
-		mp.updateBTCBalance()
-		mp.ParentWindow().Reload()
+		log.Error(err)
+		return
 	}
 	mp.usdExchangeRate = rate.LastTradePrice
 
 	mp.updateBalance()
+	mp.updateBTCBalance()
 	mp.usdExchangeSet = true
 	mp.ParentWindow().Reload()
 	mp.isFetchingExchangeRate = false
