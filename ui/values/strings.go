@@ -678,4 +678,5 @@ const (
 	StrCoinSelection                   = "coinSelection"
 	StrNonAccSelector                  = "nonAccSelector"
 	StrTxConfModalInfoTxt              = "txConfModalInfoTxt"
+	StrSendConfModalTitle              = "sendConfModalTitle"
 )
