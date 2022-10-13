@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	AddressGapLimit uint32 = 20
+	AddressGapLimit       uint32 = 20
+	ImportedAccountNumber        = 756756757
 )
 
 func (wallet *Wallet) GetAccounts() (string, error) {

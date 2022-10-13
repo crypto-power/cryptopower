@@ -29,6 +29,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/page/governance"
 	"gitlab.com/raedah/cryptopower/ui/page/info"
 	"gitlab.com/raedah/cryptopower/ui/page/privacy"
+	btcRoot "gitlab.com/raedah/cryptopower/ui/page/root/btc"
 	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
 	"gitlab.com/raedah/cryptopower/ui/page/send"
 	"gitlab.com/raedah/cryptopower/ui/page/staking"
@@ -214,7 +215,7 @@ func (mp *MainPage) initNavItems() {
 				Image:         mp.Theme.Icons.MoreIcon,
 				ImageInactive: mp.Theme.Icons.MoreIconInactive,
 				Title:         values.String(values.StrSettings),
-				PageID:        WalletSettingsPageID,
+				PageID:        btcRoot.BTCWalletSettingsPageID,
 			},
 		},
 		MinimizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowBack),
@@ -315,6 +316,11 @@ func (mp *MainPage) OnNavigatedTo() {
 		}
 	} else if mp.WL.SelectedWalletType == "BTC" {
 		mp.updateBTCBalance()
+
+		if mp.CurrentPage() == nil {
+			mp.Display(btcRoot.NewBTCWalletSettingsPage(mp.Load)) // TODO: Should pagestack have a start page?
+		}
+		mp.CurrentPage().OnNavigatedTo()
 	}
 }
 
@@ -495,6 +501,21 @@ func (mp *MainPage) HandleUserInteractions() {
 			} else {
 				mp.Display(pg)
 			}
+		}
+	}
+
+	for _, item := range mp.drawerNav.BTCDrawerNavItems {
+		for item.Clickable.Clicked() {
+			var pg app.Page
+			switch item.PageID {
+			case WalletSettingsPageID:
+				pg = btcRoot.NewBTCWalletSettingsPage(mp.Load)
+			}
+
+			if pg == nil || mp.ID() == mp.CurrentPageID() {
+				continue
+			}
+			mp.Display(pg)
 		}
 	}
 

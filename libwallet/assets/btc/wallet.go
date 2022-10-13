@@ -163,7 +163,12 @@ func (wallet *Wallet) RawRequest(method string, params []json.RawMessage) (json.
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err error) {
+func (wallet *Wallet) Prepare(rootDir, net string, db *storm.DB, log slog.Logger) (err error) {
+	wallet.db = db
+	return wallet.prepare(rootDir, net, log)
+}
+
+func (wallet *Wallet) prepare(rootDir string, net string, log slog.Logger) (err error) {
 	chainParams, err := parseChainParams(net)
 	if err != nil {
 		return err
@@ -244,7 +249,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, "testnet3", wallet.log)
 		if err != nil {
 			return err
 		}
@@ -309,7 +314,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, "testnet3", wallet.log)
 		if err != nil {
 			return err
 		}
@@ -340,19 +345,19 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 	return false
 }
 
-func (wallet *Wallet) RenameWallet(newName string, walledDbRef *storm.DB) error {
+func (wallet *Wallet) RenameWallet(newName string) error {
 	if strings.HasPrefix(newName, "wallet-") {
 		return errors.E(ErrReservedWalletName)
 	}
 
-	if exists, err := WalletNameExists(newName, walledDbRef); err != nil {
+	if exists, err := wallet.WalletNameExists(newName); err != nil {
 		return translateError(err)
 	} else if exists {
 		return errors.New(ErrExist)
 	}
 
 	wallet.Name = newName
-	return walledDbRef.Save(wallet) // update WalletName field
+	return wallet.db.Save(wallet) // update WalletName field
 }
 
 func (wallet *Wallet) OpenWallet() error {

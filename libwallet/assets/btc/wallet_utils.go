@@ -47,6 +47,21 @@ func WalletNameExists(walletName string, walledDbRef *storm.DB) (bool, error) {
 	return false, nil
 }
 
+func (wallet *Wallet) WalletNameExists(walletName string) (bool, error) {
+	if strings.HasPrefix(walletName, "wallet-") {
+		return false, errors.E(ErrReservedWalletName)
+	}
+
+	err := wallet.db.One("Name", walletName, &Wallet{})
+	if err == nil {
+		return true, nil
+	} else if err != storm.ErrNotFound {
+		return false, err
+	}
+
+	return false, nil
+}
+
 func fileExists(filePath string) (bool, error) {
 	_, err := os.Stat(filePath)
 	if err != nil {
