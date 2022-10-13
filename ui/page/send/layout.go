@@ -52,9 +52,7 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{}.Layout(gtx, pg.Theme.H6(values.String(values.StrSend)+" DCR").Layout)
-				}),
+				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+values.String(values.StrDCRCaps)).Layout),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
@@ -143,9 +141,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					return components.UniformPadding(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-									return pg.topNav(gtx)
-								})
+								return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.topNav)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
@@ -162,9 +158,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		layout.Stacked(func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 			return layout.S.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D {
-					return pg.balanceSection(gtx)
-				})
+				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, pg.balanceSection)
 			})
 		}),
 	)

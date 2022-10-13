@@ -45,7 +45,6 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 		AccountValidator(func(account *dcr.Account) bool {
 			return true
 		})
-	avm.accountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return avm
 }

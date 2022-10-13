@@ -679,4 +679,5 @@ const (
 	StrNonAccSelector                  = "nonAccSelector"
 	StrTxConfModalInfoTxt              = "txConfModalInfoTxt"
 	StrSendConfModalTitle              = "sendConfModalTitle"
+	StrDCRCaps                         = "dcrCaps"
 )

@@ -198,29 +198,12 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 			inset := layout.Inset{
 				Right: values.MarginPadding8,
 			}
-			return inset.Layout(gtx, func(gtx C) D {
-				return walletIcon.Layout24dp(gtx)
-			})
+			return inset.Layout(gtx, walletIcon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if ws.accountSelector {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
 					layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
-					layout.Rigid(func(gtx C) D {
-						walName := ws.Theme.Label(values.TextSize12, ws.SelectedWallet().Name)
-						walName.Color = ws.Theme.Color.GrayText2
-						card := ws.Theme.Card()
-						card.Radius = cryptomaterial.Radius(4)
-						card.Color = ws.Theme.Color.Gray4
-						return layout.Inset{
-							Left: values.MarginPadding4,
-						}.Layout(gtx, func(gtx C) D {
-							return card.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding0).Layout(gtx, walName.Layout)
-							})
-						})
-
-					}),
 				)
 			}
 			return ws.Theme.Body1(ws.SelectedWallet().Name).Layout(gtx)
@@ -436,9 +419,7 @@ func (sm *selectorModal) Layout(gtx C) D {
 			title.Font.Weight = text.SemiBold
 			return layout.Inset{
 				Top: values.MarginPaddingMinus15,
-			}.Layout(gtx, func(gtx C) D {
-				return title.Layout(gtx)
-			})
+			}.Layout(gtx, title.Layout)
 		},
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -449,15 +430,6 @@ func (sm *selectorModal) Layout(gtx C) D {
 						}
 						return inset.Layout(gtx, func(gtx C) D {
 							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									inset := layout.UniformInset(values.MarginPadding4)
-									return inset.Layout(gtx, func(gtx C) D {
-										walName := sm.Theme.Label(values.TextSize14, sm.selectedWallet.Name)
-										walName.Color = sm.Theme.Color.GrayText2
-										return walName.Layout(gtx)
-									})
-								}),
-
 								layout.Rigid(func(gtx C) D {
 									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 										layout.Rigid(func(gtx C) D {
