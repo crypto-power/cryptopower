@@ -224,7 +224,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-							return layout.Center.Layout(gtx, scm.Theme.Icons.ArrowDownIcon.Layout24dp)
+							return layout.Center.Layout(gtx, scm.Theme.Icons.ArrowDownIcon.Layout16dp)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -340,7 +340,6 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 			})
 		},
 	}
-
 	return scm.Modal.Layout(gtx, w)
 }
 
