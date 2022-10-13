@@ -30,7 +30,6 @@ import (
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	ldr "gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
@@ -58,7 +57,7 @@ type Wallet struct {
 	Synced bool
 
 	chainParams *chaincfg.Params
-	loader      ldr.AssetLoader
+	loader      loader.AssetLoader
 	log         slog.Logger
 	birthday    time.Time
 

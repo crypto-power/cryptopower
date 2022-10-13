@@ -17,6 +17,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/ararog/timeago"
+	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -61,6 +62,17 @@ type (
 		LockedByTickets         dcrutil.Amount
 		VotingAuthority         dcrutil.Amount
 		UnConfirmed             dcrutil.Amount
+	}
+
+	// CummulativeBTCWalletsBalance defines total balance for all available BTC wallets.
+	CummulativeBTCWalletsBalance struct {
+		Total                   btcutil.Amount
+		Spendable               btcutil.Amount
+		ImmatureReward          btcutil.Amount
+		ImmatureStakeGeneration btcutil.Amount
+		LockedByTickets         btcutil.Amount
+		VotingAuthority         btcutil.Amount
+		UnConfirmed             btcutil.Amount
 	}
 
 	DexServer struct {
@@ -577,6 +589,32 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		LockedByTickets:         dcrutil.Amount(lockedByTickets),
 		VotingAuthority:         dcrutil.Amount(votingAuthority),
 		UnConfirmed:             dcrutil.Amount(unConfirmed),
+	}
+
+	return cumm, nil
+}
+
+func CalculateTotalBTCWalletsBalance(l *load.Load) (*CummulativeBTCWalletsBalance, error) {
+	var totalBalance, spandableBalance, immatureReward, votingAuthority,
+		immatureStakeGeneration, lockedByTickets, unConfirmed int64
+
+	accountsResult, err := l.WL.SelectedBTCWallet.Wallet.GetAccountsRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, account := range accountsResult.Accounts {
+		totalBalance += int64(account.TotalBalance)
+	}
+
+	cumm := &CummulativeBTCWalletsBalance{
+		Total:                   btcutil.Amount(totalBalance),
+		Spendable:               btcutil.Amount(spandableBalance),
+		ImmatureReward:          btcutil.Amount(immatureReward),
+		ImmatureStakeGeneration: btcutil.Amount(immatureStakeGeneration),
+		LockedByTickets:         btcutil.Amount(lockedByTickets),
+		VotingAuthority:         btcutil.Amount(votingAuthority),
+		UnConfirmed:             btcutil.Amount(unConfirmed),
 	}
 
 	return cumm, nil

@@ -67,7 +67,15 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 	watchOnlyWalletList := make([]*load.BTCWalletItem, 0)
 
 	for _, wal := range wallets {
-		var totalBalance int64 = 53
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			continue
+		}
+
+		var totalBalance int64
+		for _, acc := range accountsResult.Accounts {
+			totalBalance += int64(acc.TotalBalance)
+		}
 
 		// sort wallets into normal wallet and watchonly wallets
 		if wal.IsWatchingOnlyWallet() {

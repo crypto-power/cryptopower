@@ -144,6 +144,8 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 		return nil, err
 	}
 
+	l.wallet = wal
+
 	return &loader.LoaderWallets{BTC: wal}, nil
 }
 
@@ -163,6 +165,8 @@ func (l *btcLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 		log.Errorf("Failed to open existing btc wallet: %v", err)
 		return nil, err
 	}
+
+	l.wallet = wal
 
 	return &loader.LoaderWallets{BTC: wal}, nil
 }
