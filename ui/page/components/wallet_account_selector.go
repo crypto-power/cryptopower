@@ -256,7 +256,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 		return
 	}
 	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := ws.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletAndAccountSelectorID)
+	err := ws.selectedWallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletAndAccountSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -270,7 +270,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 				case listeners.BlockAttached:
 					// refresh wallet and account balance on every new block
 					// only if sync is completed.
-					if ws.WL.SelectedWallet.Wallet.IsSynced() {
+					if ws.selectedWallet.IsSynced() {
 						if ws.selectorModal != nil {
 							if ws.accountSelector {
 								ws.selectorModal.setupAccounts(ws.selectedWallet)
@@ -294,7 +294,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 
 				}
 			case <-ctx.Done():
-				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
+				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
@@ -342,7 +342,7 @@ func (sm *selectorModal) setupWallet() {
 	selectorItems := make([]*SelectorItem, 0)
 	wallets := sm.WL.SortedWalletList()
 	for _, wal := range wallets {
-		if !sm.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
 				item:      wal,
 				clickable: sm.Theme.NewClickable(true),
@@ -371,11 +371,6 @@ func (sm *selectorModal) setupAccounts(wal *dcr.Wallet) {
 		}
 	}
 	sm.selectorItems = selectorItems
-}
-
-func (sm *selectorModal) SetCancelable(min bool) *selectorModal {
-	sm.isCancelable = min
-	return sm
 }
 
 func (sm *selectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *selectorModal {
@@ -609,11 +604,6 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			return D{}
 		}),
 	)
-}
-
-func (sm *selectorModal) onModalExit(exit func()) *selectorModal {
-	sm.onExit = exit
-	return sm
 }
 
 func (sm *selectorModal) OnDismiss() {}

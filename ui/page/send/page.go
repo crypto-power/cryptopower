@@ -51,11 +51,11 @@ type Page struct {
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
 
-	txFeeCollapsible       *cryptomaterial.Collapsible
-	shadowBox              *cryptomaterial.Shadow
-	optionsMenuCard        cryptomaterial.Card
-	moreItems              []moreItem
-	backdrop               *widget.Clickable
+	txFeeCollapsible *cryptomaterial.Collapsible
+	shadowBox        *cryptomaterial.Shadow
+	optionsMenuCard  cryptomaterial.Card
+	moreItems        []moreItem
+	backdrop         *widget.Clickable
 
 	isFetchingExchangeRate bool
 
@@ -126,7 +126,6 @@ func NewSendPage(l *load.Load) *Page {
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
-
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *dcr.Account) bool {
@@ -227,6 +226,8 @@ func (pg *Page) validateAndConstructTx() {
 }
 
 func (pg *Page) validateAndConstructTxAmountOnly() {
+	defer pg.RefreshTheme(pg.ParentWindow())
+
 	if !pg.sendDestination.validate() && pg.amount.amountIsValid() {
 		pg.constructTx(true)
 	} else {
