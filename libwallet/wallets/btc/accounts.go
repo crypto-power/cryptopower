@@ -17,10 +17,14 @@ const (
 func (wallet *Wallet) GetAccounts() (string, error) {
 	accountsResponse, err := wallet.GetAccountsRaw()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
-	result, _ := json.Marshal(accountsResponse)
+	result, err := json.Marshal(accountsResponse)
+	if err != nil {
+		return "", err
+	}
+
 	return string(result), nil
 }
 
