@@ -33,7 +33,7 @@ type Wallet struct {
 	waitingForHeaders bool
 
 	chainParams  *chaincfg.Params
-	walletDataDB *walletdata.DB
+	walletDataDB *walletdata.DB // field to be replaced in the code with GetWalletDataDb()
 
 	cancelAccountMixer context.CancelFunc `json:"-"`
 
@@ -61,8 +61,9 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	dcrWallet := &Wallet{
 		Wallet: w,
 
-		rootDir:     rootDir, // To moved to the upstream wallet
-		chainParams: chainParams,
+		rootDir:      rootDir, // To moved to the upstream wallet
+		chainParams:  chainParams,
+		walletDataDB: w.GetWalletDataDb(),
 
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
@@ -89,6 +90,8 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 		rootDir:     rootDir, // To moved to the upstream wallet
 		chainParams: chainParams,
 
+		walletDataDB: w.GetWalletDataDb(),
+
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
@@ -110,6 +113,8 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 
 		rootDir:     rootDir, // To moved to the upstream wallet
 		chainParams: chainParams,
+
+		walletDataDB: w.GetWalletDataDb(),
 
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),

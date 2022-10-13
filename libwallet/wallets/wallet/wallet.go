@@ -194,6 +194,10 @@ func (wallet *Wallet) SetNetworkCancelCallback(callback func()) {
 	wallet.networkCancel = callback
 }
 
+func (wallet *Wallet) GetWalletDataDb() *walletdata.DB {
+	return wallet.walletDataDB
+}
+
 func (wallet *Wallet) WalletExists() (bool, error) {
 	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
