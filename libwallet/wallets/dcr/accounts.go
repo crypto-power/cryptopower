@@ -8,24 +8,12 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
-
-const (
-	AddressGapLimit       uint32 = 20
-	ImportedAccountNumber        = udb.ImportedAddrAccount
-	DefaultAccountNum            = udb.DefaultAccountNum
-)
-
-type AccountsIterator struct {
-	currentIndex int
-	accounts     []*mainW.Account
-}
 
 func (wallet *Wallet) GetAccounts() (string, error) {
 	accountsResponse, err := wallet.GetAccountsRaw()

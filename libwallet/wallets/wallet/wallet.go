@@ -39,21 +39,8 @@ type Wallet struct {
 
 	networkCancel func()
 
-	// synced            bool
-	// syncing           bool
-	// waitingForHeaders bool
-
 	shuttingDown chan bool
 	cancelFuncs  []context.CancelFunc
-	// cancelAccountMixer context.CancelFunc `json:"-"`
-
-	// cancelAutoTicketBuyerMu sync.Mutex
-	// cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
-
-	// vspClientsMu sync.Mutex
-	// vspClients   map[string]*vsp.Client
-	// vspMu sync.RWMutex
-	// vsps  []*VSP
 
 	// setUserConfigValue saves the provided key-value pair to a config database.
 	// This function is ideally assigned when the `wallet.prepare` method is
@@ -65,15 +52,6 @@ type Wallet struct {
 	// This function is ideally assigned when the `wallet.prepare` method is
 	// called from a MultiWallet instance.
 	readUserConfigValue configReadFn
-
-	// notificationListenersMu          sync.RWMutex
-	// syncData                         *SyncData
-	// accountMixerNotificationListener map[string]AccountMixerNotificationListener
-	// txAndBlockNotificationListeners  map[string]TxAndBlockNotificationListener
-	// blocksRescanProgressListener     BlocksRescanProgressListener
-
-	// vspMu sync.RWMutex
-	// vsps  []*VSP
 
 	Type string
 }
@@ -117,12 +95,6 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 		log.Error(err.Error())
 		return err
 	}
-
-	// wallet.syncData = &SyncData{
-	// 	syncProgressListeners: make(map[string]SyncProgressListener),
-	// }
-	// wallet.txAndBlockNotificationListeners = make(map[string]TxAndBlockNotificationListener)
-	// wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	// init loader
 	wallet.loader = initWalletLoader(wallet.chainParams, wallet.rootDir, wallet.dbDriver)
@@ -352,13 +324,6 @@ func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 	// functions to safely cancel sync before proceeding
 	wallet.networkCancel()
 
-	// if wallet.IsConnectedToDecredNetwork() {
-	// 	wallet.CancelSync()
-	// 	defer func() {
-	// 		wallet.SpvSync()
-	// 	}()
-	// }
-
 	err := wallet.deleteWallet(privPass)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -378,10 +343,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	// functions to safely cancel sync before proceeding
 	wallet.networkCancel()
 
-	// if wallet.IsConnectedToDecredNetwork() {
-	// 	wallet.CancelSync()
-	// 	defer wallet.SpvSync()
-	// }
 	// Perform database save operations in batch transaction
 	// for automatic rollback if error occurs at any point.
 	err = wallet.batchDbTransaction(func(db storm.Node) error {

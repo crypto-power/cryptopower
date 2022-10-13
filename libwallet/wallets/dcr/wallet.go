@@ -26,7 +26,7 @@ type Wallet struct {
 
 	/* needed to load existing wallets at the multiwallet level */
 
-	rootDir string
+	rootDir string // to be moved upstream as it same for all assets
 
 	synced            bool
 	syncing           bool

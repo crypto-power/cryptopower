@@ -1,6 +1,26 @@
 package dcr
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+import (
+	"decred.org/dcrwallet/wallet/udb"
+	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+)
+
+const (
+	AddressGapLimit       uint32 = 20
+	ImportedAccountNumber        = udb.ImportedAddrAccount
+	DefaultAccountNum            = udb.DefaultAccountNum
+)
+
+type AccountsIterator struct {
+	currentIndex int
+	accounts     []*mainW.Account
+}
+
+type WalletsIterator struct {
+	CurrentIndex int
+	Wallets      []*Wallet
+}
 
 /** begin tx-related types */
 
