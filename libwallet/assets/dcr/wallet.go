@@ -6,10 +6,10 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet/walletdata"
 )
 
 // To be renamed to DCRAsset when optimizing the code.
@@ -131,6 +131,7 @@ func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *ch
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.rootDir = rootDir
 	wallet.chainParams = chainParams
+	wallet.walletDataDB = wallet.GetWalletDataDb()
 
 	wallet.syncData = &SyncData{
 		syncProgressListeners: make(map[string]mainW.SyncProgressListener),

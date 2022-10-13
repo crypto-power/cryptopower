@@ -7,8 +7,8 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 func (wallet *Wallet) RescanBlocks() error {

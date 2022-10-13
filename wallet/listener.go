@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+import "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 
 type RescanNotificationType int
 

@@ -3,7 +3,7 @@ package listeners
 import (
 	"encoding/json"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 // TxAndBlockNotificationListener satisfies libwallet

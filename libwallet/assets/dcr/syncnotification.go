@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 	"golang.org/x/sync/errgroup"
 )
 

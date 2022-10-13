@@ -18,8 +18,8 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 
 	"golang.org/x/crypto/bcrypt"
 )

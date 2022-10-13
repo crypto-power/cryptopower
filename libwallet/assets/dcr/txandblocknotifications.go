@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"decred.org/dcrwallet/v2/errors"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 func (wallet *Wallet) listenForTransactions() {

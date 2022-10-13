@@ -17,10 +17,10 @@ import (
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/wire"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 type TxAuthor struct {

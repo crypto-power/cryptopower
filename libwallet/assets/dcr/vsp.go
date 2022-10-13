@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.

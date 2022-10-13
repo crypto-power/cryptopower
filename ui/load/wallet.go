@@ -7,9 +7,9 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 

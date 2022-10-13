@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"

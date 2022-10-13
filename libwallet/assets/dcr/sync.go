@@ -13,9 +13,9 @@ import (
 	"decred.org/dcrwallet/v2/p2p"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x

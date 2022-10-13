@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+import "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 
 // NewBlock is sent when a block is attached to the multiwallet.
 type NewBlock struct {

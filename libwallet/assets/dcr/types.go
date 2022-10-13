@@ -2,8 +2,8 @@ package dcr
 
 import (
 	"decred.org/dcrwallet/wallet/udb"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (

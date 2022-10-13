@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+import "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 
 // TODO: responses.go file to be deprecated with future code clean up
 

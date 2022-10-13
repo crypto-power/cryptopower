@@ -3,8 +3,8 @@ package dcr
 import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet/walletdata"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 )
 
 func (wallet *Wallet) IndexTransactions() error {

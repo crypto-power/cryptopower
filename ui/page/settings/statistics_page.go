@@ -12,8 +12,8 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"

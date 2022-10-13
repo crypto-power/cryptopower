@@ -19,7 +19,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"

@@ -1,7 +1,7 @@
 package listeners
 
 import (
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 

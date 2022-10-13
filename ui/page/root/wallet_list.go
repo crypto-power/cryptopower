@@ -4,7 +4,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"

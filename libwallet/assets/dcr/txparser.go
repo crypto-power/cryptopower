@@ -5,7 +5,7 @@ import (
 
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/wallets/wallet"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const BlockHeightInvalid int32 = -1
