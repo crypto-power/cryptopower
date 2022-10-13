@@ -48,7 +48,7 @@ type AccountProperties struct {
 
 	// AddrSchema, if non-nil, specifies an address schema override for
 	// address generation only applicable to the account.
-	// AddrSchema *ScopeAddrSchema
+	AddrSchema *ScopeAddrSchema
 }
 
 // AccountResult is a single account result for the AccountsResult type.
