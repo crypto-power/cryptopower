@@ -20,6 +20,10 @@ type DCRUSDTBittrex struct {
 	LastTradeRate string
 }
 
+type BTCUSDTBittrex struct {
+	LastTradeRate string
+}
+
 type Load struct {
 	Theme *cryptomaterial.Theme
 

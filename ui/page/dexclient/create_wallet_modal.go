@@ -68,7 +68,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 			}
 			return true
 		})
-    md.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	md.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return md
 }

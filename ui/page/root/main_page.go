@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
@@ -76,13 +77,17 @@ type MainPage struct {
 	usdExchangeRate       float64
 	totalBalance          dcrutil.Amount
 	currencyExchangeValue string
+	dcrUsdtBittrex        load.DCRUSDTBittrex
+	btcUsdtBittrex        load.BTCUSDTBittrex
+	totalBalanceBTC       btcutil.Amount
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
 	isBalanceHidden        bool
 
-	setNavExpanded  func()
-	totalBalanceUSD string
+	setNavExpanded     func()
+	totalBalanceUSD    string
+	totalBTCBalanceUSD string
 }
 
 func NewMainPage(l *load.Load) *MainPage {
@@ -284,6 +289,7 @@ func (mp *MainPage) OnNavigatedTo() {
 		// load wallet account balance first before rendering page contents
 		// TODO update updateBalance() to accommodate BTC balance update as well.
 		mp.updateBalance()
+		mp.updateBTCBalance()
 		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
@@ -331,6 +337,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	mp.usdExchangeRate = rate.LastTradePrice
 
 	mp.updateBalance()
+	mp.updateBTCBalance()
 	mp.usdExchangeSet = true
 	mp.ParentWindow().Reload()
 	mp.isFetchingExchangeRate = false
@@ -344,6 +351,20 @@ func (mp *MainPage) updateBalance() {
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.ToCoin() * mp.usdExchangeRate
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+}
+
+func (mp *MainPage) updateBTCBalance() {
+	totalBalance, err := components.CalculateTotalBTCWalletsBalance(mp.Load)
+	if err == nil {
+		mp.totalBalanceBTC = totalBalance.Total
+		if mp.usdExchangeSet && mp.btcUsdtBittrex.LastTradeRate != "" {
+			usdExchangeRate, err := strconv.ParseFloat(mp.btcUsdtBittrex.LastTradeRate, 64)
+			if err == nil {
+				balanceInUSD := float64(totalBalance.Total) * usdExchangeRate
+				mp.totalBTCBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+			}
+		}
+	}
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -695,6 +716,10 @@ func (mp *MainPage) totalDCRBalance(gtx C) D {
 	return components.LayoutBalanceWithUnit(gtx, mp.Load, mp.totalBalance.String())
 }
 
+func (mp *MainPage) totalBTCBalance(gtx C) D {
+	return mp.Theme.Label(values.TextSize18, mp.totalBalanceBTC.String()).Layout(gtx)
+}
+
 func (mp *MainPage) LayoutTopBar(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -845,6 +870,22 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								return layout.Inset{
 									Left: values.MarginPadding10,
 								}.Layout(gtx, lbl.Layout)
+							}),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return mp.totalBTCBalance(gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								if !mp.isBalanceHidden {
+									return mp.LayoutUSDBalance(gtx)
+								}
+								return D{}
 							}),
 						)
 					})
