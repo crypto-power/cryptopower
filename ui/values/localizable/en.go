@@ -172,6 +172,7 @@ const EN = `
 "french" = "French";
 "spanish" = "Spanish";
 "usdBittrex" = "USD (Bittrex)";
+"usdBinance" = "USD (Binance)";
 "none" = "None";
 "proposals" = "Proposals";
 "dex" = "Dex";
@@ -567,4 +568,9 @@ const EN = `
 "pageWarningNotSync" = "Page cannot be accessed because the wallet is not synced, please sync your wallet and try again"
 "pageWarningSync" = "Page cannot be accessed because the wallet sync is in progress, please wait for the sync to complete"
 "backToWallets" = "Back to Wallets"
+"coinSelection" = "Coin Selection"
+"nonAccSelector" = "This widget isn't set to show accounts"
+"txConfModalInfoTxt" = "<b>Unmixed accounts are hidden</b>. Spending from unmixed accounts is disabled by stakeshuffle settings to protect your privacy"
+"sendConfModalTitle" = "You're about to send"
+"dcrCaps"            = "DCR"
 `

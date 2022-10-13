@@ -198,10 +198,12 @@ func (pg *SettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					lKey := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+					l := values.ArrExchangeCurrencies[lKey]
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
-						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)),
+						label:     pg.Theme.Body2(values.String(l)),
 					}
 					return pg.clickableRow(gtx, exchangeRate)
 				}),

@@ -9,7 +9,9 @@ var (
 
 const (
 	DefaultExchangeValue = "none"
-	USDExchangeValue     = "USD (Bittrex)"
+	DCRUSDTMarket        = "DCR-USDT"
+	BittrexExchange      = "bittrex"
+	BinanceExchange      = "binance"
 )
 
 func init() {
@@ -20,7 +22,8 @@ func init() {
 	}
 
 	ArrExchangeCurrencies = map[string]string{
+		BittrexExchange:      StrUsdBittrex,
+		BinanceExchange:      StrUsdBinance,
 		DefaultExchangeValue: StrNone,
-		USDExchangeValue:     StrUsdBittrex,
 	}
 }

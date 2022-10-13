@@ -50,7 +50,8 @@ type ReceivePage struct {
 	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
-	selector          *components.AccountSelector
+	ops               *op.Ops
+	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
 
 	isCopying  bool
@@ -99,7 +100,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copyAddressButton.TextSize = values.TextSize14
 	pg.copyAddressButton.Inset = layout.UniformInset(values.MarginPadding0)
 
-	pg.selector = components.NewAccountSelector(pg.Load).
+	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *dcr.Account) {
 			selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
@@ -122,6 +123,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			}
 			return true
 		})
+	pg.selector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return pg
 }
@@ -133,7 +135,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.selector.SelectFirstWalletValidAccount() // Want to reset the user's selection everytime this page appears?
+	pg.selector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {

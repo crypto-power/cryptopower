@@ -283,6 +283,7 @@ const (
 	StrFrench                          = "french"
 	StrSpanish                         = "spanish"
 	StrUsdBittrex                      = "usdBittrex"
+	StrUsdBinance                      = "usdBinance"
 	StrNone                            = "none"
 	StrProposal                        = "proposals"
 	StrDex                             = "dex"
@@ -674,4 +675,9 @@ const (
 	StrPageWarningSync                 = "pageWarningSync"
 	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrBackToWallets                   = "backToWallets"
+	StrCoinSelection                   = "coinSelection"
+	StrNonAccSelector                  = "nonAccSelector"
+	StrTxConfModalInfoTxt              = "txConfModalInfoTxt"
+	StrSendConfModalTitle              = "sendConfModalTitle"
+	StrDCRCaps                         = "dcrCaps"
 )

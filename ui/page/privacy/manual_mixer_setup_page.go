@@ -28,8 +28,9 @@ type ManualMixerSetupPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	mixedAccountSelector   *components.AccountSelector
-	unmixedAccountSelector *components.AccountSelector
+	wallet                 *dcr.Wallet
+	mixedAccountSelector   *components.WalletAndAccountSelector
+	unmixedAccountSelector *components.WalletAndAccountSelector
 
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
@@ -44,7 +45,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	}
 
 	// Mixed account picker
-	pg.mixedAccountSelector = components.NewAccountSelector(l).
+	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -64,9 +65,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-
+	pg.mixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 	// Unmixed account picker
-	pg.unmixedAccountSelector = components.NewAccountSelector(l).
+	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
 		AccountSelected(func(selectedAccount *dcr.Account) {}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -87,6 +88,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
+	pg.unmixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -100,8 +102,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.mixedAccountSelector.SelectFirstWalletValidAccount()
-	pg.unmixedAccountSelector.SelectFirstWalletValidAccount()
+	pg.mixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
 }
 
 // Layout draws the page UI components into the provided layout context
