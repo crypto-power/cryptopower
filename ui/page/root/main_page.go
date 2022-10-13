@@ -289,7 +289,6 @@ func (mp *MainPage) OnNavigatedTo() {
 		// load wallet account balance first before rendering page contents
 		// TODO update updateBalance() to accommodate BTC balance update as well.
 		mp.updateBalance()
-		mp.updateBTCBalance()
 		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
@@ -313,6 +312,8 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
+	} else if mp.WL.SelectedWalletType == "BTC" {
+		mp.updateBTCBalance()
 	}
 }
 
