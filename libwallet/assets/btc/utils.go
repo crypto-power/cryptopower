@@ -1,6 +1,8 @@
 package btc
 
 import (
+	"encoding/hex"
+
 	"github.com/btcsuite/btcwallet/waddrmgr"
 )
 
@@ -20,4 +22,8 @@ func (wallet *Wallet) GetScope() waddrmgr.KeyScope {
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
 	return waddrmgr.KeyScopeBIP0084
+}
+
+func EncodeHex(hexBytes []byte) string {
+	return hex.EncodeToString(hexBytes)
 }

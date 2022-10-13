@@ -284,44 +284,44 @@ func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomater
 }
 
 func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
-	// currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-	// 	Title(values.String(values.StrChangeSpendingPass)).
-	// 	PasswordHint(values.String(values.StrCurrentSpendingPassword)).
-	// 	EnableName(false).
-	// 	EnableConfirmPassword(false).
-	// 	SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-	// 		err := pg.wallet.UnlockWallet([]byte(password))
-	// 		if err != nil {
-	// 			pm.SetError(err.Error())
-	// 			pm.SetLoading(false)
-	// 			return false
-	// 		}
-	// 		pg.wallet.LockWallet()
+	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		Title(values.String(values.StrChangeSpendingPass)).
+		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := pg.wallet.UnlockWallet([]byte(password))
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			pg.wallet.LockWallet()
 
-	// 		// change password
-	// 		newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-	// 			Title(values.String(values.StrChangeSpendingPass)).
-	// 			EnableName(false).
-	// 			PasswordHint(values.String(values.StrNewSpendingPassword)).
-	// 			ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
-	// 			SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-	// 				err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
-	// 					[]byte(newPassword), dcr.PassphraseTypePass)
-	// 				if err != nil {
-	// 					m.SetError(err.Error())
-	// 					m.SetLoading(false)
-	// 					return false
-	// 				}
+			// change password
+			newSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				Title(values.String(values.StrChangeSpendingPass)).
+				EnableName(false).
+				PasswordHint(values.String(values.StrNewSpendingPassword)).
+				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
+				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
+					err := pg.wallet.ChangePrivatePassphrase([]byte(password),
+						[]byte(newPassword))
+					if err != nil {
+						m.SetError(err.Error())
+						m.SetLoading(false)
+						return false
+					}
 
-	// 				info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
-	// 					modal.DefaultClickFunc())
-	// 				pg.ParentWindow().ShowModal(info)
-	// 				return true
-	// 			})
-	// 		pg.ParentWindow().ShowModal(newSpendingPasswordModal)
-	// 		return true
-	// 	})
-	// pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
+					info := modal.NewSuccessModal(pg.Load, values.StringF(values.StrSpendingPasswordUpdated),
+						modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(info)
+					return true
+				})
+			pg.ParentWindow().ShowModal(newSpendingPasswordModal)
+			return true
+		})
+	pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
 }
 
 func (pg *WalletSettingsPage) deleteWalletModal() {

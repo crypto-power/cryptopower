@@ -7,6 +7,9 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
+	"github.com/kevinburke/nacl"
+	"github.com/kevinburke/nacl/secretbox"
+	"golang.org/x/crypto/scrypt"
 )
 
 func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err error) {
@@ -95,4 +98,40 @@ func moveFile(sourcePath, destinationPath string) error {
 		return os.Rename(sourcePath, destinationPath)
 	}
 	return nil
+}
+
+// naclLoadFromPass derives a nacl.Key from pass using scrypt.Key.
+func naclLoadFromPass(pass []byte) (nacl.Key, error) {
+
+	const N, r, p = 1 << 15, 8, 1
+
+	hash, err := scrypt.Key(pass, nil, N, r, p, 32)
+	if err != nil {
+		return nil, err
+	}
+	return nacl.Load(EncodeHex(hash))
+}
+
+// encryptWalletSeed encrypts the seed with secretbox.EasySeal using pass.
+func encryptWalletSeed(pass []byte, seed string) ([]byte, error) {
+	key, err := naclLoadFromPass(pass)
+	if err != nil {
+		return nil, err
+	}
+	return secretbox.EasySeal([]byte(seed), key), nil
+}
+
+// decryptWalletSeed decrypts the encryptedSeed with secretbox.EasyOpen using pass.
+func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
+	key, err := naclLoadFromPass(pass)
+	if err != nil {
+		return "", err
+	}
+
+	decryptedSeed, err := secretbox.EasyOpen(encryptedSeed, key)
+	if err != nil {
+		return "", errors.New(ErrInvalidPassphrase)
+	}
+
+	return string(decryptedSeed), nil
 }

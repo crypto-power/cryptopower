@@ -259,7 +259,6 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 }
 
 func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte) error {
-
 	defer func() {
 		for i := range seedMnemonic {
 			seedMnemonic[i] = 0
@@ -399,18 +398,55 @@ func (wallet *Wallet) IsLocked() bool {
 	return wallet.Internal().Locked()
 }
 
-func (wallet *Wallet) ChangePrivatePassphrase(oldPass []byte, newPass []byte) error {
-	defer func() {
-		for i := range oldPass {
-			oldPass[i] = 0
+func (wallet *Wallet) ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
+	encryptedSeed := wallet.EncryptedSeed
+	if encryptedSeed != nil {
+		decryptedSeed, err := decryptWalletSeed(oldPrivatePassphrase, encryptedSeed)
+		if err != nil {
+			return err
 		}
 
-		for i := range newPass {
-			newPass[i] = 0
+		encryptedSeed, err = encryptWalletSeed(newPrivatePassphrase, decryptedSeed)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := wallet.changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
+	if err != nil {
+		return translateError(err)
+	}
+
+	wallet.EncryptedSeed = encryptedSeed
+	err = wallet.db.Save(wallet)
+	if err != nil {
+		log.Errorf("error saving wallet-[%d] to database after passphrase change: %v", wallet.ID, err)
+
+		err2 := wallet.changePrivatePassphrase(newPrivatePassphrase, oldPrivatePassphrase)
+		if err2 != nil {
+			log.Errorf("error undoing wallet passphrase change: %v", err2)
+			log.Errorf("error wallet passphrase was changed but passphrase type and newly encrypted seed could not be saved: %v", err)
+			return errors.New(ErrSavingWallet)
+		}
+
+		return errors.New(ErrChangingPassphrase)
+	}
+
+	return nil
+}
+
+func (wallet *Wallet) changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
+	defer func() {
+		for i := range oldPrivatePassphrase {
+			oldPrivatePassphrase[i] = 0
+		}
+
+		for i := range newPrivatePassphrase {
+			newPrivatePassphrase[i] = 0
 		}
 	}()
 
-	err := wallet.Internal().ChangePrivatePassphrase(oldPass, newPass)
+	err := wallet.Internal().ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
 	if err != nil {
 		return translateError(err)
 	}
