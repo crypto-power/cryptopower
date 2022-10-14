@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
