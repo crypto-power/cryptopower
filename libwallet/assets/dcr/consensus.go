@@ -11,6 +11,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/wire"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // AgendaStatusType defines the various agenda statuses.
@@ -97,7 +98,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	// request(s) for setting this vote choice with the VSP.
 	err := wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 

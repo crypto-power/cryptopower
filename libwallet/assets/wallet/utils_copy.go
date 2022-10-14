@@ -1,4 +1,4 @@
-package libwallet
+package wallet
 
 import (
 	"context"
@@ -20,14 +20,14 @@ import (
 	"decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
 	"decred.org/dcrwallet/v2/walletseed"
+	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	dcrLoader "gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 const (
@@ -57,40 +57,40 @@ const (
 	ShortestAbbreviationFormat = "shortest"
 )
 
-func (mw *MultiWallet) RequiredConfirmations() int32 {
-	spendUnconfirmed := mw.ReadBoolConfigValueForKey(SpendUnconfirmedConfigKey, false)
+func (wallet *Wallet) RequiredConfirmations() int32 {
+	var spendUnconfirmed bool
+	wallet.readUserConfigValue(true, SpendUnconfirmedConfigKey, &spendUnconfirmed)
 	if spendUnconfirmed {
 		return 0
 	}
 	return DefaultRequiredConfirmations
 }
 
-func (mw *MultiWallet) listenForShutdown() {
-
-	mw.cancelFuncs = make([]context.CancelFunc, 0)
-	mw.shuttingDown = make(chan bool)
-	go func() {
-		<-mw.shuttingDown
-		for _, cancel := range mw.cancelFuncs {
-			cancel()
-		}
-	}()
-}
-
-func (mw *MultiWallet) contextWithShutdownCancel() (context.Context, context.CancelFunc) {
+func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	mw.cancelFuncs = append(mw.cancelFuncs, cancel)
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
 	return ctx, cancel
 }
 
-func (mw *MultiWallet) ValidateExtPubKey(extendedPubKey string) error {
-	_, err := hdkeychain.NewKeyFromString(extendedPubKey, mw.chainParams)
+func (wallet *Wallet) ShutdownContext() (ctx context.Context) {
+	ctx, _ = wallet.ShutdownContextWithCancel()
+	return
+}
+
+func (wallet *Wallet) ContextWithShutdownCancel() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
+	return ctx, cancel
+}
+
+func (wallet *Wallet) ValidateExtPubKey(extendedPubKey string) error {
+	_, err := hdkeychain.NewKeyFromString(extendedPubKey, wallet.chainParams)
 	if err != nil {
 		if err == hdkeychain.ErrInvalidChild {
-			return errors.New(ErrUnusableSeed)
+			return errors.New(utils.ErrUnusableSeed)
 		}
 
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	return nil
@@ -166,7 +166,12 @@ func EncodeBase64(text []byte) string {
 }
 
 func DecodeBase64(base64Text string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(base64Text)
+	b, err := base64.StdEncoding.DecodeString(base64Text)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func ShannonEntropy(text string) (entropy float64) {
@@ -180,19 +185,6 @@ func ShannonEntropy(text string) (entropy float64) {
 		}
 	}
 	return entropy
-}
-
-func TransactionDirectionName(direction int32) string {
-	switch direction {
-	case dcr.TxDirectionSent:
-		return "Sent"
-	case dcr.TxDirectionReceived:
-		return "Received"
-	case dcr.TxDirectionTransferred:
-		return "Yourself"
-	default:
-		return "invalid"
-	}
 }
 
 func CalculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
@@ -213,6 +205,18 @@ func CalculateDaysBehind(lastHeaderTime int64) string {
 	} else {
 		return fmt.Sprintf("%d days", daysBehind)
 	}
+}
+
+func StringsToHashes(h []string) ([]*chainhash.Hash, error) {
+	hashes := make([]*chainhash.Hash, 0, len(h))
+	for _, v := range h {
+		hash, err := chainhash.NewHashFromStr(v)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+	return hashes, nil
 }
 
 func roundUp(n float64) int32 {
@@ -250,17 +254,6 @@ func moveFile(sourcePath, destinationPath string) error {
 	return nil
 }
 
-// done returns whether the context's Done channel was closed due to
-// cancellation or exceeded deadline.
-func done(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
-		return true
-	default:
-		return false
-	}
-}
-
 func backupFile(fileName string, suffix int) (newName string, err error) {
 	newName = fileName + ".bak" + strconv.Itoa(suffix)
 	exists, err := fileExists(newName)
@@ -280,7 +273,7 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 
 func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &mainW.WalletConfig{
+	cfg := &WalletConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,
@@ -290,12 +283,12 @@ func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDrive
 		MixSplitLimit:           10,
 	}
 
-	stakeOptions := &dcrLoader.StakeOptions{
+	stakeOptions := &dcr.StakeOptions{
 		VotingEnabled: false,
 		AddressReuse:  false,
 		VotingAddress: nil,
 	}
-	walletLoader := dcrLoader.NewLoader(chainParams, walletDataDir, stakeOptions,
+	walletLoader := dcr.NewLoader(chainParams, walletDataDir, stakeOptions,
 		cfg.GapLimit, cfg.RelayFee, cfg.AllowHighFees, cfg.DisableCoinTypeUpgrades,
 		cfg.ManualTickets, cfg.AccountGapLimit, cfg.MixSplitLimit)
 

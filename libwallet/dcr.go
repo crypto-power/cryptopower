@@ -8,8 +8,8 @@ import (
 
 	"github.com/decred/dcrd/chaincfg/v3"
 
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
 // initializeDCRWalletParameters initializes the fields each DCR wallet is going to need to be setup

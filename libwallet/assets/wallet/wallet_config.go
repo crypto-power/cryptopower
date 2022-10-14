@@ -1,8 +1,9 @@
-package dcr
+package wallet
 
 import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 const (
@@ -79,7 +80,7 @@ func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
 func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) error {
 	if wallet.setUserConfigValue == nil {
 		log.Errorf("call wallet.Prepare before reading wallet config values")
-		return errors.New(ErrFailedPrecondition)
+		return errors.New(utils.ErrFailedPrecondition)
 	}
 
 	err := wallet.readUserConfigValue(false, key, valueOut)

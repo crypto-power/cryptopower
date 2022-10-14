@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
@@ -94,12 +95,12 @@ type vspDbData struct {
 
 func (wallet *Wallet) getVSPDBData() *vspDbData {
 	vspDbData := new(vspDbData)
-	wallet.ReadUserConfigValue(KnownVSPsConfigKey, vspDbData)
+	wallet.ReadUserConfigValue(mainW.KnownVSPsConfigKey, vspDbData)
 	return vspDbData
 }
 
 func (wallet *Wallet) updateVSPDBData(data *vspDbData) {
-	wallet.SaveUserConfigValue(KnownVSPsConfigKey, data)
+	wallet.SaveUserConfigValue(mainW.KnownVSPsConfigKey, data)
 }
 
 // ReloadVSPList reloads the list of known VSPs.

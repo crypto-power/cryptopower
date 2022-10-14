@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"decred.org/dcrwallet/v2/errors"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (wallet *Wallet) listenForTransactions() {
@@ -24,7 +26,7 @@ func (wallet *Wallet) listenForTransactions() {
 						return
 					}
 
-					overwritten, err := wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
+					overwritten, err := wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tempTransaction)
 					if err != nil {
 						log.Errorf("[%d] New Tx save err: %v", wallet.ID, err)
 						return
@@ -51,7 +53,7 @@ func (wallet *Wallet) listenForTransactions() {
 							return
 						}
 
-						_, err = wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tempTransaction)
+						_, err = wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tempTransaction)
 						if err != nil {
 							log.Errorf("[%d] Incoming block replace tx error :%v", wallet.ID, err)
 							return
@@ -83,13 +85,13 @@ func (wallet *Wallet) listenForTransactions() {
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (wallet *Wallet) AddTxAndBlockNotificationListener(txAndBlockNotificationListener TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+func (wallet *Wallet) AddTxAndBlockNotificationListener(txAndBlockNotificationListener mainW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
 	wallet.notificationListenersMu.Lock()
 	defer wallet.notificationListenersMu.Unlock()
 
 	_, ok := wallet.txAndBlockNotificationListeners[uniqueIdentifier]
 	if ok {
-		return errors.New(ErrListenerAlreadyExist)
+		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
 	if async {
@@ -112,7 +114,7 @@ func (wallet *Wallet) RemoveTxAndBlockNotificationListener(uniqueIdentifier stri
 
 func (wallet *Wallet) checkWalletMixers() {
 	if wallet.IsAccountMixerActive() {
-		unmixedAccount := wallet.ReadInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
+		unmixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 		hasMixableOutput, err := wallet.accountHasMixableOutput(unmixedAccount)
 		if err != nil {
 			log.Errorf("Error checking for mixable outputs: %v", err)

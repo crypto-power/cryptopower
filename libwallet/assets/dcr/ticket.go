@@ -12,6 +12,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -110,7 +111,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 
 	err = wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 
@@ -246,14 +247,14 @@ func (wallet *Wallet) StartTicketBuyer(passphrase []byte) error {
 	if len(passphrase) > 0 && wallet.IsLocked() {
 		err := wallet.UnlockWallet(passphrase)
 		if err != nil {
-			return translateError(err)
+			return utils.TranslateError(err)
 		}
 	}
 
 	// Check the VSP.
 	vspInfo, err := vspInfo(cfg.VspHost)
 	if err == nil {
-		cfg.vspClient, err = wallet.VSPClient(cfg.VspHost, vspInfo.PubKey)
+		cfg.VspClient, err = wallet.VSPClient(cfg.VspHost, vspInfo.PubKey)
 	}
 	if err != nil {
 		return fmt.Errorf("error setting up vsp client: %v", err)
@@ -286,7 +287,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 	if len(passphrase) > 0 && wallet.IsLocked() {
 		err := wallet.UnlockWallet(passphrase)
 		if err != nil {
-			return translateError(err)
+			return utils.TranslateError(err)
 		}
 	}
 
@@ -433,7 +434,7 @@ func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dc
 	if len(passphrase) > 0 && wallet.IsLocked() {
 		err := wallet.UnlockWallet(passphrase)
 		if err != nil {
-			return translateError(err)
+			return utils.TranslateError(err)
 		}
 	}
 
@@ -455,9 +456,9 @@ func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dc
 		SourceAccount: uint32(cfg.PurchaseAccount),
 		Expiry:        expiry,
 		MinConf:       wallet.RequiredConfirmations(),
-		VSPFeeProcess: cfg.vspClient.FeePercentage,
+		VSPFeeProcess: cfg.VspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return cfg.vspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
+			return cfg.VspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
 		},
 	}
 	// Mixed split buying through CoinShuffle++, if configured.
@@ -494,7 +495,7 @@ func (wallet *Wallet) StopAutoTicketsPurchase() error {
 	defer wallet.cancelAutoTicketBuyerMu.Unlock()
 
 	if wallet.cancelAutoTicketBuyer == nil {
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	wallet.cancelAutoTicketBuyer()
@@ -504,17 +505,17 @@ func (wallet *Wallet) StopAutoTicketsPurchase() error {
 
 // SetAutoTicketsBuyerConfig sets ticket buyer config for the wallet.
 func (wallet *Wallet) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount int32, amountToMaintain int64) {
-	wallet.SetLongConfigValueForKey(TicketBuyerATMConfigKey, amountToMaintain)
-	wallet.SetInt32ConfigValueForKey(TicketBuyerAccountConfigKey, purchaseAccount)
-	wallet.SetStringConfigValueForKey(TicketBuyerVSPHostConfigKey, vspHost)
+	wallet.SetLongConfigValueForKey(mainW.TicketBuyerATMConfigKey, amountToMaintain)
+	wallet.SetInt32ConfigValueForKey(mainW.TicketBuyerAccountConfigKey, purchaseAccount)
+	wallet.SetStringConfigValueForKey(mainW.TicketBuyerVSPHostConfigKey, vspHost)
 }
 
 // AutoTicketsBuyerConfig returns the previously set ticket buyer config for
 // the wallet.
 func (wallet *Wallet) AutoTicketsBuyerConfig() *TicketBuyerConfig {
-	btm := wallet.ReadLongConfigValueForKey(TicketBuyerATMConfigKey, -1)
-	accNum := wallet.ReadInt32ConfigValueForKey(TicketBuyerAccountConfigKey, -1)
-	vspHost := wallet.ReadStringConfigValueForKey(TicketBuyerVSPHostConfigKey, "")
+	btm := wallet.ReadLongConfigValueForKey(mainW.TicketBuyerATMConfigKey, -1)
+	accNum := wallet.ReadInt32ConfigValueForKey(mainW.TicketBuyerAccountConfigKey, -1)
+	vspHost := wallet.ReadStringConfigValueForKey(mainW.TicketBuyerVSPHostConfigKey, "")
 
 	return &TicketBuyerConfig{
 		VspHost:           vspHost,
@@ -525,15 +526,15 @@ func (wallet *Wallet) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 
 // TicketBuyerConfigIsSet checks if ticket buyer config is set for the wallet.
 func (wallet *Wallet) TicketBuyerConfigIsSet() bool {
-	return wallet.ReadStringConfigValueForKey(TicketBuyerVSPHostConfigKey, "") != ""
+	return wallet.ReadStringConfigValueForKey(mainW.TicketBuyerVSPHostConfigKey, "") != ""
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.
 func (wallet *Wallet) ClearTicketBuyerConfig(walletID int) error {
 
-	wallet.SetLongConfigValueForKey(TicketBuyerATMConfigKey, -1)
-	wallet.SetInt32ConfigValueForKey(TicketBuyerAccountConfigKey, -1)
-	wallet.SetStringConfigValueForKey(TicketBuyerVSPHostConfigKey, "")
+	wallet.SetLongConfigValueForKey(mainW.TicketBuyerATMConfigKey, -1)
+	wallet.SetInt32ConfigValueForKey(mainW.TicketBuyerAccountConfigKey, -1)
+	wallet.SetStringConfigValueForKey(mainW.TicketBuyerVSPHostConfigKey, "")
 
 	return nil
 }
@@ -560,8 +561,8 @@ func (wallet *Wallet) NextTicketPriceRemaining() (secs int64, err error) {
 }
 
 // UnspentUnexpiredTickets returns all Unmined, Immature and Live tickets.
-func (wallet *Wallet) UnspentUnexpiredTickets() ([]Transaction, error) {
-	var tickets []Transaction
+func (wallet *Wallet) UnspentUnexpiredTickets() ([]mainW.Transaction, error) {
+	var tickets []mainW.Transaction
 	for _, filter := range []int32{TxFilterUnmined, TxFilterImmature, TxFilterLive} {
 		tx, err := wallet.GetTransactionsRaw(0, 0, filter, true)
 		if err != nil {

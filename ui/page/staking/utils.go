@@ -8,7 +8,8 @@ import (
 
 	"gioui.org/layout"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -16,8 +17,8 @@ import (
 )
 
 type transactionItem struct {
-	transaction   *dcr.Transaction
-	ticketSpender *dcr.Transaction
+	transaction   *wallet.Transaction
+	ticketSpender *wallet.Transaction
 	status        *components.TxStatus
 	confirmations int32
 	progress      float32
@@ -33,7 +34,7 @@ type transactionItem struct {
 	durationTooltip   *cryptomaterial.Tooltip
 }
 
-func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+func stakeToTransactionItems(l *load.Load, txs []wallet.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {
@@ -65,12 +66,12 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 
 		ticketCopy := tx
 		txStatus := components.TransactionTitleIcon(l, w, &tx)
-		confirmations := tx.Confirmations(w.GetBestBlockHeight())
+		confirmations := dcr.Confirmations(w.GetBestBlockHeight(), tx)
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = ticketSpender.Confirmations(w.GetBestBlockHeight()) <= w.TicketMaturity()
+			showProgress = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender) <= w.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -90,7 +91,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 
 			confs := confirmations
 			if ticketSpender != nil {
-				confs = ticketSpender.Confirmations(w.GetBestBlockHeight())
+				confs = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender)
 			}
 
 			progress = (float32(confs) / float32(progressMax)) * 100
@@ -100,7 +101,7 @@ func stakeToTransactionItems(l *load.Load, txs []dcr.Transaction, newestFirst bo
 			transaction:   &ticketCopy,
 			ticketSpender: ticketSpender,
 			status:        txStatus,
-			confirmations: tx.Confirmations(w.GetBestBlockHeight()),
+			confirmations: dcr.Confirmations(w.GetBestBlockHeight(), tx),
 			progress:      progress,
 			showProgress:  showProgress,
 			showTime:      showTime,
@@ -285,9 +286,9 @@ func getTimeToMatureOrExpire(l *load.Load, tx *transactionItem) int {
 		progressMax = l.WL.SelectedWallet.Wallet.TicketExpiry()
 	}
 
-	confs := tx.transaction.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight())
+	confs := dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), *tx.transaction)
 	if tx.ticketSpender != nil {
-		confs = tx.ticketSpender.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight())
+		confs = dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), *tx.ticketSpender)
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100

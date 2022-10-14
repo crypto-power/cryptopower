@@ -12,7 +12,8 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -52,7 +53,7 @@ type TransactionsPage struct {
 	txTypeDropDown  *cryptomaterial.DropDown
 	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
-	transactions    []dcr.Transaction
+	transactions    []wallet.Transaction
 	wallets         []*dcr.Wallet
 
 	tabs *cryptomaterial.ClickableList
@@ -219,7 +220,7 @@ func (pg *TransactionsPage) loadTransactions() {
 		}
 	}
 
-	txns := make([]dcr.Transaction, 0)
+	txns := make([]wallet.Transaction, 0)
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, txFilter, true)
 	if err != nil {
 		// log error and return an empty list.

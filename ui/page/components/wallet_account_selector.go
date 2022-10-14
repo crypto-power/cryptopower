@@ -13,7 +13,8 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -37,15 +38,15 @@ type selectorModal struct {
 	*cryptomaterial.Modal
 
 	selectedWallet   *dcr.Wallet
-	selectedAccount  *dcr.Account
-	accountCallback  func(*dcr.Account)
+	selectedAccount  *wallet.Account
+	accountCallback  func(*wallet.Account)
 	walletCallback   func(*dcr.Wallet)
-	accountIsValid   func(*dcr.Account) bool
+	accountIsValid   func(*wallet.Account) bool
 	accountSelector  bool
 	infoActionText   string
 	dialogTitle      string
 	onWalletClicked  func(*dcr.Wallet)
-	onAccountClicked func(*dcr.Account)
+	onAccountClicked func(*wallet.Account)
 	onExit           func()
 	walletsList      layout.List
 	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
@@ -73,7 +74,7 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 				ws.walletCallback(wallet)
 			}
 		}).
-		accountCliked(func(account *dcr.Account) {
+		accountCliked(func(account *wallet.Account) {
 			if ws.selectedAccount.Number != account.Number {
 				ws.changed = true
 			}
@@ -87,12 +88,12 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 }
 
 // SelectedAccount returns the currently selected account.
-func (ws *WalletAndAccountSelector) SelectedAccount() *dcr.Account {
+func (ws *WalletAndAccountSelector) SelectedAccount() *wallet.Account {
 	return ws.selectedAccount
 }
 
 // AccountValidator validates an account according to the rules defined to determine a valid a account.
-func (ws *WalletAndAccountSelector) AccountValidator(accountIsValid func(*dcr.Account) bool) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) AccountValidator(accountIsValid func(*wallet.Account) bool) *WalletAndAccountSelector {
 	ws.accountIsValid = accountIsValid
 	return ws
 }
@@ -131,7 +132,7 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.Wallet) 
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (ws *WalletAndAccountSelector) SetSelectedAccount(account *dcr.Account) {
+func (ws *WalletAndAccountSelector) SetSelectedAccount(account *wallet.Account) {
 	ws.selectedAccount = account
 	ws.totalBalance = dcrutil.Amount(account.TotalBalance).String()
 }
@@ -150,7 +151,7 @@ func (ws *WalletAndAccountSelector) WalletSelected(callback func(*dcr.Wallet)) *
 	return ws
 }
 
-func (ws *WalletAndAccountSelector) AccountSelected(callback func(*dcr.Account)) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) AccountSelected(callback func(*wallet.Account)) *WalletAndAccountSelector {
 	ws.accountCallback = callback
 	return ws
 }
@@ -305,7 +306,7 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Size = values.MarginPadding14
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
-	sm.accountIsValid = func(*dcr.Account) bool { return false }
+	sm.accountIsValid = func(*wallet.Account) bool { return false }
 	sm.selectedWallet = l.WL.SelectedWallet.Wallet // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
@@ -356,7 +357,7 @@ func (sm *selectorModal) setupAccounts(wal *dcr.Wallet) {
 	sm.selectorItems = selectorItems
 }
 
-func (sm *selectorModal) accountValidator(accountIsValid func(*dcr.Account) bool) *selectorModal {
+func (sm *selectorModal) accountValidator(accountIsValid func(*wallet.Account) bool) *selectorModal {
 	sm.accountIsValid = accountIsValid
 	return sm
 }
@@ -366,7 +367,7 @@ func (sm *selectorModal) Handle() {
 		for _, selectorItem := range sm.selectorItems {
 			for selectorItem.clickable.Clicked() {
 				switch item := selectorItem.item.(type) {
-				case *dcr.Account:
+				case *wallet.Account:
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
@@ -403,7 +404,7 @@ func (sm *selectorModal) walletClicked(callback func(*dcr.Wallet)) *selectorModa
 	return sm
 }
 
-func (sm *selectorModal) accountCliked(callback func(*dcr.Account)) *selectorModal {
+func (sm *selectorModal) accountCliked(callback func(*wallet.Account)) *selectorModal {
 	sm.onAccountClicked = callback
 	return sm
 }
@@ -520,7 +521,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, totalBal, spendableBal string
 			switch t := selectorItem.item.(type) {
-			case *dcr.Account:
+			case *wallet.Account:
 				totalBal = dcrutil.Amount(t.TotalBalance).String()
 				spendableBal = dcrutil.Amount(t.Balance.Spendable).String()
 				name = t.Name
@@ -564,7 +565,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				})
 			}
 			switch t := selectorItem.item.(type) {
-			case *dcr.Account:
+			case *wallet.Account:
 				if t.Number == sm.selectedAccount.Number {
 					return sections(gtx)
 				}

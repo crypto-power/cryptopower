@@ -6,7 +6,8 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -46,8 +47,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Mixed account").
-		AccountSelected(func(selectedAccount *dcr.Account) {}).
-		AccountValidator(func(account *dcr.Account) bool {
+		AccountSelected(func(selectedAccount *wallet.Account) {}).
+		AccountValidator(func(account *wallet.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1
@@ -68,8 +69,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
-		AccountSelected(func(selectedAccount *dcr.Account) {}).
-		AccountValidator(func(account *dcr.Account) bool {
+		AccountSelected(func(selectedAccount *wallet.Account) {}).
+		AccountValidator(func(account *wallet.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
@@ -208,7 +209,7 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			if err != nil {
 				return errfunc(err)
 			}
-			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(dcr.AccountMixerConfigSet, true)
+			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, true)
 
 			// rename mixed account
 			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")

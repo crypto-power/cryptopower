@@ -8,8 +8,8 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
 )
 
 func initializeBTCWalletParameters(rootDir, dbDriver, netType string) (*chaincfg.Params, string, error) {

@@ -20,6 +20,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -124,11 +125,11 @@ func UseLogger(logger slog.Logger) {
 // RegisterLogger should be called before logRotator is initialized.
 func RegisterLogger(tag string) (slog.Logger, error) {
 	if logRotator != nil {
-		return nil, errors.E(ErrLogRotatorAlreadyInitialized)
+		return nil, errors.E(utils.ErrLogRotatorAlreadyInitialized)
 	}
 
 	if _, exists := subsystemLoggers[tag]; exists {
-		return nil, errors.E(ErrLoggerAlreadyRegistered)
+		return nil, errors.E(utils.ErrLoggerAlreadyRegistered)
 	}
 
 	logger := backendLog.Logger(tag)

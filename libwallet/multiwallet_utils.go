@@ -17,7 +17,7 @@ import (
 	"github.com/kevinburke/nacl/secretbox"
 	"golang.org/x/crypto/scrypt"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 )
 
 type walletType string

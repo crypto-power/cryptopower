@@ -11,7 +11,6 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -111,13 +110,13 @@ func (pg *ProposalsPage) fetchProposals() {
 	var selectedType = pg.statusDropDown.Selected()
 	switch selectedType {
 	case values.String(values.StrApproved):
-		proposalFilter = dcr.ProposalCategoryApproved
+		proposalFilter = libwallet.ProposalCategoryApproved
 	case values.String(values.StrRejected):
-		proposalFilter = dcr.ProposalCategoryRejected
+		proposalFilter = libwallet.ProposalCategoryRejected
 	case values.String(values.StrAbandoned):
-		proposalFilter = dcr.ProposalCategoryAbandoned
+		proposalFilter = libwallet.ProposalCategoryAbandoned
 	default:
-		proposalFilter = dcr.ProposalCategoryAll
+		proposalFilter = libwallet.ProposalCategoryAll
 	}
 
 	proposalItems := components.LoadProposals(proposalFilter, true, pg.Load)
@@ -126,8 +125,8 @@ func (pg *ProposalsPage) fetchProposals() {
 	if selectedType == values.String(values.StrUnderReview) {
 		// group 'In discussion' and 'Active' proposals into under review
 		for _, item := range proposalItems {
-			if item.Proposal.Category == dcr.ProposalCategoryPre ||
-				item.Proposal.Category == dcr.ProposalCategoryActive {
+			if item.Proposal.Category == libwallet.ProposalCategoryPre ||
+				item.Proposal.Category == libwallet.ProposalCategoryActive {
 				listItems = append(listItems, item)
 			}
 		}

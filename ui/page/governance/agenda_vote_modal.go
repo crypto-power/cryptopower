@@ -4,7 +4,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -21,7 +22,7 @@ type agendaVoteModal struct {
 	onPreferenceUpdated func()
 
 	accountSelector *components.WalletAndAccountSelector
-	accountSelected *dcr.Account
+	accountSelected *wallet.Account
 }
 
 func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
@@ -39,10 +40,10 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 	// Source account picker
 	avm.accountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
-		AccountSelected(func(selectedAccount *dcr.Account) {
+		AccountSelected(func(selectedAccount *wallet.Account) {
 			avm.accountSelected = selectedAccount
 		}).
-		AccountValidator(func(account *dcr.Account) bool {
+		AccountValidator(func(account *wallet.Account) bool {
 			return true
 		})
 

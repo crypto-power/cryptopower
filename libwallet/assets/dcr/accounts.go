@@ -8,16 +8,11 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
-)
-
-const (
-	AddressGapLimit       uint32 = 20
-	ImportedAccountNumber        = udb.ImportedAddrAccount
-	DefaultAccountNum            = udb.DefaultAccountNum
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (wallet *Wallet) GetAccounts() (string, error) {
@@ -30,20 +25,20 @@ func (wallet *Wallet) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (wallet *Wallet) GetAccountsRaw() (*Accounts, error) {
+func (wallet *Wallet) GetAccountsRaw() (*mainW.Accounts, error) {
 	resp, err := wallet.Internal().Accounts(wallet.ShutdownContext())
 	if err != nil {
 		return nil, err
 	}
 
-	accounts := make([]*Account, len(resp.Accounts))
+	accounts := make([]*mainW.Account, len(resp.Accounts))
 	for i, a := range resp.Accounts {
 		balance, err := wallet.GetAccountBalance(int32(a.AccountNumber))
 		if err != nil {
 			return nil, err
 		}
 
-		accounts[i] = &Account{
+		accounts[i] = &mainW.Account{
 			WalletID:         wallet.ID,
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
@@ -55,7 +50,7 @@ func (wallet *Wallet) GetAccountsRaw() (*Accounts, error) {
 		}
 	}
 
-	return &Accounts{
+	return &mainW.Accounts{
 		Count:              len(resp.Accounts),
 		CurrentBlockHash:   resp.CurrentBlockHash[:],
 		CurrentBlockHeight: resp.CurrentBlockHeight,
@@ -75,7 +70,7 @@ func (wallet *Wallet) AccountsIterator() (*AccountsIterator, error) {
 	}, nil
 }
 
-func (accountsInterator *AccountsIterator) Next() *Account {
+func (accountsInterator *AccountsIterator) Next() *mainW.Account {
 	if accountsInterator.currentIndex < len(accountsInterator.accounts) {
 		account := accountsInterator.accounts[accountsInterator.currentIndex]
 		accountsInterator.currentIndex++
@@ -89,7 +84,7 @@ func (accountsInterator *AccountsIterator) Reset() {
 	accountsInterator.currentIndex = 0
 }
 
-func (wallet *Wallet) GetAccount(accountNumber int32) (*Account, error) {
+func (wallet *Wallet) GetAccount(accountNumber int32) (*mainW.Account, error) {
 	accounts, err := wallet.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -101,16 +96,16 @@ func (wallet *Wallet) GetAccount(accountNumber int32) (*Account, error) {
 		}
 	}
 
-	return nil, errors.New(ErrNotExist)
+	return nil, errors.New(utils.ErrNotExist)
 }
 
-func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balance, error) {
+func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*mainW.Balance, error) {
 	balance, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(accountNumber), wallet.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
 
-	return &Balance{
+	return &mainW.Balance{
 		Total:                   int64(balance.Total),
 		Spendable:               int64(balance.Spendable),
 		ImmatureReward:          int64(balance.ImmatureCoinbaseRewards),
@@ -125,7 +120,7 @@ func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
 	bals, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(account), wallet.RequiredConfirmations())
 	if err != nil {
 		log.Error(err)
-		return 0, translateError(err)
+		return 0, utils.TranslateError(err)
 	}
 	return int64(bals.Spendable), nil
 }
@@ -194,7 +189,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, privPass []byte) (int
 func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 
 	if wallet.IsLocked() {
-		return -1, errors.New(ErrWalletLocked)
+		return -1, errors.New(utils.ErrWalletLocked)
 	}
 
 	ctx := wallet.ShutdownContext()
@@ -210,7 +205,7 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
 	err := wallet.Internal().RenameAccount(wallet.ShutdownContext(), uint32(accountNumber), newName)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	return nil
@@ -219,7 +214,7 @@ func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
 func (wallet *Wallet) AccountName(accountNumber int32) (string, error) {
 	name, err := wallet.AccountNameRaw(uint32(accountNumber))
 	if err != nil {
-		return "", translateError(err)
+		return "", utils.TranslateError(err)
 	}
 	return name, nil
 }
@@ -230,7 +225,7 @@ func (wallet *Wallet) AccountNameRaw(accountNumber uint32) (string, error) {
 
 func (wallet *Wallet) AccountNumber(accountName string) (int32, error) {
 	accountNumber, err := wallet.Internal().AccountNumber(wallet.ShutdownContext(), accountName)
-	return int32(accountNumber), translateError(err)
+	return int32(accountNumber), utils.TranslateError(err)
 }
 
 func (wallet *Wallet) HasAccount(accountName string) bool {
@@ -241,7 +236,7 @@ func (wallet *Wallet) HasAccount(accountName string) bool {
 func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
 	cointype, err := wallet.Internal().CoinType(wallet.ShutdownContext())
 	if err != nil {
-		return "", translateError(err)
+		return "", utils.TranslateError(err)
 	}
 
 	var hdPath string
@@ -264,11 +259,11 @@ func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
 }
 
 func (wallet *Wallet) GetExtendedPubKey(account int32) (string, error) {
-	loadedWallet, _ := wallet.loader.GetLoadedWallet()
+	loadedWallet := wallet.Internal()
 	if loadedWallet == nil {
 		return "", fmt.Errorf("dcr asset not initialised")
 	}
-	extendedPublicKey, err := loadedWallet.DCR.AccountXpub(wallet.ShutdownContext(), uint32(account))
+	extendedPublicKey, err := loadedWallet.AccountXpub(wallet.ShutdownContext(), uint32(account))
 	if err != nil {
 		return "", err
 	}

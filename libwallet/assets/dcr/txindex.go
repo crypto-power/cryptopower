@@ -3,7 +3,8 @@ package dcr
 import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr/walletdata"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 )
 
 func (wallet *Wallet) IndexTransactions() error {
@@ -27,7 +28,7 @@ func (wallet *Wallet) IndexTransactions() error {
 				return false, err
 			}
 
-			_, err = wallet.walletDataDB.SaveOrUpdate(&Transaction{}, tx)
+			_, err = wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tx)
 			if err != nil {
 				log.Errorf("[%d] Index tx replace tx err : %v", wallet.ID, err)
 				return false, err
@@ -67,7 +68,7 @@ func (wallet *Wallet) IndexTransactions() error {
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)
 
 	defer func() {
-		count, err := wallet.walletDataDB.Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &Transaction{})
+		count, err := wallet.walletDataDB.Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &mainW.Transaction{})
 		if err != nil {
 			log.Errorf("[%d] Post-indexing tx count error :%v", wallet.ID, err)
 		} else if count > 0 {
@@ -85,7 +86,7 @@ func (wallet *Wallet) IndexTransactions() error {
 }
 
 func (wallet *Wallet) reindexTransactions() error {
-	err := wallet.walletDataDB.ClearSavedTransactions(&Transaction{})
+	err := wallet.walletDataDB.ClearSavedTransactions(&mainW.Transaction{})
 	if err != nil {
 		return err
 	}

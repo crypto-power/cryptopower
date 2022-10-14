@@ -18,8 +18,8 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -169,13 +169,13 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range DCRWallets {
-		err = wallet.Prepare(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams, mw.walletConfigSetFn(wallet.ID), mw.walletConfigReadFn(wallet.ID))
+		err = wallet.LoadExisting(mw.Assets.DCR.RootDir, mw.db, mw.Assets.DCR.ChainParams)
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
 		}
 		if err != nil {
 			mw.Assets.DCR.BadWallets[wallet.ID] = wallet
-			log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			log.Warnf("Ignored dcr wallet load error for wallet %d (%s) >>>> Error: %v", wallet.ID, wallet.Name, err)
 		} else {
 			mw.Assets.DCR.Wallets[wallet.ID] = wallet
 		}

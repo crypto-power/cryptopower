@@ -6,7 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -19,12 +19,12 @@ type ticketSelector struct {
 
 	changed         bool
 	showTicketModal *cryptomaterial.Clickable
-	selectedTicket  *dcr.Transaction
+	selectedTicket  *wallet.Transaction
 
-	liveTickets []*dcr.Transaction
+	liveTickets []*wallet.Transaction
 }
 
-func newTicketSelector(l *load.Load, lv []*dcr.Transaction) *ticketSelector {
+func newTicketSelector(l *load.Load, lv []*wallet.Transaction) *ticketSelector {
 	ts := &ticketSelector{
 		Load:            l,
 		showTicketModal: l.Theme.NewClickable(true),
@@ -54,7 +54,7 @@ func (ts *ticketSelector) SelectTicket(ticketHash string) {
 	}
 }
 
-func (ts *ticketSelector) SelectedTicket() *dcr.Transaction {
+func (ts *ticketSelector) SelectedTicket() *wallet.Transaction {
 	return ts.selectedTicket
 }
 
@@ -62,7 +62,7 @@ func (ts *ticketSelector) handle(window app.WindowNavigator) {
 	if ts.showTicketModal.Clicked() {
 		ticketSelectorModal := newTicketSelectorModal(ts.Load, ts.liveTickets).
 			title(values.String(values.StrSelectTicket)).
-			ticketSelected(func(ticket *dcr.Transaction) {
+			ticketSelected(func(ticket *wallet.Transaction) {
 				ts.SelectTicket(ticket.Hash)
 			})
 		window.ShowModal(ticketSelectorModal)
@@ -114,14 +114,14 @@ type ticketSelectorModal struct {
 
 	dialogTitle string
 
-	liveTickets    []*dcr.Transaction
-	selectedTicket *dcr.Transaction
+	liveTickets    []*wallet.Transaction
+	selectedTicket *wallet.Transaction
 	ticketList     *cryptomaterial.ClickableList
 
-	ticketSelectedCallback func(*dcr.Transaction)
+	ticketSelectedCallback func(*wallet.Transaction)
 }
 
-func newTicketSelectorModal(l *load.Load, lv []*dcr.Transaction) *ticketSelectorModal {
+func newTicketSelectorModal(l *load.Load, lv []*wallet.Transaction) *ticketSelectorModal {
 	tsm := &ticketSelectorModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("TicketSelectorModal"),
@@ -152,7 +152,7 @@ func (tsm *ticketSelectorModal) title(title string) *ticketSelectorModal {
 	return tsm
 }
 
-func (tsm *ticketSelectorModal) ticketSelected(callback func(*dcr.Transaction)) *ticketSelectorModal {
+func (tsm *ticketSelectorModal) ticketSelected(callback func(*wallet.Transaction)) *ticketSelectorModal {
 	tsm.ticketSelectedCallback = callback
 	tsm.Dismiss()
 	return tsm

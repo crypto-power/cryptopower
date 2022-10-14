@@ -6,6 +6,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address
@@ -39,12 +40,12 @@ func (wallet *Wallet) HaveAddress(address string) bool {
 func (wallet *Wallet) AccountOfAddress(address string) (string, error) {
 	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
 	if err != nil {
-		return "", translateError(err)
+		return "", utils.TranslateError(err)
 	}
 
 	a, err := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
 	if err != nil {
-		return "", translateError(err)
+		return "", utils.TranslateError(err)
 	}
 
 	return a.AccountName(), nil
@@ -80,7 +81,7 @@ func (wallet *Wallet) AddressInfo(address string) (*AddressInfo, error) {
 // chained address is returned.
 func (wallet *Wallet) CurrentAddress(account int32) (string, error) {
 	if wallet.IsRestored && !wallet.HasDiscoveredAccounts {
-		return "", errors.E(ErrAddressDiscoveryNotDone)
+		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
 	addr, err := wallet.Internal().CurrentAddress(uint32(account))
@@ -96,7 +97,7 @@ func (wallet *Wallet) CurrentAddress(account int32) (string, error) {
 // the next chained address is returned.
 func (wallet *Wallet) NextAddress(account int32) (string, error) {
 	if wallet.IsRestored && !wallet.HasDiscoveredAccounts {
-		return "", errors.E(ErrAddressDiscoveryNotDone)
+		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
 	// NewExternalAddress increments the lastReturnedAddressIndex but does

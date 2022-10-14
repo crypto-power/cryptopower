@@ -3,27 +3,28 @@ package dcr
 import (
 	"fmt"
 
-	"decred.org/dcrwallet/v2/wallet"
+	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrdata/v7/txhelpers"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const BlockValid = 1 << 0
 
 // DecodeTransaction uses `walletTx.Hex` to retrieve detailed information for a transaction.
-func (w *Wallet) DecodeTransaction(walletTx *TxInfoFromWallet, netParams *chaincfg.Params) (*Transaction, error) {
+func (wallet *Wallet) DecodeTransaction(walletTx *mainW.TxInfoFromWallet, netParams *chaincfg.Params) (*mainW.Transaction, error) {
 	msgTx, txFee, txSize, txFeeRate, err := txhelper.MsgTxFeeSizeRate(walletTx.Hex)
 	if err != nil {
 		return nil, err
 	}
 
-	inputs, totalWalletInput, totalWalletUnmixedInputs := w.decodeTxInputs(msgTx, walletTx.Inputs)
-	outputs, totalWalletOutput, totalWalletMixedOutputs, mixedOutputsCount := w.decodeTxOutputs(msgTx, netParams, walletTx.Outputs)
+	inputs, totalWalletInput, totalWalletUnmixedInputs := wallet.decodeTxInputs(msgTx, walletTx.Inputs)
+	outputs, totalWalletOutput, totalWalletMixedOutputs, mixedOutputsCount := wallet.decodeTxOutputs(msgTx, netParams, walletTx.Outputs)
 
 	amount, direction := txhelper.TransactionAmountAndDirection(totalWalletInput, totalWalletOutput, int64(txFee))
 
@@ -41,7 +42,7 @@ func (w *Wallet) DecodeTransaction(walletTx *TxInfoFromWallet, netParams *chainc
 
 	isMixedTx, mixDenom, _ := txhelpers.IsMixTx(msgTx)
 
-	txType := txhelper.FormatTransactionType(wallet.TxTransactionType(msgTx))
+	txType := txhelper.FormatTransactionType(w.TxTransactionType(msgTx))
 	if isMixedTx {
 		txType = txhelper.TxTypeMixed
 
@@ -49,7 +50,7 @@ func (w *Wallet) DecodeTransaction(walletTx *TxInfoFromWallet, netParams *chainc
 		txFee = dcrutil.Amount(totalWalletUnmixedInputs - (totalWalletMixedOutputs + mixChange))
 	}
 
-	return &Transaction{
+	return &mainW.Transaction{
 		WalletID:    walletTx.WalletID,
 		Hash:        msgTx.TxHash().String(),
 		Type:        txType,
@@ -79,12 +80,12 @@ func (w *Wallet) DecodeTransaction(walletTx *TxInfoFromWallet, netParams *chainc
 	}, nil
 }
 
-func (wallet *Wallet) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*WalletInput) (inputs []*TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
-	inputs = make([]*TxInput, len(mtx.TxIn))
-	unmixedAccountNumber := wallet.ReadInt32ConfigValueForKey(AccountMixerUnmixedAccount, -1)
+func (wallet *Wallet) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*mainW.WalletInput) (inputs []*mainW.TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
+	inputs = make([]*mainW.TxInput, len(mtx.TxIn))
+	unmixedAccountNumber := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 
 	for i, txIn := range mtx.TxIn {
-		input := &TxInput{
+		input := &mainW.TxInput{
 			PreviousTransactionHash:  txIn.PreviousOutPoint.Hash.String(),
 			PreviousTransactionIndex: int32(txIn.PreviousOutPoint.Index),
 			PreviousOutpoint:         txIn.PreviousOutPoint.String(),
@@ -114,10 +115,10 @@ func (wallet *Wallet) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*WalletInpu
 }
 
 func (wallet *Wallet) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
-	walletOutputs []*WalletOutput) (outputs []*TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
-	outputs = make([]*TxOutput, len(mtx.TxOut))
+	walletOutputs []*mainW.WalletOutput) (outputs []*mainW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
+	outputs = make([]*mainW.TxOutput, len(mtx.TxOut))
 	txType := txhelpers.DetermineTxType(mtx, true)
-	mixedAccountNumber := wallet.ReadInt32ConfigValueForKey(AccountMixerMixedAccount, -1)
+	mixedAccountNumber := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, -1)
 
 	for i, txOut := range mtx.TxOut {
 		// get address and script type for output
@@ -139,7 +140,7 @@ func (wallet *Wallet) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Param
 			scriptType = scriptClass.String()
 		}
 
-		output := &TxOutput{
+		output := &mainW.TxOutput{
 			Index:         int32(i),
 			Amount:        txOut.Value,
 			Version:       int32(txOut.Version),

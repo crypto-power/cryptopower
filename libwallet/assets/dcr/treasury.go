@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -51,7 +52,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 	// request(s) for setting this voting policy with the VSP.
 	err = wallet.UnlockWallet(passphrase)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 	defer wallet.LockWallet()
 

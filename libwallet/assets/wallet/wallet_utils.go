@@ -1,4 +1,4 @@
-package dcr
+package wallet
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
 
 	w "decred.org/dcrwallet/v2/wallet"
@@ -15,9 +16,9 @@ import (
 	"strings"
 )
 
-func (wallet *Wallet) markWalletAsDiscoveredAccounts() error {
+func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
 	if wallet == nil {
-		return errors.New(ErrNotExist)
+		return errors.New(utils.ErrNotExist)
 	}
 
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
@@ -55,7 +56,7 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 
 func (wallet *Wallet) WalletNameExists(walletName string) (bool, error) {
 	if strings.HasPrefix(walletName, "wallet-") {
-		return false, errors.E(ErrReservedWalletName)
+		return false, errors.E(utils.ErrReservedWalletName)
 	}
 
 	err := wallet.db.One("Name", walletName, &Wallet{})
@@ -98,7 +99,7 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 
 	decryptedSeed, err := secretbox.EasyOpen(encryptedSeed, key)
 	if err != nil {
-		return "", errors.New(ErrInvalidPassphrase)
+		return "", errors.New(utils.ErrInvalidPassphrase)
 	}
 
 	return string(decryptedSeed), nil
@@ -117,7 +118,7 @@ func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, 
 	// open the wallet to get ready for temporary use
 	wal, err := walletLoader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	// unload wallet after temporary use

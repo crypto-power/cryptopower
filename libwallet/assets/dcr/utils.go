@@ -1,7 +1,6 @@
 package dcr
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -25,8 +24,10 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/decred/dcrd/wire"
+	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 const (
@@ -58,38 +59,21 @@ const (
 
 func (wallet *Wallet) RequiredConfirmations() int32 {
 	var spendUnconfirmed bool
-	wallet.readUserConfigValue(true, SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	wallet.ReadUserConfigValue(mainW.SpendUnconfirmedConfigKey, &spendUnconfirmed)
 	if spendUnconfirmed {
 		return 0
 	}
 	return DefaultRequiredConfirmations
 }
 
-func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-	return ctx, cancel
-}
-
-func (wallet *Wallet) ShutdownContext() (ctx context.Context) {
-	ctx, _ = wallet.ShutdownContextWithCancel()
-	return
-}
-
-func (wallet *Wallet) contextWithShutdownCancel() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-	return ctx, cancel
-}
-
 func (wallet *Wallet) ValidateExtPubKey(extendedPubKey string) error {
 	_, err := hdkeychain.NewKeyFromString(extendedPubKey, wallet.chainParams)
 	if err != nil {
 		if err == hdkeychain.ErrInvalidChild {
-			return errors.New(ErrUnusableSeed)
+			return errors.New(utils.ErrUnusableSeed)
 		}
 
-		return errors.New(ErrInvalid)
+		return errors.New(utils.ErrInvalid)
 	}
 
 	return nil
@@ -285,7 +269,7 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 
 func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &WalletConfig{
+	cfg := &mainW.WalletConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,

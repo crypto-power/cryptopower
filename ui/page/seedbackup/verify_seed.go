@@ -10,7 +10,8 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -168,7 +169,7 @@ func (pg *VerifySeedPage) verifySeed() {
 			seed := pg.selectedSeedPhrase()
 			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, []byte(password))
 			if err != nil {
-				if err.Error() == dcr.ErrInvalid {
+				if err.Error() == utils.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)
 					errModal := modal.NewErrorModal(pg.Load, msg, modal.DefaultClickFunc())
 					pg.ParentWindow().ShowModal(errModal)

@@ -14,7 +14,8 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -69,10 +70,10 @@ type TxDetailsPage struct {
 	backButton  cryptomaterial.IconButton
 	rebroadcast cryptomaterial.Label
 
-	transaction   *dcr.Transaction
-	ticketSpender *dcr.Transaction // vote or revoke ticket
-	ticketSpent   *dcr.Transaction // ticket spent in a vote or revoke
-	txBackStack   *dcr.Transaction // track original transaction
+	transaction   *wallet.Transaction
+	ticketSpender *wallet.Transaction // vote or revoke ticket
+	ticketSpent   *wallet.Transaction // ticket spent in a vote or revoke
+	txBackStack   *wallet.Transaction // track original transaction
 	wallet        *dcr.Wallet
 
 	moreItems  []moreItem
@@ -86,7 +87,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *dcr.Transaction, isTicket bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, transaction *wallet.Transaction, isTicket bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -487,9 +488,9 @@ func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
 		progressMax = pg.wallet.TicketExpiry()
 	}
 
-	confs := pg.transaction.Confirmations(pg.wallet.GetBestBlockHeight())
+	confs := dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.transaction)
 	if pg.ticketSpender != nil {
-		confs = pg.ticketSpender.Confirmations(pg.wallet.GetBestBlockHeight())
+		confs = dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.ticketSpender)
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100
@@ -982,7 +983,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
 
-func initTxnWidgets(l *load.Load, transaction *dcr.Transaction) transactionWdg {
+func initTxnWidgets(l *load.Load, transaction *wallet.Transaction) transactionWdg {
 
 	var txn transactionWdg
 	wal := l.WL.SelectedWallet.Wallet
