@@ -337,8 +337,11 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 	mp.usdExchangeRate = rate.LastTradePrice
 
-	mp.updateBalance()
-	mp.updateBTCBalance()
+	if mp.WL.SelectedWalletType == "DCR" {
+		mp.updateBalance()
+	} else if mp.WL.SelectedWalletType == "BTC" {
+		mp.updateBTCBalance()
+	}
 	mp.usdExchangeSet = true
 	mp.ParentWindow().Reload()
 	mp.isFetchingExchangeRate = false
