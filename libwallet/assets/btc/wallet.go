@@ -187,21 +187,32 @@ func (wallet *Wallet) prepare(rootDir string, net string, log slog.Logger) (err 
 	return nil
 }
 
-func (wallet *Wallet) Shutdown(walletDBRef *storm.DB) {
+func (wallet *Wallet) Shutdown() {
 	// Trigger shuttingDown signal to cancel all contexts created with
 	// `wallet.shutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	// wallet.shuttingDown <- true
 
 	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
-		wallet.loader.UnloadWallet()
+		err := wallet.loader.UnloadWallet()
+		if err != nil {
+			log.Errorf("Failed to close wallet: %v", err)
+		} else {
+			log.Info("Closed wallet")
+		}
 	}
 
 	for _, f := range wallet.cancelFuncs {
 		f()
 	}
 
-	if walletDBRef != nil {
-		walletDBRef.Close()
+	if wallet.db != nil {
+		err := wallet.db.Close()
+		if err != nil {
+			log.Errorf("tx db closed with error: %v", err)
+
+		} else {
+			log.Info("tx db closed successfully")
+		}
 	}
 }
 
@@ -454,6 +465,15 @@ func (wallet *Wallet) changePrivatePassphrase(oldPrivatePassphrase, newPrivatePa
 }
 
 func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
+	err := wallet.deleteWallet(privatePassphrase)
+	if err != nil {
+		return translateError(err)
+	}
+
+	return nil
+}
+
+func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 	defer func() {
 		for i := range privatePassphrase {
 			privatePassphrase[i] = 0
@@ -472,6 +492,16 @@ func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
 		wallet.Internal().Lock()
 	}
 
+	// Uncommenting this prevents the wallet from deleting,
+	// seems related to not having a properly define walletdatadb
+	// wallet.Shutdown()
+
+	err := wallet.db.DeleteStruct(wallet)
+	if err != nil {
+		return translateError(err)
+	}
+
+	log.Info("Deleting Wallet")
 	return os.RemoveAll(wallet.dataDir)
 }
 

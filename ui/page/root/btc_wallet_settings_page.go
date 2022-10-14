@@ -1,4 +1,4 @@
-package btc
+package root
 
 import (
 	"strings"
@@ -18,23 +18,12 @@ import (
 
 const BTCWalletSettingsPageID = "BTCWalletSettings"
 
-type (
-	C = layout.Context
-	D = layout.Dimensions
-)
-
-type clickableRowData struct {
-	clickable *cryptomaterial.Clickable
-	labelText string
-	title     string
-}
-
-type accountData struct {
+type btcAccountData struct {
 	*btc.AccountResult
 	clickable *cryptomaterial.Clickable
 }
 
-type WalletSettingsPage struct {
+type BTCWalletSettingsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -43,7 +32,7 @@ type WalletSettingsPage struct {
 	*app.GenericPageModal
 
 	wallet   *btc.Wallet
-	accounts []*accountData
+	accounts []*btcAccountData
 
 	pageContainer layout.List
 	accountsList  *cryptomaterial.ClickableList
@@ -66,8 +55,8 @@ type WalletSettingsPage struct {
 	peerAddr string
 }
 
-func NewBTCWalletSettingsPage(l *load.Load) *WalletSettingsPage {
-	pg := &WalletSettingsPage{
+func NewBTCWalletSettingsPage(l *load.Load) *BTCWalletSettingsPage {
+	pg := &BTCWalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(BTCWalletSettingsPageID),
 		wallet:              l.WL.SelectedBTCWallet.Wallet,
@@ -104,14 +93,14 @@ func NewBTCWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) OnNavigatedTo() {
+func (pg *BTCWalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
 
 	pg.loadWalletAccount()
 }
 
-func (pg *WalletSettingsPage) loadWalletAccount() {
-	walletAccounts := make([]*accountData, 0)
+func (pg *BTCWalletSettingsPage) loadWalletAccount() {
+	walletAccounts := make([]*btcAccountData, 0)
 	accounts, err := pg.wallet.GetAccountsRaw()
 	if err != nil {
 		log.Errorf("error retrieving wallet accounts: %v", err)
@@ -123,7 +112,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 			continue
 		}
 
-		walletAccounts = append(walletAccounts, &accountData{
+		walletAccounts = append(walletAccounts, &btcAccountData{
 			AccountResult: acct,
 			clickable:     pg.Theme.NewClickable(false),
 		})
@@ -135,7 +124,7 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) Layout(gtx C) D {
+func (pg *BTCWalletSettingsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
 			func(gtx C) D {
@@ -159,15 +148,15 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx, body)
 }
 
-func (pg *WalletSettingsPage) layoutDesktop(gtx C, body layout.Widget) D {
+func (pg *BTCWalletSettingsPage) layoutDesktop(gtx C, body layout.Widget) D {
 	return components.UniformPadding(gtx, body)
 }
 
-func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
+func (pg *BTCWalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
 	return components.UniformMobile(gtx, false, false, body)
 }
 
-func (pg *WalletSettingsPage) generalSection() layout.Widget {
+func (pg *BTCWalletSettingsPage) generalSection() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword))),
@@ -180,7 +169,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) account() layout.Widget {
+func (pg *BTCWalletSettingsPage) account() layout.Widget {
 	dim := func(gtx C) D {
 		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
 			return pg.subSection(gtx, pg.accounts[a].AccountName, pg.Theme.Icons.ChevronRight.Layout24dp)
@@ -191,7 +180,7 @@ func (pg *WalletSettingsPage) account() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) dangerZone() layout.Widget {
+func (pg *BTCWalletSettingsPage) dangerZone() layout.Widget {
 	return func(gtx C) D {
 		return pg.pageSections(gtx, values.String(values.StrDangerZone),
 			pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)),
@@ -199,7 +188,7 @@ func (pg *WalletSettingsPage) dangerZone() layout.Widget {
 	}
 }
 
-func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widget) D {
+func (pg *BTCWalletSettingsPage) pageSections(gtx C, title string, body layout.Widget) D {
 	dims := func(gtx C, title string, body layout.Widget) D {
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -245,7 +234,7 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 	})
 }
 
-func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
+func (pg *BTCWalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
 	return func(gtx C) D {
 		return clickable.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, title)
@@ -266,7 +255,7 @@ func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable
 	}
 }
 
-func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget) D {
+func (pg *BTCWalletSettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.Theme.Label(values.TextSize16, title).Layout),
@@ -277,13 +266,13 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 	})
 }
 
-func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
+func (pg *BTCWalletSettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
 	return func(gtx C) D {
 		return pg.subSection(gtx, title, option.Layout)
 	}
 }
 
-func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
+func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		Title(values.String(values.StrChangeSpendingPass)).
 		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
@@ -324,76 +313,76 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 	pg.ParentWindow().ShowModal(currentSpendingPasswordModal)
 }
 
-func (pg *WalletSettingsPage) deleteWalletModal() {
-	// textModal := modal.NewTextInputModal(pg.Load).
-	// 	Hint(values.String(values.StrWalletName)).
-	// 	SetTextWithTemplate(modal.RemoveWalletInfoTemplate).
-	// 	PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
-	// 	SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
-	// 		if walletName != pg.WL.SelectedWallet.Wallet.Name {
-	// 			m.SetError(values.String(values.StrWalletNameMismatch))
-	// 			m.SetLoading(false)
-	// 			return false
-	// 		}
+func (pg *BTCWalletSettingsPage) deleteWalletModal() {
+	textModal := modal.NewTextInputModal(pg.Load).
+		Hint(values.String(values.StrWalletName)).
+		// SetTextWithTemplate(modal.RemoveWalletInfoTemplate). // TODO: crashes when uncommented, shoud be investigated.
+		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
+		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
+			if walletName != pg.WL.SelectedBTCWallet.Wallet.Name {
+				m.SetError(values.String(values.StrWalletNameMismatch))
+				m.SetLoading(false)
+				return false
+			}
 
-	// 		walletDeleted := func() {
-	// 			if pg.WL.MultiWallet.LoadedWalletsCount() > 0 {
-	// 				m.Dismiss()
-	// 				pg.ParentNavigator().CloseCurrentPage()
-	// 				onWalSelected := func() {
-	// 					pg.ParentWindow().CloseCurrentPage()
-	// 				}
-	// 				onDexServerSelected := func(server string) {
-	// 					log.Info("Not implemented yet...", server)
-	// 				}
-	// 				pg.ParentWindow().Display(NewWalletDexServerSelector(pg.Load, onWalSelected, onDexServerSelected))
-	// 			} else {
-	// 				m.Dismiss()
-	// 				pg.ParentWindow().CloseAllPages()
-	// 			}
-	// 		}
+			walletDeleted := func() {
+				if pg.WL.MultiWallet.LoadedWalletsCount() > 0 {
+					m.Dismiss()
+					pg.ParentNavigator().CloseCurrentPage()
+					onWalSelected := func() {
+						pg.ParentWindow().CloseCurrentPage()
+					}
+					onDexServerSelected := func(server string) {
+						log.Info("Not implemented yet...", server)
+					}
+					pg.ParentWindow().Display(NewWalletDexServerSelector(pg.Load, onWalSelected, onDexServerSelected))
+				} else {
+					m.Dismiss()
+					pg.ParentWindow().CloseAllPages()
+				}
+			}
 
-	// 		if pg.wallet.IsWatchingOnlyWallet() {
-	// 			// no password is required for watching only wallets.
-	// 			err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, nil)
-	// 			if err != nil {
-	// 				m.SetError(err.Error())
-	// 				m.SetLoading(false)
-	// 			} else {
-	// 				walletDeleted()
-	// 			}
-	// 			return false
-	// 		}
+			if pg.wallet.IsWatchingOnlyWallet() {
+				// no password is required for watching only wallets.
+				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, nil)
+				if err != nil {
+					m.SetError(err.Error())
+					m.SetLoading(false)
+				} else {
+					walletDeleted()
+				}
+				return false
+			}
 
-	// 		walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-	// 			EnableName(false).
-	// 			EnableConfirmPassword(false).
-	// 			Title(values.String(values.StrConfirmToRemove)).
-	// 			SetNegativeButtonCallback(func() {
-	// 				m.SetLoading(false)
-	// 			}).
-	// 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-	// 				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedWallet.Wallet.ID, []byte(password))
-	// 				if err != nil {
-	// 					pm.SetError(err.Error())
-	// 					pm.SetLoading(false)
-	// 					return false
-	// 				}
+			walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				EnableName(false).
+				EnableConfirmPassword(false).
+				Title(values.String(values.StrConfirmToRemove)).
+				SetNegativeButtonCallback(func() {
+					m.SetLoading(false)
+				}).
+				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+					err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, []byte(password))
+					if err != nil {
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
 
-	// 				walletDeleted()
-	// 				pm.Dismiss() // calls RefreshWindow.
-	// 				return true
-	// 			})
-	// 		pg.ParentWindow().ShowModal(walletPasswordModal)
-	// 		return true
+					walletDeleted()
+					pm.Dismiss() // calls RefreshWindow.
+					return true
+				})
+			pg.ParentWindow().ShowModal(walletPasswordModal)
+			return true
 
-	// 	})
-	// textModal.Title(values.String(values.StrRemoveWallet)).
-	// 	SetPositiveButtonText(values.String(values.StrRemove))
-	// pg.ParentWindow().ShowModal(textModal)
+		})
+	textModal.Title(values.String(values.StrRemoveWallet)).
+		SetPositiveButtonText(values.String(values.StrRemove))
+	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) renameWalletModal() {
+func (pg *BTCWalletSettingsPage) renameWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
@@ -420,7 +409,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
+func (pg *BTCWalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	return row.clickable.Layout(gtx, func(gtx C) D {
 		return pg.subSection(gtx, row.title, func(gtx C) D {
 			lbl := pg.Theme.Label(values.TextSize16, row.labelText)
@@ -440,7 +429,7 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) HandleUserInteractions() {
+func (pg *BTCWalletSettingsPage) HandleUserInteractions() {
 	for pg.changePass.Clicked() {
 		pg.changeSpendingPasswordModal()
 		break
@@ -502,4 +491,4 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *WalletSettingsPage) OnNavigatedFrom() {}
+func (pg *BTCWalletSettingsPage) OnNavigatedFrom() {}
