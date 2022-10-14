@@ -357,11 +357,3 @@ func (l *dcrLoader) NetworkBackend() (n wallet.NetworkBackend, ok bool) {
 	l.mu.Unlock()
 	return n, n != nil
 }
-
-func (l *dcrLoader) GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error) {
-	accExtendedPubKey, err := l.wallet.AccountXpub(ctx, account)
-	if err != nil {
-		return "", err
-	}
-	return accExtendedPubKey.String(), nil
-}

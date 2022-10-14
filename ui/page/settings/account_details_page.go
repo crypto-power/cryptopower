@@ -71,7 +71,6 @@ func NewAcctDetailsPage(l *load.Load, account *dcr.Account) *AcctDetailsPage {
 		renameAccount:           l.Theme.NewClickable(false),
 		extendedKeyClickable:    l.Theme.NewClickable(true),
 		showExtendedKeyButton:   l.Theme.NewClickable(false),
-		extendedKey:             "",
 		isHiddenExtendedxPubkey: true,
 	}
 

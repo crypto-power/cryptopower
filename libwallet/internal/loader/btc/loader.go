@@ -215,6 +215,3 @@ func (l *btcLoader) WalletExists(walletID string) (bool, error) {
 	}
 	return exists, nil
 }
-func (l *btcLoader) GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error) {
-	return "", fmt.Errorf("need implement")
-}

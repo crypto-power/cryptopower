@@ -54,7 +54,6 @@ type AssetLoader interface {
 	OpenExistingWallet(ctx context.Context, WalletID string, pubPassphrase []byte) (*LoaderWallets, error)
 	CreateNewWallet(ctx context.Context, params *CreateWalletParams) (*LoaderWallets, error)
 	CreateWatchingOnlyWallet(ctx context.Context, params *WatchOnlyWalletParams) (*LoaderWallets, error)
-	GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error)
 
 	GetLoadedWallet() (*LoaderWallets, bool)
 	UnloadWallet() error
