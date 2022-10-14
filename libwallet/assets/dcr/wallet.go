@@ -43,7 +43,7 @@ type Wallet struct {
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
 	vspMu        sync.RWMutex
-	vsps         []*mainW.VSP
+	vsps         []*VSP
 
 	notificationListenersMu          sync.RWMutex
 	syncData                         *SyncData

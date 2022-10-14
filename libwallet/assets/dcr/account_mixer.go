@@ -212,7 +212,7 @@ func (wallet *Wallet) StartAccountMixer(walletPassphrase string) error {
 	return nil
 }
 
-func (wallet *Wallet) readCSPPConfig() *mainW.CSPPConfig {
+func (wallet *Wallet) readCSPPConfig() *CSPPConfig {
 	mixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerMixedAccount, -1)
 	unmixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
 
@@ -245,7 +245,7 @@ func (wallet *Wallet) readCSPPConfig() *mainW.CSPPConfig {
 		}
 	}
 
-	return &mainW.CSPPConfig{
+	return &CSPPConfig{
 		CSPPServer:         ShuffleServer + ":" + shufflePort,
 		DialCSPPServer:     dialCSPPServer,
 		MixedAccount:       uint32(mixedAccount),

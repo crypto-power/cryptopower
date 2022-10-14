@@ -125,7 +125,7 @@ func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
-func (wallet *Wallet) UnspentOutputs(account int32) ([]*mainW.UnspentOutput, error) {
+func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(account),
 		RequiredConfirmations: wallet.RequiredConfirmations(),
@@ -139,7 +139,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*mainW.UnspentOutput, err
 		return nil, err
 	}
 
-	unspentOutputs := make([]*mainW.UnspentOutput, len(inputDetail.Inputs))
+	unspentOutputs := make([]*UnspentOutput, len(inputDetail.Inputs))
 
 	for i, input := range inputDetail.Inputs {
 		outputInfo, err := wallet.Internal().OutputInfo(wallet.ShutdownContext(), &input.PreviousOutPoint)
@@ -158,7 +158,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*mainW.UnspentOutput, err
 			confirmations = wallet.GetBestBlockHeight() - inputBlockHeight + 1
 		}
 
-		unspentOutputs[i] = &mainW.UnspentOutput{
+		unspentOutputs[i] = &UnspentOutput{
 			TransactionHash: input.PreviousOutPoint.Hash[:],
 			OutputIndex:     input.PreviousOutPoint.Index,
 			OutputKey:       outputKey,

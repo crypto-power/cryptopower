@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
 	"github.com/decred/dcrd/blockchain/stake/v4"
@@ -134,7 +133,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 // is returned; otherwise the policies for all pi keys are returned.
 // If a ticket hash is provided, the policy(ies) for that ticket
 // is/are returned.
-func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*mainW.TreasuryKeyPolicy, error) {
+func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPolicy, error) {
 	var ticketHash *chainhash.Hash
 	if tixHash != "" {
 		tixHash, err := chainhash.NewHashFromStr(tixHash)
@@ -158,7 +157,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*mainW.Treasury
 		default:
 			policy = "abstain"
 		}
-		res := []*mainW.TreasuryKeyPolicy{
+		res := []*TreasuryKeyPolicy{
 			{
 				TicketHash: tixHash,
 				PiKey:      PiKey,
@@ -169,7 +168,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*mainW.Treasury
 	}
 
 	policies := wallet.Internal().TreasuryKeyPolicies()
-	res := make([]*mainW.TreasuryKeyPolicy, len(policies))
+	res := make([]*TreasuryKeyPolicy, len(policies))
 	for i := range policies {
 		var policy string
 		switch policies[i].Policy {
@@ -178,7 +177,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*mainW.Treasury
 		case stake.TreasuryVoteNo:
 			policy = "no"
 		}
-		r := &mainW.TreasuryKeyPolicy{
+		r := &TreasuryKeyPolicy{
 			PiKey:  hex.EncodeToString(policies[i].PiKey),
 			Policy: policy,
 		}

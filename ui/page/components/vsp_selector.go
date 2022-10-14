@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -25,7 +25,7 @@ type VSPSelector struct {
 
 	changed      bool
 	showVSPModal *cryptomaterial.Clickable
-	selectedVSP  *wallet.VSP
+	selectedVSP  *dcr.VSP
 }
 
 func NewVSPSelector(l *load.Load) *VSPSelector {
@@ -57,7 +57,7 @@ func (v *VSPSelector) SelectVSP(vspHost string) {
 	}
 }
 
-func (v *VSPSelector) SelectedVSP() *wallet.VSP {
+func (v *VSPSelector) SelectedVSP() *dcr.VSP {
 	return v.selectedVSP
 }
 
@@ -65,7 +65,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 	if v.showVSPModal.Clicked() {
 		modal := newVSPSelectorModal(v.Load).
 			title(values.String(values.StrVotingServiceProvider)).
-			vspSelected(func(info *wallet.VSP) {
+			vspSelected(func(info *dcr.VSP) {
 				v.SelectVSP(info.Host)
 			})
 		window.ShowModal(modal)
@@ -131,10 +131,10 @@ type vspSelectorModal struct {
 	inputVSP cryptomaterial.Editor
 	addVSP   cryptomaterial.Button
 
-	selectedVSP *wallet.VSP
+	selectedVSP *dcr.VSP
 	vspList     *cryptomaterial.ClickableList
 
-	vspSelectedCallback func(*wallet.VSP)
+	vspSelectedCallback func(*dcr.VSP)
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
@@ -196,7 +196,7 @@ func (v *vspSelectorModal) title(title string) *vspSelectorModal {
 	return v
 }
 
-func (v *vspSelectorModal) vspSelected(callback func(*wallet.VSP)) *vspSelectorModal {
+func (v *vspSelectorModal) vspSelected(callback func(*dcr.VSP)) *vspSelectorModal {
 	v.vspSelectedCallback = callback
 	return v
 }

@@ -39,8 +39,8 @@ func (wallet *Wallet) TicketExpiry() int32 {
 	return int32(wallet.chainParams.TicketExpiry)
 }
 
-func (wallet *Wallet) StakingOverview() (stOverview *mainW.StakingOverview, err error) {
-	stOverview = &mainW.StakingOverview{}
+func (wallet *Wallet) StakingOverview() (stOverview *StakingOverview, err error) {
+	stOverview = &StakingOverview{}
 
 	stOverview.Voted, err = wallet.CountTransactions(TxFilterVoted)
 	if err != nil {
@@ -81,7 +81,7 @@ func (wallet *Wallet) StakingOverview() (stOverview *mainW.StakingOverview, err 
 // TicketPrice returns the price of a ticket for the next block, also known as
 // the stake difficulty. May be incorrect if blockchain sync is ongoing or if
 // blockchain is not up-to-date.
-func (wallet *Wallet) TicketPrice() (*mainW.TicketPriceResponse, error) {
+func (wallet *Wallet) TicketPrice() (*TicketPriceResponse, error) {
 	ctx := wallet.ShutdownContext()
 	sdiff, err := wallet.Internal().NextStakeDifficulty(ctx)
 	if err != nil {
@@ -89,7 +89,7 @@ func (wallet *Wallet) TicketPrice() (*mainW.TicketPriceResponse, error) {
 	}
 
 	_, tipHeight := wallet.Internal().MainChainTip(ctx)
-	resp := &mainW.TicketPriceResponse{
+	resp := &TicketPriceResponse{
 		TicketPrice: int64(sdiff),
 		Height:      tipHeight,
 	}
@@ -153,7 +153,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
-func (wallet *Wallet) VSPTicketInfo(hash string) (*mainW.VSPTicketInfo, error) {
+func (wallet *Wallet) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	ticketHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
@@ -167,10 +167,10 @@ func (wallet *Wallet) VSPTicketInfo(hash string) (*mainW.VSPTicketInfo, error) {
 		return nil, err
 	}
 
-	ticketInfo := &mainW.VSPTicketInfo{
+	ticketInfo := &VSPTicketInfo{
 		VSP:         walletTicketInfo.Host,
 		FeeTxHash:   walletTicketInfo.FeeHash.String(),
-		FeeTxStatus: mainW.VSPFeeStatus(walletTicketInfo.FeeTxStatus),
+		FeeTxStatus: VSPFeeStatus(walletTicketInfo.FeeTxStatus),
 	}
 
 	// Cannot submit a ticketstatus api request to the VSP if
@@ -191,18 +191,18 @@ func (wallet *Wallet) VSPTicketInfo(hash string) (*mainW.VSPTicketInfo, error) {
 	}
 
 	// Parse the fee status returned by the vsp.
-	var vspFeeStatus mainW.VSPFeeStatus
+	var vspFeeStatus VSPFeeStatus
 	switch vspTicketStatus.FeeTxStatus {
 	case "received": // received but not broadcast
-		vspFeeStatus = mainW.VSPFeeProcessStarted
+		vspFeeStatus = VSPFeeProcessStarted
 	case "broadcast": // broadcast but not confirmed
-		vspFeeStatus = mainW.VSPFeeProcessPaid
+		vspFeeStatus = VSPFeeProcessPaid
 	case "confirmed": // broadcast and confirmed
-		vspFeeStatus = mainW.VSPFeeProcessConfirmed
+		vspFeeStatus = VSPFeeProcessConfirmed
 	case "error":
-		vspFeeStatus = mainW.VSPFeeProcessErrored
+		vspFeeStatus = VSPFeeProcessErrored
 	default:
-		vspFeeStatus = mainW.VSPFeeProcessErrored
+		vspFeeStatus = VSPFeeProcessErrored
 		log.Warnf("VSP responded with %v for %v", vspTicketStatus.FeeTxStatus, ticketHash)
 	}
 
@@ -283,7 +283,7 @@ func (wallet *Wallet) StartTicketBuyer(passphrase []byte) error {
 // runTicketBuyer executes the ticket buyer. If the private passphrase is
 // incorrect, or ever becomes incorrect due to a wallet passphrase change,
 // runTicketBuyer exits with an errors.Passphrase error.
-func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg *mainW.TicketBuyerConfig) error {
+func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg *TicketBuyerConfig) error {
 	if len(passphrase) > 0 && wallet.IsLocked() {
 		err := wallet.UnlockWallet(passphrase)
 		if err != nil {
@@ -427,7 +427,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 }
 
 // buyTicket purchases one ticket with the wallet.
-func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dcrutil.Amount, expiry int32, cfg *mainW.TicketBuyerConfig) error {
+func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dcrutil.Amount, expiry int32, cfg *TicketBuyerConfig) error {
 	ctx, task := trace.NewTask(ctx, "ticketbuyer.buy")
 	defer task.End()
 
@@ -512,12 +512,12 @@ func (wallet *Wallet) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount 
 
 // AutoTicketsBuyerConfig returns the previously set ticket buyer config for
 // the wallet.
-func (wallet *Wallet) AutoTicketsBuyerConfig() *mainW.TicketBuyerConfig {
+func (wallet *Wallet) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 	btm := wallet.ReadLongConfigValueForKey(mainW.TicketBuyerATMConfigKey, -1)
 	accNum := wallet.ReadInt32ConfigValueForKey(mainW.TicketBuyerAccountConfigKey, -1)
 	vspHost := wallet.ReadStringConfigValueForKey(mainW.TicketBuyerVSPHostConfigKey, "")
 
-	return &mainW.TicketBuyerConfig{
+	return &TicketBuyerConfig{
 		VspHost:           vspHost,
 		PurchaseAccount:   accNum,
 		BalanceToMaintain: btm,

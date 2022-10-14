@@ -11,7 +11,6 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/wire"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -196,7 +195,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 // network and this version of the software. Also returns any saved vote
 // preferences for the agendas of the current stake version. Vote preferences
 // for older agendas cannot currently be retrieved.
-func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*mainW.Agenda, error) {
+func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
 	if wallet.chainParams.Deployments == nil {
 		return nil, nil // no agendas to return
 	}
@@ -225,7 +224,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*mainW.Ag
 	}
 
 	// Fetch high level agenda detail form dcrdata api.
-	var dcrdataAgenda []mainW.DcrdataAgenda
+	var dcrdataAgenda []DcrdataAgenda
 	host := dcrdataAgendasAPIMainnetUrl
 	if wallet.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
@@ -235,7 +234,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*mainW.Ag
 		return nil, err
 	}
 
-	agendas := make([]*mainW.Agenda, len(deployments))
+	agendas := make([]*Agenda, len(deployments))
 	var status string
 	for i := range deployments {
 		d := &deployments[i]
@@ -254,7 +253,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*mainW.Ag
 			}
 		}
 
-		agendas[i] = &mainW.Agenda{
+		agendas[i] = &Agenda{
 			AgendaID:         d.Vote.Id,
 			Description:      d.Vote.Description,
 			Mask:             uint32(d.Vote.Mask),

@@ -4,6 +4,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -15,7 +16,7 @@ type agendaVoteModal struct {
 	// This modal inherits most of the CreatePasswordModal implementation
 	*modal.CreatePasswordModal
 
-	agenda     *wallet.Agenda
+	agenda     *dcr.Agenda
 	voteChoice string
 
 	onPreferenceUpdated func()
@@ -24,7 +25,7 @@ type agendaVoteModal struct {
 	accountSelected *wallet.Account
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *wallet.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
+func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
 		agenda:              agenda,
 		CreatePasswordModal: modal.NewCreatePasswordModal(l),

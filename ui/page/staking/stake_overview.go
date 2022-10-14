@@ -44,7 +44,7 @@ type Page struct {
 
 	tickets []*transactionItem
 
-	ticketOverview *wallet.StakingOverview
+	ticketOverview *dcr.StakingOverview
 
 	ticketsList   *cryptomaterial.ClickableList
 	stakeSettings *cryptomaterial.Clickable
@@ -67,7 +67,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
-	pg.ticketOverview = new(wallet.StakingOverview)
+	pg.ticketOverview = new(dcr.StakingOverview)
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
@@ -271,7 +271,7 @@ func (pg *Page) HandleUserInteractions() {
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v\n", err)
 		} else {
-			if ticketInfo.FeeTxStatus != wallet.VSPFeeProcessConfirmed {
+			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed {
 				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
 					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
