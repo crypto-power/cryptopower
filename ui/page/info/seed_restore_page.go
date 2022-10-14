@@ -12,6 +12,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -533,7 +534,11 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
 				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, dcr.PassphraseTypePass)
 				if err != nil {
-					m.SetError(err.Error())
+					errString := err.Error()
+					if err.Error() == libwallet.ErrExist {
+						errString = values.StringF(values.StrWalletExist, pg.walletName)
+					}
+					m.SetError(errString)
 					m.SetLoading(false)
 					pg.isRestoring = false
 					return false

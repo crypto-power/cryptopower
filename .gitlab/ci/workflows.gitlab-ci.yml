@@ -34,6 +34,4 @@ Test:
   stage: test
   extends: .go-cache
   script:
-    - apt update
-    - apt install -y gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
     - env GORACE="halt_on_error=1" go test -race -short -count 1 ./...

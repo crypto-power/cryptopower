@@ -76,7 +76,6 @@ func (p ProgressBarStyle) Layout2(gtx C) D {
 			Background: p.TrackColor,
 			Border:     Border{Radius: p.Radius},
 		}.Layout2(gtx, func(gtx C) D {
-
 			return LinearLayout{
 				Width:      int(float32(p.Width) * clamp1(p.Progress)),
 				Height:     gtx.Dp(p.Height),
@@ -93,22 +92,29 @@ func (p ProgressBarStyle) TextLayout(gtx C, lbl layout.Widget) D {
 		p.Width = unit.Dp(gtx.Constraints.Max.X)
 	}
 
-	return p.Direction.Layout(gtx, func(gtx C) D {
-		return LinearLayout{
-			Width:      MatchParent,
-			Height:     gtx.Dp(p.Height),
-			Background: p.TrackColor,
-			Border:     Border{Radius: p.Radius},
-		}.Layout2(gtx, func(gtx C) D {
-			return LinearLayout{
-				Width:      int(float32(p.Width) * clamp1(p.Progress)),
-				Height:     gtx.Dp(p.Height),
-				Background: p.Color,
-				Border:     Border{Radius: p.Radius},
-				Direction:  layout.Center,
-			}.Layout2(gtx, lbl)
-		})
-	})
+	return layout.Stack{Alignment: layout.Center}.Layout(gtx,
+		layout.Stacked(func(gtx C) D {
+			return p.Direction.Layout(gtx, func(gtx C) D {
+				return LinearLayout{
+					Width:      MatchParent,
+					Height:     gtx.Dp(p.Height),
+					Background: p.TrackColor,
+					Border:     Border{Radius: p.Radius},
+				}.Layout2(gtx, func(gtx C) D {
+					return LinearLayout{
+						Width:      int(float32(p.Width) * clamp1(p.Progress)),
+						Height:     gtx.Dp(p.Height),
+						Background: p.Color,
+						Border:     Border{Radius: p.Radius},
+						Direction:  layout.Center,
+					}.Layout(gtx)
+				})
+			})
+		}),
+		layout.Expanded(func(gtx C) D {
+			return layout.Center.Layout(gtx, lbl)
+		}),
+	)
 }
 
 func (p ProgressBarStyle) Layout(gtx layout.Context) layout.Dimensions {

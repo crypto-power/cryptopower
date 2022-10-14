@@ -9,7 +9,6 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
-	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -39,7 +38,7 @@ type WalletDexServerSelector struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	walletSyncListener map[int]*listeners.SyncProgressListener
+	isListenerAdded bool
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -53,9 +52,11 @@ type WalletDexServerSelector struct {
 	// wallet selector options
 	listLock             sync.Mutex
 	mainWalletList       []*load.WalletItem
+	mainBTCWalletList    []*load.BTCWalletItem
 	watchOnlyWalletList  []*load.WalletItem
 	badWalletsList       []*badWalletListItem
 	walletsList          *cryptomaterial.ClickableList
+	BTCwalletsList       *cryptomaterial.ClickableList
 	watchOnlyWalletsList *cryptomaterial.ClickableList
 	walletSelected       func()
 
@@ -73,9 +74,8 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 				Alignment: layout.Middle,
 			},
 		},
-		Load:               l,
-		shadowBox:          l.Theme.Shadow(),
-		walletSyncListener: make(map[int]*listeners.SyncProgressListener),
+		Load:      l,
+		shadowBox: l.Theme.Shadow(),
 
 		walletSelected:    onWalletSelected,
 		dexServerSelected: onDexServerSelected,
@@ -115,6 +115,7 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 
 	pg.listenForNotifications()
 	pg.loadWallets()
+	pg.loadBTCWallets()
 	pg.startDexClient()
 
 	for _, wallet := range pg.WL.SortedWalletList() {
@@ -132,11 +133,19 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	pg.listLock.Lock()
 	mainWalletList := pg.mainWalletList
+	mainBTCWalletList := pg.mainBTCWalletList
 	watchOnlyWalletList := pg.watchOnlyWalletList
 	pg.listLock.Unlock()
 
 	if ok, selectedItem := pg.walletsList.ItemClicked(); ok {
 		pg.WL.SelectedWallet = mainWalletList[selectedItem]
+		pg.WL.SelectedWalletType = "DCR"
+		pg.walletSelected()
+	}
+
+	if ok, selectedItem := pg.BTCwalletsList.ItemClicked(); ok {
+		pg.WL.SelectedBTCWallet = mainBTCWalletList[selectedItem]
+		pg.WL.SelectedWalletType = "BTC"
 		pg.walletSelected()
 	}
 
@@ -242,6 +251,7 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.walletListLayout,
+		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.dexServersLayout,

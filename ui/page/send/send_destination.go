@@ -19,7 +19,8 @@ type destination struct {
 
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
-	destinationAccountSelector *components.AccountSelector
+	destinationAccountSelector *components.WalletAndAccountSelector
+	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	sendToAddress bool
 	accountSwitch *cryptomaterial.SwitchButtonText
@@ -36,23 +37,17 @@ func newSendDestination(l *load.Load) *destination {
 
 	dst.accountSwitch = l.Theme.SwitchButtonText([]cryptomaterial.SwitchItem{
 		{Text: values.String(values.StrAddress)},
-		{Text: values.String(values.StrMyAcct)},
+		{Text: values.String(values.StrWallets)},
 	})
 
+	// Destination wallet picker
+	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load).
+		Title(values.String(values.StrTo))
+
 	// Destination account picker
-	dst.destinationAccountSelector = components.NewAccountSelector(dst.Load).
-		Title(values.String(values.StrReceivingAddress)).
-		AccountValidator(func(account *dcr.Account) bool {
-
-			// Filter out imported account and mixed.
-			wal := dst.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
-			if account.Number == components.MaxInt32 ||
-				account.Number == wal.MixedAccountNumber() {
-				return false
-			}
-
-			return true
-		})
+	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
+		Title(values.String(values.StrAccount))
+	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 
 	return dst
 }
@@ -142,6 +137,6 @@ func (dst *destination) handle() {
 // styleWidgets sets the appropriate colors for the destination widgets.
 func (dst *destination) styleWidgets() {
 	dst.accountSwitch.Active, dst.accountSwitch.Inactive = dst.Theme.Color.Surface, color.NRGBA{}
-	dst.accountSwitch.ActiveTextColor, dst.accountSwitch.InactiveTextColor = dst.Theme.Color.GrayText1, dst.Theme.Color.Text
+	dst.accountSwitch.ActiveTextColor, dst.accountSwitch.InactiveTextColor = dst.Theme.Color.GrayText1, dst.Theme.Color.Surface
 	dst.destinationAddressEditor.EditorStyle.Color = dst.Theme.Color.Text
 }

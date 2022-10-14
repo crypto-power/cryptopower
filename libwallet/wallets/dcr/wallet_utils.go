@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"context"
+	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
@@ -114,7 +115,7 @@ func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, 
 	walletLoader := initWalletLoader(wallet.chainParams, walletDataDir, wallet.dbDriver)
 
 	// open the wallet to get ready for temporary use
-	wal, err := walletLoader.OpenExistingWallet(ctx, []byte(walletPublicPass))
+	wal, err := walletLoader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
 	if err != nil {
 		return translateError(err)
 	}
@@ -123,7 +124,7 @@ func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, 
 	defer walletLoader.UnloadWallet()
 
 	if onLoaded != nil {
-		return onLoaded(wal)
+		return onLoaded(wal.DCR)
 	}
 
 	return nil

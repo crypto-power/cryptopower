@@ -268,7 +268,7 @@ func stringToTime(t string) time.Time {
 }
 
 func mainnetService() *Service {
-	chainParams, err := utils.ChainParams("mainnet")
+	chainParams, err := utils.DCRChainParams("mainnet")
 	if err != nil {
 		fmt.Println("Error creating chain params.")
 		return nil

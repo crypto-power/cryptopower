@@ -27,7 +27,7 @@ type createWalletModal struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	sourceAccountSelector *components.AccountSelector
+	sourceAccountSelector *components.WalletAndAccountSelector
 	submitBtn             cryptomaterial.Button
 	cancelBtn             cryptomaterial.Button
 	walletPassword        cryptomaterial.Editor
@@ -56,7 +56,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 		walletInfoWidget: wallInfo,
 	}
 	md.submitBtn.SetEnabled(false)
-	md.sourceAccountSelector = components.NewAccountSelector(md.Load).
+	md.sourceAccountSelector = components.NewWalletAndAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
 		AccountSelected(func(selectedAccount *decred.Account) {}).
 		AccountValidator(func(account *decred.Account) bool {
@@ -68,6 +68,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 			}
 			return true
 		})
+	md.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 
 	return md
 }
@@ -84,7 +85,7 @@ func (md *createWalletModal) OnResume() {
 	md.ctx, md.ctxCancel = context.WithCancel(context.TODO())
 	md.sourceAccountSelector.ListenForTxNotifications(md.ctx, md.ParentWindow())
 
-	err := md.sourceAccountSelector.SelectFirstWalletValidAccount()
+	err := md.sourceAccountSelector.SelectFirstValidAccount(md.WL.SelectedWallet.Wallet)
 	if err != nil {
 		md.SetError(err.Error())
 	}

@@ -20,12 +20,17 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 )
 
+type walletType string
+
 const (
 	logFileName   = "libwallet.log"
 	walletsDbName = "wallets.db"
 
 	walletsMetadataBucketName    = "metadata"
 	walletstartupPassphraseField = "startup-passphrase"
+
+	BTCWallet walletType = "BTC"
+	DCRWallet walletType = "DCR"
 )
 
 var (
@@ -56,7 +61,7 @@ func (mw *MultiWallet) batchDbTransaction(dbOp func(node storm.Node) error) (err
 	return err
 }
 
-func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
+func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, strWalletID, walletDataDir, walletPublicPass string,
 	onLoaded func(*w.Wallet) error) error {
 
 	if walletPublicPass == "" {
@@ -67,7 +72,7 @@ func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, walletDataDir,
 	walletLoader := initWalletLoader(mw.chainParams, walletDataDir, mw.dbDriver)
 
 	// open the wallet to get ready for temporary use
-	wallet, err := walletLoader.OpenExistingWallet(ctx, []byte(walletPublicPass))
+	wallet, err := walletLoader.OpenExistingWallet(ctx, strWalletID, []byte(walletPublicPass))
 	if err != nil {
 		return translateError(err)
 	}
@@ -76,7 +81,7 @@ func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, walletDataDir,
 	defer walletLoader.UnloadWallet()
 
 	if onLoaded != nil {
-		return onLoaded(wallet)
+		return onLoaded(wallet.DCR)
 	}
 
 	return nil

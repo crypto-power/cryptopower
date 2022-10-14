@@ -3,42 +3,42 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package loader
+package dcr
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"sync"
 
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/wallet"
-	_ "decred.org/dcrwallet/v2/wallet/drivers/bdb" // driver loaded during init
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
-	_ "gitlab.com/raedah/cryptopower/libwallet/badgerdb" // initialize badger driver
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+
+	_ "decred.org/dcrwallet/v2/wallet/drivers/bdb" // driver loaded during init
 )
 
-const (
-	walletDbName    = "wallet.db"
-	defaultDbDriver = "bdb"
-)
+const walletDbName = "wallet.db"
 
-// Loader implements the creating of new and opening of existing wallets, while
+var log = loader.Log
+
+// dcrLoader implements the creating of new and opening of existing dcr wallets, while
 // providing a callback system for other subsystems to handle the loading of a
-// wallet.  This is primarely intended for use by the RPC servers, to enable
+// wallet.  This is primarily intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
 // another subsystem.
 //
-// Loader is safe for concurrent access.
-type Loader struct {
+// dcrLoader is safe for concurrent access.
+type dcrLoader struct {
+	*loader.Loader
+
 	callbacks   []func(*wallet.Wallet)
 	chainParams *chaincfg.Params
-	dbDirPath   string
 	wallet      *wallet.Wallet
 	db          wallet.DB
-	dbDriver    string
 
 	stakeOptions            *StakeOptions
 	gapLimit                uint32
@@ -49,7 +49,7 @@ type Loader struct {
 	relayFee                dcrutil.Amount
 	mixSplitLimit           int
 
-	mu sync.Mutex
+	mu sync.RWMutex
 }
 
 // StakeOptions contains the various options necessary for stake mining.
@@ -62,14 +62,15 @@ type StakeOptions struct {
 	StakePoolColdExtKey string
 }
 
-// NewLoader constructs a Loader.
-func NewLoader(chainParams *chaincfg.Params, dbDirPath string, stakeOptions *StakeOptions, gapLimit uint32,
-	allowHighFees bool, relayFee dcrutil.Amount, accountGapLimit int, disableCoinTypeUpgrades bool, manualTickets bool, mixSplitLimit int) *Loader {
+// Confirm the dcrLoader implements the assets loader interface.
+var _ loader.AssetLoader = (*dcrLoader)(nil)
 
-	return &Loader{
+// NewLoader constructs a DCR Loader.
+func NewLoader(chainParams *chaincfg.Params, dbDirPath string, stakeOptions *StakeOptions, gapLimit uint32,
+	relayFee dcrutil.Amount, allowHighFees, disableCoinTypeUpgrades, manualTickets bool, accountGapLimit, mixSplitLimit int) loader.AssetLoader {
+
+	return &dcrLoader{
 		chainParams:             chainParams,
-		dbDirPath:               dbDirPath,
-		dbDriver:                defaultDbDriver,
 		stakeOptions:            stakeOptions,
 		gapLimit:                gapLimit,
 		accountGapLimit:         accountGapLimit,
@@ -78,17 +79,14 @@ func NewLoader(chainParams *chaincfg.Params, dbDirPath string, stakeOptions *Sta
 		manualTickets:           manualTickets,
 		relayFee:                relayFee,
 		mixSplitLimit:           mixSplitLimit,
-	}
-}
 
-// SetDatabaseDriver specifies the database to be used by walletdb
-func (l *Loader) SetDatabaseDriver(driver string) {
-	l.dbDriver = driver
+		Loader: loader.NewLoader(dbDirPath),
+	}
 }
 
 // onLoaded executes each added callback and prevents loader from loading any
 // additional wallets.  Requires mutex to be locked.
-func (l *Loader) onLoaded(w *wallet.Wallet, db wallet.DB) {
+func (l *dcrLoader) onLoaded(w *wallet.Wallet, db wallet.DB) {
 	for _, fn := range l.callbacks {
 		fn(w)
 	}
@@ -99,9 +97,9 @@ func (l *Loader) onLoaded(w *wallet.Wallet, db wallet.DB) {
 }
 
 // RunAfterLoad adds a function to be executed when the loader creates or opens
-// a wallet.  Functions are executed in a single goroutine in the order they are
+// a wallet. Functions are executed in a single goroutine in the order they are
 // added.
-func (l *Loader) RunAfterLoad(fn func(*wallet.Wallet)) {
+func (l *dcrLoader) RunAfterLoad(fn func(*wallet.Wallet)) {
 	l.mu.Lock()
 	if l.wallet != nil {
 		w := l.wallet
@@ -114,8 +112,8 @@ func (l *Loader) RunAfterLoad(fn func(*wallet.Wallet)) {
 }
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
-// extended public key and public passphrase.
-func (l *Loader) CreateWatchingOnlyWallet(ctx context.Context, extendedPubKey string, pubPass []byte) (w *wallet.Wallet, err error) {
+// walletID, extended public key and public passphrase.
+func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
 	const op errors.Op = "loader.CreateWatchingOnlyWallet"
 
 	defer l.mu.Unlock()
@@ -125,52 +123,18 @@ func (l *Loader) CreateWatchingOnlyWallet(ctx context.Context, extendedPubKey st
 		return nil, errors.E(op, errors.Exist, "wallet already loaded")
 	}
 
-	// Ensure that the network directory exists.
-	if fi, err := os.Stat(l.dbDirPath); err != nil {
-		if os.IsNotExist(err) {
-			// Attempt data directory creation
-			if err = os.MkdirAll(l.dbDirPath, 0700); err != nil {
-				return nil, errors.E(op, err)
-			}
-		} else {
-			return nil, errors.E(op, err)
-		}
-	} else {
-		if !fi.IsDir() {
-			return nil, errors.E(op, errors.Invalid, errors.Errorf("%q is not a directory", l.dbDirPath))
-		}
-	}
-
-	dbPath := filepath.Join(l.dbDirPath, walletDbName)
-	exists, err := fileExists(dbPath)
+	dbPath, err := l.CreateDirPath(params.WalletID, walletDbName, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if exists {
-		return nil, errors.E(op, errors.Exist, "wallet already exists")
-	}
 
-	// At this point it is asserted that there is no existing database file, and
-	// deleting anything won't destroy a wallet in use.  Defer a function that
-	// attempts to remove any written database file if this function errors.
-	defer func() {
-		if err != nil {
-			_ = os.Remove(dbPath)
-		}
-	}()
-
-	// Create the wallet database backed by bolt db.
-	err = os.MkdirAll(l.dbDirPath, 0700)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	db, err := wallet.CreateDB(l.dbDriver, dbPath)
+	db, err := wallet.CreateDB(l.DbDriver, dbPath)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	// Initialize the watch-only database for the wallet before opening.
-	err = wallet.CreateWatchOnly(ctx, db, extendedPubKey, pubPass, l.chainParams)
+	err = wallet.CreateWatchOnly(ctx, db, params.ExtendedPubKey, params.PubPassphrase, l.chainParams)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -179,7 +143,7 @@ func (l *Loader) CreateWatchingOnlyWallet(ctx context.Context, extendedPubKey st
 	so := l.stakeOptions
 	cfg := &wallet.Config{
 		DB:                      db,
-		PubPassphrase:           pubPass,
+		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
 		AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
@@ -195,19 +159,19 @@ func (l *Loader) CreateWatchingOnlyWallet(ctx context.Context, extendedPubKey st
 		MixSplitLimit:           l.mixSplitLimit,
 		Params:                  l.chainParams,
 	}
-	w, err = wallet.Open(ctx, cfg)
+	w, err := wallet.Open(ctx, cfg)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	l.onLoaded(w, db)
-	return w, nil
+	return &loader.LoaderWallets{DCR: w}, nil
 }
 
-// CreateNewWallet creates a new wallet using the provided public and private
+// CreateNewWallet creates a new wallet using the provided walletID, public and private
 // passphrases.  The seed is optional.  If non-nil, addresses are derived from
 // this seed.  If nil, a secure random seed is generated.
-func (l *Loader) CreateNewWallet(ctx context.Context, pubPassphrase, privPassphrase, seed []byte) (w *wallet.Wallet, err error) {
+func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
 	const op errors.Op = "loader.CreateNewWallet"
 
 	defer l.mu.Unlock()
@@ -217,52 +181,18 @@ func (l *Loader) CreateNewWallet(ctx context.Context, pubPassphrase, privPassphr
 		return nil, errors.E(op, errors.Exist, "wallet already opened")
 	}
 
-	// Ensure that the network directory exists.
-	if fi, err := os.Stat(l.dbDirPath); err != nil {
-		if os.IsNotExist(err) {
-			// Attempt data directory creation
-			if err = os.MkdirAll(l.dbDirPath, 0700); err != nil {
-				return nil, errors.E(op, err)
-			}
-		} else {
-			return nil, errors.E(op, err)
-		}
-	} else {
-		if !fi.IsDir() {
-			return nil, errors.E(op, errors.Errorf("%q is not a directory", l.dbDirPath))
-		}
-	}
-
-	dbPath := filepath.Join(l.dbDirPath, walletDbName)
-	exists, err := fileExists(dbPath)
+	dbPath, err := l.CreateDirPath(params.WalletID, walletDbName, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if exists {
-		return nil, errors.E(op, errors.Exist, "wallet DB exists")
-	}
 
-	// At this point it is asserted that there is no existing database file, and
-	// deleting anything won't destroy a wallet in use.  Defer a function that
-	// attempts to remove any written database file if this function errors.
-	defer func() {
-		if err != nil {
-			_ = os.Remove(dbPath)
-		}
-	}()
-
-	// Create the wallet database backed by bolt db.
-	err = os.MkdirAll(l.dbDirPath, 0700)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	db, err := wallet.CreateDB(l.dbDriver, dbPath)
+	db, err := wallet.CreateDB(l.DbDriver, dbPath)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	// Initialize the newly created database for the wallet before opening.
-	err = wallet.Create(ctx, db, pubPassphrase, privPassphrase, seed, l.chainParams)
+	err = wallet.Create(ctx, db, params.PubPassphrase, params.PrivPassphrase, params.Seed, l.chainParams)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -271,7 +201,7 @@ func (l *Loader) CreateNewWallet(ctx context.Context, pubPassphrase, privPassphr
 	so := l.stakeOptions
 	cfg := &wallet.Config{
 		DB:                      db,
-		PubPassphrase:           pubPassphrase,
+		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
 		AddressReuse:            so.AddressReuse,
 		VotingAddress:           so.VotingAddress,
@@ -286,20 +216,20 @@ func (l *Loader) CreateNewWallet(ctx context.Context, pubPassphrase, privPassphr
 		RelayFee:                l.relayFee,
 		Params:                  l.chainParams,
 	}
-	w, err = wallet.Open(ctx, cfg)
+	w, err := wallet.Open(ctx, cfg)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	l.onLoaded(w, db)
-	return w, nil
+	return &loader.LoaderWallets{DCR: w}, nil
 }
 
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.  If the loader is being called by a context where
 // standard input prompts may be used during wallet upgrades, setting
 // canConsolePrompt will enable these prompts.
-func (l *Loader) OpenExistingWallet(ctx context.Context, pubPassphrase []byte) (w *wallet.Wallet, rerr error) {
+func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
 	const op errors.Op = "loader.OpenExistingWallet"
 
 	defer l.mu.Unlock()
@@ -309,12 +239,16 @@ func (l *Loader) OpenExistingWallet(ctx context.Context, pubPassphrase []byte) (
 		return nil, errors.E(op, errors.Exist, "wallet already opened")
 	}
 
-	// Open the database using the boltdb backend.
-	dbPath := filepath.Join(l.dbDirPath, walletDbName)
-	l.mu.Unlock()
-	db, err := wallet.OpenDB(l.dbDriver, dbPath)
-	l.mu.Lock()
+	var err error
 
+	// Open the database using the boltdb backend.
+	dbPath, _, err := l.FileExists(walletID, walletDbName, utils.DCRWalletAsset)
+	if err != nil {
+		log.Warnf("unable to open wallet db at %q: %v", dbPath, err)
+		return nil, errors.E(op, err)
+	}
+
+	db, err := wallet.OpenDB(l.DbDriver, dbPath)
 	if err != nil {
 		log.Errorf("Failed to open database: %v", err)
 		return nil, errors.E(op, err)
@@ -324,7 +258,7 @@ func (l *Loader) OpenExistingWallet(ctx context.Context, pubPassphrase []byte) (
 	// other attempts to open the wallet will hang, and there is no way to
 	// recover since this db handle would be leaked.
 	defer func() {
-		if rerr != nil {
+		if err != nil {
 			db.Close()
 		}
 	}()
@@ -348,26 +282,31 @@ func (l *Loader) OpenExistingWallet(ctx context.Context, pubPassphrase []byte) (
 		MixSplitLimit:           l.mixSplitLimit,
 		Params:                  l.chainParams,
 	}
-	w, err = wallet.Open(ctx, cfg)
+	w, err := wallet.Open(ctx, cfg)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	l.onLoaded(w, db)
-	return w, nil
+	return &loader.LoaderWallets{DCR: w}, nil
 }
 
-// DbDirPath returns the Loader's database directory path
-func (l *Loader) DbDirPath() string {
-	return l.dbDirPath
+// GetDbDirPath returns the Loader's database directory path
+func (l *dcrLoader) GetDbDirPath() string {
+	defer l.mu.RUnlock()
+	l.mu.RLock()
+
+	return filepath.Join(l.DbDirPath, string(utils.DCRWalletAsset))
 }
 
 // WalletExists returns whether a file exists at the loader's database path.
 // This may return an error for unexpected I/O failures.
-func (l *Loader) WalletExists() (bool, error) {
+func (l *dcrLoader) WalletExists(walletID string) (bool, error) {
+	defer l.mu.RUnlock()
+	l.mu.RLock()
+
 	const op errors.Op = "loader.WalletExists"
-	dbPath := filepath.Join(l.dbDirPath, walletDbName)
-	exists, err := fileExists(dbPath)
+	_, exists, err := l.FileExists(walletID, walletDbName, utils.DCRWalletAsset)
 	if err != nil {
 		return false, errors.E(op, err)
 	}
@@ -377,18 +316,18 @@ func (l *Loader) WalletExists() (bool, error) {
 // LoadedWallet returns the loaded wallet, if any, and a bool for whether the
 // wallet has been loaded or not.  If true, the wallet pointer should be safe to
 // dereference.
-func (l *Loader) LoadedWallet() (*wallet.Wallet, bool) {
-	l.mu.Lock()
+func (l *dcrLoader) GetLoadedWallet() (*loader.LoaderWallets, bool) {
+	l.mu.RLock()
 	w := l.wallet
-	l.mu.Unlock()
-	return w, w != nil
+	l.mu.RUnlock()
+	return &loader.LoaderWallets{DCR: w}, w != nil
 }
 
 // UnloadWallet stops the loaded wallet, if any, and closes the wallet database.
 // Returns with errors.Invalid if the wallet has not been loaded with
 // CreateNewWallet or LoadExistingWallet.  The Loader may be reused if this
 // function returns without error.
-func (l *Loader) UnloadWallet() error {
+func (l *dcrLoader) UnloadWallet() error {
 	const op errors.Op = "loader.UnloadWallet"
 
 	defer l.mu.Unlock()
@@ -410,7 +349,7 @@ func (l *Loader) UnloadWallet() error {
 
 // NetworkBackend returns the associated wallet network backend, if any, and a
 // bool describing whether a non-nil network backend was set.
-func (l *Loader) NetworkBackend() (n wallet.NetworkBackend, ok bool) {
+func (l *dcrLoader) NetworkBackend() (n wallet.NetworkBackend, ok bool) {
 	l.mu.Lock()
 	if l.wallet != nil {
 		n, _ = l.wallet.NetworkBackend()
@@ -419,18 +358,7 @@ func (l *Loader) NetworkBackend() (n wallet.NetworkBackend, ok bool) {
 	return n, n != nil
 }
 
-func fileExists(filePath string) (bool, error) {
-	_, err := os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (l *Loader) GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error) {
+func (l *dcrLoader) GetAccountExtendedPubKey(ctx context.Context, account uint32) (string, error) {
 	accExtendedPubKey, err := l.wallet.AccountXpub(ctx, account)
 	if err != nil {
 		return "", err

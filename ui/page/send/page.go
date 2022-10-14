@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
-	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/wallets/dcr"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -44,28 +43,28 @@ type Page struct {
 
 	pageContainer *widget.List
 
-	sourceAccountSelector *components.AccountSelector
+	sourceAccountSelector *components.WalletAndAccountSelector
 	sendDestination       *destination
 	amount                *sendAmount
 
-	backButton    cryptomaterial.IconButton
 	infoButton    cryptomaterial.IconButton
-	moreOption    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
 
 	txFeeCollapsible *cryptomaterial.Collapsible
 	shadowBox        *cryptomaterial.Shadow
+	optionsMenuCard  cryptomaterial.Card
 	moreItems        []moreItem
 	backdrop         *widget.Clickable
 
-	moreOptionIsOpen       bool
 	isFetchingExchangeRate bool
 
 	exchangeRate        float64
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
+	coinSelectionLabel  *cryptomaterial.Clickable
+	currencyExchange    string
 
 	*authoredTxData
 }
@@ -101,9 +100,11 @@ func NewSendPage(l *load.Load) *Page {
 	}
 
 	// Source account picker
-	pg.sourceAccountSelector = components.NewAccountSelector(l).
-		Title(values.String(values.StrSendingAcct)).
+	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
+		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *dcr.Account) {
+			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
+				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *dcr.Account) bool {
@@ -122,16 +123,34 @@ func NewSendPage(l *load.Load) *Page {
 				}
 			}
 			return accountIsValid
+		}).
+		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
+	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+
+	pg.sendDestination.destinationAccountSelector =
+		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *dcr.Account) bool {
+			// Filter out imported account and mixed.
+			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			// Filter imported account and mixed accounts.
+			accountIsValid := account.Number != load.MaxInt32 && account.Number != wal.MixedAccountNumber()
+			// Filter the sending account.
+			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
+				return false
+			}
+			return true
 		})
 
 	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *dcr.Account) {
 		pg.validateAndConstructTx()
-		pg.sourceAccountSelector.SelectFirstWalletValidAccount() // refresh source account
+	})
+
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.Wallet) {
+		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstWalletValidAccount()
+		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -160,16 +179,14 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.sendDestination.destinationAccountSelector.SelectFirstWalletValidAccount()
-	pg.sourceAccountSelector.SelectFirstWalletValidAccount()
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
-	currencyExchangeValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyExchangeValue == values.USDExchangeValue {
+	pg.usdExchangeSet = false
+	if pg.currencyExchange = pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey); pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
-	} else {
-		pg.usdExchangeSet = false
 	}
 }
 
@@ -184,34 +201,17 @@ func (pg *Page) fetchExchangeRate() {
 	if pg.isFetchingExchangeRate {
 		return
 	}
-	maxAttempts := 5
-	delayBtwAttempts := 2 * time.Second
 	pg.isFetchingExchangeRate = true
-	desc := "for getting dcrUsdtBittrex exchange rate value"
-	pg.exchangeRateMessage = "fetching exchange rate..."
-
-	var dcrUsdtBittrex load.DCRUSDTBittrex
-	attempts, err := components.RetryFunc(maxAttempts, delayBtwAttempts, desc, func() error {
-		return utils.GetUSDExchangeValue(&dcrUsdtBittrex)
-	})
+	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, values.DCRUSDTMarket)
 	if err != nil {
-		pg.exchangeRateMessage = "Exchange rate not fetched. Kindly check internet connection."
-		log.Printf("error fetching usd exchange rate value after %d attempts: %v", attempts, err)
-	} else if dcrUsdtBittrex.LastTradeRate == "" {
-		log.Printf("no error while fetching usd exchange rate in %d tries, but no rate was fetched", attempts)
-		pg.exchangeRateMessage = "Exchange rate not fetched."
-	} else {
-		log.Printf("exchange rate value fetched: %s", dcrUsdtBittrex.LastTradeRate)
-		pg.exchangeRateMessage = ""
-		exchangeRate, err := strconv.ParseFloat(dcrUsdtBittrex.LastTradeRate, 64)
-		if err != nil {
-			pg.exchangeRateMessage = err.Error()
-		} else {
-			pg.exchangeRate = exchangeRate
-			pg.amount.setExchangeRate(exchangeRate)
-			pg.validateAndConstructTx() // convert estimates to usd
-		}
+		log.Printf("Error fetching exchange rate : %s \n", err)
+		return
 	}
+
+	pg.exchangeRate = rate.LastTradePrice
+	pg.amount.setExchangeRate(pg.exchangeRate)
+	pg.validateAndConstructTx() // convert estimates to usd
+
 	pg.isFetchingExchangeRate = false
 	pg.ParentWindow().Reload()
 }
@@ -221,10 +221,13 @@ func (pg *Page) validateAndConstructTx() {
 		pg.constructTx(false)
 	} else {
 		pg.clearEstimates()
+		pg.showBalaceAfterSend()
 	}
 }
 
 func (pg *Page) validateAndConstructTxAmountOnly() {
+	defer pg.RefreshTheme(pg.ParentWindow())
+
 	if !pg.sendDestination.validate() && pg.amount.amountIsValid() {
 		pg.constructTx(true)
 	} else {
@@ -310,6 +313,15 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	pg.txAuthor = unsignedTx
 }
 
+func (pg *Page) showBalaceAfterSend() {
+	if pg.sourceAccountSelector != nil {
+		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
+		balanceAfterSend := dcrutil.Amount(sourceAccount.Balance.Spendable)
+		pg.balanceAfterSend = balanceAfterSend.String()
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+	}
+}
+
 func (pg *Page) feeEstimationError(err string) {
 	pg.amount.setError(err)
 	pg.clearEstimates()
@@ -317,12 +329,12 @@ func (pg *Page) feeEstimationError(err string) {
 
 func (pg *Page) clearEstimates() {
 	pg.txAuthor = nil
-	pg.txFee = " - "
+	pg.txFee = " - " + values.String(values.StrDCRCaps)
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
-	pg.totalCost = " - "
+	pg.totalCost = " - " + values.String(values.StrDCRCaps)
 	pg.totalCostUSD = " - "
-	pg.balanceAfterSend = " - "
+	pg.balanceAfterSend = " - " + values.String(values.StrDCRCaps)
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
@@ -344,20 +356,12 @@ func (pg *Page) HandleUserInteractions() {
 	pg.sendDestination.handle()
 	pg.amount.handle()
 
-	if pg.backButton.Button.Clicked() {
-		pg.ParentNavigator().CloseCurrentPage()
-	}
-
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrSend) + " DCR").
 			Body(values.String(values.StrSendInfo)).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
-	}
-
-	for pg.moreOption.Button.Clicked() {
-		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
 	for pg.retryExchange.Clicked() {
@@ -378,10 +382,6 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	for pg.backdrop.Clicked() {
-		pg.moreOptionIsOpen = false
-	}
-
 	for _, menu := range pg.moreItems {
 		if menu.button.Clicked() {
 			menu.action()
@@ -390,8 +390,8 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyValue != values.USDExchangeValue {
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
 			if !pg.amount.dcrAmountEditor.Editor.Focused() && !modalShown {
@@ -428,7 +428,7 @@ func (pg *Page) HandleUserInteractions() {
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
-			if currencyValue != values.USDExchangeValue {
+			if currencyValue == values.DefaultExchangeValue {
 				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
@@ -440,7 +440,7 @@ func (pg *Page) HandleUserInteractions() {
 			}
 		}
 	} else {
-		if currencyValue != values.USDExchangeValue {
+		if currencyValue == values.DefaultExchangeValue {
 			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
@@ -480,8 +480,8 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(dcr.CurrencyConversionConfigKey)
-	if currencyValue != values.USDExchangeValue {
+	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
 			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)

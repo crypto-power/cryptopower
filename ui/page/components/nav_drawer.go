@@ -25,9 +25,10 @@ type NavHandler struct {
 type NavDrawer struct {
 	*load.Load
 
-	AppBarNavItems []NavHandler
-	DrawerNavItems []NavHandler
-	CurrentPage    string
+	AppBarNavItems    []NavHandler
+	DrawerNavItems    []NavHandler
+	BTCDrawerNavItems []NavHandler
+	CurrentPage       string
 
 	axis      layout.Axis
 	textSize  unit.Sp
@@ -94,6 +95,71 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context) layout.Dimensions {
 									textColor = nd.Theme.Color.DeepBlue
 								}
 								txt := nd.Theme.Label(nd.textSize, nd.DrawerNavItems[i].Title)
+								txt.Color = textColor
+								return txt.Layout(gtx)
+							})
+						}
+
+						return D{}
+					}),
+				)
+			})
+		}),
+		layout.Flexed(1, func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.SE.Layout(gtx, func(gtx C) D {
+				return nd.activeDrawerBtn.Layout(gtx)
+			})
+		}),
+	)
+}
+
+func (nd *NavDrawer) LayoutBTCNavDrawer(gtx layout.Context) layout.Dimensions {
+	return cryptomaterial.LinearLayout{
+		Width:       gtx.Dp(nd.width),
+		Height:      cryptomaterial.MatchParent,
+		Orientation: layout.Vertical,
+		Background:  nd.Theme.Color.Surface,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			list := layout.List{Axis: layout.Vertical}
+			return list.Layout(gtx, len(nd.BTCDrawerNavItems), func(gtx C, i int) D {
+				mGtx := gtx
+				background := cryptomaterial.Disabled(nd.Theme.Color.Gray5)
+				mGtx = gtx.Disabled()
+
+				if nd.DrawerNavItems[i].PageID == nd.CurrentPage {
+					background = nd.Theme.Color.Gray5
+				}
+				return cryptomaterial.LinearLayout{
+					Orientation: nd.axis,
+					Width:       cryptomaterial.MatchParent,
+					Height:      cryptomaterial.WrapContent,
+					Padding:     layout.UniformInset(values.MarginPadding15),
+					Alignment:   nd.alignment,
+					Direction:   nd.direction,
+					Background:  background,
+					Clickable:   nd.BTCDrawerNavItems[i].Clickable,
+				}.Layout(mGtx,
+					layout.Rigid(func(gtx C) D {
+						img := nd.BTCDrawerNavItems[i].ImageInactive
+
+						if nd.BTCDrawerNavItems[i].PageID == nd.CurrentPage {
+							img = nd.BTCDrawerNavItems[i].Image
+						}
+
+						return img.Layout24dp(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !nd.IsNavExpanded {
+							return layout.Inset{
+								Left: nd.leftInset,
+							}.Layout(gtx, func(gtx C) D {
+								textColor := nd.Theme.Color.GrayText1
+								if nd.BTCDrawerNavItems[i].PageID == nd.CurrentPage {
+									textColor = nd.Theme.Color.DeepBlue
+								}
+								txt := nd.Theme.Label(nd.textSize, nd.BTCDrawerNavItems[i].Title)
 								txt.Color = textColor
 								return txt.Layout(gtx)
 							})

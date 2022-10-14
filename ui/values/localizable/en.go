@@ -172,6 +172,7 @@ const EN = `
 "french" = "French";
 "spanish" = "Spanish";
 "usdBittrex" = "USD (Bittrex)";
+"usdBinance" = "USD (Binance)";
 "none" = "None";
 "proposals" = "Proposals";
 "dex" = "Dex";
@@ -570,4 +571,9 @@ const EN = `
 "pageWarningSync" = "Page cannot be accessed because the wallet sync is in progress, please wait for the sync to complete"
 "backToWallets" = "Back to Wallets"
 "extendedInfo" = "The Extended Public Key is used to import the wallet as a watch-only wallet"
+"coinSelection" = "Coin Selection"
+"nonAccSelector" = "This widget isn't set to show accounts"
+"txConfModalInfoTxt" = "<b>Unmixed accounts are hidden</b>. Spending from unmixed accounts is disabled by stakeshuffle settings to protect your privacy"
+"sendConfModalTitle" = "You're about to send"
+"dcrCaps"            = "DCR"
 `
