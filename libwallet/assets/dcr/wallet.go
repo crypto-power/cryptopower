@@ -131,7 +131,6 @@ func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *ch
 	wallet.vspClients = make(map[string]*vsp.Client)
 	wallet.rootDir = rootDir
 	wallet.chainParams = chainParams
-	wallet.walletDataDB = wallet.GetWalletDataDb()
 
 	wallet.syncData = &SyncData{
 		syncProgressListeners: make(map[string]mainW.SyncProgressListener),
@@ -139,9 +138,15 @@ func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *ch
 	wallet.txAndBlockNotificationListeners = make(map[string]mainW.TxAndBlockNotificationListener)
 	wallet.accountMixerNotificationListener = make(map[string]mainW.AccountMixerNotificationListener)
 
-	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSync)
+	err := wallet.Prepare(rootDir, db, chainParams, wallet.ID)
+	if err != nil {
+		return err
+	}
 
-	return wallet.Prepare(rootDir, db, chainParams, wallet.ID)
+	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSync)
+	wallet.walletDataDB = wallet.GetWalletDataDb()
+
+	return nil
 }
 
 func (wallet *Wallet) Synced() bool {
