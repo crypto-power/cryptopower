@@ -335,7 +335,11 @@ func (pg *AccountMixerPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 func (pg *AccountMixerPage) HandleUserInteractions() {
 	if pg.toggleMixer.Changed() {
 		if pg.toggleMixer.IsChecked() {
-			// todo not working properly.
+			if pg.unmixedBalance.ToCoin() <= 0 {
+				pg.Toast.NotifyError(values.String(values.StrNoMixable))
+				pg.toggleMixer.SetChecked(false)
+				return
+			}
 			pg.showModalPasswordStartAccountMixer()
 		} else {
 			pg.toggleMixer.SetChecked(true)
