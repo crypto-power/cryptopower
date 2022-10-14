@@ -34,7 +34,7 @@ type Wallet struct {
 
 	chainParams  *chaincfg.Params
 	dataDir      string
-	loader       loader.AssetLoader
+	Loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
 	networkCancel func()
@@ -97,7 +97,7 @@ func (wallet *Wallet) prepare(rootDir string, chainParams *chaincfg.Params,
 	}
 
 	// init loader
-	wallet.loader = initWalletLoader(wallet.chainParams, wallet.rootDir, wallet.dbDriver)
+	wallet.Loader = initWalletLoader(wallet.chainParams, wallet.rootDir, wallet.dbDriver)
 
 	if wallet.networkCancel == nil {
 		wallet.networkCancel = func() {
@@ -124,8 +124,8 @@ func (wallet *Wallet) Shutdown() {
 	// `wallet.ShutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	wallet.shuttingDown <- true
 
-	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
-		err := wallet.loader.UnloadWallet()
+	if _, loaded := wallet.Loader.GetLoadedWallet(); loaded {
+		err := wallet.Loader.UnloadWallet()
 		if err != nil {
 			log.Errorf("Failed to close wallet: %v", err)
 		} else {
@@ -158,7 +158,7 @@ func (wallet *Wallet) NetType() string {
 }
 
 func (wallet *Wallet) Internal() *w.Wallet {
-	lw, _ := wallet.loader.GetLoadedWallet()
+	lw, _ := wallet.Loader.GetLoadedWallet()
 	return lw.DCR
 }
 
@@ -171,7 +171,7 @@ func (wallet *Wallet) GetWalletDataDb() *walletdata.DB {
 }
 
 func (wallet *Wallet) WalletExists() (bool, error) {
-	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
+	return wallet.Loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
@@ -230,7 +230,7 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 		Seed:           seed,
 	}
 
-	_, err = wallet.loader.CreateNewWallet(wallet.ShutdownContext(), params)
+	_, err = wallet.Loader.CreateNewWallet(wallet.ShutdownContext(), params)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -270,7 +270,7 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 		ExtendedPubKey: extendedPublicKey,
 	}
 
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), params)
+	_, err := wallet.Loader.CreateWatchingOnlyWallet(wallet.ShutdownContext(), params)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -455,7 +455,7 @@ func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubP
 }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {
-	if w, ok := wallet.loader.GetLoadedWallet(); ok {
+	if w, ok := wallet.Loader.GetLoadedWallet(); ok {
 		return w.DCR.WatchingOnly()
 	}
 
@@ -465,7 +465,7 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 func (wallet *Wallet) OpenWallet() error {
 	pubPass := []byte(w.InsecurePubPassphrase)
 
-	_, err := wallet.loader.OpenExistingWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass)
+	_, err := wallet.Loader.OpenExistingWallet(wallet.ShutdownContext(), strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
 		log.Error(err)
 		return utils.TranslateError(err)
@@ -483,7 +483,7 @@ func (wallet *Wallet) UnlockWallet(privPass []byte) error {
 }
 
 func (wallet *Wallet) unlockWallet(privPass []byte) error {
-	loadedWallet, ok := wallet.loader.GetLoadedWallet()
+	loadedWallet, ok := wallet.Loader.GetLoadedWallet()
 	if !ok {
 		return fmt.Errorf("wallet has not been loaded")
 	}
@@ -568,7 +568,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 		}
 	}()
 
-	if _, loaded := wallet.loader.GetLoadedWallet(); !loaded {
+	if _, loaded := wallet.Loader.GetLoadedWallet(); !loaded {
 		return errors.New(utils.ErrWalletNotLoaded)
 	}
 

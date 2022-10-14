@@ -259,7 +259,7 @@ func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
 }
 
 func (wallet *Wallet) GetExtendedPubKey(account int32) (string, error) {
-	loadedWallet, _ := wallet.loader.GetLoadedWallet()
+	loadedWallet, _ := wallet.Loader.GetLoadedWallet()
 	if loadedWallet == nil {
 		return "", fmt.Errorf("dcr asset not initialised")
 	}
