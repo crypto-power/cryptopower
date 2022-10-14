@@ -141,6 +141,7 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 	date := time.Unix(tx.transaction.Timestamp, 0).Format("Jan 2, 2006")
 	timeSplit := time.Unix(tx.transaction.Timestamp, 0).Format("03:04:05 PM")
 	dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
+	bestBlock := l.WL.SelectedWallet.Wallet.GetBestBlock()
 	col := l.Theme.Color.GrayText3
 
 	switch tx.status.TicketStatus {
@@ -152,10 +153,11 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 		maturity := l.WL.SelectedWallet.Wallet.TicketMaturity()
 		blockTime := l.WL.MultiWallet.TargetTimePerBlockMinutes()
 		maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
+		blockRemaining := (bestBlock.Height - tx.transaction.BlockHeight)
 
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo, tx.transaction.BlockHeight, maturity,
+				lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo, blockRemaining, maturity,
 					maturityDuration.String()))
 				lbl.Color = col
 				return lbl.Layout(gtx)
