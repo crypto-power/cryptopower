@@ -121,6 +121,17 @@ func (wl *WalletLoad) HDPrefix() string {
 	}
 }
 
+func (wl *WalletLoad) BTCHDPrefix() string {
+	switch wl.Wallet.Net {
+	case libwallet.Testnet3:
+		return btc.TestnetHDPath
+	case "mainnet":
+		return btc.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
 func (wl *WalletLoad) WalletDirectory() string {
 	return fmt.Sprintf("%s/%s", wl.Wallet.Root, wl.Wallet.Net)
 }

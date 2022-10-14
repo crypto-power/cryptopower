@@ -373,7 +373,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 	// 				m.SetLoading(false)
 	// 			}).
 	// 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-	// 				err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, []byte(password))
+	// 				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedWallet.Wallet.ID, []byte(password))
 	// 				if err != nil {
 	// 					pm.SetError(err.Error())
 	// 					pm.SetLoading(false)
@@ -435,27 +435,6 @@ func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	})
 }
 
-func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
-	warningModal := modal.NewCustomModal(pg.Load).
-		Title(title).
-		Body(msg).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetNegativeButtonCallback(func() {
-			pg.connectToPeer.SetChecked(true)
-		}).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-		SetPositiveButtonText(values.String(values.StrRemove)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-			// TODO: Check if deletion happened successfully
-			// Since only one peer is available at time, the single peer key can
-			// be set to empty string to delete its entry..
-			pg.WL.SelectedWallet.Wallet.RemoveSpecificPeer()
-			return true
-		})
-	pg.ParentWindow().ShowModal(warningModal)
-}
-
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -511,9 +490,9 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		break
 	}
 
-	// if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
-	// 	pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].AccountResult))
-	// }
+	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem].AccountResult))
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
