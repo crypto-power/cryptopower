@@ -680,4 +680,5 @@ const (
 	StrTxConfModalInfoTxt              = "txConfModalInfoTxt"
 	StrSendConfModalTitle              = "sendConfModalTitle"
 	StrDCRCaps                         = "dcrCaps"
+	StrNoMixable                       = "errNoMixable"
 )

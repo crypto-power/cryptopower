@@ -129,7 +129,7 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 	}
 }
 
-func (pg *AccountMixerPage) MixerProgressBarLayout(gtx C) D {
+func (pg *AccountMixerPage) mixerProgressBarLayout(gtx C) D {
 	totalAmount := (pg.mixedBalance + pg.unmixedBalance).ToCoin()
 	pacentage := (pg.mixedBalance.ToCoin() / totalAmount) * 100
 
@@ -205,7 +205,7 @@ func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
 							return txt.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, pg.MixerProgressBarLayout)
+							return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, pg.mixerProgressBarLayout)
 						}),
 					)
 				})
@@ -335,7 +335,11 @@ func (pg *AccountMixerPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 func (pg *AccountMixerPage) HandleUserInteractions() {
 	if pg.toggleMixer.Changed() {
 		if pg.toggleMixer.IsChecked() {
-			// todo not working properly.
+			if pg.unmixedBalance.ToCoin() <= 0 {
+				pg.Toast.NotifyError(values.String(values.StrNoMixable))
+				pg.toggleMixer.SetChecked(false)
+				return
+			}
 			pg.showModalPasswordStartAccountMixer()
 		} else {
 			pg.toggleMixer.SetChecked(true)

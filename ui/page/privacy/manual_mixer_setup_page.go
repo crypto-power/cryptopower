@@ -28,7 +28,6 @@ type ManualMixerSetupPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	wallet                 *dcr.Wallet
 	mixedAccountSelector   *components.WalletAndAccountSelector
 	unmixedAccountSelector *components.WalletAndAccountSelector
 
