@@ -125,7 +125,7 @@ func (wl *WalletLoad) BTCHDPrefix() string {
 	switch wl.Wallet.Net {
 	case libwallet.Testnet3:
 		return btc.TestnetHDPath
-	case "mainnet":
+	case libwallet.Mainnet:
 		return btc.MainnetHDPath
 	default:
 		return ""

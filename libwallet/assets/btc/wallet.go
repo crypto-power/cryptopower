@@ -260,7 +260,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
 		if err != nil {
 			return err
 		}
@@ -320,7 +320,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
 		if err != nil {
 			return err
 		}
