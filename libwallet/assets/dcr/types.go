@@ -37,6 +37,11 @@ type CSPPConfig struct {
 	ChangeAccount      uint32
 }
 
+type AccountMixerNotificationListener interface {
+	OnAccountMixerStarted(walletID int)
+	OnAccountMixerEnded(walletID int)
+}
+
 /** begin tx-related types */
 
 // asyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that

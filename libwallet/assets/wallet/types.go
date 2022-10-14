@@ -80,11 +80,6 @@ type PeerInfo struct {
 	BanScore       int32  `json:"ban_score"`
 }
 
-type AccountMixerNotificationListener interface {
-	OnAccountMixerStarted(walletID int)
-	OnAccountMixerEnded(walletID int)
-}
-
 /** begin sync-related types */
 
 type SyncProgressListener interface {

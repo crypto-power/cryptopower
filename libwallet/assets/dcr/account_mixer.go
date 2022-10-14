@@ -25,7 +25,7 @@ const (
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
-func (wallet *Wallet) AddAccountMixerNotificationListener(accountMixerNotificationListener mainW.AccountMixerNotificationListener, uniqueIdentifier string) error {
+func (wallet *Wallet) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
 	wallet.notificationListenersMu.Lock()
 	defer wallet.notificationListenersMu.Unlock()
 

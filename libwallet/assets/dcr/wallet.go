@@ -47,7 +47,7 @@ type Wallet struct {
 
 	notificationListenersMu          sync.RWMutex
 	syncData                         *SyncData
-	accountMixerNotificationListener map[string]mainW.AccountMixerNotificationListener
+	accountMixerNotificationListener map[string]AccountMixerNotificationListener
 	txAndBlockNotificationListeners  map[string]mainW.TxAndBlockNotificationListener
 	blocksRescanProgressListener     mainW.BlocksRescanProgressListener
 }
@@ -69,7 +69,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
 		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]mainW.AccountMixerNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		vspClients:                       make(map[string]*vsp.Client),
 	}
 
@@ -136,7 +136,7 @@ func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *ch
 		syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 	}
 	wallet.txAndBlockNotificationListeners = make(map[string]mainW.TxAndBlockNotificationListener)
-	wallet.accountMixerNotificationListener = make(map[string]mainW.AccountMixerNotificationListener)
+	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
 	err := wallet.Prepare(rootDir, db, chainParams, wallet.ID)
 	if err != nil {

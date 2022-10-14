@@ -66,23 +66,6 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 	return DefaultRequiredConfirmations
 }
 
-// func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	// wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-// 	return ctx, cancel
-// }
-
-// func (wallet *Wallet) ShutdownContext() (ctx context.Context) {
-// 	ctx, _ = wallet.ShutdownContextWithCancel()
-// 	return
-// }
-
-// func (wallet *Wallet) contextWithShutdownCancel() (context.Context, context.CancelFunc) {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
-// 	return ctx, cancel
-// }
-
 func (wallet *Wallet) ValidateExtPubKey(extendedPubKey string) error {
 	_, err := hdkeychain.NewKeyFromString(extendedPubKey, wallet.chainParams)
 	if err != nil {
