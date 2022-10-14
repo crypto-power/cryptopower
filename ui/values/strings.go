@@ -676,4 +676,5 @@ const (
 	StrPageWarningSync                 = "pageWarningSync"
 	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrBackToWallets                   = "backToWallets"
+	StrExtendedInfo                    = "extendedInfo"
 )

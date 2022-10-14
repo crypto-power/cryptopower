@@ -39,6 +39,7 @@ type AcctDetailsPage struct {
 	renameAccount            *cryptomaterial.Clickable
 	extendedKeyClickable     *cryptomaterial.Clickable
 	showExtendedKeyButton    *cryptomaterial.Clickable
+	infoButton               cryptomaterial.IconButton
 
 	stakingBalance   int64
 	totalBalance     string
@@ -103,6 +104,7 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 	internal := pg.account.InternalKeyCount
 	imp := pg.account.ImportedKeyCount
 	pg.keys = values.StringF(values.StrAcctDetailsKey, ext, internal, imp)
+	_, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
 	pg.loadExtendedPubKey()
 }
 
@@ -167,7 +169,7 @@ func (pg *AcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx 
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformHorizontalPadding(gtx, body)
+	return components.UniformPadding(gtx, body)
 }
 
 func (pg *AcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
@@ -342,6 +344,11 @@ func (pg *AcctDetailsPage) extendedPubkey(gtx C) D {
 				leftTextLabel.Color = pg.theme.Color.GrayText2
 				return leftTextLabel.Layout(gtx)
 			}),
+			layout.Rigid(func(gtx C) D {
+				pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
+				pg.infoButton.Size = values.MarginPadding16
+				return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.infoButton.Layout)
+			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -419,6 +426,14 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 		if pg.extendedKey != "" {
 			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
 		}
+	}
+
+	if pg.infoButton.Button.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrExtendedKey)).
+			Body(values.String(values.StrExtendedInfo)).
+			SetContentAlignment(layout.NW, layout.Center)
+		pg.ParentWindow().ShowModal(info)
 	}
 }
 

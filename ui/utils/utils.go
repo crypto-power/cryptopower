@@ -257,7 +257,7 @@ func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserve
 			skewed -= 1
 			str = reserveText[0 : len(text)+skewed]
 		} else if (line[0].Width.Round() + 1) < maxWidth-(avd*3) {
-			if len(text) == len(reserveText) {
+			if len(text) == len(reserveText) || len(text)+skewed+1 > len(reserveText) {
 				loop = false
 				continue
 			}
