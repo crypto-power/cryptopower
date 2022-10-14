@@ -8,10 +8,12 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	// "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (
-	AddressGapLimit uint32 = 20
+	AddressGapLimit       uint32 = 20
+	ImportedAccountNumber        = 2147483647
 )
 
 func (wallet *Wallet) GetAccounts() (string, error) {

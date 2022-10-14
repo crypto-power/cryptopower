@@ -125,10 +125,14 @@ func (nd *NavDrawer) LayoutBTCNavDrawer(gtx layout.Context) layout.Dimensions {
 			list := layout.List{Axis: layout.Vertical}
 			return list.Layout(gtx, len(nd.BTCDrawerNavItems), func(gtx C, i int) D {
 				mGtx := gtx
-				background := cryptomaterial.Disabled(nd.Theme.Color.Gray5)
-				mGtx = gtx.Disabled()
+				background := nd.Theme.Color.Surface
 
-				if nd.DrawerNavItems[i].PageID == nd.CurrentPage {
+				if nd.BTCDrawerNavItems[i].PageID != values.String(values.StrSettings) {
+					background = cryptomaterial.Disabled(nd.Theme.Color.Gray5)
+					mGtx = gtx.Disabled()
+				}
+
+				if nd.BTCDrawerNavItems[i].PageID == nd.CurrentPage {
 					background = nd.Theme.Color.Gray5
 				}
 				return cryptomaterial.LinearLayout{

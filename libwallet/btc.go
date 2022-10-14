@@ -37,3 +37,23 @@ func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, 
 
 	return wallet, nil
 }
+
+func (mw *MultiWallet) DeleteBTCWallet(walletID int, privPass []byte) error {
+	wallet := mw.BTCWalletWithID(walletID)
+
+	err := wallet.DeleteWallet(privPass)
+	if err != nil {
+		return err
+	}
+
+	delete(mw.Assets.BTC.Wallets, walletID)
+
+	return nil
+}
+
+func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.Wallet {
+	if wallet, ok := mw.Assets.BTC.Wallets[walletID]; ok {
+		return wallet
+	}
+	return nil
+}

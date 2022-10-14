@@ -163,7 +163,12 @@ func (wallet *Wallet) RawRequest(method string, params []json.RawMessage) (json.
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err error) {
+func (wallet *Wallet) Prepare(rootDir, net string, db *storm.DB, log slog.Logger) (err error) {
+	wallet.db = db
+	return wallet.prepare(rootDir, net, log)
+}
+
+func (wallet *Wallet) prepare(rootDir string, net string, log slog.Logger) (err error) {
 	chainParams, err := parseChainParams(net)
 	if err != nil {
 		return err
@@ -182,21 +187,32 @@ func (wallet *Wallet) Prepare(rootDir string, net string, log slog.Logger) (err 
 	return nil
 }
 
-func (wallet *Wallet) Shutdown(walletDBRef *storm.DB) {
+func (wallet *Wallet) Shutdown() {
 	// Trigger shuttingDown signal to cancel all contexts created with
 	// `wallet.shutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	// wallet.shuttingDown <- true
 
 	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
-		wallet.loader.UnloadWallet()
+		err := wallet.loader.UnloadWallet()
+		if err != nil {
+			log.Errorf("Failed to close wallet: %v", err)
+		} else {
+			log.Info("Closed wallet")
+		}
 	}
 
 	for _, f := range wallet.cancelFuncs {
 		f()
 	}
 
-	if walletDBRef != nil {
-		walletDBRef.Close()
+	if wallet.db != nil {
+		err := wallet.db.Close()
+		if err != nil {
+			log.Errorf("tx db closed with error: %v", err)
+
+		} else {
+			log.Info("tx db closed successfully")
+		}
 	}
 }
 
@@ -244,7 +260,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
 		if err != nil {
 			return err
 		}
@@ -254,7 +270,6 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 }
 
 func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte) error {
-
 	defer func() {
 		for i := range seedMnemonic {
 			seedMnemonic[i] = 0
@@ -294,10 +309,6 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 		return fmt.Errorf("error closing newly created wallet database: %w", err)
 	}
 
-	if err := wallet.loader.UnloadWallet(); err != nil {
-		return fmt.Errorf("error unloading wallet: %w", err)
-	}
-
 	return nil
 }
 
@@ -309,7 +320,7 @@ func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (
 	}
 
 	return wallet.saveNewWallet(func() error {
-		err := wallet.Prepare(wallet.rootDir, "testnet3", wallet.log)
+		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
 		if err != nil {
 			return err
 		}
@@ -340,19 +351,19 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 	return false
 }
 
-func (wallet *Wallet) RenameWallet(newName string, walledDbRef *storm.DB) error {
+func (wallet *Wallet) RenameWallet(newName string) error {
 	if strings.HasPrefix(newName, "wallet-") {
 		return errors.E(ErrReservedWalletName)
 	}
 
-	if exists, err := WalletNameExists(newName, walledDbRef); err != nil {
+	if exists, err := wallet.WalletNameExists(newName); err != nil {
 		return translateError(err)
 	} else if exists {
 		return errors.New(ErrExist)
 	}
 
 	wallet.Name = newName
-	return walledDbRef.Save(wallet) // update WalletName field
+	return wallet.db.Save(wallet) // update WalletName field
 }
 
 func (wallet *Wallet) OpenWallet() error {
@@ -371,6 +382,10 @@ func (wallet *Wallet) WalletOpened() bool {
 }
 
 func (wallet *Wallet) UnlockWallet(privPass []byte) error {
+	return wallet.unlockWallet(privPass)
+}
+
+func (wallet *Wallet) unlockWallet(privPass []byte) error {
 	loadedWallet, ok := wallet.loader.GetLoadedWallet()
 	if !ok {
 		return fmt.Errorf("wallet has not been loaded")
@@ -394,18 +409,55 @@ func (wallet *Wallet) IsLocked() bool {
 	return wallet.Internal().Locked()
 }
 
-func (wallet *Wallet) ChangePrivatePassphrase(oldPass []byte, newPass []byte) error {
-	defer func() {
-		for i := range oldPass {
-			oldPass[i] = 0
+func (wallet *Wallet) ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
+	encryptedSeed := wallet.EncryptedSeed
+	if encryptedSeed != nil {
+		decryptedSeed, err := decryptWalletSeed(oldPrivatePassphrase, encryptedSeed)
+		if err != nil {
+			return err
 		}
 
-		for i := range newPass {
-			newPass[i] = 0
+		encryptedSeed, err = encryptWalletSeed(newPrivatePassphrase, decryptedSeed)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := wallet.changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
+	if err != nil {
+		return translateError(err)
+	}
+
+	wallet.EncryptedSeed = encryptedSeed
+	err = wallet.db.Save(wallet)
+	if err != nil {
+		log.Errorf("error saving wallet-[%d] to database after passphrase change: %v", wallet.ID, err)
+
+		err2 := wallet.changePrivatePassphrase(newPrivatePassphrase, oldPrivatePassphrase)
+		if err2 != nil {
+			log.Errorf("error undoing wallet passphrase change: %v", err2)
+			log.Errorf("error wallet passphrase was changed but passphrase type and newly encrypted seed could not be saved: %v", err)
+			return errors.New(ErrSavingWallet)
+		}
+
+		return errors.New(ErrChangingPassphrase)
+	}
+
+	return nil
+}
+
+func (wallet *Wallet) changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
+	defer func() {
+		for i := range oldPrivatePassphrase {
+			oldPrivatePassphrase[i] = 0
+		}
+
+		for i := range newPrivatePassphrase {
+			newPrivatePassphrase[i] = 0
 		}
 	}()
 
-	err := wallet.Internal().ChangePrivatePassphrase(oldPass, newPass)
+	err := wallet.Internal().ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
 	if err != nil {
 		return translateError(err)
 	}
@@ -413,6 +465,15 @@ func (wallet *Wallet) ChangePrivatePassphrase(oldPass []byte, newPass []byte) er
 }
 
 func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
+	err := wallet.deleteWallet(privatePassphrase)
+	if err != nil {
+		return translateError(err)
+	}
+
+	return nil
+}
+
+func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
 	defer func() {
 		for i := range privatePassphrase {
 			privatePassphrase[i] = 0
@@ -431,6 +492,16 @@ func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
 		wallet.Internal().Lock()
 	}
 
+	// Uncommenting this prevents the wallet from deleting,
+	// seems related to not having a properly define walletdatadb
+	// wallet.Shutdown()
+
+	err := wallet.db.DeleteStruct(wallet)
+	if err != nil {
+		return translateError(err)
+	}
+
+	log.Info("Deleting Wallet")
 	return os.RemoveAll(wallet.dataDir)
 }
 

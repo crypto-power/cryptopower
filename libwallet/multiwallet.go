@@ -185,7 +185,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	for _, wallet := range BTCwallets {
-		err = wallet.Prepare(mw.Assets.BTC.RootDir, netType, nil)
+		err = wallet.Prepare(mw.Assets.BTC.RootDir, netType, mw.db, nil)
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
 		}
