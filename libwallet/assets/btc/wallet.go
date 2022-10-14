@@ -309,10 +309,6 @@ func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte
 		return fmt.Errorf("error closing newly created wallet database: %w", err)
 	}
 
-	if err := wallet.loader.UnloadWallet(); err != nil {
-		return fmt.Errorf("error unloading wallet: %w", err)
-	}
-
 	return nil
 }
 
@@ -386,6 +382,10 @@ func (wallet *Wallet) WalletOpened() bool {
 }
 
 func (wallet *Wallet) UnlockWallet(privPass []byte) error {
+	return wallet.unlockWallet(privPass)
+}
+
+func (wallet *Wallet) unlockWallet(privPass []byte) error {
 	loadedWallet, ok := wallet.loader.GetLoadedWallet()
 	if !ok {
 		return fmt.Errorf("wallet has not been loaded")
