@@ -16,7 +16,8 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 	var blockHeight int32 = BlockHeightInvalid
 	if blockHash != nil {
 		blockIdentifier := w.NewBlockIdentifierFromHash(blockHash)
-		blockInfo, err := wallet.Internal().BlockInfo(wallet.ShutdownContext(), blockIdentifier)
+		ctx, _ := wallet.ShutdownContextWithCancel()
+		blockInfo, err := wallet.Internal().DCR.BlockInfo(ctx, blockIdentifier)
 		if err != nil {
 			log.Error(err)
 		} else {

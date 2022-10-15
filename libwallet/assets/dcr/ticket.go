@@ -82,13 +82,13 @@ func (wallet *Wallet) StakingOverview() (stOverview *StakingOverview, err error)
 // the stake difficulty. May be incorrect if blockchain sync is ongoing or if
 // blockchain is not up-to-date.
 func (wallet *Wallet) TicketPrice() (*TicketPriceResponse, error) {
-	ctx := wallet.ShutdownContext()
-	sdiff, err := wallet.Internal().NextStakeDifficulty(ctx)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	sdiff, err := wallet.Internal().DCR.NextStakeDifficulty(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, tipHeight := wallet.Internal().MainChainTip(ctx)
+	_, tipHeight := wallet.Internal().DCR.MainChainTip(ctx)
 	resp := &TicketPriceResponse{
 		TicketPrice: int64(sdiff),
 		Height:      tipHeight,
@@ -104,7 +104,7 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)
 	}
 
-	networkBackend, err := wallet.Internal().NetworkBackend()
+	networkBackend, err := wallet.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,8 @@ func (wallet *Wallet) PurchaseTickets(account, numTickets int32, vspHost string,
 		request.MixedSplitAccount = csppCfg.TicketSplitAccount
 	}
 
-	ctx := wallet.ShutdownContext()
-	ticketsResponse, err := wallet.Internal().PurchaseTickets(ctx, networkBackend, request)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	ticketsResponse, err := wallet.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +161,8 @@ func (wallet *Wallet) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 	}
 
 	// Read the VSP info for this ticket from the wallet db.
-	ctx := wallet.ShutdownContext()
-	walletTicketInfo, err := wallet.Internal().VSPTicketInfo(ctx, ticketHash)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	walletTicketInfo, err := wallet.Internal().DCR.VSPTicketInfo(ctx, ticketHash)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +291,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 		}
 	}
 
-	c := wallet.Internal().NtfnServer.MainTipChangedNotifications()
+	c := wallet.Internal().DCR.NtfnServer.MainTipChangedNotifications()
 	defer c.Done()
 
 	ctx, outerCancel := context.WithCancel(ctx)
@@ -318,7 +318,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 			}
 
 			tip := n.AttachedBlocks[len(n.AttachedBlocks)-1]
-			w := wallet.Internal()
+			w := wallet.Internal().DCR
 
 			// Don't perform any actions while transactions are not synced through
 			// the tip block.
@@ -384,7 +384,7 @@ func (wallet *Wallet) runTicketBuyer(ctx context.Context, passphrase []byte, cfg
 			}
 
 			spendable -= cfg.BalanceToMaintain
-			sdiff, err := wallet.Internal().NextStakeDifficultyAfterHeader(ctx, tipHeader)
+			sdiff, err := wallet.Internal().DCR.NextStakeDifficultyAfterHeader(ctx, tipHeader)
 			if err != nil {
 				return err
 			}
@@ -438,7 +438,7 @@ func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dc
 		}
 	}
 
-	networkBackend, err := wallet.Internal().NetworkBackend()
+	networkBackend, err := wallet.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (wallet *Wallet) buyTicket(ctx context.Context, passphrase []byte, sdiff dc
 		request.MixedSplitAccount = csppCfg.TicketSplitAccount
 	}
 
-	tix, err := wallet.Internal().PurchaseTickets(ctx, networkBackend, request)
+	tix, err := wallet.Internal().DCR.PurchaseTickets(ctx, networkBackend, request)
 	if tix != nil {
 		for _, hash := range tix.TicketHashes {
 			log.Infof("[%d] Purchased ticket %v at stake difficulty %v", wallet.ID, hash, sdiff)
@@ -542,7 +542,7 @@ func (wallet *Wallet) ClearTicketBuyerConfig(walletID int) error {
 // NextTicketPriceRemaining returns the remaning time in seconds of a ticket for the next block,
 // if secs equal 0 is imminent
 func (wallet *Wallet) NextTicketPriceRemaining() (secs int64, err error) {
-	params, er := utils.DCRChainParams(wallet.chainParams.Name)
+	params, er := utils.DCRChainParams(wallet.NetType())
 	if er != nil {
 		secs, err = -1, er
 		return

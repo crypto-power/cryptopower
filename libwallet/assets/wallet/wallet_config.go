@@ -1,9 +1,9 @@
 package wallet
 
 import (
-	"decred.org/dcrwallet/v2/errors"
+	"fmt"
+
 	"github.com/asdine/storm"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 const (
@@ -46,48 +46,47 @@ const (
 	PassphraseTypePass int32 = 1
 )
 
-type configSaveFn = func(key string, value interface{}) error
-type configReadFn = func(multiwallet bool, key string, valueOut interface{}) error
-
-func (wallet *Wallet) walletConfigSetFn(walletID int) configSaveFn {
-	return func(key string, value interface{}) error {
-		walletUniqueKey := WalletUniqueConfigKey(walletID, key)
-		return wallet.db.Set(userConfigBucketName, walletUniqueKey, value)
+func (wallet *Wallet) walletConfigSave(multiwallet bool, key string, value interface{}) error {
+	if !multiwallet {
+		key = fmt.Sprintf("%d%s", wallet.ID, key)
 	}
+	return wallet.db.Set(userConfigBucketName, key, value)
 }
 
-func (wallet *Wallet) walletConfigReadFn(walletID int) configReadFn {
-	return func(multiwallet bool, key string, valueOut interface{}) error {
-		if !multiwallet {
-			key = WalletUniqueConfigKey(walletID, key)
-		}
-		return wallet.db.Get(userConfigBucketName, key, valueOut)
+func (wallet *Wallet) walletConfigRead(multiwallet bool, key string, valueOut interface{}) error {
+	if !multiwallet {
+		key = fmt.Sprintf("%d%s", wallet.ID, key)
 	}
+	return wallet.db.Get(userConfigBucketName, key, valueOut)
+}
+
+func (wallet *Wallet) walletConfigDelete(multiwallet bool, key string) error {
+	if !multiwallet {
+		key = fmt.Sprintf("%d%s", wallet.ID, key)
+	}
+	return wallet.db.Delete(userConfigBucketName, key)
 }
 
 func (wallet *Wallet) SaveUserConfigValue(key string, value interface{}) {
-	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.Prepare before setting wallet config values")
-		return
-	}
-
-	err := wallet.setUserConfigValue(key, value)
+	err := wallet.walletConfigSave(false, key, value)
 	if err != nil {
 		log.Errorf("error setting config value for key: %s, error: %v", key, err)
 	}
 }
 
 func (wallet *Wallet) ReadUserConfigValue(key string, valueOut interface{}) error {
-	if wallet.setUserConfigValue == nil {
-		log.Errorf("call wallet.Prepare before reading wallet config values")
-		return errors.New(utils.ErrFailedPrecondition)
-	}
-
-	err := wallet.readUserConfigValue(false, key, valueOut)
+	err := wallet.walletConfigRead(false, key, valueOut)
 	if err != nil && err != storm.ErrNotFound {
 		log.Errorf("error reading config value for key: %s, error: %v", key, err)
 	}
 	return err
+}
+
+func (wallet *Wallet) DeleteUserConfigValueForKey(key string) {
+	err := wallet.walletConfigDelete(false, key)
+	if err != nil {
+		log.Errorf("error deleting config value for key: %s, error: %v", key, err)
+	}
 }
 
 func (wallet *Wallet) SetBoolConfigValueForKey(key string, value bool) {

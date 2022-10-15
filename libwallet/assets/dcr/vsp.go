@@ -25,7 +25,7 @@ func (wallet *Wallet) VSPClient(host string, pubKey []byte) (*vsp.Client, error)
 		URL:    host,
 		PubKey: base64.StdEncoding.EncodeToString(pubKey),
 		Dialer: nil, // optional, but consider providing a value
-		Wallet: wallet.Internal(),
+		Wallet: wallet.Internal().DCR,
 	}
 	client, err := vsp.New(cfg)
 	if err != nil {
@@ -61,7 +61,7 @@ func (wallet *Wallet) SaveVSP(host string) (err error) {
 	}
 
 	// TODO: defaultVSPs() uses strings.Contains(network, vspInfo.Network).
-	if info.Network != wallet.NetType() {
+	if info.Network != string(wallet.NetType()) {
 		return fmt.Errorf("invalid net %s", info.Network)
 	}
 
@@ -125,7 +125,7 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 		}
 	}
 
-	otherVSPHosts, err := defaultVSPs(wallet.NetType())
+	otherVSPHosts, err := defaultVSPs(string(wallet.NetType()))
 	if err != nil {
 		log.Debugf("get default vsp list error: %v", err)
 	}

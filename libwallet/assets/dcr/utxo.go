@@ -69,8 +69,8 @@ func (tx *TxAuthor) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
 	// if no change destination is provided and
 	// no recipient is set to receive max amount.
 	nextInternalAddress := func() (string, error) {
-		ctx := tx.sourceWallet.ShutdownContext()
-		addr, err := tx.sourceWallet.Internal().NewChangeAddress(ctx, tx.sourceAccountNumber)
+		ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
+		addr, err := tx.sourceWallet.Internal().DCR.NewChangeAddress(ctx, tx.sourceAccountNumber)
 		if err != nil {
 			return "", err
 		}

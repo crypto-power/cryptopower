@@ -230,7 +230,7 @@ func (wallet *Wallet) SpvSync() error {
 	wallet.initActiveSyncData()
 
 	wallets := make(map[int]*w.Wallet)
-	wallets[0] = wallet.Internal()
+	wallets[0] = wallet.Internal().DCR
 	wallet.waitingForHeaders = true
 	wallet.syncing = true
 
@@ -240,7 +240,7 @@ func (wallet *Wallet) SpvSync() error {
 		syncer.SetPersistentPeers(validPeerAddresses)
 	}
 
-	ctx, cancel := wallet.ContextWithShutdownCancel()
+	ctx, cancel := wallet.ShutdownContextWithCancel()
 
 	var restartSyncRequested bool
 
@@ -454,8 +454,8 @@ func (wallet *Wallet) GetBestBlockHeight() int32 {
 		log.Error("Attempting to read best block height without a loaded wallet.")
 		return 0
 	}
-
-	_, height := wallet.Internal().MainChainTip(wallet.ShutdownContext())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	_, height := wallet.Internal().DCR.MainChainTip(ctx)
 	return height
 }
 
@@ -466,10 +466,10 @@ func (wallet *Wallet) GetBestBlockTimeStamp() int64 {
 		return 0
 	}
 
-	ctx := wallet.ShutdownContext()
-	_, height := wallet.Internal().MainChainTip(ctx)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	_, height := wallet.Internal().DCR.MainChainTip(ctx)
 	identifier := w.NewBlockIdentifierFromHeight(height)
-	info, err := wallet.Internal().BlockInfo(ctx, identifier)
+	info, err := wallet.Internal().DCR.BlockInfo(ctx, identifier)
 	if err != nil {
 		log.Error(err)
 		return 0

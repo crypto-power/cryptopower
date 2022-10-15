@@ -49,13 +49,14 @@ const (
 )
 
 func (wallet *Wallet) PublishUnminedTransactions() error {
-	n, err := wallet.Internal().NetworkBackend()
+	n, err := wallet.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	return wallet.Internal().PublishUnminedTransactions(wallet.ShutdownContext(), n)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	return wallet.Internal().DCR.PublishUnminedTransactions(ctx, n)
 }
 
 func (wallet *Wallet) GetTransaction(txHash string) (string, error) {
@@ -80,7 +81,8 @@ func (wallet *Wallet) GetTransactionRaw(txHash string) (*mainW.Transaction, erro
 		return nil, err
 	}
 
-	txSummary, _, blockHash, err := wallet.Internal().TransactionSummary(wallet.ShutdownContext(), hash)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	txSummary, _, blockHash, err := wallet.Internal().DCR.TransactionSummary(ctx, hash)
 	if err != nil {
 		log.Error(err)
 		return nil, err

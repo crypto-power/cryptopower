@@ -14,8 +14,8 @@ import (
 
 // initializeDCRWalletParameters initializes the fields each DCR wallet is going to need to be setup
 // such as chainparams, root directory, network and database references
-func initializeDCRWalletParameters(rootDir, dbDriver, netType string) (*chaincfg.Params, string, error) {
-	rootDir = filepath.Join(rootDir, netType) // dcr now added in the dcr loader pkg
+func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.NetworkType) (*chaincfg.Params, string, error) {
+	rootDir = filepath.Join(rootDir, string(netType)) // dcr now added in the dcr loader pkg
 	err := os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, "", errors.Errorf("failed to create dcr rootDir: %v", err)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
@@ -149,19 +150,43 @@ func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *ch
 	return nil
 }
 
+// AccountXPubMatches checks if the xpub of the provided account matches the
+// provided legacy or SLIP0044 xpub. While both the legacy and SLIP0044 xpubs
+// will be checked for watch-only wallets, other wallets will only check the
+// xpub that matches the coin type key used by the wallet.
+func (wallet *Wallet) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
+	ctx, _ := wallet.ShutdownContextWithCancel()
+
+	acctXPubKey, err := wallet.Internal().DCR.AccountXpub(ctx, account)
+	if err != nil {
+		return false, err
+	}
+	acctXPub := acctXPubKey.String()
+
+	if wallet.IsWatchingOnlyWallet() {
+		// Coin type info isn't saved for watch-only wallets, so check
+		// against both legacy and SLIP0044 coin types.
+		return acctXPub == legacyXPub || acctXPub == slip044XPub, nil
+	}
+
+	cointype, err := wallet.Internal().DCR.CoinType(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if cointype == wallet.chainParams.LegacyCoinType {
+		return acctXPub == legacyXPub, nil
+	} else {
+		return acctXPub == slip044XPub, nil
+	}
+}
+
 func (wallet *Wallet) Synced() bool {
 	return wallet.synced
 }
 
-func (wallet *Wallet) LockWallet() {
-	if wallet.IsAccountMixerActive() {
-		log.Error("LockWallet ignored due to active account mixer")
-		return
-	}
-
-	if !wallet.Internal().Locked() {
-		wallet.Internal().Lock()
-	}
+func (wallet *Wallet) AmountCoin(amount int64) float64 {
+	return dcrutil.Amount(amount).ToCoin()
 }
 
 func (wallet *Wallet) SafelyCancelSync() {

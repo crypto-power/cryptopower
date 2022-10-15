@@ -93,9 +93,9 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 		if wallet == nil {
 			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
 		}
-		if wallet.Internal().ChainParams().Net != chainParams.Net {
+		if wallet.Internal().DCR.ChainParams().Net != chainParams.Net {
 			return nil, fmt.Errorf("selected wallet is for %s network, expected %s",
-				wallet.Internal().ChainParams().Name, chainParams.Name)
+				wallet.Internal().DCR.ChainParams().Name, chainParams.Name)
 		}
 
 		// Ensure the account exists.
@@ -106,7 +106,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 		}
 
 		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir())
-		return dexdcr.NewSpvWallet(wallet.Internal(), walletDesc, chainParams, logger.SubLogger("DLWL")), nil
+		return dexdcr.NewSpvWallet(wallet.Internal().DCR, walletDesc, chainParams, logger.SubLogger("DLWL")), nil
 	}
 
 	return dcr.RegisterCustomWallet(walletMaker, def)

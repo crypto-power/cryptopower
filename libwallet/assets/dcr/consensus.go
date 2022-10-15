@@ -102,10 +102,10 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	}
 	defer wallet.LockWallet()
 
-	ctx := wallet.ShutdownContext()
+	ctx, _ := wallet.ShutdownContextWithCancel()
 
 	// get choices
-	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
+	choices, _, err := wallet.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 		ChoiceID: choiceID,
 	}
 
-	_, err = wallet.Internal().SetAgendaChoices(ctx, ticketHash, newChoice)
+	_, err = wallet.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 		if !vspPreferenceUpdateSuccess {
 			// Updating the agenda voting preference with the vsp failed,
 			// revert the locally saved voting preference for the agenda.
-			_, revertError := wallet.Internal().SetAgendaChoices(ctx, ticketHash, currentChoice)
+			_, revertError := wallet.Internal().DCR.SetAgendaChoices(ctx, ticketHash, currentChoice)
 			if revertError != nil {
 				log.Errorf("unable to revert locally saved voting preference: %v", revertError)
 			}
@@ -151,7 +151,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	if ticketHash != nil {
 		ticketHashes = append(ticketHashes, ticketHash)
 	} else {
-		err = wallet.Internal().ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+		err = wallet.Internal().DCR.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
 			ticketHashes = append(ticketHashes, hash)
 			return nil
 		})
@@ -164,7 +164,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	// The first error will be returned to the caller.
 	var firstErr error
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := wallet.Internal().VSPTicketInfo(ctx, tHash)
+		vspTicketInfo, err := wallet.Internal().DCR.VSPTicketInfo(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -209,8 +209,8 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 		ticketHash = hash
 	}
 
-	ctx := wallet.ShutdownContext()
-	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	choices, _, err := wallet.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return nil, err
 	}

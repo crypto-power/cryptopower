@@ -8,7 +8,7 @@ import (
 )
 
 func (wallet *Wallet) IndexTransactions() error {
-	ctx := wallet.ShutdownContext()
+	ctx, _ := wallet.ShutdownContextWithCancel()
 
 	var totalIndex int32
 	var txEndHeight uint32
@@ -82,7 +82,7 @@ func (wallet *Wallet) IndexTransactions() error {
 	}()
 
 	log.Infof("[%d] Indexing transactions start height: %d, end height: %d", wallet.ID, beginHeight, endHeight)
-	return wallet.Internal().GetTransactions(ctx, rangeFn, startBlock, endBlock)
+	return wallet.Internal().DCR.GetTransactions(ctx, rangeFn, startBlock, endBlock)
 }
 
 func (wallet *Wallet) reindexTransactions() error {

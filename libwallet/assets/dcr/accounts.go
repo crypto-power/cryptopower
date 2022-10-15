@@ -26,7 +26,8 @@ func (wallet *Wallet) GetAccounts() (string, error) {
 }
 
 func (wallet *Wallet) GetAccountsRaw() (*mainW.Accounts, error) {
-	resp, err := wallet.Internal().Accounts(wallet.ShutdownContext())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	resp, err := wallet.Internal().DCR.Accounts(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,8 @@ func (wallet *Wallet) GetAccount(accountNumber int32) (*mainW.Account, error) {
 }
 
 func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*mainW.Balance, error) {
-	balance, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(accountNumber), wallet.RequiredConfirmations())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	balance, err := wallet.Internal().DCR.AccountBalance(ctx, uint32(accountNumber), wallet.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +119,8 @@ func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*mainW.Balance, er
 }
 
 func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
-	bals, err := wallet.Internal().AccountBalance(wallet.ShutdownContext(), uint32(account), wallet.RequiredConfirmations())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	bals, err := wallet.Internal().DCR.AccountBalance(ctx, uint32(account), wallet.RequiredConfirmations())
 	if err != nil {
 		log.Error(err)
 		return 0, utils.TranslateError(err)
@@ -133,7 +136,8 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 
 	// fetch all utxos in account to extract details for the utxos selected by user
 	// use targetAmount = 0 to fetch ALL utxos in account
-	inputDetail, err := wallet.Internal().SelectInputs(wallet.ShutdownContext(), dcrutil.Amount(0), policy)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	inputDetail, err := wallet.Internal().DCR.SelectInputs(ctx, dcrutil.Amount(0), policy)
 
 	if err != nil {
 		return nil, err
@@ -142,7 +146,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 	unspentOutputs := make([]*UnspentOutput, len(inputDetail.Inputs))
 
 	for i, input := range inputDetail.Inputs {
-		outputInfo, err := wallet.Internal().OutputInfo(wallet.ShutdownContext(), &input.PreviousOutPoint)
+		outputInfo, err := wallet.Internal().DCR.OutputInfo(ctx, &input.PreviousOutPoint)
 		if err != nil {
 			return nil, err
 		}
@@ -192,9 +196,8 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}
 
-	ctx := wallet.ShutdownContext()
-
-	accountNumber, err := wallet.Internal().NextAccount(ctx, accountName)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	accountNumber, err := wallet.Internal().DCR.NextAccount(ctx, accountName)
 	if err != nil {
 		return -1, err
 	}
@@ -203,7 +206,8 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 }
 
 func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
-	err := wallet.Internal().RenameAccount(wallet.ShutdownContext(), uint32(accountNumber), newName)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	err := wallet.Internal().DCR.RenameAccount(ctx, uint32(accountNumber), newName)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -220,21 +224,25 @@ func (wallet *Wallet) AccountName(accountNumber int32) (string, error) {
 }
 
 func (wallet *Wallet) AccountNameRaw(accountNumber uint32) (string, error) {
-	return wallet.Internal().AccountName(wallet.ShutdownContext(), accountNumber)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	return wallet.Internal().DCR.AccountName(ctx, accountNumber)
 }
 
 func (wallet *Wallet) AccountNumber(accountName string) (int32, error) {
-	accountNumber, err := wallet.Internal().AccountNumber(wallet.ShutdownContext(), accountName)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	accountNumber, err := wallet.Internal().DCR.AccountNumber(ctx, accountName)
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
 func (wallet *Wallet) HasAccount(accountName string) bool {
-	_, err := wallet.Internal().AccountNumber(wallet.ShutdownContext(), accountName)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	_, err := wallet.Internal().DCR.AccountNumber(ctx, accountName)
 	return err == nil
 }
 
 func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
-	cointype, err := wallet.Internal().CoinType(wallet.ShutdownContext())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	cointype, err := wallet.Internal().DCR.CoinType(ctx)
 	if err != nil {
 		return "", utils.TranslateError(err)
 	}
@@ -259,11 +267,12 @@ func (wallet *Wallet) HDPathForAccount(accountNumber int32) (string, error) {
 }
 
 func (wallet *Wallet) GetExtendedPubKey(account int32) (string, error) {
-	loadedWallet := wallet.Internal()
+	loadedWallet := wallet.Internal().DCR
 	if loadedWallet == nil {
 		return "", fmt.Errorf("dcr asset not initialised")
 	}
-	extendedPublicKey, err := loadedWallet.AccountXpub(wallet.ShutdownContext(), uint32(account))
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	extendedPublicKey, err := loadedWallet.AccountXpub(ctx, uint32(account))
 	if err != nil {
 		return "", err
 	}

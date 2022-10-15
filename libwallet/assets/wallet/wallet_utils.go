@@ -1,19 +1,17 @@
 package wallet
 
 import (
-	"context"
-	"strconv"
+	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
-
-	w "decred.org/dcrwallet/v2/wallet"
-
-	"strings"
 )
 
 func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
@@ -54,24 +52,32 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 	return err
 }
 
-func (wallet *Wallet) WalletNameExists(walletName string) (bool, error) {
-	if strings.HasPrefix(walletName, "wallet-") {
-		return false, errors.E(utils.ErrReservedWalletName)
+// DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
+func (wallet *Wallet) DecryptSeed(privatePassphrase []byte) (string, error) {
+	if wallet.EncryptedSeed == nil {
+		return "", errors.New(utils.ErrInvalid)
 	}
 
-	err := wallet.db.One("Name", walletName, &Wallet{})
-	if err == nil {
-		return true, nil
-	} else if err != storm.ErrNotFound {
+	return decryptWalletSeed(privatePassphrase, wallet.EncryptedSeed)
+}
+
+// VerifySeedForWallet compares seedMnemonic with the decrypted wallet.EncryptedSeed and clears wallet.EncryptedSeed if they match.
+func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) (bool, error) {
+	decryptedSeed, err := decryptWalletSeed(privpass, wallet.EncryptedSeed)
+	if err != nil {
 		return false, err
 	}
 
-	return false, nil
+	if decryptedSeed == seedMnemonic {
+		wallet.EncryptedSeed = nil
+		return true, utils.TranslateError(wallet.db.Save(wallet))
+	}
+
+	return false, errors.New(utils.ErrInvalid)
 }
 
 // naclLoadFromPass derives a nacl.Key from pass using scrypt.Key.
 func naclLoadFromPass(pass []byte) (nacl.Key, error) {
-
 	const N, r, p = 1 << 15, 8, 1
 
 	hash, err := scrypt.Key(pass, nil, N, r, p, 32)
@@ -105,28 +111,58 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 	return string(decryptedSeed), nil
 }
 
-func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
-	onLoaded func(*w.Wallet) error) error {
-
-	if walletPublicPass == "" {
-		walletPublicPass = w.InsecurePubPassphrase
+// For use with gomobile bind,
+// doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
+func generateSeed(assetType utils.AssetType) (v string, err error) {
+	var seed []byte
+	switch assetType {
+	case utils.BTCWalletAsset:
+		seed, err = btchdkeychain.GenerateSeed(btchdkeychain.RecommendedSeedLen)
+		if err != nil {
+			return "", err
+		}
+	case utils.DCRWalletAsset:
+		seed, err = dcrhdkeychain.GenerateSeed(dcrhdkeychain.RecommendedSeedLen)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	// initialize the wallet loader
-	walletLoader := initWalletLoader(wallet.chainParams, walletDataDir, wallet.dbDriver)
-
-	// open the wallet to get ready for temporary use
-	wal, err := walletLoader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
-	if err != nil {
-		return utils.TranslateError(err)
+	if len(seed) > 0 {
+		return walletseed.EncodeMnemonic(seed), nil
 	}
 
-	// unload wallet after temporary use
-	defer walletLoader.UnloadWallet()
-
-	if onLoaded != nil {
-		return onLoaded(wal.DCR)
-	}
-
-	return nil
+	// Execution should never get here but error added as a safeguard to
+	// ensure any new asset added must add its own custom way to generate wallet
+	// seed added above, if need be.
+	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 }
+
+// func verifySeed(seedMnemonic string) bool {
+// 	_, err := walletseed.DecodeUserInput(seedMnemonic)
+// 	return err == nil
+// }
+
+// func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
+// 	onLoaded func(*w.Wallet) error) error {
+
+// 	if walletPublicPass == "" {
+// 		walletPublicPass = w.InsecurePubPassphrase
+// 	}
+
+// 	// initialize the wallet loader
+// 	// open the wallet to get ready for temporary use
+// 	wal, err := wallet.loader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
+// 	if err != nil {
+// 		return utils.TranslateError(err)
+// 	}
+
+// 	// unload wallet after temporary use
+// 	defer wallet.loader.UnloadWallet()
+
+// 	if onLoaded != nil {
+// 		return onLoaded(wal.DCR)
+// 	}
+
+// 	return nil
+// }

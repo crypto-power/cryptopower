@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/asdine/storm"
-	"github.com/decred/dcrd/chaincfg/v3"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -22,16 +21,17 @@ const (
 )
 
 type DB struct {
-	walletDataDB *storm.DB
-	chainParams  *chaincfg.Params
-	Close        func() error
+	walletDataDB   *storm.DB
+	ticketMaturity int32
+	ticketExpiry   int32
+	Close          func() error
 }
 
 // Initialize opens the existing storm db at `dbPath`
 // and checks the database version for compatibility.
 // If there is a version mismatch or the db does not exist at `dbPath`,
 // a new db is created and the current db version number saved to the db.
-func Initialize(dbPath string, chainParams *chaincfg.Params, txData interface{}) (*DB, error) {
+func Initialize(dbPath string, txData interface{}) (*DB, error) {
 	walletDataDB, err := openOrCreateDB(dbPath)
 	if err != nil {
 		return nil, err
@@ -49,10 +49,21 @@ func Initialize(dbPath string, chainParams *chaincfg.Params, txData interface{})
 	}
 
 	return &DB{
-		walletDataDB,
-		chainParams,
-		walletDataDB.Close,
+		walletDataDB: walletDataDB,
+		Close:        walletDataDB.Close,
 	}, nil
+}
+
+// SetTicketMaturity sets the ticket maturity value required when filterig txs.
+func (db *DB) SetTicketMaturity(val int32) *DB {
+	db.ticketMaturity = val
+	return db
+}
+
+// SetTicketExpiry sets the ticket expiry value required when filtering txs
+func (db *DB) SetTicketExpiry(val int32) *DB {
+	db.ticketExpiry = val
+	return db
 }
 
 func openOrCreateDB(dbPath string) (*storm.DB, error) {

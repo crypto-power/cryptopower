@@ -660,7 +660,7 @@ func (w *Wallet) syncedWallet(walletID int, synced bool) {
 	w.syncing = false
 	w.listenForTransactions()
 
-	if !w.Internal().Locked() {
+	if !w.Internal().DCR.Locked() {
 		w.LockWallet() // lock wallet if previously unlocked to perform account discovery.
 		err := w.MarkWalletAsDiscoveredAccounts()
 		if err != nil {

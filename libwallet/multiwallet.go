@@ -58,8 +58,10 @@ type MultiWallet struct {
 	ExternalService *ext.Service
 }
 
-func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWallet, error) {
+func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, error) {
 	errors.Separator = ":: "
+
+	netType := utils.NetworkType(net)
 
 	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
@@ -78,7 +80,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 		return nil, err
 	}
 
-	rootDir = filepath.Join(rootDir, netType)
+	rootDir = filepath.Join(rootDir, net)
 	err = os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
@@ -185,7 +187,7 @@ func NewMultiWallet(rootDir, dbDriver, netType, politeiaHost string) (*MultiWall
 	}
 
 	for _, wallet := range BTCwallets {
-		err = wallet.Prepare(mw.Assets.BTC.RootDir, netType, mw.db, nil)
+		err = wallet.Prepare(mw.Assets.BTC.RootDir, net, mw.db, nil)
 		if err == nil && !WalletExistsAt(wallet.DataDir()) {
 			err = fmt.Errorf("missing wallet database file")
 		}

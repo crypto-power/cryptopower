@@ -29,7 +29,8 @@ func (wallet *Wallet) HaveAddress(address string) bool {
 		return false
 	}
 
-	have, err := wallet.Internal().HaveAddress(wallet.ShutdownContext(), addr)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	have, err := wallet.Internal().DCR.HaveAddress(ctx, addr)
 	if err != nil {
 		return false
 	}
@@ -43,7 +44,8 @@ func (wallet *Wallet) AccountOfAddress(address string) (string, error) {
 		return "", utils.TranslateError(err)
 	}
 
-	a, err := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	a, err := wallet.Internal().DCR.KnownAddress(ctx, addr)
 	if err != nil {
 		return "", utils.TranslateError(err)
 	}
@@ -60,8 +62,8 @@ func (wallet *Wallet) AddressInfo(address string) (*AddressInfo, error) {
 	addressInfo := &AddressInfo{
 		Address: address,
 	}
-
-	known, _ := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	known, _ := wallet.Internal().DCR.KnownAddress(ctx, addr)
 	if known != nil {
 		addressInfo.IsMine = true
 		addressInfo.AccountName = known.AccountName()
@@ -84,7 +86,7 @@ func (wallet *Wallet) CurrentAddress(account int32) (string, error) {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
-	addr, err := wallet.Internal().CurrentAddress(uint32(account))
+	addr, err := wallet.Internal().DCR.CurrentAddress(uint32(account))
 	if err != nil {
 		log.Errorf("CurrentAddress error: %w", err)
 		return "", err
@@ -105,7 +107,8 @@ func (wallet *Wallet) NextAddress(account int32) (string, error) {
 	// the newly incremented index) is returned below by CurrentAddress.
 	// NOTE: This workaround will be unnecessary once this anomaly is corrected
 	// upstream.
-	_, err := wallet.Internal().NewExternalAddress(wallet.ShutdownContext(), uint32(account), w.WithGapPolicyWrap())
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	_, err := wallet.Internal().DCR.NewExternalAddress(ctx, uint32(account), w.WithGapPolicyWrap())
 	if err != nil {
 		log.Errorf("NewExternalAddress error: %w", err)
 		return "", err
@@ -120,7 +123,8 @@ func (wallet *Wallet) AddressPubKey(address string) (string, error) {
 		return "", err
 	}
 
-	known, err := wallet.Internal().KnownAddress(wallet.ShutdownContext(), addr)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	known, err := wallet.Internal().DCR.KnownAddress(ctx, addr)
 	if err != nil {
 		return "", err
 	}

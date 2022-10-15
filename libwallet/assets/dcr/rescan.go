@@ -17,7 +17,7 @@ func (wallet *Wallet) RescanBlocks() error {
 
 func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 
-	netBackend, err := wallet.Internal().NetworkBackend()
+	netBackend, err := wallet.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return errors.E(utils.ErrNotConnected)
 	}
@@ -46,7 +46,7 @@ func (wallet *Wallet) RescanBlocksFromHeight(startHeight int32) error {
 		}
 
 		progress := make(chan w.RescanProgress, 1)
-		go wallet.Internal().RescanProgressFromHeight(ctx, netBackend, startHeight, progress)
+		go wallet.Internal().DCR.RescanProgressFromHeight(ctx, netBackend, startHeight, progress)
 
 		rescanStartTime := time.Now().Unix()
 

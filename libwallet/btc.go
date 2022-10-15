@@ -12,8 +12,8 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func initializeBTCWalletParameters(rootDir, dbDriver, netType string) (*chaincfg.Params, string, error) {
-	rootDir = filepath.Join(rootDir, netType) // btc now added in the btc loader pkg
+func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.NetworkType) (*chaincfg.Params, string, error) {
+	rootDir = filepath.Join(rootDir, string(netType)) // btc now added in the btc loader pkg
 	err := os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, "", errors.Errorf("failed to create btc rootDir: %v", err)

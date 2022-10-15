@@ -32,7 +32,8 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 		return nil, errors.New(utils.ErrInvalidAddress)
 	}
 
-	sig, err := wallet.Internal().SignMessage(wallet.ShutdownContext(), message, addr)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	sig, err := wallet.Internal().DCR.SignMessage(ctx, message, addr)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}

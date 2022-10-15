@@ -145,7 +145,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 		if !w.WalletOpened() {
 			return -1, errors.Errorf("wallet %d is not open and cannot be checked", w.ID)
 		}
-		accounts, err := w.Internal().Accounts(ctx)
+		accounts, err := w.Internal().DCR.Accounts(ctx)
 		if err != nil {
 			return -1, err
 		}
@@ -153,7 +153,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 			if account.AccountNumber == dcr.ImportedAccountNumber {
 				continue
 			}
-			acctXPub, err := w.Internal().AccountXpub(ctx, account.AccountNumber)
+			acctXPub, err := w.Internal().DCR.AccountXpub(ctx, account.AccountNumber)
 			if err != nil {
 				return -1, err
 			}

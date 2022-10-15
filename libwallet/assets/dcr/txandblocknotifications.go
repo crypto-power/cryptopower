@@ -11,7 +11,7 @@ import (
 func (wallet *Wallet) listenForTransactions() {
 	go func() {
 
-		n := wallet.Internal().NtfnServer.TransactionNotifications()
+		n := wallet.Internal().DCR.NtfnServer.TransactionNotifications()
 
 		for {
 			select {

@@ -56,11 +56,10 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 	}
 	defer wallet.LockWallet()
 
-	currentVotingPolicy := wallet.Internal().TreasuryKeyPolicy(pikey, ticketHash)
+	currentVotingPolicy := wallet.Internal().DCR.TreasuryKeyPolicy(pikey, ticketHash)
 
-	ctx := wallet.ShutdownContext()
-
-	err = wallet.Internal().SetTreasuryKeyPolicy(ctx, pikey, policy, ticketHash)
+	ctx, _ := wallet.ShutdownContextWithCancel()
+	err = wallet.Internal().DCR.SetTreasuryKeyPolicy(ctx, pikey, policy, ticketHash)
 	if err != nil {
 		return err
 	}
@@ -70,7 +69,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 		if !vspPreferenceUpdateSuccess {
 			// Updating the treasury spend voting preference with the vsp failed,
 			// revert the locally saved voting preference for the treasury spend.
-			revertError := wallet.Internal().SetTreasuryKeyPolicy(ctx, pikey, currentVotingPolicy, ticketHash)
+			revertError := wallet.Internal().DCR.SetTreasuryKeyPolicy(ctx, pikey, currentVotingPolicy, ticketHash)
 			if revertError != nil {
 				log.Errorf("unable to revert locally saved voting preference: %v", revertError)
 			}
@@ -84,7 +83,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 	if ticketHash != nil {
 		ticketHashes = append(ticketHashes, ticketHash)
 	} else {
-		err = wallet.Internal().ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+		err = wallet.Internal().DCR.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
 			ticketHashes = append(ticketHashes, hash)
 			return nil
 		})
@@ -101,7 +100,7 @@ func (wallet *Wallet) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, 
 		PiKey: newVotingPolicy,
 	}
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := wallet.Internal().VSPTicketInfo(ctx, tHash)
+		vspTicketInfo, err := wallet.Internal().DCR.VSPTicketInfo(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -149,7 +148,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 			return nil, fmt.Errorf("invalid pikey: %w", err)
 		}
 		var policy string
-		switch wallet.Internal().TreasuryKeyPolicy(pikey, ticketHash) {
+		switch wallet.Internal().DCR.TreasuryKeyPolicy(pikey, ticketHash) {
 		case stake.TreasuryVoteYes:
 			policy = "yes"
 		case stake.TreasuryVoteNo:
@@ -167,7 +166,7 @@ func (wallet *Wallet) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPol
 		return res, nil
 	}
 
-	policies := wallet.Internal().TreasuryKeyPolicies()
+	policies := wallet.Internal().DCR.TreasuryKeyPolicies()
 	res := make([]*TreasuryKeyPolicy, len(policies))
 	for i := range policies {
 		var policy string
