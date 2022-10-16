@@ -167,8 +167,8 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 			w, err := btc.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
 			if err == nil && !WalletExistsAt(wallet.DataDir()) {
 				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
+				log.Warn(err)
 			}
-			log.Warn(err)
 			if err != nil {
 				mw.Assets.BTC.BadWallets[wallet.ID] = w
 				log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)

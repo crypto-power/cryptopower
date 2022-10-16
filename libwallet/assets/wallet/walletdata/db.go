@@ -114,7 +114,7 @@ func ensureTxDatabaseVersion(walletDataDB *storm.DB, dbPath string, txData inter
 	}
 
 	if currentDbVersion != TxDbVersion {
-		if err = walletDataDB.Drop(txData); err != nil {
+		if err = walletDataDB.DeleteStruct(txData); err != nil {
 			return nil, fmt.Errorf("error deleting outdated wallet data database: %s", err.Error())
 		}
 
