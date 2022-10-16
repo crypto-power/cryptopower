@@ -405,7 +405,7 @@ func (tx *TxAuthor) changeSource(ctx context.Context) (txauthor.ChangeSource, er
 
 // validateSendAmount validate the amount to send to a destination address
 func (tx *TxAuthor) validateSendAmount(sendMax bool, atomAmount int64) error {
-	if !sendMax && (atomAmount <= 0 || atomAmount > MaxAmountAtom) {
+	if !sendMax && (atomAmount <= 0 || atomAmount > maxAmountAtom) {
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil

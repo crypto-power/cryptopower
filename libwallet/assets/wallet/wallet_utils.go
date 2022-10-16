@@ -1,7 +1,10 @@
 package wallet
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/walletseed"
@@ -13,6 +16,36 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
 )
+
+const (
+	// Users cannot set a wallet with this prefix.
+	reservedWalletPrefix = "wallet-"
+
+	defaultDCRRequiredConfirmations = 2
+	defaultBTCRequiredConfirmations = 6
+)
+
+func (wallet *Wallet) RequiredConfirmations() int32 {
+	var spendUnconfirmed bool
+	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	if spendUnconfirmed {
+		return 0
+	}
+
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
+		return defaultBTCRequiredConfirmations
+	case utils.DCRWalletAsset:
+		return defaultDCRRequiredConfirmations
+	}
+	return -1 // Not supposed to happen
+}
+
+func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
+	return ctx, cancel
+}
 
 func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
 	if wallet == nil {
@@ -143,26 +176,37 @@ func VerifySeed(seedMnemonic string) bool {
 	return err == nil
 }
 
-// func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
-// 	onLoaded func(*w.Wallet) error) error {
+func fileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
 
-// 	if walletPublicPass == "" {
-// 		walletPublicPass = w.InsecurePubPassphrase
-// 	}
+func moveFile(sourcePath, destinationPath string) error {
+	if exists, _ := fileExists(sourcePath); exists {
+		return os.Rename(sourcePath, destinationPath)
+	}
+	return nil
+}
 
-// 	// initialize the wallet loader
-// 	// open the wallet to get ready for temporary use
-// 	wal, err := wallet.loader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
-// 	if err != nil {
-// 		return utils.TranslateError(err)
-// 	}
+func backupFile(fileName string, suffix int) (newName string, err error) {
+	newName = fileName + ".bak" + strconv.Itoa(suffix)
+	exists, err := fileExists(newName)
+	if err != nil {
+		return "", err
+	} else if exists {
+		return backupFile(fileName, suffix+1)
+	}
 
-// 	// unload wallet after temporary use
-// 	defer wallet.loader.UnloadWallet()
+	err = moveFile(fileName, newName)
+	if err != nil {
+		return "", err
+	}
 
-// 	if onLoaded != nil {
-// 		return onLoaded(wal.DCR)
-// 	}
-
-// 	return nil
-// }
+	return newName, nil
+}

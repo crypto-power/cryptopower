@@ -99,11 +99,11 @@ func (w *Wallet) fetchCFiltersProgress(walletID int, startCFiltersHeight, endCFi
 	cfiltersFetchRate := float64(w.syncData.activeSyncData.cfiltersFetchProgress.TotalFetchedCFiltersCount) / float64(timeTakenSoFar)
 	estimatedHeadersLeftToFetch := w.estimateBlockHeadersCountAfter(w.GetBestBlockTimeStamp())
 	estimatedTotalHeadersFetchTime := float64(estimatedHeadersLeftToFetch) / cfiltersFetchRate
-	// increase estimated value by FetchPercentage
-	estimatedTotalHeadersFetchTime /= FetchPercentage
+	// increase estimated value by fetchPercentage
+	estimatedTotalHeadersFetchTime /= fetchPercentage
 
-	estimatedDiscoveryTime := estimatedTotalHeadersFetchTime * DiscoveryPercentage
-	estimatedRescanTime := estimatedTotalHeadersFetchTime * RescanPercentage
+	estimatedDiscoveryTime := estimatedTotalHeadersFetchTime * discoveryPercentage
+	estimatedRescanTime := estimatedTotalHeadersFetchTime * rescanPercentage
 	estimatedTotalSyncTime := estimatedTotalCFiltersFetchTime + estimatedTotalHeadersFetchTime + estimatedDiscoveryTime + estimatedRescanTime
 
 	totalSyncProgress := float64(timeTakenSoFar) / estimatedTotalSyncTime
@@ -237,8 +237,8 @@ func (w *Wallet) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastFetched
 	adjustmentFactor := 0.5 * (1 - headersFetchProgress)
 	estimatedTotalHeadersFetchTime += estimatedTotalHeadersFetchTime * adjustmentFactor
 
-	estimatedDiscoveryTime := estimatedTotalHeadersFetchTime * DiscoveryPercentage
-	estimatedRescanTime := estimatedTotalHeadersFetchTime * RescanPercentage
+	estimatedDiscoveryTime := estimatedTotalHeadersFetchTime * discoveryPercentage
+	estimatedRescanTime := estimatedTotalHeadersFetchTime * rescanPercentage
 	estimatedTotalSyncTime := float64(w.syncData.activeSyncData.cfiltersFetchProgress.CfiltersFetchTimeSpent) +
 		estimatedTotalHeadersFetchTime + estimatedDiscoveryTime + estimatedRescanTime
 
@@ -341,8 +341,8 @@ func (w *Wallet) updateAddressDiscoveryProgress(totalHeadersFetchTime float64) {
 	everySecondTicker := time.NewTicker(1 * time.Second)
 
 	// these values will be used every second to calculate the total sync progress
-	estimatedDiscoveryTime := totalHeadersFetchTime * DiscoveryPercentage
-	estimatedRescanTime := totalHeadersFetchTime * RescanPercentage
+	estimatedDiscoveryTime := totalHeadersFetchTime * discoveryPercentage
+	estimatedRescanTime := totalHeadersFetchTime * rescanPercentage
 
 	// track last logged time remaining and total percent to avoid re-logging same message
 	var lastTimeRemaining int64

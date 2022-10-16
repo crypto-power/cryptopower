@@ -34,7 +34,6 @@ type Wallet struct {
 
 	netType      utils.NetworkType
 	chainsParams *utils.ChainsParams
-
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
@@ -45,17 +44,6 @@ type Wallet struct {
 
 	shuttingDown chan bool
 	cancelFuncs  []context.CancelFunc
-
-	// // setUserConfigValue saves the provided key-value pair to a config database.
-	// // This function is ideally assigned when the `wallet.prepare` method is
-	// // called from a MultiWallet instance.
-	// setUserConfigValue configSaveFn
-
-	// // readUserConfigValue returns the previously saved value for the provided
-	// // key from a config database. Returns nil if the key wasn't previously set.
-	// // This function is ideally assigned when the `wallet.prepare` method is
-	// // called from a MultiWallet instance.
-	// readUserConfigValue configReadFn
 
 	mu sync.RWMutex
 }
@@ -76,10 +64,12 @@ func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, netType utils.Networ
 
 // prepare is used initialize the assets common setup configuration.
 // Should be called by every method that exports the shared wallet implementation.
+// The following should always be pre-loaded before calling prepare();
+// wallet.db = db
+// wallet.loader = loader
+// wallet.netType = netType
+// wallet.rootDir = rootDir
 func (wallet *Wallet) prepare() (err error) {
-	// wallet.setUserConfigValue = wallet.walletConfigSetFn()
-	// wallet.readUserConfigValue = wallet.walletConfigReadFn()
-
 	// Confirms if the correct wallet type and network types were set and passed.
 	// Wallet type should be preset by the caller otherwise an error is returned.
 	wallet.chainsParams, err = utils.GetChainParams(wallet.Type, wallet.netType)
@@ -346,12 +336,18 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 
 func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm.DB, privatePassphrase string,
 	privatePassphraseType int32, assetType utils.AssetType, net utils.NetworkType, loader loader.AssetLoader) (*Wallet, error) {
+	encryptedSeed, err := encryptWalletSeed([]byte(privatePassphrase), seedMnemonic)
+	if err != nil {
+		return nil, err
+	}
+
 	wallet := &Wallet{
 		Name:                  walletName,
 		PrivatePassphraseType: privatePassphraseType,
 		db:                    db,
 		dbDriver:              dbDriver,
 		rootDir:               rootDir,
+		EncryptedSeed:         encryptedSeed,
 
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
@@ -458,73 +454,6 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 
 	return wallet, nil
 }
-
-// func (wallet *Wallet) LinkExistingWallet(walletName, walletDataDir, originalPubPass string, privatePassphraseType int32) (*Wallet, error) {
-// 	// check if `walletDataDir` contains wallet.db
-// 	if !WalletExistsAt(walletDataDir) {
-// 		return nil, errors.New(utils.ErrNotExist)
-// 	}
-
-// 	ctx, _ := wallet.ContextWithShutdownCancel()
-
-// 	// verify the public passphrase for the wallet being linked before proceeding
-// 	if err := wallet.loadWalletTemporarily(ctx, walletDataDir, originalPubPass, nil); err != nil {
-// 		return nil, err
-// 	}
-
-// 	wal := &Wallet{
-// 		Name:                  walletName,
-// 		PrivatePassphraseType: privatePassphraseType,
-// 		IsRestored:            true,
-// 		HasDiscoveredAccounts: false, // assume that account discovery hasn't been done
-// 		Type:                  DCRWallet,
-// 	}
-
-// 	return wallet.saveNewWallet(func() error {
-// 		// move wallet.db and tx.db files to newly created dir for the wallet
-// 		currentWalletDbFilePath := filepath.Join(walletDataDir, walletDbName)
-// 		newWalletDbFilePath := filepath.Join(wal.DataDir(), walletDbName)
-// 		if err := moveFile(currentWalletDbFilePath, newWalletDbFilePath); err != nil {
-// 			return err
-// 		}
-
-// 		currentTxDbFilePath := filepath.Join(walletDataDir, walletdata.OldDbName)
-// 		newTxDbFilePath := filepath.Join(wallet.DataDir(), walletdata.DbName)
-// 		if err := moveFile(currentTxDbFilePath, newTxDbFilePath); err != nil {
-// 			return err
-// 		}
-
-// 		// prepare the wallet for use and open it
-// 		err := (func() error {
-// 			err := wallet.prepare()
-// 			if err != nil {
-// 				return err
-// 			}
-
-// 			if originalPubPass == "" || originalPubPass == w.InsecurePubPassphrase {
-// 				return wallet.OpenWallet()
-// 			}
-
-// 			err = wallet.loadWalletTemporarily(ctx, wallet.DataDir(), originalPubPass, func(tempWallet *w.Wallet) error {
-// 				return tempWallet.ChangePublicPassphrase(ctx, []byte(originalPubPass), []byte(w.InsecurePubPassphrase))
-// 			})
-// 			if err != nil {
-// 				return err
-// 			}
-
-// 			return wallet.OpenWallet()
-// 		})()
-
-// 		// restore db files to their original location if there was an error
-// 		// in the wallet setup process above
-// 		if err != nil {
-// 			moveFile(newWalletDbFilePath, currentWalletDbFilePath)
-// 			moveFile(newTxDbFilePath, currentTxDbFilePath)
-// 		}
-
-// 		return err
-// 	})
-// }
 
 func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 	if w, ok := wallet.loader.GetLoadedWallet(); ok {
