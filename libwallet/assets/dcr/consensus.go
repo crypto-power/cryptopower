@@ -229,7 +229,7 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 	if wallet.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
 	}
-	_, _, err = HttpGet(host, &dcrdataAgenda)
+	_, _, err = utils.HttpGet(host, &dcrdataAgenda)
 	if err != nil {
 		return nil, err
 	}

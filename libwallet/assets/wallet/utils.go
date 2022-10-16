@@ -2,40 +2,30 @@ package wallet
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"math"
-	"net"
-	"net/http"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 const (
 	// walletDbName = "wallet.db"
 
-	// FetchPercentage is used to increase the initial estimate gotten during cfilters stage
-	FetchPercentage = 0.38
+	// // FetchPercentage is used to increase the initial estimate gotten during cfilters stage
+	// FetchPercentage = 0.38
 
-	// Use 10% of estimated total headers fetch time to estimate rescan time
-	RescanPercentage = 0.1
+	// // Use 10% of estimated total headers fetch time to estimate rescan time
+	// RescanPercentage = 0.1
 
-	// Use 80% of estimated total headers fetch time to estimate address discovery time
-	DiscoveryPercentage = 0.8
+	// // Use 80% of estimated total headers fetch time to estimate address discovery time
+	// DiscoveryPercentage = 0.8
 
 	// Users cannot set a wallet with this prefix.
 	reservedWalletPrefix = "wallet-"
 
-	fullDateformat = "2006-01-02 15:04:05"
-	dateOnlyFormat = "2006-01-02"
-	timeOnlyformat = "15:04:05"
+	// fullDateformat = "2006-01-02 15:04:05"
+	// dateOnlyFormat = "2006-01-02"
+	// timeOnlyformat = "15:04:05"
 
 	// MaxAmountAtom = dcrutil.MaxAmount
 	// MaxAmountDcr  = dcrutil.MaxAmount / dcrutil.AtomsPerCoin
@@ -45,21 +35,29 @@ const (
 	// MainnetHDPath       = "m / 44' / 42' / "
 	// LegacyMainnetHDPath = "m / 44’ / 20’ / "
 
-	// DefaultRequiredConfirmations = 2
+	defaultDCRRequiredConfirmations = 2
+	defaultBTCRequiredConfirmations = 6
 
 	// LongAbbreviationFormat     = "long"
 	// ShortAbbreviationFormat    = "short"
 	// ShortestAbbreviationFormat = "shortest"
 )
 
-// func (wallet *Wallet) RequiredConfirmations() int32 {
-// 	var spendUnconfirmed bool
-// 	wallet.readUserConfigValue(true, SpendUnconfirmedConfigKey, &spendUnconfirmed)
-// 	if spendUnconfirmed {
-// 		return 0
-// 	}
-// 	return DefaultRequiredConfirmations
-// }
+func (wallet *Wallet) RequiredConfirmations() int32 {
+	var spendUnconfirmed bool
+	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	if spendUnconfirmed {
+		return 0
+	}
+
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
+		return defaultBTCRequiredConfirmations
+	case utils.DCRWalletAsset:
+		return defaultDCRRequiredConfirmations
+	}
+	return -1 // Not supposed to happen
+}
 
 func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -91,37 +89,37 @@ func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.Canc
 // 	return nil
 // }
 
-func NormalizeAddress(addr string, defaultPort string) (string, error) {
-	// If the first SplitHostPort errors because of a missing port and not
-	// for an invalid host, add the port.  If the second SplitHostPort
-	// fails, then a port is not missing and the original error should be
-	// returned.
-	host, port, origErr := net.SplitHostPort(addr)
-	if origErr == nil {
-		return net.JoinHostPort(host, port), nil
-	}
-	addr = net.JoinHostPort(addr, defaultPort)
-	_, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return "", origErr
-	}
-	return addr, nil
-}
+// func NormalizeAddress(addr string, defaultPort string) (string, error) {
+// 	// If the first SplitHostPort errors because of a missing port and not
+// 	// for an invalid host, add the port.  If the second SplitHostPort
+// 	// fails, then a port is not missing and the original error should be
+// 	// returned.
+// 	host, port, origErr := net.SplitHostPort(addr)
+// 	if origErr == nil {
+// 		return net.JoinHostPort(host, port), nil
+// 	}
+// 	addr = net.JoinHostPort(addr, defaultPort)
+// 	_, _, err := net.SplitHostPort(addr)
+// 	if err != nil {
+// 		return "", origErr
+// 	}
+// 	return addr, nil
+// }
 
-// ExtractDateOrTime returns the date represented by the timestamp as a date string if the timestamp is over 24 hours ago.
-// Otherwise, the time alone is returned as a string.
-func ExtractDateOrTime(timestamp int64) string {
-	utcTime := time.Unix(timestamp, 0).UTC()
-	if time.Now().UTC().Sub(utcTime).Hours() > 24 {
-		return utcTime.Format(dateOnlyFormat)
-	} else {
-		return utcTime.Format(timeOnlyformat)
-	}
-}
+// // ExtractDateOrTime returns the date represented by the timestamp as a date string if the timestamp is over 24 hours ago.
+// // Otherwise, the time alone is returned as a string.
+// func ExtractDateOrTime(timestamp int64) string {
+// 	utcTime := time.Unix(timestamp, 0).UTC()
+// 	if time.Now().UTC().Sub(utcTime).Hours() > 24 {
+// 		return utcTime.Format(dateOnlyFormat)
+// 	} else {
+// 		return utcTime.Format(timeOnlyformat)
+// 	}
+// }
 
-func FormatUTCTime(timestamp int64) string {
-	return time.Unix(timestamp, 0).UTC().Format(fullDateformat)
-}
+// func FormatUTCTime(timestamp int64) string {
+// 	return time.Unix(timestamp, 0).UTC().Format(fullDateformat)
+// }
 
 // func AmountAtom(f float64) int64 {
 // 	amount, err := dcrutil.NewAmount(f)
@@ -132,67 +130,67 @@ func FormatUTCTime(timestamp int64) string {
 // 	return int64(amount)
 // }
 
-func EncodeHex(hexBytes []byte) string {
-	return hex.EncodeToString(hexBytes)
-}
+// func EncodeHex(hexBytes []byte) string {
+// 	return hex.EncodeToString(hexBytes)
+// }
 
-func EncodeBase64(text []byte) string {
-	return base64.StdEncoding.EncodeToString(text)
-}
+// func EncodeBase64(text []byte) string {
+// 	return base64.StdEncoding.EncodeToString(text)
+// }
 
-func DecodeBase64(base64Text string) ([]byte, error) {
-	b, err := base64.StdEncoding.DecodeString(base64Text)
-	if err != nil {
-		return nil, err
-	}
+// func DecodeBase64(base64Text string) ([]byte, error) {
+// 	b, err := base64.StdEncoding.DecodeString(base64Text)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return b, nil
-}
+// 	return b, nil
+// }
 
-func ShannonEntropy(text string) (entropy float64) {
-	if text == "" {
-		return 0
-	}
-	for i := 0; i < 256; i++ {
-		px := float64(strings.Count(text, string(byte(i)))) / float64(len(text))
-		if px > 0 {
-			entropy += -px * math.Log2(px)
-		}
-	}
-	return entropy
-}
+// func ShannonEntropy(text string) (entropy float64) {
+// 	if text == "" {
+// 		return 0
+// 	}
+// 	for i := 0; i < 256; i++ {
+// 		px := float64(strings.Count(text, string(byte(i)))) / float64(len(text))
+// 		if px > 0 {
+// 			entropy += -px * math.Log2(px)
+// 		}
+// 	}
+// 	return entropy
+// }
 
-func CalculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
-	minutes := timeRemainingInSeconds / 60
-	if minutes > 0 {
-		return fmt.Sprintf("%d min", minutes)
-	}
-	return fmt.Sprintf("%d sec", timeRemainingInSeconds)
-}
+// func CalculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
+// 	minutes := timeRemainingInSeconds / 60
+// 	if minutes > 0 {
+// 		return fmt.Sprintf("%d min", minutes)
+// 	}
+// 	return fmt.Sprintf("%d sec", timeRemainingInSeconds)
+// }
 
-func CalculateDaysBehind(lastHeaderTime int64) string {
-	diff := time.Since(time.Unix(lastHeaderTime, 0))
-	daysBehind := int(math.Round(diff.Hours() / 24))
-	if daysBehind == 0 {
-		return "<1 day"
-	} else if daysBehind == 1 {
-		return "1 day"
-	} else {
-		return fmt.Sprintf("%d days", daysBehind)
-	}
-}
+// func CalculateDaysBehind(lastHeaderTime int64) string {
+// 	diff := time.Since(time.Unix(lastHeaderTime, 0))
+// 	daysBehind := int(math.Round(diff.Hours() / 24))
+// 	if daysBehind == 0 {
+// 		return "<1 day"
+// 	} else if daysBehind == 1 {
+// 		return "1 day"
+// 	} else {
+// 		return fmt.Sprintf("%d days", daysBehind)
+// 	}
+// }
 
-func StringsToHashes(h []string) ([]*chainhash.Hash, error) {
-	hashes := make([]*chainhash.Hash, 0, len(h))
-	for _, v := range h {
-		hash, err := chainhash.NewHashFromStr(v)
-		if err != nil {
-			return nil, err
-		}
-		hashes = append(hashes, hash)
-	}
-	return hashes, nil
-}
+// func StringsToHashes(h []string) ([]*chainhash.Hash, error) {
+// 	hashes := make([]*chainhash.Hash, 0, len(h))
+// 	for _, v := range h {
+// 		hash, err := chainhash.NewHashFromStr(v)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		hashes = append(hashes, hash)
+// 	}
+// 	return hashes, nil
+// }
 
 // func roundUp(n float64) int32 {
 // 	return int32(math.Round(n))
@@ -408,24 +406,24 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 // 	}
 // }
 
-// HttpGet helps to convert json(Byte data) into a struct object.
-func HttpGet(url string, respObj interface{}) (*http.Response, []byte, error) {
-	rq := new(http.Client)
-	resp, err := rq.Get((url))
-	if err != nil {
-		return nil, nil, err
-	}
+// // HttpGet helps to convert json(Byte data) into a struct object.
+// func HttpGet(url string, respObj interface{}) (*http.Response, []byte, error) {
+// 	rq := new(http.Client)
+// 	resp, err := rq.Get((url))
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		return nil, nil, err
-	}
+// 	respBytes, err := ioutil.ReadAll(resp.Body)
+// 	resp.Body.Close()
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return resp, respBytes, fmt.Errorf("%d response from server: %v", resp.StatusCode, string(respBytes))
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return resp, respBytes, fmt.Errorf("%d response from server: %v", resp.StatusCode, string(respBytes))
+// 	}
 
-	err = json.Unmarshal(respBytes, respObj)
-	return resp, respBytes, err
-}
+// 	err = json.Unmarshal(respBytes, respObj)
+// 	return resp, respBytes, err
+// }

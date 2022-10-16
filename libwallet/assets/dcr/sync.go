@@ -204,7 +204,7 @@ func (wallet *Wallet) SpvSync() error {
 	}
 
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
-	addrManager := addrmgr.New(wallet.rootDir, net.LookupIP) // TODO: be mindful of tor
+	addrManager := addrmgr.New(wallet.RootDir(), net.LookupIP) // TODO: be mindful of tor
 	lp := p2p.NewLocalPeer(wallet.chainParams, addr, addrManager)
 
 	var validPeerAddresses []string
@@ -212,7 +212,7 @@ func (wallet *Wallet) SpvSync() error {
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
-			peerAddress, err := NormalizeAddress(address, wallet.chainParams.DefaultPort)
+			peerAddress, err := normalizeAddress(address, wallet.chainParams.DefaultPort)
 			if err != nil {
 				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
 			} else {

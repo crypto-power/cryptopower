@@ -11,7 +11,7 @@ type NetworkType string
 
 const (
 	Mainnet    NetworkType = "mainnet"
-	Testnet    NetworkType = "testnet"
+	Testnet    NetworkType = "testnet3"
 	Staging    NetworkType = "staging"
 	Regression NetworkType = "regression"
 	Simulation NetworkType = "simulation"

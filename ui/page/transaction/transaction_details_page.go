@@ -397,7 +397,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 							switch pg.txnWidgets.txStatus.TicketStatus {
 							case dcr.TicketStatusImmature:
 								maturity := pg.wallet.TicketMaturity()
-								blockTime := pg.WL.MultiWallet.TargetTimePerBlockMinutes()
+								blockTime := pg.wallet.TargetTimePerBlockMinutes()
 								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 
 								lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo,

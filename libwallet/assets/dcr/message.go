@@ -49,7 +49,7 @@ func (wallet *Wallet) VerifyMessage(address string, message string, signatureBas
 		return false, utils.TranslateError(err)
 	}
 
-	signature, err := DecodeBase64(signatureBase64)
+	signature, err := utils.DecodeBase64(signatureBase64)
 	if err != nil {
 		return false, err
 	}

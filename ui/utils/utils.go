@@ -20,6 +20,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"
@@ -152,7 +153,7 @@ func goToURL(url string) {
 
 func ComputePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
-	strength := dcr.ShannonEntropy(password.Text()) / 4.0
+	strength := utils.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength)
 
 	//set progress bar color

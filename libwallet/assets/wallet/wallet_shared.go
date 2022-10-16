@@ -156,6 +156,13 @@ func (wallet *Wallet) Shutdown() {
 	}
 }
 
+func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {
+	if wallet.Type == utils.BTCWalletAsset {
+		return wallet.chainsParams.BTC.TargetTimePerBlock.Minutes()
+	}
+	return wallet.chainsParams.DCR.TargetTimePerBlock.Minutes()
+}
+
 // WalletCreationTimeInMillis returns the wallet creation time for new
 // wallets. Restored wallets would return an error.
 func (wallet *Wallet) WalletCreationTimeInMillis() (int64, error) {
@@ -165,7 +172,7 @@ func (wallet *Wallet) WalletCreationTimeInMillis() (int64, error) {
 	return wallet.CreatedAt.UnixNano() / int64(time.Millisecond), nil
 }
 
-// DataDir returns the current wallet bucket. It is exported via the interface
+// DataDir returns the current wallet bucket directory. It is exported via the interface
 // thus the need to be thread safe.
 func (wallet *Wallet) DataDir() string {
 	wallet.mu.RLock()
@@ -175,6 +182,15 @@ func (wallet *Wallet) DataDir() string {
 
 func (wallet *Wallet) dataDir() string {
 	return filepath.Join(wallet.rootDir, string(wallet.Type), strconv.Itoa(wallet.ID))
+}
+
+// RootDir returns the root of current wallet bucket. It is exported via the interface
+// thus the need to be thread safe.
+// RootD
+func (wallet *Wallet) RootDir() string {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.rootDir
 }
 
 // NetType returns the current network type. It is exported via the interface thus the
@@ -524,12 +540,6 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 }
 
 func (wallet *Wallet) OpenWallet() error {
-	// load all the necessary configurations and valid the preset asset type
-	// and the net type.
-	if err := wallet.prepare(); err != nil {
-		return err
-	}
-
 	pubPass := []byte(w.InsecurePubPassphrase)
 
 	ctx, _ := wallet.ShutdownContextWithCancel()

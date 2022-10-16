@@ -84,7 +84,7 @@ func naclLoadFromPass(pass []byte) (nacl.Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	return nacl.Load(EncodeHex(hash))
+	return nacl.Load(utils.EncodeHex(hash))
 }
 
 // encryptWalletSeed encrypts the seed with secretbox.EasySeal using pass.
@@ -138,10 +138,10 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 }
 
-// func verifySeed(seedMnemonic string) bool {
-// 	_, err := walletseed.DecodeUserInput(seedMnemonic)
-// 	return err == nil
-// }
+func VerifySeed(seedMnemonic string) bool {
+	_, err := walletseed.DecodeUserInput(seedMnemonic)
+	return err == nil
+}
 
 // func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
 // 	onLoaded func(*w.Wallet) error) error {

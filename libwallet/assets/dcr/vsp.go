@@ -10,6 +10,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
@@ -154,7 +155,7 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	vspInfoResponse := new(VspInfoResponse)
-	resp, respBytes, err := HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
+	resp, respBytes, err := utils.HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +176,7 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 // defaultVSPs returns a list of known VSPs.
 func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
-	_, _, err := HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
+	_, _, err := utils.HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
 	if err != nil {
 		return nil, err
 	}

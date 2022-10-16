@@ -4,13 +4,15 @@ import (
 	"context"
 	"sync"
 
+	dcrW "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/v2/wallet/txrules"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // To be renamed to DCRAsset when optimizing the code.
@@ -18,28 +20,15 @@ import (
 type Wallet struct {
 	*mainW.Wallet
 
-	/* needed to load existing wallets at the multiwallet level */
-
-	// Order by ID at the multiwallet level fails without this field declared
-	// Here. It introduces a bug where the ID cannot be passed upstream.
-	// It will be fixed once the code at the multiwallet level is optimized.
-	ID int `storm:"id,increment"`
-
-	/* needed to load existing wallets at the multiwallet level */
-
-	rootDir string // to be moved upstream as it same for all assets
-
 	synced            bool
 	syncing           bool
 	waitingForHeaders bool
 
-	chainParams  *chaincfg.Params
-	walletDataDB *walletdata.DB // field to be replaced in the code with GetWalletDataDb()
+	chainParams *chaincfg.Params
 
-	cancelAccountMixer context.CancelFunc `json:"-"`
-
-	cancelAutoTicketBuyerMu sync.Mutex
+	cancelAccountMixer      context.CancelFunc `json:"-"`
 	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
+	cancelAutoTicketBuyerMu sync.RWMutex
 
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
@@ -53,19 +42,53 @@ type Wallet struct {
 	blocksRescanProgressListener     mainW.BlocksRescanProgressListener
 }
 
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, db, rootDir, dbDriver, chainParams)
+// initWalletLoader setups the loader.
+func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
+	// TODO: Allow users provide values to override these defaults.
+	cfg := &mainW.WalletConfig{
+		GapLimit:                20,
+		AllowHighFees:           false,
+		RelayFee:                txrules.DefaultRelayFeePerKb,
+		AccountGapLimit:         dcrW.DefaultAccountGapLimit,
+		DisableCoinTypeUpgrades: false,
+		ManualTickets:           false,
+		MixSplitLimit:           10,
+	}
+
+	stakeOptions := &dcr.StakeOptions{
+		VotingEnabled: false,
+		AddressReuse:  false,
+		VotingAddress: nil,
+	}
+	walletLoader := dcr.NewLoader(chainParams, rootdir, stakeOptions,
+		cfg.GapLimit, cfg.RelayFee, cfg.AllowHighFees, cfg.DisableCoinTypeUpgrades,
+		cfg.ManualTickets, cfg.AccountGapLimit, cfg.MixSplitLimit)
+
+	if walletDbDriver != "" {
+		walletLoader.SetDatabaseDriver(walletDbDriver)
+	}
+
+	return walletLoader
+}
+
+func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB,
+	rootDir, dbDriver string, netType utils.NetworkType) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(netType)
+	if err == nil {
+		return nil, err
+	}
+
+	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+
+	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType,
+		db, rootDir, dbDriver, utils.DCRWalletAsset, netType, ldr)
 	if err != nil {
 		return nil, err
 	}
 
 	dcrWallet := &Wallet{
-		Wallet: w,
-
-		rootDir:      rootDir, // To moved to the upstream wallet
-		chainParams:  chainParams,
-		walletDataDB: w.GetWalletDataDb(),
-
+		Wallet:      w,
+		chainParams: chainParams,
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
@@ -79,20 +102,23 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	return dcrWallet, nil
 }
 
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	w, err := wallet.CreateWatchOnlyWallet(walletName, extendedPublicKey, db, rootDir, dbDriver, chainParams)
+func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir, dbDriver string,
+	netType utils.NetworkType) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(netType)
+	if err == nil {
+		return nil, err
+	}
+
+	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey, db, rootDir, dbDriver,
+		utils.BTCWalletAsset, netType, ldr)
 	if err != nil {
 		return nil, err
 	}
 
 	dcrWallet := &Wallet{
-		Wallet: w,
-
-		rootDir:     rootDir, // To moved to the upstream wallet
+		Wallet:      w,
 		chainParams: chainParams,
-
-		walletDataDB: w.GetWalletDataDb(),
-
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
@@ -103,20 +129,23 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 	return dcrWallet, nil
 }
 
-func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm.DB, chainParams *chaincfg.Params, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
-	w, err := wallet.RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver, db, chainParams, privatePassphrase, privatePassphraseType)
+func RestoreWallet(privatePassphrase string, privatePassphraseType int32, walletName, seedMnemonic,
+	rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(netType)
+	if err == nil {
+		return nil, err
+	}
+
+	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+	w, err := mainW.RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver, db,
+		privatePassphrase, privatePassphraseType, utils.DCRWalletAsset, netType, ldr)
 	if err != nil {
 		return nil, err
 	}
 
 	dcrWallet := &Wallet{
-		Wallet: w,
-
-		rootDir:     rootDir, // To moved to the upstream wallet
+		Wallet:      w,
 		chainParams: chainParams,
-
-		walletDataDB: w.GetWalletDataDb(),
-
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
 		},
@@ -128,26 +157,32 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 	return dcrWallet, nil
 }
 
-func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *chaincfg.Params) error {
-	wallet.vspClients = make(map[string]*vsp.Client)
-	wallet.rootDir = rootDir
-	wallet.chainParams = chainParams
-
-	wallet.syncData = &SyncData{
-		syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+func LoadExisting(w *mainW.Wallet, rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(netType)
+	if err == nil {
+		return nil, err
 	}
-	wallet.txAndBlockNotificationListeners = make(map[string]mainW.TxAndBlockNotificationListener)
-	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
 
-	err := wallet.Prepare(rootDir, db, chainParams, wallet.ID)
+	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+	dcrWallet := &Wallet{
+		Wallet:      w,
+		vspClients:  make(map[string]*vsp.Client),
+		chainParams: chainParams,
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+		},
+		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
+	}
+
+	err = dcrWallet.Prepare(rootDir, db, netType, ldr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSync)
-	wallet.walletDataDB = wallet.GetWalletDataDb()
+	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
 
-	return nil
+	return dcrWallet, nil
 }
 
 // AccountXPubMatches checks if the xpub of the provided account matches the
@@ -183,10 +218,6 @@ func (wallet *Wallet) AccountXPubMatches(account uint32, legacyXPub, slip044XPub
 
 func (wallet *Wallet) Synced() bool {
 	return wallet.synced
-}
-
-func (wallet *Wallet) AmountCoin(amount int64) float64 {
-	return dcrutil.Amount(amount).ToCoin()
 }
 
 func (wallet *Wallet) SafelyCancelSync() {

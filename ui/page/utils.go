@@ -49,7 +49,7 @@ func getLockedWallets(wallets []*dcr.Wallet) []*dcr.Wallet {
 
 func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
 	password := editors[0]
-	strength := dcr.ShannonEntropy(password.Text()) / 4.0
+	strength := utils.ShannonEntropy(password.Text()) / 4.0
 	pb.Progress = float32(strength * 100)
 	pb.Color = th.Color.Success
 }

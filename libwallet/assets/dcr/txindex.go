@@ -28,7 +28,7 @@ func (wallet *Wallet) IndexTransactions() error {
 				return false, err
 			}
 
-			_, err = wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tx)
+			_, err = wallet.GetWalletDataDb().SaveOrUpdate(&mainW.Transaction{}, tx)
 			if err != nil {
 				log.Errorf("[%d] Index tx replace tx err : %v", wallet.ID, err)
 				return false, err
@@ -39,7 +39,7 @@ func (wallet *Wallet) IndexTransactions() error {
 
 		if block.Header != nil {
 			txEndHeight = block.Header.Height
-			err := wallet.walletDataDB.SaveLastIndexPoint(int32(txEndHeight))
+			err := wallet.GetWalletDataDb().SaveLastIndexPoint(int32(txEndHeight))
 			if err != nil {
 				log.Errorf("[%d] Set tx index end block height error: ", wallet.ID, err)
 				return false, err
@@ -56,7 +56,7 @@ func (wallet *Wallet) IndexTransactions() error {
 		}
 	}
 
-	beginHeight, err := wallet.walletDataDB.ReadIndexingStartBlock()
+	beginHeight, err := wallet.GetWalletDataDb().ReadIndexingStartBlock()
 	if err != nil {
 		log.Errorf("[%d] Get tx indexing start point error: %v", wallet.ID, err)
 		return err
@@ -68,14 +68,14 @@ func (wallet *Wallet) IndexTransactions() error {
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)
 
 	defer func() {
-		count, err := wallet.walletDataDB.Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &mainW.Transaction{})
+		count, err := wallet.GetWalletDataDb().Count(walletdata.TxFilterAll, wallet.RequiredConfirmations(), endHeight, &mainW.Transaction{})
 		if err != nil {
 			log.Errorf("[%d] Post-indexing tx count error :%v", wallet.ID, err)
 		} else if count > 0 {
 			log.Infof("[%d] Transaction index finished at %d, %d transaction(s) indexed in total", wallet.ID, endHeight, count)
 		}
 
-		err = wallet.walletDataDB.SaveLastIndexPoint(endHeight)
+		err = wallet.GetWalletDataDb().SaveLastIndexPoint(endHeight)
 		if err != nil {
 			log.Errorf("[%d] Set tx index end block height error: ", wallet.ID, err)
 		}
@@ -86,7 +86,7 @@ func (wallet *Wallet) IndexTransactions() error {
 }
 
 func (wallet *Wallet) reindexTransactions() error {
-	err := wallet.walletDataDB.ClearSavedTransactions(&mainW.Transaction{})
+	err := wallet.GetWalletDataDb().ClearSavedTransactions(&mainW.Transaction{})
 	if err != nil {
 		return err
 	}

@@ -106,16 +106,16 @@ func (wallet *Wallet) GetTransactions(offset, limit, txFilter int32, newestFirst
 }
 
 func (wallet *Wallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []mainW.Transaction, err error) {
-	err = wallet.walletDataDB.Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &transactions)
+	err = wallet.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &transactions)
 	return
 }
 
 func (wallet *Wallet) CountTransactions(txFilter int32) (int, error) {
-	return wallet.walletDataDB.Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &mainW.Transaction{})
+	return wallet.GetWalletDataDb().Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &mainW.Transaction{})
 }
 
 func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
-	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &mainW.Transaction{})
+	err := wallet.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &mainW.Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return false, nil
@@ -128,7 +128,7 @@ func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
 
 func (wallet *Wallet) TicketSpender(ticketHash string) (*mainW.Transaction, error) {
 	var spender mainW.Transaction
-	err := wallet.walletDataDB.FindOne("TicketSpentHash", ticketHash, &spender)
+	err := wallet.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return nil, nil

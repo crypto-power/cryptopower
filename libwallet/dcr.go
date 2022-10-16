@@ -30,7 +30,7 @@ func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
+	wallet, err := dcr.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.rootDir, mw.dbDriver, mw.net)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, 
 }
 
 func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.db, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
+	wallet, err := dcr.CreateWatchOnlyWallet(mw.db, walletName, extendedPublicKey, mw.rootDir, mw.dbDriver, mw.net)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.RestoreWallet(walletName, seedMnemonic, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.db, mw.Assets.DCR.ChainParams, privatePassphrase, privatePassphraseType)
+	wallet, err := dcr.RestoreWallet(privatePassphrase, privatePassphraseType, walletName, seedMnemonic, mw.rootDir, mw.dbDriver, mw.db, mw.net)
 	if err != nil {
 		return nil, err
 	}
