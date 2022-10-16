@@ -17,14 +17,21 @@ type AssetType string
 const (
 	LogFileName = "libwallet.log"
 
-	// ETHTokenAsset AssetType = "eth"
-	BTCWalletAsset AssetType = "btc"
-	DCRWalletAsset AssetType = "dcr"
+	// ETHTokenAsset AssetType = "ETH"
+	BTCWalletAsset AssetType = "BTC"
+	DCRWalletAsset AssetType = "DCR"
 
 	fullDateformat = "2006-01-02 15:04:05"
 	dateOnlyFormat = "2006-01-02"
 	timeOnlyformat = "15:04:05"
 )
+
+// Stringer used in generating the directory path where the lowercase of the
+// asset type is required. The uppercase defined by default is required to
+// asset previously created using the uppercase.
+func (str AssetType) ToString() string {
+	return strings.ToLower(string(str))
+}
 
 // ExtractDateOrTime returns the date represented by the timestamp as a date string
 // if the timestamp is over 24 hours ago. Otherwise, the time alone is returned as a string.

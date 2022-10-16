@@ -74,7 +74,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB,
 	rootDir, dbDriver string, netType utils.NetworkType) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(netType)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -105,7 +105,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir, dbDriver string,
 	netType utils.NetworkType) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(netType)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir,
 func RestoreWallet(privatePassphrase string, privatePassphraseType int32, walletName, seedMnemonic,
 	rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(netType)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func RestoreWallet(privatePassphrase string, privatePassphraseType int32, wallet
 
 func LoadExisting(w *mainW.Wallet, rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(netType)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 

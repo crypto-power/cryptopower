@@ -296,7 +296,7 @@ func (l *dcrLoader) GetDbDirPath() string {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	return filepath.Join(l.DbDirPath, string(utils.DCRWalletAsset))
+	return filepath.Join(l.DbDirPath, utils.DCRWalletAsset.ToString())
 }
 
 // WalletExists returns whether a file exists at the loader's database path.

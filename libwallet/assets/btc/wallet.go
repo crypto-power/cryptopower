@@ -685,6 +685,7 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	return wallet, nil
 }
 
+// to be deleted in favour of the upstream inherited.
 func (wallet *Wallet) DataDir() string {
 	return filepath.Join(wallet.rootDir, string(utils.BTCWalletAsset), strconv.Itoa(wallet.ID))
 }

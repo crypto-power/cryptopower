@@ -10,6 +10,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/ext"
@@ -152,7 +153,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 	mw.ExternalService = ext.NewService(dcrChainParams)
 
 	// read saved dcr wallets info from db and initialize wallets
-	query := mw.db.Select().OrderBy("ID")
+	query := mw.db.Select(q.True()).OrderBy("ID")
 	var wallets []*wallet.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
@@ -184,7 +185,8 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 		case utils.DCRWalletAsset:
 			w, err := dcr.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
 			if err == nil && !WalletExistsAt(wallet.DataDir()) {
-				err = fmt.Errorf("missing wallet database file")
+				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
+				log.Debug(err)
 			}
 			if err != nil {
 				mw.Assets.DCR.BadWallets[wallet.ID] = w

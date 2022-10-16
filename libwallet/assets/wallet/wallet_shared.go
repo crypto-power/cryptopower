@@ -181,7 +181,7 @@ func (wallet *Wallet) DataDir() string {
 }
 
 func (wallet *Wallet) dataDir() string {
-	return filepath.Join(wallet.rootDir, string(wallet.Type), strconv.Itoa(wallet.ID))
+	return filepath.Join(wallet.rootDir, wallet.Type.ToString(), strconv.Itoa(wallet.ID))
 }
 
 // RootDir returns the root of current wallet bucket. It is exported via the interface
