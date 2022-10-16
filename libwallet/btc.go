@@ -28,7 +28,29 @@ func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
-	wallet, err := btc.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.Assets.BTC.RootDir, mw.Assets.BTC.DBDriver, mw.Assets.BTC.ChainParams)
+	wallet, err := btc.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.rootDir, mw.dbDriver, mw.net)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.Wallet, error) {
+	wallet, err := btc.CreateWatchOnlyWallet(mw.db, walletName, extendedPublicKey, mw.rootDir, mw.dbDriver, mw.net)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
+	wallet, err := btc.RestoreWallet(privatePassphrase, privatePassphraseType, walletName, seedMnemonic, mw.rootDir, mw.dbDriver, mw.db, mw.net)
 	if err != nil {
 		return nil, err
 	}

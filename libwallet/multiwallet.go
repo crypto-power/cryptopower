@@ -160,28 +160,22 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 		return nil, err
 	}
 
-	// // read saved all wallets info from db and initialize wallets
-	// query = mw.db.Select().OrderBy("ID")
-	// var BTCwallets []*btc.Wallet
-	// err = query.Find(&BTCwallets)
-	// if err != nil && err != storm.ErrNotFound {
-	// 	return nil, err
-	// }
-
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
-		// 	err = wallet.Prepare(mw.Assets.BTC.RootDir, net, mw.db, nil)
-		// if err == nil && !WalletExistsAt(wallet.DataDir()) {
-		// 	err = fmt.Errorf("missing wallet database file")
-		// }
-		// if err != nil {
-		// 	mw.Assets.BTC.BadWallets[wallet.ID] = wallet
-		// 	log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
-		// } else {
-		// 	mw.Assets.BTC.Wallets[wallet.ID] = wallet
-		// }
+			w, err := btc.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
+			if err == nil && !WalletExistsAt(wallet.DataDir()) {
+				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
+			}
+			log.Warn(err)
+			if err != nil {
+				mw.Assets.BTC.BadWallets[wallet.ID] = w
+				log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			} else {
+				mw.Assets.BTC.Wallets[wallet.ID] = w
+			}
+
 		case utils.DCRWalletAsset:
 			w, err := dcr.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
 			if err == nil && !WalletExistsAt(wallet.DataDir()) {
@@ -248,10 +242,6 @@ func (mw *MultiWallet) NetType() string {
 func (mw *MultiWallet) LogDir() string {
 	return filepath.Join(mw.rootDir, logFileName)
 }
-
-// func (mw *MultiWallet) TargetTimePerBlockMinutes() float64 {
-// 	return mw.chainParams.TargetTimePerBlock.Minutes()
-// }
 
 func (mw *MultiWallet) SetStartupPassphrase(passphrase []byte, passphraseType int32) error {
 	return mw.ChangeStartupPassphrase([]byte(""), passphrase, passphraseType)

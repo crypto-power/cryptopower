@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	DbName    = "walletData.db"
+	DCRDbName = "walletData.db"
+	BTCDBName = "neutrino.db"
 	OldDbName = "tx.db"
 
 	TxBucketName = "TxIndexInfo"

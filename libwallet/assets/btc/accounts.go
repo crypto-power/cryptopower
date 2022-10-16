@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	// "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
@@ -31,7 +32,7 @@ func (wallet *Wallet) GetAccounts() (string, error) {
 }
 
 func (wallet *Wallet) GetAccountsRaw() (*AccountsResult, error) {
-	resp, err := wallet.Internal().Accounts(wallet.GetScope())
+	resp, err := wallet.Internal().BTC.Accounts(wallet.GetScope())
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +75,11 @@ func (wallet *Wallet) GetAccount(accountNumber int32) (*AccountResult, error) {
 		}
 	}
 
-	return nil, errors.New(ErrNotExist)
+	return nil, errors.New(utils.ErrNotExist)
 }
 
 func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balances, error) {
-	balance, err := wallet.Internal().CalculateAccountBalances(uint32(accountNumber), wallet.RequiredConfirmations())
+	balance, err := wallet.Internal().BTC.CalculateAccountBalances(uint32(accountNumber), wallet.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +92,9 @@ func (wallet *Wallet) GetAccountBalance(accountNumber int32) (*Balances, error) 
 }
 
 func (wallet *Wallet) SpendableForAccount(account int32) (int64, error) {
-	bals, err := wallet.Internal().CalculateAccountBalances(uint32(account), wallet.RequiredConfirmations())
+	bals, err := wallet.Internal().BTC.CalculateAccountBalances(uint32(account), wallet.RequiredConfirmations())
 	if err != nil {
-		return 0, translateError(err)
+		return 0, utils.TranslateError(err)
 	}
 	return int64(bals.Spendable), nil
 }
@@ -104,7 +105,7 @@ func (wallet *Wallet) UnspentOutputs(account int32) ([]*ListUnspentResult, error
 		return nil, err
 	}
 
-	unspents, err := wallet.Internal().ListUnspent(0, math.MaxInt32, accountName)
+	unspents, err := wallet.Internal().BTC.ListUnspent(0, math.MaxInt32, accountName)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +141,10 @@ func (wallet *Wallet) CreateNewAccount(accountName string, privPass []byte) (int
 func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 
 	if wallet.IsLocked() {
-		return -1, errors.New(ErrWalletLocked)
+		return -1, errors.New(utils.ErrWalletLocked)
 	}
 
-	accountNumber, err := wallet.Internal().NextAccount(wallet.GetScope(), accountName)
+	accountNumber, err := wallet.Internal().BTC.NextAccount(wallet.GetScope(), accountName)
 	if err != nil {
 		return -1, err
 	}
@@ -152,9 +153,9 @@ func (wallet *Wallet) NextAccount(accountName string) (int32, error) {
 }
 
 func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
-	err := wallet.Internal().RenameAccount(wallet.GetScope(), uint32(accountNumber), newName)
+	err := wallet.Internal().BTC.RenameAccount(wallet.GetScope(), uint32(accountNumber), newName)
 	if err != nil {
-		return translateError(err)
+		return utils.TranslateError(err)
 	}
 
 	return nil
@@ -163,22 +164,22 @@ func (wallet *Wallet) RenameAccount(accountNumber int32, newName string) error {
 func (wallet *Wallet) AccountName(accountNumber int32) (string, error) {
 	name, err := wallet.AccountNameRaw(uint32(accountNumber))
 	if err != nil {
-		return "", translateError(err)
+		return "", utils.TranslateError(err)
 	}
 	return name, nil
 }
 
 func (wallet *Wallet) AccountNameRaw(accountNumber uint32) (string, error) {
-	return wallet.Internal().AccountName(wallet.GetScope(), accountNumber)
+	return wallet.Internal().BTC.AccountName(wallet.GetScope(), accountNumber)
 }
 
 func (wallet *Wallet) AccountNumber(accountName string) (int32, error) {
-	accountNumber, err := wallet.Internal().AccountNumber(wallet.GetScope(), accountName)
-	return int32(accountNumber), translateError(err)
+	accountNumber, err := wallet.Internal().BTC.AccountNumber(wallet.GetScope(), accountName)
+	return int32(accountNumber), utils.TranslateError(err)
 }
 
 func (wallet *Wallet) HasAccount(accountName string) bool {
-	_, err := wallet.Internal().AccountNumber(wallet.GetScope(), accountName)
+	_, err := wallet.Internal().BTC.AccountNumber(wallet.GetScope(), accountName)
 	return err == nil
 }
 

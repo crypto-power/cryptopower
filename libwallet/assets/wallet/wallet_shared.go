@@ -69,6 +69,7 @@ func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, netType utils.Networ
 // wallet.loader = loader
 // wallet.netType = netType
 // wallet.rootDir = rootDir
+// wallet.Type = assetType
 func (wallet *Wallet) prepare() (err error) {
 	// Confirms if the correct wallet type and network types were set and passed.
 	// Wallet type should be preset by the caller otherwise an error is returned.
@@ -78,8 +79,18 @@ func (wallet *Wallet) prepare() (err error) {
 		return err
 	}
 
+	if wallet.networkCancel == nil {
+		wallet.networkCancel = func() {
+			log.Warnf("Network cancel callback missing")
+		}
+	}
+
 	// open database for indexing transactions for faster loading
-	walletDataDBPath := filepath.Join(wallet.dataDir(), walletdata.DbName)
+	var dbName = walletdata.DCRDbName
+	if wallet.Type == utils.BTCWalletAsset {
+		dbName = walletdata.BTCDBName
+	}
+	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
 	oldTxDBPath := filepath.Join(wallet.dataDir(), walletdata.OldDbName)
 	if exists, _ := fileExists(oldTxDBPath); exists {
 		moveFile(oldTxDBPath, walletDataDBPath)
@@ -101,12 +112,6 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	wallet.walletDataDB = walletDb
-
-	if wallet.networkCancel == nil {
-		wallet.networkCancel = func() {
-			log.Warnf("Network cancel callback missing")
-		}
-	}
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -393,7 +398,9 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 
 func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 	// functions to safely cancel sync before proceeding
-	wallet.networkCancel()
+	if wallet.networkCancel != nil {
+		wallet.networkCancel()
+	}
 
 	err := wallet.deleteWallet(privPass)
 	if err != nil {
@@ -412,7 +419,9 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	}
 
 	// safely cancel sync before proceeding
-	wallet.networkCancel()
+	if wallet.networkCancel != nil {
+		wallet.networkCancel()
+	}
 
 	// Perform database save operations in batch transaction
 	// for automatic rollback if error occurs at any point.
