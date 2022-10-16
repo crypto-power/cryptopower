@@ -26,6 +26,7 @@ type DB struct {
 	ticketMaturity int32
 	ticketExpiry   int32
 	Close          func() error
+	Path           string
 }
 
 // Initialize opens the existing storm db at `dbPath`
@@ -52,6 +53,7 @@ func Initialize(dbPath string, txData interface{}) (*DB, error) {
 	return &DB{
 		walletDataDB: walletDataDB,
 		Close:        walletDataDB.Close,
+		Path:         dbPath,
 	}, nil
 }
 

@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	neutrinoDBName = "neutrino.db"
 	logDirName     = "logs"
 	logFileName    = "neutrino.log"
 )

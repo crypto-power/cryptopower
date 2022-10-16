@@ -3,7 +3,6 @@ package btc
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -41,12 +40,11 @@ type Wallet struct {
 
 	chainParams *chaincfg.Params
 	log         slog.Logger
-	birthday    time.Time
 }
 
 const (
-	defaultDBTimeout = time.Duration(100)
 	recoverWindow    = 200
+	defaultDBTimeout = time.Duration(100)
 )
 
 // neutrinoService is satisfied by *neutrino.ChainService.
@@ -195,7 +193,11 @@ func (wallet *Wallet) startWallet() error {
 		return fmt.Errorf("couldn't load wallet: %w", err)
 	}
 
-	neutrinoDBPath := filepath.Join(wallet.DataDir(), neutrinoDBName)
+	// https://pkg.go.dev/github.com/btcsuite/btcwallet/walletdb@v1.4.0#DB
+	// For neutrino to be completely compatible with the walletDbData implementation
+	// in gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata the above
+	// interface needs to be fully implemented.
+	neutrinoDBPath := wallet.GetWalletDataDb().Path
 	wallet.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
 	if err != nil {
 		return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
