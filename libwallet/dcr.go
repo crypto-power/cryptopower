@@ -9,13 +9,14 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // initializeDCRWalletParameters initializes the fields each DCR wallet is going to need to be setup
 // such as chainparams, root directory, network and database references
-func initializeDCRWalletParameters(rootDir, dbDriver, netType string) (*chaincfg.Params, string, error) {
-	rootDir = filepath.Join(rootDir, netType) // dcr now added in the dcr loader pkg
+func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.NetworkType) (*chaincfg.Params, string, error) {
+	rootDir = filepath.Join(rootDir, string(netType)) // dcr now added in the dcr loader pkg
 	err := os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, "", errors.Errorf("failed to create dcr rootDir: %v", err)
@@ -29,8 +30,13 @@ func initializeDCRWalletParameters(rootDir, dbDriver, netType string) (*chaincfg
 	return chainParams, rootDir, nil
 }
 
-func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
+func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
+	pass := &wallet.WalletAuthInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := dcr.CreateNewWallet(pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +46,8 @@ func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.db, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.Assets.DCR.ChainParams)
+func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.DCRAsset, error) {
+	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +57,13 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 	return wallet, nil
 }
 
-func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.RestoreWallet(walletName, seedMnemonic, mw.Assets.DCR.RootDir, mw.Assets.DCR.DBDriver, mw.db, mw.Assets.DCR.ChainParams, privatePassphrase, privatePassphraseType)
+func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
+	pass := &wallet.WalletAuthInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := dcr.RestoreWallet(seedMnemonic, pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +94,7 @@ func (mw *MultiWallet) DeleteBadDCRWallet(walletID int) error {
 
 	log.Info("Deleting bad wallet")
 
-	err := mw.db.DeleteStruct(wallet)
+	err := mw.params.DB.DeleteStruct(wallet)
 	if err != nil {
 		return translateError(err)
 	}
@@ -94,7 +105,7 @@ func (mw *MultiWallet) DeleteBadDCRWallet(walletID int) error {
 	return nil
 }
 
-func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.Wallet {
+func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.DCRAsset {
 	if wallet, ok := mw.Assets.DCR.Wallets[walletID]; ok {
 		return wallet
 	}

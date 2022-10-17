@@ -26,7 +26,7 @@ type (
 )
 
 type badWalletListItem struct {
-	*dcr.Wallet
+	*dcr.DCRAsset
 	deleteBtn cryptomaterial.Button
 }
 
@@ -309,7 +309,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.Wallet) {
+func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.DCRAsset) {
 	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
 		pg.unlockWalletForSyncing(wallet)
 		return
@@ -323,7 +323,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.Wallet) {
 
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.Wallet) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.DCRAsset) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).

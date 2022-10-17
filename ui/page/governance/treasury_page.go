@@ -33,7 +33,7 @@ type TreasuryPage struct {
 	ctxCancel context.CancelFunc
 
 	multiWallet   *libwallet.MultiWallet
-	wallets       []*dcr.Wallet
+	wallets       []*dcr.DCRAsset
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List

@@ -2,19 +2,50 @@ package wallet
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
-
-	w "decred.org/dcrwallet/v2/wallet"
-
-	"strings"
 )
+
+const (
+	// Users cannot set a wallet with this prefix.
+	reservedWalletPrefix = "wallet-"
+
+	defaultDCRRequiredConfirmations = 2
+	defaultBTCRequiredConfirmations = 6
+)
+
+func (wallet *Wallet) RequiredConfirmations() int32 {
+	var spendUnconfirmed bool
+	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
+	if spendUnconfirmed {
+		return 0
+	}
+
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
+		return defaultBTCRequiredConfirmations
+	case utils.DCRWalletAsset:
+		return defaultDCRRequiredConfirmations
+	}
+	return -1 // Not supposed to happen
+}
+
+func (wallet *Wallet) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	wallet.cancelFuncs = append(wallet.cancelFuncs, cancel)
+	return ctx, cancel
+}
 
 func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
 	if wallet == nil {
@@ -54,31 +85,39 @@ func (wallet *Wallet) batchDbTransaction(dbOp func(node storm.Node) error) (err 
 	return err
 }
 
-func (wallet *Wallet) WalletNameExists(walletName string) (bool, error) {
-	if strings.HasPrefix(walletName, "wallet-") {
-		return false, errors.E(utils.ErrReservedWalletName)
+// DecryptSeed decrypts wallet.EncryptedSeed using privatePassphrase
+func (wallet *Wallet) DecryptSeed(privatePassphrase []byte) (string, error) {
+	if wallet.EncryptedSeed == nil {
+		return "", errors.New(utils.ErrInvalid)
 	}
 
-	err := wallet.db.One("Name", walletName, &Wallet{})
-	if err == nil {
-		return true, nil
-	} else if err != storm.ErrNotFound {
+	return decryptWalletSeed(privatePassphrase, wallet.EncryptedSeed)
+}
+
+// VerifySeedForWallet compares seedMnemonic with the decrypted wallet.EncryptedSeed and clears wallet.EncryptedSeed if they match.
+func (wallet *Wallet) VerifySeedForWallet(seedMnemonic string, privpass []byte) (bool, error) {
+	decryptedSeed, err := decryptWalletSeed(privpass, wallet.EncryptedSeed)
+	if err != nil {
 		return false, err
 	}
 
-	return false, nil
+	if decryptedSeed == seedMnemonic {
+		wallet.EncryptedSeed = nil
+		return true, utils.TranslateError(wallet.db.Save(wallet))
+	}
+
+	return false, errors.New(utils.ErrInvalid)
 }
 
 // naclLoadFromPass derives a nacl.Key from pass using scrypt.Key.
 func naclLoadFromPass(pass []byte) (nacl.Key, error) {
-
 	const N, r, p = 1 << 15, 8, 1
 
 	hash, err := scrypt.Key(pass, nil, N, r, p, 32)
 	if err != nil {
 		return nil, err
 	}
-	return nacl.Load(EncodeHex(hash))
+	return nacl.Load(utils.EncodeHex(hash))
 }
 
 // encryptWalletSeed encrypts the seed with secretbox.EasySeal using pass.
@@ -105,28 +144,69 @@ func decryptWalletSeed(pass []byte, encryptedSeed []byte) (string, error) {
 	return string(decryptedSeed), nil
 }
 
-func (wallet *Wallet) loadWalletTemporarily(ctx context.Context, walletDataDir, walletPublicPass string,
-	onLoaded func(*w.Wallet) error) error {
-
-	if walletPublicPass == "" {
-		walletPublicPass = w.InsecurePubPassphrase
+// For use with gomobile bind,
+// doesn't support the alternative `GenerateSeed` function because it returns more than 2 types.
+func generateSeed(assetType utils.AssetType) (v string, err error) {
+	var seed []byte
+	switch assetType {
+	case utils.BTCWalletAsset:
+		seed, err = btchdkeychain.GenerateSeed(btchdkeychain.RecommendedSeedLen)
+		if err != nil {
+			return "", err
+		}
+	case utils.DCRWalletAsset:
+		seed, err = dcrhdkeychain.GenerateSeed(dcrhdkeychain.RecommendedSeedLen)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	// initialize the wallet loader
-	walletLoader := initWalletLoader(wallet.chainParams, walletDataDir, wallet.dbDriver)
+	if len(seed) > 0 {
+		return walletseed.EncodeMnemonic(seed), nil
+	}
 
-	// open the wallet to get ready for temporary use
-	wal, err := walletLoader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), []byte(walletPublicPass))
+	// Execution should never get here but error added as a safeguard to
+	// ensure any new asset added must add its own custom way to generate wallet
+	// seed added above, if need be.
+	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
+}
+
+func VerifySeed(seedMnemonic string) bool {
+	_, err := walletseed.DecodeUserInput(seedMnemonic)
+	return err == nil
+}
+
+func fileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
 	if err != nil {
-		return utils.TranslateError(err)
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
 	}
+	return true, nil
+}
 
-	// unload wallet after temporary use
-	defer walletLoader.UnloadWallet()
-
-	if onLoaded != nil {
-		return onLoaded(wal.DCR)
+func moveFile(sourcePath, destinationPath string) error {
+	if exists, _ := fileExists(sourcePath); exists {
+		return os.Rename(sourcePath, destinationPath)
 	}
-
 	return nil
+}
+
+func backupFile(fileName string, suffix int) (newName string, err error) {
+	newName = fileName + ".bak" + strconv.Itoa(suffix)
+	exists, err := fileExists(newName)
+	if err != nil {
+		return "", err
+	} else if exists {
+		return backupFile(fileName, suffix+1)
+	}
+
+	err = moveFile(fileName, newName)
+	if err != nil {
+		return "", err
+	}
+
+	return newName, nil
 }

@@ -84,7 +84,7 @@ func AgendaStatusFromStr(status string) AgendaStatusType {
 // the ticket. If a ticket hash isn't provided, the vote choice is saved to the
 // local wallet database and the VSPs controlling all unspent, unexpired tickets
 // are updated to use the specified vote choice.
-func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase []byte) error {
+func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash string, passphrase []byte) error {
 	var ticketHash *chainhash.Hash
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
@@ -96,16 +96,16 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 
 	// The wallet will need to be unlocked to sign the API
 	// request(s) for setting this vote choice with the VSP.
-	err := wallet.UnlockWallet(passphrase)
+	err := asset.UnlockWallet(passphrase)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
-	defer wallet.LockWallet()
+	defer asset.LockWallet()
 
-	ctx := wallet.ShutdownContext()
+	ctx, _ := asset.ShutdownContextWithCancel()
 
 	// get choices
-	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
+	choices, _, err := asset.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 		ChoiceID: choiceID,
 	}
 
-	_, err = wallet.Internal().SetAgendaChoices(ctx, ticketHash, newChoice)
+	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 		if !vspPreferenceUpdateSuccess {
 			// Updating the agenda voting preference with the vsp failed,
 			// revert the locally saved voting preference for the agenda.
-			_, revertError := wallet.Internal().SetAgendaChoices(ctx, ticketHash, currentChoice)
+			_, revertError := asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, currentChoice)
 			if revertError != nil {
 				log.Errorf("unable to revert locally saved voting preference: %v", revertError)
 			}
@@ -151,7 +151,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	if ticketHash != nil {
 		ticketHashes = append(ticketHashes, ticketHash)
 	} else {
-		err = wallet.Internal().ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
+		err = asset.Internal().DCR.ForUnspentUnexpiredTickets(ctx, func(hash *chainhash.Hash) error {
 			ticketHashes = append(ticketHashes, hash)
 			return nil
 		})
@@ -164,7 +164,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 	// The first error will be returned to the caller.
 	var firstErr error
 	for _, tHash := range ticketHashes {
-		vspTicketInfo, err := wallet.Internal().VSPTicketInfo(ctx, tHash)
+		vspTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, tHash)
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
@@ -175,7 +175,7 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 		}
 
 		// Update the vote choice for the ticket with the associated VSP.
-		vspClient, err := wallet.VSPClient(vspTicketInfo.Host, vspTicketInfo.PubKey)
+		vspClient, err := asset.VSPClient(vspTicketInfo.Host, vspTicketInfo.PubKey)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
@@ -195,8 +195,8 @@ func (wallet *Wallet) SetVoteChoice(agendaID, choiceID, hash string, passphrase 
 // network and this version of the software. Also returns any saved vote
 // preferences for the agendas of the current stake version. Vote preferences
 // for older agendas cannot currently be retrieved.
-func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
-	if wallet.chainParams.Deployments == nil {
+func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
+	if asset.chainParams.Deployments == nil {
 		return nil, nil // no agendas to return
 	}
 
@@ -209,8 +209,8 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 		ticketHash = hash
 	}
 
-	ctx := wallet.ShutdownContext()
-	choices, _, err := wallet.Internal().AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
+	ctx, _ := asset.ShutdownContextWithCancel()
+	choices, _, err := asset.Internal().DCR.AgendaChoices(ctx, ticketHash) // returns saved prefs for current agendas
 	if err != nil {
 		return nil, err
 	}
@@ -219,17 +219,17 @@ func (wallet *Wallet) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, 
 	// current stake version, in order to fetch legacy agendas.
 	deployments := make([]chaincfg.ConsensusDeployment, 0)
 	var i uint32
-	for i = 1; i <= voteVersion(wallet.chainParams); i++ {
-		deployments = append(deployments, wallet.chainParams.Deployments[i]...)
+	for i = 1; i <= voteVersion(asset.chainParams); i++ {
+		deployments = append(deployments, asset.chainParams.Deployments[i]...)
 	}
 
 	// Fetch high level agenda detail form dcrdata api.
 	var dcrdataAgenda []DcrdataAgenda
 	host := dcrdataAgendasAPIMainnetUrl
-	if wallet.chainParams.Net == wire.TestNet3 {
+	if asset.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
 	}
-	_, _, err = HttpGet(host, &dcrdataAgenda)
+	_, _, err = utils.HttpGet(host, &dcrdataAgenda)
 	if err != nil {
 		return nil, err
 	}

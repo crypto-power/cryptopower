@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 
 	"decred.org/dcrwallet/v2/errors"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func (wallet *Wallet) listenForTransactions() {
+func (asset *DCRAsset) listenForTransactions() {
 	go func() {
 
-		n := wallet.Internal().NtfnServer.TransactionNotifications()
+		n := asset.Internal().DCR.NtfnServer.TransactionNotifications()
 
 		for {
 			select {
@@ -20,26 +20,26 @@ func (wallet *Wallet) listenForTransactions() {
 					return
 				}
 				for _, transaction := range v.UnminedTransactions {
-					tempTransaction, err := wallet.decodeTransactionWithTxSummary(&transaction, nil)
+					tempTransaction, err := asset.decodeTransactionWithTxSummary(&transaction, nil)
 					if err != nil {
-						log.Errorf("[%d] Error ntfn parse tx: %v", wallet.ID, err)
+						log.Errorf("[%d] Error ntfn parse tx: %v", asset.ID, err)
 						return
 					}
 
-					overwritten, err := wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tempTransaction)
+					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
 					if err != nil {
-						log.Errorf("[%d] New Tx save err: %v", wallet.ID, err)
+						log.Errorf("[%d] New Tx save err: %v", asset.ID, err)
 						return
 					}
 
 					if !overwritten {
-						log.Infof("[%d] New Transaction %s", wallet.ID, tempTransaction.Hash)
+						log.Infof("[%d] New Transaction %s", asset.ID, tempTransaction.Hash)
 
 						result, err := json.Marshal(tempTransaction)
 						if err != nil {
 							log.Error(err)
 						} else {
-							wallet.mempoolTransactionNotification(string(result))
+							asset.mempoolTransactionNotification(string(result))
 						}
 					}
 				}
@@ -47,28 +47,28 @@ func (wallet *Wallet) listenForTransactions() {
 				for _, block := range v.AttachedBlocks {
 					blockHash := block.Header.BlockHash()
 					for _, transaction := range block.Transactions {
-						tempTransaction, err := wallet.decodeTransactionWithTxSummary(&transaction, &blockHash)
+						tempTransaction, err := asset.decodeTransactionWithTxSummary(&transaction, &blockHash)
 						if err != nil {
-							log.Errorf("[%d] Error ntfn parse tx: %v", wallet.ID, err)
+							log.Errorf("[%d] Error ntfn parse tx: %v", asset.ID, err)
 							return
 						}
 
-						_, err = wallet.walletDataDB.SaveOrUpdate(&mainW.Transaction{}, tempTransaction)
+						_, err = asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
 						if err != nil {
-							log.Errorf("[%d] Incoming block replace tx error :%v", wallet.ID, err)
+							log.Errorf("[%d] Incoming block replace tx error :%v", asset.ID, err)
 							return
 						}
-						wallet.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Header.Height))
+						asset.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Header.Height))
 					}
 
-					wallet.publishBlockAttached(int32(block.Header.Height))
+					asset.publishBlockAttached(int32(block.Header.Height))
 				}
 
 				if len(v.AttachedBlocks) > 0 {
-					wallet.checkWalletMixers()
+					asset.checkWalletMixers()
 				}
 
-			case <-wallet.syncData.syncCanceled:
+			case <-asset.syncData.syncCanceled:
 				n.Done()
 			}
 		}
@@ -76,7 +76,7 @@ func (wallet *Wallet) listenForTransactions() {
 }
 
 // AddTxAndBlockNotificationListener registers a set of functions to be invoked
-// when a transaction or block update is processed by the wallet. If async is
+// when a transaction or block update is processed by the asset. If async is
 // true, the provided callback methods will be called from separate goroutines,
 // allowing notification senders to continue their operation without waiting
 // for the listener to complete processing the notification. This asyncrhonous
@@ -85,44 +85,44 @@ func (wallet *Wallet) listenForTransactions() {
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (wallet *Wallet) AddTxAndBlockNotificationListener(txAndBlockNotificationListener mainW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
-	wallet.notificationListenersMu.Lock()
-	defer wallet.notificationListenersMu.Unlock()
+func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+	asset.notificationListenersMu.Lock()
+	defer asset.notificationListenersMu.Unlock()
 
-	_, ok := wallet.txAndBlockNotificationListeners[uniqueIdentifier]
+	_, ok := asset.txAndBlockNotificationListeners[uniqueIdentifier]
 	if ok {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
 	if async {
-		wallet.txAndBlockNotificationListeners[uniqueIdentifier] = &asyncTxAndBlockNotificationListener{
+		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &asyncTxAndBlockNotificationListener{
 			l: txAndBlockNotificationListener,
 		}
 	} else {
-		wallet.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
+		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
 	}
 
 	return nil
 }
 
-func (wallet *Wallet) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
-	wallet.notificationListenersMu.Lock()
-	defer wallet.notificationListenersMu.Unlock()
+func (asset *DCRAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
+	asset.notificationListenersMu.Lock()
+	defer asset.notificationListenersMu.Unlock()
 
-	delete(wallet.txAndBlockNotificationListeners, uniqueIdentifier)
+	delete(asset.txAndBlockNotificationListeners, uniqueIdentifier)
 }
 
-func (wallet *Wallet) checkWalletMixers() {
-	if wallet.IsAccountMixerActive() {
-		unmixedAccount := wallet.ReadInt32ConfigValueForKey(mainW.AccountMixerUnmixedAccount, -1)
-		hasMixableOutput, err := wallet.accountHasMixableOutput(unmixedAccount)
+func (asset *DCRAsset) checkWalletMixers() {
+	if asset.IsAccountMixerActive() {
+		unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
+		hasMixableOutput, err := asset.accountHasMixableOutput(unmixedAccount)
 		if err != nil {
 			log.Errorf("Error checking for mixable outputs: %v", err)
 		}
 
 		if !hasMixableOutput {
-			log.Infof("[%d] unmixed account does not have a mixable output, stopping account mixer", wallet.ID)
-			err = wallet.StopAccountMixer()
+			log.Infof("[%d] unmixed account does not have a mixable output, stopping account mixer", asset.ID)
+			err = asset.StopAccountMixer()
 			if err != nil {
 				log.Errorf("Error stopping account mixer: %v", err)
 			}
@@ -130,29 +130,29 @@ func (wallet *Wallet) checkWalletMixers() {
 	}
 }
 
-func (wallet *Wallet) mempoolTransactionNotification(transaction string) {
-	wallet.notificationListenersMu.RLock()
-	defer wallet.notificationListenersMu.RUnlock()
+func (asset *DCRAsset) mempoolTransactionNotification(transaction string) {
+	asset.notificationListenersMu.RLock()
+	defer asset.notificationListenersMu.RUnlock()
 
-	for _, txAndBlockNotifcationListener := range wallet.txAndBlockNotificationListeners {
+	for _, txAndBlockNotifcationListener := range asset.txAndBlockNotificationListeners {
 		txAndBlockNotifcationListener.OnTransaction(transaction)
 	}
 }
 
-func (wallet *Wallet) publishTransactionConfirmed(transactionHash string, blockHeight int32) {
-	wallet.notificationListenersMu.RLock()
-	defer wallet.notificationListenersMu.RUnlock()
+func (asset *DCRAsset) publishTransactionConfirmed(transactionHash string, blockHeight int32) {
+	asset.notificationListenersMu.RLock()
+	defer asset.notificationListenersMu.RUnlock()
 
-	for _, txAndBlockNotifcationListener := range wallet.txAndBlockNotificationListeners {
-		txAndBlockNotifcationListener.OnTransactionConfirmed(wallet.ID, transactionHash, blockHeight)
+	for _, txAndBlockNotifcationListener := range asset.txAndBlockNotificationListeners {
+		txAndBlockNotifcationListener.OnTransactionConfirmed(asset.ID, transactionHash, blockHeight)
 	}
 }
 
-func (wallet *Wallet) publishBlockAttached(blockHeight int32) {
-	wallet.notificationListenersMu.RLock()
-	defer wallet.notificationListenersMu.RUnlock()
+func (asset *DCRAsset) publishBlockAttached(blockHeight int32) {
+	asset.notificationListenersMu.RLock()
+	defer asset.notificationListenersMu.RUnlock()
 
-	for _, txAndBlockNotifcationListener := range wallet.txAndBlockNotificationListeners {
-		txAndBlockNotifcationListener.OnBlockAttached(wallet.ID, blockHeight)
+	for _, txAndBlockNotifcationListener := range asset.txAndBlockNotificationListeners {
+		txAndBlockNotifcationListener.OnBlockAttached(asset.ID, blockHeight)
 	}
 }

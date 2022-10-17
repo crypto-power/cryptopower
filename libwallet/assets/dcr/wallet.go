@@ -4,41 +4,28 @@ import (
 	"context"
 	"sync"
 
-	"github.com/asdine/storm"
+	dcrW "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/v2/wallet/txrules"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-// To be renamed to DCRAsset when optimizing the code.
-// type DCRAsset struct {
-type Wallet struct {
-	*mainW.Wallet
-
-	/* needed to load existing wallets at the multiwallet level */
-
-	// Order by ID at the multiwallet level fails without this field declared
-	// Here. It introduces a bug where the ID cannot be passed upstream.
-	// It will be fixed once the code at the multiwallet level is optimized.
-	ID int `storm:"id,increment"`
-
-	/* needed to load existing wallets at the multiwallet level */
-
-	rootDir string // to be moved upstream as it same for all assets
+type DCRAsset struct {
+	*sharedW.Wallet
 
 	synced            bool
 	syncing           bool
 	waitingForHeaders bool
 
-	chainParams  *chaincfg.Params
-	walletDataDB *walletdata.DB // field to be replaced in the code with GetWalletDataDb()
+	chainParams *chaincfg.Params
 
-	cancelAccountMixer context.CancelFunc `json:"-"`
-
-	cancelAutoTicketBuyerMu sync.Mutex
+	cancelAccountMixer      context.CancelFunc `json:"-"`
 	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
+	cancelAutoTicketBuyerMu sync.RWMutex
 
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
@@ -48,27 +35,66 @@ type Wallet struct {
 	notificationListenersMu          sync.RWMutex
 	syncData                         *SyncData
 	accountMixerNotificationListener map[string]AccountMixerNotificationListener
-	txAndBlockNotificationListeners  map[string]mainW.TxAndBlockNotificationListener
-	blocksRescanProgressListener     mainW.BlocksRescanProgressListener
+	txAndBlockNotificationListeners  map[string]sharedW.TxAndBlockNotificationListener
+	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
 
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, db, rootDir, dbDriver, chainParams)
+// initWalletLoader setups the loader.
+func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
+	// TODO: Allow users provide values to override these defaults.
+	cfg := &sharedW.WalletConfig{
+		GapLimit:                20,
+		AllowHighFees:           false,
+		RelayFee:                txrules.DefaultRelayFeePerKb,
+		AccountGapLimit:         dcrW.DefaultAccountGapLimit,
+		DisableCoinTypeUpgrades: false,
+		ManualTickets:           false,
+		MixSplitLimit:           10,
+	}
+
+	stakeOptions := &dcr.StakeOptions{
+		VotingEnabled: false,
+		AddressReuse:  false,
+		VotingAddress: nil,
+	}
+	walletLoader := dcr.NewLoader(chainParams, rootdir, stakeOptions,
+		cfg.GapLimit, cfg.RelayFee, cfg.AllowHighFees, cfg.DisableCoinTypeUpgrades,
+		cfg.ManualTickets, cfg.AccountGapLimit, cfg.MixSplitLimit)
+
+	if walletDbDriver != "" {
+		walletLoader.SetDatabaseDriver(walletDbDriver)
+	}
+
+	return walletLoader
+}
+
+// CreateNewWallet accepts the wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while creating a new wallet in the
+// shared wallet implemenation.
+// Immediately a new wallet is created, the function to safely cancel network sync
+// is set. There after returning the new wallet's interface.
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*DCRAsset, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
-		Wallet: w,
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 
-		rootDir:      rootDir, // To moved to the upstream wallet
-		chainParams:  chainParams,
-		walletDataDB: w.GetWalletDataDb(),
+	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.DCRWalletAsset)
+	if err != nil {
+		return nil, err
+	}
 
+	dcrWallet := &DCRAsset{
+		Wallet:      w,
+		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		vspClients:                       make(map[string]*vsp.Client),
 	}
@@ -78,22 +104,32 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	return dcrWallet, nil
 }
 
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-	w, err := wallet.CreateWatchOnlyWallet(walletName, extendedPublicKey, db, rootDir, dbDriver, chainParams)
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the DCR asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*DCRAsset, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
-		Wallet: w,
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+		ldr, params, utils.DCRWalletAsset)
+	if err != nil {
+		return nil, err
+	}
 
-		rootDir:     rootDir, // To moved to the upstream wallet
+	dcrWallet := &DCRAsset{
+		Wallet:      w,
 		chainParams: chainParams,
-
-		walletDataDB: w.GetWalletDataDb(),
-
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
 	}
 
@@ -102,22 +138,30 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, r
 	return dcrWallet, nil
 }
 
-func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm.DB, chainParams *chaincfg.Params, privatePassphrase string, privatePassphraseType int32) (*Wallet, error) {
-	w, err := wallet.RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver, db, chainParams, privatePassphrase, privatePassphraseType)
+// RestoreWallet accepts the seed, wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while restoring the wallet in the
+// shared wallet implemenation.
+// Immediately wallet restore is complete, the function to safely cancel network sync
+// is set. There after returning the restored wallet's interface.
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*DCRAsset, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
-		Wallet: w,
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.DCRWalletAsset)
+	if err != nil {
+		return nil, err
+	}
 
-		rootDir:     rootDir, // To moved to the upstream wallet
+	dcrWallet := &DCRAsset{
+		Wallet:      w,
 		chainParams: chainParams,
-
-		walletDataDB: w.GetWalletDataDb(),
-
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
 		vspClients: make(map[string]*vsp.Client),
 	}
@@ -127,48 +171,81 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 	return dcrWallet, nil
 }
 
-func (wallet *Wallet) LoadExisting(rootDir string, db *storm.DB, chainParams *chaincfg.Params) error {
-	wallet.vspClients = make(map[string]*vsp.Client)
-	wallet.rootDir = rootDir
-	wallet.chainParams = chainParams
-
-	wallet.syncData = &SyncData{
-		syncProgressListeners: make(map[string]mainW.SyncProgressListener),
-	}
-	wallet.txAndBlockNotificationListeners = make(map[string]mainW.TxAndBlockNotificationListener)
-	wallet.accountMixerNotificationListener = make(map[string]AccountMixerNotificationListener)
-
-	err := wallet.Prepare(rootDir, db, chainParams, wallet.ID)
+// LoadExisting accepts the stored shared wallet information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while loading the existing the wallet in the
+// shared wallet implemenation.
+// Immediately loading the existing wallet is complete, the function to safely
+// cancel network sync is set. There after returning the loaded wallet's interface.
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*DCRAsset, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSync)
-	wallet.walletDataDB = wallet.GetWalletDataDb()
-
-	return nil
-}
-
-func (wallet *Wallet) Synced() bool {
-	return wallet.synced
-}
-
-func (wallet *Wallet) LockWallet() {
-	if wallet.IsAccountMixerActive() {
-		log.Error("LockWallet ignored due to active account mixer")
-		return
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	dcrWallet := &DCRAsset{
+		Wallet:      w,
+		vspClients:  make(map[string]*vsp.Client),
+		chainParams: chainParams,
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
+		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 	}
 
-	if !wallet.Internal().Locked() {
-		wallet.Internal().Lock()
+	err = dcrWallet.Prepare(ldr, params)
+	if err != nil {
+		return nil, err
+	}
+
+	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
+
+	return dcrWallet, nil
+}
+
+// AccountXPubMatches checks if the xpub of the provided account matches the
+// provided legacy or SLIP0044 xpub. While both the legacy and SLIP0044 xpubs
+// will be checked for watch-only wallets, other wallets will only check the
+// xpub that matches the coin type key used by the asset.
+func (asset *DCRAsset) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
+	ctx, _ := asset.ShutdownContextWithCancel()
+
+	acctXPubKey, err := asset.Internal().DCR.AccountXpub(ctx, account)
+	if err != nil {
+		return false, err
+	}
+	acctXPub := acctXPubKey.String()
+
+	if asset.IsWatchingOnlyWallet() {
+		// Coin type info isn't saved for watch-only wallets, so check
+		// against both legacy and SLIP0044 coin types.
+		return acctXPub == legacyXPub || acctXPub == slip044XPub, nil
+	}
+
+	cointype, err := asset.Internal().DCR.CoinType(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	if cointype == asset.chainParams.LegacyCoinType {
+		return acctXPub == legacyXPub, nil
+	} else {
+		return acctXPub == slip044XPub, nil
 	}
 }
 
-func (wallet *Wallet) SafelyCancelSync() {
-	if wallet.IsConnectedToDecredNetwork() {
-		wallet.CancelSync()
+func (asset *DCRAsset) Synced() bool {
+	return asset.synced
+}
+
+func (asset *DCRAsset) SafelyCancelSync() {
+	if asset.IsConnectedToDecredNetwork() {
+		asset.CancelSync()
 		defer func() {
-			wallet.SpvSync()
+			asset.SpvSync()
 		}()
 	}
 }

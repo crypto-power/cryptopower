@@ -2,70 +2,47 @@ package btc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcwallet/chain"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
-	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/decred/slog"
-	"github.com/jrick/logrotate/rotator"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-
-	"github.com/asdine/storm"
 )
 
-type Wallet struct {
-	ID            int       `storm:"id,increment"`
-	Name          string    `storm:"unique"`
-	CreatedAt     time.Time `storm:"index"`
-	dbDriver      string
-	rootDir       string
-	db            *storm.DB
-	EncryptedSeed []byte
-	IsRestored    bool
+type BTCAsset struct {
+	*sharedW.Wallet
 
 	cl          neutrinoService
 	neutrinoDB  walletdb.DB
 	chainClient *chain.NeutrinoClient
 
-	dataDir     string
 	cancelFuncs []context.CancelFunc
 	ctx         context.Context
 
 	Synced bool
 
 	chainParams *chaincfg.Params
-	loader      loader.AssetLoader
 	log         slog.Logger
-	birthday    time.Time
-
-	Type string
 }
 
 const (
-	BTCWallet = "BTC"
+	recoverWindow    = 200
+	defaultDBTimeout = time.Duration(100)
 )
 
 // neutrinoService is satisfied by *neutrino.ChainService.
@@ -82,440 +59,133 @@ type neutrinoService interface {
 
 var _ neutrinoService = (*neutrino.ChainService)(nil)
 
-var (
-	walletBirthday time.Time
-	loggingInited  uint32
-)
-
-const (
-	neutrinoDBName = "neutrino.db"
-	logDirName     = "logs"
-	logFileName    = "neutrino.log"
-)
-
-func parseChainParams(net string) (*chaincfg.Params, error) {
-	switch net {
-	case "mainnet":
-		return &chaincfg.MainNetParams, nil
-	case "testnet3":
-		return &chaincfg.TestNet3Params, nil
-	case "regtest", "regnet", "simnet":
-		return &chaincfg.RegressionNetParams, nil
-	}
-	return nil, fmt.Errorf("unknown network ID %v", net)
-}
-
-// logWriter implements an io.Writer that outputs to a rotating log file.
-type logWriter struct {
-	*rotator.Rotator
-}
-
-// logNeutrino initializes logging in the neutrino + wallet packages. Logging
-// only has to be initialized once, so an atomic flag is used internally to
-// return early on subsequent invocations.
-//
-// In theory, the the rotating file logger must be Close'd at some point, but
-// there are concurrency issues with that since btcd and btcwallet have
-// unsupervised goroutines still running after shutdown. So we leave the rotator
-// running at the risk of losing some logs.
-func logNeutrino(walletDir string) error {
-	if !atomic.CompareAndSwapUint32(&loggingInited, 0, 1) {
-		return nil
-	}
-
-	logSpinner, err := logRotator(walletDir)
-	if err != nil {
-		return fmt.Errorf("error initializing log rotator: %w", err)
-	}
-
-	backendLog := btclog.NewBackend(logWriter{logSpinner})
-
-	logger := func(name string, lvl btclog.Level) btclog.Logger {
-		l := backendLog.Logger(name)
-		l.SetLevel(lvl)
-		return l
-	}
-
-	neutrino.UseLogger(logger("NTRNO", btclog.LevelDebug))
-	w.UseLogger(logger("BTCW", btclog.LevelInfo))
-	wtxmgr.UseLogger(logger("TXMGR", btclog.LevelInfo))
-	chain.UseLogger(logger("CHAIN", btclog.LevelInfo))
-
-	return nil
-}
-
-// logRotator initializes a rotating file logger.
-func logRotator(netDir string) (*rotator.Rotator, error) {
-	const maxLogRolls = 8
-	logDir := filepath.Join(netDir, logDirName)
-	if err := os.MkdirAll(logDir, 0744); err != nil {
-		return nil, fmt.Errorf("error creating log directory: %w", err)
-	}
-
-	logFilename := filepath.Join(logDir, logFileName)
-	return rotator.New(logFilename, 32*1024, false, maxLogRolls)
-}
-func (wallet *Wallet) RawRequest(method string, params []json.RawMessage) (json.RawMessage, error) {
-	// Not needed for spv wallet.
-	return nil, errors.New("RawRequest not available on spv")
-}
-
-// prepare gets a wallet ready for use by opening the transactions index database
-// and initializing the wallet loader which can be used subsequently to create,
-// load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir, net string, db *storm.DB, log slog.Logger) (err error) {
-	wallet.db = db
-	return wallet.prepare(rootDir, net, log)
-}
-
-func (wallet *Wallet) prepare(rootDir string, net string, log slog.Logger) (err error) {
-	chainParams, err := parseChainParams(net)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancelfunc := context.WithCancel(context.Background())
-	wallet.ctx = ctx
-
-	wallet.cancelFuncs = append(wallet.cancelFuncs, cancelfunc)
-
-	wallet.chainParams = chainParams
-	wallet.rootDir = rootDir
-	wallet.dataDir = filepath.Join(rootDir, strconv.Itoa(wallet.ID))
-	wallet.log = log
-	wallet.loader = btc.NewLoader(chainParams, rootDir, time.Duration(100), 200)
-	return nil
-}
-
-func (wallet *Wallet) Shutdown() {
-	// Trigger shuttingDown signal to cancel all contexts created with
-	// `wallet.shutdownContext()` or `wallet.shutdownContextWithCancel()`.
-	// wallet.shuttingDown <- true
-
-	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
-		err := wallet.loader.UnloadWallet()
-		if err != nil {
-			log.Errorf("Failed to close wallet: %v", err)
-		} else {
-			log.Info("Closed wallet")
-		}
-	}
-
-	for _, f := range wallet.cancelFuncs {
-		f()
-	}
-
-	if wallet.db != nil {
-		err := wallet.db.Close()
-		if err != nil {
-			log.Errorf("tx db closed with error: %v", err)
-
-		} else {
-			log.Info("tx db closed successfully")
-		}
-	}
-}
-
-// WalletCreationTimeInMillis returns the wallet creation time for new
-// wallets. Restored wallets would return an error.
-func (wallet *Wallet) WalletCreationTimeInMillis() (int64, error) {
-	if wallet.IsRestored {
-		return 0, errors.New(ErrWalletIsRestored)
-	}
-
-	return wallet.CreatedAt.UnixNano() / int64(time.Millisecond), nil
-}
-
-func (wallet *Wallet) NetType() string {
-	return wallet.chainParams.Name
-}
-
-func (wallet *Wallet) Internal() *w.Wallet {
-	lw, _ := wallet.loader.GetLoadedWallet()
-	return lw.BTC
-}
-
-func (wallet *Wallet) WalletExists() (bool, error) {
-	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
-}
-
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string, chainParams *chaincfg.Params) (*Wallet, error) {
-
-	encryptedSeed, err := hdkeychain.GenerateSeed(
-		hdkeychain.RecommendedSeedLen,
-	)
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the BTC asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	wallet := &Wallet{
-		Name:          walletName,
-		db:            db,
-		dbDriver:      dbDriver,
-		rootDir:       rootDir,
-		chainParams:   chainParams,
-		CreatedAt:     time.Now(),
-		EncryptedSeed: encryptedSeed,
-		Type:          BTCWallet,
-	}
-
-	return wallet.saveNewWallet(func() error {
-		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
-		if err != nil {
-			return err
-		}
-
-		return wallet.createWallet(privatePassphrase, encryptedSeed)
-	})
-}
-
-func (wallet *Wallet) createWallet(privatePassphrase string, seedMnemonic []byte) error {
-	defer func() {
-		for i := range seedMnemonic {
-			seedMnemonic[i] = 0
-		}
-	}()
-
-	if len(seedMnemonic) == 0 {
-		return errors.New("ErrEmptySeed")
-	}
-
-	params := &loader.CreateWalletParams{
-		WalletID:       strconv.Itoa(wallet.ID),
-		PubPassphrase:  []byte(w.InsecurePubPassphrase),
-		PrivPassphrase: []byte(privatePassphrase),
-		Seed:           seedMnemonic,
-	}
-
-	_, err := wallet.loader.CreateNewWallet(wallet.ctx, params)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	bailOnWallet := func() {
-		if err := wallet.loader.UnloadWallet(); err != nil {
-			fmt.Errorf("Error unloading wallet after createSPVWallet error: %v", err)
-		}
+	btcWallet := &BTCAsset{
+		Wallet:      w,
+		chainParams: chainParams,
 	}
 
-	neutrinoDBPath := filepath.Join(wallet.DataDir(), neutrinoDBName)
-	db, err := walletdb.Create("bdb", neutrinoDBPath, true, 5*time.Second)
+	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+
+	return btcWallet, nil
+}
+
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the BTC asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*BTCAsset, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
-		bailOnWallet()
-		return fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
-	}
-	if err = db.Close(); err != nil {
-		bailOnWallet()
-		return fmt.Errorf("error closing newly created wallet database: %w", err)
+		return nil, err
 	}
 
-	return nil
-}
-
-func CreateNewWatchOnlyWallet(walletName string, chainParams *chaincfg.Params) (*Wallet, error) {
-	wallet := &Wallet{
-		Name:       walletName,
-		IsRestored: true,
-		Type:       BTCWallet,
-	}
-
-	return wallet.saveNewWallet(func() error {
-		err := wallet.prepare(wallet.rootDir, wallet.NetType(), wallet.log)
-		if err != nil {
-			return err
-		}
-
-		return wallet.createWatchingOnlyWallet()
-	})
-}
-
-func (wallet *Wallet) createWatchingOnlyWallet() error {
-	params := &loader.WatchOnlyWalletParams{
-		WalletID:      strconv.Itoa(wallet.ID),
-		PubPassphrase: []byte(w.InsecurePubPassphrase),
-	}
-
-	_, err := wallet.loader.CreateWatchingOnlyWallet(wallet.ctx, params)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+		ldr, params, utils.BTCWalletAsset)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	btcWallet := &BTCAsset{
+		Wallet:      w,
+		chainParams: chainParams,
+	}
+
+	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+
+	return btcWallet, nil
 }
 
-func (wallet *Wallet) IsWatchingOnlyWallet() bool {
-	if _, ok := wallet.loader.GetLoadedWallet(); ok {
-		return false
-	}
-
-	return false
-}
-
-func (wallet *Wallet) RenameWallet(newName string) error {
-	if strings.HasPrefix(newName, "wallet-") {
-		return errors.E(ErrReservedWalletName)
-	}
-
-	if exists, err := wallet.WalletNameExists(newName); err != nil {
-		return translateError(err)
-	} else if exists {
-		return errors.New(ErrExist)
-	}
-
-	wallet.Name = newName
-	return wallet.db.Save(wallet) // update WalletName field
-}
-
-func (wallet *Wallet) OpenWallet() error {
-	pubPass := []byte(w.InsecurePubPassphrase)
-
-	_, err := wallet.loader.OpenExistingWallet(wallet.ctx, strconv.Itoa(wallet.ID), pubPass)
+// RestoreWallet accepts the seed, wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while restoring the wallet in the
+// shared wallet implemenation.
+// Immediately wallet restore is complete, the function to safely cancel network sync
+// is set. There after returning the restored wallet's interface.
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
-		return translateError(err)
+		return nil, err
 	}
 
-	return nil
-}
-
-func (wallet *Wallet) WalletOpened() bool {
-	return wallet.Internal() != nil
-}
-
-func (wallet *Wallet) UnlockWallet(privPass []byte) error {
-	return wallet.unlockWallet(privPass)
-}
-
-func (wallet *Wallet) unlockWallet(privPass []byte) error {
-	loadedWallet, ok := wallet.loader.GetLoadedWallet()
-	if !ok {
-		return fmt.Errorf("wallet has not been loaded")
-	}
-
-	err := loadedWallet.BTC.Unlock(privPass, nil)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
-		return translateError(err)
+		return nil, err
 	}
 
-	return nil
-}
-
-func (wallet *Wallet) LockWallet() {
-	if !wallet.Internal().Locked() {
-		wallet.Internal().Lock()
-	}
-}
-
-func (wallet *Wallet) IsLocked() bool {
-	return wallet.Internal().Locked()
-}
-
-func (wallet *Wallet) ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
-	encryptedSeed := wallet.EncryptedSeed
-	if encryptedSeed != nil {
-		decryptedSeed, err := decryptWalletSeed(oldPrivatePassphrase, encryptedSeed)
-		if err != nil {
-			return err
-		}
-
-		encryptedSeed, err = encryptWalletSeed(newPrivatePassphrase, decryptedSeed)
-		if err != nil {
-			return err
-		}
+	btcWallet := &BTCAsset{
+		Wallet:      w,
+		chainParams: chainParams,
 	}
 
-	err := wallet.changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
+	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+
+	return btcWallet, nil
+}
+
+// LoadExisting accepts the stored shared wallet information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while loading the existing the wallet in the
+// shared wallet implemenation.
+// Immediately loading the existing wallet is complete, the function to safely
+// cancel network sync is set. There after returning the loaded wallet's interface.
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
-		return translateError(err)
+		return nil, err
 	}
 
-	wallet.EncryptedSeed = encryptedSeed
-	err = wallet.db.Save(wallet)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	btcWallet := &BTCAsset{
+		Wallet:      w,
+		chainParams: chainParams,
+	}
+
+	err = btcWallet.Prepare(ldr, params)
 	if err != nil {
-		log.Errorf("error saving wallet-[%d] to database after passphrase change: %v", wallet.ID, err)
-
-		err2 := wallet.changePrivatePassphrase(newPrivatePassphrase, oldPrivatePassphrase)
-		if err2 != nil {
-			log.Errorf("error undoing wallet passphrase change: %v", err2)
-			log.Errorf("error wallet passphrase was changed but passphrase type and newly encrypted seed could not be saved: %v", err)
-			return errors.New(ErrSavingWallet)
-		}
-
-		return errors.New(ErrChangingPassphrase)
+		return nil, err
 	}
 
-	return nil
+	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+
+	return btcWallet, nil
 }
 
-func (wallet *Wallet) changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase []byte) error {
-	defer func() {
-		for i := range oldPrivatePassphrase {
-			oldPrivatePassphrase[i] = 0
-		}
-
-		for i := range newPrivatePassphrase {
-			newPrivatePassphrase[i] = 0
-		}
-	}()
-
-	err := wallet.Internal().ChangePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
-	if err != nil {
-		return translateError(err)
-	}
-	return nil
-}
-
-func (wallet *Wallet) DeleteWallet(privatePassphrase []byte) error {
-	err := wallet.deleteWallet(privatePassphrase)
-	if err != nil {
-		return translateError(err)
-	}
-
-	return nil
-}
-
-func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
-	defer func() {
-		for i := range privatePassphrase {
-			privatePassphrase[i] = 0
-		}
-	}()
-
-	if _, loaded := wallet.loader.GetLoadedWallet(); !loaded {
-		return errors.New(ErrWalletNotLoaded)
-	}
-
-	if !wallet.IsWatchingOnlyWallet() {
-		err := wallet.Internal().Unlock(privatePassphrase, nil)
-		if err != nil {
-			return translateError(err)
-		}
-		wallet.Internal().Lock()
-	}
-
-	// Uncommenting this prevents the wallet from deleting,
-	// seems related to not having a properly define walletdatadb
-	// wallet.Shutdown()
-
-	err := wallet.db.DeleteStruct(wallet)
-	if err != nil {
-		return translateError(err)
-	}
-
-	log.Info("Deleting Wallet")
-	return os.RemoveAll(wallet.dataDir)
-}
-
-func (wallet *Wallet) ConnectSPVWallet(ctx context.Context, wg *sync.WaitGroup) (err error) {
-	return wallet.connect(ctx, wg)
-}
-
+//TODO: NOT USED.
 // connect will start the wallet and begin syncing.
-func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
-	if err := logNeutrino(wallet.dataDir); err != nil {
+func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
+	if err := logNeutrino(asset.DataDir()); err != nil {
 		return fmt.Errorf("error initializing btcwallet+neutrino logging: %v", err)
 	}
 
-	err := wallet.startWallet()
+	err := asset.startWallet()
 	if err != nil {
 		return err
 	}
@@ -526,13 +196,13 @@ func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	return nil
 }
 
+//TODO: NOT USED.
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
-func (wallet *Wallet) startWallet() error {
+func (asset *BTCAsset) startWallet() error {
 	// timeout and recoverWindow arguments borrowed from btcwallet directly.
-	wallet.loader = btc.NewLoader(wallet.chainParams, wallet.dataDir, time.Duration(100), 200)
 
-	exists, err := wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
+	exists, err := asset.WalletExists()
 	if err != nil {
 		return fmt.Errorf("error verifying wallet existence: %v", err)
 	}
@@ -540,30 +210,26 @@ func (wallet *Wallet) startWallet() error {
 		return errors.New("wallet not found")
 	}
 
-	wallet.log.Debug("Starting native BTC wallet...")
-	btcw, err := wallet.loader.OpenExistingWallet(wallet.ctx, strconv.Itoa(wallet.ID), []byte(w.InsecurePubPassphrase))
+	asset.log.Debug("Starting native BTC wallet...")
+	err = asset.OpenWallet()
 	if err != nil {
 		return fmt.Errorf("couldn't load wallet: %w", err)
 	}
 
-	bailOnWallet := func() {
-		if err := wallet.loader.UnloadWallet(); err != nil {
-			wallet.log.Errorf("Error unloading wallet: %v", err)
-		}
-	}
-
-	neutrinoDBPath := filepath.Join(wallet.DataDir(), neutrinoDBName)
-	wallet.neutrinoDB, err = walletdb.Create("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
+	// https://pkg.go.dev/github.com/btcsuite/btcwallet/walletdb@v1.4.0#DB
+	// For neutrino to be completely compatible with the walletDbData implementation
+	// in gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata the above
+	// interface needs to be fully implemented.
+	neutrinoDBPath := asset.GetWalletDataDb().Path
+	asset.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
 	if err != nil {
-		bailOnWallet()
-		return fmt.Errorf("unable to create wallet db at %q: %v", neutrinoDBPath, err)
+		return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
 	}
 
 	bailOnWalletAndDB := func() {
-		if err := wallet.neutrinoDB.Close(); err != nil {
-			wallet.log.Errorf("Error closing neutrino database: %v", err)
+		if err := asset.neutrinoDB.Close(); err != nil {
+			asset.log.Errorf("Error closing neutrino database: %v", err)
 		}
-		bailOnWallet()
 	}
 
 	// Depending on the network, we add some addpeers or a connect peer. On
@@ -573,7 +239,7 @@ func (wallet *Wallet) startWallet() error {
 	// addition to normal DNS seed-based peer discovery.
 	var addPeers []string
 	var connectPeers []string
-	switch wallet.chainParams.Net {
+	switch asset.chainParams.Net {
 	case wire.MainNet:
 		addPeers = []string{"cfilters.ssgen.io"}
 	case wire.TestNet3:
@@ -581,11 +247,11 @@ func (wallet *Wallet) startWallet() error {
 	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
 		connectPeers = []string{"localhost:20575"}
 	}
-	wallet.log.Debug("Starting neutrino chain service...")
+	asset.log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
-		DataDir:       wallet.dataDir,
-		Database:      wallet.neutrinoDB,
-		ChainParams:   *wallet.chainParams,
+		DataDir:       asset.DataDir(),
+		Database:      asset.neutrinoDB,
+		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		AddPeers:      addPeers,
 		ConnectPeers:  connectPeers,
@@ -602,89 +268,26 @@ func (wallet *Wallet) startWallet() error {
 
 	bailOnEverything := func() {
 		if err := chainService.Stop(); err != nil {
-			wallet.log.Errorf("Error closing neutrino chain service: %v", err)
+			asset.log.Errorf("Error closing neutrino chain service: %v", err)
 		}
 		bailOnWalletAndDB()
 	}
 
-	wallet.cl = chainService
-	wallet.chainClient = chain.NewNeutrinoClient(wallet.chainParams, chainService)
+	asset.cl = chainService
+	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
-	if err = wallet.chainClient.Start(); err != nil { // lazily starts connmgr
+	if err = asset.chainClient.Start(); err != nil { // lazily starts connmgr
 		bailOnEverything()
 		return fmt.Errorf("couldn't start Neutrino client: %v", err)
 	}
 
-	wallet.log.Info("Synchronizing wallet with network...")
-	btcw.BTC.SynchronizeRPC(wallet.chainClient)
+	asset.log.Info("Synchronizing wallet with network...")
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	return nil
 }
 
-// saveNewWallet performs the following tasks using a db batch operation to ensure
-// that db changes are rolled back if any of the steps below return an error.
-//
-// - saves the initial wallet info to btcWallet.walletsDb to get a wallet id
-// - creates a data directory for the wallet using the auto-generated wallet id
-// - updates the initial wallet info with name, dataDir (created above), db driver
-//   and saves the updated info to btcWallet.walletsDb
-// - calls the provided `setupWallet` function to perform any necessary creation,
-//   restoration or linking of the just saved wallet
-//
-// IFF all the above operations succeed, the wallet info will be persisted to db
-// and the wallet will be added to `btcWallet.wallets`.
-func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
-	exists, err := WalletNameExists(wallet.Name, wallet.db)
-	if err != nil {
-		return nil, err
-	} else if exists {
-		return nil, errors.New(ErrExist)
-	}
-
-	// Perform database save operations in batch transaction
-	// for automatic rollback if error occurs at any point.
-	err = wallet.batchDbTransaction(func(db storm.Node) error {
-		// saving struct to update ID property with an auto-generated value
-		err := db.Save(wallet)
-		if err != nil {
-			return err
-		}
-
-		walletDataDir := wallet.DataDir()
-
-		dirExists, err := fileExists(walletDataDir)
-		if err != nil {
-			return err
-		} else if dirExists {
-			_, err := backupFile(walletDataDir, 1)
-			if err != nil {
-				return err
-			}
-
-		}
-
-		os.MkdirAll(walletDataDir, os.ModePerm) // create wallet dir
-
-		if wallet.Name == "" {
-			wallet.Name = "wallet-" + strconv.Itoa(wallet.ID) // wallet-#
-		}
-
-		err = db.Save(wallet) // update database with complete wallet information
-		if err != nil {
-			return err
-		}
-
-		return setupWallet()
-
-	})
-
-	if err != nil {
-		return nil, translateError(err)
-	}
-
-	return wallet, nil
-}
-
-func (wallet *Wallet) DataDir() string {
-	return filepath.Join(wallet.rootDir, string(utils.BTCWalletAsset), strconv.Itoa(wallet.ID))
+func (asset *BTCAsset) SafelyCancelSync() {
+	//TODO: use a proper logger
+	fmt.Println("Safe sync shutdown not implemented")
 }

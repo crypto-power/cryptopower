@@ -30,7 +30,7 @@ type BackupInstructionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcr.Wallet
+	wallet *dcr.DCRAsset
 
 	backButton  cryptomaterial.IconButton
 	viewSeedBtn cryptomaterial.Button
@@ -40,7 +40,7 @@ type BackupInstructionsPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *dcr.Wallet, redirect Redirectfunc) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet *dcr.DCRAsset, redirect Redirectfunc) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),

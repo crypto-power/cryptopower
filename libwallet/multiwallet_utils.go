@@ -39,7 +39,7 @@ var (
 )
 
 func (mw *MultiWallet) batchDbTransaction(dbOp func(node storm.Node) error) (err error) {
-	dbTx, err := mw.db.Begin(true)
+	dbTx, err := mw.params.DB.Begin(true)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (mw *MultiWallet) loadWalletTemporarily(ctx context.Context, strWalletID, w
 	}
 
 	// initialize the wallet loader
-	walletLoader := initWalletLoader(mw.chainParams, walletDataDir, mw.dbDriver)
+	walletLoader := initWalletLoader(mw.chainParams, walletDataDir, mw.params.DbDriver)
 
 	// open the wallet to get ready for temporary use
 	wallet, err := walletLoader.OpenExistingWallet(ctx, strWalletID, []byte(walletPublicPass))
@@ -95,7 +95,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
 	wallet.HasDiscoveredAccounts = true
-	err := mw.db.Save(wallet)
+	err := mw.params.DB.Save(wallet)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (mw *MultiWallet) markWalletAsDiscoveredAccounts(walletID int) error {
 // multiwallet's root directory in bytes.
 func (mw *MultiWallet) RootDirFileSizeInBytes() (int64, error) {
 	var size int64
-	err := filepath.Walk(mw.rootDir, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(mw.params.RootDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 		if !w.WalletOpened() {
 			return -1, errors.Errorf("wallet %d is not open and cannot be checked", w.ID)
 		}
-		accounts, err := w.Internal().Accounts(ctx)
+		accounts, err := w.Internal().DCR.Accounts(ctx)
 		if err != nil {
 			return -1, err
 		}
@@ -153,7 +153,7 @@ func (mw *MultiWallet) WalletWithXPub(xpub string) (int, error) {
 			if account.AccountNumber == dcr.ImportedAccountNumber {
 				continue
 			}
-			acctXPub, err := w.Internal().AccountXpub(ctx, account.AccountNumber)
+			acctXPub, err := w.Internal().DCR.AccountXpub(ctx, account.AccountNumber)
 			if err != nil {
 				return -1, err
 			}

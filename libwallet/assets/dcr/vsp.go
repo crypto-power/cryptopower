@@ -8,15 +8,16 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
-func (wallet *Wallet) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
-	wallet.vspClientsMu.Lock()
-	defer wallet.vspClientsMu.Unlock()
-	client, ok := wallet.vspClients[host]
+func (asset *DCRAsset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
+	asset.vspClientsMu.Lock()
+	defer asset.vspClientsMu.Unlock()
+	client, ok := asset.vspClients[host]
 	if ok {
 		return client, nil
 	}
@@ -25,29 +26,29 @@ func (wallet *Wallet) VSPClient(host string, pubKey []byte) (*vsp.Client, error)
 		URL:    host,
 		PubKey: base64.StdEncoding.EncodeToString(pubKey),
 		Dialer: nil, // optional, but consider providing a value
-		Wallet: wallet.Internal(),
+		Wallet: asset.Internal().DCR,
 	}
 	client, err := vsp.New(cfg)
 	if err != nil {
 		return nil, err
 	}
-	wallet.vspClients[host] = client
+	asset.vspClients[host] = client
 	return client, nil
 }
 
 // KnownVSPs returns a list of known VSPs. This list may be updated by calling
 // ReloadVSPList. This method is safe for concurrent access.
-func (wallet *Wallet) KnownVSPs() []*VSP {
-	wallet.vspMu.RLock()
-	defer wallet.vspMu.RUnlock()
-	return wallet.vsps // TODO: Return a copy.
+func (asset *DCRAsset) KnownVSPs() []*VSP {
+	asset.vspMu.RLock()
+	defer asset.vspMu.RUnlock()
+	return asset.vsps // TODO: Return a copy.
 }
 
 // SaveVSP marks a VSP as known and will be susbequently included as part of
 // known VSPs.
-func (wallet *Wallet) SaveVSP(host string) (err error) {
+func (asset *DCRAsset) SaveVSP(host string) (err error) {
 	// check if host already exists
-	vspDbData := wallet.getVSPDBData()
+	vspDbData := asset.getVSPDBData()
 	for _, savedHost := range vspDbData.SavedHosts {
 		if savedHost == host {
 			return fmt.Errorf("duplicate host %s", host)
@@ -61,31 +62,31 @@ func (wallet *Wallet) SaveVSP(host string) (err error) {
 	}
 
 	// TODO: defaultVSPs() uses strings.Contains(network, vspInfo.Network).
-	if info.Network != wallet.NetType() {
+	if info.Network != string(asset.NetType()) {
 		return fmt.Errorf("invalid net %s", info.Network)
 	}
 
 	vspDbData.SavedHosts = append(vspDbData.SavedHosts, host)
-	wallet.updateVSPDBData(vspDbData)
+	asset.updateVSPDBData(vspDbData)
 
-	wallet.vspMu.Lock()
-	wallet.vsps = append(wallet.vsps, &VSP{Host: host, VspInfoResponse: info})
-	wallet.vspMu.Unlock()
+	asset.vspMu.Lock()
+	asset.vsps = append(asset.vsps, &VSP{Host: host, VspInfoResponse: info})
+	asset.vspMu.Unlock()
 
 	return
 }
 
 // LastUsedVSP returns the host of the last used VSP, as saved by the
 // SaveLastUsedVSP() method.
-func (wallet *Wallet) LastUsedVSP() string {
-	return wallet.getVSPDBData().LastUsedVSP
+func (asset *DCRAsset) LastUsedVSP() string {
+	return asset.getVSPDBData().LastUsedVSP
 }
 
 // SaveLastUsedVSP saves the host of the last used VSP.
-func (wallet *Wallet) SaveLastUsedVSP(host string) {
-	vspDbData := wallet.getVSPDBData()
+func (asset *DCRAsset) SaveLastUsedVSP(host string) {
+	vspDbData := asset.getVSPDBData()
 	vspDbData.LastUsedVSP = host
-	wallet.updateVSPDBData(vspDbData)
+	asset.updateVSPDBData(vspDbData)
 }
 
 type vspDbData struct {
@@ -93,24 +94,24 @@ type vspDbData struct {
 	LastUsedVSP string
 }
 
-func (wallet *Wallet) getVSPDBData() *vspDbData {
+func (asset *DCRAsset) getVSPDBData() *vspDbData {
 	vspDbData := new(vspDbData)
-	wallet.ReadUserConfigValue(mainW.KnownVSPsConfigKey, vspDbData)
+	asset.ReadUserConfigValue(sharedW.KnownVSPsConfigKey, vspDbData)
 	return vspDbData
 }
 
-func (wallet *Wallet) updateVSPDBData(data *vspDbData) {
-	wallet.SaveUserConfigValue(mainW.KnownVSPsConfigKey, data)
+func (asset *DCRAsset) updateVSPDBData(data *vspDbData) {
+	asset.SaveUserConfigValue(sharedW.KnownVSPsConfigKey, data)
 }
 
 // ReloadVSPList reloads the list of known VSPs.
 // This method makes multiple network calls; should be called in a goroutine
 // to prevent blocking the UI thread.
-func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
+func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 	log.Debugf("Reloading list of known VSPs")
 	defer log.Debugf("Reloaded list of known VSPs")
 
-	vspDbData := wallet.getVSPDBData()
+	vspDbData := asset.getVSPDBData()
 	vspList := make(map[string]*VspInfoResponse)
 	for _, host := range vspDbData.SavedHosts {
 		vspInfo, err := vspInfo(host)
@@ -125,7 +126,7 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 		}
 	}
 
-	otherVSPHosts, err := defaultVSPs(wallet.NetType())
+	otherVSPHosts, err := defaultVSPs(string(asset.NetType()))
 	if err != nil {
 		log.Debugf("get default vsp list error: %v", err)
 	}
@@ -144,17 +145,17 @@ func (wallet *Wallet) ReloadVSPList(ctx context.Context) {
 		}
 	}
 
-	wallet.vspMu.Lock()
-	wallet.vsps = make([]*VSP, 0, len(vspList))
+	asset.vspMu.Lock()
+	asset.vsps = make([]*VSP, 0, len(vspList))
 	for host, info := range vspList {
-		wallet.vsps = append(wallet.vsps, &VSP{Host: host, VspInfoResponse: info})
+		asset.vsps = append(asset.vsps, &VSP{Host: host, VspInfoResponse: info})
 	}
-	wallet.vspMu.Unlock()
+	asset.vspMu.Unlock()
 }
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	vspInfoResponse := new(VspInfoResponse)
-	resp, respBytes, err := HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
+	resp, respBytes, err := utils.HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +176,7 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 // defaultVSPs returns a list of known VSPs.
 func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
-	_, _, err := HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
+	_, _, err := utils.HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
 	if err != nil {
 		return nil, err
 	}

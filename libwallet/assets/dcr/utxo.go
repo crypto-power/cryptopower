@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/wire"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -32,7 +32,7 @@ func calculateChangeScriptSize(changeAddress string, chainParams *chaincfg.Param
 // but is instead returned as a change destination.
 // Returns an error if more than 1 max amount recipients identified or
 // if any other error is encountered while processing the addresses and amounts.
-func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []mainW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
+func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
 	var outputs = make([]*wire.TxOut, 0)
 	var totalSendAmount int64
 	var maxAmountRecipientAddress string
@@ -69,8 +69,8 @@ func (tx *TxAuthor) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
 	// if no change destination is provided and
 	// no recipient is set to receive max amount.
 	nextInternalAddress := func() (string, error) {
-		ctx := tx.sourceWallet.ShutdownContext()
-		addr, err := tx.sourceWallet.Internal().NewChangeAddress(ctx, tx.sourceAccountNumber)
+		ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
+		addr, err := tx.sourceWallet.Internal().DCR.NewChangeAddress(ctx, tx.sourceAccountNumber)
 		if err != nil {
 			return "", err
 		}
@@ -80,7 +80,7 @@ func (tx *TxAuthor) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
 	return tx.newUnsignedTxUTXO(tx.inputs, tx.destinations, tx.changeDestination, nextInternalAddress)
 }
 
-func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []mainW.TransactionDestination, changeDestination *mainW.TransactionDestination,
+func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sharedW.TransactionDestination, changeDestination *sharedW.TransactionDestination,
 	nextInternalAddress nextAddressFunc) (*txauthor.AuthoredTx, error) {
 	outputs, totalSendAmount, maxAmountRecipientAddress, err := tx.ParseOutputsAndChangeDestination(sendDestinations)
 	if err != nil {

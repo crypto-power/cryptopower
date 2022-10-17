@@ -40,7 +40,7 @@ type WalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *dcr.Wallet
+	wallet   *dcr.DCRAsset
 	accounts []*accountData
 
 	pageContainer layout.List

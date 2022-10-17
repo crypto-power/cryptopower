@@ -133,7 +133,7 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadPolicies(l *load.Load, selectedWallet *dcr.Wallet, pikey string) []*TreasuryItem {
+func LoadPolicies(l *load.Load, selectedWallet *dcr.DCRAsset, pikey string) []*TreasuryItem {
 	policies, err := selectedWallet.TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil

@@ -152,7 +152,7 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, selectedWallet *dcr.Wallet, newestFirst bool) []*ConsensusItem {
+func LoadAgendas(l *load.Load, selectedWallet *dcr.DCRAsset, newestFirst bool) []*ConsensusItem {
 	agendas, err := selectedWallet.AllVoteAgendas("", newestFirst)
 	if err != nil {
 		return nil

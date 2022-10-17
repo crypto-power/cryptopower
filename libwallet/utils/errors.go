@@ -43,6 +43,11 @@ const (
 	ErrInvalidVoteBit               = "err_invalid_vote_bit"
 )
 
+var (
+	ErrInvalidNet   = errors.New("invalid network type found")
+	ErrAssetUnknown = errors.New("unknown asset found")
+)
+
 // todo, should update this method to translate more error kinds.
 func TranslateError(err error) error {
 	if err, ok := err.(*errors.Error); ok {

@@ -74,7 +74,7 @@ type TxDetailsPage struct {
 	ticketSpender *wallet.Transaction // vote or revoke ticket
 	ticketSpent   *wallet.Transaction // ticket spent in a vote or revoke
 	txBackStack   *wallet.Transaction // track original transaction
-	wallet        *dcr.Wallet
+	wallet        *dcr.DCRAsset
 
 	moreItems  []moreItem
 	txnWidgets transactionWdg
@@ -397,7 +397,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 							switch pg.txnWidgets.txStatus.TicketStatus {
 							case dcr.TicketStatusImmature:
 								maturity := pg.wallet.TicketMaturity()
-								blockTime := pg.WL.MultiWallet.TargetTimePerBlockMinutes()
+								blockTime := pg.wallet.TargetTimePerBlockMinutes()
 								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 
 								lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo,

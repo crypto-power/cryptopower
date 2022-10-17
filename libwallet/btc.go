@@ -9,11 +9,12 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func initializeBTCWalletParameters(rootDir, dbDriver, netType string) (*chaincfg.Params, string, error) {
-	rootDir = filepath.Join(rootDir, netType) // btc now added in the btc loader pkg
+func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.NetworkType) (*chaincfg.Params, string, error) {
+	rootDir = filepath.Join(rootDir, string(netType)) // btc now added in the btc loader pkg
 	err := os.MkdirAll(rootDir, os.ModePerm)
 	if err != nil {
 		return nil, "", errors.Errorf("failed to create btc rootDir: %v", err)
@@ -27,8 +28,40 @@ func initializeBTCWalletParameters(rootDir, dbDriver, netType string) (*chaincfg
 	return chainParams, rootDir, nil
 }
 
-func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
-	wallet, err := btc.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.Assets.BTC.RootDir, mw.Assets.BTC.DBDriver, mw.Assets.BTC.ChainParams)
+func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+	pass := &wallet.WalletAuthInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := btc.CreateNewWallet(pass, mw.params)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.BTCAsset, error) {
+	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
+	if err != nil {
+		return nil, err
+	}
+
+	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	return wallet, nil
+}
+
+func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+	pass := &wallet.WalletAuthInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := btc.RestoreWallet(seedMnemonic, pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +84,7 @@ func (mw *MultiWallet) DeleteBTCWallet(walletID int, privPass []byte) error {
 	return nil
 }
 
-func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.Wallet {
+func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.BTCAsset {
 	if wallet, ok := mw.Assets.BTC.Wallets[walletID]; ok {
 		return wallet
 	}

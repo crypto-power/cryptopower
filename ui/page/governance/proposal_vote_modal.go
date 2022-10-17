@@ -55,7 +55,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
-		WalletSelected(func(w *dcr.Wallet) {
+		WalletSelected(func(w *dcr.DCRAsset) {
 
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
@@ -76,7 +76,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 			vm.ParentWindow().Reload()
 
 			go func() {
-				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal(), vm.proposal.Token)
+				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal().DCR, vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
 					vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
@@ -85,7 +85,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				vm.detailsMu.Unlock()
 			}()
 		}).
-		WalletValidator(func(w *dcr.Wallet) bool {
+		WalletValidator(func(w *dcr.DCRAsset) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 	return vm
@@ -156,7 +156,7 @@ func (vm *voteModal) sendVotes() {
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			isSuccess := true
 			go func(isClosing *bool) {
-				w := vm.walletSelector.selectedWallet.Internal()
+				w := vm.walletSelector.selectedWallet.Internal().DCR
 				err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
 				if err != nil {
 					pm.SetError(err.Error())

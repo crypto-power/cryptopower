@@ -143,7 +143,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *dcr.Wallet, tx *wallet.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal *dcr.DCRAsset, tx *wallet.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {

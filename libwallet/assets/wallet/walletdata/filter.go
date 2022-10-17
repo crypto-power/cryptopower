@@ -26,10 +26,10 @@ const (
 
 func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (query storm.Query) {
 	// tickets with block height less than this are matured.
-	maturityBlock := bestBlock - int32(db.chainParams.TicketMaturity)
+	maturityBlock := bestBlock - db.ticketMaturity
 
 	// tickets with block height less than this are expired.
-	expiryBlock := bestBlock - int32(db.chainParams.TicketMaturity+uint16(db.chainParams.TicketExpiry))
+	expiryBlock := bestBlock - (db.ticketMaturity + db.ticketExpiry)
 
 	switch txFilter {
 	case TxFilterSent:

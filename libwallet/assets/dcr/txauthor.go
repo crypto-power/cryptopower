@@ -17,25 +17,25 @@ import (
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/wire"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 type TxAuthor struct {
-	sourceWallet        *Wallet
+	sourceWallet        *DCRAsset
 	sourceAccountNumber uint32
-	destinations        []mainW.TransactionDestination
+	destinations        []sharedW.TransactionDestination
 	changeAddress       string
 	inputs              []*wire.TxIn
-	changeDestination   *mainW.TransactionDestination
+	changeDestination   *sharedW.TransactionDestination
 
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 }
 
-func (wallet *Wallet) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error) {
-	sourceWallet := wallet
+func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error) {
+	sourceWallet := asset
 	if sourceWallet == nil {
 		return nil, fmt.Errorf(utils.ErrWalletNotFound)
 	}
@@ -48,7 +48,7 @@ func (wallet *Wallet) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error
 	return &TxAuthor{
 		sourceWallet:        sourceWallet,
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make([]mainW.TransactionDestination, 0),
+		destinations:        make([]sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 	}, nil
 }
@@ -63,7 +63,7 @@ func (tx *TxAuthor) AddSendDestination(address string, atomAmount int64, sendMax
 		return err
 	}
 
-	tx.destinations = append(tx.destinations, mainW.TransactionDestination{
+	tx.destinations = append(tx.destinations, sharedW.TransactionDestination{
 		Address:    address,
 		AtomAmount: atomAmount,
 		SendMax:    sendMax,
@@ -82,7 +82,7 @@ func (tx *TxAuthor) UpdateSendDestination(index int, address string, atomAmount 
 		return errors.New(utils.ErrIndexOutOfRange)
 	}
 
-	tx.destinations[index] = mainW.TransactionDestination{
+	tx.destinations[index] = sharedW.TransactionDestination{
 		Address:    address,
 		AtomAmount: atomAmount,
 		SendMax:    sendMax,
@@ -98,12 +98,12 @@ func (tx *TxAuthor) RemoveSendDestination(index int) {
 	}
 }
 
-func (tx *TxAuthor) SendDestination(atIndex int) *mainW.TransactionDestination {
+func (tx *TxAuthor) SendDestination(atIndex int) *sharedW.TransactionDestination {
 	return &tx.destinations[atIndex]
 }
 
 func (tx *TxAuthor) SetChangeDestination(address string) {
-	tx.changeDestination = &mainW.TransactionDestination{
+	tx.changeDestination = &sharedW.TransactionDestination{
 		Address: address,
 	}
 	tx.needsConstruct = true
@@ -114,47 +114,47 @@ func (tx *TxAuthor) RemoveChangeDestination() {
 	tx.needsConstruct = true
 }
 
-func (tx *TxAuthor) TotalSendAmount() *mainW.Amount {
+func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
 	var totalSendAmountAtom int64 = 0
 	for _, destination := range tx.destinations {
 		totalSendAmountAtom += destination.AtomAmount
 	}
 
-	return &mainW.Amount{
+	return &sharedW.Amount{
 		AtomValue: totalSendAmountAtom,
 		DcrValue:  dcrutil.Amount(totalSendAmountAtom).ToCoin(),
 	}
 }
 
-func (tx *TxAuthor) EstimateFeeAndSize() (*mainW.TxFeeAndSize, error) {
+func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	unsignedTx, err := tx.unsignedTransaction()
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
 
 	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, unsignedTx.EstimatedSignedSerializeSize)
-	feeAmount := &mainW.Amount{
+	feeAmount := &sharedW.Amount{
 		AtomValue: int64(feeToSendTx),
 		DcrValue:  feeToSendTx.ToCoin(),
 	}
 
-	var change *mainW.Amount
+	var change *sharedW.Amount
 	if unsignedTx.ChangeIndex >= 0 {
 		txOut := unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex]
-		change = &mainW.Amount{
+		change = &sharedW.Amount{
 			AtomValue: txOut.Value,
 			DcrValue:  AmountCoin(txOut.Value),
 		}
 	}
 
-	return &mainW.TxFeeAndSize{
+	return &sharedW.TxFeeAndSize{
 		EstimatedSignedSize: unsignedTx.EstimatedSignedSerializeSize,
 		Fee:                 feeAmount,
 		Change:              change,
 	}, nil
 }
 
-func (tx *TxAuthor) EstimateMaxSendAmount() (*mainW.Amount, error) {
+func (tx *TxAuthor) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	txFeeAndSize, err := tx.EstimateFeeAndSize()
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (tx *TxAuthor) EstimateMaxSendAmount() (*mainW.Amount, error) {
 
 	maxSendableAmount := spendableAccountBalance - txFeeAndSize.Fee.AtomValue
 
-	return &mainW.Amount{
+	return &sharedW.Amount{
 		AtomValue: maxSendableAmount,
 		DcrValue:  dcrutil.Amount(maxSendableAmount).ToCoin(),
 	}, nil
@@ -196,7 +196,8 @@ func (tx *TxAuthor) UseInputs(utxoKeys []string) error {
 			Hash:  *txHash,
 			Index: uint32(index),
 		}
-		outputInfo, err := tx.sourceWallet.Internal().OutputInfo(tx.sourceWallet.ShutdownContext(), op)
+		ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
+		outputInfo, err := tx.sourceWallet.Internal().DCR.OutputInfo(ctx, op)
 		if err != nil {
 			return fmt.Errorf("no valid utxo found for '%s' in the source account", utxoKey)
 		}
@@ -217,7 +218,7 @@ func (tx *TxAuthor) Broadcast(privatePassphrase []byte) ([]byte, error) {
 		}
 	}()
 
-	n, err := tx.sourceWallet.Internal().NetworkBackend()
+	n, err := tx.sourceWallet.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -253,8 +254,8 @@ func (tx *TxAuthor) Broadcast(privatePassphrase []byte) ([]byte, error) {
 		lock <- time.Time{}
 	}()
 
-	ctx := tx.sourceWallet.ShutdownContext()
-	err = tx.sourceWallet.Internal().Unlock(ctx, privatePassphrase, lock)
+	ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
+	err = tx.sourceWallet.Internal().DCR.Unlock(ctx, privatePassphrase, lock)
 	if err != nil {
 		log.Error(err)
 		return nil, errors.New(utils.ErrInvalidPassphrase)
@@ -262,7 +263,7 @@ func (tx *TxAuthor) Broadcast(privatePassphrase []byte) ([]byte, error) {
 
 	var additionalPkScripts map[wire.OutPoint][]byte
 
-	invalidSigs, err := tx.sourceWallet.Internal().SignTransaction(ctx, &msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
+	invalidSigs, err := tx.sourceWallet.Internal().DCR.SignTransaction(ctx, &msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -288,7 +289,7 @@ func (tx *TxAuthor) Broadcast(privatePassphrase []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	txHash, err := tx.sourceWallet.Internal().PublishTransaction(ctx, &msgTx, n)
+	txHash, err := tx.sourceWallet.Internal().DCR.PublishTransaction(ctx, &msgTx, n)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
@@ -319,8 +320,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
 	var changeSource txauthor.ChangeSource
 
-	ctx := tx.sourceWallet.ShutdownContext()
-
+	ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
 	for _, destination := range tx.destinations {
 		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
 			return nil, err
@@ -354,7 +354,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	if changeSource == nil {
 		// dcrwallet should ordinarily handle cases where a nil changeSource
-		// is passed to `wallet.NewUnsignedTransaction` but the changeSource
+		// is passed to `sharedW.NewUnsignedTransaction` but the changeSource
 		// generated there errors on internal gap address limit exhaustion
 		// instead of wrapping around to a previously returned address.
 		//
@@ -367,14 +367,14 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 	}
 
 	requiredConfirmations := tx.sourceWallet.RequiredConfirmations()
-	return tx.sourceWallet.Internal().NewUnsignedTransaction(ctx, outputs, txrules.DefaultRelayFeePerKb, tx.sourceAccountNumber,
+	return tx.sourceWallet.Internal().DCR.NewUnsignedTransaction(ctx, outputs, txrules.DefaultRelayFeePerKb, tx.sourceAccountNumber,
 		requiredConfirmations, outputSelectionAlgorithm, changeSource, nil)
 }
 
 // changeSource derives an internal address from the source wallet and account
 // for this unsigned tx, if a change address had not been previously derived.
 // The derived (or previously derived) address is used to prepare a
-// change source for receiving change from this tx back into the wallet.
+// change source for receiving change from this tx back into the sharedW.
 func (tx *TxAuthor) changeSource(ctx context.Context) (txauthor.ChangeSource, error) {
 	if tx.changeAddress == "" {
 		var changeAccount uint32
@@ -387,7 +387,7 @@ func (tx *TxAuthor) changeSource(ctx context.Context) (txauthor.ChangeSource, er
 			changeAccount = tx.sourceAccountNumber
 		}
 
-		address, err := tx.sourceWallet.Internal().NewChangeAddress(ctx, changeAccount)
+		address, err := tx.sourceWallet.Internal().DCR.NewChangeAddress(ctx, changeAccount)
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
 		}
@@ -405,7 +405,7 @@ func (tx *TxAuthor) changeSource(ctx context.Context) (txauthor.ChangeSource, er
 
 // validateSendAmount validate the amount to send to a destination address
 func (tx *TxAuthor) validateSendAmount(sendMax bool, atomAmount int64) error {
-	if !sendMax && (atomAmount <= 0 || atomAmount > MaxAmountAtom) {
+	if !sendMax && (atomAmount <= 0 || atomAmount > maxAmountAtom) {
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil

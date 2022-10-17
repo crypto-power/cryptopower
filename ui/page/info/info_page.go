@@ -9,7 +9,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -207,18 +207,18 @@ func (pg *WalletInfo) listenForNotifications() {
 				// Update sync progress fields which will be displayed
 				// when the next UI invalidation occurs.
 				switch t := n.ProgressReport.(type) {
-				case *mainW.HeadersFetchProgressReport:
+				case *sharedW.HeadersFetchProgressReport:
 					pg.stepFetchProgress = t.HeadersFetchProgress
 					pg.headersToFetchOrScan = t.TotalHeadersToFetch
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.FetchHeadersSteps
-				case *mainW.AddressDiscoveryProgressReport:
+				case *sharedW.AddressDiscoveryProgressReport:
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
 					pg.syncStep = wallet.AddressDiscoveryStep
 					pg.stepFetchProgress = t.AddressDiscoveryProgress
-				case *mainW.HeadersRescanProgressReport:
+				case *sharedW.HeadersRescanProgressReport:
 					pg.headersToFetchOrScan = t.TotalHeadersToScan
 					pg.syncProgress = int(t.TotalSyncProgress)
 					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)

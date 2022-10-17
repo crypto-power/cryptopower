@@ -107,7 +107,7 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	pg.badWalletsList = make([]*badWalletListItem, 0, len(badWallets))
 	for _, badWallet := range badWallets {
 		listItem := &badWalletListItem{
-			Wallet:    badWallet,
+			DCRAsset:  badWallet,
 			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
 		}
 		listItem.deleteBtn.Color = pg.Theme.Color.Danger
@@ -139,7 +139,7 @@ func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
-func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet *dcr.Wallet) D {
+func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet *dcr.DCRAsset) D {
 	var (
 		syncStatusIcon *cryptomaterial.Image
 		syncStatus     string
@@ -391,7 +391,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 			return
 		}
 
-		go func(wal *dcr.Wallet, k int) {
+		go func(wal *dcr.DCRAsset, k int) {
 			for {
 				select {
 				case n := <-syncListener.SyncStatusChan:

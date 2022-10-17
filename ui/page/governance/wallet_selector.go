@@ -22,13 +22,13 @@ type WalletSelector struct {
 	multiWallet *libwallet.MultiWallet
 	dialogTitle string
 
-	walletIsValid func(*dcr.Wallet) bool
-	callback      func(*dcr.Wallet)
+	walletIsValid func(*dcr.DCRAsset) bool
+	callback      func(*dcr.DCRAsset)
 
 	openSelectorDialog *cryptomaterial.Clickable
 
-	wallets        []*dcr.Wallet
-	selectedWallet *dcr.Wallet
+	wallets        []*dcr.DCRAsset
+	selectedWallet *dcr.DCRAsset
 	totalBalance   string
 }
 
@@ -38,7 +38,7 @@ func NewWalletSelector(l *load.Load) *WalletSelector {
 	return &WalletSelector{
 		Load:               l,
 		multiWallet:        l.WL.MultiWallet,
-		walletIsValid:      func(*dcr.Wallet) bool { return true },
+		walletIsValid:      func(*dcr.DCRAsset) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 
 		wallets: l.WL.SortedWalletList(),
@@ -50,12 +50,12 @@ func (as *WalletSelector) Title(title string) *WalletSelector {
 	return as
 }
 
-func (as *WalletSelector) WalletValidator(walletIsValid func(*dcr.Wallet) bool) *WalletSelector {
+func (as *WalletSelector) WalletValidator(walletIsValid func(*dcr.DCRAsset) bool) *WalletSelector {
 	as.walletIsValid = walletIsValid
 	return as
 }
 
-func (as *WalletSelector) WalletSelected(callback func(*dcr.Wallet)) *WalletSelector {
+func (as *WalletSelector) WalletSelected(callback func(*dcr.DCRAsset)) *WalletSelector {
 	as.callback = callback
 	return as
 }
@@ -65,7 +65,7 @@ func (as *WalletSelector) Handle(window app.WindowNavigator) {
 		walletSelectorModal := newWalletSelectorModal(as.Load, as.selectedWallet).
 			title(as.dialogTitle).
 			accountValidator(as.walletIsValid).
-			accountSelected(func(wallet *dcr.Wallet) {
+			accountSelected(func(wallet *dcr.DCRAsset) {
 				as.selectedWallet = wallet
 				as.setupSelectedWallet(wallet)
 				as.callback(wallet)
@@ -92,7 +92,7 @@ func (as *WalletSelector) SelectFirstValidWallet() error {
 	return errors.New(values.String(values.StrnoValidWalletFound))
 }
 
-func (as *WalletSelector) setupSelectedWallet(wallet *dcr.Wallet) {
+func (as *WalletSelector) setupSelectedWallet(wallet *dcr.DCRAsset) {
 
 	totalBalance, err := as.WL.TotalWalletBalance(wallet.ID)
 	if err != nil {
@@ -103,7 +103,7 @@ func (as *WalletSelector) setupSelectedWallet(wallet *dcr.Wallet) {
 	as.totalBalance = totalBalance.String()
 }
 
-func (as *WalletSelector) SelectedWallet() *dcr.Wallet {
+func (as *WalletSelector) SelectedWallet() *dcr.DCRAsset {
 	return as.selectedWallet
 }
 
@@ -157,16 +157,16 @@ type WalletSelectorModal struct {
 
 	isCancelable bool
 
-	walletIsValid func(*dcr.Wallet) bool
-	callback      func(*dcr.Wallet)
+	walletIsValid func(*dcr.DCRAsset) bool
+	callback      func(*dcr.DCRAsset)
 
 	walletsList *cryptomaterial.ClickableList
 
-	currentSelectedWallet *dcr.Wallet
-	filteredWallets       []*dcr.Wallet
+	currentSelectedWallet *dcr.DCRAsset
+	filteredWallets       []*dcr.DCRAsset
 }
 
-func newWalletSelectorModal(l *load.Load, currentSelectedAccount *dcr.Wallet) *WalletSelectorModal {
+func newWalletSelectorModal(l *load.Load, currentSelectedAccount *dcr.DCRAsset) *WalletSelectorModal {
 	asm := &WalletSelectorModal{
 		Load:        l,
 		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal"),
@@ -180,7 +180,7 @@ func newWalletSelectorModal(l *load.Load, currentSelectedAccount *dcr.Wallet) *W
 }
 
 func (asm *WalletSelectorModal) OnResume() {
-	wallets := make([]*dcr.Wallet, 0)
+	wallets := make([]*dcr.DCRAsset, 0)
 
 	for _, wal := range asm.WL.SortedWalletList() {
 		if asm.walletIsValid(wal) {
@@ -207,12 +207,12 @@ func (asm *WalletSelectorModal) title(title string) *WalletSelectorModal {
 	return asm
 }
 
-func (asm *WalletSelectorModal) accountValidator(walletIsValid func(*dcr.Wallet) bool) *WalletSelectorModal {
+func (asm *WalletSelectorModal) accountValidator(walletIsValid func(*dcr.DCRAsset) bool) *WalletSelectorModal {
 	asm.walletIsValid = walletIsValid
 	return asm
 }
 
-func (asm *WalletSelectorModal) accountSelected(callback func(*dcr.Wallet)) *WalletSelectorModal {
+func (asm *WalletSelectorModal) accountSelected(callback func(*dcr.DCRAsset)) *WalletSelectorModal {
 	asm.callback = callback
 	return asm
 }
@@ -258,7 +258,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return asm.Modal.Layout(gtx, w)
 }
 
-func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *dcr.Wallet) layout.Dimensions {
+func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet *dcr.DCRAsset) layout.Dimensions {
 
 	walletTotalBalance, _ := asm.WL.TotalWalletBalance(wallet.ID)
 	walletSpendableBalance, _ := asm.WL.SpendableWalletBalance(wallet.ID)

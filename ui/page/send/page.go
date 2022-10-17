@@ -144,7 +144,7 @@ func NewSendPage(l *load.Load) *Page {
 		pg.validateAndConstructTx()
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.Wallet) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.DCRAsset) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 

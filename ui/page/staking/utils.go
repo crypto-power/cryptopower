@@ -152,7 +152,7 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusImmature:
 		maturity := l.WL.SelectedWallet.Wallet.TicketMaturity()
-		blockTime := l.WL.MultiWallet.TargetTimePerBlockMinutes()
+		blockTime := l.WL.SelectedWallet.Wallet.TargetTimePerBlockMinutes()
 		maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 		blockRemaining := (bestBlock.Height - tx.transaction.BlockHeight)
 

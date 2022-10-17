@@ -54,7 +54,7 @@ type TransactionsPage struct {
 	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
 	transactions    []wallet.Transaction
-	wallets         []*dcr.Wallet
+	wallets         []*dcr.DCRAsset
 
 	tabs *cryptomaterial.ClickableList
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/decred/dcrd/wire"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	dcrLoader "gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 )
@@ -280,7 +280,7 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 
 func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &mainW.WalletConfig{
+	cfg := &sharedW.WalletConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,
