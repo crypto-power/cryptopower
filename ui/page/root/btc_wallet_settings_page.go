@@ -317,7 +317,7 @@ func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplateAndWalletName(modal.RemoveWalletInfoTemplate, pg.WL.SelectedBTCWallet.Wallet.Name). // TODO: crashes when uncommented, shoud be investigated.
+		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedBTCWallet.Wallet.Name).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
 			if walletName != pg.WL.SelectedBTCWallet.Wallet.Name {
