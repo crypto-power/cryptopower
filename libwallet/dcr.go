@@ -9,7 +9,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -31,7 +31,7 @@ func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
-	pass := &wallet.WalletAuthInfo{
+	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -58,7 +58,7 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
-	pass := &wallet.WalletAuthInfo{
+	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,

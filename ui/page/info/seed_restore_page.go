@@ -14,7 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -462,7 +462,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	if isValid {
 		pg.seedPhrase = seedphrase
-		if !wallet.VerifySeed(pg.seedPhrase) {
+		if !sharedW.VerifySeed(pg.seedPhrase) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.window.ShowModal(errModal)
 			return false
@@ -533,7 +533,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, wallet.PassphraseTypePass)
+				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
 				if err != nil {
 					errString := err.Error()
 					if err.Error() == libwallet.ErrExist {

@@ -13,7 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -30,8 +30,8 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	txs      []wallet.Transaction
-	accounts *wallet.Accounts
+	txs      []sharedW.Transaction
+	accounts *sharedW.Accounts
 
 	l             layout.List
 	scrollbarList *widget.List

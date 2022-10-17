@@ -20,7 +20,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -39,7 +39,7 @@ type Assets struct {
 }
 
 type MultiWallet struct {
-	params *wallet.InitParams
+	params *sharedW.InitParams
 
 	chainParams *chaincfg.Params
 	Assets      *Assets
@@ -92,7 +92,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 	}
 
 	// init database for saving/reading wallet objects
-	err = mwDB.Init(&wallet.Wallet{}) // Since BTC and DCR have similar wallet structures,
+	err = mwDB.Init(&sharedW.Wallet{}) // Since BTC and DCR have similar wallet structures,
 	if err != nil {
 		log.Errorf("Error initializing wallets database: %s", err.Error())
 		return nil, err
@@ -103,7 +103,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 		return nil, err
 	}
 
-	params := &wallet.InitParams{
+	params := &sharedW.InitParams{
 		DbDriver: dbDriver,
 		RootDir:  rootDir,
 		DB:       mwDB,
@@ -143,7 +143,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 
 	// read saved dcr wallets info from db and initialize wallets
 	query := mw.params.DB.Select(q.True()).OrderBy("ID")
-	var wallets []*wallet.Wallet
+	var wallets []*sharedW.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
 		return nil, err

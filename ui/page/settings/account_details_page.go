@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -31,7 +31,7 @@ type AcctDetailsPage struct {
 	*app.GenericPageModal
 
 	wallet  *dcr.DCRAsset
-	account *wallet.Account
+	account *sharedW.Account
 
 	theme                    *cryptomaterial.Theme
 	acctDetailsPageContainer layout.List
@@ -56,7 +56,7 @@ type AcctDetailsPage struct {
 	isHiddenExtendedxPubkey bool
 }
 
-func NewAcctDetailsPage(l *load.Load, account *wallet.Account) *AcctDetailsPage {
+func NewAcctDetailsPage(l *load.Load, account *sharedW.Account) *AcctDetailsPage {
 	pg := &AcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
