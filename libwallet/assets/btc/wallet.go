@@ -59,6 +59,14 @@ type neutrinoService interface {
 
 var _ neutrinoService = (*neutrino.ChainService)(nil)
 
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the BTC asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
 func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
@@ -81,6 +89,14 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 	return btcWallet, nil
 }
 
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the BTC asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
@@ -104,6 +120,13 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 	return btcWallet, nil
 }
 
+// RestoreWallet accepts the seed, wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while restoring the wallet in the
+// shared wallet implemenation.
+// Immediately wallet restore is complete, the function to safely cancel network sync
+// is set. There after returning the restored wallet's interface.
 func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
@@ -126,6 +149,13 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 	return btcWallet, nil
 }
 
+// LoadExisting accepts the stored shared wallet information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the BTC asset. It then generates the BTC loader interface
+// that is passed to be used upstream while loading the existing the wallet in the
+// shared wallet implemenation.
+// Immediately loading the existing wallet is complete, the function to safely
+// cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
@@ -258,5 +288,6 @@ func (wallet *Wallet) startWallet() error {
 }
 
 func (wallet *Wallet) SafelyCancelSync() {
-	log.Warn("Safe sync shutdown not implemented")
+	//TODO: use a proper logger
+	fmt.Println("Safe sync shutdown not implemented")
 }

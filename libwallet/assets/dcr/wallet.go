@@ -70,6 +70,13 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 	return walletLoader
 }
 
+// CreateNewWallet accepts the wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while creating a new wallet in the
+// shared wallet implemenation.
+// Immediately a new wallet is created, the function to safely cancel network sync
+// is set. There after returning the new wallet's interface.
 func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
@@ -99,6 +106,14 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 	return dcrWallet, nil
 }
 
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the DCR asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
@@ -125,6 +140,13 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 	return dcrWallet, nil
 }
 
+// RestoreWallet accepts the seed, wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while restoring the wallet in the
+// shared wallet implemenation.
+// Immediately wallet restore is complete, the function to safely cancel network sync
+// is set. There after returning the restored wallet's interface.
 func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
@@ -151,6 +173,13 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 	return dcrWallet, nil
 }
 
+// LoadExisting accepts the stored shared wallet information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the DCR asset. It then generates the DCR loader interface
+// that is passed to be used upstream while loading the existing the wallet in the
+// shared wallet implemenation.
+// Immediately loading the existing wallet is complete, the function to safely
+// cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
