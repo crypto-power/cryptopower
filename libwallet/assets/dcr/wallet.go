@@ -6,7 +6,6 @@ import (
 
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
-	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/v3"
 	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
@@ -71,17 +70,15 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 	return walletLoader
 }
 
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB,
-	rootDir, dbDriver string, netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.DCRChainParams(netType)
+func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 
-	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType,
-		db, rootDir, dbDriver, utils.DCRWalletAsset, netType, ldr)
+	w, err := mainW.CreateNewWallet(pass, utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
@@ -102,16 +99,15 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 	return dcrWallet, nil
 }
 
-func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir, dbDriver string,
-	netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.DCRChainParams(netType)
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
-	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey, db, rootDir, dbDriver,
-		utils.BTCWalletAsset, netType, ldr)
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+		utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
@@ -129,16 +125,14 @@ func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir,
 	return dcrWallet, nil
 }
 
-func RestoreWallet(privatePassphrase string, privatePassphraseType int32, walletName, seedMnemonic,
-	rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.DCRChainParams(netType)
+func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
-	w, err := mainW.RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver, db,
-		privatePassphrase, privatePassphraseType, utils.DCRWalletAsset, netType, ldr)
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
+	w, err := mainW.RestoreWallet(seedMnemonic, pass, utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
@@ -157,13 +151,13 @@ func RestoreWallet(privatePassphrase string, privatePassphraseType int32, wallet
 	return dcrWallet, nil
 }
 
-func LoadExisting(w *mainW.Wallet, rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.DCRChainParams(netType)
+func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, rootDir, dbDriver)
+	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 	dcrWallet := &Wallet{
 		Wallet:      w,
 		vspClients:  make(map[string]*vsp.Client),
@@ -175,7 +169,7 @@ func LoadExisting(w *mainW.Wallet, rootDir, dbDriver string, db *storm.DB, netTy
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 	}
 
-	err = dcrWallet.Prepare(rootDir, db, netType, ldr)
+	err = dcrWallet.Prepare(ldr, params)
 	if err != nil {
 		return nil, err
 	}

@@ -51,14 +51,14 @@ type Wallet struct {
 // prepare gets a wallet ready for use by opening the transactions index database
 // and initializing the wallet loader which can be used subsequently to create,
 // load and unload the wallet.
-func (wallet *Wallet) Prepare(rootDir string, db *storm.DB, netType utils.NetworkType, loader loader.AssetLoader) (err error) {
+func (wallet *Wallet) Prepare(loader loader.AssetLoader, params *InitParams) (err error) {
 	wallet.mu.Lock()
 	defer wallet.mu.Unlock()
 
-	wallet.db = db
+	wallet.db = params.DB
 	wallet.loader = loader
-	wallet.netType = netType
-	wallet.rootDir = rootDir
+	wallet.netType = params.NetType
+	wallet.rootDir = params.RootDir
 	return wallet.prepare()
 }
 
@@ -231,31 +231,31 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32, db *storm.DB, rootDir, dbDriver string,
-	assetType utils.AssetType, net utils.NetworkType, loader loader.AssetLoader) (*Wallet, error) {
+func CreateNewWallet(pass *WalletPassInfo, assetType utils.AssetType,
+	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
 	if err != nil {
 		return nil, err
 	}
 
-	encryptedSeed, err := encryptWalletSeed([]byte(privatePassphrase), seed)
+	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seed)
 	if err != nil {
 		return nil, err
 	}
 
 	wallet := &Wallet{
-		Name:          walletName,
-		db:            db,
-		dbDriver:      dbDriver,
-		rootDir:       rootDir,
+		Name:          pass.Name,
+		db:            params.DB,
+		dbDriver:      params.DbDriver,
+		rootDir:       params.RootDir,
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
 
-		PrivatePassphraseType: privatePassphraseType,
+		PrivatePassphraseType: pass.PrivatePassType,
 		HasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
-		netType:               net,
+		netType:               params.NetType,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -263,7 +263,7 @@ func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(privatePassphrase, seed)
+		return wallet.CreateWallet(pass.PrivatePass, seed)
 	})
 }
 
@@ -297,19 +297,19 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 	return nil
 }
 
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, db *storm.DB, rootDir, dbDriver string,
-	assetType utils.AssetType, net utils.NetworkType, loader loader.AssetLoader) (*Wallet, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, assetType utils.AssetType,
+	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:     walletName,
-		db:       db,
-		dbDriver: dbDriver,
-		rootDir:  rootDir,
+		db:       params.DB,
+		dbDriver: params.DbDriver,
+		rootDir:  params.RootDir,
 
 		IsRestored:            true,
 		HasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
-		netType:               net,
+		netType:               params.NetType,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -339,26 +339,26 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 	return nil
 }
 
-func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm.DB, privatePassphrase string,
-	privatePassphraseType int32, assetType utils.AssetType, net utils.NetworkType, loader loader.AssetLoader) (*Wallet, error) {
-	encryptedSeed, err := encryptWalletSeed([]byte(privatePassphrase), seedMnemonic)
+func RestoreWallet(seedMnemonic string, pass *WalletPassInfo, assetType utils.AssetType,
+	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
+	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
 	if err != nil {
 		return nil, err
 	}
 
 	wallet := &Wallet{
-		Name:                  walletName,
-		PrivatePassphraseType: privatePassphraseType,
-		db:                    db,
-		dbDriver:              dbDriver,
-		rootDir:               rootDir,
+		Name:                  pass.Name,
+		PrivatePassphraseType: pass.PrivatePassType,
+		db:                    params.DB,
+		dbDriver:              params.DbDriver,
+		rootDir:               params.RootDir,
 		EncryptedSeed:         encryptedSeed,
 
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
 		Type:                  assetType,
 		loader:                loader,
-		netType:               net,
+		netType:               params.NetType,
 	}
 
 	return wallet.saveNewWallet(func() error {
@@ -366,7 +366,7 @@ func RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver string, db *storm
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(privatePassphrase, seedMnemonic)
+		return wallet.CreateWallet(pass.PrivatePass, seedMnemonic)
 	})
 }
 

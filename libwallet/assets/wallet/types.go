@@ -1,6 +1,10 @@
 package wallet
 
-import "github.com/decred/dcrd/dcrutil/v4"
+import (
+	"github.com/asdine/storm"
+	"github.com/decred/dcrd/dcrutil/v4"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
+)
 
 // WalletConfig defines options for configuring wallet behaviour.
 // This is a subset of the config used by dcrwallet.
@@ -15,6 +19,21 @@ type WalletConfig struct {
 
 	// CSPP
 	MixSplitLimit int // Connection limit to CoinShuffle++ server per change amount
+}
+
+// InitParams defines the basic parameters required to instantiate any
+// wallet interface.
+type InitParams struct {
+	RootDir  string
+	NetType  utils.NetworkType
+	DB       *storm.DB
+	DbDriver string
+}
+
+type WalletPassInfo struct {
+	Name            string
+	PrivatePass     string
+	PrivatePassType int32
 }
 
 type BlockInfo struct {

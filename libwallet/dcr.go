@@ -9,6 +9,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -30,7 +31,12 @@ func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.rootDir, mw.dbDriver, mw.net)
+	pass := &wallet.WalletPassInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := dcr.CreateNewWallet(pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +47,7 @@ func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, 
 }
 
 func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
-	wallet, err := dcr.CreateWatchOnlyWallet(mw.db, walletName, extendedPublicKey, mw.rootDir, mw.dbDriver, mw.net)
+	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +58,12 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
-	wallet, err := dcr.RestoreWallet(privatePassphrase, privatePassphraseType, walletName, seedMnemonic, mw.rootDir, mw.dbDriver, mw.db, mw.net)
+	pass := &wallet.WalletPassInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := dcr.RestoreWallet(seedMnemonic, pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +94,7 @@ func (mw *MultiWallet) DeleteBadDCRWallet(walletID int) error {
 
 	log.Info("Deleting bad wallet")
 
-	err := mw.db.DeleteStruct(wallet)
+	err := mw.params.DB.DeleteStruct(wallet)
 	if err != nil {
 		return translateError(err)
 	}

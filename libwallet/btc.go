@@ -9,6 +9,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -28,7 +29,12 @@ func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
-	wallet, err := btc.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType, mw.db, mw.rootDir, mw.dbDriver, mw.net)
+	pass := &wallet.WalletPassInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := btc.CreateNewWallet(pass, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +45,7 @@ func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, 
 }
 
 func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.Wallet, error) {
-	wallet, err := btc.CreateWatchOnlyWallet(mw.db, walletName, extendedPublicKey, mw.rootDir, mw.dbDriver, mw.net)
+	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +56,12 @@ func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
-	wallet, err := btc.RestoreWallet(privatePassphrase, privatePassphraseType, walletName, seedMnemonic, mw.rootDir, mw.dbDriver, mw.db, mw.net)
+	pass := &wallet.WalletPassInfo{
+		Name:            walletName,
+		PrivatePass:     privatePassphrase,
+		PrivatePassType: privatePassphraseType,
+	}
+	wallet, err := btc.RestoreWallet(seedMnemonic, pass, mw.params)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,6 @@ import (
 	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-
-	"github.com/asdine/storm"
 )
 
 type Wallet struct {
@@ -61,40 +59,14 @@ type neutrinoService interface {
 
 var _ neutrinoService = (*neutrino.ChainService)(nil)
 
-func CreateNewWallet(walletName, privatePassphrase string, privatePassphraseType int32,
-	db *storm.DB, rootDir, dbDriver string, net utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.BTCChainParams(net)
+func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, rootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.CreateNewWallet(walletName, privatePassphrase, privatePassphraseType,
-		db, rootDir, dbDriver, utils.BTCWalletAsset, net, ldr)
-	if err != nil {
-		return nil, err
-	}
-
-	btcWallet := &Wallet{
-		Wallet:      w,
-		chainParams: chainParams,
-	}
-
-	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
-
-	return btcWallet, nil
-}
-
-func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir, dbDriver string,
-	netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.BTCChainParams(netType)
-	if err != nil {
-		return nil, err
-	}
-
-	ldr := btc.NewLoader(chainParams, rootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey, db, rootDir, dbDriver,
-		utils.BTCWalletAsset, netType, ldr)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := mainW.CreateNewWallet(pass, utils.BTCWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
@@ -109,16 +81,15 @@ func CreateWatchOnlyWallet(db *storm.DB, walletName, extendedPublicKey, rootDir,
 	return btcWallet, nil
 }
 
-func RestoreWallet(privatePassphrase string, privatePassphraseType int32, walletName, seedMnemonic,
-	rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.BTCChainParams(netType)
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, rootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.RestoreWallet(walletName, seedMnemonic, rootDir, dbDriver, db,
-		privatePassphrase, privatePassphraseType, utils.BTCWalletAsset, netType, ldr)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+		utils.BTCWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
@@ -133,19 +104,41 @@ func RestoreWallet(privatePassphrase string, privatePassphraseType int32, wallet
 	return btcWallet, nil
 }
 
-func LoadExisting(w *mainW.Wallet, rootDir, dbDriver string, db *storm.DB, netType utils.NetworkType) (*Wallet, error) {
-	chainParams, err := utils.BTCChainParams(netType)
+func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, rootDir, defaultDBTimeout, recoverWindow)
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	w, err := mainW.RestoreWallet(seedMnemonic, pass, utils.BTCWalletAsset, ldr, params)
+	if err != nil {
+		return nil, err
+	}
+
 	btcWallet := &Wallet{
 		Wallet:      w,
 		chainParams: chainParams,
 	}
 
-	err = btcWallet.Prepare(rootDir, db, netType, ldr)
+	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+
+	return btcWallet, nil
+}
+
+func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
+	chainParams, err := utils.BTCChainParams(params.NetType)
+	if err != nil {
+		return nil, err
+	}
+
+	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	btcWallet := &Wallet{
+		Wallet:      w,
+		chainParams: chainParams,
+	}
+
+	err = btcWallet.Prepare(ldr, params)
 	if err != nil {
 		return nil, err
 	}

@@ -44,7 +44,7 @@ func (mw *MultiWallet) initDexClient() error {
 
 	mw.dexClient = &DexClient{
 		log:        dex.NewLogger("DEXC", log.Level(), logWriter{}, true),
-		dexDataDir: filepath.Join(mw.rootDir, "dex"),
+		dexDataDir: filepath.Join(mw.params.RootDir, "dex"),
 	}
 
 	err := os.MkdirAll(mw.dexClient.dexDataDir, os.ModePerm)

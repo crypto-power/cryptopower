@@ -29,24 +29,17 @@ type Assets struct {
 	DCR struct {
 		Wallets     map[int]*dcr.Wallet
 		BadWallets  map[int]*dcr.Wallet
-		DBDriver    string
-		RootDir     string
 		ChainParams *chaincfg.Params
 	}
 	BTC struct {
 		Wallets     map[int]*btc.Wallet
 		BadWallets  map[int]*btc.Wallet
-		DBDriver    string
-		RootDir     string
 		ChainParams *btccfg.Params
 	}
 }
 
 type MultiWallet struct {
-	dbDriver string
-	rootDir  string
-	db       *storm.DB
-	net      utils.NetworkType
+	params *wallet.InitParams
 
 	chainParams *chaincfg.Params
 	Assets      *Assets
@@ -65,13 +58,13 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 
 	netType := utils.NetworkType(net)
 
-	dcrChainParams, dcrRootDir, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
+	dcrChainParams, _, err := initializeDCRWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
 		return nil, errors.Errorf("error initializing DCR parameters: %s", err.Error())
 	}
 
-	btcChainParams, btcRootDir, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
+	btcChainParams, _, err := initializeBTCWalletParameters(rootDir, dbDriver, netType)
 	if err != nil {
 		log.Errorf("error initializing BTC parameters: %s", err.Error())
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
@@ -110,37 +103,33 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 		return nil, err
 	}
 
+	params := &wallet.InitParams{
+		DbDriver: dbDriver,
+		RootDir:  rootDir,
+		DB:       mwDB,
+		NetType:  netType,
+	}
+
 	mw := &MultiWallet{
-		dbDriver: dbDriver,
-		rootDir:  rootDir,
-		db:       mwDB,
-		net:      netType,
+		params:   params,
 		Politeia: politeia,
 		Assets: &Assets{
 			DCR: struct {
 				Wallets     map[int]*dcr.Wallet
 				BadWallets  map[int]*dcr.Wallet
-				DBDriver    string
-				RootDir     string
 				ChainParams *chaincfg.Params
 			}{
 				Wallets:     make(map[int]*dcr.Wallet),
 				BadWallets:  make(map[int]*dcr.Wallet),
-				DBDriver:    dbDriver,
-				RootDir:     dcrRootDir,
 				ChainParams: dcrChainParams,
 			},
 			BTC: struct {
 				Wallets     map[int]*btc.Wallet
 				BadWallets  map[int]*btc.Wallet
-				DBDriver    string
-				RootDir     string
 				ChainParams *btccfg.Params
 			}{
 				Wallets:     make(map[int]*btc.Wallet),
 				BadWallets:  make(map[int]*btc.Wallet),
-				DBDriver:    dbDriver,
-				RootDir:     btcRootDir,
 				ChainParams: btcChainParams,
 			},
 		},
@@ -153,7 +142,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 	mw.ExternalService = ext.NewService(dcrChainParams)
 
 	// read saved dcr wallets info from db and initialize wallets
-	query := mw.db.Select(q.True()).OrderBy("ID")
+	query := mw.params.DB.Select(q.True()).OrderBy("ID")
 	var wallets []*wallet.Wallet
 	err = query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
@@ -164,7 +153,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 	for _, wallet := range wallets {
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
-			w, err := btc.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
+			w, err := btc.LoadExisting(wallet, mw.params)
 			if err == nil && !WalletExistsAt(wallet.DataDir()) {
 				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
 				log.Warn(err)
@@ -177,7 +166,7 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 			}
 
 		case utils.DCRWalletAsset:
-			w, err := dcr.LoadExisting(wallet, mw.rootDir, mw.dbDriver, mw.db, netType)
+			w, err := dcr.LoadExisting(wallet, mw.params)
 			if err == nil && !WalletExistsAt(wallet.DataDir()) {
 				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
 				log.Debug(err)
@@ -220,8 +209,8 @@ func (mw *MultiWallet) Shutdown() {
 		wallet.Shutdown()
 	}
 
-	if mw.db != nil {
-		if err := mw.db.Close(); err != nil {
+	if mw.params.DB != nil {
+		if err := mw.params.DB.Close(); err != nil {
 			log.Errorf("db closed with error: %v", err)
 		} else {
 			log.Info("db closed successfully")
@@ -236,11 +225,11 @@ func (mw *MultiWallet) Shutdown() {
 }
 
 func (mw *MultiWallet) NetType() string {
-	return string(mw.net)
+	return string(mw.params.NetType)
 }
 
 func (mw *MultiWallet) LogDir() string {
-	return filepath.Join(mw.rootDir, logFileName)
+	return filepath.Join(mw.params.RootDir, logFileName)
 }
 
 func (mw *MultiWallet) SetStartupPassphrase(passphrase []byte, passphraseType int32) error {
@@ -249,7 +238,7 @@ func (mw *MultiWallet) SetStartupPassphrase(passphrase []byte, passphraseType in
 
 func (mw *MultiWallet) VerifyStartupPassphrase(startupPassphrase []byte) error {
 	var startupPassphraseHash []byte
-	err := mw.db.Get(walletsMetadataBucketName, walletstartupPassphraseField, &startupPassphraseHash)
+	err := mw.params.DB.Get(walletsMetadataBucketName, walletstartupPassphraseField, &startupPassphraseHash)
 	if err != nil && err != storm.ErrNotFound {
 		return err
 	}
@@ -286,7 +275,7 @@ func (mw *MultiWallet) ChangeStartupPassphrase(oldPassphrase, newPassphrase []by
 		return err
 	}
 
-	err = mw.db.Set(walletsMetadataBucketName, walletstartupPassphraseField, startupPassphraseHash)
+	err = mw.params.DB.Set(walletsMetadataBucketName, walletstartupPassphraseField, startupPassphraseHash)
 	if err != nil {
 		return err
 	}
@@ -303,7 +292,7 @@ func (mw *MultiWallet) RemoveStartupPassphrase(oldPassphrase []byte) error {
 		return err
 	}
 
-	err = mw.db.Delete(walletsMetadataBucketName, walletstartupPassphraseField)
+	err = mw.params.DB.Delete(walletsMetadataBucketName, walletstartupPassphraseField)
 	if err != nil {
 		return err
 	}
@@ -420,7 +409,7 @@ func (mw *MultiWallet) WalletNameExists(walletName string) (bool, error) {
 		return false, errors.E(ErrReservedWalletName)
 	}
 
-	err := mw.db.One("Name", walletName, &dcr.Wallet{})
+	err := mw.params.DB.One("Name", walletName, &dcr.Wallet{})
 	if err == nil {
 		return true, nil
 	} else if err != storm.ErrNotFound {
