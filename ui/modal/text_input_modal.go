@@ -96,6 +96,16 @@ func (tm *TextInputModal) SetTextWithTemplate(template string) *TextInputModal {
 	return tm
 }
 
+func (tm *TextInputModal) SetTextWithTemplateAndWalletName(template, walletName string) *TextInputModal {
+	switch template {
+	case AllowUnmixedSpendingTemplate:
+		tm.textCustomTemplate = allowUnspendUnmixedAcct(tm.Load)
+	case RemoveWalletInfoTemplate:
+		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletName)
+	}
+	return tm
+}
+
 func (tm *TextInputModal) Handle() {
 	// set the positive button state
 	tm.btnPositive.SetEnabled(utils.EditorsNotEmpty(tm.textInput.Editor))

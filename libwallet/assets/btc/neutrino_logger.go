@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	logDirName     = "logs"
-	logFileName    = "neutrino.log"
+	logDirName  = "logs"
+	logFileName = "neutrino.log"
 )
 
 var (

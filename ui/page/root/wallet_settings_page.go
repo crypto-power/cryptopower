@@ -396,7 +396,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *WalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplate(modal.RemoveWalletInfoTemplate).
+		SetTextWithTemplateAndWalletName(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.Name).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
 			if walletName != pg.WL.SelectedWallet.Wallet.Name {
