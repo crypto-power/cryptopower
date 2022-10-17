@@ -62,7 +62,7 @@ func (wallet *Wallet) Prepare(loader loader.AssetLoader, params *InitParams) (er
 	return wallet.prepare()
 }
 
-// prepare is used initialize the assets common setup configuration.
+// prepare is used to initialize the assets common setup configuration.
 // Should be called by every method that exports the shared wallet implementation.
 // The following should always be pre-loaded before calling prepare();
 // wallet.db = db

@@ -8,7 +8,6 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	// "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (
