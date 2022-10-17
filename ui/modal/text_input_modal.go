@@ -86,12 +86,15 @@ func (tm *TextInputModal) SetCancelable(min bool) *TextInputModal {
 	return tm
 }
 
-func (tm *TextInputModal) SetTextWithTemplate(template string) *TextInputModal {
+func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...string /*optional parameter*/) *TextInputModal {
 	switch template {
 	case AllowUnmixedSpendingTemplate:
 		tm.textCustomTemplate = allowUnspendUnmixedAcct(tm.Load)
 	case RemoveWalletInfoTemplate:
-		tm.textCustomTemplate = removeWalletInfo(tm.Load)
+		if walletName == nil {
+			walletName[0] = ""
+		}
+		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletName[0])
 	}
 	return tm
 }

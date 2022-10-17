@@ -91,8 +91,8 @@ func allowUnspendUnmixedAcct(l *load.Load) []layout.Widget {
 	}
 }
 
-func removeWalletInfo(l *load.Load) []layout.Widget {
-	text := values.StringF(values.StrRemoveWalletInfo, `<span style="text-color: gray">`, `<span style="font-weight: bold">`, l.WL.SelectedWallet.Wallet.Name, `</span>`, `</span>`)
+func removeWalletInfo(l *load.Load, walletName string) []layout.Widget {
+	text := values.StringF(values.StrRemoveWalletInfo, `<span style="text-color: gray">`, `<span style="font-weight: bold">`, walletName, `</span>`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, l.Theme).Layout,
 	}
