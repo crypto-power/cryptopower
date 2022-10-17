@@ -7,7 +7,7 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -72,7 +72,7 @@ func (dst *destination) destinationAddress(useDefaultParams bool) (string, error
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
-func (dst *destination) destinationAccount(useDefaultParams bool) *wallet.Account {
+func (dst *destination) destinationAccount(useDefaultParams bool) *sharedW.Account {
 	if useDefaultParams {
 		return dst.destinationAccountSelector.SelectedAccount()
 	}

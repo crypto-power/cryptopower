@@ -8,7 +8,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -508,7 +508,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					m.SetLoading(false)
 					return false
 				}
-				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, wallet.PassphraseTypePass)
+				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libwallet.ErrExist {
 						return errFunc(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
@@ -519,7 +519,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				if err != nil {
 					return errFunc(err.Error())
 				}
-				wal.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, true)
+				wal.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 				m.Dismiss()
 
 				pg.handlerWalletDexServerSelectorCallBacks()
@@ -537,7 +537,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					m.SetLoading(false)
 					return false
 				}
-				_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), password, wallet.PassphraseTypePass)
+				_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
 				if err != nil {
 					return errFunc(err)
 				}

@@ -9,7 +9,7 @@ import (
 	"gioui.org/layout"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -17,8 +17,8 @@ import (
 )
 
 type transactionItem struct {
-	transaction   *wallet.Transaction
-	ticketSpender *wallet.Transaction
+	transaction   *sharedW.Transaction
+	ticketSpender *sharedW.Transaction
 	status        *components.TxStatus
 	confirmations int32
 	progress      float32
@@ -34,7 +34,7 @@ type transactionItem struct {
 	durationTooltip   *cryptomaterial.Tooltip
 }
 
-func stakeToTransactionItems(l *load.Load, txs []wallet.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {

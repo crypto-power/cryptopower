@@ -15,7 +15,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -70,10 +70,10 @@ type TxDetailsPage struct {
 	backButton  cryptomaterial.IconButton
 	rebroadcast cryptomaterial.Label
 
-	transaction   *wallet.Transaction
-	ticketSpender *wallet.Transaction // vote or revoke ticket
-	ticketSpent   *wallet.Transaction // ticket spent in a vote or revoke
-	txBackStack   *wallet.Transaction // track original transaction
+	transaction   *sharedW.Transaction
+	ticketSpender *sharedW.Transaction // vote or revoke ticket
+	ticketSpent   *sharedW.Transaction // ticket spent in a vote or revoke
+	txBackStack   *sharedW.Transaction // track original transaction
 	wallet        *dcr.DCRAsset
 
 	moreItems  []moreItem
@@ -87,7 +87,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *wallet.Transaction, isTicket bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, isTicket bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -983,7 +983,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
 
-func initTxnWidgets(l *load.Load, transaction *wallet.Transaction) transactionWdg {
+func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionWdg {
 
 	var txn transactionWdg
 	wal := l.WL.SelectedWallet.Wallet

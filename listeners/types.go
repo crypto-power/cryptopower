@@ -1,6 +1,6 @@
 package listeners
 
-import "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+import sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 
 type TxNotifType int
 
@@ -14,7 +14,7 @@ const (
 // TxNotification models transaction notifications.
 type TxNotification struct {
 	Type        TxNotifType
-	Transaction *wallet.Transaction
+	Transaction *sharedW.Transaction
 	WalletID    int
 	BlockHeight int32
 	Hash        string

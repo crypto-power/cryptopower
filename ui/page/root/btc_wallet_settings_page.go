@@ -7,7 +7,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -296,7 +296,7 @@ func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 					err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
-						[]byte(newPassword), wallet.PassphraseTypePass)
+						[]byte(newPassword), sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)

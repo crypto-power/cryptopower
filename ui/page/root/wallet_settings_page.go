@@ -8,7 +8,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -28,7 +28,7 @@ type clickableRowData struct {
 }
 
 type accountData struct {
-	*wallet.Account
+	*sharedW.Account
 	clickable *cryptomaterial.Clickable
 }
 
@@ -106,7 +106,7 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
 	pg.fetchProposal.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false))
 	pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false))
-	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(wallet.SpendUnconfirmedConfigKey, false))
+	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnconfirmedConfigKey, false))
 	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false))
 
 	pg.loadPeerAddress()
@@ -115,7 +115,7 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 }
 
 func (pg *WalletSettingsPage) loadPeerAddress() {
-	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(wallet.SpvPersistentPeerAddressesConfigKey, "")
+	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	pg.connectToPeer.SetChecked(false)
 	if pg.peerAddr != "" {
 		pg.connectToPeer.SetChecked(true)
@@ -199,7 +199,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(wallet.SpvPersistentPeerAddressesConfigKey, "") == "" {
+						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" {
 							return D{}
 						}
 
@@ -375,7 +375,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
 					err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
-						[]byte(newPassword), wallet.PassphraseTypePass)
+						[]byte(newPassword), sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -642,7 +642,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.spendUnconfirmed.Changed() {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(wallet.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
 	if pg.spendUnconfirmed.Changed() {

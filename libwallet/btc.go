@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -29,7 +29,7 @@ func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
-	pass := &wallet.WalletAuthInfo{
+	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -56,7 +56,7 @@ func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
-	pass := &wallet.WalletAuthInfo{
+	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,

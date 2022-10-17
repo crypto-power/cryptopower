@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -70,7 +70,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 				pm.SetLoading(false)
 				return false
 			}
-			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, true)
+			conf.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			if movefundsChecked {
 				err := moveFundsFromDefaultToUnmixed(conf, password)
