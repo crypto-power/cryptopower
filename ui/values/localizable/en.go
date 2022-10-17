@@ -584,4 +584,6 @@ const EN = `
 "gapLimitInputErr" = "Invalid Input"
 "addressDiscoveryInfoStarted" = "Address discovery started successfully"
 "addressDiscoveryInfoBody"    = "See wallet information page for progress"
+"setGapLimit"             = "Set Gap Limit"
+>>>>>>> 0b711e5a (Localize gap limit text and rebase to master)
 `

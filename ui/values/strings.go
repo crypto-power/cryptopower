@@ -691,4 +691,5 @@ const (
 	StrGapLimitInputErr                = "gapLimitInputErr"
 	StrAddressDiscoveryInfoStarted         = "addressDiscoveryInfoStarted"
 	StrAddressDicoveryInfoBody             = "addressDiscoveryInfoBody"
+	StrSetGapLimit                     = "setGapLimit"
 )

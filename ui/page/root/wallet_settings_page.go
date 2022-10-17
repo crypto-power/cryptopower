@@ -237,7 +237,7 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 	dims := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
-			layout.Rigid(pg.sectionContent(pg.setGapLimit, "Set Address GAPLimit")),
+			layout.Rigid(pg.sectionContent(pg.setGapLimit, values.String(values.StrSetGapLimit))),
 			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
 			layout.Rigid(pg.sectionContent(pg.resetDexData, values.String(values.StrResetDexClient))),
