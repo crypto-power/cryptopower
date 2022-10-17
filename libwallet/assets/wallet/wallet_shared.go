@@ -231,8 +231,8 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
-func CreateNewWallet(pass *WalletPassInfo, assetType utils.AssetType,
-	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
+func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
+	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
 	if err != nil {
 		return nil, err
@@ -297,8 +297,8 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 	return nil
 }
 
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, assetType utils.AssetType,
-	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.AssetLoader,
+	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:     walletName,
 		db:       params.DB,
@@ -339,8 +339,8 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 	return nil
 }
 
-func RestoreWallet(seedMnemonic string, pass *WalletPassInfo, assetType utils.AssetType,
-	loader loader.AssetLoader, params *InitParams) (*Wallet, error) {
+func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.AssetLoader,
+	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
 	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
 	if err != nil {
 		return nil, err

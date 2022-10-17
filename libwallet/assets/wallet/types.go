@@ -30,7 +30,9 @@ type InitParams struct {
 	DbDriver string
 }
 
-type WalletPassInfo struct {
+// WalletAuthInfo defines the complete information required to either create a
+// new wallet or restore an old wallet.
+type WalletAuthInfo struct {
 	Name            string
 	PrivatePass     string
 	PrivatePassType int32

@@ -1,7 +1,7 @@
 package listeners
 
 import (
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
@@ -30,28 +30,28 @@ func (sp *SyncProgressListener) OnPeerConnectedOrDisconnected(numberOfConnectedP
 	})
 }
 
-func (sp *SyncProgressListener) OnCFiltersFetchProgress(cfiltersFetchProgress *mainW.CFiltersFetchProgressReport) {
+func (sp *SyncProgressListener) OnCFiltersFetchProgress(cfiltersFetchProgress *sharedW.CFiltersFetchProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.CfiltersFetchProgress,
 		ProgressReport: cfiltersFetchProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnHeadersFetchProgress(headersFetchProgress *mainW.HeadersFetchProgressReport) {
+func (sp *SyncProgressListener) OnHeadersFetchProgress(headersFetchProgress *sharedW.HeadersFetchProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.HeadersFetchProgress,
 		ProgressReport: headersFetchProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnAddressDiscoveryProgress(addressDiscoveryProgress *mainW.AddressDiscoveryProgressReport) {
+func (sp *SyncProgressListener) OnAddressDiscoveryProgress(addressDiscoveryProgress *sharedW.AddressDiscoveryProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.AddressDiscoveryProgress,
 		ProgressReport: addressDiscoveryProgress,
 	})
 }
 
-func (sp *SyncProgressListener) OnHeadersRescanProgress(headersRescanProgress *mainW.HeadersRescanProgressReport) {
+func (sp *SyncProgressListener) OnHeadersRescanProgress(headersRescanProgress *sharedW.HeadersRescanProgressReport) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage:          wallet.HeadersRescanProgress,
 		ProgressReport: headersRescanProgress,
@@ -68,8 +68,8 @@ func (sp *SyncProgressListener) OnSyncCanceled(willRestart bool) {
 		Stage: wallet.SyncCanceled,
 	})
 }
-func (sp *SyncProgressListener) OnSyncEndedWithError(err error)   {}
-func (sp *SyncProgressListener) Debug(debugInfo *mainW.DebugInfo) {}
+func (sp *SyncProgressListener) OnSyncEndedWithError(err error)     {}
+func (sp *SyncProgressListener) Debug(debugInfo *sharedW.DebugInfo) {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {
 	sp.SyncStatusChan <- signal

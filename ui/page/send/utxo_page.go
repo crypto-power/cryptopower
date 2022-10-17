@@ -10,7 +10,7 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -48,7 +48,7 @@ type UTXOPage struct {
 	selectedAccountID int32
 }
 
-func NewUTXOPage(l *load.Load, account *mainW.Account) *UTXOPage {
+func NewUTXOPage(l *load.Load, account *sharedW.Account) *UTXOPage {
 	pg := &UTXOPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(UTXOPageID),

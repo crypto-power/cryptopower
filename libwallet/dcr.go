@@ -31,7 +31,7 @@ func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 }
 
 func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
-	pass := &wallet.WalletPassInfo{
+	pass := &wallet.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -58,7 +58,7 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 }
 
 func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
-	pass := &wallet.WalletPassInfo{
+	pass := &wallet.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,

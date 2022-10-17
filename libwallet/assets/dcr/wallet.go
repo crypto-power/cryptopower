@@ -75,7 +75,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 // shared wallet implemenation.
 // Immediately a new wallet is created, the function to safely cancel network sync
 // is set. There after returning the new wallet's interface.
-func CreateNewWallet(pass *wallet.WalletPassInfo, params *wallet.InitParams) (*DCRAsset, error) {
+func CreateNewWallet(pass *wallet.WalletAuthInfo, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func CreateNewWallet(pass *wallet.WalletPassInfo, params *wallet.InitParams) (*D
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 
-	w, err := wallet.CreateNewWallet(pass, utils.DCRWalletAsset, ldr, params)
+	w, err := wallet.CreateNewWallet(pass, ldr, params, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *wallet.
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 	w, err := wallet.CreateWatchOnlyWallet(walletName, extendedPublicKey,
-		utils.DCRWalletAsset, ldr, params)
+		ldr, params, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -145,14 +145,14 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *wallet.
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *wallet.WalletPassInfo, params *wallet.InitParams) (*DCRAsset, error) {
+func RestoreWallet(seedMnemonic string, pass *wallet.WalletAuthInfo, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
-	w, err := wallet.RestoreWallet(seedMnemonic, pass, utils.DCRWalletAsset, ldr, params)
+	w, err := wallet.RestoreWallet(seedMnemonic, pass, ldr, params, utils.DCRWalletAsset)
 	if err != nil {
 		return nil, err
 	}

@@ -19,13 +19,13 @@ import (
 	"github.com/decred/slog"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 type BTCAsset struct {
-	*mainW.Wallet
+	*sharedW.Wallet
 
 	cl          neutrinoService
 	neutrinoDB  walletdb.DB
@@ -67,14 +67,14 @@ var _ neutrinoService = (*neutrino.ChainService)(nil)
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*BTCAsset, error) {
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.CreateNewWallet(pass, utils.BTCWalletAsset, ldr, params)
+	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -97,15 +97,15 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*BTC
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*BTCAsset, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
-		utils.BTCWalletAsset, ldr, params)
+	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+		ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -127,14 +127,14 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*BTCAsset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
-	w, err := mainW.RestoreWallet(seedMnemonic, pass, utils.BTCWalletAsset, ldr, params)
+	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*BTCAsset, error) {
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
