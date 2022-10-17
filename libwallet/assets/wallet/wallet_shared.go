@@ -410,17 +410,14 @@ func (wallet *Wallet) DeleteWallet(privPass []byte) error {
 	return nil
 }
 
+// saveNewWallet completes setting up the wallet. Since sync can only be
+// initiated after wallet setup is complete, no sync cancel is necessary here.
 func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 	exists, err := wallet.WalletNameExists(wallet.Name)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	} else if exists {
 		return nil, errors.New(utils.ErrExist)
-	}
-
-	// safely cancel sync before proceeding
-	if wallet.networkCancel != nil {
-		wallet.networkCancel()
 	}
 
 	// Perform database save operations in batch transaction
