@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"gioui.org/layout"
@@ -50,7 +51,7 @@ type WalletSettingsPage struct {
 	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
 	changeWalletName, addAccount, deleteWallet *cryptomaterial.Clickable
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
-	updateConnectToPeer                        *cryptomaterial.Clickable
+	updateConnectToPeer, setGapLimit           *cryptomaterial.Clickable
 
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
@@ -71,6 +72,7 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		wallet:              l.WL.SelectedWallet.Wallet,
 		changePass:          l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
+		setGapLimit:         l.Theme.NewClickable(false),
 		resetDexData:        l.Theme.NewClickable(false),
 		changeAccount:       l.Theme.NewClickable(false),
 		checklog:            l.Theme.NewClickable(false),
@@ -235,6 +237,7 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 	dims := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
+			layout.Rigid(pg.sectionContent(pg.setGapLimit, "Set Address GAPLimit")),
 			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
 			layout.Rigid(pg.sectionContent(pg.resetDexData, values.String(values.StrResetDexClient))),
@@ -590,6 +593,40 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			pg.ParentWindow().ShowModal(info)
 		}()
 		break
+	}
+
+	for pg.setGapLimit.Clicked() {
+		go func() {
+			textModal := modal.NewTextInputModal(pg.Load).
+				Hint(values.String(values.StrGapLimit)).
+				SetTextWithTemplate(modal.SetGapLimitTemplate).
+				PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
+				SetPositiveButtonCallback(func(gapLimit string, tm *modal.TextInputModal) bool {
+					val, err := strconv.ParseUint(gapLimit, 10, 32)
+					if err != nil {
+						tm.SetError(values.String(values.StrGapLimitInputErr))
+						tm.SetLoading(false)
+						return false
+					}
+					gLimit := uint32(val)
+					tm.SetLoading(true)
+
+					err = pg.WL.SelectedWallet.Wallet.DiscoverUsage(gLimit)
+					if err != nil {
+						tm.SetError(err.Error())
+						tm.SetLoading(false)
+						return false
+					}
+					tm.SetLoading(false)
+					info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddresDiscoveryInfoStarted), modal.DefaultClickFunc()).
+						Body(values.String(values.StrAddresDiscoveryInfoBody))
+					pg.ParentWindow().ShowModal(info)
+					return true
+				})
+			textModal.Title(values.String(values.StrDiscoverAddressUsage)).
+				SetPositiveButtonText(values.String(values.StrDiscoverAddressUsage))
+			pg.ParentWindow().ShowModal(textModal)
+		}()
 	}
 
 	for pg.deleteWallet.Clicked() {

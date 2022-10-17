@@ -41,6 +41,7 @@ const (
 	ErrIndexOutOfRange              = "err_index_out_of_range"
 	ErrNoMixableOutput              = "err_no_mixable_output"
 	ErrInvalidVoteBit               = "err_invalid_vote_bit"
+	ErrNotSynced                    = "err_not_synced"
 )
 
 var (

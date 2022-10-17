@@ -95,6 +95,8 @@ func (tm *TextInputModal) SetTextWithTemplate(template string, walletName ...str
 			walletName[0] = ""
 		}
 		tm.textCustomTemplate = removeWalletInfo(tm.Load, walletName[0])
+	case SetGapLimitTemplate:
+		tm.textCustomTemplate = setGapLimitText(tm.Load)
 	}
 	return tm
 }
