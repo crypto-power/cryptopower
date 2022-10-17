@@ -13,7 +13,7 @@ import (
 	"decred.org/dcrwallet/v2/p2p"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -22,7 +22,7 @@ import (
 type SyncData struct {
 	mu sync.RWMutex
 
-	syncProgressListeners map[string]mainW.SyncProgressListener
+	syncProgressListeners map[string]wallet.SyncProgressListener
 	showLogs              bool
 
 	synced       bool
@@ -46,10 +46,10 @@ type activeSyncData struct {
 
 	syncStage int32
 
-	cfiltersFetchProgress    mainW.CFiltersFetchProgressReport
-	headersFetchProgress     mainW.HeadersFetchProgressReport
-	addressDiscoveryProgress mainW.AddressDiscoveryProgressReport
-	headersRescanProgress    mainW.HeadersRescanProgressReport
+	cfiltersFetchProgress    wallet.CFiltersFetchProgressReport
+	headersFetchProgress     wallet.HeadersFetchProgressReport
+	addressDiscoveryProgress wallet.AddressDiscoveryProgressReport
+	headersRescanProgress    wallet.HeadersRescanProgressReport
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
@@ -66,34 +66,34 @@ const (
 	HeadersRescanSyncStage    = 3
 )
 
-func (wallet *Wallet) initActiveSyncData() {
+func (asset *DCRAsset) initActiveSyncData() {
 
-	cfiltersFetchProgress := mainW.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &mainW.GeneralSyncProgress{},
+	cfiltersFetchProgress := wallet.CFiltersFetchProgressReport{
+		GeneralSyncProgress:         &wallet.GeneralSyncProgress{},
 		BeginFetchCFiltersTimeStamp: 0,
 		StartCFiltersHeight:         -1,
 		CfiltersFetchTimeSpent:      0,
 		TotalFetchedCFiltersCount:   0,
 	}
 
-	headersFetchProgress := mainW.HeadersFetchProgressReport{
-		GeneralSyncProgress:      &mainW.GeneralSyncProgress{},
+	headersFetchProgress := wallet.HeadersFetchProgressReport{
+		GeneralSyncProgress:      &wallet.GeneralSyncProgress{},
 		BeginFetchTimeStamp:      -1,
 		HeadersFetchTimeSpent:    -1,
 		TotalFetchedHeadersCount: 0,
 	}
 
-	addressDiscoveryProgress := mainW.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &mainW.GeneralSyncProgress{},
+	addressDiscoveryProgress := wallet.AddressDiscoveryProgressReport{
+		GeneralSyncProgress:       &wallet.GeneralSyncProgress{},
 		AddressDiscoveryStartTime: -1,
 		TotalDiscoveryTimeSpent:   -1,
 	}
 
-	headersRescanProgress := mainW.HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &mainW.GeneralSyncProgress{}
+	headersRescanProgress := wallet.HeadersRescanProgressReport{}
+	headersRescanProgress.GeneralSyncProgress = &wallet.GeneralSyncProgress{}
 
-	wallet.syncData.mu.Lock()
-	wallet.syncData.activeSyncData = &activeSyncData{
+	asset.syncData.mu.Lock()
+	asset.syncData.activeSyncData = &activeSyncData{
 		syncStage: InvalidSyncStage,
 
 		cfiltersFetchProgress:    cfiltersFetchProgress,
@@ -101,118 +101,118 @@ func (wallet *Wallet) initActiveSyncData() {
 		addressDiscoveryProgress: addressDiscoveryProgress,
 		headersRescanProgress:    headersRescanProgress,
 	}
-	wallet.syncData.mu.Unlock()
+	asset.syncData.mu.Unlock()
 }
 
-func (wallet *Wallet) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string) bool {
-	wallet.syncData.mu.RLock()
-	_, exists := wallet.syncData.syncProgressListeners[uniqueIdentifier]
-	wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string) bool {
+	asset.syncData.mu.RLock()
+	_, exists := asset.syncData.syncProgressListeners[uniqueIdentifier]
+	asset.syncData.mu.RUnlock()
 	return exists
 }
 
-func (wallet *Wallet) AddSyncProgressListener(syncProgressListener mainW.SyncProgressListener, uniqueIdentifier string) error {
-	if wallet.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
+func (asset *DCRAsset) AddSyncProgressListener(syncProgressListener wallet.SyncProgressListener, uniqueIdentifier string) error {
+	if asset.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
-	wallet.syncData.mu.Lock()
-	wallet.syncData.syncProgressListeners[uniqueIdentifier] = syncProgressListener
-	wallet.syncData.mu.Unlock()
+	asset.syncData.mu.Lock()
+	asset.syncData.syncProgressListeners[uniqueIdentifier] = syncProgressListener
+	asset.syncData.mu.Unlock()
 
 	// If sync is already on, notify this newly added listener of the current progress report.
-	return wallet.PublishLastSyncProgress(uniqueIdentifier)
+	return asset.PublishLastSyncProgress(uniqueIdentifier)
 }
 
-func (wallet *Wallet) RemoveSyncProgressListener(uniqueIdentifier string) {
-	wallet.syncData.mu.Lock()
-	delete(wallet.syncData.syncProgressListeners, uniqueIdentifier)
-	wallet.syncData.mu.Unlock()
+func (asset *DCRAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
+	asset.syncData.mu.Lock()
+	delete(asset.syncData.syncProgressListeners, uniqueIdentifier)
+	asset.syncData.mu.Unlock()
 }
 
-func (wallet *Wallet) syncProgressListeners() []mainW.SyncProgressListener {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) syncProgressListeners() []wallet.SyncProgressListener {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	listeners := make([]mainW.SyncProgressListener, 0, len(wallet.syncData.syncProgressListeners))
-	for _, listener := range wallet.syncData.syncProgressListeners {
+	listeners := make([]wallet.SyncProgressListener, 0, len(asset.syncData.syncProgressListeners))
+	for _, listener := range asset.syncData.syncProgressListeners {
 		listeners = append(listeners, listener)
 	}
 
 	return listeners
 }
 
-func (wallet *Wallet) PublishLastSyncProgress(uniqueIdentifier string) error {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) PublishLastSyncProgress(uniqueIdentifier string) error {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	syncProgressListener, exists := wallet.syncData.syncProgressListeners[uniqueIdentifier]
+	syncProgressListener, exists := asset.syncData.syncProgressListeners[uniqueIdentifier]
 	if !exists {
 		return errors.New(utils.ErrInvalid)
 	}
 
-	if wallet.syncData.syncing && wallet.syncData.activeSyncData != nil {
-		switch wallet.syncData.activeSyncData.syncStage {
+	if asset.syncData.syncing && asset.syncData.activeSyncData != nil {
+		switch asset.syncData.activeSyncData.syncStage {
 		case HeadersFetchSyncStage:
-			syncProgressListener.OnHeadersFetchProgress(&wallet.syncData.headersFetchProgress)
+			syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
 		case AddressDiscoverySyncStage:
-			syncProgressListener.OnAddressDiscoveryProgress(&wallet.syncData.addressDiscoveryProgress)
+			syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
 		case HeadersRescanSyncStage:
-			syncProgressListener.OnHeadersRescanProgress(&wallet.syncData.headersRescanProgress)
+			syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
 		}
 	}
 
 	return nil
 }
 
-func (wallet *Wallet) EnableSyncLogs() {
-	wallet.syncData.mu.Lock()
-	wallet.syncData.showLogs = true
-	wallet.syncData.mu.Unlock()
+func (asset *DCRAsset) EnableSyncLogs() {
+	asset.syncData.mu.Lock()
+	asset.syncData.showLogs = true
+	asset.syncData.mu.Unlock()
 }
 
-func (wallet *Wallet) SyncInactiveForPeriod(totalInactiveSeconds int64) {
-	wallet.syncData.mu.Lock()
-	defer wallet.syncData.mu.Unlock()
+func (asset *DCRAsset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
+	asset.syncData.mu.Lock()
+	defer asset.syncData.mu.Unlock()
 
-	if !wallet.syncData.syncing || wallet.syncData.activeSyncData == nil {
+	if !asset.syncData.syncing || asset.syncData.activeSyncData == nil {
 		log.Debug("Not accounting for inactive time, wallet is not syncing.")
 		return
 	}
 
-	wallet.syncData.totalInactiveSeconds += totalInactiveSeconds
-	if wallet.syncData.connectedPeers == 0 {
+	asset.syncData.totalInactiveSeconds += totalInactiveSeconds
+	if asset.syncData.connectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
-		wallet.syncData.totalInactiveSeconds += 60
+		asset.syncData.totalInactiveSeconds += 60
 	}
 }
 
-func (wallet *Wallet) SetSpecificPeer(address string) {
-	wallet.SaveUserConfigValue(mainW.SpvPersistentPeerAddressesConfigKey, address)
-	wallet.RestartSpvSync()
+func (asset *DCRAsset) SetSpecificPeer(address string) {
+	asset.SaveUserConfigValue(wallet.SpvPersistentPeerAddressesConfigKey, address)
+	asset.RestartSpvSync()
 }
 
-func (wallet *Wallet) RemoveSpecificPeer() {
-	wallet.SaveUserConfigValue(mainW.SpvPersistentPeerAddressesConfigKey, "")
-	wallet.RestartSpvSync()
+func (asset *DCRAsset) RemoveSpecificPeer() {
+	asset.SaveUserConfigValue(wallet.SpvPersistentPeerAddressesConfigKey, "")
+	asset.RestartSpvSync()
 }
 
-func (wallet *Wallet) SpvSync() error {
+func (asset *DCRAsset) SpvSync() error {
 	// prevent an attempt to sync when the previous syncing has not been canceled
-	if wallet.IsSyncing() || wallet.IsSynced() {
+	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
-	addrManager := addrmgr.New(wallet.RootDir(), net.LookupIP) // TODO: be mindful of tor
-	lp := p2p.NewLocalPeer(wallet.chainParams, addr, addrManager)
+	addrManager := addrmgr.New(asset.RootDir(), net.LookupIP) // TODO: be mindful of tor
+	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
 	var validPeerAddresses []string
-	peerAddresses := wallet.ReadStringConfigValueForKey(mainW.SpvPersistentPeerAddressesConfigKey, "")
+	peerAddresses := asset.ReadStringConfigValueForKey(wallet.SpvPersistentPeerAddressesConfigKey, "")
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
-			peerAddress, err := normalizeAddress(address, wallet.chainParams.DefaultPort)
+			peerAddress, err := normalizeAddress(address, asset.chainParams.DefaultPort)
 			if err != nil {
 				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
 			} else {
@@ -227,33 +227,33 @@ func (wallet *Wallet) SpvSync() error {
 
 	// init activeSyncData to be used to hold data used
 	// to calculate sync estimates only during sync
-	wallet.initActiveSyncData()
+	asset.initActiveSyncData()
 
 	wallets := make(map[int]*w.Wallet)
-	wallets[0] = wallet.Internal().DCR
-	wallet.waitingForHeaders = true
-	wallet.syncing = true
+	wallets[0] = asset.Internal().DCR
+	asset.waitingForHeaders = true
+	asset.syncing = true
 
 	syncer := spv.NewSyncer(wallets, lp)
-	syncer.SetNotifications(wallet.spvSyncNotificationCallbacks())
+	syncer.SetNotifications(asset.spvSyncNotificationCallbacks())
 	if len(validPeerAddresses) > 0 {
 		syncer.SetPersistentPeers(validPeerAddresses)
 	}
 
-	ctx, cancel := wallet.ShutdownContextWithCancel()
+	ctx, cancel := asset.ShutdownContextWithCancel()
 
 	var restartSyncRequested bool
 
-	wallet.syncData.mu.Lock()
-	restartSyncRequested = wallet.syncData.restartSyncRequested
-	wallet.syncData.restartSyncRequested = false
-	wallet.syncData.syncing = true
-	wallet.syncData.cancelSync = cancel
-	wallet.syncData.syncCanceled = make(chan struct{})
-	wallet.syncData.syncer = syncer
-	wallet.syncData.mu.Unlock()
+	asset.syncData.mu.Lock()
+	restartSyncRequested = asset.syncData.restartSyncRequested
+	asset.syncData.restartSyncRequested = false
+	asset.syncData.syncing = true
+	asset.syncData.cancelSync = cancel
+	asset.syncData.syncCanceled = make(chan struct{})
+	asset.syncData.syncer = syncer
+	asset.syncData.mu.Unlock()
 
-	for _, listener := range wallet.syncProgressListeners() {
+	for _, listener := range asset.syncProgressListeners() {
 		listener.OnSyncStarted(restartSyncRequested)
 	}
 
@@ -265,44 +265,44 @@ func (wallet *Wallet) SpvSync() error {
 		//sync has ended or errored
 		if syncError != nil {
 			if syncError == context.DeadlineExceeded {
-				wallet.notifySyncError(errors.Errorf("SPV synchronization deadline exceeded: %v", syncError))
+				asset.notifySyncError(errors.Errorf("SPV synchronization deadline exceeded: %v", syncError))
 			} else if syncError == context.Canceled {
-				close(wallet.syncData.syncCanceled)
-				wallet.notifySyncCanceled()
+				close(asset.syncData.syncCanceled)
+				asset.notifySyncCanceled()
 			} else {
-				wallet.notifySyncError(syncError)
+				asset.notifySyncError(syncError)
 			}
 		}
 
 		//reset sync variables
-		wallet.resetSyncData()
+		asset.resetSyncData()
 	}()
 	return nil
 }
 
-func (wallet *Wallet) RestartSpvSync() error {
-	wallet.syncData.mu.Lock()
-	wallet.syncData.restartSyncRequested = true
-	wallet.syncData.mu.Unlock()
+func (asset *DCRAsset) RestartSpvSync() error {
+	asset.syncData.mu.Lock()
+	asset.syncData.restartSyncRequested = true
+	asset.syncData.mu.Unlock()
 
-	wallet.CancelSync() // necessary to unset the network backend.
-	return wallet.SpvSync()
+	asset.CancelSync() // necessary to unset the network backend.
+	return asset.SpvSync()
 }
 
-func (wallet *Wallet) CancelSync() {
-	wallet.syncData.mu.RLock()
-	cancelSync := wallet.syncData.cancelSync
-	wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) CancelSync() {
+	asset.syncData.mu.RLock()
+	cancelSync := asset.syncData.cancelSync
+	asset.syncData.mu.RUnlock()
 
 	if cancelSync != nil {
 		log.Info("Canceling sync. May take a while for sync to fully cancel.")
 
 		// Stop running cspp mixers
-		if wallet.IsAccountMixerActive() {
-			log.Infof("[%d] Stopping cspp mixer", wallet.ID)
-			err := wallet.StopAccountMixer()
+		if asset.IsAccountMixerActive() {
+			log.Infof("[%d] Stopping cspp mixer", asset.ID)
+			err := asset.StopAccountMixer()
 			if err != nil {
-				log.Errorf("[%d] Error stopping cspp mixer: %v", wallet.ID, err)
+				log.Errorf("[%d] Error stopping cspp mixer: %v", asset.ID, err)
 			}
 		}
 
@@ -313,80 +313,80 @@ func (wallet *Wallet) CancelSync() {
 
 		// When sync terminates and syncer.Run returns `err == context.Canceled`,
 		// we will get notified on this channel.
-		<-wallet.syncData.syncCanceled
+		<-asset.syncData.syncCanceled
 
 		log.Info("Sync fully canceled.")
 	}
 }
 
-func (wallet *Wallet) IsWaiting() bool {
-	return wallet.waitingForHeaders
+func (asset *DCRAsset) IsWaiting() bool {
+	return asset.waitingForHeaders
 }
 
-func (wallet *Wallet) IsSyncing() bool {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.syncing
+func (asset *DCRAsset) IsSyncing() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+	return asset.syncData.syncing
 }
 
-func (wallet *Wallet) IsConnectedToDecredNetwork() bool {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.syncing || wallet.syncData.synced
+func (asset *DCRAsset) IsConnectedToDecredNetwork() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+	return asset.syncData.syncing || asset.syncData.synced
 }
 
-func (wallet *Wallet) IsSynced() bool {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.synced
+func (asset *DCRAsset) IsSynced() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+	return asset.syncData.synced
 }
 
-func (wallet *Wallet) CurrentSyncStage() int32 {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) CurrentSyncStage() int32 {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	if wallet.syncData != nil && wallet.syncData.syncing {
-		return wallet.syncData.syncStage
+	if asset.syncData != nil && asset.syncData.syncing {
+		return asset.syncData.syncStage
 	}
 	return InvalidSyncStage
 }
 
-func (wallet *Wallet) GeneralSyncProgress() *mainW.GeneralSyncProgress {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
+func (asset *DCRAsset) GeneralSyncProgress() *wallet.GeneralSyncProgress {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	if wallet.syncData != nil && wallet.syncData.syncing {
-		switch wallet.syncData.syncStage {
+	if asset.syncData != nil && asset.syncData.syncing {
+		switch asset.syncData.syncStage {
 		case HeadersFetchSyncStage:
-			return wallet.syncData.headersFetchProgress.GeneralSyncProgress
+			return asset.syncData.headersFetchProgress.GeneralSyncProgress
 		case AddressDiscoverySyncStage:
-			return wallet.syncData.addressDiscoveryProgress.GeneralSyncProgress
+			return asset.syncData.addressDiscoveryProgress.GeneralSyncProgress
 		case HeadersRescanSyncStage:
-			return wallet.syncData.headersRescanProgress.GeneralSyncProgress
+			return asset.syncData.headersRescanProgress.GeneralSyncProgress
 		case CFiltersFetchSyncStage:
-			return wallet.syncData.cfiltersFetchProgress.GeneralSyncProgress
+			return asset.syncData.cfiltersFetchProgress.GeneralSyncProgress
 		}
 	}
 
 	return nil
 }
 
-func (wallet *Wallet) ConnectedPeers() int32 {
-	wallet.syncData.mu.RLock()
-	defer wallet.syncData.mu.RUnlock()
-	return wallet.syncData.connectedPeers
+func (asset *DCRAsset) ConnectedPeers() int32 {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+	return asset.syncData.connectedPeers
 }
 
-func (wallet *Wallet) PeerInfoRaw() ([]mainW.PeerInfo, error) {
-	if !wallet.IsConnectedToDecredNetwork() {
+func (asset *DCRAsset) PeerInfoRaw() ([]wallet.PeerInfo, error) {
+	if !asset.IsConnectedToDecredNetwork() {
 		return nil, errors.New(utils.ErrNotConnected)
 	}
 
-	syncer := wallet.syncData.syncer
+	syncer := asset.syncData.syncer
 
-	infos := make([]mainW.PeerInfo, 0, len(syncer.GetRemotePeers()))
+	infos := make([]wallet.PeerInfo, 0, len(syncer.GetRemotePeers()))
 	for _, rp := range syncer.GetRemotePeers() {
-		info := mainW.PeerInfo{
+		info := wallet.PeerInfo{
 			ID:             int32(rp.ID()),
 			Addr:           rp.RemoteAddr().String(),
 			AddrLocal:      rp.LocalAddr().String(),
@@ -407,8 +407,8 @@ func (wallet *Wallet) PeerInfoRaw() ([]mainW.PeerInfo, error) {
 	return infos, nil
 }
 
-func (wallet *Wallet) PeerInfo() (string, error) {
-	infos, err := wallet.PeerInfoRaw()
+func (asset *DCRAsset) PeerInfo() (string, error) {
+	infos, err := asset.PeerInfoRaw()
 	if err != nil {
 		return "", err
 	}
@@ -417,59 +417,59 @@ func (wallet *Wallet) PeerInfo() (string, error) {
 	return string(result), nil
 }
 
-func (wallet *Wallet) GetBestBlock() *mainW.BlockInfo {
+func (asset *DCRAsset) GetBestBlock() *wallet.BlockInfo {
 	var bestBlock int32 = -1
-	var blockInfo *mainW.BlockInfo
-	if !wallet.WalletOpened() {
+	var blockInfo *wallet.BlockInfo
+	if !asset.WalletOpened() {
 		return nil
 	}
 
-	walletBestBLock := wallet.GetBestBlockHeight()
+	walletBestBLock := asset.GetBestBlockHeight()
 	if walletBestBLock > bestBlock || bestBlock == -1 {
 		bestBlock = walletBestBLock
-		blockInfo = &mainW.BlockInfo{Height: bestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
+		blockInfo = &wallet.BlockInfo{Height: bestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo
 }
 
-func (wallet *Wallet) GetLowestBlock() *mainW.BlockInfo {
+func (asset *DCRAsset) GetLowestBlock() *wallet.BlockInfo {
 	var lowestBlock int32 = -1
-	var blockInfo *mainW.BlockInfo
-	if !wallet.WalletOpened() {
+	var blockInfo *wallet.BlockInfo
+	if !asset.WalletOpened() {
 		return nil
 	}
-	walletBestBLock := wallet.GetBestBlockHeight()
+	walletBestBLock := asset.GetBestBlockHeight()
 	if walletBestBLock < lowestBlock || lowestBlock == -1 {
 		lowestBlock = walletBestBLock
-		blockInfo = &mainW.BlockInfo{Height: lowestBlock, Timestamp: wallet.GetBestBlockTimeStamp()}
+		blockInfo = &wallet.BlockInfo{Height: lowestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo
 }
 
-func (wallet *Wallet) GetBestBlockHeight() int32 {
-	if wallet.Internal() == nil {
+func (asset *DCRAsset) GetBestBlockHeight() int32 {
+	if asset.Internal() == nil {
 		// This method is sometimes called after a wallet is deleted and causes crash.
-		log.Error("Attempting to read best block height without a loaded wallet.")
+		log.Error("Attempting to read best block height without a loaded asset.")
 		return 0
 	}
-	ctx, _ := wallet.ShutdownContextWithCancel()
-	_, height := wallet.Internal().DCR.MainChainTip(ctx)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	_, height := asset.Internal().DCR.MainChainTip(ctx)
 	return height
 }
 
-func (wallet *Wallet) GetBestBlockTimeStamp() int64 {
-	if wallet.Internal() == nil {
+func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
+	if asset.Internal() == nil {
 		// This method is sometimes called after a wallet is deleted and causes crash.
-		log.Error("Attempting to read best block timestamp without a loaded wallet.")
+		log.Error("Attempting to read best block timestamp without a loaded asset.")
 		return 0
 	}
 
-	ctx, _ := wallet.ShutdownContextWithCancel()
-	_, height := wallet.Internal().DCR.MainChainTip(ctx)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	_, height := asset.Internal().DCR.MainChainTip(ctx)
 	identifier := w.NewBlockIdentifierFromHeight(height)
-	info, err := wallet.Internal().DCR.BlockInfo(ctx, identifier)
+	info, err := asset.Internal().DCR.BlockInfo(ctx, identifier)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -477,9 +477,9 @@ func (wallet *Wallet) GetBestBlockTimeStamp() int64 {
 	return info.Timestamp
 }
 
-func (wallet *Wallet) GetLowestBlockTimestamp() int64 {
+func (asset *DCRAsset) GetLowestBlockTimestamp() int64 {
 	var timestamp int64 = -1
-	bestBlockTimestamp := wallet.GetBestBlockTimeStamp()
+	bestBlockTimestamp := asset.GetBestBlockTimeStamp()
 	if bestBlockTimestamp < timestamp || timestamp == -1 {
 		timestamp = bestBlockTimestamp
 	}

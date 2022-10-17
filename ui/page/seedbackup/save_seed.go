@@ -37,7 +37,7 @@ type SaveSeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcr.Wallet
+	wallet *dcr.DCRAsset
 
 	backButton   cryptomaterial.IconButton
 	actionButton cryptomaterial.Button
@@ -53,7 +53,7 @@ type SaveSeedPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewSaveSeedPage(l *load.Load, wallet *dcr.Wallet, redirect Redirectfunc) *SaveSeedPage {
+func NewSaveSeedPage(l *load.Load, wallet *dcr.DCRAsset, redirect Redirectfunc) *SaveSeedPage {
 	pg := &SaveSeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),

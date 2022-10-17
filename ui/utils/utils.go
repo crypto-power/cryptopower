@@ -54,8 +54,8 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 }
 
 // getLockWallet returns a list of locked wallets
-func GetLockedWallets(wallets []*dcr.Wallet) []*dcr.Wallet {
-	var walletsLocked []*dcr.Wallet
+func GetLockedWallets(wallets []*dcr.DCRAsset) []*dcr.DCRAsset {
+	var walletsLocked []*dcr.DCRAsset
 	for _, wl := range wallets {
 		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
 			walletsLocked = append(walletsLocked, wl)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
@@ -48,19 +48,19 @@ const (
 	TicketStatusExpired        = "expired"
 )
 
-func (wallet *Wallet) PublishUnminedTransactions() error {
-	n, err := wallet.Internal().DCR.NetworkBackend()
+func (asset *DCRAsset) PublishUnminedTransactions() error {
+	n, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	ctx, _ := wallet.ShutdownContextWithCancel()
-	return wallet.Internal().DCR.PublishUnminedTransactions(ctx, n)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	return asset.Internal().DCR.PublishUnminedTransactions(ctx, n)
 }
 
-func (wallet *Wallet) GetTransaction(txHash string) (string, error) {
-	transaction, err := wallet.GetTransactionRaw(txHash)
+func (asset *DCRAsset) GetTransaction(txHash string) (string, error) {
+	transaction, err := asset.GetTransactionRaw(txHash)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -74,25 +74,25 @@ func (wallet *Wallet) GetTransaction(txHash string) (string, error) {
 	return string(result), nil
 }
 
-func (wallet *Wallet) GetTransactionRaw(txHash string) (*mainW.Transaction, error) {
+func (asset *DCRAsset) GetTransactionRaw(txHash string) (*wallet.Transaction, error) {
 	hash, err := chainhash.NewHashFromStr(txHash)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	ctx, _ := wallet.ShutdownContextWithCancel()
-	txSummary, _, blockHash, err := wallet.Internal().DCR.TransactionSummary(ctx, hash)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	txSummary, _, blockHash, err := asset.Internal().DCR.TransactionSummary(ctx, hash)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	return wallet.decodeTransactionWithTxSummary(txSummary, blockHash)
+	return asset.decodeTransactionWithTxSummary(txSummary, blockHash)
 }
 
-func (wallet *Wallet) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
-	transactions, err := wallet.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
+func (asset *DCRAsset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
+	transactions, err := asset.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
 	if err != nil {
 		return "", err
 	}
@@ -105,17 +105,17 @@ func (wallet *Wallet) GetTransactions(offset, limit, txFilter int32, newestFirst
 	return string(jsonEncodedTransactions), nil
 }
 
-func (wallet *Wallet) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []mainW.Transaction, err error) {
-	err = wallet.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &transactions)
+func (asset *DCRAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []wallet.Transaction, err error) {
+	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
 	return
 }
 
-func (wallet *Wallet) CountTransactions(txFilter int32) (int, error) {
-	return wallet.GetWalletDataDb().Count(txFilter, wallet.RequiredConfirmations(), wallet.GetBestBlockHeight(), &mainW.Transaction{})
+func (asset *DCRAsset) CountTransactions(txFilter int32) (int, error) {
+	return asset.GetWalletDataDb().Count(txFilter, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &wallet.Transaction{})
 }
 
-func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
-	err := wallet.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &mainW.Transaction{})
+func (asset *DCRAsset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
+	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &wallet.Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return false, nil
@@ -126,9 +126,9 @@ func (wallet *Wallet) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
 	return true, nil
 }
 
-func (wallet *Wallet) TicketSpender(ticketHash string) (*mainW.Transaction, error) {
-	var spender mainW.Transaction
-	err := wallet.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &spender)
+func (asset *DCRAsset) TicketSpender(ticketHash string) (*wallet.Transaction, error) {
+	var spender wallet.Transaction
+	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return nil, nil
@@ -139,36 +139,36 @@ func (wallet *Wallet) TicketSpender(ticketHash string) (*mainW.Transaction, erro
 	return &spender, nil
 }
 
-func (wallet *Wallet) TransactionOverview() (txOverview *mainW.TransactionOverview, err error) {
+func (asset *DCRAsset) TransactionOverview() (txOverview *wallet.TransactionOverview, err error) {
 
-	txOverview = &mainW.TransactionOverview{}
+	txOverview = &wallet.TransactionOverview{}
 
-	txOverview.Sent, err = wallet.CountTransactions(TxFilterSent)
+	txOverview.Sent, err = asset.CountTransactions(TxFilterSent)
 	if err != nil {
 		return
 	}
 
-	txOverview.Received, err = wallet.CountTransactions(TxFilterReceived)
+	txOverview.Received, err = asset.CountTransactions(TxFilterReceived)
 	if err != nil {
 		return
 	}
 
-	txOverview.Transferred, err = wallet.CountTransactions(TxFilterTransferred)
+	txOverview.Transferred, err = asset.CountTransactions(TxFilterTransferred)
 	if err != nil {
 		return
 	}
 
-	txOverview.Mixed, err = wallet.CountTransactions(TxFilterMixed)
+	txOverview.Mixed, err = asset.CountTransactions(TxFilterMixed)
 	if err != nil {
 		return
 	}
 
-	txOverview.Staking, err = wallet.CountTransactions(TxFilterStaking)
+	txOverview.Staking, err = asset.CountTransactions(TxFilterStaking)
 	if err != nil {
 		return
 	}
 
-	txOverview.Coinbase, err = wallet.CountTransactions(TxFilterCoinBase)
+	txOverview.Coinbase, err = asset.CountTransactions(TxFilterCoinBase)
 	if err != nil {
 		return
 	}
@@ -179,14 +179,14 @@ func (wallet *Wallet) TransactionOverview() (txOverview *mainW.TransactionOvervi
 	return txOverview, nil
 }
 
-func (wallet *Wallet) TxMatchesFilter(tx *mainW.Transaction, txFilter int32) bool {
-	bestBlock := wallet.GetBestBlockHeight()
+func (asset *DCRAsset) TxMatchesFilter(tx *wallet.Transaction, txFilter int32) bool {
+	bestBlock := asset.GetBestBlockHeight()
 
 	// tickets with block height less than this are matured.
-	maturityBlock := bestBlock - int32(wallet.chainParams.TicketMaturity)
+	maturityBlock := bestBlock - int32(asset.chainParams.TicketMaturity)
 
 	// tickets with block height less than this are expired.
-	expiryBlock := bestBlock - int32(wallet.chainParams.TicketMaturity+uint16(wallet.chainParams.TicketExpiry))
+	expiryBlock := bestBlock - int32(asset.chainParams.TicketMaturity+uint16(asset.chainParams.TicketExpiry))
 
 	switch txFilter {
 	case TxFilterSent:
@@ -243,17 +243,17 @@ func (wallet *Wallet) TxMatchesFilter(tx *mainW.Transaction, txFilter int32) boo
 	return false
 }
 
-func (wallet *Wallet) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
-	tx := mainW.Transaction{
+func (asset *DCRAsset) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
+	tx := wallet.Transaction{
 		Type:          txType,
 		Direction:     direction,
 		BlockHeight:   blockHeight,
 		TicketSpender: ticketSpender,
 	}
-	return wallet.TxMatchesFilter(&tx, txFilter)
+	return asset.TxMatchesFilter(&tx, txFilter)
 }
 
-func Confirmations(bestBlock int32, tx mainW.Transaction) int32 {
+func Confirmations(bestBlock int32, tx wallet.Transaction) int32 {
 	if tx.BlockHeight == BlockHeightInvalid {
 		return 0
 	}
@@ -261,7 +261,7 @@ func Confirmations(bestBlock int32, tx mainW.Transaction) int32 {
 	return (bestBlock - tx.BlockHeight) + 1
 }
 
-func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx mainW.Transaction) string {
+func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx wallet.Transaction) string {
 	if tx.Type != TxTypeTicketPurchase {
 		return ""
 	}

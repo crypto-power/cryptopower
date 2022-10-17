@@ -37,7 +37,7 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer layout.List
-	wallet        *dcr.Wallet
+	wallet        *dcr.DCRAsset
 
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable

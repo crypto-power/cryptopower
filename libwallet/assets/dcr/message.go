@@ -7,18 +7,18 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func (wallet *Wallet) SignMessage(passphrase []byte, address string, message string) ([]byte, error) {
-	err := wallet.UnlockWallet(passphrase)
+func (asset *DCRAsset) SignMessage(passphrase []byte, address string, message string) ([]byte, error) {
+	err := asset.UnlockWallet(passphrase)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
-	defer wallet.LockWallet()
+	defer asset.LockWallet()
 
-	return wallet.signMessage(address, message)
+	return asset.signMessage(address, message)
 }
 
-func (wallet *Wallet) signMessage(address string, message string) ([]byte, error) {
-	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
+func (asset *DCRAsset) signMessage(address string, message string) ([]byte, error) {
+	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
@@ -32,8 +32,8 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 		return nil, errors.New(utils.ErrInvalidAddress)
 	}
 
-	ctx, _ := wallet.ShutdownContextWithCancel()
-	sig, err := wallet.Internal().DCR.SignMessage(ctx, message, addr)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	sig, err := asset.Internal().DCR.SignMessage(ctx, message, addr)
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
@@ -41,10 +41,10 @@ func (wallet *Wallet) signMessage(address string, message string) ([]byte, error
 	return sig, nil
 }
 
-func (wallet *Wallet) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
+func (asset *DCRAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
 	var valid bool
 
-	addr, err := stdaddr.DecodeAddress(address, wallet.chainParams)
+	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return false, utils.TranslateError(err)
 	}
@@ -63,7 +63,7 @@ func (wallet *Wallet) VerifyMessage(address string, message string, signatureBas
 		return false, errors.New(utils.ErrInvalidAddress)
 	}
 
-	valid, err = w.VerifyMessage(message, addr, signature, wallet.chainParams)
+	valid, err = w.VerifyMessage(message, addr, signature, asset.chainParams)
 	if err != nil {
 		return false, utils.TranslateError(err)
 	}

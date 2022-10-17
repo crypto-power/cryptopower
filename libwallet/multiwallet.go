@@ -27,13 +27,13 @@ import (
 
 type Assets struct {
 	DCR struct {
-		Wallets     map[int]*dcr.Wallet
-		BadWallets  map[int]*dcr.Wallet
+		Wallets     map[int]*dcr.DCRAsset
+		BadWallets  map[int]*dcr.DCRAsset
 		ChainParams *chaincfg.Params
 	}
 	BTC struct {
-		Wallets     map[int]*btc.Wallet
-		BadWallets  map[int]*btc.Wallet
+		Wallets     map[int]*btc.BTCAsset
+		BadWallets  map[int]*btc.BTCAsset
 		ChainParams *btccfg.Params
 	}
 }
@@ -115,21 +115,21 @@ func NewMultiWallet(rootDir, dbDriver, net, politeiaHost string) (*MultiWallet, 
 		Politeia: politeia,
 		Assets: &Assets{
 			DCR: struct {
-				Wallets     map[int]*dcr.Wallet
-				BadWallets  map[int]*dcr.Wallet
+				Wallets     map[int]*dcr.DCRAsset
+				BadWallets  map[int]*dcr.DCRAsset
 				ChainParams *chaincfg.Params
 			}{
-				Wallets:     make(map[int]*dcr.Wallet),
-				BadWallets:  make(map[int]*dcr.Wallet),
+				Wallets:     make(map[int]*dcr.DCRAsset),
+				BadWallets:  make(map[int]*dcr.DCRAsset),
 				ChainParams: dcrChainParams,
 			},
 			BTC: struct {
-				Wallets     map[int]*btc.Wallet
-				BadWallets  map[int]*btc.Wallet
+				Wallets     map[int]*btc.BTCAsset
+				BadWallets  map[int]*btc.BTCAsset
 				ChainParams *btccfg.Params
 			}{
-				Wallets:     make(map[int]*btc.Wallet),
-				BadWallets:  make(map[int]*btc.Wallet),
+				Wallets:     make(map[int]*btc.BTCAsset),
+				BadWallets:  make(map[int]*btc.BTCAsset),
 				ChainParams: btcChainParams,
 			},
 		},
@@ -354,7 +354,7 @@ func (mw *MultiWallet) AllWalletsAreWatchOnly() (bool, error) {
 	return true, nil
 }
 
-func (mw *MultiWallet) BadWallets() map[int]*dcr.Wallet {
+func (mw *MultiWallet) BadWallets() map[int]*dcr.DCRAsset {
 	return mw.Assets.DCR.BadWallets
 }
 
@@ -409,7 +409,7 @@ func (mw *MultiWallet) WalletNameExists(walletName string) (bool, error) {
 		return false, errors.E(ErrReservedWalletName)
 	}
 
-	err := mw.params.DB.One("Name", walletName, &dcr.Wallet{})
+	err := mw.params.DB.One("Name", walletName, &dcr.DCRAsset{})
 	if err == nil {
 		return true, nil
 	} else if err != storm.ErrNotFound {

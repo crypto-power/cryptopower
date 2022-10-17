@@ -5,19 +5,19 @@ import (
 
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const BlockHeightInvalid int32 = -1
 
-func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
-	blockHash *chainhash.Hash) (*mainW.Transaction, error) {
+func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
+	blockHash *chainhash.Hash) (*wallet.Transaction, error) {
 
 	var blockHeight int32 = BlockHeightInvalid
 	if blockHash != nil {
 		blockIdentifier := w.NewBlockIdentifierFromHash(blockHash)
-		ctx, _ := wallet.ShutdownContextWithCancel()
-		blockInfo, err := wallet.Internal().DCR.BlockInfo(ctx, blockIdentifier)
+		ctx, _ := asset.ShutdownContextWithCancel()
+		blockInfo, err := asset.Internal().DCR.BlockInfo(ctx, blockIdentifier)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -25,46 +25,46 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 		}
 	}
 
-	walletInputs := make([]*mainW.WalletInput, len(txSummary.MyInputs))
+	walletInputs := make([]*wallet.WalletInput, len(txSummary.MyInputs))
 	for i, input := range txSummary.MyInputs {
 		accountNumber := int32(input.PreviousAccount)
-		accountName, err := wallet.AccountName(accountNumber)
+		accountName, err := asset.AccountName(accountNumber)
 		if err != nil {
 			log.Error(err)
 		}
 
-		walletInputs[i] = &mainW.WalletInput{
+		walletInputs[i] = &wallet.WalletInput{
 			Index:    int32(input.Index),
 			AmountIn: int64(input.PreviousAmount),
-			WalletAccount: &mainW.WalletAccount{
+			WalletAccount: &wallet.WalletAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},
 		}
 	}
 
-	walletOutputs := make([]*mainW.WalletOutput, len(txSummary.MyOutputs))
+	walletOutputs := make([]*wallet.WalletOutput, len(txSummary.MyOutputs))
 	for i, output := range txSummary.MyOutputs {
 		accountNumber := int32(output.Account)
-		accountName, err := wallet.AccountName(accountNumber)
+		accountName, err := asset.AccountName(accountNumber)
 		if err != nil {
 			log.Error(err)
 		}
 
-		walletOutputs[i] = &mainW.WalletOutput{
+		walletOutputs[i] = &wallet.WalletOutput{
 			Index:     int32(output.Index),
 			AmountOut: int64(output.Amount),
 			Internal:  output.Internal,
 			Address:   output.Address.String(),
-			WalletAccount: &mainW.WalletAccount{
+			WalletAccount: &wallet.WalletAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},
 		}
 	}
 
-	walletTx := &mainW.TxInfoFromWallet{
-		WalletID:    wallet.ID,
+	walletTx := &wallet.TxInfoFromWallet{
+		WalletID:    asset.ID,
 		BlockHeight: blockHeight,
 		Timestamp:   txSummary.Timestamp,
 		Hex:         fmt.Sprintf("%x", txSummary.Transaction),
@@ -72,13 +72,13 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 		Outputs:     walletOutputs,
 	}
 
-	decodedTx, err := wallet.DecodeTransaction(walletTx, wallet.chainParams)
+	decodedTx, err := asset.DecodeTransaction(walletTx, asset.chainParams)
 	if err != nil {
 		return nil, err
 	}
 
 	if decodedTx.TicketSpentHash != "" {
-		ticketPurchaseTx, err := wallet.GetTransactionRaw(decodedTx.TicketSpentHash)
+		ticketPurchaseTx, err := asset.GetTransactionRaw(decodedTx.TicketSpentHash)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +106,7 @@ func (wallet *Wallet) decodeTransactionWithTxSummary(txSummary *w.TransactionSum
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
-		wallet.GetWalletDataDb().SaveOrUpdate(&mainW.Transaction{}, ticketPurchaseTx)
+		asset.GetWalletDataDb().SaveOrUpdate(&wallet.Transaction{}, ticketPurchaseTx)
 	}
 
 	return decodedTx, nil

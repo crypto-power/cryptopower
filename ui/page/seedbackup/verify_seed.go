@@ -35,7 +35,7 @@ type VerifySeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet        *dcr.Wallet
+	wallet        *dcr.DCRAsset
 	seed          string
 	multiSeedList []shuffledSeedWords
 
@@ -47,7 +47,7 @@ type VerifySeedPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *dcr.Wallet, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet *dcr.DCRAsset, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),

@@ -26,7 +26,7 @@ type BTCAcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *btc.Wallet
+	wallet  *btc.BTCAsset
 	account *btc.AccountResult
 
 	theme                    *cryptomaterial.Theme

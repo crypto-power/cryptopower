@@ -24,7 +24,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-type Wallet struct {
+type BTCAsset struct {
 	*mainW.Wallet
 
 	cl          neutrinoService
@@ -67,7 +67,7 @@ var _ neutrinoService = (*neutrino.ChainService)(nil)
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 		return nil, err
 	}
 
-	btcWallet := &Wallet{
+	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 	}
@@ -97,7 +97,7 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 		return nil, err
 	}
 
-	btcWallet := &Wallet{
+	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 	}
@@ -127,7 +127,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 		return nil, err
 	}
 
-	btcWallet := &Wallet{
+	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 	}
@@ -156,14 +156,14 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
+func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*BTCAsset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
-	btcWallet := &Wallet{
+	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 	}
@@ -180,12 +180,12 @@ func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
 
 //TODO: NOT USED.
 // connect will start the wallet and begin syncing.
-func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
-	if err := logNeutrino(wallet.DataDir()); err != nil {
+func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
+	if err := logNeutrino(asset.DataDir()); err != nil {
 		return fmt.Errorf("error initializing btcwallet+neutrino logging: %v", err)
 	}
 
-	err := wallet.startWallet()
+	err := asset.startWallet()
 	if err != nil {
 		return err
 	}
@@ -199,10 +199,10 @@ func (wallet *Wallet) connect(ctx context.Context, wg *sync.WaitGroup) error {
 //TODO: NOT USED.
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
-func (wallet *Wallet) startWallet() error {
+func (asset *BTCAsset) startWallet() error {
 	// timeout and recoverWindow arguments borrowed from btcwallet directly.
 
-	exists, err := wallet.WalletExists()
+	exists, err := asset.WalletExists()
 	if err != nil {
 		return fmt.Errorf("error verifying wallet existence: %v", err)
 	}
@@ -210,8 +210,8 @@ func (wallet *Wallet) startWallet() error {
 		return errors.New("wallet not found")
 	}
 
-	wallet.log.Debug("Starting native BTC wallet...")
-	err = wallet.OpenWallet()
+	asset.log.Debug("Starting native BTC wallet...")
+	err = asset.OpenWallet()
 	if err != nil {
 		return fmt.Errorf("couldn't load wallet: %w", err)
 	}
@@ -220,15 +220,15 @@ func (wallet *Wallet) startWallet() error {
 	// For neutrino to be completely compatible with the walletDbData implementation
 	// in gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata the above
 	// interface needs to be fully implemented.
-	neutrinoDBPath := wallet.GetWalletDataDb().Path
-	wallet.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
+	neutrinoDBPath := asset.GetWalletDataDb().Path
+	asset.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
 	if err != nil {
 		return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
 	}
 
 	bailOnWalletAndDB := func() {
-		if err := wallet.neutrinoDB.Close(); err != nil {
-			wallet.log.Errorf("Error closing neutrino database: %v", err)
+		if err := asset.neutrinoDB.Close(); err != nil {
+			asset.log.Errorf("Error closing neutrino database: %v", err)
 		}
 	}
 
@@ -239,7 +239,7 @@ func (wallet *Wallet) startWallet() error {
 	// addition to normal DNS seed-based peer discovery.
 	var addPeers []string
 	var connectPeers []string
-	switch wallet.chainParams.Net {
+	switch asset.chainParams.Net {
 	case wire.MainNet:
 		addPeers = []string{"cfilters.ssgen.io"}
 	case wire.TestNet3:
@@ -247,11 +247,11 @@ func (wallet *Wallet) startWallet() error {
 	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
 		connectPeers = []string{"localhost:20575"}
 	}
-	wallet.log.Debug("Starting neutrino chain service...")
+	asset.log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
-		DataDir:       wallet.DataDir(),
-		Database:      wallet.neutrinoDB,
-		ChainParams:   *wallet.chainParams,
+		DataDir:       asset.DataDir(),
+		Database:      asset.neutrinoDB,
+		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		AddPeers:      addPeers,
 		ConnectPeers:  connectPeers,
@@ -268,26 +268,26 @@ func (wallet *Wallet) startWallet() error {
 
 	bailOnEverything := func() {
 		if err := chainService.Stop(); err != nil {
-			wallet.log.Errorf("Error closing neutrino chain service: %v", err)
+			asset.log.Errorf("Error closing neutrino chain service: %v", err)
 		}
 		bailOnWalletAndDB()
 	}
 
-	wallet.cl = chainService
-	wallet.chainClient = chain.NewNeutrinoClient(wallet.chainParams, chainService)
+	asset.cl = chainService
+	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
-	if err = wallet.chainClient.Start(); err != nil { // lazily starts connmgr
+	if err = asset.chainClient.Start(); err != nil { // lazily starts connmgr
 		bailOnEverything()
 		return fmt.Errorf("couldn't start Neutrino client: %v", err)
 	}
 
-	wallet.log.Info("Synchronizing wallet with network...")
-	wallet.Internal().BTC.SynchronizeRPC(wallet.chainClient)
+	asset.log.Info("Synchronizing wallet with network...")
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	return nil
 }
 
-func (wallet *Wallet) SafelyCancelSync() {
+func (asset *BTCAsset) SafelyCancelSync() {
 	//TODO: use a proper logger
 	fmt.Println("Safe sync shutdown not implemented")
 }

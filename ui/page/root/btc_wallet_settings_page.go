@@ -32,7 +32,7 @@ type BTCWalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *btc.Wallet
+	wallet   *btc.BTCAsset
 	accounts []*btcAccountData
 
 	pageContainer layout.List

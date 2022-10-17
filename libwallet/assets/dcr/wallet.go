@@ -7,17 +7,15 @@ import (
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
 	"github.com/decred/dcrd/chaincfg/v3"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-// To be renamed to DCRAsset when optimizing the code.
-// type DCRAsset struct {
-type Wallet struct {
-	*mainW.Wallet
+type DCRAsset struct {
+	*wallet.Wallet
 
 	synced            bool
 	syncing           bool
@@ -37,14 +35,14 @@ type Wallet struct {
 	notificationListenersMu          sync.RWMutex
 	syncData                         *SyncData
 	accountMixerNotificationListener map[string]AccountMixerNotificationListener
-	txAndBlockNotificationListeners  map[string]mainW.TxAndBlockNotificationListener
-	blocksRescanProgressListener     mainW.BlocksRescanProgressListener
+	txAndBlockNotificationListeners  map[string]wallet.TxAndBlockNotificationListener
+	blocksRescanProgressListener     wallet.BlocksRescanProgressListener
 }
 
 // initWalletLoader setups the loader.
 func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &mainW.WalletConfig{
+	cfg := &wallet.WalletConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,
@@ -77,7 +75,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 // shared wallet implemenation.
 // Immediately a new wallet is created, the function to safely cancel network sync
 // is set. There after returning the new wallet's interface.
-func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+func CreateNewWallet(pass *wallet.WalletPassInfo, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -85,18 +83,18 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
 
-	w, err := mainW.CreateNewWallet(pass, utils.DCRWalletAsset, ldr, params)
+	w, err := wallet.CreateNewWallet(pass, utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
+	dcrWallet := &DCRAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners:  make(map[string]wallet.TxAndBlockNotificationListener),
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 		vspClients:                       make(map[string]*vsp.Client),
 	}
@@ -114,24 +112,24 @@ func CreateNewWallet(pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wal
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.InitParams) (*Wallet, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
-	w, err := mainW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
+	w, err := wallet.CreateWatchOnlyWallet(walletName, extendedPublicKey,
 		utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
+	dcrWallet := &DCRAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
 		},
 	}
 
@@ -147,23 +145,23 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *mainW.I
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *mainW.InitParams) (*Wallet, error) {
+func RestoreWallet(seedMnemonic string, pass *wallet.WalletPassInfo, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
-	w, err := mainW.RestoreWallet(seedMnemonic, pass, utils.DCRWalletAsset, ldr, params)
+	w, err := wallet.RestoreWallet(seedMnemonic, pass, utils.DCRWalletAsset, ldr, params)
 	if err != nil {
 		return nil, err
 	}
 
-	dcrWallet := &Wallet{
+	dcrWallet := &DCRAsset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
 		},
 		vspClients: make(map[string]*vsp.Client),
 	}
@@ -180,21 +178,21 @@ func RestoreWallet(seedMnemonic string, pass *mainW.WalletPassInfo, params *main
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
+func LoadExisting(w *wallet.Wallet, params *wallet.InitParams) (*DCRAsset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
-	dcrWallet := &Wallet{
+	dcrWallet := &DCRAsset{
 		Wallet:      w,
 		vspClients:  make(map[string]*vsp.Client),
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]mainW.SyncProgressListener),
+			syncProgressListeners: make(map[string]wallet.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]mainW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners:  make(map[string]wallet.TxAndBlockNotificationListener),
 		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 	}
 
@@ -212,7 +210,7 @@ func LoadExisting(w *mainW.Wallet, params *mainW.InitParams) (*Wallet, error) {
 // provided legacy or SLIP0044 xpub. While both the legacy and SLIP0044 xpubs
 // will be checked for watch-only wallets, other wallets will only check the
 // xpub that matches the coin type key used by the wallet.
-func (wallet *Wallet) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
+func (wallet *DCRAsset) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
 	ctx, _ := wallet.ShutdownContextWithCancel()
 
 	acctXPubKey, err := wallet.Internal().DCR.AccountXpub(ctx, account)
@@ -239,11 +237,11 @@ func (wallet *Wallet) AccountXPubMatches(account uint32, legacyXPub, slip044XPub
 	}
 }
 
-func (wallet *Wallet) Synced() bool {
+func (wallet *DCRAsset) Synced() bool {
 	return wallet.synced
 }
 
-func (wallet *Wallet) SafelyCancelSync() {
+func (wallet *DCRAsset) SafelyCancelSync() {
 	if wallet.IsConnectedToDecredNetwork() {
 		wallet.CancelSync()
 		defer func() {

@@ -28,7 +28,7 @@ func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 	return chainParams, rootDir, nil
 }
 
-func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
+func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
 	pass := &wallet.WalletPassInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -44,7 +44,7 @@ func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.Wallet, error) {
+func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.BTCAsset, error) {
 	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey
 	return wallet, nil
 }
 
-func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.Wallet, error) {
+func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
 	pass := &wallet.WalletPassInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -84,7 +84,7 @@ func (mw *MultiWallet) DeleteBTCWallet(walletID int, privPass []byte) error {
 	return nil
 }
 
-func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.Wallet {
+func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.BTCAsset {
 	if wallet, ok := mw.Assets.BTC.Wallets[walletID]; ok {
 		return wallet
 	}

@@ -30,7 +30,7 @@ func initializeDCRWalletParameters(rootDir, dbDriver string, netType utils.Netwo
 	return chainParams, rootDir, nil
 }
 
-func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
+func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
 	pass := &wallet.WalletPassInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -46,7 +46,7 @@ func (mw *MultiWallet) CreateNewDCRWallet(walletName, privatePassphrase string, 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.Wallet, error) {
+func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.DCRAsset, error) {
 	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (mw *MultiWallet) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey
 	return wallet, nil
 }
 
-func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.Wallet, error) {
+func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
 	pass := &wallet.WalletPassInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -105,7 +105,7 @@ func (mw *MultiWallet) DeleteBadDCRWallet(walletID int) error {
 	return nil
 }
 
-func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.Wallet {
+func (mw *MultiWallet) DCRWalletWithID(walletID int) *dcr.DCRAsset {
 	if wallet, ok := mw.Assets.DCR.Wallets[walletID]; ok {
 		return wallet
 	}

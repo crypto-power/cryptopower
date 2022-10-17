@@ -634,8 +634,8 @@ func getUniqueTokens(tokenInventory, savedTokens []string) ([]string, []string) 
 	return diff, savedTokens
 }
 
-// TODO: When dcr wallets move to a different package, use dcr.Wallet from the
-// new package rather than wallet.Wallet. Then do dcr.Wallet.AddressInfo instead
+// TODO: When dcr wallets move to a different package, use dcr.DCRAsset from the
+// new package rather than wallet.Wallet. Then do dcr.DCRAsset.AddressInfo instead
 // of using this function.
 func walletAddressAccount(ctx context.Context, wallet *wallet.Wallet, address string) (bool, uint32, error) {
 	addr, err := stdaddr.DecodeAddress(address, wallet.ChainParams())
@@ -652,8 +652,8 @@ func walletAddressAccount(ctx context.Context, wallet *wallet.Wallet, address st
 	return false, 0, nil
 }
 
-// TODO: When dcr wallets move to a different package, use dcr.Wallet from the
-// new package rather than wallet.Wallet. Then do dcr.Wallet.signMessage instead
+// TODO: When dcr wallets move to a different package, use dcr.DCRAsset from the
+// new package rather than wallet.Wallet. Then do dcr.DCRAsset.signMessage instead
 // of using this function.
 func walletSignMessage(ctx context.Context, wallet *wallet.Wallet, address string, message string) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, wallet.ChainParams())

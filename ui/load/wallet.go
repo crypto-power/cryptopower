@@ -14,12 +14,12 @@ import (
 )
 
 type WalletItem struct {
-	Wallet       *dcr.Wallet
+	Wallet       *dcr.DCRAsset
 	TotalBalance string
 }
 
 type BTCWalletItem struct {
-	Wallet       *btc.Wallet
+	Wallet       *btc.BTCAsset
 	TotalBalance string
 }
 
@@ -36,7 +36,7 @@ type WalletLoad struct {
 	SelectedWalletType string
 }
 
-func (wl *WalletLoad) SortedWalletList() []*dcr.Wallet {
+func (wl *WalletLoad) SortedWalletList() []*dcr.DCRAsset {
 	wallets := wl.MultiWallet.AllDCRWallets()
 
 	sort.Slice(wallets, func(i, j int) bool {
@@ -46,7 +46,7 @@ func (wl *WalletLoad) SortedWalletList() []*dcr.Wallet {
 	return wallets
 }
 
-func (wl *WalletLoad) SortedBTCWalletList() []*btc.Wallet {
+func (wl *WalletLoad) SortedBTCWalletList() []*btc.BTCAsset {
 	wallets := wl.MultiWallet.AllBTCWallets()
 
 	sort.Slice(wallets, func(i, j int) bool {

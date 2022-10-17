@@ -33,7 +33,7 @@ type SignMessagePage struct {
 	*app.GenericPageModal
 
 	container layout.List
-	wallet    *dcr.Wallet
+	wallet    *dcr.DCRAsset
 
 	isSigningMessage bool
 	addressIsValid   bool

@@ -74,7 +74,7 @@ type TxDetailsPage struct {
 	ticketSpender *wallet.Transaction // vote or revoke ticket
 	ticketSpent   *wallet.Transaction // ticket spent in a vote or revoke
 	txBackStack   *wallet.Transaction // track original transaction
-	wallet        *dcr.Wallet
+	wallet        *dcr.DCRAsset
 
 	moreItems  []moreItem
 	txnWidgets transactionWdg

@@ -55,7 +55,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
-		WalletSelected(func(w *dcr.Wallet) {
+		WalletSelected(func(w *dcr.DCRAsset) {
 
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
@@ -85,7 +85,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				vm.detailsMu.Unlock()
 			}()
 		}).
-		WalletValidator(func(w *dcr.Wallet) bool {
+		WalletValidator(func(w *dcr.DCRAsset) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 	return vm

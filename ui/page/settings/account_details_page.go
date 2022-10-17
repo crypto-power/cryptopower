@@ -30,7 +30,7 @@ type AcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *dcr.Wallet
+	wallet  *dcr.DCRAsset
 	account *wallet.Account
 
 	theme                    *cryptomaterial.Theme

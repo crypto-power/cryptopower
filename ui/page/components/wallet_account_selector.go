@@ -37,15 +37,15 @@ type selectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedWallet   *dcr.Wallet
+	selectedWallet   *dcr.DCRAsset
 	selectedAccount  *wallet.Account
 	accountCallback  func(*wallet.Account)
-	walletCallback   func(*dcr.Wallet)
+	walletCallback   func(*dcr.DCRAsset)
 	accountIsValid   func(*wallet.Account) bool
 	accountSelector  bool
 	infoActionText   string
 	dialogTitle      string
-	onWalletClicked  func(*dcr.Wallet)
+	onWalletClicked  func(*dcr.DCRAsset)
 	onAccountClicked func(*wallet.Account)
 	onExit           func()
 	walletsList      layout.List
@@ -65,7 +65,7 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 	}
 
 	ws.selectorModal = newSelectorModal(l).
-		walletClicked(func(wallet *dcr.Wallet) {
+		walletClicked(func(wallet *dcr.DCRAsset) {
 			if ws.selectedWallet.ID == wallet.ID {
 				ws.changed = true
 			}
@@ -107,7 +107,7 @@ func (ws *WalletAndAccountSelector) SetActionInfoText(text string) *WalletAndAcc
 
 // SelectFirstValidAccount transforms this widget into an Account selector and selects the first valid account from the
 // the wallet passed to this method.
-func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.Wallet) error {
+func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.DCRAsset) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
 	}
@@ -146,7 +146,7 @@ func (ws *WalletAndAccountSelector) Title(title string) *WalletAndAccountSelecto
 	return ws
 }
 
-func (ws *WalletAndAccountSelector) WalletSelected(callback func(*dcr.Wallet)) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) WalletSelected(callback func(*dcr.DCRAsset)) *WalletAndAccountSelector {
 	ws.walletCallback = callback
 	return ws
 }
@@ -169,11 +169,11 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 	}
 }
 
-func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *dcr.Wallet) {
+func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *dcr.DCRAsset) {
 	ws.selectedWallet = wallet
 }
 
-func (ws *WalletAndAccountSelector) SelectedWallet() *dcr.Wallet {
+func (ws *WalletAndAccountSelector) SelectedWallet() *dcr.DCRAsset {
 	return ws.selectedWallet
 }
 
@@ -336,7 +336,7 @@ func (sm *selectorModal) setupWallet() {
 	sm.selectorItems = selectorItems
 }
 
-func (sm *selectorModal) setupAccounts(wal *dcr.Wallet) {
+func (sm *selectorModal) setupAccounts(wal *dcr.DCRAsset) {
 	selectorItems := make([]*SelectorItem, 0)
 	if !wal.IsWatchingOnlyWallet() {
 		accountsResult, err := wal.GetAccountsRaw()
@@ -371,7 +371,7 @@ func (sm *selectorModal) Handle() {
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
-				case *dcr.Wallet:
+				case *dcr.DCRAsset:
 					if sm.onWalletClicked != nil {
 						sm.onWalletClicked(item)
 					}
@@ -399,7 +399,7 @@ func (sm *selectorModal) title(title string) *selectorModal {
 	return sm
 }
 
-func (sm *selectorModal) walletClicked(callback func(*dcr.Wallet)) *selectorModal {
+func (sm *selectorModal) walletClicked(callback func(*dcr.DCRAsset)) *selectorModal {
 	sm.onWalletClicked = callback
 	return sm
 }
@@ -492,7 +492,7 @@ func (sm *selectorModal) infoBackdropLayout(gtx C) {
 	}
 }
 
-func walletBalance(wal *dcr.Wallet) (totalBalance, spendableBalance int64) {
+func walletBalance(wal *dcr.DCRAsset) (totalBalance, spendableBalance int64) {
 	accountsResult, _ := wal.GetAccountsRaw()
 	var tBal, sBal int64
 	for _, account := range accountsResult.Acc {
@@ -525,7 +525,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				totalBal = dcrutil.Amount(t.TotalBalance).String()
 				spendableBal = dcrutil.Amount(t.Balance.Spendable).String()
 				name = t.Name
-			case *dcr.Wallet:
+			case *dcr.DCRAsset:
 				tb, sb := walletBalance(t)
 				totalBal = dcrutil.Amount(tb).String()
 				spendableBal = dcrutil.Amount(sb).String()
@@ -569,7 +569,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				if t.Number == sm.selectedAccount.Number {
 					return sections(gtx)
 				}
-			case *dcr.Wallet:
+			case *dcr.DCRAsset:
 				if t.ID == sm.selectedWallet.ID {
 					return sections(gtx)
 				}

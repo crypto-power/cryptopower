@@ -8,7 +8,6 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	mainW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
@@ -20,12 +19,12 @@ const (
 
 type AccountsIterator struct {
 	currentIndex int
-	accounts     []*mainW.Account
+	accounts     []*wallet.Account
 }
 
 type WalletsIterator struct {
 	CurrentIndex int
-	Wallets      []*Wallet
+	Wallets      []*DCRAsset
 }
 
 type CSPPConfig struct {
