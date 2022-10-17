@@ -596,40 +596,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.setGapLimit.Clicked() {
-		go func() {
-			walGapLim := pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
-			textModal := modal.NewTextInputModal(pg.Load).
-				Hint(values.String(values.StrGapLimit)).
-				SetTextWithTemplate(modal.SetGapLimitTemplate).
-				SetText(walGapLim).
-				PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-				SetPositiveButtonCallback(func(gapLimit string, tm *modal.TextInputModal) bool {
-					val, err := strconv.ParseUint(gapLimit, 10, 32)
-					if err != nil {
-						tm.SetError(values.String(values.StrGapLimitInputErr))
-						tm.SetLoading(false)
-						return false
-					}
-					gLimit := uint32(val)
-					tm.SetLoading(true)
-
-					err = pg.WL.SelectedWallet.Wallet.DiscoverUsage(gLimit)
-					if err != nil {
-						tm.SetError(err.Error())
-						tm.SetLoading(false)
-						return false
-					}
-					tm.SetLoading(false)
-					info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddresDiscoveryInfoStarted), modal.DefaultClickFunc()).
-						Body(values.String(values.StrAddresDiscoveryInfoBody))
-					pg.ParentWindow().ShowModal(info)
-					pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
-					return true
-				})
-			textModal.Title(values.String(values.StrDiscoverAddressUsage)).
-				SetPositiveButtonText(values.String(values.StrDiscoverAddressUsage))
-			pg.ParentWindow().ShowModal(textModal)
-		}()
+		pg.gapLimitModal()
 	}
 
 	for pg.deleteWallet.Clicked() {
@@ -786,6 +753,47 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
 	}
+}
+
+func (pg *WalletSettingsPage) gapLimitModal() {
+	walGapLim := pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
+	textModal := modal.NewTextInputModal(pg.Load).
+		Hint(values.String(values.StrGapLimit)).
+		SetTextWithTemplate(modal.SetGapLimitTemplate).
+		SetText(walGapLim).
+		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
+		SetPositiveButtonCallback(func(gapLimit string, tm *modal.TextInputModal) bool {
+			val, err := strconv.ParseUint(gapLimit, 10, 32)
+			if err != nil {
+				tm.SetError(values.String(values.StrGapLimitInputErr))
+				tm.SetLoading(false)
+				return false
+			}
+
+			if val < 1 || val > 1000 {
+				tm.SetError(values.String(values.StrGapLimitInputErr))
+				tm.SetLoading(false)
+				return false
+			}
+			gLimit := uint32(val)
+			tm.SetLoading(true)
+
+			err = pg.WL.SelectedWallet.Wallet.DiscoverUsage(gLimit)
+			if err != nil {
+				tm.SetError(err.Error())
+				tm.SetLoading(false)
+				return false
+			}
+			tm.SetLoading(false)
+			info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddressDiscoveryStarted), modal.DefaultClickFunc()).
+				Body(values.String(values.StrAddressDiscoveryBody))
+			pg.ParentWindow().ShowModal(info)
+			pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
+			return true
+		})
+	textModal.Title(values.String(values.StrDiscoverAddressUsage)).
+		SetPositiveButtonText(values.String(values.StrDiscoverAddressUsage))
+	pg.ParentWindow().ShowModal(textModal)
 }
 
 func (pg *WalletSettingsPage) resetDexDataModal() {
