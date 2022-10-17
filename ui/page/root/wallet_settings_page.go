@@ -597,9 +597,11 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	for pg.setGapLimit.Clicked() {
 		go func() {
+			walGapLim := pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
 			textModal := modal.NewTextInputModal(pg.Load).
 				Hint(values.String(values.StrGapLimit)).
 				SetTextWithTemplate(modal.SetGapLimitTemplate).
+				SetText(walGapLim).
 				PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 				SetPositiveButtonCallback(func(gapLimit string, tm *modal.TextInputModal) bool {
 					val, err := strconv.ParseUint(gapLimit, 10, 32)
@@ -621,6 +623,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 					info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddresDiscoveryInfoStarted), modal.DefaultClickFunc()).
 						Body(values.String(values.StrAddresDiscoveryInfoBody))
 					pg.ParentWindow().ShowModal(info)
+					pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
 					return true
 				})
 			textModal.Title(values.String(values.StrDiscoverAddressUsage)).

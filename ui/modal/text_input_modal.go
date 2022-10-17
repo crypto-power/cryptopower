@@ -177,3 +177,9 @@ func (tm *TextInputModal) Layout(gtx layout.Context) D {
 
 	return tm.Modal.Layout(gtx, w)
 }
+
+// SetText replaces the content of this editor with the provided text.
+func (tm *TextInputModal) SetText(text string) *TextInputModal {
+	tm.textInput.Editor.SetText(text)
+	return tm
+}
