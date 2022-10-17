@@ -5,13 +5,13 @@ import (
 
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const BlockHeightInvalid int32 = -1
 
 func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
-	blockHash *chainhash.Hash) (*wallet.Transaction, error) {
+	blockHash *chainhash.Hash) (*sharedW.Transaction, error) {
 
 	var blockHeight int32 = BlockHeightInvalid
 	if blockHash != nil {
@@ -25,7 +25,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 		}
 	}
 
-	walletInputs := make([]*wallet.WalletInput, len(txSummary.MyInputs))
+	walletInputs := make([]*sharedW.WalletInput, len(txSummary.MyInputs))
 	for i, input := range txSummary.MyInputs {
 		accountNumber := int32(input.PreviousAccount)
 		accountName, err := asset.AccountName(accountNumber)
@@ -33,17 +33,17 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			log.Error(err)
 		}
 
-		walletInputs[i] = &wallet.WalletInput{
+		walletInputs[i] = &sharedW.WalletInput{
 			Index:    int32(input.Index),
 			AmountIn: int64(input.PreviousAmount),
-			WalletAccount: &wallet.WalletAccount{
+			WalletAccount: &sharedW.WalletAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},
 		}
 	}
 
-	walletOutputs := make([]*wallet.WalletOutput, len(txSummary.MyOutputs))
+	walletOutputs := make([]*sharedW.WalletOutput, len(txSummary.MyOutputs))
 	for i, output := range txSummary.MyOutputs {
 		accountNumber := int32(output.Account)
 		accountName, err := asset.AccountName(accountNumber)
@@ -51,19 +51,19 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			log.Error(err)
 		}
 
-		walletOutputs[i] = &wallet.WalletOutput{
+		walletOutputs[i] = &sharedW.WalletOutput{
 			Index:     int32(output.Index),
 			AmountOut: int64(output.Amount),
 			Internal:  output.Internal,
 			Address:   output.Address.String(),
-			WalletAccount: &wallet.WalletAccount{
+			WalletAccount: &sharedW.WalletAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},
 		}
 	}
 
-	walletTx := &wallet.TxInfoFromWallet{
+	walletTx := &sharedW.TxInfoFromWallet{
 		WalletID:    asset.ID,
 		BlockHeight: blockHeight,
 		Timestamp:   txSummary.Timestamp,
@@ -106,7 +106,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
-		asset.GetWalletDataDb().SaveOrUpdate(&wallet.Transaction{}, ticketPurchaseTx)
+		asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, ticketPurchaseTx)
 	}
 
 	return decodedTx, nil

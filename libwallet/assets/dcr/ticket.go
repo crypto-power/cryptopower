@@ -12,7 +12,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -505,17 +505,17 @@ func (asset *DCRAsset) StopAutoTicketsPurchase() error {
 
 // SetAutoTicketsBuyerConfig sets ticket buyer config for the asset.
 func (asset *DCRAsset) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount int32, amountToMaintain int64) {
-	asset.SetLongConfigValueForKey(wallet.TicketBuyerATMConfigKey, amountToMaintain)
-	asset.SetInt32ConfigValueForKey(wallet.TicketBuyerAccountConfigKey, purchaseAccount)
-	asset.SetStringConfigValueForKey(wallet.TicketBuyerVSPHostConfigKey, vspHost)
+	asset.SetLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, amountToMaintain)
+	asset.SetInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, purchaseAccount)
+	asset.SetStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, vspHost)
 }
 
 // AutoTicketsBuyerConfig returns the previously set ticket buyer config for
 // the asset.
 func (asset *DCRAsset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
-	btm := asset.ReadLongConfigValueForKey(wallet.TicketBuyerATMConfigKey, -1)
-	accNum := asset.ReadInt32ConfigValueForKey(wallet.TicketBuyerAccountConfigKey, -1)
-	vspHost := asset.ReadStringConfigValueForKey(wallet.TicketBuyerVSPHostConfigKey, "")
+	btm := asset.ReadLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, -1)
+	accNum := asset.ReadInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1)
+	vspHost := asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "")
 
 	return &TicketBuyerConfig{
 		VspHost:           vspHost,
@@ -526,15 +526,15 @@ func (asset *DCRAsset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 
 // TicketBuyerConfigIsSet checks if ticket buyer config is set for the asset.
 func (asset *DCRAsset) TicketBuyerConfigIsSet() bool {
-	return asset.ReadStringConfigValueForKey(wallet.TicketBuyerVSPHostConfigKey, "") != ""
+	return asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "") != ""
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.
 func (asset *DCRAsset) ClearTicketBuyerConfig(walletID int) error {
 
-	asset.SetLongConfigValueForKey(wallet.TicketBuyerATMConfigKey, -1)
-	asset.SetInt32ConfigValueForKey(wallet.TicketBuyerAccountConfigKey, -1)
-	asset.SetStringConfigValueForKey(wallet.TicketBuyerVSPHostConfigKey, "")
+	asset.SetLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, -1)
+	asset.SetInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1)
+	asset.SetStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "")
 
 	return nil
 }
@@ -561,8 +561,8 @@ func (asset *DCRAsset) NextTicketPriceRemaining() (secs int64, err error) {
 }
 
 // UnspentUnexpiredTickets returns all Unmined, Immature and Live tickets.
-func (asset *DCRAsset) UnspentUnexpiredTickets() ([]wallet.Transaction, error) {
-	var tickets []wallet.Transaction
+func (asset *DCRAsset) UnspentUnexpiredTickets() ([]sharedW.Transaction, error) {
+	var tickets []sharedW.Transaction
 	for _, filter := range []int32{TxFilterUnmined, TxFilterImmature, TxFilterLive} {
 		tx, err := asset.GetTransactionsRaw(0, 0, filter, true)
 		if err != nil {

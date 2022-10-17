@@ -5,7 +5,7 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
@@ -74,7 +74,7 @@ func (asset *DCRAsset) GetTransaction(txHash string) (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetTransactionRaw(txHash string) (*wallet.Transaction, error) {
+func (asset *DCRAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
 	hash, err := chainhash.NewHashFromStr(txHash)
 	if err != nil {
 		log.Error(err)
@@ -105,17 +105,17 @@ func (asset *DCRAsset) GetTransactions(offset, limit, txFilter int32, newestFirs
 	return string(jsonEncodedTransactions), nil
 }
 
-func (asset *DCRAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []wallet.Transaction, err error) {
+func (asset *DCRAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
 	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
 	return
 }
 
 func (asset *DCRAsset) CountTransactions(txFilter int32) (int, error) {
-	return asset.GetWalletDataDb().Count(txFilter, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &wallet.Transaction{})
+	return asset.GetWalletDataDb().Count(txFilter, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &sharedW.Transaction{})
 }
 
 func (asset *DCRAsset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
-	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &wallet.Transaction{})
+	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &sharedW.Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
 			return false, nil
@@ -126,8 +126,8 @@ func (asset *DCRAsset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) 
 	return true, nil
 }
 
-func (asset *DCRAsset) TicketSpender(ticketHash string) (*wallet.Transaction, error) {
-	var spender wallet.Transaction
+func (asset *DCRAsset) TicketSpender(ticketHash string) (*sharedW.Transaction, error) {
+	var spender sharedW.Transaction
 	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
 		if err == storm.ErrNotFound {
@@ -139,9 +139,9 @@ func (asset *DCRAsset) TicketSpender(ticketHash string) (*wallet.Transaction, er
 	return &spender, nil
 }
 
-func (asset *DCRAsset) TransactionOverview() (txOverview *wallet.TransactionOverview, err error) {
+func (asset *DCRAsset) TransactionOverview() (txOverview *sharedW.TransactionOverview, err error) {
 
-	txOverview = &wallet.TransactionOverview{}
+	txOverview = &sharedW.TransactionOverview{}
 
 	txOverview.Sent, err = asset.CountTransactions(TxFilterSent)
 	if err != nil {
@@ -179,7 +179,7 @@ func (asset *DCRAsset) TransactionOverview() (txOverview *wallet.TransactionOver
 	return txOverview, nil
 }
 
-func (asset *DCRAsset) TxMatchesFilter(tx *wallet.Transaction, txFilter int32) bool {
+func (asset *DCRAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
 	bestBlock := asset.GetBestBlockHeight()
 
 	// tickets with block height less than this are matured.
@@ -244,7 +244,7 @@ func (asset *DCRAsset) TxMatchesFilter(tx *wallet.Transaction, txFilter int32) b
 }
 
 func (asset *DCRAsset) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
-	tx := wallet.Transaction{
+	tx := sharedW.Transaction{
 		Type:          txType,
 		Direction:     direction,
 		BlockHeight:   blockHeight,
@@ -253,7 +253,7 @@ func (asset *DCRAsset) TxMatchesFilter2(direction, blockHeight int32, txType, ti
 	return asset.TxMatchesFilter(&tx, txFilter)
 }
 
-func Confirmations(bestBlock int32, tx wallet.Transaction) int32 {
+func Confirmations(bestBlock int32, tx sharedW.Transaction) int32 {
 	if tx.BlockHeight == BlockHeightInvalid {
 		return 0
 	}
@@ -261,7 +261,7 @@ func Confirmations(bestBlock int32, tx wallet.Transaction) int32 {
 	return (bestBlock - tx.BlockHeight) + 1
 }
 
-func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx wallet.Transaction) string {
+func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx sharedW.Transaction) string {
 	if tx.Type != TxTypeTicketPurchase {
 		return ""
 	}

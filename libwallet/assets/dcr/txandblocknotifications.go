@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"decred.org/dcrwallet/v2/errors"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -26,7 +26,7 @@ func (asset *DCRAsset) listenForTransactions() {
 						return
 					}
 
-					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&wallet.Transaction{}, tempTransaction)
+					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
 					if err != nil {
 						log.Errorf("[%d] New Tx save err: %v", asset.ID, err)
 						return
@@ -53,7 +53,7 @@ func (asset *DCRAsset) listenForTransactions() {
 							return
 						}
 
-						_, err = asset.GetWalletDataDb().SaveOrUpdate(&wallet.Transaction{}, tempTransaction)
+						_, err = asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
 						if err != nil {
 							log.Errorf("[%d] Incoming block replace tx error :%v", asset.ID, err)
 							return
@@ -85,7 +85,7 @@ func (asset *DCRAsset) listenForTransactions() {
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener wallet.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
@@ -114,7 +114,7 @@ func (asset *DCRAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier str
 
 func (asset *DCRAsset) checkWalletMixers() {
 	if asset.IsAccountMixerActive() {
-		unmixedAccount := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
+		unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 		hasMixableOutput, err := asset.accountHasMixableOutput(unmixedAccount)
 		if err != nil {
 			log.Errorf("Error checking for mixable outputs: %v", err)

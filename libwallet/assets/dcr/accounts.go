@@ -11,7 +11,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -25,21 +25,21 @@ func (asset *DCRAsset) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetAccountsRaw() (*wallet.Accounts, error) {
+func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	ctx, _ := asset.ShutdownContextWithCancel()
 	resp, err := asset.Internal().DCR.Accounts(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	accounts := make([]*wallet.Account, len(resp.Accounts))
+	accounts := make([]*sharedW.Account, len(resp.Accounts))
 	for i, a := range resp.Accounts {
 		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
 		if err != nil {
 			return nil, err
 		}
 
-		accounts[i] = &wallet.Account{
+		accounts[i] = &sharedW.Account{
 			WalletID:         asset.ID,
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
@@ -51,7 +51,7 @@ func (asset *DCRAsset) GetAccountsRaw() (*wallet.Accounts, error) {
 		}
 	}
 
-	return &wallet.Accounts{
+	return &sharedW.Accounts{
 		Count:              len(resp.Accounts),
 		CurrentBlockHash:   resp.CurrentBlockHash[:],
 		CurrentBlockHeight: resp.CurrentBlockHeight,
@@ -71,7 +71,7 @@ func (asset *DCRAsset) AccountsIterator() (*AccountsIterator, error) {
 	}, nil
 }
 
-func (accountsInterator *AccountsIterator) Next() *wallet.Account {
+func (accountsInterator *AccountsIterator) Next() *sharedW.Account {
 	if accountsInterator.currentIndex < len(accountsInterator.accounts) {
 		account := accountsInterator.accounts[accountsInterator.currentIndex]
 		accountsInterator.currentIndex++
@@ -85,7 +85,7 @@ func (accountsInterator *AccountsIterator) Reset() {
 	accountsInterator.currentIndex = 0
 }
 
-func (asset *DCRAsset) GetAccount(accountNumber int32) (*wallet.Account, error) {
+func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -100,14 +100,14 @@ func (asset *DCRAsset) GetAccount(accountNumber int32) (*wallet.Account, error) 
 	return nil, errors.New(utils.ErrNotExist)
 }
 
-func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*wallet.Balance, error) {
+func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
 	ctx, _ := asset.ShutdownContextWithCancel()
 	balance, err := asset.Internal().DCR.AccountBalance(ctx, uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
 
-	return &wallet.Balance{
+	return &sharedW.Balance{
 		Total:                   int64(balance.Total),
 		Spendable:               int64(balance.Spendable),
 		ImmatureReward:          int64(balance.ImmatureCoinbaseRewards),

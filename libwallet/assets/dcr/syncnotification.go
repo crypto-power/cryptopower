@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
 	"golang.org/x/sync/errgroup"
 )
@@ -75,11 +75,9 @@ func (asset *DCRAsset) fetchCFiltersProgress(walletID int, startCFiltersHeight, 
 		asset.syncData.activeSyncData.cfiltersFetchProgress.StartCFiltersHeight = startCFiltersHeight
 	}
 
-	// wallet := asset.DCRWalletWithID(walletID)
 	asset.syncData.activeSyncData.cfiltersFetchProgress.TotalFetchedCFiltersCount += endCFiltersHeight - startCFiltersHeight
 
 	totalCFiltersToFetch := asset.GetBestBlockHeight() - asset.syncData.activeSyncData.cfiltersFetchProgress.StartCFiltersHeight
-	// cfiltersLeftToFetch := totalCFiltersToFetch - asset.syncData.activeSyncData.cfiltersFetchProgress.totalFetchedCFiltersCount
 
 	cfiltersFetchProgress := float64(asset.syncData.activeSyncData.cfiltersFetchProgress.TotalFetchedCFiltersCount) / float64(totalCFiltersToFetch)
 
@@ -122,7 +120,7 @@ func (asset *DCRAsset) fetchCFiltersProgress(walletID int, startCFiltersHeight, 
 	asset.publishFetchCFiltersProgress()
 
 	cfiltersFetchTimeRemaining := estimatedTotalCFiltersFetchTime - float64(timeTakenSoFar)
-	debugInfo := &wallet.DebugInfo{
+	debugInfo := &sharedW.DebugInfo{
 		timeTakenSoFar,
 		totalTimeRemainingSeconds,
 		timeTakenSoFar,
@@ -199,11 +197,9 @@ func (asset *DCRAsset) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastF
 		return
 	}
 
-	// for _, wallet := range asset.wallets {
 	if asset.waitingForHeaders {
 		asset.waitingForHeaders = asset.GetBestBlockHeight() > lastFetchedHeaderHeight
 	}
-	// }
 
 	// lock the mutex before reading and writing to asset.syncData.*
 	asset.syncData.mu.Lock()
@@ -263,7 +259,7 @@ func (asset *DCRAsset) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastF
 	// todo: also log report if showLog == true
 	timeTakenSoFar := asset.syncData.activeSyncData.cfiltersFetchProgress.CfiltersFetchTimeSpent + fetchTimeTakenSoFar
 	headersFetchTimeRemaining := estimatedTotalHeadersFetchTime - float64(fetchTimeTakenSoFar)
-	debugInfo := &wallet.DebugInfo{
+	debugInfo := &sharedW.DebugInfo{
 		timeTakenSoFar,
 		totalTimeRemainingSeconds,
 		fetchTimeTakenSoFar,
@@ -405,7 +401,7 @@ func (asset *DCRAsset) updateAddressDiscoveryProgress(totalHeadersFetchTime floa
 
 			asset.publishAddressDiscoveryProgress()
 
-			debugInfo := &wallet.DebugInfo{
+			debugInfo := &sharedW.DebugInfo{
 				int64(math.Round(totalElapsedTime)),
 				totalTimeRemainingSeconds,
 				int64(math.Round(elapsedDiscoveryTime)),
@@ -524,7 +520,7 @@ func (asset *DCRAsset) rescanProgress(walletID int, rescannedThrough int32) {
 
 	asset.publishHeadersRescanProgress()
 
-	debugInfo := &wallet.DebugInfo{
+	debugInfo := &sharedW.DebugInfo{
 		totalElapsedTime,
 		totalTimeRemainingSeconds,
 		elapsedRescanTime,
@@ -562,7 +558,7 @@ func (asset *DCRAsset) rescanFinished(walletID int) {
 	asset.syncData.activeSyncData.headersRescanProgress.TotalSyncProgress = 100
 
 	// Reset these value so that address discovery would
-	// not be skipped for the next wallet.
+	// not be skipped for the next sharedW.
 	asset.syncData.activeSyncData.addressDiscoveryProgress.AddressDiscoveryStartTime = -1
 	asset.syncData.activeSyncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent = -1
 	asset.syncData.mu.Unlock()
@@ -570,7 +566,7 @@ func (asset *DCRAsset) rescanFinished(walletID int) {
 	asset.publishHeadersRescanProgress()
 }
 
-func (asset *DCRAsset) publishDebugInfo(debugInfo *wallet.DebugInfo) {
+func (asset *DCRAsset) publishDebugInfo(debugInfo *sharedW.DebugInfo) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		syncProgressListener.Debug(debugInfo)
 	}

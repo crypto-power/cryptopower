@@ -3,7 +3,7 @@ package dcr
 import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 )
 
@@ -28,7 +28,7 @@ func (asset *DCRAsset) IndexTransactions() error {
 				return false, err
 			}
 
-			_, err = asset.GetWalletDataDb().SaveOrUpdate(&wallet.Transaction{}, tx)
+			_, err = asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tx)
 			if err != nil {
 				log.Errorf("[%d] Index tx replace tx err : %v", asset.ID, err)
 				return false, err
@@ -68,7 +68,7 @@ func (asset *DCRAsset) IndexTransactions() error {
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)
 
 	defer func() {
-		count, err := asset.GetWalletDataDb().Count(walletdata.TxFilterAll, asset.RequiredConfirmations(), endHeight, &wallet.Transaction{})
+		count, err := asset.GetWalletDataDb().Count(walletdata.TxFilterAll, asset.RequiredConfirmations(), endHeight, &sharedW.Transaction{})
 		if err != nil {
 			log.Errorf("[%d] Post-indexing tx count error :%v", asset.ID, err)
 		} else if count > 0 {
@@ -86,7 +86,7 @@ func (asset *DCRAsset) IndexTransactions() error {
 }
 
 func (asset *DCRAsset) reindexTransactions() error {
-	err := asset.GetWalletDataDb().ClearSavedTransactions(&wallet.Transaction{})
+	err := asset.GetWalletDataDb().ClearSavedTransactions(&sharedW.Transaction{})
 	if err != nil {
 		return err
 	}

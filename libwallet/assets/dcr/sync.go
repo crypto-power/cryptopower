@@ -13,7 +13,7 @@ import (
 	"decred.org/dcrwallet/v2/p2p"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/spv"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -22,7 +22,7 @@ import (
 type SyncData struct {
 	mu sync.RWMutex
 
-	syncProgressListeners map[string]wallet.SyncProgressListener
+	syncProgressListeners map[string]sharedW.SyncProgressListener
 	showLogs              bool
 
 	synced       bool
@@ -46,10 +46,10 @@ type activeSyncData struct {
 
 	syncStage int32
 
-	cfiltersFetchProgress    wallet.CFiltersFetchProgressReport
-	headersFetchProgress     wallet.HeadersFetchProgressReport
-	addressDiscoveryProgress wallet.AddressDiscoveryProgressReport
-	headersRescanProgress    wallet.HeadersRescanProgressReport
+	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
+	headersFetchProgress     sharedW.HeadersFetchProgressReport
+	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
+	headersRescanProgress    sharedW.HeadersRescanProgressReport
 
 	addressDiscoveryCompletedOrCanceled chan bool
 
@@ -68,29 +68,29 @@ const (
 
 func (asset *DCRAsset) initActiveSyncData() {
 
-	cfiltersFetchProgress := wallet.CFiltersFetchProgressReport{
-		GeneralSyncProgress:         &wallet.GeneralSyncProgress{},
+	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
+		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
 		BeginFetchCFiltersTimeStamp: 0,
 		StartCFiltersHeight:         -1,
 		CfiltersFetchTimeSpent:      0,
 		TotalFetchedCFiltersCount:   0,
 	}
 
-	headersFetchProgress := wallet.HeadersFetchProgressReport{
-		GeneralSyncProgress:      &wallet.GeneralSyncProgress{},
+	headersFetchProgress := sharedW.HeadersFetchProgressReport{
+		GeneralSyncProgress:      &sharedW.GeneralSyncProgress{},
 		BeginFetchTimeStamp:      -1,
 		HeadersFetchTimeSpent:    -1,
 		TotalFetchedHeadersCount: 0,
 	}
 
-	addressDiscoveryProgress := wallet.AddressDiscoveryProgressReport{
-		GeneralSyncProgress:       &wallet.GeneralSyncProgress{},
+	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
+		GeneralSyncProgress:       &sharedW.GeneralSyncProgress{},
 		AddressDiscoveryStartTime: -1,
 		TotalDiscoveryTimeSpent:   -1,
 	}
 
-	headersRescanProgress := wallet.HeadersRescanProgressReport{}
-	headersRescanProgress.GeneralSyncProgress = &wallet.GeneralSyncProgress{}
+	headersRescanProgress := sharedW.HeadersRescanProgressReport{}
+	headersRescanProgress.GeneralSyncProgress = &sharedW.GeneralSyncProgress{}
 
 	asset.syncData.mu.Lock()
 	asset.syncData.activeSyncData = &activeSyncData{
@@ -111,7 +111,7 @@ func (asset *DCRAsset) IsSyncProgressListenerRegisteredFor(uniqueIdentifier stri
 	return exists
 }
 
-func (asset *DCRAsset) AddSyncProgressListener(syncProgressListener wallet.SyncProgressListener, uniqueIdentifier string) error {
+func (asset *DCRAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	if asset.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
@@ -130,11 +130,11 @@ func (asset *DCRAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *DCRAsset) syncProgressListeners() []wallet.SyncProgressListener {
+func (asset *DCRAsset) syncProgressListeners() []sharedW.SyncProgressListener {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	listeners := make([]wallet.SyncProgressListener, 0, len(asset.syncData.syncProgressListeners))
+	listeners := make([]sharedW.SyncProgressListener, 0, len(asset.syncData.syncProgressListeners))
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listeners = append(listeners, listener)
 	}
@@ -188,12 +188,12 @@ func (asset *DCRAsset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 }
 
 func (asset *DCRAsset) SetSpecificPeer(address string) {
-	asset.SaveUserConfigValue(wallet.SpvPersistentPeerAddressesConfigKey, address)
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
 	asset.RestartSpvSync()
 }
 
 func (asset *DCRAsset) RemoveSpecificPeer() {
-	asset.SaveUserConfigValue(wallet.SpvPersistentPeerAddressesConfigKey, "")
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	asset.RestartSpvSync()
 }
 
@@ -208,7 +208,7 @@ func (asset *DCRAsset) SpvSync() error {
 	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
 	var validPeerAddresses []string
-	peerAddresses := asset.ReadStringConfigValueForKey(wallet.SpvPersistentPeerAddressesConfigKey, "")
+	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
@@ -351,7 +351,7 @@ func (asset *DCRAsset) CurrentSyncStage() int32 {
 	return InvalidSyncStage
 }
 
-func (asset *DCRAsset) GeneralSyncProgress() *wallet.GeneralSyncProgress {
+func (asset *DCRAsset) GeneralSyncProgress() *sharedW.GeneralSyncProgress {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -377,16 +377,16 @@ func (asset *DCRAsset) ConnectedPeers() int32 {
 	return asset.syncData.connectedPeers
 }
 
-func (asset *DCRAsset) PeerInfoRaw() ([]wallet.PeerInfo, error) {
+func (asset *DCRAsset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {
 	if !asset.IsConnectedToDecredNetwork() {
 		return nil, errors.New(utils.ErrNotConnected)
 	}
 
 	syncer := asset.syncData.syncer
 
-	infos := make([]wallet.PeerInfo, 0, len(syncer.GetRemotePeers()))
+	infos := make([]sharedW.PeerInfo, 0, len(syncer.GetRemotePeers()))
 	for _, rp := range syncer.GetRemotePeers() {
-		info := wallet.PeerInfo{
+		info := sharedW.PeerInfo{
 			ID:             int32(rp.ID()),
 			Addr:           rp.RemoteAddr().String(),
 			AddrLocal:      rp.LocalAddr().String(),
@@ -417,9 +417,9 @@ func (asset *DCRAsset) PeerInfo() (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetBestBlock() *wallet.BlockInfo {
+func (asset *DCRAsset) GetBestBlock() *sharedW.BlockInfo {
 	var bestBlock int32 = -1
-	var blockInfo *wallet.BlockInfo
+	var blockInfo *sharedW.BlockInfo
 	if !asset.WalletOpened() {
 		return nil
 	}
@@ -427,22 +427,22 @@ func (asset *DCRAsset) GetBestBlock() *wallet.BlockInfo {
 	walletBestBLock := asset.GetBestBlockHeight()
 	if walletBestBLock > bestBlock || bestBlock == -1 {
 		bestBlock = walletBestBLock
-		blockInfo = &wallet.BlockInfo{Height: bestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
+		blockInfo = &sharedW.BlockInfo{Height: bestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo
 }
 
-func (asset *DCRAsset) GetLowestBlock() *wallet.BlockInfo {
+func (asset *DCRAsset) GetLowestBlock() *sharedW.BlockInfo {
 	var lowestBlock int32 = -1
-	var blockInfo *wallet.BlockInfo
+	var blockInfo *sharedW.BlockInfo
 	if !asset.WalletOpened() {
 		return nil
 	}
 	walletBestBLock := asset.GetBestBlockHeight()
 	if walletBestBLock < lowestBlock || lowestBlock == -1 {
 		lowestBlock = walletBestBLock
-		blockInfo = &wallet.BlockInfo{Height: lowestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
+		blockInfo = &sharedW.BlockInfo{Height: lowestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo

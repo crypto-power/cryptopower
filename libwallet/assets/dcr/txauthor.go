@@ -17,7 +17,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -25,10 +25,10 @@ import (
 type TxAuthor struct {
 	sourceWallet        *DCRAsset
 	sourceAccountNumber uint32
-	destinations        []wallet.TransactionDestination
+	destinations        []sharedW.TransactionDestination
 	changeAddress       string
 	inputs              []*wire.TxIn
-	changeDestination   *wallet.TransactionDestination
+	changeDestination   *sharedW.TransactionDestination
 
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
@@ -48,7 +48,7 @@ func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, erro
 	return &TxAuthor{
 		sourceWallet:        sourceWallet,
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make([]wallet.TransactionDestination, 0),
+		destinations:        make([]sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 	}, nil
 }
@@ -63,7 +63,7 @@ func (tx *TxAuthor) AddSendDestination(address string, atomAmount int64, sendMax
 		return err
 	}
 
-	tx.destinations = append(tx.destinations, wallet.TransactionDestination{
+	tx.destinations = append(tx.destinations, sharedW.TransactionDestination{
 		Address:    address,
 		AtomAmount: atomAmount,
 		SendMax:    sendMax,
@@ -82,7 +82,7 @@ func (tx *TxAuthor) UpdateSendDestination(index int, address string, atomAmount 
 		return errors.New(utils.ErrIndexOutOfRange)
 	}
 
-	tx.destinations[index] = wallet.TransactionDestination{
+	tx.destinations[index] = sharedW.TransactionDestination{
 		Address:    address,
 		AtomAmount: atomAmount,
 		SendMax:    sendMax,
@@ -98,12 +98,12 @@ func (tx *TxAuthor) RemoveSendDestination(index int) {
 	}
 }
 
-func (tx *TxAuthor) SendDestination(atIndex int) *wallet.TransactionDestination {
+func (tx *TxAuthor) SendDestination(atIndex int) *sharedW.TransactionDestination {
 	return &tx.destinations[atIndex]
 }
 
 func (tx *TxAuthor) SetChangeDestination(address string) {
-	tx.changeDestination = &wallet.TransactionDestination{
+	tx.changeDestination = &sharedW.TransactionDestination{
 		Address: address,
 	}
 	tx.needsConstruct = true
@@ -114,47 +114,47 @@ func (tx *TxAuthor) RemoveChangeDestination() {
 	tx.needsConstruct = true
 }
 
-func (tx *TxAuthor) TotalSendAmount() *wallet.Amount {
+func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
 	var totalSendAmountAtom int64 = 0
 	for _, destination := range tx.destinations {
 		totalSendAmountAtom += destination.AtomAmount
 	}
 
-	return &wallet.Amount{
+	return &sharedW.Amount{
 		AtomValue: totalSendAmountAtom,
 		DcrValue:  dcrutil.Amount(totalSendAmountAtom).ToCoin(),
 	}
 }
 
-func (tx *TxAuthor) EstimateFeeAndSize() (*wallet.TxFeeAndSize, error) {
+func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	unsignedTx, err := tx.unsignedTransaction()
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
 
 	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, unsignedTx.EstimatedSignedSerializeSize)
-	feeAmount := &wallet.Amount{
+	feeAmount := &sharedW.Amount{
 		AtomValue: int64(feeToSendTx),
 		DcrValue:  feeToSendTx.ToCoin(),
 	}
 
-	var change *wallet.Amount
+	var change *sharedW.Amount
 	if unsignedTx.ChangeIndex >= 0 {
 		txOut := unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex]
-		change = &wallet.Amount{
+		change = &sharedW.Amount{
 			AtomValue: txOut.Value,
 			DcrValue:  AmountCoin(txOut.Value),
 		}
 	}
 
-	return &wallet.TxFeeAndSize{
+	return &sharedW.TxFeeAndSize{
 		EstimatedSignedSize: unsignedTx.EstimatedSignedSerializeSize,
 		Fee:                 feeAmount,
 		Change:              change,
 	}, nil
 }
 
-func (tx *TxAuthor) EstimateMaxSendAmount() (*wallet.Amount, error) {
+func (tx *TxAuthor) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	txFeeAndSize, err := tx.EstimateFeeAndSize()
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (tx *TxAuthor) EstimateMaxSendAmount() (*wallet.Amount, error) {
 
 	maxSendableAmount := spendableAccountBalance - txFeeAndSize.Fee.AtomValue
 
-	return &wallet.Amount{
+	return &sharedW.Amount{
 		AtomValue: maxSendableAmount,
 		DcrValue:  dcrutil.Amount(maxSendableAmount).ToCoin(),
 	}, nil
@@ -354,7 +354,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	if changeSource == nil {
 		// dcrwallet should ordinarily handle cases where a nil changeSource
-		// is passed to `wallet.NewUnsignedTransaction` but the changeSource
+		// is passed to `sharedW.NewUnsignedTransaction` but the changeSource
 		// generated there errors on internal gap address limit exhaustion
 		// instead of wrapping around to a previously returned address.
 		//
@@ -374,7 +374,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 // changeSource derives an internal address from the source wallet and account
 // for this unsigned tx, if a change address had not been previously derived.
 // The derived (or previously derived) address is used to prepare a
-// change source for receiving change from this tx back into the wallet.
+// change source for receiving change from this tx back into the sharedW.
 func (tx *TxAuthor) changeSource(ctx context.Context) (txauthor.ChangeSource, error) {
 	if tx.changeAddress == "" {
 		var changeAccount uint32

@@ -10,14 +10,14 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrdata/v7/txhelpers"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const BlockValid = 1 << 0
 
 // DecodeTransaction uses `walletTx.Hex` to retrieve detailed information for a transaction.
-func (asset *DCRAsset) DecodeTransaction(walletTx *wallet.TxInfoFromWallet, netParams *chaincfg.Params) (*wallet.Transaction, error) {
+func (asset *DCRAsset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, netParams *chaincfg.Params) (*sharedW.Transaction, error) {
 	msgTx, txFee, txSize, txFeeRate, err := txhelper.MsgTxFeeSizeRate(walletTx.Hex)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (asset *DCRAsset) DecodeTransaction(walletTx *wallet.TxInfoFromWallet, netP
 		txFee = dcrutil.Amount(totalWalletUnmixedInputs - (totalWalletMixedOutputs + mixChange))
 	}
 
-	return &wallet.Transaction{
+	return &sharedW.Transaction{
 		WalletID:    walletTx.WalletID,
 		Hash:        msgTx.TxHash().String(),
 		Type:        txType,
@@ -80,12 +80,12 @@ func (asset *DCRAsset) DecodeTransaction(walletTx *wallet.TxInfoFromWallet, netP
 	}, nil
 }
 
-func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*wallet.WalletInput) (inputs []*wallet.TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
-	inputs = make([]*wallet.TxInput, len(mtx.TxIn))
-	unmixedAccountNumber := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
+func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.WalletInput) (inputs []*sharedW.TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
+	inputs = make([]*sharedW.TxInput, len(mtx.TxIn))
+	unmixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 
 	for i, txIn := range mtx.TxIn {
-		input := &wallet.TxInput{
+		input := &sharedW.TxInput{
 			PreviousTransactionHash:  txIn.PreviousOutPoint.Hash.String(),
 			PreviousTransactionIndex: int32(txIn.PreviousOutPoint.Index),
 			PreviousOutpoint:         txIn.PreviousOutPoint.String(),
@@ -115,10 +115,10 @@ func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*wallet.Wa
 }
 
 func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
-	walletOutputs []*wallet.WalletOutput) (outputs []*wallet.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
-	outputs = make([]*wallet.TxOutput, len(mtx.TxOut))
+	walletOutputs []*sharedW.WalletOutput) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
+	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
 	txType := txhelpers.DetermineTxType(mtx, true)
-	mixedAccountNumber := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, -1)
+	mixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 
 	for i, txOut := range mtx.TxOut {
 		// get address and script type for output
@@ -140,7 +140,7 @@ func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Para
 			scriptType = scriptClass.String()
 		}
 
-		output := &wallet.TxOutput{
+		output := &sharedW.TxOutput{
 			Index:         int32(i),
 			Amount:        txOut.Value,
 			Version:       int32(txOut.Version),

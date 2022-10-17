@@ -7,7 +7,7 @@ import (
 
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
@@ -19,7 +19,7 @@ const (
 
 type AccountsIterator struct {
 	currentIndex int
-	accounts     []*wallet.Account
+	accounts     []*sharedW.Account
 }
 
 type WalletsIterator struct {
@@ -46,7 +46,7 @@ type AccountMixerNotificationListener interface {
 // asyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that
 // triggers notifcation callbacks asynchronously.
 type asyncTxAndBlockNotificationListener struct {
-	l wallet.TxAndBlockNotificationListener
+	l sharedW.TxAndBlockNotificationListener
 }
 
 // OnTransaction satisfies the TxAndBlockNotificationListener interface and

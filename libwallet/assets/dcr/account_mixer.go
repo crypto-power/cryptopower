@@ -12,7 +12,7 @@ import (
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/certs"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -48,7 +48,7 @@ func (asset *DCRAsset) RemoveAccountMixerNotificationListener(uniqueIdentifier s
 // is added to ease unlocking the wallet before creating accounts. This function should be
 // used with auto cspp mixer setup.
 func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass string) error {
-	accountMixerConfigSet := asset.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false)
+	accountMixerConfigSet := asset.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 	if accountMixerConfigSet {
 		return errors.New(utils.ErrInvalid)
 	}
@@ -74,9 +74,9 @@ func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPas
 		return err
 	}
 
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, mixedAccountNumber)
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, unmixedAccountNumber)
-	asset.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, true)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, mixedAccountNumber)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, unmixedAccountNumber)
+	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 	return nil
 }
@@ -106,33 +106,33 @@ func (asset *DCRAsset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32,
 	}
 	asset.LockWallet()
 
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, mixedAccount)
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, unmixedAccount)
-	asset.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, true)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, mixedAccount)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, unmixedAccount)
+	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 	return nil
 }
 
 func (asset *DCRAsset) AccountMixerMixChange() bool {
-	return asset.ReadBoolConfigValueForKey(wallet.AccountMixerMixTxChange, false)
+	return asset.ReadBoolConfigValueForKey(sharedW.AccountMixerMixTxChange, false)
 }
 
 func (asset *DCRAsset) AccountMixerConfigIsSet() bool {
-	return asset.ReadBoolConfigValueForKey(wallet.AccountMixerConfigSet, false)
+	return asset.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 }
 
 func (asset *DCRAsset) MixedAccountNumber() int32 {
-	return asset.ReadInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, -1)
+	return asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 }
 
 func (asset *DCRAsset) UnmixedAccountNumber() int32 {
-	return asset.ReadInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
+	return asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 }
 
 func (asset *DCRAsset) ClearMixerConfig() {
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, -1)
-	asset.SetInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
-	asset.SetBoolConfigValueForKey(wallet.AccountMixerConfigSet, false)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
+	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
+	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 }
 
 func (asset *DCRAsset) ReadyToMix(walletID int) (bool, error) {
@@ -140,7 +140,7 @@ func (asset *DCRAsset) ReadyToMix(walletID int) (bool, error) {
 		return false, errors.New(utils.ErrNotExist)
 	}
 
-	unmixedAccount := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
+	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 
 	hasMixableOutput, err := asset.accountHasMixableOutput(unmixedAccount)
 	if err != nil {
@@ -213,8 +213,8 @@ func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
 }
 
 func (asset *DCRAsset) readCSPPConfig() *CSPPConfig {
-	mixedAccount := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerMixedAccount, -1)
-	unmixedAccount := asset.ReadInt32ConfigValueForKey(wallet.AccountMixerUnmixedAccount, -1)
+	mixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
+	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 
 	if mixedAccount == -1 || unmixedAccount == -1 {
 		// not configured for mixing

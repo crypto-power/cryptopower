@@ -7,7 +7,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -59,7 +59,7 @@ func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
 				return
 			}
 
-			rescanProgressReport := &wallet.HeadersRescanProgressReport{
+			rescanProgressReport := &sharedW.HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
 				TotalHeadersToScan:  asset.GetBestBlockHeight(),
 				WalletID:            asset.ID,
@@ -72,7 +72,7 @@ func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
 			estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
 			rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
 
-			rescanProgressReport.GeneralSyncProgress = &wallet.GeneralSyncProgress{
+			rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
 				TotalSyncProgress:         rescanProgressReport.RescanProgress,
 				TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
 			}
@@ -138,6 +138,6 @@ func (asset *DCRAsset) IsRescanning() bool {
 	return asset.syncData.rescanning
 }
 
-func (asset *DCRAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener wallet.BlocksRescanProgressListener) {
+func (asset *DCRAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
