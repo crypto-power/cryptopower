@@ -36,18 +36,26 @@ type btcLoader struct {
 	mu sync.RWMutex
 }
 
+// LoaderConf models the configuration options of a btc loader.
+type LoaderConf struct {
+	ChainParams      *chaincfg.Params
+	DBDirPath        string
+	DefaultDBTimeout time.Duration
+	RecoveryWin      uint32
+}
+
 // Confirm that btcLoader implements the complete asset loader interface.
 var _ loader.AssetLoader = (*btcLoader)(nil)
 
 // NewLoader constructs a BTC Loader.
-func NewLoader(chainParams *chaincfg.Params, dbDirPath string, defaultDBTimeout time.Duration, recoveryWin uint32) loader.AssetLoader {
+func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 
 	return &btcLoader{
-		chainParams:    chainParams,
-		dbTimeout:      defaultDBTimeout,
-		recoveryWindow: recoveryWin,
+		chainParams:    cfg.ChainParams,
+		dbTimeout:      cfg.DefaultDBTimeout,
+		recoveryWindow: cfg.RecoveryWin,
 
-		Loader: loader.NewLoader(dbDirPath),
+		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
 }
 
