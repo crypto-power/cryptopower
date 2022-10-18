@@ -20,6 +20,7 @@ import (
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -73,7 +74,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -87,6 +88,17 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
 
 	return btcWallet, nil
+}
+
+func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.AssetLoader {
+	conf := &btc.LoaderConf{
+		ChainParams:      chainParams,
+		DBDirPath:        dbDirPath,
+		DefaultDBTimeout: defaultDBTimeout,
+		RecoveryWin:      recoverWindow,
+	}
+
+	return btc.NewLoader(conf)
 }
 
 // CreateWatchOnlyWallet accepts the wallet name, extended public key and the
@@ -103,7 +115,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
 		ldr, params, utils.BTCWalletAsset)
 	if err != nil {
@@ -133,7 +145,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -162,7 +174,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, err
 		return nil, err
 	}
 
-	ldr := btc.NewLoader(chainParams, params.RootDir, defaultDBTimeout, recoverWindow)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
@@ -178,7 +190,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, err
 	return btcWallet, nil
 }
 
-//TODO: NOT USED.
+// TODO: NOT USED.
 // connect will start the wallet and begin syncing.
 func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	if err := logNeutrino(asset.DataDir()); err != nil {
@@ -196,7 +208,7 @@ func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	return nil
 }
 
-//TODO: NOT USED.
+// TODO: NOT USED.
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() error {
