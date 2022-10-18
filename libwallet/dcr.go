@@ -76,6 +76,7 @@ func (mw *MultiWallet) RestoreDCRWallet(walletName, seedMnemonic, privatePassphr
 func (mw *MultiWallet) DeleteDCRWallet(walletID int, privPass []byte) error {
 	wallet := mw.DCRWalletWithID(walletID)
 
+	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly)
 	err := wallet.DeleteWallet(privPass)
 	if err != nil {
 		return err

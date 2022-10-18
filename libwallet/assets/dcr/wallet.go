@@ -249,3 +249,9 @@ func (asset *DCRAsset) SafelyCancelSync() {
 		}()
 	}
 }
+
+func (asset *DCRAsset) SafelyCancelSyncOnly() {
+	if asset.IsConnectedToDecredNetwork() {
+		asset.CancelSync()
+	}
+}
