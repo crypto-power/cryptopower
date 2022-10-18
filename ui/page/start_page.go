@@ -62,6 +62,8 @@ func (sp *startPage) OnNavigatedTo() {
 	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
+		// Set the log levels.
+		sp.WL.MultiWallet.GetLogLevels()
 		if sp.WL.MultiWallet.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
@@ -99,7 +101,7 @@ func (sp *startPage) unlock() {
 }
 
 func (sp *startPage) openWallets(password string) error {
-	err := sp.WL.MultiWallet.OpenWallets([]byte(password))
+	err := sp.WL.MultiWallet.OpenWallets(password)
 	if err != nil {
 		log.Info("Error opening wallet:", err)
 		// show err dialog
@@ -191,7 +193,8 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					netType := sp.WL.Wallet.Net
-					if sp.WL.Wallet.Net == libwallet.Testnet3 {
+					if sp.WL.MultiWallet.NetType() == libwallet.Testnet3 {
+						//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
 						netType = "Testnet"
 					}
 
@@ -243,9 +246,9 @@ func (sp *startPage) layoutMobile(gtx C) D {
 }
 
 func (sp *startPage) setLanguageSetting() {
-	langPre := sp.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)
+	langPre := sp.WL.MultiWallet.GetLanguagePreference()
 	if langPre == "" {
-		sp.WL.MultiWallet.SaveUserConfigValue(load.LanguagePreferenceKey, values.DefaultLangauge)
+		sp.WL.MultiWallet.SetLanguagePreference(values.DefaultLangauge)
 	}
 	values.SetUserLanguage(langPre)
 }

@@ -19,7 +19,7 @@ import (
 
 type WalletSelector struct {
 	*load.Load
-	multiWallet *libwallet.MultiWallet
+	multiWallet *libwallet.AssetsManager
 	dialogTitle string
 
 	walletIsValid func(*dcr.DCRAsset) bool

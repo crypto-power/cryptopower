@@ -60,7 +60,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	pg.buildDateValue.Color = col
 
 	netType := pg.WL.Wallet.Net
-	if pg.WL.Wallet.Net == libwallet.Testnet3 {
+	if pg.WL.Wallet.Net == string(libwallet.Testnet3) {
 		netType = "Testnet"
 	}
 	pg.networkValue = l.Theme.Body1(netType)

@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/utils"
@@ -330,7 +330,7 @@ func (cm *CreatePasswordModal) LayoutComponents(gtx C) []layout.Widget {
 
 	if cm.serverError != "" {
 		// set wallet name editor error if wallet name already exist
-		if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
+		if cm.serverError == libutils.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
 		} else if !utils.ValidateLengthName(cm.walletName.Editor.Text()) {
 			cm.walletName.SetError(values.String(values.StrWalletNameLengthError))

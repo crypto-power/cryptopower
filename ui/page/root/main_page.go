@@ -17,7 +17,6 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
@@ -293,7 +292,7 @@ func (mp *MainPage) OnNavigatedTo() {
 		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
-		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SeedBackupNotificationConfigKey, false)
+		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
 		// reset the checkbox
 		mp.checkBox.CheckBox.Value = false
 
@@ -307,7 +306,7 @@ func (mp *MainPage) OnNavigatedTo() {
 		}
 		mp.CurrentPage().OnNavigatedTo()
 
-		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false) {
+		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
 			if mp.WL.MultiWallet.Politeia.IsSyncing() {
 				return
 			}
@@ -325,7 +324,8 @@ func (mp *MainPage) OnNavigatedTo() {
 
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
-	if mp.currencyExchangeValue = mp.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey); mp.currencyExchangeValue != values.DefaultExchangeValue {
+	mp.currencyExchangeValue = mp.WL.MultiWallet.GetCurrencyConversionExchange()
+	if mp.currencyExchangeValue != values.DefaultExchangeValue {
 		go mp.fetchExchangeRate()
 	}
 }
@@ -567,9 +567,9 @@ func (mp *MainPage) HandleUserInteractions() {
 	}
 
 	for mp.hideBalanceButton.Clicked() {
-		mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.HideBalanceConfigKey, false)
+		mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
 		mp.isBalanceHidden = !mp.isBalanceHidden
-		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(load.HideBalanceConfigKey, mp.isBalanceHidden)
+		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, mp.isBalanceHidden)
 	}
 }
 
@@ -611,7 +611,7 @@ func (mp *MainPage) OnNavigatedFrom() {
 	}
 
 	if mp.WL.SelectedWalletType == "DCR" {
-		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
+		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
 	mp.ctxCancel()
@@ -958,7 +958,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 
 		initializeBeepNotification(notification)
 	case wallet.Proposal:
-		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.ProposalNotificationConfigKey, false)
+		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false)
 		if !proposalNotification {
 			return
 		}
@@ -1029,8 +1029,7 @@ func (mp *MainPage) listenForNotifications() {
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
-					transactionNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
-					if transactionNotification {
+					if mp.WL.MultiWallet.IsTransactionNotificationsOn() {
 						update := wallet.NewTransaction{
 							Transaction: n.Transaction,
 						}
@@ -1090,12 +1089,12 @@ func (mp *MainPage) showBackupInfo() {
 		CheckBox(mp.checkBox, true).
 		SetNegativeButtonText(values.String(values.StrBackupLater)).
 		SetNegativeButtonCallback(func() {
-			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
+			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 		}).
 		PositiveButtonStyle(mp.Load.Theme.Color.Primary, mp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, true)
+			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
 			return true
 		})

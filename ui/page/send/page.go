@@ -114,7 +114,7 @@ func NewSendPage(l *load.Load) *Page {
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
 
 			if wal.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!wal.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
+				!wal.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
 				// only mixed accounts can send to address for wallet with privacy setup
@@ -184,7 +184,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	pg.currencyExchange = pg.WL.MultiWallet.ReadStringConfigValueForKey(sharedW.CurrencyConversionConfigKey)
+	pg.currencyExchange = pg.WL.MultiWallet.GetCurrencyConversionExchange()
 	if pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
@@ -391,7 +391,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(sharedW.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
@@ -481,7 +481,7 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 		return
 	}
 
-	currencyValue := pg.WL.MultiWallet.ReadStringConfigValueForKey(sharedW.CurrencyConversionConfigKey)
+	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:

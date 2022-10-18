@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -103,7 +102,8 @@ func sortDexExchanges(mapCert map[string][]byte) []string {
 func (pg *WalletDexServerSelector) mapKnowDexServers() map[string][]byte {
 	knownDexServers := core.CertStore[pg.Dexc().Core().Network()]
 	dexServer := new(components.DexServer)
-	err := pg.Load.WL.MultiWallet.ReadUserConfigValue(load.KnownDexServersConfigKey, &dexServer)
+	hosts, err := pg.Load.WL.MultiWallet.GetDexServers()
+	dexServer.SavedHosts = hosts
 	if err != nil {
 		return knownDexServers
 	}

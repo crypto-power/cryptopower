@@ -5,7 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -75,7 +75,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.isDarkModeOn = pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false)
+	pg.isDarkModeOn = pg.WL.MultiWallet.IsDarkModeOn()
 
 	return pg
 }
@@ -198,7 +198,7 @@ func (pg *SettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					lKey := pg.WL.MultiWallet.ReadStringConfigValueForKey(libwallet.CurrencyConversionConfigKey)
+					lKey := pg.WL.MultiWallet.GetCurrencyConversionExchange()
 					l := values.ArrExchangeCurrencies[lKey]
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
@@ -211,7 +211,7 @@ func (pg *SettingsPage) general() layout.Widget {
 					languageRow := row{
 						title:     values.String(values.StrLanguage),
 						clickable: pg.language,
-						label:     pg.Theme.Body2(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)),
+						label:     pg.Theme.Body2(pg.WL.MultiWallet.GetLanguagePreference()),
 					}
 					return pg.clickableRow(gtx, languageRow)
 				}),
@@ -321,20 +321,6 @@ func (pg *SettingsPage) lineSeparator() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) showWarningModalDialog(title, msg, key string) {
-	info := modal.NewCustomModal(pg.Load).
-		Title(title).
-		Body(msg).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-		SetPositiveButtonText(values.String(values.StrRemove)).
-		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pg.WL.MultiWallet.DeleteUserConfigValueForKey(key)
-			return true
-		})
-	pg.ParentWindow().ShowModal(info)
-}
-
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -344,10 +330,10 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
-			load.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
+			sharedW.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
-				values.SetUserLanguage(pg.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey))
+				values.SetUserLanguage(pg.WL.MultiWallet.GetLanguagePreference())
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
 		break
@@ -359,7 +345,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.currency.Clicked() {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
-			libwallet.CurrencyConversionConfigKey, values.DefaultExchangeValue,
+			sharedW.CurrencyConversionConfigKey, values.DefaultExchangeValue,
 			values.ArrExchangeCurrencies).
 			Title(values.StrExchangeRate).
 			UpdateValues(func(_ string) {})
@@ -369,13 +355,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.appearanceMode.Clicked() {
 		pg.isDarkModeOn = !pg.isDarkModeOn
-		pg.WL.MultiWallet.SaveUserConfigValue(load.DarkModeConfigKey, pg.isDarkModeOn)
+		pg.WL.MultiWallet.IsDarkModeOn()
 		pg.RefreshTheme(pg.ParentWindow())
 	}
 
 	if pg.transactionNotification.Changed() {
 		go func() {
-			pg.WL.MultiWallet.SaveUserConfigValue(load.TransactionNotificationConfigKey, pg.transactionNotification.IsChecked())
+			pg.WL.MultiWallet.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 		}()
 	}
 
@@ -402,7 +388,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			Title(values.String(values.StrConfirmStartupPass)).
 			PasswordHint(values.String(values.StrCurrentStartupPass)).
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
+				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -417,7 +403,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					PasswordHint(values.String(values.StrNewStartupPass)).
 					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
 					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), libwallet.PassphraseTypePass)
+						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -442,7 +428,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), libwallet.PassphraseTypePass)
+					err := pg.wal.GetMultiWallet().SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -463,7 +449,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
+					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -489,7 +475,7 @@ func (pg *SettingsPage) showUserAgentDialog() {
 		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
 		SetPositiveButtonCallback(func(userAgent string, tim *modal.TextInputModal) bool {
 			if userAgent != "" {
-				pg.WL.MultiWallet.SaveUserConfigValue(libwallet.UserAgentConfigKey, userAgent)
+				pg.WL.MultiWallet.SetUserAgent(userAgent)
 			}
 			return true
 		})
@@ -507,7 +493,7 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	transactionNotification := pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.TransactionNotificationConfigKey, false)
+	transactionNotification := pg.WL.MultiWallet.IsTransactionNotificationsOn()
 	pg.transactionNotification.SetChecked(false)
 	if transactionNotification {
 		pg.transactionNotification.SetChecked(transactionNotification)

@@ -3,7 +3,7 @@ package values
 import (
 	"strings"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // This files holds implementation to translate errors into user friendly messages.
@@ -11,13 +11,13 @@ import (
 // TranslateErr translates all server errors to user friendly messages.
 func TranslateErr(errStr string) string {
 	switch errStr {
-	case libwallet.ErrInvalidPassphrase:
+	case utils.ErrInvalidPassphrase:
 		return String(StrInvalidPassphrase)
 
-	case libwallet.ErrNotConnected:
+	case utils.ErrNotConnected:
 		return String(StrNotConnected)
 
-	case libwallet.ErrInsufficientBalance:
+	case utils.ErrInsufficientBalance:
 		return String(StrInsufficentFund)
 
 	default:

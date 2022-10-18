@@ -19,7 +19,7 @@ const (
 
 // Wallet represents the wallet back end of the app
 type Wallet struct {
-	multi       *libwallet.MultiWallet
+	multi       *libwallet.AssetsManager
 	Root, Net   string
 	buildDate   time.Time
 	version     string
@@ -64,27 +64,16 @@ func (wal *Wallet) StartupTime() time.Time {
 
 func (wal *Wallet) InitMultiWallet() error {
 	politeiaHost := libwallet.PoliteiaMainnetHost
-	if wal.Net == libwallet.Testnet3 {
+	if wal.Net == string(libwallet.Testnet3) {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	multiWal, err := libwallet.NewMultiWallet(wal.Root, "bdb", wal.Net, politeiaHost)
+	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", wal.Net, politeiaHost)
 	if err != nil {
 		return err
 	}
 
 	wal.multi = multiWal
 	return nil
-}
-
-func (wal *Wallet) hdPrefix() string {
-	switch wal.Net {
-	case libwallet.Testnet3:
-		return libwallet.TestnetHDPath
-	case "mainnet":
-		return libwallet.MainnetHDPath
-	default:
-		return ""
-	}
 }
 
 // Shutdown shutsdown the multiwallet
@@ -94,13 +83,13 @@ func (wal *Wallet) Shutdown() {
 	}
 }
 
-// GetBlockExplorerURL accept transaction hash,
+// GetDCRBlockExplorerURL accept transaction hash,
 // return the block explorer URL with respect to the network
-func (wal *Wallet) GetBlockExplorerURL(txnHash string) string {
+func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case libwallet.Testnet3:
+	case string(libwallet.Testnet3):
 		return "https://testnet.dcrdata.org/tx/" + txnHash
-	case "mainnet":
+	case string(libwallet.Mainnet):
 		return "https://explorer.dcrdata.org/tx/" + txnHash
 	default:
 		return ""

@@ -7,7 +7,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/utils"
@@ -128,7 +128,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 
 		// Check if there are existing wallets with identical Xpub.
 		// matchedWalletID == ID of the wallet whose xpub is identical to provided xpub.
-		matchedWalletID, err := cm.WL.MultiWallet.WalletWithXPub(cm.extendedPubKey.Editor.Text())
+		matchedWalletID, err := cm.WL.MultiWallet.DCRWalletWithXPub(cm.extendedPubKey.Editor.Text())
 		if err != nil {
 			log.Errorf("Error checking xpub: %v", err)
 			cm.SetError(values.StringF(values.StrXpubKeyErr, err))
@@ -190,7 +190,7 @@ func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
 		func(gtx C) D {
 			if cm.serverError != "" {
 				// set wallet name editor error if wallet name already exist
-				if cm.serverError == libwallet.ErrExist && cm.walletNameEnabled {
+				if cm.serverError == libutils.ErrExist && cm.walletNameEnabled {
 					cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
 				} else {
 					cm.extendedPubKey.SetError(cm.serverError)

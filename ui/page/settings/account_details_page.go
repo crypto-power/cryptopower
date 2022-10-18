@@ -98,7 +98,7 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 	pg.votingAuthority = dcrutil.Amount(balance.VotingAuthority).String()
 	pg.immatureStakeGen = dcrutil.Amount(balance.ImmatureStakeGeneration).String()
 
-	pg.hdPath = pg.WL.HDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
+	pg.hdPath = pg.WL.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount

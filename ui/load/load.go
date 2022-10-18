@@ -43,7 +43,7 @@ type Load struct {
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {
-	isDarkModeOn := l.WL.MultiWallet.ReadBoolConfigValueForKey(DarkModeConfigKey, false)
+	isDarkModeOn := l.WL.MultiWallet.IsDarkModeOn()
 	l.Theme.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 	l.DarkModeSettingChanged(isDarkModeOn)
 	l.LanguageSettingChanged()

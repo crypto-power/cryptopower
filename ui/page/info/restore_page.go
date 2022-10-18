@@ -9,7 +9,7 @@ import (
 	"gioui.org/op/paint"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -242,7 +242,7 @@ func (pg *Restore) showHexRestoreModal() {
 					pg.switchTab(pg.tabIndex)
 				}).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, hex, password, libwallet.PassphraseTypePass)
+					_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, hex, password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -274,13 +274,13 @@ func (pg *Restore) showHexRestoreModal() {
 }
 
 func (pg *Restore) verifyHex(hex string) bool {
-	if !libwallet.VerifySeed(hex) {
+	if !sharedW.VerifySeed(hex) {
 		return false
 	}
 
 	// Compare with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(hex)
+	walletWithSameSeed, err := pg.WL.MultiWallet.DCRWalletWithSeed(hex)
 	if err != nil {
 		log.Error(err)
 		return false

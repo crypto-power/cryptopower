@@ -12,9 +12,9 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -471,7 +471,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	// Compare seed with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(pg.seedPhrase)
+	walletWithSameSeed, err := pg.WL.MultiWallet.DCRWalletWithSeed(pg.seedPhrase)
 	if err != nil {
 		log.Error(err)
 		return false
@@ -536,7 +536,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
 				if err != nil {
 					errString := err.Error()
-					if err.Error() == libwallet.ErrExist {
+					if err.Error() == libutils.ErrExist {
 						errString = values.StringF(values.StrWalletExist, pg.walletName)
 					}
 					m.SetError(errString)

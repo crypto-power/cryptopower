@@ -37,22 +37,22 @@ type DexClient struct {
 
 // initDexClient sets up a DEX client on this MultiWallet instance. This equips
 // the MultiWallet instance with DEX client features.
-func (mw *MultiWallet) initDexClient() error {
-	if mw.dexClient != nil {
+func (mgr *AssetsManager) initDexClient() error {
+	if mgr.dexClient != nil {
 		return nil
 	}
 
-	mw.dexClient = &DexClient{
+	mgr.dexClient = &DexClient{
 		log:        dex.NewLogger("DEXC", log.Level(), logWriter{}, true),
-		dexDataDir: filepath.Join(mw.params.RootDir, "dex"),
+		dexDataDir: filepath.Join(mgr.params.RootDir, "dex"),
 	}
 
-	err := os.MkdirAll(mw.dexClient.dexDataDir, os.ModePerm)
+	err := os.MkdirAll(mgr.dexClient.dexDataDir, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	err = mw.prepareDexSupportForDcrWalletLibrary()
+	err = mgr.prepareDexSupportForDcrWalletLibrary()
 	if err != nil {
 		return fmt.Errorf("custom dcr wallet support error: %v", err)
 	}
@@ -63,7 +63,7 @@ func (mw *MultiWallet) initDexClient() error {
 // prepareDexSupportForDcrWalletLibrary sets up the DEX client to allow using a
 // custom dcr wallet as an alternative to using an rpc connection to a running
 // dcrwallet instance.
-func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
+func (mgr *AssetsManager) prepareDexSupportForDcrWalletLibrary() error {
 	// Build a custom wallet definition with custom config options
 	// for use by the dex dcr ExchangeWallet.
 	customWalletConfigOpts := []*asset.ConfigOption{
@@ -89,7 +89,7 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
 		}
 
-		wallet := mw.DCRWalletWithID(walletID)
+		wallet := mgr.DCRWalletWithID(walletID)
 		if wallet == nil {
 			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
 		}
@@ -114,10 +114,11 @@ func (mw *MultiWallet) prepareDexSupportForDcrWalletLibrary() error {
 
 // StartDexClient readies the inbuilt DexClient for use. The client will be
 // stopped when this MultiWallet instance is shutdown.
-func (mw *MultiWallet) StartDexClient() (*DexClient, error) {
-	if mw.dexClient.core == nil {
-		net := mw.NetType()
+func (mgr *AssetsManager) StartDexClient() (*DexClient, error) {
+	if mgr.dexClient.core == nil {
+		net := string(mgr.NetType())
 		if net == "testnet3" {
+			//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
 			net = "testnet"
 		}
 		n, err := dex.NetFromString(net)
@@ -125,38 +126,38 @@ func (mw *MultiWallet) StartDexClient() (*DexClient, error) {
 			return nil, err
 		}
 
-		mw.dexClient.core, err = core.New(&core.Config{
-			DBPath: filepath.Join(mw.dexClient.dexDataDir, "dexc.db"),
+		mgr.dexClient.core, err = core.New(&core.Config{
+			DBPath: filepath.Join(mgr.dexClient.dexDataDir, "dexc.db"),
 			Net:    n,
-			Logger: mw.dexClient.log,
+			Logger: mgr.dexClient.log,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error creating dex client core: %v", err)
 		}
 	}
 
-	if mw.dexClient.cancelCoreCtx != nil { // already started
-		return mw.dexClient, nil
+	if mgr.dexClient.cancelCoreCtx != nil { // already started
+		return mgr.dexClient, nil
 	}
 
 	// Run the client core with a context that is canceled when
 	// MultiWallet shuts down.
-	ctx, cancel := mw.contextWithShutdownCancel()
-	mw.dexClient.cancelCoreCtx = cancel
+	ctx, cancel := context.WithCancel(context.Background())
+	mgr.dexClient.cancelCoreCtx = cancel
 	go func() {
-		mw.dexClient.core.Run(ctx)
-		mw.dexClient.cancelCoreCtx()
-		mw.dexClient.cancelCoreCtx = nil
+		mgr.dexClient.core.Run(ctx)
+		mgr.dexClient.cancelCoreCtx()
+		mgr.dexClient.cancelCoreCtx = nil
 	}()
-	<-mw.dexClient.core.Ready()
+	<-mgr.dexClient.core.Ready()
 
-	return mw.dexClient, nil
+	return mgr.dexClient, nil
 }
 
 // DexClient returns the managed instance of a DEX client. The client must
-// have been started with mw.StartDexClient().
-func (mw *MultiWallet) DexClient() *DexClient {
-	return mw.dexClient
+// have been started with mgr.StartDexClient().
+func (mgr *AssetsManager) DexClient() *DexClient {
+	return mgr.dexClient
 }
 
 // Reset attempts to shutdown Core if it is running and if successful, deletes
@@ -246,7 +247,7 @@ func (d *DexClient) HasWallet(assetID int32) bool {
 
 // AddWallet attempts to connect or create the wallet with the provided details
 // to the DEX client.
-// NOTE: Before connecting a dcr wallet, first call mw.UseDcrWalletForDex to
+// NOTE: Before connecting a dcr wallet, first call mgr.UseDcrWalletForDex to
 // configure the dcr ExchangeWallet to use a custom wallet instead of the
 // default rpc wallet.
 func (d *DexClient) AddWallet(assetID uint32, walletType string, settings map[string]string, appPW, walletPW []byte) error {

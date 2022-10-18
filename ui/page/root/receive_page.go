@@ -40,7 +40,7 @@ type ReceivePage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet       *libwallet.MultiWallet
+	multiWallet       *libwallet.AssetsManager
 	pageContainer     layout.List
 	scrollContainer   *widget.List
 	isNewAddr, isInfo bool

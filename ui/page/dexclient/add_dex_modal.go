@@ -240,7 +240,8 @@ func confirmRegisterModalDesc(dexServer *core.Exchange, selectedFeeAsset string)
 // saveDexServer after pay the fee success save the host and cert to db.
 func (md *AddDexModal) saveDexServer(host string, cert []byte) {
 	dexServer := new(components.DexServer)
-	err := md.Load.WL.MultiWallet.ReadUserConfigValue(load.KnownDexServersConfigKey, &dexServer)
+	hosts, err := md.Load.WL.MultiWallet.GetDexServers()
+	dexServer.SavedHosts = hosts
 	if err != nil {
 		return
 	}
@@ -248,5 +249,5 @@ func (md *AddDexModal) saveDexServer(host string, cert []byte) {
 		dexServer.SavedHosts = make(map[string][]byte)
 	}
 	dexServer.SavedHosts[host] = cert
-	md.Load.WL.MultiWallet.SaveUserConfigValue(load.KnownDexServersConfigKey, dexServer)
+	md.Load.WL.MultiWallet.SaveDexServers(dexServer.SavedHosts)
 }
