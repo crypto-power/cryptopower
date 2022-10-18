@@ -132,12 +132,37 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
 	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
 
+	// Load existing wallets.
+	if err := mgr.prepareExistingWallets(); err != nil {
+		return nil, err
+	}
+
+	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
+
+	// Attempt to set the log levels if a valid db interface was found.
+	if mgr.db != nil {
+		mgr.GetLogLevels()
+	}
+
+	if err = mgr.initDexClient(); err != nil {
+		log.Errorf("DEX client set up error: %v", err)
+	}
+
+	mgr.listenForShutdown()
+
+	return mgr, nil
+}
+
+// prepareExistingWallets loads all the valid and bad wallets. It also attempts
+// to extract the assets manager db access interface from one of the validly
+// created wallets.
+func (mgr *AssetsManager) prepareExistingWallets() error {
 	// read all stored wallets info from the db and initialize wallets interfaces.
 	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
 	var wallets []*sharedW.Wallet
-	err = query.Find(&wallets)
+	err := query.Find(&wallets)
 	if err != nil && err != storm.ErrNotFound {
-		return nil, err
+		return err
 	}
 
 	isOK := func(val interface{}) bool {
@@ -185,21 +210,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 			}
 		}
 	}
-
-	mgr.listenForShutdown()
-
-	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
-
-	// Attempt to set the log levels if a valid db interface was found.
-	if mgr.db != nil {
-		mgr.GetLogLevels()
-	}
-
-	if err = mgr.initDexClient(); err != nil {
-		log.Errorf("DEX client set up error: %v", err)
-	}
-
-	return mgr, nil
+	return nil
 }
 
 func (mgr *AssetsManager) listenForShutdown() {
