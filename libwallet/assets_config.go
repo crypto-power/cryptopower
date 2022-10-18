@@ -171,4 +171,5 @@ func (mgr *AssetsManager) GetLogLevels() {
 
 func (mgr *AssetsManager) SetLogLevels(logLevel string) {
 	mgr.db.SaveWalletConfigValue(sharedW.LogLevelConfigKey, logLevel)
+	SetLogLevels(logLevel)
 }
