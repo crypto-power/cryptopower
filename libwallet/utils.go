@@ -295,9 +295,20 @@ func initWalletLoader(chainParams *chaincfg.Params, walletDataDir, walletDbDrive
 		AddressReuse:  false,
 		VotingAddress: nil,
 	}
-	walletLoader := dcrLoader.NewLoader(chainParams, walletDataDir, stakeOptions,
-		cfg.GapLimit, cfg.RelayFee, cfg.AllowHighFees, cfg.DisableCoinTypeUpgrades,
-		cfg.ManualTickets, cfg.AccountGapLimit, cfg.MixSplitLimit)
+
+	loaderCfg := &dcrLoader.LoaderConf{
+		ChainParams:             chainParams,
+		DBDirPath:               walletDataDir,
+		StakeOptions:            stakeOptions,
+		GapLimit:                cfg.GapLimit,
+		RelayFee:                cfg.RelayFee,
+		AllowHighFees:           cfg.AllowHighFees,
+		DisableCoinTypeUpgrades: cfg.DisableCoinTypeUpgrades,
+		ManualTickets:           cfg.ManualTickets,
+		AccountGapLimit:         cfg.AccountGapLimit,
+		MixSplitLimit:           cfg.MixSplitLimit,
+	}
+	walletLoader := dcrLoader.NewLoader(loaderCfg)
 
 	if walletDbDriver != "" {
 		walletLoader.SetDatabaseDriver(walletDbDriver)

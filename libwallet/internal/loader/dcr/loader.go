@@ -65,22 +65,35 @@ type StakeOptions struct {
 // Confirm the dcrLoader implements the assets loader interface.
 var _ loader.AssetLoader = (*dcrLoader)(nil)
 
+// LoaderConf models the configuration options of a dcr loader.
+type LoaderConf struct {
+	ChainParams             *chaincfg.Params
+	DBDirPath               string
+	StakeOptions            *StakeOptions
+	GapLimit                uint32
+	RelayFee                dcrutil.Amount
+	AllowHighFees           bool
+	DisableCoinTypeUpgrades bool
+	ManualTickets           bool
+	AccountGapLimit         int
+	MixSplitLimit           int
+}
+
 // NewLoader constructs a DCR Loader.
-func NewLoader(chainParams *chaincfg.Params, dbDirPath string, stakeOptions *StakeOptions, gapLimit uint32,
-	relayFee dcrutil.Amount, allowHighFees, disableCoinTypeUpgrades, manualTickets bool, accountGapLimit, mixSplitLimit int) loader.AssetLoader {
+func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 
 	return &dcrLoader{
-		chainParams:             chainParams,
-		stakeOptions:            stakeOptions,
-		gapLimit:                gapLimit,
-		accountGapLimit:         accountGapLimit,
-		disableCoinTypeUpgrades: disableCoinTypeUpgrades,
-		allowHighFees:           allowHighFees,
-		manualTickets:           manualTickets,
-		relayFee:                relayFee,
-		mixSplitLimit:           mixSplitLimit,
+		chainParams:             cfg.ChainParams,
+		stakeOptions:            cfg.StakeOptions,
+		gapLimit:                cfg.GapLimit,
+		accountGapLimit:         cfg.AccountGapLimit,
+		disableCoinTypeUpgrades: cfg.DisableCoinTypeUpgrades,
+		allowHighFees:           cfg.AllowHighFees,
+		manualTickets:           cfg.ManualTickets,
+		relayFee:                cfg.RelayFee,
+		mixSplitLimit:           cfg.MixSplitLimit,
 
-		Loader: loader.NewLoader(dbDirPath),
+		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
 }
 
