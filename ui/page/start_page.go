@@ -191,7 +191,8 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					netType := sp.WL.Wallet.Net
-					if sp.WL.Wallet.Net == libwallet.Testnet3 {
+					if sp.WL.MultiWallet.NetType() == libwallet.Testnet3 {
+						//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
 						netType = "Testnet"
 					}
 
@@ -243,9 +244,9 @@ func (sp *startPage) layoutMobile(gtx C) D {
 }
 
 func (sp *startPage) setLanguageSetting() {
-	langPre := sp.WL.MultiWallet.ReadStringConfigValueForKey(load.LanguagePreferenceKey)
+	langPre := sp.WL.MultiWallet.GetLanguagePreference()
 	if langPre == "" {
-		sp.WL.MultiWallet.SaveUserConfigValue(load.LanguagePreferenceKey, values.DefaultLangauge)
+		sp.WL.MultiWallet.SetLanguagePreference(values.DefaultLangauge)
 	}
 	values.SetUserLanguage(langPre)
 }

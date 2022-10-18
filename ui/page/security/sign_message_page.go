@@ -8,8 +8,8 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -292,7 +292,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 					}
 
 					pm.Dismiss()
-					pg.signedMessageLabel.Text = libwallet.EncodeBase64(sig)
+					pg.signedMessageLabel.Text = utils.EncodeBase64(sig)
 					return true
 				})
 			pg.ParentWindow().ShowModal(walletPasswordModal)

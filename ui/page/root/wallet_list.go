@@ -103,11 +103,11 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 }
 
 func (pg *WalletDexServerSelector) loadBadWallets() {
-	badWallets := pg.WL.MultiWallet.BadWallets()
+	badWallets := pg.WL.MultiWallet.DCRBadWallets()
 	pg.badWalletsList = make([]*badWalletListItem, 0, len(badWallets))
 	for _, badWallet := range badWallets {
 		listItem := &badWalletListItem{
-			DCRAsset:  badWallet,
+			Wallet:  badWallet,
 			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
 		}
 		listItem.deleteBtn.Color = pg.Theme.Color.Danger

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"decred.org/dcrwallet/v2/errors"
@@ -174,6 +175,15 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 func VerifySeed(seedMnemonic string) bool {
 	_, err := walletseed.DecodeUserInput(seedMnemonic)
 	return err == nil
+}
+
+func WalletExistsAt(directory, walletDbName string) bool {
+	walletDbFilePath := filepath.Join(directory, walletDbName)
+	exists, err := fileExists(walletDbFilePath)
+	if err != nil {
+		log.Errorf("wallet exists check error: %v", err)
+	}
+	return exists
 }
 
 func fileExists(filePath string) (bool, error) {

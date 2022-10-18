@@ -10,6 +10,7 @@ import (
 	"gioui.org/text"
 
 	"gitlab.com/raedah/cryptopower/app"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -60,7 +61,7 @@ func (pg *Page) OnNavigatedTo() {
 }
 
 func (pg *Page) isGovernanceFeatureEnabled() bool {
-	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.FetchProposalConfigKey, false)
+	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -88,7 +89,7 @@ func (pg *Page) HandleUserInteractions() {
 	for pg.enableGovernanceBtn.Clicked() {
 		go pg.WL.MultiWallet.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.FetchProposalConfigKey, true)
+		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
 	}
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {

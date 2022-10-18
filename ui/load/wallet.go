@@ -24,7 +24,7 @@ type BTCWalletItem struct {
 }
 
 type WalletLoad struct {
-	MultiWallet *libwallet.MultiWallet
+	MultiWallet *libwallet.AssetsManager
 	TxAuthor    dcr.TxAuthor
 
 	UnspentOutputs *wallet.UnspentOutputs
@@ -112,10 +112,10 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, erro
 
 func (wl *WalletLoad) HDPrefix() string {
 	switch wl.Wallet.Net {
-	case libwallet.Testnet3:
-		return libwallet.TestnetHDPath
-	case "mainnet":
-		return libwallet.MainnetHDPath
+	case string(utils.Testnet):
+		return dcr.TestnetHDPath
+	case string(utils.Mainnet):
+		return dcr.MainnetHDPath
 	default:
 		return ""
 	}
@@ -123,9 +123,9 @@ func (wl *WalletLoad) HDPrefix() string {
 
 func (wl *WalletLoad) BTCHDPrefix() string {
 	switch wl.Wallet.Net {
-	case libwallet.Testnet3:
+	case string(utils.Testnet):
 		return btc.TestnetHDPath
-	case libwallet.Mainnet:
+	case string(utils.Mainnet):
 		return btc.MainnetHDPath
 	default:
 		return ""

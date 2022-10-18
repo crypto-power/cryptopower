@@ -7,6 +7,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -70,8 +71,29 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items m
 	return &lp
 }
 
+func (lp *ListPreferenceModal) ReadPreferenceKeyedValue() string {
+	switch lp.preferenceKey {
+	case sharedW.CurrencyConversionConfigKey:
+		return lp.WL.MultiWallet.GetCurrencyConversionExchange()
+	case sharedW.LanguagePreferenceKey:
+		return lp.WL.MultiWallet.GetLanguagePreference()
+	default:
+		return ""
+	}
+}
+
+func (lp *ListPreferenceModal) SavePreferenceKeyedValue() {
+	val := lp.optionsRadioGroup.Value
+	switch lp.preferenceKey {
+	case sharedW.CurrencyConversionConfigKey:
+		lp.WL.MultiWallet.SetCurrencyConversionExchange(val)
+	case sharedW.LanguagePreferenceKey:
+		lp.WL.MultiWallet.SetLanguagePreference(val)
+	}
+}
+
 func (lp *ListPreferenceModal) OnResume() {
-	initialValue := lp.WL.MultiWallet.ReadStringConfigValueForKey(lp.preferenceKey)
+	initialValue := lp.ReadPreferenceKeyedValue()
 	if initialValue == "" {
 		initialValue = lp.defaultValue
 	}
@@ -107,7 +129,7 @@ func (lp *ListPreferenceModal) UpdateValues(clicked func(val string)) *ListPrefe
 func (lp *ListPreferenceModal) Handle() {
 	for lp.btnSave.Button.Clicked() {
 		lp.currentValue = lp.optionsRadioGroup.Value
-		lp.WL.MultiWallet.SaveUserConfigValue(lp.preferenceKey, lp.optionsRadioGroup.Value)
+		lp.SavePreferenceKeyedValue()
 		lp.updateButtonClicked(lp.optionsRadioGroup.Value)
 		lp.RefreshTheme(lp.ParentWindow())
 		lp.Dismiss()

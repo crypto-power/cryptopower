@@ -7,8 +7,8 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -510,7 +510,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				}
 				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
 				if err != nil {
-					if err.Error() == libwallet.ErrExist {
+					if err.Error() == libutils.ErrExist {
 						return errFunc(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
 					}
 					return errFunc(err.Error())
@@ -564,7 +564,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		go func() {
 			_, err := pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 			if err != nil {
-				if err.Error() == libwallet.ErrExist {
+				if err.Error() == libutils.ErrExist {
 					pg.watchOnlyWalletHex.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
 				} else {
 					pg.watchOnlyWalletHex.SetError(err.Error())

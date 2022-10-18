@@ -51,7 +51,7 @@ func NewStatPage(l *load.Load) *StatPage {
 		},
 		netType: l.WL.Wallet.Net,
 	}
-	if pg.netType == libwallet.Testnet3 {
+	if pg.netType == string(libwallet.Testnet3) {
 		pg.netType = "Testnet"
 	} else {
 		pg.netType = strings.Title(pg.netType)

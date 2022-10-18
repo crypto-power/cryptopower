@@ -90,7 +90,7 @@ func (tb *ticketBuyerModal) OnResume() {
 		}
 
 		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
+			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
@@ -183,7 +183,7 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
 
 			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) {
+				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
 				accountIsValid = account.Number == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()
 			}

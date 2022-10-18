@@ -881,7 +881,7 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
+									redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
 									if pg.moreItems[i].button.Clicked() {
 										switch pg.moreItems[i].id {
 										case copyBlockID: // copy the redirect url
@@ -964,7 +964,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 		}()
 	}
 
-	redirectURL := pg.WL.Wallet.GetBlockExplorerURL(pg.transaction.Hash)
+	redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
 	for _, menu := range pg.moreItems {
 		if menu.button.Clicked() && menu.id == viewBlockID {
 			components.GoToURL(redirectURL)

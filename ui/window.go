@@ -55,7 +55,8 @@ type WriteClipboard struct {
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	var netType string
-	if wal.Net == libwallet.Testnet3 {
+	if wal.Net == string(libwallet.Testnet3) {
+		//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
 		netType = "testnet"
 	} else {
 		netType = wal.Net
@@ -88,7 +89,7 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	mw := win.wallet.GetMultiWallet()
 
 	// Set the user-configured theme colors on app load.
-	isDarkModeOn := mw.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false)
+	isDarkModeOn := mw.IsDarkModeOn()
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
 	l := &load.Load{

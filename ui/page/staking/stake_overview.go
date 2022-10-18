@@ -213,7 +213,7 @@ func (pg *Page) HandleUserInteractions() {
 				// if it is not, open stake config modal
 				tbConfig := pg.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
 				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.SpendUnmixedFundsKey, false) &&
+					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
 					(tbConfig.PurchaseAccount == pg.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 					pg.startTicketBuyerPasswordModal()
 				} else {
@@ -348,7 +348,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 							txt := pg.Theme.Label(values.TextSize14, msg)
 							txt.Alignment = text.Middle
 							txt.Color = pg.Theme.Color.GrayText3
-							if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
+							if pg.WL.MultiWallet.IsDarkModeOn() {
 								txt.Color = pg.Theme.Color.Gray3
 							}
 							return txt.Layout(gtx)

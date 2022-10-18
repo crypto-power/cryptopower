@@ -9,6 +9,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -26,7 +27,7 @@ type (
 )
 
 type badWalletListItem struct {
-	*dcr.DCRAsset
+	*sharedW.Wallet
 	deleteBtn cryptomaterial.Button
 }
 
@@ -119,7 +120,7 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.startDexClient()
 
 	for _, wallet := range pg.WL.SortedWalletList() {
-		if wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
 		}
 	}

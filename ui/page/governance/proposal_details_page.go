@@ -362,7 +362,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								if proposal.Category == libwallet.ProposalCategoryActive {
 									ic := pg.Theme.Icons.TimerIcon
-									if pg.WL.MultiWallet.ReadBoolConfigValueForKey(load.DarkModeConfigKey, false) {
+									if pg.WL.MultiWallet.IsDarkModeOn() {
 										ic = pg.Theme.Icons.TimerDarkMode
 									}
 									return layout.Inset{

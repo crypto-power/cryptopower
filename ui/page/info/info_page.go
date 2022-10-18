@@ -40,7 +40,7 @@ type WalletInfo struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet  *libwallet.MultiWallet
+	multiWallet  *libwallet.AssetsManager
 	rescanUpdate *wallet.RescanUpdate
 
 	container *widget.List
@@ -88,7 +88,7 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 func (pg *WalletInfo) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(load.AutoSyncConfigKey, false)
+	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
 	pg.listenForNotifications()
@@ -155,7 +155,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
 			pg.WL.SelectedWallet.Wallet.CancelRescan()
 		} else {
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
 			go func() {
 				pg.ToggleSync()
 			}()

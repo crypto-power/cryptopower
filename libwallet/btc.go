@@ -1,11 +1,7 @@
 package libwallet
 
 import (
-	"os"
-	"path/filepath"
-
 	"decred.org/dcrwallet/v2/errors"
-
 	"github.com/btcsuite/btcd/chaincfg"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
@@ -13,80 +9,102 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func initializeBTCWalletParameters(rootDir, dbDriver string, netType utils.NetworkType) (*chaincfg.Params, string, error) {
-	rootDir = filepath.Join(rootDir, string(netType)) // btc now added in the btc loader pkg
-	err := os.MkdirAll(rootDir, os.ModePerm)
-	if err != nil {
-		return nil, "", errors.Errorf("failed to create btc rootDir: %v", err)
-	}
-
+func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params, error) {
 	chainParams, err := utils.BTCChainParams(netType)
 	if err != nil {
-		return chainParams, "", err
+		return chainParams, err
 	}
 
-	return chainParams, rootDir, nil
+	return chainParams, nil
 }
 
-func (mw *MultiWallet) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
 	}
-	wallet, err := btc.CreateNewWallet(pass, mw.params)
+	wallet, err := btc.CreateNewWallet(pass, mgr.params)
 	if err != nil {
 		return nil, err
 	}
 
-	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	// extract the db interface if it hasn't been set already.
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet)
+	}
 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.BTCAsset, error) {
-	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mw.params)
+func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.BTCAsset, error) {
+	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mgr.params)
 	if err != nil {
 		return nil, err
 	}
 
-	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	// extract the db interface if it hasn't been set already.
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet)
+	}
 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
 	}
-	wallet, err := btc.RestoreWallet(seedMnemonic, pass, mw.params)
+	wallet, err := btc.RestoreWallet(seedMnemonic, pass, mgr.params)
 	if err != nil {
 		return nil, err
 	}
 
-	mw.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+
+	// extract the db interface if it hasn't been set already.
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet)
+	}
 
 	return wallet, nil
 }
 
-func (mw *MultiWallet) DeleteBTCWallet(walletID int, privPass []byte) error {
-	wallet := mw.BTCWalletWithID(walletID)
+func (mgr *AssetsManager) DeleteBTCWallet(walletID int, privPass []byte) error {
+	wallet := mgr.BTCWalletWithID(walletID)
 
 	err := wallet.DeleteWallet(privPass)
 	if err != nil {
 		return err
 	}
 
-	delete(mw.Assets.BTC.Wallets, walletID)
+	delete(mgr.Assets.BTC.Wallets, walletID)
 
 	return nil
 }
 
-func (mw *MultiWallet) BTCWalletWithID(walletID int) *btc.BTCAsset {
-	if wallet, ok := mw.Assets.BTC.Wallets[walletID]; ok {
+func (mgr *AssetsManager) BTCWalletWithID(walletID int) *btc.BTCAsset {
+	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
 		return wallet
 	}
 	return nil
+}
+
+// BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
+// provided xpub. Returns -1 if there is no such wallet.
+func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
+	return -1, errors.New("NotImplemented")
+}
+
+// BTCWalletWithSeed returns the ID of the BTC wallet that was created or restored
+// using the same seed as the one provided. Returns -1 if no wallet uses the
+// provided seed.
+func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
+	return -1, errors.New("Not Implemented")
 }

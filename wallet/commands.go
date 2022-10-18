@@ -16,6 +16,6 @@ func (wal *Wallet) HaveAddress(address string) (bool, string) {
 	return false, ""
 }
 
-func (wal *Wallet) GetMultiWallet() *libwallet.MultiWallet {
+func (wal *Wallet) GetMultiWallet() *libwallet.AssetsManager {
 	return wal.multi
 }
