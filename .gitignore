@@ -6,3 +6,5 @@ _*
 *.coverprofile
 **/.cryptopower_test*
 pkged.go
+
+vendor

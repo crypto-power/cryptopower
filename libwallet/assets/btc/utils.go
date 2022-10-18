@@ -1,10 +1,13 @@
 package btc
 
 import (
+	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 )
 
 const (
+	maxAmountSatoshi = btcutil.MaxSatoshi // MaxSatoshi is the maximum transaction amount allowed in satoshi.
+
 	TestnetHDPath = "m / 44' / 1' / " // TODO: confirm if this is the correct HD path for btc
 	MainnetHDPath = "m / 44' / 0' / " // TODO: confirm if this is the correct HD path for btc
 )

@@ -44,8 +44,13 @@ type BlockInfo struct {
 }
 
 type Amount struct {
+	// DCR fields.
 	AtomValue int64
 	DcrValue  float64
+
+	// BTC fields.
+	SatoshiValue int64
+	BtcValue     float64
 }
 
 type TxFeeAndSize struct {
@@ -266,9 +271,15 @@ type WalletAccount struct {
 }
 
 type TransactionDestination struct {
-	Address    string
+	// Shared fields.
+	Address string
+	SendMax bool
+
+	// DCR fields.
 	AtomAmount int64
-	SendMax    bool
+
+	// BTC fields.
+	SatoshiAmount int64
 }
 
 type TransactionOverview struct {
