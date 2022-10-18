@@ -361,7 +361,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	if pg.transactionNotification.Changed() {
 		go func() {
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.TransactionNotificationConfigKey, pg.transactionNotification.IsChecked())
+			pg.WL.MultiWallet.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 		}()
 	}
 
@@ -493,7 +493,7 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	transactionNotification := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.TransactionNotificationConfigKey, false)
+	transactionNotification := pg.WL.MultiWallet.IsTransactionNotificationsOn()
 	pg.transactionNotification.SetChecked(false)
 	if transactionNotification {
 		pg.transactionNotification.SetChecked(transactionNotification)

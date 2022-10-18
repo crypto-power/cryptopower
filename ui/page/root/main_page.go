@@ -1029,8 +1029,7 @@ func (mp *MainPage) listenForNotifications() {
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
-					transactionNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.TransactionNotificationConfigKey, false)
-					if transactionNotification {
+					if mp.WL.MultiWallet.IsTransactionNotificationsOn() {
 						update := wallet.NewTransaction{
 							Transaction: n.Transaction,
 						}

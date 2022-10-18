@@ -34,7 +34,7 @@ type AssetsManager struct {
 	params *sharedW.InitParams
 	Assets *Assets
 
-	db sharedW.AssetsManagerDB // Interface to manage db access.
+	db sharedW.AssetsManagerDB // Interface to manage db access at the ASM.
 
 	shuttingDown chan bool
 	cancelFuncs  []context.CancelFunc
@@ -80,7 +80,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 		return nil, errors.Errorf("error opening wallets database: %s", err.Error())
 	}
 
-	// init database for saving/reading wallet objects
+	// init database for persistence of wallet objects
 	if err = mwDB.Init(&sharedW.Wallet{}); err != nil {
 		log.Errorf("Error initializing wallets database: %s", err.Error())
 		return nil, err
@@ -132,7 +132,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 			// walletDataDb file exists. Returns true if affirmative.
 			ok, _ = val.(interface{ WalletExists() (bool, error) }).WalletExists()
 			// Extracts the asset manager db interface from one of the wallets.
-			// Assets Manager Db interface exists in all wallets by default.
+			// Assets Manager Db interface that exists in all wallets by default.
 			if mgr.db == nil {
 				mgr.setDBInterface(val.(sharedW.AssetsManagerDB))
 			}
@@ -246,25 +246,25 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase []byte) error {
 		}
 	}
 
-	err := mgr.VerifyStartupPassphrase(startupPassphrase)
-	if err != nil {
+	//TODO: Check if any of the btc wallets is syncing.
+
+	if err := mgr.VerifyStartupPassphrase(startupPassphrase); err != nil {
 		return err
 	}
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
-		err = wallet.OpenWallet()
+		err := wallet.OpenWallet()
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, wallet := range mgr.Assets.BTC.Wallets {
-		err = wallet.OpenWallet()
+		err := wallet.OpenWallet()
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -280,18 +280,19 @@ func (mgr *AssetsManager) LoadedWalletsCount() int32 {
 	return int32(len(mgr.Assets.DCR.Wallets) + len(mgr.Assets.BTC.Wallets))
 }
 
-func (mgr *AssetsManager) OpenedWalletIDsRaw() []int {
-	walletIDs := make([]int, 0)
+func (mgr *AssetsManager) OpenedWalletsCount() int32 {
+	var count int32
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		if wallet.WalletOpened() {
-			walletIDs = append(walletIDs, wallet.ID)
+			count++
 		}
 	}
-	return walletIDs
-}
-
-func (mgr *AssetsManager) OpenedWalletsCount() int32 {
-	return int32(len(mgr.OpenedWalletIDsRaw()))
+	for _, wallet := range mgr.Assets.BTC.Wallets {
+		if wallet.WalletOpened() {
+			count++
+		}
+	}
+	return count
 }
 
 // PiKeys returns the sanctioned Politeia keys for the current network.

@@ -151,9 +151,19 @@ func (mgr *AssetsManager) SetUserAgent(data string) {
 	mgr.db.SaveWalletConfigValue(sharedW.UserAgentConfigKey, data)
 }
 
+func (mgr *AssetsManager) IsTransactionNotificationsOn() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.TransactionNotificationConfigKey, &data)
+	return data
+}
+
+func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
+}
+
 func (mgr *AssetsManager) SetLogLevels() {
 	//TODO: loglevels should have a custom type supported on libwallet.
-	// Issue to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
+	// Issue is to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
 	var logLevel string
 	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
 	SetLogLevels(logLevel)
