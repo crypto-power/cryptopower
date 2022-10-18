@@ -127,23 +127,27 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 		return nil, err
 	}
 
+	isOK := func(val interface{}) bool {
+		var ok bool
+		if val != nil {
+			// Extracts the walletExists method and checks if the current wallet
+			// walletDataDb file exists. Returns true if affirmative.
+			ok, _ = val.(interface{ WalletExists() (bool, error) }).WalletExists()
+			// Extracts the asset manager db interface from one of the wallets.
+			// Assets Manager Db interface exists in all wallets by default.
+			if mgr.db == nil {
+				mgr.setDBInterface(val.(sharedW.AssetsManagerDB))
+			}
+		}
+		return ok
+	}
+
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
-		// Extract the asset manager db interface from one of the wallets.
-		// Assets Manager Db interface exists in all wallets by default.
-		if mgr.db == nil && wallet != nil {
-			mgr.setDBInterface(wallet)
-		}
-
-		var ok bool
-
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
 			w, err := btc.LoadExisting(wallet, mgr.params)
-			if w != nil {
-				ok, _ = w.WalletExists()
-			}
-			if err == nil && !ok {
+			if err == nil && !isOK(w) {
 				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
 				log.Warn(err)
 			}
@@ -156,10 +160,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 
 		case utils.DCRWalletAsset:
 			w, err := dcr.LoadExisting(wallet, mgr.params)
-			if w != nil {
-				ok, _ = w.WalletExists()
-			}
-			if err == nil && !ok {
+			if err == nil && !isOK(w) {
 				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
 				log.Debug(err)
 			}
@@ -175,6 +176,11 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 	mgr.listenForShutdown()
 
 	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
+
+	// Attempt to set the log levels if a valid db interface was found.
+	if mgr.db != nil {
+		mgr.SetLogLevels()
+	}
 
 	if err = mgr.initDexClient(); err != nil {
 		log.Errorf("DEX client set up error: %v", err)

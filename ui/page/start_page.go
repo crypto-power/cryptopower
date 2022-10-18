@@ -62,6 +62,8 @@ func (sp *startPage) OnNavigatedTo() {
 	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
+		// Set the log levels.
+		sp.WL.MultiWallet.SetLogLevels()
 		if sp.WL.MultiWallet.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {

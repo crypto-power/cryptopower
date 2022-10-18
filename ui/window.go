@@ -89,7 +89,11 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	mw := win.wallet.GetMultiWallet()
 
 	// Set the user-configured theme colors on app load.
-	isDarkModeOn := mw.IsDarkModeOn()
+	var isDarkModeOn bool
+	if mw.LoadedWalletsCount() > 0 {
+		// A valid DB interface must have been set. Otherwise no valid wallet exists.
+		isDarkModeOn = mw.IsDarkModeOn()
+	}
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
 	l := &load.Load{
