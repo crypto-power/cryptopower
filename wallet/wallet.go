@@ -76,17 +76,6 @@ func (wal *Wallet) InitMultiWallet() error {
 	return nil
 }
 
-// func (wal *Wallet) hdPrefix() string {
-// 	switch wal.Net {
-// 	case string(libwallet.Testnet3):
-// 		return l.TestnetHDPath
-// 	case "mainnet":
-// 		return libwallet.MainnetHDPath
-// 	default:
-// 		return ""
-// 	}
-// }
-
 // Shutdown shutsdown the multiwallet
 func (wal *Wallet) Shutdown() {
 	if wal.multi != nil {

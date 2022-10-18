@@ -301,5 +301,5 @@ func (asset *BTCAsset) startWallet() error {
 
 func (asset *BTCAsset) SafelyCancelSync() {
 	//TODO: use a proper logger
-	fmt.Println("Safe sync shutdown not implemented")
+	fmt.Println("Safe sync shutdown not implemented for BTC")
 }
