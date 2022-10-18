@@ -45,10 +45,9 @@ type AssetsManager struct {
 	ExternalService *ext.Service
 }
 
-func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManager, error) {
-	errors.Separator = ":: "
-
-	netType := utils.NetworkType(net)
+// initializeAssetsFields validate the network provided is valid for all assets before proceeding
+// to initialize the rest of the other fields.
+func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType) (*AssetsManager, error) {
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -61,15 +60,50 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
+	params := &sharedW.InitParams{
+		DbDriver: dbDriver,
+		RootDir:  rootDir,
+		NetType:  netType,
+	}
+
+	mgr := &AssetsManager{
+		params: params,
+		Assets: new(Assets),
+	}
+
+	mgr.Assets.BTC.Wallets = make(map[int]*btc.BTCAsset)
+	mgr.Assets.DCR.Wallets = make(map[int]*dcr.DCRAsset)
+
+	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
+	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
+
+	mgr.chainsParams.DCR = dcrChainParams
+	mgr.chainsParams.BTC = btcChainParams
+	return mgr, nil
+}
+
+func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManager, error) {
+	errors.Separator = ":: "
+
+	netType := utils.NetworkType(net)
+
+	// Create a root dir that has the path up the network folder.
 	rootDir = filepath.Join(rootDir, net)
-	if err = os.MkdirAll(rootDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(rootDir, os.ModePerm); err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
 
-	if err = initLogRotator(filepath.Join(rootDir, logFileName)); err != nil {
+	// validate the network type before proceeding to initialize the othe fields.
+	mgr, err := initializeAssetsFields(rootDir, dbDriver, netType)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := initLogRotator(filepath.Join(rootDir, logFileName)); err != nil {
 		return nil, errors.Errorf("failed to init logRotator: %v", err.Error())
 	}
 
+	// Attempt to acquire lock on the wallets.db file.
 	mwDB, err := storm.Open(filepath.Join(rootDir, walletsDbName))
 	if err != nil {
 		log.Errorf("Error opening wallets database: %s", err.Error())
@@ -91,33 +125,14 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 		return nil, err
 	}
 
-	params := &sharedW.InitParams{
-		DbDriver: dbDriver,
-		RootDir:  rootDir,
-		DB:       mwDB,
-		NetType:  netType,
-	}
-
-	mgr := &AssetsManager{
-		params:   params,
-		Politeia: politeia,
-		Assets:   new(Assets),
-	}
-
-	mgr.Assets.BTC.Wallets = make(map[int]*btc.BTCAsset)
-	mgr.Assets.DCR.Wallets = make(map[int]*dcr.DCRAsset)
-
-	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
-	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
-
-	mgr.chainsParams.DCR = dcrChainParams
-	mgr.chainsParams.BTC = btcChainParams
+	mgr.params.DB = mwDB
+	mgr.Politeia = politeia
 
 	// initialize the ExternalService. ExternalService provides multiwallet with
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
-	mgr.ExternalService = ext.NewService(dcrChainParams)
+	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
 
-	// read saved dcr wallets info from db and initialize wallets
+	// read all stored wallets info from the db and initialize wallets interfaces.
 	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
 	var wallets []*sharedW.Wallet
 	err = query.Find(&wallets)
@@ -177,7 +192,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 
 	// Attempt to set the log levels if a valid db interface was found.
 	if mgr.db != nil {
-		mgr.SetLogLevels()
+		mgr.GetLogLevels()
 	}
 
 	if err = mgr.initDexClient(); err != nil {
@@ -239,7 +254,7 @@ func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
 }
 
-func (mgr *AssetsManager) OpenWallets(startupPassphrase []byte) error {
+func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		if wallet.IsSyncing() {
 			return errors.New(utils.ErrSyncAlreadyInProgress)

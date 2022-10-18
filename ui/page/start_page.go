@@ -63,7 +63,7 @@ func (sp *startPage) OnNavigatedTo() {
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
 		// Set the log levels.
-		sp.WL.MultiWallet.SetLogLevels()
+		sp.WL.MultiWallet.GetLogLevels()
 		if sp.WL.MultiWallet.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
@@ -101,7 +101,7 @@ func (sp *startPage) unlock() {
 }
 
 func (sp *startPage) openWallets(password string) error {
-	err := sp.WL.MultiWallet.OpenWallets([]byte(password))
+	err := sp.WL.MultiWallet.OpenWallets(password)
 	if err != nil {
 		log.Info("Error opening wallet:", err)
 		// show err dialog

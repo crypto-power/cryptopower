@@ -388,7 +388,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			Title(values.String(values.StrConfirmStartupPass)).
 			PasswordHint(values.String(values.StrCurrentStartupPass)).
 			SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase([]byte(password))
+				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -403,7 +403,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					PasswordHint(values.String(values.StrNewStartupPass)).
 					ConfirmPasswordHint(values.String(values.StrConfirmNewStartupPass)).
 					SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase([]byte(password), []byte(newPassword), sharedW.PassphraseTypePass)
+						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -428,7 +428,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				PasswordHint(values.String(values.StrStartupPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmStartupPass)).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetMultiWallet().SetStartupPassphrase([]byte(password), sharedW.PassphraseTypePass)
+					err := pg.wal.GetMultiWallet().SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -449,7 +449,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase([]byte(password))
+					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)

@@ -110,7 +110,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, erro
 	return dcrutil.Amount(spendableBal), nil
 }
 
-func (wl *WalletLoad) HDPrefix() string {
+func (wl *WalletLoad) DCRHDPrefix() string {
 	switch wl.Wallet.Net {
 	case string(utils.Testnet):
 		return dcr.TestnetHDPath

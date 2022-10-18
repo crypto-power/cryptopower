@@ -99,12 +99,12 @@ func (mgr *AssetsManager) BTCWalletWithID(walletID int) *btc.BTCAsset {
 // BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
 // provided xpub. Returns -1 if there is no such wallet.
 func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
-	return -1, errors.New("NotImplemented")
+	return -1, errors.New("Not implemented")
 }
 
 // BTCWalletWithSeed returns the ID of the BTC wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
 func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
-	return -1, errors.New("Not Implemented")
+	return -1, errors.New("Not implemented")
 }

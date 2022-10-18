@@ -29,11 +29,11 @@ func (mgr *AssetsManager) setDBInterface(db sharedW.AssetsManagerDB) {
 	}
 }
 
-func (mgr *AssetsManager) SetStartupPassphrase(passphrase []byte, passphraseType int32) error {
-	return mgr.ChangeStartupPassphrase([]byte(""), passphrase, passphraseType)
+func (mgr *AssetsManager) SetStartupPassphrase(passphrase string, passphraseType int32) error {
+	return mgr.ChangeStartupPassphrase("", passphrase, passphraseType)
 }
 
-func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase []byte) error {
+func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase string) error {
 	var startupPassphraseHash []byte
 	err := mgr.db.ReadWalletConfigValue(walletstartupPassphraseField, &startupPassphraseHash)
 	if err != nil && err != storm.ErrNotFound {
@@ -49,7 +49,7 @@ func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase []byte) erro
 	}
 
 	// startup passphrase was set, verify
-	err = bcrypt.CompareHashAndPassword(startupPassphraseHash, startupPassphrase)
+	err = bcrypt.CompareHashAndPassword(startupPassphraseHash, []byte(startupPassphrase))
 	if err != nil {
 		return errors.E(utils.ErrInvalidPassphrase)
 	}
@@ -57,7 +57,7 @@ func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase []byte) erro
 	return nil
 }
 
-func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase []byte, passphraseType int32) error {
+func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase string, passphraseType int32) error {
 	if len(newPassphrase) == 0 {
 		return mgr.RemoveStartupPassphrase(oldPassphrase)
 	}
@@ -67,7 +67,7 @@ func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase [
 		return err
 	}
 
-	startupPassphraseHash, err := bcrypt.GenerateFromPassword(newPassphrase, bcrypt.DefaultCost)
+	startupPassphraseHash, err := bcrypt.GenerateFromPassword([]byte(newPassphrase), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase [
 	return nil
 }
 
-func (mgr *AssetsManager) RemoveStartupPassphrase(oldPassphrase []byte) error {
+func (mgr *AssetsManager) RemoveStartupPassphrase(oldPassphrase string) error {
 	err := mgr.VerifyStartupPassphrase(oldPassphrase)
 	if err != nil {
 		return err
@@ -161,10 +161,14 @@ func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
 	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
 }
 
-func (mgr *AssetsManager) SetLogLevels() {
+func (mgr *AssetsManager) GetLogLevels() {
 	//TODO: loglevels should have a custom type supported on libwallet.
 	// Issue is to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
 	var logLevel string
 	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
 	SetLogLevels(logLevel)
+}
+
+func (mgr *AssetsManager) SetLogLevels(logLevel string) {
+	mgr.db.SaveWalletConfigValue(sharedW.LogLevelConfigKey, logLevel)
 }

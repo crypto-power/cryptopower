@@ -70,9 +70,9 @@ type AssetsManagerDB interface {
 }
 
 // walletConfigSave method manages all the write operations.
-func (wallet *Wallet) walletConfigSave(multiwallet bool, key string, value interface{}) error {
+func (wallet *Wallet) walletConfigSave(isAssetsManager bool, key string, value interface{}) error {
 	bucket := walletsMetadataBucketName
-	if !multiwallet {
+	if !isAssetsManager {
 		bucket = userConfigBucketName
 		key = fmt.Sprintf("%d%s", wallet.ID, key)
 	}
@@ -80,9 +80,9 @@ func (wallet *Wallet) walletConfigSave(multiwallet bool, key string, value inter
 }
 
 // walletConfigRead manages all the read operations.
-func (wallet *Wallet) walletConfigRead(multiwallet bool, key string, valueOut interface{}) error {
+func (wallet *Wallet) walletConfigRead(isAssetsManager bool, key string, valueOut interface{}) error {
 	bucket := walletsMetadataBucketName
-	if !multiwallet {
+	if !isAssetsManager {
 		bucket = userConfigBucketName
 		key = fmt.Sprintf("%d%s", wallet.ID, key)
 	}
@@ -90,9 +90,9 @@ func (wallet *Wallet) walletConfigRead(multiwallet bool, key string, valueOut in
 }
 
 // walletConfigDelete manages all delete operations.
-func (wallet *Wallet) walletConfigDelete(multiwallet bool, key string) error {
+func (wallet *Wallet) walletConfigDelete(isAssetsManager bool, key string) error {
 	bucket := walletsMetadataBucketName
-	if !multiwallet {
+	if !isAssetsManager {
 		bucket = userConfigBucketName
 		key = fmt.Sprintf("%d%s", wallet.ID, key)
 	}
