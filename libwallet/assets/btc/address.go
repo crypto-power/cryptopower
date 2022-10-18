@@ -39,6 +39,8 @@ func (asset *BTCAsset) HaveAddress(address string) bool {
 }
 
 func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
+	const op errors.Op = "btc.AddressInfo"
+
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return nil, err
@@ -47,7 +49,10 @@ func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
 	addressInfo := &AddressInfo{
 		Address: address,
 	}
-	isMine, _ := asset.Internal().BTC.HaveAddress(addr)
+	isMine, err := asset.Internal().BTC.HaveAddress(addr)
+	if err != nil {
+		log.Error(op, err)
+	}
 	if isMine {
 		addressInfo.IsMine = isMine
 
