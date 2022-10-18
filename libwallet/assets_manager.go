@@ -17,8 +17,6 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Assets struct {
@@ -241,163 +239,6 @@ func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
 }
 
-// setDBInterface extract the assets manager db interface that is available
-// in each wallet by default from one of the validly created wallets.
-func (mgr *AssetsManager) setDBInterface(db sharedW.AssetsManagerDB) {
-	if db != nil {
-		mgr.db = db
-	}
-}
-
-func (mgr *AssetsManager) SetStartupPassphrase(passphrase []byte, passphraseType int32) error {
-	return mgr.ChangeStartupPassphrase([]byte(""), passphrase, passphraseType)
-}
-
-func (mgr *AssetsManager) VerifyStartupPassphrase(startupPassphrase []byte) error {
-	var startupPassphraseHash []byte
-	err := mgr.db.ReadWalletConfigValue(walletstartupPassphraseField, &startupPassphraseHash)
-	if err != nil && err != storm.ErrNotFound {
-		return err
-	}
-
-	if startupPassphraseHash == nil {
-		// startup passphrase was not previously set
-		if len(startupPassphrase) > 0 {
-			return errors.E(utils.ErrInvalidPassphrase)
-		}
-		return nil
-	}
-
-	// startup passphrase was set, verify
-	err = bcrypt.CompareHashAndPassword(startupPassphraseHash, startupPassphrase)
-	if err != nil {
-		return errors.E(utils.ErrInvalidPassphrase)
-	}
-
-	return nil
-}
-
-func (mgr *AssetsManager) ChangeStartupPassphrase(oldPassphrase, newPassphrase []byte, passphraseType int32) error {
-	if len(newPassphrase) == 0 {
-		return mgr.RemoveStartupPassphrase(oldPassphrase)
-	}
-
-	err := mgr.VerifyStartupPassphrase(oldPassphrase)
-	if err != nil {
-		return err
-	}
-
-	startupPassphraseHash, err := bcrypt.GenerateFromPassword(newPassphrase, bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	mgr.db.SaveWalletConfigValue(walletstartupPassphraseField, startupPassphraseHash)
-	mgr.db.SaveWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, true)
-	mgr.db.SaveWalletConfigValue(sharedW.StartupSecurityTypeConfigKey, passphraseType)
-
-	return nil
-}
-
-func (mgr *AssetsManager) RemoveStartupPassphrase(oldPassphrase []byte) error {
-	err := mgr.VerifyStartupPassphrase(oldPassphrase)
-	if err != nil {
-		return err
-	}
-
-	mgr.db.DeleteWalletConfigValue(walletstartupPassphraseField)
-	mgr.db.SaveWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, false)
-	mgr.db.DeleteWalletConfigValue(sharedW.StartupSecurityTypeConfigKey)
-
-	return nil
-}
-
-func (mgr *AssetsManager) IsStartupSecuritySet() bool {
-	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.IsStartupSecuritySetConfigKey, &data)
-	return data
-}
-
-func (mgr *AssetsManager) IsDarkModeOn() bool {
-	var data bool
-	mgr.db.ReadWalletConfigValue(sharedW.DarkModeConfigKey, &data)
-	return data
-}
-
-func (mgr *AssetsManager) SetDarkMode(data bool) {
-	mgr.db.SaveWalletConfigValue(sharedW.DarkModeConfigKey, data)
-}
-
-func (mgr *AssetsManager) GetDexServers() (map[string][]byte, error) {
-	var servers = make(map[string][]byte, 0)
-	err := mgr.db.ReadWalletConfigValue(sharedW.KnownDexServersConfigKey, &servers)
-	return servers, err
-}
-
-func (mgr *AssetsManager) SaveDexServers(servers map[string][]byte) {
-	mgr.db.SaveWalletConfigValue(sharedW.KnownDexServersConfigKey, servers)
-}
-
-func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
-	var key string
-	mgr.db.ReadWalletConfigValue(sharedW.CurrencyConversionConfigKey, &key)
-	if key == "" {
-		return "none" // default exchange value
-	}
-	return key
-}
-
-func (mgr *AssetsManager) SetCurrencyConversionExchange(data string) {
-	mgr.db.SaveWalletConfigValue(sharedW.CurrencyConversionConfigKey, data)
-}
-
-func (mgr *AssetsManager) GetLanguagePreference() string {
-	var lang string
-	mgr.db.ReadWalletConfigValue(sharedW.LanguagePreferenceKey, &lang)
-	return lang
-}
-
-func (mgr *AssetsManager) SetLanguagePreference(lang string) {
-	mgr.db.SaveWalletConfigValue(sharedW.LanguagePreferenceKey, lang)
-}
-
-func (mgr *AssetsManager) GetUserAgent() string {
-	var data string
-	mgr.db.ReadWalletConfigValue(sharedW.UserAgentConfigKey, data)
-	return data
-}
-
-func (mgr *AssetsManager) SetUserAgent(data string) {
-	mgr.db.SaveWalletConfigValue(sharedW.UserAgentConfigKey, data)
-}
-
-// func (mgr *AssetsManager) IsBalanceHidden() bool {
-// 	var data bool
-// 	mgr.db.ReadWalletConfigValue(HideBalanceConfigKey, &data)
-// 	return data
-// }
-
-// func (mgr *AssetsManager) SetHideBalance(data bool) {
-// 	mgr.db.SaveWalletConfigValue(HideBalanceConfigKey, data)
-// }
-
-// func (mgr *AssetsManager) StartupSecurityType() int32 {
-// 	var data int32
-// 	mgr.db.ReadWalletConfigValue(sharedW.StartupSecurityTypeConfigKey, &data)
-// 	if data == 0 {
-// 		return sharedW.PassphraseTypePass
-// 	}
-// 	return data
-// }
-
-func (mgr *AssetsManager) SetLogLevels() {
-	//TODO: loglevels should have a custom type supported on libwallet.
-	// Issue to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
-	var logLevel string
-	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
-	SetLogLevels(logLevel)
-}
-
 func (mgr *AssetsManager) OpenWallets(startupPassphrase []byte) error {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		if wallet.IsSyncing() {
@@ -427,20 +268,6 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase []byte) error {
 	return nil
 }
 
-// func (mgr *AssetsManager) AllWalletsAreWatchOnly() (bool, error) {
-// 	if len(mgr.Assets.DCR.Wallets) == 0 {
-// 		return false, errors.New(utils.ErrInvalid)
-// 	}
-
-// 	for _, w := range mgr.Assets.DCR.Wallets {
-// 		if !w.IsWatchingOnlyWallet() {
-// 			return false, nil
-// 		}
-// 	}
-
-// 	return true, nil
-// }
-
 func (mgr *AssetsManager) DCRBadWallets() map[int]*sharedW.Wallet {
 	return mgr.Assets.DCR.BadWallets
 }
@@ -448,17 +275,6 @@ func (mgr *AssetsManager) DCRBadWallets() map[int]*sharedW.Wallet {
 func (mgr *AssetsManager) BTCBadWallets() map[int]*sharedW.Wallet {
 	return mgr.Assets.BTC.BadWallets
 }
-
-// // NumWalletsNeedingSeedBackup returns the number of opened wallets whose seed haven't been verified.
-// func (mgr *AssetsManager) NumWalletsNeedingSeedBackup() int32 {
-// 	var backupsNeeded int32
-// 	for _, wallet := range mgr.Assets.DCR.Wallets {
-// 		if wallet.WalletOpened() && wallet.EncryptedSeed != nil {
-// 			backupsNeeded++
-// 		}
-// 	}
-// 	return backupsNeeded
-// }
 
 func (mgr *AssetsManager) LoadedWalletsCount() int32 {
 	return int32(len(mgr.Assets.DCR.Wallets) + len(mgr.Assets.BTC.Wallets))
@@ -474,26 +290,9 @@ func (mgr *AssetsManager) OpenedWalletIDsRaw() []int {
 	return walletIDs
 }
 
-// func (mgr *AssetsManager) OpenedWalletIDs() string {
-// 	walletIDs := mgr.OpenedWalletIDsRaw()
-// 	jsonEncoded, _ := json.Marshal(&walletIDs)
-// 	return string(jsonEncoded)
-// }
-
 func (mgr *AssetsManager) OpenedWalletsCount() int32 {
 	return int32(len(mgr.OpenedWalletIDsRaw()))
 }
-
-// func (mgr *AssetsManager) SyncedWalletsCount() int32 {
-// 	var syncedWallets int32
-// 	for _, wallet := range mgr.Assets.DCR.Wallets {
-// 		if wallet.WalletOpened() && wallet.Synced() {
-// 			syncedWallets++
-// 		}
-// 	}
-
-// 	return syncedWallets
-// }
 
 // PiKeys returns the sanctioned Politeia keys for the current network.
 func (mgr *AssetsManager) PiKeys() [][]byte {

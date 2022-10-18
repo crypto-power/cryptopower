@@ -118,6 +118,7 @@ func (mgr *AssetsManager) StartDexClient() (*DexClient, error) {
 	if mgr.dexClient.core == nil {
 		net := string(mgr.NetType())
 		if net == "testnet3" {
+			//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
 			net = "testnet"
 		}
 		n, err := dex.NetFromString(net)
