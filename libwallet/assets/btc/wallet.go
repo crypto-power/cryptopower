@@ -16,7 +16,6 @@ import (
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
-	"github.com/decred/slog"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
@@ -38,7 +37,6 @@ type BTCAsset struct {
 	Synced bool
 
 	chainParams *chaincfg.Params
-	log         slog.Logger
 }
 
 const (
@@ -193,10 +191,6 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, err
 // TODO: NOT USED.
 // connect will start the wallet and begin syncing.
 func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
-	if err := logNeutrino(asset.DataDir()); err != nil {
-		return fmt.Errorf("error initializing btcwallet+neutrino logging: %v", err)
-	}
-
 	err := asset.startWallet()
 	if err != nil {
 		return err
@@ -222,7 +216,7 @@ func (asset *BTCAsset) startWallet() error {
 		return errors.New("wallet not found")
 	}
 
-	asset.log.Debug("Starting native BTC wallet...")
+	log.Debug("Starting native BTC wallet...")
 	err = asset.OpenWallet()
 	if err != nil {
 		return fmt.Errorf("couldn't load wallet: %w", err)
@@ -240,7 +234,7 @@ func (asset *BTCAsset) startWallet() error {
 
 	bailOnWalletAndDB := func() {
 		if err := asset.neutrinoDB.Close(); err != nil {
-			asset.log.Errorf("Error closing neutrino database: %v", err)
+			log.Errorf("Error closing neutrino database: %v", err)
 		}
 	}
 
@@ -259,7 +253,7 @@ func (asset *BTCAsset) startWallet() error {
 	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
 		connectPeers = []string{"localhost:20575"}
 	}
-	asset.log.Debug("Starting neutrino chain service...")
+	log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.neutrinoDB,
@@ -280,7 +274,7 @@ func (asset *BTCAsset) startWallet() error {
 
 	bailOnEverything := func() {
 		if err := chainService.Stop(); err != nil {
-			asset.log.Errorf("Error closing neutrino chain service: %v", err)
+			log.Errorf("Error closing neutrino chain service: %v", err)
 		}
 		bailOnWalletAndDB()
 	}
@@ -293,13 +287,12 @@ func (asset *BTCAsset) startWallet() error {
 		return fmt.Errorf("couldn't start Neutrino client: %v", err)
 	}
 
-	asset.log.Info("Synchronizing wallet with network...")
+	log.Info("Synchronizing wallet with network...")
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	return nil
 }
 
 func (asset *BTCAsset) SafelyCancelSync() {
-	//TODO: use a proper logger
-	fmt.Println("Safe sync shutdown not implemented for BTC")
+	log.Info("Safe sync shutdown not implemented for BTC")
 }
