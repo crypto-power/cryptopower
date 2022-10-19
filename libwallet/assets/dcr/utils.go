@@ -20,8 +20,6 @@ const (
 	// Use 80% of estimated total headers fetch time to estimate address discovery time
 	discoveryPercentage = 0.8
 
-	maxAmountAtom = dcrutil.MaxAmount
-
 	TestnetHDPath       = "m / 44' / 1' / "
 	LegacyTestnetHDPath = "m / 44’ / 11’ / "
 	MainnetHDPath       = "m / 44' / 42' / "

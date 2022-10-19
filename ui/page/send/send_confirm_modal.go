@@ -80,7 +80,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		_, err := scm.authoredTxData.txAuthor.Broadcast([]byte(password))
+		_, err := scm.authoredTxData.txAuthor.Broadcast(password)
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)

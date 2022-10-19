@@ -280,7 +280,7 @@ func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.wallet.UnlockWallet([]byte(password))
+			err := pg.wallet.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -295,8 +295,8 @@ func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 				PasswordHint(values.String(values.StrNewSpendingPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-					err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
-						[]byte(newPassword), sharedW.PassphraseTypePass)
+					err := pg.wallet.ChangePrivatePassphraseForWallet(password,
+						newPassword, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -345,7 +345,7 @@ func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, nil)
+				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -363,7 +363,7 @@ func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, []byte(password))
+					err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -462,7 +462,7 @@ func (pg *BTCWalletSettingsPage) HandleUserInteractions() {
 			EnableConfirmPassword(false).
 			PasswordHint(values.String(values.StrSpendingPassword)).
 			SetPositiveButtonCallback(func(accountName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
+				_, err := pg.wallet.CreateNewAccount(accountName, password)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)

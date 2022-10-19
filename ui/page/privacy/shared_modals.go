@@ -108,26 +108,26 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	unsignedTx, err := conf.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
+	err = conf.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		return err
 	}
 
 	// get tx fees
-	feeAndSize, err := unsignedTx.EstimateFeeAndSize()
+	feeAndSize, err := conf.WL.SelectedWallet.Wallet.EstimateFeeAndSize()
 	if err != nil {
 		return err
 	}
 
 	// calculate max amount to be sent
 	amountAtom := sourceAccount.Balance.Spendable - feeAndSize.Fee.UnitValue
-	err = unsignedTx.AddSendDestination(destinationAddress, amountAtom, true)
+	err = conf.WL.SelectedWallet.Wallet.AddSendDestination(destinationAddress, amountAtom, true)
 	if err != nil {
 		return err
 	}
 
 	// send fund
-	_, err = unsignedTx.Broadcast([]byte(password))
+	_, err = conf.WL.SelectedWallet.Wallet.Broadcast(password)
 	if err != nil {
 		return err
 	}

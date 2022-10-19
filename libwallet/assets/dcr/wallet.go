@@ -27,6 +27,8 @@ type DCRAsset struct {
 	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
 	cancelAutoTicketBuyerMu sync.RWMutex
 
+	TxAuthoredInfo *TxAuthor
+
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
 	vspMu        sync.RWMutex
@@ -38,6 +40,15 @@ type DCRAsset struct {
 	txAndBlockNotificationListeners  map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
+
+var _ DCRUniqueAsset = (*DCRAsset)(nil)
+var _ sharedW.Asset = (*DCRAsset)(nil)
+
+// func (asset *DCRAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error)
+// func (asset *DCRAsset) AddSendDestination(address string, atomAmount int64, sendMax bool) error
+// func (asset *DCRAsset) Broadcast(privatePassphrase []byte) ([]byte, error)
+// func (asset *DCRAsset) GetUnsignedTx() *TxAuthor
+// func (asset *DCRAsset) UseInputs(utxoKeys []string) error
 
 // initWalletLoader setups the loader.
 func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
@@ -265,4 +276,8 @@ func (asset *DCRAsset) SafelyCancelSyncOnly() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
 	}
+}
+
+func (asset *DCRAsset) IsConnectedToNetwork() bool {
+	return asset.IsConnectedToDecredNetwork()
 }

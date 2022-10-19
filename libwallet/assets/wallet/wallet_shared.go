@@ -196,9 +196,9 @@ func (wallet *Wallet) NetType() utils.NetworkType {
 	return wallet.netType
 }
 
-// WalletType returns the current wallet's asset type. It is exported via the
+// GetAssetType returns the current wallet's asset type. It is exported via the
 // interface thus the the need to be thread safe.
-func (wallet *Wallet) WalletType() utils.AssetType {
+func (wallet *Wallet) GetAssetType() utils.AssetType {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	return wallet.Type
@@ -211,6 +211,29 @@ func (wallet *Wallet) Internal() *loader.LoaderWallets {
 	defer wallet.mu.RUnlock()
 	lw, _ := wallet.loader.GetLoadedWallet()
 	return lw
+}
+
+func (wallet *Wallet) GetEncryptedSeed() string {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return string(wallet.EncryptedSeed)
+}
+
+func (wallet *Wallet) GetWalletID() int {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.ID
+}
+
+func (wallet *Wallet) GetWalletName() string {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.Name
+}
+func (wallet *Wallet) HasDiscoveredAccnts() bool {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.HasDiscoveredAccounts
 }
 
 func (wallet *Wallet) SetNetworkCancelCallback(callback func()) {
@@ -396,7 +419,7 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 	return wallet.db.Save(wallet) // update WalletName field
 }
 
-func (wallet *Wallet) DeleteWallet(privPass []byte) error {
+func (wallet *Wallet) DeleteWallet(privPass string) error {
 	// functions to safely cancel sync before proceeding
 	if wallet.networkCancel != nil {
 		wallet.networkCancel()
@@ -498,7 +521,7 @@ func (wallet *Wallet) WalletOpened() bool {
 	}
 }
 
-func (wallet *Wallet) UnlockWallet(privPass []byte) (err error) {
+func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 	loadedWallet, ok := wallet.loader.GetLoadedWallet()
 	if !ok {
 		return errors.New(utils.ErrWalletNotLoaded)
@@ -506,10 +529,10 @@ func (wallet *Wallet) UnlockWallet(privPass []byte) (err error) {
 
 	switch wallet.Type {
 	case utils.BTCWalletAsset:
-		err = loadedWallet.BTC.Unlock(privPass, nil)
+		err = loadedWallet.BTC.Unlock([]byte(privPass), nil)
 	case utils.DCRWalletAsset:
 		ctx, _ := wallet.ShutdownContextWithCancel()
-		err = loadedWallet.DCR.Unlock(ctx, privPass, nil)
+		err = loadedWallet.DCR.Unlock(ctx, []byte(privPass), nil)
 	}
 
 	if err != nil {
@@ -545,24 +568,27 @@ func (wallet *Wallet) IsLocked() bool {
 }
 
 // ChangePrivatePassphraseForWallet attempts to change the wallet's passphrase and re-encrypts the seed with the new passphrase.
-func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase []byte, privatePassphraseType int32) error {
+func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase string, privatePassphraseType int32) error {
 	if privatePassphraseType != PassphraseTypePin && privatePassphraseType != PassphraseTypePass {
 		return errors.New(utils.ErrInvalid)
 	}
+
+	oldPassphrase := []byte(oldPrivatePassphrase)
+	newPassphrase := []byte(newPrivatePassphrase)
 	encryptedSeed := wallet.EncryptedSeed
 	if encryptedSeed != nil {
-		decryptedSeed, err := decryptWalletSeed(oldPrivatePassphrase, encryptedSeed)
+		decryptedSeed, err := decryptWalletSeed(oldPassphrase, encryptedSeed)
 		if err != nil {
 			return err
 		}
 
-		encryptedSeed, err = encryptWalletSeed(newPrivatePassphrase, decryptedSeed)
+		encryptedSeed, err = encryptWalletSeed(newPassphrase, decryptedSeed)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := wallet.changePrivatePassphrase(oldPrivatePassphrase, newPrivatePassphrase)
+	err := wallet.changePrivatePassphrase(oldPassphrase, newPassphrase)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -573,7 +599,7 @@ func (wallet *Wallet) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, new
 	if err != nil {
 		log.Errorf("error saving wallet-[%d] to database after passphrase change: %v", wallet.ID, err)
 
-		err2 := wallet.changePrivatePassphrase(newPrivatePassphrase, oldPrivatePassphrase)
+		err2 := wallet.changePrivatePassphrase(newPassphrase, oldPassphrase)
 		if err2 != nil {
 			log.Errorf("error undoing wallet passphrase change: %v", err2)
 			log.Errorf("error wallet passphrase was changed but passphrase type and newly encrypted seed could not be saved: %v", err)
@@ -610,13 +636,7 @@ func (wallet *Wallet) changePrivatePassphrase(oldPass []byte, newPass []byte) (e
 	return nil
 }
 
-func (wallet *Wallet) deleteWallet(privatePassphrase []byte) error {
-	defer func() {
-		for i := range privatePassphrase {
-			privatePassphrase[i] = 0
-		}
-	}()
-
+func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 	if !wallet.IsWatchingOnlyWallet() {
 		err := wallet.UnlockWallet(privatePassphrase)
 		if err != nil {

@@ -284,7 +284,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToSign)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					sig, err := pg.wallet.SignMessage([]byte(password), address, message)
+					sig, err := pg.wallet.SignMessage(password, address, message)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)

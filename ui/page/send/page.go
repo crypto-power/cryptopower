@@ -260,19 +260,19 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	unsignedTx, err := pg.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
+	err = pg.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	err = unsignedTx.AddSendDestination(destinationAddress, amountAtom, SendMax)
+	err = pg.WL.SelectedWallet.Wallet.AddSendDestination(destinationAddress, amountAtom, SendMax)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	feeAndSize, err := unsignedTx.EstimateFeeAndSize()
+	feeAndSize, err := pg.WL.SelectedWallet.Wallet.EstimateFeeAndSize()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -311,7 +311,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
 
-	pg.txAuthor = unsignedTx
+	pg.txAuthor = pg.WL.SelectedWallet.Wallet.GetUnsignedTx()
 }
 
 func (pg *Page) showBalaceAfterSend() {

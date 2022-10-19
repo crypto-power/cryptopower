@@ -83,7 +83,7 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) DeleteDCRWallet(walletID int, privPass []byte) error {
+func (mgr *AssetsManager) DeleteDCRWallet(walletID int, privPass string) error {
 	wallet := mgr.DCRWalletWithID(walletID)
 
 	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly)

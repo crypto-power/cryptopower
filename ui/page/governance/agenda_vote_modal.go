@@ -73,7 +73,7 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 }
 
 func (avm *agendaVoteModal) sendVotes(_, password string, m *modal.CreatePasswordModal) bool {
-	err := avm.CreatePasswordModal.WL.SelectedWallet.Wallet.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", []byte(password))
+	err := avm.CreatePasswordModal.WL.SelectedWallet.Wallet.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", password)
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())
 		avm.CreatePasswordModal.SetLoading(false)

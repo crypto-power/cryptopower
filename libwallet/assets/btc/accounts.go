@@ -125,7 +125,7 @@ func (asset *BTCAsset) UnspentOutputs(account int32) ([]*ListUnspentResult, erro
 	return resp, nil
 }
 
-func (asset *BTCAsset) CreateNewAccount(accountName string, privPass []byte) (int32, error) {
+func (asset *BTCAsset) CreateNewAccount(accountName, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err

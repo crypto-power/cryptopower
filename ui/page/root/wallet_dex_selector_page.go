@@ -333,7 +333,7 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.DCRAsset) {
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := wal.UnlockWallet([]byte(password))
+			err := wal.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)

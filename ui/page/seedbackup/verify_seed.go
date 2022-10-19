@@ -167,7 +167,7 @@ func (pg *VerifySeedPage) verifySeed() {
 		Title("Confirm to verify seed").
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed := pg.selectedSeedPhrase()
-			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, []byte(password))
+			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
 			if err != nil {
 				if err.Error() == utils.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)

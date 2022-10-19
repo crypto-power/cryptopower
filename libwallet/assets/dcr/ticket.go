@@ -98,7 +98,7 @@ func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
 
 // PurchaseTickets purchases tickets from the asset.
 // Returns a slice of hashes for tickets purchased.
-func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost string, vspPubKey []byte, passphrase []byte) ([]*chainhash.Hash, error) {
+func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost string, vspPubKey []byte, passphrase string) ([]*chainhash.Hash, error) {
 	vspClient, err := asset.VSPClient(vspHost, vspPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)
@@ -224,7 +224,7 @@ func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 // StartTicketBuyer starts the automatic ticket buyer. The wallet
 // should already be configured with the required parameters using
 // asset.SetAutoTicketsBuyerConfig().
-func (asset *DCRAsset) StartTicketBuyer(passphrase []byte) error {
+func (asset *DCRAsset) StartTicketBuyer(passphrase string) error {
 	cfg := asset.AutoTicketsBuyerConfig()
 	if cfg.VspHost == "" {
 		return errors.New("ticket buyer config not set for this wallet")
@@ -283,7 +283,7 @@ func (asset *DCRAsset) StartTicketBuyer(passphrase []byte) error {
 // runTicketBuyer executes the ticket buyer. If the private passphrase is
 // incorrect, or ever becomes incorrect due to a wallet passphrase change,
 // runTicketBuyer exits with an errors.Passphrase error.
-func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase []byte, cfg *TicketBuyerConfig) error {
+func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase string, cfg *TicketBuyerConfig) error {
 	if len(passphrase) > 0 && asset.IsLocked() {
 		err := asset.UnlockWallet(passphrase)
 		if err != nil {
@@ -427,7 +427,7 @@ func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase []byte, cf
 }
 
 // buyTicket purchases one ticket with the asset.
-func (asset *DCRAsset) buyTicket(ctx context.Context, passphrase []byte, sdiff dcrutil.Amount, expiry int32, cfg *TicketBuyerConfig) error {
+func (asset *DCRAsset) buyTicket(ctx context.Context, passphrase string, sdiff dcrutil.Amount, expiry int32, cfg *TicketBuyerConfig) error {
 	ctx, task := trace.NewTask(ctx, "ticketbuyer.buy")
 	defer task.End()
 

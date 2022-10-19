@@ -179,7 +179,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 	return unspentOutputs, nil
 }
 
-func (asset *DCRAsset) CreateNewAccount(accountName string, privPass []byte) (int32, error) {
+func (asset *DCRAsset) CreateNewAccount(accountName string, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err

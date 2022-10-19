@@ -366,7 +366,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 				return false
 			}
 
-			err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer([]byte(password))
+			err := pg.WL.SelectedWallet.Wallet.StartTicketBuyer(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)

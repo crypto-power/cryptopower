@@ -76,7 +76,7 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) DeleteBTCWallet(walletID int, privPass []byte) error {
+func (mgr *AssetsManager) DeleteBTCWallet(walletID int, privPass string) error {
 	wallet := mgr.BTCWalletWithID(walletID)
 
 	err := wallet.DeleteWallet(privPass)

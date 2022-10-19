@@ -84,7 +84,7 @@ func AgendaStatusFromStr(status string) AgendaStatusType {
 // the ticket. If a ticket hash isn't provided, the vote choice is saved to the
 // local wallet database and the VSPs controlling all unspent, unexpired tickets
 // are updated to use the specified vote choice.
-func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash string, passphrase []byte) error {
+func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash string, passphrase string) error {
 	var ticketHash *chainhash.Hash
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
