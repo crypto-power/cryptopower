@@ -44,7 +44,7 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
 			Balance:          balance,
-			TotalBalance:     balance.Total,
+			TotalDCRBalance:  balance.TotalDCR,
 			ExternalKeyCount: int32(a.LastUsedExternalIndex + AddressGapLimit), // Add gap limit
 			InternalKeyCount: int32(a.LastUsedInternalIndex + AddressGapLimit),
 			ImportedKeyCount: int32(a.ImportedKeyCount),
@@ -52,10 +52,9 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	}
 
 	return &sharedW.Accounts{
-		Count:              len(resp.Accounts),
-		CurrentBlockHash:   resp.CurrentBlockHash[:],
-		CurrentBlockHeight: resp.CurrentBlockHeight,
-		Acc:                accounts,
+		CurrentDCRBlockHash:   resp.CurrentBlockHash[:],
+		CurrentDCRBlockHeight: resp.CurrentBlockHeight,
+		DCRAccounts:           accounts,
 	}, nil
 }
 
@@ -67,7 +66,7 @@ func (asset *DCRAsset) AccountsIterator() (*AccountsIterator, error) {
 
 	return &AccountsIterator{
 		currentIndex: 0,
-		accounts:     accounts.Acc,
+		accounts:     accounts.DCRAccounts,
 	}, nil
 }
 
@@ -91,7 +90,7 @@ func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 		return nil, err
 	}
 
-	for _, account := range accounts.Acc {
+	for _, account := range accounts.DCRAccounts {
 		if account.Number == accountNumber {
 			return account, nil
 		}
@@ -108,9 +107,9 @@ func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		Total:                   int64(balance.Total),
-		Spendable:               int64(balance.Spendable),
-		ImmatureReward:          int64(balance.ImmatureCoinbaseRewards),
+		TotalDCR:                int64(balance.Total),
+		SpendableDCR:            int64(balance.Spendable),
+		ImmatureRewardDCR:       int64(balance.ImmatureCoinbaseRewards),
 		ImmatureStakeGeneration: int64(balance.ImmatureStakeGeneration),
 		LockedByTickets:         int64(balance.LockedByTickets),
 		VotingAuthority:         int64(balance.VotingAuthority),

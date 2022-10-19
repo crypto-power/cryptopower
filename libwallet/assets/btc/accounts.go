@@ -7,6 +7,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
@@ -29,45 +30,45 @@ func (asset *BTCAsset) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (asset *BTCAsset) GetAccountsRaw() (*AccountsResult, error) {
+func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	resp, err := asset.Internal().BTC.Accounts(asset.GetScope())
 	if err != nil {
 		return nil, err
 	}
 
-	accounts := make([]*AccountResult, len(resp.Accounts))
+	accounts := make([]*sharedW.Account, len(resp.Accounts))
 	for i, a := range resp.Accounts {
 		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
 		if err != nil {
 			return nil, err
 		}
 
-		accounts[i] = &AccountResult{
-			AccountProperties: AccountProperties{
+		accounts[i] = &sharedW.Account{
+			AccountProperties: sharedW.AccountProperties{
 				AccountNumber:    a.AccountNumber,
 				AccountName:      a.AccountName,
 				ExternalKeyCount: a.ExternalKeyCount + AddressGapLimit, // Add gap limit
 				InternalKeyCount: a.InternalKeyCount + AddressGapLimit,
 				ImportedKeyCount: a.ImportedKeyCount,
 			},
-			TotalBalance: balance.Total,
+			TotalBTCBalance: balance.TotalBTC,
 		}
 	}
 
-	return &AccountsResult{
-		CurrentBlockHash:   resp.CurrentBlockHash,
-		CurrentBlockHeight: resp.CurrentBlockHeight,
-		Accounts:           accounts,
+	return &sharedW.Accounts{
+		CurrentBTCBlockHash:   resp.CurrentBlockHash,
+		CurrentBTCBlockHeight: resp.CurrentBlockHeight,
+		BTCAccounts:           accounts,
 	}, nil
 }
 
-func (asset *BTCAsset) GetAccount(accountNumber int32) (*AccountResult, error) {
+func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, account := range accounts.Accounts {
+	for _, account := range accounts.BTCAccounts {
 		if account.AccountNumber == uint32(accountNumber) {
 			return account, nil
 		}
@@ -76,16 +77,16 @@ func (asset *BTCAsset) GetAccount(accountNumber int32) (*AccountResult, error) {
 	return nil, errors.New(utils.ErrNotExist)
 }
 
-func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*Balances, error) {
+func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
 	balance, err := asset.Internal().BTC.CalculateAccountBalances(uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
 
-	return &Balances{
-		Total:          balance.Total,
-		Spendable:      balance.Spendable,
-		ImmatureReward: balance.ImmatureReward,
+	return &sharedW.Balance{
+		TotalBTC:          balance.Total,
+		SpendableBTC:      balance.Spendable,
+		ImmatureRewardBTC: balance.ImmatureReward,
 	}, nil
 }
 

@@ -41,14 +41,11 @@ type DCRAsset struct {
 	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
 
+// BTCAsset confirm that DCR implements the unique DCR implenatation interface.
 var _ DCRUniqueAsset = (*DCRAsset)(nil)
-var _ sharedW.Asset = (*DCRAsset)(nil)
 
-// func (asset *DCRAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error)
-// func (asset *DCRAsset) AddSendDestination(address string, atomAmount int64, sendMax bool) error
-// func (asset *DCRAsset) Broadcast(privatePassphrase []byte) ([]byte, error)
-// func (asset *DCRAsset) GetUnsignedTx() *TxAuthor
-// func (asset *DCRAsset) UseInputs(utxoKeys []string) error
+// BTCAsset confirm that BTC implements the shared assets interface.
+var _ sharedW.Asset = (*DCRAsset)(nil)
 
 // initWalletLoader setups the loader.
 func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {

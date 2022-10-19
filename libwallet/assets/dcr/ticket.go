@@ -377,7 +377,7 @@ func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase string, cf
 				return err
 			}
 
-			spendable := bal.Spendable
+			spendable := bal.SpendableDCR
 			if spendable < cfg.BalanceToMaintain {
 				log.Debugf("[%d] Skipping purchase: low available balance", asset.ID)
 				continue

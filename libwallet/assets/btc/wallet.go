@@ -24,6 +24,9 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
+// BTCAsset confirm that BTC implements that shared assets interface.
+var _ sharedW.Asset = (*BTCAsset)(nil)
+
 type BTCAsset struct {
 	*sharedW.Wallet
 
@@ -296,3 +299,26 @@ func (asset *BTCAsset) startWallet() error {
 func (asset *BTCAsset) SafelyCancelSync() {
 	log.Info("Safe sync shutdown not implemented for BTC")
 }
+
+// Methods added below satisfy the shared asset interface. Each should be
+// implementet fully to avoid panic if invoked.
+func (asset *BTCAsset) IsSynced() bool
+func (asset *BTCAsset) IsWaiting() bool
+func (asset *BTCAsset) IsSyncing() bool
+func (asset *BTCAsset) SpvSync() error
+func (asset *BTCAsset) CancelRescan()
+func (asset *BTCAsset) CancelSync()
+func (asset *BTCAsset) IsRescanning() bool
+func (asset *BTCAsset) RescanBlocks() error
+func (asset *BTCAsset) ConnectedPeers() int32
+func (asset *BTCAsset) IsConnectedToNetwork() bool
+func (asset *BTCAsset) PublishUnminedTransactions() error
+func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error)
+func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error)
+func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool
+func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error)
+func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo
+func (asset *BTCAsset) GetBestBlockHeight() int32
+func (asset *BTCAsset) GetBestBlockTimeStamp() int64
+func (asset *BTCAsset) SignMessage(passphrase string, address string, message string) ([]byte, error)
+func (asset *BTCAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error)
