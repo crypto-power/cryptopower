@@ -21,11 +21,11 @@ import (
 
 type Assets struct {
 	DCR struct {
-		Wallets    map[int]*dcr.DCRAsset
+		Wallets    map[int]sharedW.Asset
 		BadWallets map[int]*sharedW.Wallet
 	}
 	BTC struct {
-		Wallets    map[int]*btc.BTCAsset
+		Wallets    map[int]sharedW.Asset
 		BadWallets map[int]*sharedW.Wallet
 	}
 }
@@ -71,8 +71,8 @@ func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType)
 		Assets: new(Assets),
 	}
 
-	mgr.Assets.BTC.Wallets = make(map[int]*btc.BTCAsset)
-	mgr.Assets.DCR.Wallets = make(map[int]*dcr.DCRAsset)
+	mgr.Assets.BTC.Wallets = make(map[int]sharedW.Asset)
+	mgr.Assets.DCR.Wallets = make(map[int]sharedW.Asset)
 
 	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
@@ -326,14 +326,14 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
-func (mgr *AssetsManager) AllDCRWallets() (wallets []*dcr.DCRAsset) {
+func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallets = append(wallets, wallet)
 	}
 	return wallets
 }
 
-func (mgr *AssetsManager) AllBTCWallets() (wallets []*btc.BTCAsset) {
+func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.BTC.Wallets {
 		wallets = append(wallets, wallet)
 	}

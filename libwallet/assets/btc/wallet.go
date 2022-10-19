@@ -69,7 +69,7 @@ var _ neutrinoService = (*neutrino.ChainService)(nil)
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.Ass
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*BTCAsset, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, error) {
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err

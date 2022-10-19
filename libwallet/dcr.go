@@ -25,7 +25,7 @@ func initializeDCRWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 	return chainParams, nil
 }
 
-func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
+func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -36,33 +36,33 @@ func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase strin
 		return nil, err
 	}
 
-	mgr.Assets.DCR.Wallets[wallet.ID] = wallet
+	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (*dcr.DCRAsset, error) {
+func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublicKey string) (sharedW.Asset, error) {
 	wallet, err := dcr.CreateWatchOnlyWallet(walletName, extendedPublicKey, mgr.params)
 	if err != nil {
 		return nil, err
 	}
 
-	mgr.Assets.DCR.Wallets[wallet.ID] = wallet
+	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*dcr.DCRAsset, error) {
+func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -73,11 +73,11 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 		return nil, err
 	}
 
-	mgr.Assets.DCR.Wallets[wallet.ID] = wallet
+	mgr.Assets.DCR.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
@@ -86,7 +86,9 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 func (mgr *AssetsManager) DeleteDCRWallet(walletID int, privPass string) error {
 	wallet := mgr.DCRWalletWithID(walletID)
 
-	wallet.SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly)
+	// SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly) called before the
+	// asset interface is loaded guarantees that sync shutdown will happen
+	// before upstream wallet deletion happens.
 	err := wallet.DeleteWallet(privPass)
 	if err != nil {
 		return err
@@ -116,7 +118,7 @@ func (mgr *AssetsManager) DeleteBadDCRWallet(walletID int) error {
 	return nil
 }
 
-func (mgr *AssetsManager) DCRWalletWithID(walletID int) *dcr.DCRAsset {
+func (mgr *AssetsManager) DCRWalletWithID(walletID int) sharedW.Asset {
 	if wallet, ok := mgr.Assets.DCR.Wallets[walletID]; ok {
 		return wallet
 	}
@@ -131,7 +133,7 @@ func (mgr *AssetsManager) DCRWalletWithXPub(xpub string) (int, error) {
 
 	for _, w := range mgr.Assets.DCR.Wallets {
 		if !w.WalletOpened() {
-			return -1, errors.Errorf("wallet %d is not open and cannot be checked", w.ID)
+			return -1, errors.Errorf("wallet %d is not open and cannot be checked", w.GetWalletID())
 		}
 		accounts, err := w.Internal().DCR.Accounts(ctx)
 		if err != nil {
@@ -146,7 +148,7 @@ func (mgr *AssetsManager) DCRWalletWithXPub(xpub string) (int, error) {
 				return -1, err
 			}
 			if acctXPub.String() == xpub {
-				return w.ID, nil
+				return w.GetWalletID(), nil
 			}
 		}
 	}
@@ -169,19 +171,22 @@ func (mgr *AssetsManager) DCRWalletWithSeed(seedMnemonic string) (int, error) {
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		if !wallet.WalletOpened() {
-			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.ID)
+			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.GetWalletID())
 		}
 		// NOTE: Existing watch-only wallets may have been created using the
 		// xpub of an account that is NOT the default account and may return
 		// incorrect result from the check below. But this would return true
 		// if the watch-only wallet was created using the xpub of the default
 		// account of the provided seed.
-		usesSameSeed, err := wallet.AccountXPubMatches(dcr.DefaultAccountNum, newSeedLegacyXPUb, newSeedSLIP0044XPUb)
+		fn := wallet.(interface {
+			AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error)
+		})
+		usesSameSeed, err := fn.AccountXPubMatches(dcr.DefaultAccountNum, newSeedLegacyXPUb, newSeedSLIP0044XPUb)
 		if err != nil {
 			return -1, err
 		}
 		if usesSameSeed {
-			return wallet.ID, nil
+			return wallet.GetWalletID(), nil
 		}
 	}
 
