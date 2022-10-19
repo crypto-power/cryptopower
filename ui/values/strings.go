@@ -684,4 +684,5 @@ const (
 	StrSendConfModalTitle              = "sendConfModalTitle"
 	StrDCRCaps                         = "dcrCaps"
 	StrNoMixable                       = "errNoMixable"
+	StrErrPassEmpty                    = "errPassEmpty"
 )

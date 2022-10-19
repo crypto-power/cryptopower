@@ -33,10 +33,6 @@ type startPage struct {
 
 	addWalletButton cryptomaterial.Button
 
-	// to be removed after full layout migration
-	newlayout    cryptomaterial.Button
-	legacyLayout cryptomaterial.Button
-
 	loading bool
 }
 
@@ -85,6 +81,7 @@ func (sp *startPage) unlock() {
 			sp.WL.MultiWallet.Shutdown()
 			os.Exit(0)
 		}).
+		SetCancelable(false).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			err := sp.openWallets(password)

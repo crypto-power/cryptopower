@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -175,7 +176,7 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 					Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(4)},
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if !components.StringNotEmpty(infoText) {
+						if !utils.StringNotEmpty(infoText) {
 							return D{}
 						}
 						label := theme.Label(values.TextSize14, infoText)

@@ -505,16 +505,6 @@ func GoToURL(url string) {
 	}
 }
 
-func StringNotEmpty(texts ...string) bool {
-	for _, t := range texts {
-		if strings.TrimSpace(t) == "" {
-			return false
-		}
-	}
-
-	return true
-}
-
 func TimeFormat(secs int, long bool) string {
 	var val string
 	if secs > 86399 {
