@@ -26,6 +26,11 @@ import (
 	"golang.org/x/text/message"
 )
 
+const (
+	WalletTypeDCR = "dcr"
+	WalletTypeBTC = "btc"
+)
+
 // the length of name should be 20 characters
 func ValidateLengthName(name string) bool {
 	trimName := strings.TrimSpace(name)

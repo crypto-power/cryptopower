@@ -285,7 +285,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	if mp.WL.SelectedWalletType == "DCR" {
+	if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
 		// load wallet account balance first before rendering page contents
 		// TODO update updateBalance() to accommodate BTC balance update as well.
 		mp.updateBalance()
@@ -312,7 +312,7 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
-	} else if mp.WL.SelectedWalletType == "BTC" {
+	} else if mp.WL.SelectedWalletType == utils.WalletTypeBTC {
 		mp.updateBTCBalance()
 
 		if mp.CurrentPage() == nil {
@@ -343,9 +343,9 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 	mp.usdExchangeRate = rate.LastTradePrice
 
-	if mp.WL.SelectedWalletType == "DCR" {
+	if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
 		mp.updateBalance()
-	} else if mp.WL.SelectedWalletType == "BTC" {
+	} else if mp.WL.SelectedWalletType == utils.WalletTypeBTC {
 		mp.updateBTCBalance()
 	}
 	mp.usdExchangeSet = true
@@ -610,8 +610,8 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	if mp.WL.SelectedWalletType == "DCR" {
-		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
+	if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
+		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
 	}
 
 	mp.ctxCancel()
@@ -638,10 +638,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					var topBar D
-					if mp.WL.SelectedWalletType == "DCR" {
+					if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
 						topBar = mp.LayoutTopBar(gtx)
 					}
-					if mp.WL.SelectedWalletType == "BTC" {
+					if mp.WL.SelectedWalletType == utils.WalletTypeBTC {
 						topBar = mp.LayoutBTCTopBar(gtx)
 					}
 					return topBar
@@ -654,10 +654,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							var drawer D
-							if mp.WL.SelectedWalletType == "DCR" {
+							if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx)
 							}
-							if mp.WL.SelectedWalletType == "BTC" {
+							if mp.WL.SelectedWalletType == utils.WalletTypeBTC {
 								drawer = mp.drawerNav.LayoutBTCNavDrawer(gtx)
 							}
 							return drawer
