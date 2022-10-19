@@ -18,3 +18,16 @@ func (asset *BTCAsset) GetScope() waddrmgr.KeyScope {
 	// scope is used for each specific coin type.
 	return waddrmgr.KeyScopeBIP0084
 }
+
+func AmountBTC(amount int64) float64 {
+	return btcutil.Amount(amount).ToBTC()
+}
+
+func AmountSatoshi(f float64) int64 {
+	amount, err := btcutil.NewAmount(f)
+	if err != nil {
+		log.Error(err)
+		return -1
+	}
+	return int64(amount)
+}

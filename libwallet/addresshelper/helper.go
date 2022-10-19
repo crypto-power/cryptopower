@@ -3,6 +3,9 @@ package addresshelper
 import (
 	"fmt"
 
+	btccfg "github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -18,6 +21,25 @@ func PkScript(address string, net dcrutil.AddressParams) ([]byte, error) {
 	}
 
 	_, pkScript := addr.PaymentScript()
+	return pkScript, nil
+}
+
+func BTCPkScript(address string, net *btccfg.Params) ([]byte, error) {
+	// Parse the address to send the coins to into a btcutil.Address
+	// which is useful to ensure the accuracy of the address and determine
+	// the address type. It is also required for the upcoming call to
+	// PayToAddrScript.
+	addr, err := btcutil.DecodeAddress(address, net)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding address '%s': %s", address, err.Error())
+	}
+
+	// Create a public key script that pays to the address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
 	return pkScript, nil
 }
 
