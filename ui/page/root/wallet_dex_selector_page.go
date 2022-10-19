@@ -1,7 +1,6 @@
 package root
 
 import (
-	"fmt"
 	"context"
 	"sync"
 
@@ -153,8 +152,7 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 
 	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
 		pg.WL.SelectedWallet = watchOnlyWalletList[selectedItem]
-		fmt.Println("[][][][]", mainWalletList[selectedItem].Wallet.Type.ToString())
-		pg.WL.SelectedWalletType =  mainWalletList[selectedItem].Wallet.Type.ToString()
+		pg.WL.SelectedWalletType = mainWalletList[selectedItem].Wallet.Type.ToString()
 		pg.walletSelected()
 	}
 

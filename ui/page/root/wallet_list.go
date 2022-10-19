@@ -107,7 +107,7 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	pg.badWalletsList = make([]*badWalletListItem, 0, len(badWallets))
 	for _, badWallet := range badWallets {
 		listItem := &badWalletListItem{
-			Wallet:  badWallet,
+			Wallet:    badWallet,
 			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
 		}
 		listItem.deleteBtn.Color = pg.Theme.Color.Danger

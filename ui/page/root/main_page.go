@@ -611,7 +611,7 @@ func (mp *MainPage) OnNavigatedFrom() {
 	}
 
 	if mp.WL.SelectedWalletType == utils.WalletTypeDCR {
-		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(load.SeedBackupNotificationConfigKey, false)
+		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
 	mp.ctxCancel()
