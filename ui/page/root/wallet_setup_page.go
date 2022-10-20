@@ -239,10 +239,11 @@ func (pg *CreateWallet) Layout(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.backButton.Layout),
 				layout.Rigid(func(gtx C) D {
-					return pg.list.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+					return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 						return layout.Inset{
 							Top:    values.MarginPadding26,
 							Bottom: values.MarginPadding10,
+							Right:  values.MarginPadding10,
 						}.Layout(gtx, pageContent[i])
 					})
 				}),
