@@ -51,6 +51,7 @@ func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 				InternalKeyCount: a.InternalKeyCount + AddressGapLimit,
 				ImportedKeyCount: a.ImportedKeyCount,
 			},
+			Balance: balance,
 			TotalBTCBalance: balance.TotalBTC,
 		}
 	}

@@ -5,7 +5,6 @@ import (
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -23,7 +22,7 @@ func (pg *WalletDexServerSelector) initWalletSelectorOptions() {
 }
 
 func (pg *WalletDexServerSelector) loadDCRWallets() {
-	wallets := pg.WL.SortedWalletList(utils.DCRWalletAsset)
+	wallets := pg.WL.SortedWalletList(libutils.DCRWalletAsset)
 	mainWalletList := make([]*load.WalletItem, 0)
 	watchOnlyWalletList := make([]*load.WalletItem, 0)
 
@@ -63,7 +62,7 @@ func (pg *WalletDexServerSelector) loadDCRWallets() {
 }
 
 func (pg *WalletDexServerSelector) loadBTCWallets() {
-	wallets := pg.WL.SortedWalletList(utils.BTCWalletAsset)
+	wallets := pg.WL.SortedWalletList(libutils.BTCWalletAsset)
 	mainWalletList := make([]*load.WalletItem, 0)
 	watchOnlyWalletList := make([]*load.WalletItem, 0)
 
@@ -105,29 +104,29 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 func (pg *WalletDexServerSelector) loadBadWallets() {
 	dcrBadWallets := pg.WL.MultiWallet.DCRBadWallets()
 	btcBadWallets := pg.WL.MultiWallet.BTCBadWallets()
-	pg.dcrBadWalletsList = make([]*badWalletListItem, len(dcrBadWallets))
-	pg.btcBadWalletsList = make([]*badWalletListItem, len(btcBadWallets))
+	pg.dcrBadWalletsList = make([]*badWalletListItem, 0, len(dcrBadWallets))
+	pg.btcBadWalletsList = make([]*badWalletListItem, 0, len(btcBadWallets))
 
 	// dcr bad wallets
-	for i, badWallet := range dcrBadWallets {
+	for _, badWallet := range dcrBadWallets {
 		listItem := &badWalletListItem{
 			Wallet:    badWallet,
 			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
 		}
 		listItem.deleteBtn.Color = pg.Theme.Color.Danger
 		listItem.deleteBtn.Inset = layout.Inset{}
-		pg.dcrBadWalletsList[i] = listItem
+		pg.dcrBadWalletsList = append(pg.dcrBadWalletsList, listItem)
 	}
 
 	// btc bad wallets
-	for i, badWallet := range btcBadWallets {
+	for _, badWallet := range btcBadWallets {
 		listItem := &badWalletListItem{
 			Wallet:    badWallet,
 			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
 		}
 		listItem.deleteBtn.Color = pg.Theme.Color.Danger
 		listItem.deleteBtn.Inset = layout.Inset{}
-		pg.btcBadWalletsList[i] = listItem
+		pg.btcBadWalletsList = append(pg.btcBadWalletsList, listItem)
 	}
 }
 
@@ -429,13 +428,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 
 	pg.isListenerAdded = true
 
-	if pg.WL.SelectedWallet.Wallet.GetAssetType() != libutils.DCRWalletAsset {
-		log.Warnf("WalletDexServerSelector listener for (%v) not implemented.",
-			pg.WL.SelectedWallet.Wallet.GetAssetType())
-		return
-	}
-
-	for k, w := range pg.WL.SortedWalletList() {
+	for k, w := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
 		syncListener := listeners.NewSyncProgress()
 		dcrUniqueImpl := w.(dcr.DCRUniqueAsset)
 		err := dcrUniqueImpl.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)

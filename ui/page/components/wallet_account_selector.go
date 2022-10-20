@@ -154,9 +154,11 @@ func (ws *WalletAndAccountSelector) SetSelectedAccount(account *sharedW.Account)
 	ws.selectedAccount = account
 	switch ws.SelectedWallet().GetAssetType() {
 	case utils.BTCWalletAsset:
-		ws.totalBalance = account.TotalDCRBalance.String()
-	case utils.DCRWalletAsset:
 		ws.totalBalance = account.TotalBTCBalance.String()
+	case utils.DCRWalletAsset:
+		if account != nil {
+			ws.totalBalance = account.TotalDCRBalance.String()
+		}
 	}
 }
 

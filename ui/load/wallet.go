@@ -32,9 +32,12 @@ type WalletLoad struct {
 // SortedWalletList can return sorted wallets based on the current selected wallet
 // type of on the basis of the provided asset type variadic variable.
 func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.Asset {
-	var wallets = wl.getAssets()
+	var wallets []sharedW.Asset
 	if len(assetType) > 0 {
 		wallets = wl.getAssets(assetType[0])
+	} else {
+		// On app start up SelectedWallet is usually not set thus the else use.
+		wallets = wl.getAssets()
 	}
 
 	if wallets == nil {
@@ -70,8 +73,8 @@ func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
 	if len(assetType) > 0 {
 		wType = assetType[0]
 	} else {
+		// On app start up SelectedWallet is usually not set thus the else use.
 		wType = wl.SelectedWallet.Wallet.GetAssetType()
-
 	}
 
 	switch wType {

@@ -554,7 +554,7 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 	switch l.WL.SelectedWallet.Wallet.GetAssetType() {
 	case utils.BTCWalletAsset:
 		for _, account := range accountsResult.BTCAccounts {
-			totalBalance += account.TotalDCRBalance.ToInt()
+			totalBalance += account.TotalBTCBalance.ToInt()
 			spandableBalance += account.Balance.SpendableBTC.ToInt()
 			immatureReward += account.Balance.ImmatureRewardBTC.ToInt()
 		}
