@@ -14,6 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	uiUtils "gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -45,7 +46,6 @@ type SignMessagePage struct {
 	clearButton, signButton, copyButton        cryptomaterial.Button
 	copySignature                              *cryptomaterial.Clickable
 	copyIcon                                   *cryptomaterial.Image
-	gtx                                        *C
 
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
@@ -182,7 +182,7 @@ func (pg *SignMessagePage) drawButtonsRow() layout.Widget {
 
 func (pg *SignMessagePage) drawResult() layout.Widget {
 	return func(gtx C) D {
-		if !components.StringNotEmpty(pg.signedMessageLabel.Text) {
+		if !uiUtils.StringNotEmpty(pg.signedMessageLabel.Text) {
 			return D{}
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -237,8 +237,8 @@ func (pg *SignMessagePage) drawResult() layout.Widget {
 
 func (pg *SignMessagePage) updateButtonColors() {
 	pg.isEnabled = false
-	if components.StringNotEmpty(pg.addressEditor.Editor.Text()) ||
-		components.StringNotEmpty(pg.messageEditor.Editor.Text()) {
+	if uiUtils.StringNotEmpty(pg.addressEditor.Editor.Text()) ||
+		uiUtils.StringNotEmpty(pg.messageEditor.Editor.Text()) {
 		pg.clearButton.SetEnabled(true)
 	} else {
 		pg.clearButton.SetEnabled(false)
@@ -331,7 +331,7 @@ func (pg *SignMessagePage) validateAddress() bool {
 	var errorMessage string
 
 	switch {
-	case !components.StringNotEmpty(address):
+	case !uiUtils.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
 	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)
@@ -352,7 +352,7 @@ func (pg *SignMessagePage) validateMessage() bool {
 	message := pg.messageEditor.Editor.Text()
 	pg.messageEditor.SetError("")
 
-	if !components.StringNotEmpty(message) {
+	if !uiUtils.StringNotEmpty(message) {
 		pg.messageEditor.SetError(values.String(values.StrEnterValidMsg))
 		pg.messageIsValid = false
 		return false

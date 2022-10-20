@@ -577,4 +577,5 @@ const EN = `
 "sendConfModalTitle" = "You're about to send"
 "dcrCaps"            = "DCR"
 "errNoMixable" = "No mixable output"
+"errPassEmpty" = "Password can not be empty"
 `

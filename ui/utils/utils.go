@@ -270,3 +270,13 @@ func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserve
 	}
 	return skewed, str
 }
+
+func StringNotEmpty(texts ...string) bool {
+	for _, t := range texts {
+		if strings.TrimSpace(t) == "" {
+			return false
+		}
+	}
+
+	return true
+}

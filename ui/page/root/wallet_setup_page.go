@@ -580,7 +580,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 func (pg *CreateWallet) validInputs() bool {
 	pg.walletName.SetError("")
 	pg.watchOnlyWalletHex.SetError("")
-	if !components.StringNotEmpty(pg.walletName.Editor.Text()) {
+	if !utils.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))
 		return false
 	}
@@ -590,7 +590,7 @@ func (pg *CreateWallet) validInputs() bool {
 		return false
 	}
 
-	if pg.watchOnlyCheckBox.CheckBox.Value && !components.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
+	if pg.watchOnlyCheckBox.CheckBox.Value && !utils.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
 		pg.watchOnlyWalletHex.SetError(values.String(values.StrEnterExtendedPubKey))
 		return false
 	}
