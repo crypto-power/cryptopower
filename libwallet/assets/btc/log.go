@@ -43,8 +43,8 @@ var (
 )
 
 // SetLogRotator assigns logrotator to be used for logging outputs.
-func SetLogRotator(logRotator *rotator.Rotator) {
-	logRotator = logRotator
+func SetLogRotator(rotator *rotator.Rotator) {
+	logRotator = rotator
 }
 
 // Initialize package-global logger variables.
