@@ -84,9 +84,9 @@ func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		TotalBTC:          balance.Total,
-		SpendableBTC:      balance.Spendable,
-		ImmatureRewardBTC: balance.ImmatureReward,
+		TotalBTC:          BTCAmount(balance.Total),
+		SpendableBTC:      BTCAmount(balance.Spendable),
+		ImmatureRewardBTC: BTCAmount(balance.ImmatureReward),
 	}, nil
 }
 

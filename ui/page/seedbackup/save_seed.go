@@ -12,7 +12,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -37,7 +37,7 @@ type SaveSeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcr.DCRAsset
+	wallet sharedW.Asset
 
 	backButton   cryptomaterial.IconButton
 	actionButton cryptomaterial.Button
@@ -53,7 +53,7 @@ type SaveSeedPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewSaveSeedPage(l *load.Load, wallet *dcr.DCRAsset, redirect Redirectfunc) *SaveSeedPage {
+func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) *SaveSeedPage {
 	pg := &SaveSeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),

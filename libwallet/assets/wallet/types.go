@@ -4,10 +4,20 @@ import (
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	btcchainhash "github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
+
+type AssetAmount interface {
+	// ToCoin returns an asset formatted amount in float64.
+	ToCoin() float64
+	// String returns an asset formatted amount in string.
+	String() string
+	// MulF64 multiplies an Amount by a floating point value.
+	MulF64(f float64) AssetAmount
+	// ToInt() returns the complete int64 value without formatting.
+	ToInt() int64
+}
 
 // WalletConfig defines options for configuring wallet behaviour.
 // This is a subset of the config used by dcrwallet.
@@ -74,18 +84,18 @@ type UnsignedTransaction struct {
 
 type Balance struct {
 	// DCR fields
-	TotalDCR                int64
-	SpendableDCR            int64
-	ImmatureRewardDCR       int64
-	ImmatureStakeGeneration int64
-	LockedByTickets         int64
-	VotingAuthority         int64
-	UnConfirmed             int64
+	TotalDCR                AssetAmount
+	SpendableDCR            AssetAmount
+	ImmatureRewardDCR       AssetAmount
+	ImmatureStakeGeneration AssetAmount
+	LockedByTickets         AssetAmount
+	VotingAuthority         AssetAmount
+	UnConfirmed             AssetAmount
 
 	// BTC fields
-	TotalBTC          btcutil.Amount
-	SpendableBTC      btcutil.Amount
-	ImmatureRewardBTC btcutil.Amount
+	TotalBTC          AssetAmount
+	SpendableBTC      AssetAmount
+	ImmatureRewardBTC AssetAmount
 }
 
 type Account struct {
@@ -94,14 +104,14 @@ type Account struct {
 	Number           int32
 	Name             string
 	Balance          *Balance
-	TotalDCRBalance  int64
+	TotalDCRBalance  AssetAmount
 	ExternalKeyCount int32
 	InternalKeyCount int32
 	ImportedKeyCount int32
 
 	// BTC fields
 	AccountProperties
-	TotalBTCBalance btcutil.Amount
+	TotalBTCBalance AssetAmount
 }
 
 type Accounts struct {

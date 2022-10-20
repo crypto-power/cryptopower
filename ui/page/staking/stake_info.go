@@ -54,7 +54,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 										}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
 									}),
 									layout.Rigid(func(gtx C) D {
-										secs, _ := pg.WL.SelectedWallet.Wallet.NextTicketPriceRemaining()
+										secs, _ := pg.dcrImpl.NextTicketPriceRemaining()
 										txt := pg.Theme.Label(values.TextSize16, nextTicketRemaining(int(secs)))
 										txt.Color = col
 
@@ -142,7 +142,7 @@ func (pg *Page) dataRows(title string, count int) layout.FlexChild {
 
 func (pg *Page) CalculateTotalTicketsCanBuy() int {
 	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load)
-	ticketPrice, err := pg.WL.SelectedWallet.Wallet.TicketPrice()
+	ticketPrice, err := pg.dcrImpl.TicketPrice()
 	if err != nil {
 		log.Errorf("ticketPrice error:", err)
 		return 0
@@ -181,7 +181,8 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 			)
 		})
 	}
-	pb := pg.Theme.MultiLayerProgressBar((totalBalance.Spendable + totalBalance.LockedByTickets).ToCoin(), items)
+	total := totalBalance.Spendable.ToInt() + totalBalance.LockedByTickets.ToInt()
+	pb := pg.Theme.MultiLayerProgressBar(pg.WL.SelectedWallet.Wallet.ToAmount(total).ToCoin(), items)
 	pb.Height = values.MarginPadding16
 	pb.ShowLedger = true
 	return pb.Layout(gtx, labelWdg)

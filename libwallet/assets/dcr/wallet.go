@@ -7,6 +7,7 @@ import (
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader/dcr"
@@ -270,4 +271,9 @@ func (asset *DCRAsset) SafelyCancelSync() {
 
 func (asset *DCRAsset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToDecredNetwork()
+}
+
+// Returns a DCR amount that implements the asset amount interface.
+func (asset *DCRAsset) ToAmount(v int64) sharedW.AssetAmount {
+	return DCRAmount(dcrutil.Amount(v))
 }

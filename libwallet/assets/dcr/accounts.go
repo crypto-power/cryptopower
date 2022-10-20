@@ -107,13 +107,13 @@ func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		TotalDCR:                int64(balance.Total),
-		SpendableDCR:            int64(balance.Spendable),
-		ImmatureRewardDCR:       int64(balance.ImmatureCoinbaseRewards),
-		ImmatureStakeGeneration: int64(balance.ImmatureStakeGeneration),
-		LockedByTickets:         int64(balance.LockedByTickets),
-		VotingAuthority:         int64(balance.VotingAuthority),
-		UnConfirmed:             int64(balance.Unconfirmed),
+		TotalDCR:                DCRAmount(balance.Total),
+		SpendableDCR:            DCRAmount(balance.Spendable),
+		ImmatureRewardDCR:       DCRAmount(balance.ImmatureCoinbaseRewards),
+		ImmatureStakeGeneration: DCRAmount(balance.ImmatureStakeGeneration),
+		LockedByTickets:         DCRAmount(balance.LockedByTickets),
+		VotingAuthority:         DCRAmount(balance.VotingAuthority),
+		UnConfirmed:             DCRAmount(balance.Unconfirmed),
 	}, nil
 }
 

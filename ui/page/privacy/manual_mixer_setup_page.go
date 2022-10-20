@@ -35,13 +35,22 @@ type ManualMixerSetupPage struct {
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
 	toPrivacySetup cryptomaterial.Button
+
+	dcrImpl dcr.DCRUniqueAsset
 }
 
 func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
+	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	pg := &ManualMixerSetupPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualMixerSetupPageID),
 		toPrivacySetup:   l.Theme.Button("Set up"),
+		dcrImpl:          impl,
 	}
 
 	// Mixed account picker
@@ -49,7 +58,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		Title("Mixed account").
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1
 			if unmixedAcc := pg.unmixedAccountSelector.SelectedAccount(); unmixedAcc != nil {
@@ -71,7 +80,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		Title("Unmixed account").
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
 			if mixedAcc := pg.mixedAccountSelector.SelectedAccount(); mixedAcc != nil {
@@ -205,7 +214,7 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			}
 			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
 			unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
-			err := pg.WL.SelectedWallet.Wallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+			err := pg.dcrImpl.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
 			if err != nil {
 				return errfunc(err)
 			}

@@ -2,7 +2,6 @@ package libwallet
 
 import (
 	"context"
-	"os"
 
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/walletseed"
@@ -81,48 +80,6 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 	}
 
 	return wallet, nil
-}
-
-func (mgr *AssetsManager) DeleteDCRWallet(walletID int, privPass string) error {
-	wallet := mgr.DCRWalletWithID(walletID)
-
-	// SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly) called before the
-	// asset interface is loaded guarantees that sync shutdown will happen
-	// before upstream wallet deletion happens.
-	err := wallet.DeleteWallet(privPass)
-	if err != nil {
-		return err
-	}
-
-	delete(mgr.Assets.DCR.Wallets, walletID)
-
-	return nil
-}
-
-func (mgr *AssetsManager) DeleteBadDCRWallet(walletID int) error {
-	wallet := mgr.Assets.DCR.BadWallets[walletID]
-	if wallet == nil {
-		return errors.New(utils.ErrNotExist)
-	}
-
-	log.Info("Deleting bad wallet")
-
-	err := mgr.params.DB.DeleteStruct(wallet)
-	if err != nil {
-		return utils.TranslateError(err)
-	}
-
-	os.RemoveAll(wallet.DataDir())
-	delete(mgr.Assets.DCR.BadWallets, walletID)
-
-	return nil
-}
-
-func (mgr *AssetsManager) DCRWalletWithID(walletID int) sharedW.Asset {
-	if wallet, ok := mgr.Assets.DCR.Wallets[walletID]; ok {
-		return wallet
-	}
-	return nil
 }
 
 // DCRWalletWithXPub returns the ID of the DCR wallet that has an account with the

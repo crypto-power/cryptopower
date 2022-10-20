@@ -25,6 +25,10 @@ type DCRUniqueAsset interface {
 	VSPTicketInfo(hash string) (*VSPTicketInfo, error)
 	StartTicketBuyer(passphrase string) error
 
+	RemoveSpecificPeer()
+	SetSpecificPeer(address string)
+	GetExtendedPubKey(account int32) (string, error)
+
 	KnownVSPs() []*VSP
 	ReloadVSPList(ctx context.Context)
 	TicketBuyerConfigIsSet() bool

@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -41,7 +42,7 @@ type WalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *dcr.DCRAsset
+	wallet   sharedW.Asset
 	accounts []*accountData
 
 	pageContainer layout.List
@@ -132,15 +133,28 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 		return
 	}
 
-	for _, acct := range accounts.Acc {
-		if acct.Number == dcr.ImportedAccountNumber {
-			continue
+	switch pg.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.BTCWalletAsset:
+		for _, acct := range accounts.BTCAccounts {
+			if acct.Number == dcr.ImportedAccountNumber {
+				continue
+			}
+			walletAccounts = append(walletAccounts, &accountData{
+				Account:   acct,
+				clickable: pg.Theme.NewClickable(false),
+			})
 		}
 
-		walletAccounts = append(walletAccounts, &accountData{
-			Account:   acct,
-			clickable: pg.Theme.NewClickable(false),
-		})
+	case libutils.DCRWalletAsset:
+		for _, acct := range accounts.DCRAccounts {
+			if acct.Number == dcr.ImportedAccountNumber {
+				continue
+			}
+			walletAccounts = append(walletAccounts, &accountData{
+				Account:   acct,
+				clickable: pg.Theme.NewClickable(false),
+			})
+		}
 	}
 
 	pg.accounts = walletAccounts
@@ -399,10 +413,10 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *WalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.Name).
+		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.GetWalletName()).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
-			if walletName != pg.WL.SelectedWallet.Wallet.Name {
+			if walletName != pg.WL.SelectedWallet.Wallet.GetWalletName() {
 				m.SetError(values.String(values.StrWalletNameMismatch))
 				m.SetLoading(false)
 				return false
@@ -427,7 +441,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, "")
+				err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -445,7 +459,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, password)
+					err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -503,7 +517,10 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				return false
 			}
 			if ipAddress != "" {
-				pg.WL.SelectedWallet.Wallet.SetSpecificPeer(ipAddress)
+				dcrUniqueImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+				if dcrUniqueImpl != nil {
+					dcrUniqueImpl.SetSpecificPeer(ipAddress)
+				}
 				pg.loadPeerAddress()
 			}
 			return true
@@ -549,7 +566,10 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
-			pg.WL.SelectedWallet.Wallet.RemoveSpecificPeer()
+			dcrUniqueImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+			if dcrUniqueImpl != nil {
+				dcrUniqueImpl.RemoveSpecificPeer()
+			}
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)
@@ -778,7 +798,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			gLimit := uint32(val)
 			tm.SetLoading(true)
 
-			err = pg.WL.SelectedWallet.Wallet.DiscoverUsage(gLimit)
+			err = pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset).DiscoverUsage(gLimit)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)

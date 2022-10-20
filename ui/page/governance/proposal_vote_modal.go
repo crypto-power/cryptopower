@@ -10,7 +10,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -55,7 +55,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
-		WalletSelected(func(w *dcr.DCRAsset) {
+		WalletSelected(func(w sharedW.Asset) {
 
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
@@ -85,7 +85,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				vm.detailsMu.Unlock()
 			}()
 		}).
-		WalletValidator(func(w *dcr.DCRAsset) bool {
+		WalletValidator(func(w sharedW.Asset) bool {
 			return !w.IsWatchingOnlyWallet()
 		})
 	return vm

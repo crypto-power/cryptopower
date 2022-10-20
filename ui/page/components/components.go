@@ -17,10 +17,10 @@ import (
 	"gioui.org/unit"
 
 	"github.com/ararog/timeago"
-	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -56,24 +56,13 @@ type (
 
 	// CummulativeWalletsBalance defines total balance for all available wallets.
 	CummulativeWalletsBalance struct {
-		Total                   dcrutil.Amount
-		Spendable               dcrutil.Amount
-		ImmatureReward          dcrutil.Amount
-		ImmatureStakeGeneration dcrutil.Amount
-		LockedByTickets         dcrutil.Amount
-		VotingAuthority         dcrutil.Amount
-		UnConfirmed             dcrutil.Amount
-	}
-
-	// CummulativeBTCWalletsBalance defines total balance for all available BTC wallets.
-	CummulativeBTCWalletsBalance struct {
-		Total                   btcutil.Amount
-		Spendable               btcutil.Amount
-		ImmatureReward          btcutil.Amount
-		ImmatureStakeGeneration btcutil.Amount
-		LockedByTickets         btcutil.Amount
-		VotingAuthority         btcutil.Amount
-		UnConfirmed             btcutil.Amount
+		Total                   sharedW.AssetAmount
+		Spendable               sharedW.AssetAmount
+		ImmatureReward          sharedW.AssetAmount
+		ImmatureStakeGeneration sharedW.AssetAmount
+		LockedByTickets         sharedW.AssetAmount
+		VotingAuthority         sharedW.AssetAmount
+		UnConfirmed             sharedW.AssetAmount
 	}
 
 	DexServer struct {
@@ -143,7 +132,7 @@ func UniformMobile(gtx layout.Context, isHorizontal, withList bool, body layout.
 	}.Layout(gtx, body)
 }
 
-func TransactionTitleIcon(l *load.Load, wal *dcr.DCRAsset, tx *sharedW.Transaction) *TxStatus {
+func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction) *TxStatus {
 	var txStatus TxStatus
 
 	switch tx.Direction {
@@ -192,7 +181,7 @@ func TransactionTitleIcon(l *load.Load, wal *dcr.DCRAsset, tx *sharedW.Transacti
 					txStatus.TicketStatus = dcr.TicketStatusExpired
 					txStatus.Background = l.Theme.Color.Gray4
 				} else {
-					ticketSpender, _ := wal.TicketSpender(tx.Hash)
+					ticketSpender, _ := wal.(dcr.DCRUniqueAsset).TicketSpender(tx.Hash)
 					if ticketSpender != nil {
 						if ticketSpender.Type == dcr.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)
@@ -306,7 +295,7 @@ func durationAgo(timestamp int64) string {
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-	wal := l.WL.MultiWallet.DCRWalletWithID(row.Transaction.WalletID)
+	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 
 	return cryptomaterial.LinearLayout{
@@ -429,7 +418,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 func TxConfirmations(l *load.Load, transaction sharedW.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
-		return (l.WL.MultiWallet.DCRWalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
+		return (l.WL.MultiWallet.WalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0
@@ -562,50 +551,37 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		return nil, err
 	}
 
-	for _, account := range accountsResult.Acc {
-		totalBalance += account.TotalBalance
-		spandableBalance += account.Balance.Spendable
-		immatureReward += account.Balance.ImmatureReward
-		immatureStakeGeneration += account.Balance.ImmatureStakeGeneration
-		lockedByTickets += account.Balance.LockedByTickets
-		votingAuthority += account.Balance.VotingAuthority
-		unConfirmed += account.Balance.UnConfirmed
+	switch l.WL.SelectedWallet.Wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		for _, account := range accountsResult.BTCAccounts {
+			totalBalance += account.TotalDCRBalance.ToInt()
+			spandableBalance += account.Balance.SpendableBTC.ToInt()
+			immatureReward += account.Balance.ImmatureRewardBTC.ToInt()
+		}
+	case utils.DCRWalletAsset:
+		for _, account := range accountsResult.DCRAccounts {
+			totalBalance += account.TotalDCRBalance.ToInt()
+			spandableBalance += account.Balance.SpendableDCR.ToInt()
+			immatureReward += account.Balance.ImmatureRewardDCR.ToInt()
+			immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
+			lockedByTickets += account.Balance.LockedByTickets.ToInt()
+			votingAuthority += account.Balance.VotingAuthority.ToInt()
+			unConfirmed += account.Balance.UnConfirmed.ToInt()
+		}
+	}
+
+	toAmount := func(v int64) sharedW.AssetAmount {
+		return l.WL.SelectedWallet.Wallet.ToAmount(v)
 	}
 
 	cumm := &CummulativeWalletsBalance{
-		Total:                   dcrutil.Amount(totalBalance),
-		Spendable:               dcrutil.Amount(spandableBalance),
-		ImmatureReward:          dcrutil.Amount(immatureReward),
-		ImmatureStakeGeneration: dcrutil.Amount(immatureStakeGeneration),
-		LockedByTickets:         dcrutil.Amount(lockedByTickets),
-		VotingAuthority:         dcrutil.Amount(votingAuthority),
-		UnConfirmed:             dcrutil.Amount(unConfirmed),
-	}
-
-	return cumm, nil
-}
-
-func CalculateTotalBTCWalletsBalance(l *load.Load) (*CummulativeBTCWalletsBalance, error) {
-	var totalBalance, spandableBalance, immatureReward, votingAuthority,
-		immatureStakeGeneration, lockedByTickets, unConfirmed int64
-
-	accountsResult, err := l.WL.SelectedBTCWallet.Wallet.GetAccountsRaw()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, account := range accountsResult.Accounts {
-		totalBalance += int64(account.TotalBalance)
-	}
-
-	cumm := &CummulativeBTCWalletsBalance{
-		Total:                   btcutil.Amount(totalBalance),
-		Spendable:               btcutil.Amount(spandableBalance),
-		ImmatureReward:          btcutil.Amount(immatureReward),
-		ImmatureStakeGeneration: btcutil.Amount(immatureStakeGeneration),
-		LockedByTickets:         btcutil.Amount(lockedByTickets),
-		VotingAuthority:         btcutil.Amount(votingAuthority),
-		UnConfirmed:             btcutil.Amount(unConfirmed),
+		Total:                   toAmount(totalBalance),
+		Spendable:               toAmount(spandableBalance),
+		ImmatureReward:          toAmount(immatureReward),
+		ImmatureStakeGeneration: toAmount(immatureStakeGeneration),
+		LockedByTickets:         toAmount(lockedByTickets),
+		VotingAuthority:         toAmount(votingAuthority),
+		UnConfirmed:             toAmount(unConfirmed),
 	}
 
 	return cumm, nil

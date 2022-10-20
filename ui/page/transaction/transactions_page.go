@@ -54,12 +54,20 @@ type TransactionsPage struct {
 	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
 	transactions    []sharedW.Transaction
-	wallets         []*dcr.DCRAsset
+	wallets         []sharedW.Asset
+
+	dcrImpl dcr.DCRUniqueAsset
 
 	tabs *cryptomaterial.ClickableList
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
+	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	if impl == nil {
+		log.Error("Only DCR implementation is supported")
+		return nil
+	}
+
 	pg := &TransactionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
@@ -68,6 +76,7 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 		},
 		separator:       l.Theme.Separator(),
 		transactionList: l.Theme.NewClickableList(layout.Vertical),
+		dcrImpl:         impl,
 	}
 
 	pg.tabs = l.Theme.NewClickableList(layout.Horizontal)
@@ -415,7 +424,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 		return
 	}
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
+	err := pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -430,7 +439,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+				pg.dcrImpl.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

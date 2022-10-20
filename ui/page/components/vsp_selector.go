@@ -48,7 +48,7 @@ func (v *VSPSelector) Changed() bool {
 }
 
 func (v *VSPSelector) SelectVSP(vspHost string) {
-	for _, vsp := range v.WL.SelectedWallet.Wallet.KnownVSPs() {
+	for _, vsp := range v.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset).KnownVSPs() {
 		if vsp.Host == vspHost {
 			v.changed = true
 			v.selectedVSP = vsp
@@ -135,9 +135,17 @@ type vspSelectorModal struct {
 	vspList     *cryptomaterial.ClickableList
 
 	vspSelectedCallback func(*dcr.VSP)
+
+	dcrImpl dcr.DCRUniqueAsset
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
+	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	v := &vspSelectorModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("VSPSelectorModal"),
@@ -145,6 +153,7 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 		inputVSP: l.Theme.Editor(new(widget.Editor), values.String(values.StrAddVSP)),
 		addVSP:   l.Theme.Button(values.String(values.StrSave)),
 		vspList:  l.Theme.NewClickableList(layout.Vertical),
+		dcrImpl:  impl,
 	}
 	v.inputVSP.Editor.SingleLine = true
 
@@ -154,9 +163,9 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 }
 
 func (v *vspSelectorModal) OnResume() {
-	if len(v.WL.SelectedWallet.Wallet.KnownVSPs()) == 0 {
+	if len(v.dcrImpl.KnownVSPs()) == 0 {
 		go func() {
-			v.WL.SelectedWallet.Wallet.ReloadVSPList(context.TODO())
+			v.dcrImpl.ReloadVSPList(context.TODO())
 			v.ParentWindow().Reload()
 		}()
 	}
@@ -170,7 +179,7 @@ func (v *vspSelectorModal) Handle() {
 			return
 		}
 		go func() {
-			err := v.WL.SelectedWallet.Wallet.SaveVSP(v.inputVSP.Editor.Text())
+			err := v.dcrImpl.SaveVSP(v.inputVSP.Editor.Text())
 			if err != nil {
 				errModal := modal.NewErrorModal(v.Load, err.Error(), modal.DefaultClickFunc())
 				v.ParentWindow().ShowModal(errModal)
@@ -185,7 +194,7 @@ func (v *vspSelectorModal) Handle() {
 	}
 
 	if clicked, selectedItem := v.vspList.ItemClicked(); clicked {
-		v.selectedVSP = v.WL.SelectedWallet.Wallet.KnownVSPs()[selectedItem]
+		v.selectedVSP = v.dcrImpl.KnownVSPs()[selectedItem]
 		v.vspSelectedCallback(v.selectedVSP)
 		v.Dismiss()
 	}
@@ -219,7 +228,7 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 				}),
 				layout.Rigid(func(gtx C) D {
 					// if no vsp loaded, display a no vsp text
-					vsps := v.WL.SelectedWallet.Wallet.KnownVSPs()
+					vsps := v.dcrImpl.KnownVSPs()
 					if len(vsps) == 0 {
 						noVsp := v.Theme.Label(values.TextSize14, values.String(values.StrNoVSPLoaded))
 						noVsp.Color = v.Theme.Color.GrayText2

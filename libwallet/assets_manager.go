@@ -340,6 +340,72 @@ func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
+func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
+	wallet := mgr.WalletWithID(walletID)
+
+	// SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly) called before the
+	// asset interface is loaded guarantees that sync shutdown will happen
+	// before upstream wallet deletion happens.
+	err := wallet.DeleteWallet(privPass)
+	if err != nil {
+		return err
+	}
+
+	switch wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		delete(mgr.Assets.BTC.Wallets, walletID)
+	case utils.DCRWalletAsset:
+		delete(mgr.Assets.DCR.Wallets, walletID)
+	}
+
+	return nil
+}
+
+func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
+	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
+		return wallet
+	}
+	if wallet, ok := mgr.Assets.DCR.Wallets[walletID]; ok {
+		return wallet
+	}
+	return nil
+}
+
+func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
+	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; !ok {
+		return badWallet
+	}
+	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; !ok {
+		return badWallet
+	}
+	return nil
+}
+
+func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
+	wallet := mgr.getbadWallet(walletID)
+	if wallet == nil {
+		return errors.New(utils.ErrNotExist)
+	}
+
+	log.Info("Deleting bad wallet")
+
+	err := mgr.params.DB.DeleteStruct(wallet)
+	if err != nil {
+		return utils.TranslateError(err)
+	}
+
+	os.RemoveAll(wallet.DataDir())
+
+	switch wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		delete(mgr.Assets.BTC.BadWallets, walletID)
+	case utils.DCRWalletAsset:
+		delete(mgr.Assets.DCR.BadWallets, walletID)
+	}
+
+	return nil
+}
+
 // RootDirFileSizeInBytes returns the total directory size of
 // Assets Manager's root directory in bytes.
 func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {

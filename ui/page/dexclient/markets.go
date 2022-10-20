@@ -56,7 +56,7 @@ func NewMarketPage(l *load.Load) *Page {
 func (pg *Page) Layout(gtx C) D {
 	body := func(gtx C) D {
 		switch {
-		case !pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork():
+		case !pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork():
 			return pg.pageSections(gtx, pg.welcomeLayout(&pg.syncBtn))
 		case pg.isLoadingDexClient(): // Need start DEX client
 			return pg.pageSections(gtx, pg.welcomeLayout(nil))

@@ -8,7 +8,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
@@ -30,7 +29,7 @@ type AcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *dcr.DCRAsset
+	wallet  sharedW.Asset
 	account *sharedW.Account
 
 	theme                    *cryptomaterial.Theme
@@ -88,15 +87,17 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 
 	balance := pg.account.Balance
 
-	pg.stakingBalance = balance.ImmatureReward + balance.LockedByTickets + balance.VotingAuthority +
-		balance.ImmatureStakeGeneration
+	pg.stakingBalance = balance.ImmatureRewardDCR.ToInt() +
+		balance.LockedByTickets.ToInt() +
+		balance.VotingAuthority.ToInt() +
+		balance.ImmatureStakeGeneration.ToInt()
 
-	pg.totalBalance = dcrutil.Amount(balance.Total).String()
-	pg.spendable = dcrutil.Amount(balance.Spendable).String()
-	pg.immatureRewards = dcrutil.Amount(balance.ImmatureReward).String()
-	pg.lockedByTickets = dcrutil.Amount(balance.LockedByTickets).String()
-	pg.votingAuthority = dcrutil.Amount(balance.VotingAuthority).String()
-	pg.immatureStakeGen = dcrutil.Amount(balance.ImmatureStakeGeneration).String()
+	pg.totalBalance = balance.TotalDCR.String()
+	pg.spendable = balance.SpendableDCR.String()
+	pg.immatureRewards = balance.ImmatureRewardDCR.String()
+	pg.lockedByTickets = balance.LockedByTickets.String()
+	pg.votingAuthority = balance.VotingAuthority.String()
+	pg.immatureStakeGen = balance.ImmatureStakeGeneration.String()
 
 	pg.hdPath = pg.WL.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
 
@@ -438,7 +439,8 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 }
 
 func (pg *AcctDetailsPage) loadExtendedPubKey() {
-	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	dcrImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	xpub, err := dcrImpl.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 	}

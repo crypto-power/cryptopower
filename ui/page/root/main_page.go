@@ -13,13 +13,11 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"github.com/btcsuite/btcutil"
-	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	u "gitlab.com/raedah/cryptopower/libwallet/utils"
+	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -76,19 +74,17 @@ type MainPage struct {
 
 	// page state variables
 	usdExchangeRate       float64
-	totalBalance          dcrutil.Amount
+	totalBalance          sharedW.AssetAmount
 	currencyExchangeValue string
 	dcrUsdtBittrex        load.DCRUSDTBittrex
 	btcUsdtBittrex        load.BTCUSDTBittrex
-	totalBalanceBTC       btcutil.Amount
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
 	isBalanceHidden        bool
 
-	setNavExpanded     func()
-	totalBalanceUSD    string
-	totalBTCBalanceUSD string
+	setNavExpanded  func()
+	totalBalanceUSD string
 }
 
 func NewMainPage(l *load.Load) *MainPage {
@@ -286,10 +282,11 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
-		// load wallet account balance first before rendering page contents
-		// TODO update updateBalance() to accommodate BTC balance update as well.
-		mp.updateBalance()
+	// load wallet account balance first before rendering page contents.
+	// It loads balance for the current selected wallet.
+	mp.updateBalance()
+
+	if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset {
 		mp.updateExchangeSetting()
 		mp.listenForNotifications()
 
@@ -297,7 +294,7 @@ func (mp *MainPage) OnNavigatedTo() {
 		// reset the checkbox
 		mp.checkBox.CheckBox.Value = false
 
-		needBackup := mp.WL.SelectedWallet.Wallet.EncryptedSeed != nil
+		needBackup := mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != ""
 		if needBackup && !backupLater {
 			mp.showBackupInfo()
 		}
@@ -313,9 +310,7 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
-	} else if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
-		mp.updateBTCBalance()
-
+	} else if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
 		if mp.CurrentPage() == nil {
 			mp.Display(NewBTCWalletSettingsPage(mp.Load)) // TODO: Should pagestack have a start page?
 		}
@@ -344,11 +339,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 	mp.usdExchangeRate = rate.LastTradePrice
 
-	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
-		mp.updateBalance()
-	} else if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
-		mp.updateBTCBalance()
-	}
+	mp.updateBalance()
 	mp.usdExchangeSet = true
 	mp.ParentWindow().Reload()
 	mp.isFetchingExchangeRate = false
@@ -360,22 +351,23 @@ func (mp *MainPage) updateBalance() {
 		log.Error(err)
 	}
 	mp.totalBalance = totalBalance.Total
-	balanceInUSD := totalBalance.Total.ToCoin() * mp.usdExchangeRate
+	balanceInUSD := totalBalance.Total.MulF64(mp.getExchangeRate()).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
-func (mp *MainPage) updateBTCBalance() {
-	totalBalance, err := components.CalculateTotalBTCWalletsBalance(mp.Load)
-	if err == nil {
-		mp.totalBalanceBTC = totalBalance.Total
+func (mp *MainPage) getExchangeRate() float64 {
+	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.BTCWalletAsset:
 		if mp.usdExchangeSet && mp.btcUsdtBittrex.LastTradeRate != "" {
 			usdExchangeRate, err := strconv.ParseFloat(mp.btcUsdtBittrex.LastTradeRate, 64)
 			if err == nil {
-				balanceInUSD := float64(totalBalance.Total) * usdExchangeRate
-				mp.totalBTCBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+				return usdExchangeRate
 			}
 		}
+	case libutils.DCRWalletAsset:
+		return mp.usdExchangeRate
 	}
+	return -1
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -466,8 +458,9 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				if mp.isSynced() {
-					if !mp.WL.SelectedWallet.Wallet.AccountMixerConfigIsSet() {
+				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+				if mp.isSynced() && dcrUniqueImpl != nil {
+					if !dcrUniqueImpl.AccountMixerConfigIsSet() {
 						pg = privacy.NewSetupPrivacyPage(mp.Load)
 					} else {
 						pg = privacy.NewAccountMixerPage(mp.Load)
@@ -611,7 +604,9 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
+	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.BTCWalletAsset:
+	case libutils.DCRWalletAsset:
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
@@ -639,11 +634,11 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					var topBar D
-					if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
-						topBar = mp.LayoutTopBar(gtx)
-					}
-					if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
+					switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+					case libutils.BTCWalletAsset:
 						topBar = mp.LayoutBTCTopBar(gtx)
+					case libutils.DCRWalletAsset:
+						topBar = mp.LayoutDCRTopBar(gtx)
 					}
 					return topBar
 				}),
@@ -655,11 +650,11 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							var drawer D
-							if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
-								drawer = mp.drawerNav.LayoutNavDrawer(gtx)
-							}
-							if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
+							switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+							case libutils.BTCWalletAsset:
 								drawer = mp.drawerNav.LayoutBTCNavDrawer(gtx)
+							case libutils.DCRWalletAsset:
+								drawer = mp.drawerNav.LayoutDCRNavDrawer(gtx)
 							}
 							return drawer
 						}),
@@ -678,7 +673,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 
 func (mp *MainPage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(mp.LayoutTopBar),
+		layout.Rigid(mp.LayoutDCRTopBar),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.N}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
@@ -743,10 +738,10 @@ func (mp *MainPage) totalDCRBalance(gtx C) D {
 }
 
 func (mp *MainPage) totalBTCBalance(gtx C) D {
-	return mp.Theme.Label(values.TextSize18, mp.totalBalanceBTC.String()).Layout(gtx)
+	return mp.Theme.Label(values.TextSize18, mp.totalBalance.String()).Layout(gtx)
 }
 
-func (mp *MainPage) LayoutTopBar(gtx C) D {
+func (mp *MainPage) LayoutDCRTopBar(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -792,7 +787,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								return mp.Theme.Icons.DecredSymbol2.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
-								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.Name)
+								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
 								lbl.Color = mp.Theme.Color.PageNavText
 								return layout.Inset{
 									Left: values.MarginPadding10,
@@ -891,7 +886,7 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								return mp.Theme.Icons.BTC.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
-								lbl := mp.Theme.H6(mp.WL.SelectedBTCWallet.Wallet.Name)
+								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
 								lbl.Color = mp.Theme.Color.PageNavText
 								return layout.Inset{
 									Left: values.MarginPadding10,
@@ -949,12 +944,12 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 		}
 
 		if mp.WL.MultiWallet.OpenedWalletsCount() > 1 {
-			wallet := mp.WL.MultiWallet.DCRWalletWithID(t.Transaction.WalletID)
+			wallet := mp.WL.MultiWallet.WalletWithID(t.Transaction.WalletID)
 			if wallet == nil {
 				return
 			}
 
-			notification = fmt.Sprintf("[%s] %s", wallet.Name, notification)
+			notification = fmt.Sprintf("[%s] %s", wallet.GetWalletName(), notification)
 		}
 
 		initializeBeepNotification(notification)
@@ -1002,15 +997,23 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	}
 
+	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.DCRWalletAsset {
+		log.Warnf("MainPage listener for (%v) not implemented.",
+			mp.WL.SelectedWallet.Wallet.GetAssetType())
+		return
+	}
+
+	dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+
 	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := mp.WL.SelectedWallet.Wallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := dcrUniqueImpl.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = mp.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	err = dcrUniqueImpl.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -1064,8 +1067,8 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				mp.WL.SelectedWallet.Wallet.RemoveSyncProgressListener(MainPageID)
-				mp.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(MainPageID)
+				dcrUniqueImpl.RemoveSyncProgressListener(MainPageID)
+				dcrUniqueImpl.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.MultiWallet.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)

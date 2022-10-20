@@ -1,5 +1,33 @@
 package btc
 
+import (
+	"github.com/btcsuite/btcutil"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+)
+
+// BTCAmount implements the Asset amount interface for the BTC asset
+type BTCAmount btcutil.Amount
+
+// ToCoin returns the float64 version of the BTC formatted asset amount.
+func (a BTCAmount) ToCoin() float64 {
+	return btcutil.Amount(a).ToBTC()
+}
+
+// String returns the string version of the BTC formatted asset amount.
+func (a BTCAmount) String() string {
+	return btcutil.Amount(a).String()
+}
+
+// MulF64 multiplys the BTCAmount with the provided float64 value.
+func (a BTCAmount) MulF64(f float64) sharedW.AssetAmount {
+	return BTCAmount(btcutil.Amount(a).MulF64(f))
+}
+
+// ToInt return the original unformatted amount BTCs
+func (a BTCAmount) ToInt() int64 {
+	return int64(btcutil.Amount(a))
+}
+
 type ListUnspentResult struct {
 	TxID          string  `json:"txid"`
 	Vout          uint32  `json:"vout"`

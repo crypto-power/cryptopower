@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -44,8 +46,14 @@ func showModalSetupMixerInfo(conf *sharedModalConfig) {
 }
 
 func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
+	if conf.WL.SelectedWallet.Wallet.GetAssetType() != utils.DCRWalletAsset {
+		log.Warnf("Mixer Account for (%v) not supported.",
+			conf.WL.SelectedWallet.Wallet.GetAssetType())
+		return
+	}
+
 	accounts, _ := conf.WL.SelectedWallet.Wallet.GetAccountsRaw()
-	for _, acct := range accounts.Acc {
+	for _, acct := range accounts.DCRAccounts {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
 				Body(values.String(values.StrMixerAccErrorMsg)).
@@ -64,7 +72,8 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := conf.WL.SelectedWallet.Wallet.CreateMixerAccounts("mixed", "unmixed", password)
+			dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+			err := dcrUniqueImpl.CreateMixerAccounts("mixed", "unmixed", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -99,35 +108,36 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
+	dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
 	// get the first account in the wallet as this is the default
-	sourceAccount := acc.Acc[0]
-	destinationAccount := conf.WL.SelectedWallet.Wallet.UnmixedAccountNumber()
+	sourceAccount := acc.DCRAccounts[0]
+	destinationAccount := dcrUniqueImpl.UnmixedAccountNumber()
 
 	destinationAddress, err := conf.WL.SelectedWallet.Wallet.CurrentAddress(destinationAccount)
 	if err != nil {
 		return err
 	}
 
-	err = conf.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
+	err = dcrUniqueImpl.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		return err
 	}
 
 	// get tx fees
-	feeAndSize, err := conf.WL.SelectedWallet.Wallet.EstimateFeeAndSize()
+	feeAndSize, err := dcrUniqueImpl.EstimateFeeAndSize()
 	if err != nil {
 		return err
 	}
 
 	// calculate max amount to be sent
-	amountAtom := sourceAccount.Balance.Spendable - feeAndSize.Fee.UnitValue
-	err = conf.WL.SelectedWallet.Wallet.AddSendDestination(destinationAddress, amountAtom, true)
+	amountAtom := sourceAccount.Balance.SpendableDCR.ToInt() - feeAndSize.Fee.UnitValue
+	err = dcrUniqueImpl.AddSendDestination(destinationAddress, amountAtom, true)
 	if err != nil {
 		return err
 	}
 
 	// send fund
-	_, err = conf.WL.SelectedWallet.Wallet.Broadcast(password)
+	_, err = dcrUniqueImpl.Broadcast(password)
 	if err != nil {
 		return err
 	}

@@ -20,7 +20,7 @@ import (
 const BTCWalletSettingsPageID = "BTCWalletSettings"
 
 type btcAccountData struct {
-	*btc.AccountResult
+	*sharedW.Account
 	clickable *cryptomaterial.Clickable
 }
 
@@ -32,7 +32,7 @@ type BTCWalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *btc.BTCAsset
+	wallet   sharedW.Asset
 	accounts []*btcAccountData
 
 	pageContainer layout.List
@@ -60,7 +60,7 @@ func NewBTCWalletSettingsPage(l *load.Load) *BTCWalletSettingsPage {
 	pg := &BTCWalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(BTCWalletSettingsPageID),
-		wallet:              l.WL.SelectedBTCWallet.Wallet,
+		wallet:              l.WL.SelectedWallet.Wallet,
 		changePass:          l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
 		resetDexData:        l.Theme.NewClickable(false),
@@ -108,14 +108,14 @@ func (pg *BTCWalletSettingsPage) loadWalletAccount() {
 		return
 	}
 
-	for _, acct := range accounts.Accounts {
+	for _, acct := range accounts.BTCAccounts {
 		if acct.AccountNumber == btc.ImportedAccountNumber {
 			continue
 		}
 
 		walletAccounts = append(walletAccounts, &btcAccountData{
-			AccountResult: acct,
-			clickable:     pg.Theme.NewClickable(false),
+			Account:   acct,
+			clickable: pg.Theme.NewClickable(false),
 		})
 	}
 
@@ -208,7 +208,7 @@ func (pg *BTCWalletSettingsPage) pageSections(gtx C, title string, body layout.W
 							}
 							if title == values.String(values.StrAccount) {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									if pg.WL.SelectedBTCWallet.Wallet.IsWatchingOnlyWallet() {
+									if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
 										return D{}
 									}
 									return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
@@ -317,10 +317,10 @@ func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedBTCWallet.Wallet.Name).
+		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.GetWalletName()).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
-			if walletName != pg.WL.SelectedBTCWallet.Wallet.Name {
+			if walletName != pg.WL.SelectedWallet.Wallet.GetWalletName() {
 				m.SetError(values.String(values.StrWalletNameMismatch))
 				m.SetLoading(false)
 				return false
@@ -345,7 +345,7 @@ func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, "")
+				err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -363,7 +363,7 @@ func (pg *BTCWalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteBTCWallet(pg.WL.SelectedBTCWallet.Wallet.ID, password)
+					err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -395,7 +395,7 @@ func (pg *BTCWalletSettingsPage) renameWalletModal() {
 				return false
 			}
 
-			err := pg.WL.SelectedBTCWallet.Wallet.RenameWallet(name)
+			err := pg.WL.SelectedWallet.Wallet.RenameWallet(name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -481,7 +481,7 @@ func (pg *BTCWalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem].AccountResult))
+		pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
 	}
 }
 

@@ -7,9 +7,33 @@ import (
 
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
+
+// DCRAmount implements the Asset amount interface for the DCR asset
+type DCRAmount dcrutil.Amount
+
+// ToCoin returns the float64 version of the DCR formatted asset amount.
+func (a DCRAmount) ToCoin() float64 {
+	return dcrutil.Amount(a).ToCoin()
+}
+
+// String returns the string version of the DCR formatted asset amount.
+func (a DCRAmount) String() string {
+	return dcrutil.Amount(a).String()
+}
+
+// MulF64 multiplys the DCRAmount with the provided float64 value.
+func (a DCRAmount) MulF64(f float64) sharedW.AssetAmount {
+	return DCRAmount(dcrutil.Amount(a).MulF64(f))
+}
+
+// ToInt return the original unformatted amount DCRs
+func (a DCRAmount) ToInt() int64 {
+	return int64(dcrutil.Amount(a))
+}
 
 const (
 	AddressGapLimit       uint32 = 20

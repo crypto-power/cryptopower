@@ -76,28 +76,6 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) DeleteBTCWallet(walletID int, privPass string) error {
-	wallet := mgr.BTCWalletWithID(walletID)
-
-	// SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly) called before the
-	// asset interface is loaded guarantees that sync shutdown will happen
-	// before upstream wallet deletion happens.
-	err := wallet.DeleteWallet(privPass)
-	if err != nil {
-		return err
-	}
-
-	delete(mgr.Assets.BTC.Wallets, walletID)
-
-	return nil
-}
-
-func (mgr *AssetsManager) BTCWalletWithID(walletID int) sharedW.Asset {
-	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
-		return wallet
-	}
-	return nil
-}
 
 // BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
 // provided xpub. Returns -1 if there is no such wallet.

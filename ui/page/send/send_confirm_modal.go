@@ -12,6 +12,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -31,15 +33,18 @@ type sendConfirmModal struct {
 	isSending bool
 
 	*authoredTxData
+	asset           sharedW.Asset
 	exchangeRateSet bool
 }
 
-func newSendConfirmModal(l *load.Load, data *authoredTxData) *sendConfirmModal {
-	scm := &sendConfirmModal{
-		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("send_confirm_modal"),
+type broadcastfn func(password string) ([]byte, error)
 
+func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
+	scm := &sendConfirmModal{
+		Load:           l,
+		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal"),
 		authoredTxData: data,
+		asset:          asset,
 	}
 
 	scm.closeConfirmationModalButton = l.Theme.OutlineButton(values.String(values.StrCancel))
@@ -80,7 +85,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		_, err := scm.authoredTxData.txAuthor.Broadcast(password)
+		_, err := scm.asset.(dcr.DCRUniqueAsset).Broadcast(password)
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)
@@ -179,7 +184,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 				Top: values.MarginPadding16, Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						sendWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.sourceAccount.WalletID)
+						sendWallet := scm.WL.MultiWallet.WalletWithID(scm.sourceAccount.WalletID)
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								txt := scm.Theme.Body2(values.String(values.StrFrom))
@@ -195,7 +200,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 							}),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{}.Layout(gtx, func(gtx C) D {
-									txt := scm.Theme.Label(unit.Sp(16), sendWallet.Name)
+									txt := scm.Theme.Label(unit.Sp(16), sendWallet.GetWalletName())
 									txt.Color = scm.Theme.Color.Text
 									txt.Font.Weight = text.Medium
 									return txt.Layout(gtx)
@@ -247,8 +252,8 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 											}),
 											layout.Rigid(func(gtx C) D {
 												return layout.Inset{}.Layout(gtx, func(gtx C) D {
-													destinationWallet := scm.WL.MultiWallet.DCRWalletWithID(scm.destinationAccount.WalletID)
-													txt := scm.Theme.Label(unit.Sp(16), destinationWallet.Name)
+													destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
+													txt := scm.Theme.Label(unit.Sp(16), destinationWallet.GetWalletName())
 													txt.Color = scm.Theme.Color.Text
 													txt.Font.Weight = text.Medium
 													return txt.Layout(gtx)

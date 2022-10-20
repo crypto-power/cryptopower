@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -133,8 +134,8 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadPolicies(l *load.Load, selectedWallet *dcr.DCRAsset, pikey string) []*TreasuryItem {
-	policies, err := selectedWallet.TreasuryPolicies(pikey, "")
+func LoadPolicies(l *load.Load, selectedWallet sharedW.Asset, pikey string) []*TreasuryItem {
+	policies, err := selectedWallet.(dcr.DCRUniqueAsset).TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil
 	}

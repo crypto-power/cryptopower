@@ -43,7 +43,7 @@ type NavDrawer struct {
 	IsNavExpanded           bool
 }
 
-func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context) layout.Dimensions {
+func (nd *NavDrawer) LayoutDCRNavDrawer(gtx layout.Context) layout.Dimensions {
 	return cryptomaterial.LinearLayout{
 		Width:       gtx.Dp(nd.width),
 		Height:      cryptomaterial.MatchParent,

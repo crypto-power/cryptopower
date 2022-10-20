@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -516,7 +517,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					}
 					return errFunc(err.Error())
 				}
-				err = wal.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
+				dcrUniqueImpl := wal.(dcr.DCRUniqueAsset)
+				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 				if err != nil {
 					return errFunc(err.Error())
 				}

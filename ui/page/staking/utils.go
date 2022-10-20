@@ -32,15 +32,23 @@ type transactionItem struct {
 	dateTooltip       *cryptomaterial.Tooltip
 	daysBehindTooltip *cryptomaterial.Tooltip
 	durationTooltip   *cryptomaterial.Tooltip
+
+	dcrImpl dcr.DCRUniqueAsset
 }
 
 func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil, values.ErrDCRSupportedOnly
+	}
+
 	tickets := make([]*transactionItem, 0)
 	multiWallet := l.WL.MultiWallet
 	for _, tx := range txs {
-		w := multiWallet.DCRWalletWithID(tx.WalletID)
+		w := multiWallet.WalletWithID(tx.WalletID)
 
-		ticketSpender, err := w.TicketSpender(tx.Hash)
+		ticketSpender, err := impl.TicketSpender(tx.Hash)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +79,7 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender) <= w.TicketMaturity()
+			showProgress = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender) <= impl.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -84,9 +92,9 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 
 		var progress float32
 		if showProgress {
-			progressMax := w.TicketMaturity()
+			progressMax := impl.TicketMaturity()
 			if txStatus.TicketStatus == dcr.TicketStatusLive {
-				progressMax = w.TicketExpiry()
+				progressMax = impl.TicketExpiry()
 			}
 
 			confs := confirmations
@@ -113,6 +121,8 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 			dateTooltip:       l.Theme.Tooltip(),
 			daysBehindTooltip: l.Theme.Tooltip(),
 			durationTooltip:   l.Theme.Tooltip(),
+
+			dcrImpl: impl,
 		})
 	}
 
@@ -151,7 +161,7 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusImmature:
-		maturity := l.WL.SelectedWallet.Wallet.TicketMaturity()
+		maturity := tx.dcrImpl.TicketMaturity()
 		blockTime := l.WL.SelectedWallet.Wallet.TargetTimePerBlockMinutes()
 		maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 		blockRemaining := (bestBlock.Height - tx.transaction.BlockHeight)
@@ -175,7 +185,7 @@ func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 			}),
 		)
 	case dcr.TicketStatusLive:
-		expiry := l.WL.SelectedWallet.Wallet.TicketExpiry()
+		expiry := tx.dcrImpl.TicketExpiry()
 		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc, expiry, getTimeToMatureOrExpire(l, tx), expiry))
 		lbl.Color = col
 		return lbl.Layout(gtx)
@@ -281,9 +291,9 @@ func nextTicketRemaining(allsecs int) string {
 }
 
 func getTimeToMatureOrExpire(l *load.Load, tx *transactionItem) int {
-	progressMax := l.WL.SelectedWallet.Wallet.TicketMaturity()
+	progressMax := tx.dcrImpl.TicketMaturity()
 	if tx.status.TicketStatus == dcr.TicketStatusLive {
-		progressMax = l.WL.SelectedWallet.Wallet.TicketExpiry()
+		progressMax = tx.dcrImpl.TicketExpiry()
 	}
 
 	confs := dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), *tx.transaction)

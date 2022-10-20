@@ -40,6 +40,7 @@ type Asset interface {
 	GetEncryptedSeed() string
 	IsConnectedToNetwork() bool
 	NetType() utils.NetworkType
+	ToAmount(v int64) AssetAmount
 	GetAssetType() utils.AssetType
 	Internal() *loader.LoaderWallets
 	TargetTimePerBlockMinutes() float64
@@ -63,6 +64,7 @@ type Asset interface {
 	CreateNewAccount(accountName string, privPass string) (int32, error)
 	RenameAccount(accountNumber int32, newName string) error
 	AccountNumber(accountName string) (int32, error)
+	AccountNameRaw(accountNumber uint32) (string, error)
 	GetAccountBalance(accountNumber int32) (*Balance, error)
 
 	CurrentAddress(account int32) (string, error)

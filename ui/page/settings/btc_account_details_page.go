@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -26,8 +26,8 @@ type BTCAcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *btc.BTCAsset
-	account *btc.AccountResult
+	wallet  sharedW.Asset
+	account *sharedW.Account
 
 	theme                    *cryptomaterial.Theme
 	acctDetailsPageContainer layout.List
@@ -40,11 +40,11 @@ type BTCAcctDetailsPage struct {
 	keys         string
 }
 
-func NewAcctBTCDetailsPage(l *load.Load, account *btc.AccountResult) *BTCAcctDetailsPage {
+func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetailsPage {
 	pg := &BTCAcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
-		wallet:           l.WL.SelectedBTCWallet.Wallet,
+		wallet:           l.WL.SelectedWallet.Wallet,
 		account:          account,
 
 		theme:                    l.Theme,
@@ -66,9 +66,7 @@ func NewAcctBTCDetailsPage(l *load.Load, account *btc.AccountResult) *BTCAcctDet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
-
-	balance := pg.account.TotalBalance
-
+	balance := pg.account.TotalBTCBalance
 	pg.totalBalance = balance.String()
 
 	pg.hdPath = pg.WL.BTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"

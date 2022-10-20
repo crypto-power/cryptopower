@@ -54,7 +54,7 @@ func newSendDestination(l *load.Load) *destination {
 
 func (dst *destination) destinationAddress(useDefaultParams bool) (string, error) {
 	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
-	wal := dst.WL.MultiWallet.DCRWalletWithID(destinationAccount.WalletID)
+	wal := dst.WL.MultiWallet.WalletWithID(destinationAccount.WalletID)
 
 	if useDefaultParams {
 		return wal.CurrentAddress(destinationAccount.Number)

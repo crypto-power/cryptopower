@@ -296,29 +296,97 @@ func (asset *BTCAsset) startWallet() error {
 	return nil
 }
 
+// Returns a BTC amount that implements the asset amount interface.
+func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
+	return BTCAmount(btcutil.Amount(v))
+}
+
 func (asset *BTCAsset) SafelyCancelSync() {
+<<<<<<< HEAD
 	log.Info("Safe sync shutdown not implemented for BTC")
+=======
+	//TODO: use a proper logger
+	fmt.Println(utils.ErrBTCMethodNotImplemented("SafelyCancelSync"))
+>>>>>>> 90ffffe4 (Resolve all the cases where unique dcr implementation is required)
 }
 
 // Methods added below satisfy the shared asset interface. Each should be
 // implementet fully to avoid panic if invoked.
-func (asset *BTCAsset) IsSynced() bool
-func (asset *BTCAsset) IsWaiting() bool
-func (asset *BTCAsset) IsSyncing() bool
-func (asset *BTCAsset) SpvSync() error
-func (asset *BTCAsset) CancelRescan()
-func (asset *BTCAsset) CancelSync()
-func (asset *BTCAsset) IsRescanning() bool
-func (asset *BTCAsset) RescanBlocks() error
-func (asset *BTCAsset) ConnectedPeers() int32
-func (asset *BTCAsset) IsConnectedToNetwork() bool
-func (asset *BTCAsset) PublishUnminedTransactions() error
-func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error)
-func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error)
-func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool
-func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error)
-func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo
-func (asset *BTCAsset) GetBestBlockHeight() int32
-func (asset *BTCAsset) GetBestBlockTimeStamp() int64
-func (asset *BTCAsset) SignMessage(passphrase string, address string, message string) ([]byte, error)
-func (asset *BTCAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error)
+func (asset *BTCAsset) IsSynced() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsSynced"))
+	return false
+}
+func (asset *BTCAsset) IsWaiting() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
+	return false
+}
+func (asset *BTCAsset) IsSyncing() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
+	return false
+}
+func (asset *BTCAsset) SpvSync() error {
+	err := utils.ErrBTCMethodNotImplemented("SpvSync")
+	return err
+}
+func (asset *BTCAsset) CancelRescan() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("CancelRescan"))
+}
+func (asset *BTCAsset) CancelSync() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("CancelSync"))
+}
+func (asset *BTCAsset) IsRescanning() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsRescanning"))
+	return false
+}
+func (asset *BTCAsset) RescanBlocks() error {
+	err := utils.ErrBTCMethodNotImplemented("RescanBlocks")
+	return err
+}
+func (asset *BTCAsset) ConnectedPeers() int32 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("ConnectedPeers"))
+	return -1
+}
+func (asset *BTCAsset) IsConnectedToNetwork() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsConnectedToNetwork"))
+	return false
+}
+func (asset *BTCAsset) PublishUnminedTransactions() error {
+	err := utils.ErrBTCMethodNotImplemented("PublishUnminedTransactions")
+	return err
+}
+func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
+	err := utils.ErrBTCMethodNotImplemented("CountTransactions")
+	return -1, err
+}
+func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetTransactionRaw")
+	return nil, err
+}
+func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("TxMatchesFilter"))
+	return false
+}
+func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetTransactionsRaw")
+	return nil, err
+}
+func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlock"))
+	return nil
+}
+func (asset *BTCAsset) GetBestBlockHeight() int32 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockHeight"))
+	return -1
+}
+func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
+	return -1
+}
+func (asset *BTCAsset) SignMessage(passphrase string, address string, message string) ([]byte, error) {
+	err := utils.ErrBTCMethodNotImplemented("IsSynced")
+	return nil, err
+}
+func (asset *BTCAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
+	err := utils.ErrBTCMethodNotImplemented("IsSynced")
+	return false, err
+}
