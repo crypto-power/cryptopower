@@ -23,6 +23,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )
@@ -50,16 +51,17 @@ type ReceivePage struct {
 	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
-	ops               *op.Ops
 	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
+	walletType        utils.WalletType
+	wallet            *components.CommonWallets
 
 	isCopying  bool
 	backdrop   *widget.Clickable
 	infoButton cryptomaterial.IconButton
 }
 
-func NewReceivePage(l *load.Load) *ReceivePage {
+func NewReceivePage(l *load.Load, walletType utils.WalletType) *ReceivePage {
 	pg := &ReceivePage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ReceivePageID),
@@ -77,6 +79,13 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
 		backdrop:       new(widget.Clickable),
+		walletType:     walletType,
+	}
+
+	if walletType == utils.DCRWalletAsset {
+		pg.wallet = components.NewDCRCommonWallet(pg.WL.SelectedWallet.Wallet)
+	} else if walletType == utils.BTCWalletAsset {
+		pg.wallet = components.NewBTCCommonWallet(pg.WL.SelectedBTCWallet.Wallet)
 	}
 
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
@@ -102,9 +111,17 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 
 	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
-			selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
-			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
+		//TODO: need to optimize code when restruct to use common wallet
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
+			currentAddress := ""
+			var err error
+			if walletType == utils.DCRWalletAsset {
+				selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
+				currentAddress, err = selectedWallet.CurrentAddress(selectedAccount.Number)
+			} else if walletType == utils.BTCWalletAsset {
+				selectedWallet := pg.multiWallet.BTCWalletWithID(selectedAccount.WalletID)
+				currentAddress, err = selectedWallet.CurrentAddress(selectedAccount.Number)
+			}
 			if err != nil {
 				log.Errorf("Error getting current address: %v", err)
 			} else {
@@ -114,7 +131,9 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			pg.generateQRForAddress()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-
+			if walletType == utils.BTCWalletAsset {
+				return true
+			}
 			// Filter out imported account and mixed.
 			wal := pg.multiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
@@ -123,7 +142,8 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			}
 			return true
 		})
-	pg.selector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+		//TODO: need to optimize code when restruct to use common wallet
+	pg.selector.SelectFirstValidAccount(pg.wallet)
 
 	return pg
 }
@@ -134,10 +154,9 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.selector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet) // Want to reset the user's selection everytime this page appears?
+	pg.selector.SelectFirstValidAccount(pg.wallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
-	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
+	currentAddress, err := pg.wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
@@ -350,7 +369,11 @@ func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
+			unit := " DCR"
+			if pg.walletType == utils.BTCWalletAsset {
+				unit = " BTC"
+			}
+			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+unit).Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
@@ -445,8 +468,12 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
+		unit := " DCR"
+		if pg.walletType == utils.BTCWalletAsset {
+			unit = " BTC"
+		}
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrReceive)+" DCR").
+			Title(values.String(values.StrReceive)+unit).
 			Body(values.String(values.StrReceiveInfo)).
 			SetContentAlignment(layout.NW, layout.Center)
 		pg.ParentWindow().ShowModal(info)
@@ -454,6 +481,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 }
 
 func (pg *ReceivePage) generateNewAddress() (string, error) {
+	//TODO: need to optimize code when restruct to use common wallet
 	selectedAccount := pg.selector.SelectedAccount()
 	selectedWallet := pg.multiWallet.DCRWalletWithID(selectedAccount.WalletID)
 

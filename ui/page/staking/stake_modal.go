@@ -14,6 +14,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -94,7 +95,8 @@ func (tb *ticketBuyerModal) OnResume() {
 			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			if err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet); err != nil {
+			wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
+			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}
@@ -105,7 +107,8 @@ func (tb *ticketBuyerModal) OnResume() {
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
-		err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
+		wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
+		err := tb.accountSelector.SelectFirstValidAccount(wl)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
@@ -177,7 +180,7 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
@@ -190,7 +193,8 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 
 			return accountIsValid
 		})
-	tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
+	tb.accountSelector.SelectFirstValidAccount(wl)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {

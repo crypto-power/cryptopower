@@ -9,6 +9,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -40,7 +41,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 	// Source account picker
 	avm.accountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
 			avm.accountSelected = selectedAccount
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
@@ -51,7 +52,8 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	avm.accountSelector.SelectFirstValidAccount(avm.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(avm.WL.SelectedWallet.Wallet)
+	avm.accountSelector.SelectFirstValidAccount(wl)
 }
 
 // - Layout

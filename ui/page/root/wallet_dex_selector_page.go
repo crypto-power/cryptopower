@@ -152,6 +152,7 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 
 	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
 		pg.WL.SelectedWallet = watchOnlyWalletList[selectedItem]
+		pg.WL.SelectedWalletType = "DCR"
 		pg.walletSelected()
 	}
 

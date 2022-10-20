@@ -102,7 +102,7 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *sharedW.Account) {
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
 			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
 				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
@@ -125,7 +125,8 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
+	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
@@ -140,17 +141,18 @@ func NewSendPage(l *load.Load) *Page {
 			return true
 		})
 
-	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
+	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
 		pg.validateAndConstructTx()
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *dcr.DCRAsset) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *components.CommonWallets) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+		wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
+		pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 		pg.validateAndConstructTx()
 	}
 
@@ -180,7 +182,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(pg.WL.SelectedWallet.Wallet)
+	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false

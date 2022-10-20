@@ -13,6 +13,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -47,7 +48,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Mixed account").
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
@@ -65,12 +66,16 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	pg.mixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
+	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
-		AccountSelected(func(selectedAccount *sharedW.Account) {}).
+		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
+			if utils.WalletType(l.WL.SelectedWalletType) == utils.BTCWalletAsset {
+				return true
+			}
 			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
@@ -88,7 +93,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	pg.unmixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -101,9 +106,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
-	pg.mixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	wl := components.NewDCRCommonWallet(pg.WL.SelectedWallet.Wallet)
+	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
 }
 
 // Layout draws the page UI components into the provided layout context

@@ -458,7 +458,7 @@ func (mp *MainPage) HandleUserInteractions() {
 				}
 			case ReceivePageID:
 				if mp.isSynced() {
-					pg = NewReceivePage(mp.Load)
+					pg = NewReceivePage(mp.Load, utils.WalletType(mp.WL.SelectedWalletType))
 				}
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
@@ -509,6 +509,8 @@ func (mp *MainPage) HandleUserInteractions() {
 			switch item.PageID {
 			case WalletSettingsPageID:
 				pg = NewBTCWalletSettingsPage(mp.Load)
+			case ReceivePageID:
+				pg = NewReceivePage(mp.Load, utils.WalletType(mp.WL.SelectedWalletType))
 			}
 
 			if pg == nil || mp.ID() == mp.CurrentPageID() {
@@ -547,7 +549,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			if i == 0 {
 				pg = send.NewSendPage(mp.Load)
 			} else {
-				pg = NewReceivePage(mp.Load)
+				pg = NewReceivePage(mp.Load, utils.WalletType(mp.WL.SelectedWalletType))
 			}
 
 			if mp.ID() == mp.CurrentPageID() {

@@ -13,12 +13,12 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/renderers"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -37,17 +37,16 @@ type selectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedWallet   *dcr.DCRAsset
+	selectedWallet   *CommonWallets
 	selectedAccount  *sharedW.Account
-	accountCallback  func(*sharedW.Account)
-	walletCallback   func(*dcr.DCRAsset)
+	accountCallback  func(*sharedW.Account, utils.WalletType)
+	walletCallback   func(*CommonWallets)
 	accountIsValid   func(*sharedW.Account) bool
 	accountSelector  bool
 	infoActionText   string
 	dialogTitle      string
-	onWalletClicked  func(*dcr.DCRAsset)
-	onAccountClicked func(*sharedW.Account)
-	onExit           func()
+	onWalletClicked  func(*CommonWallets)
+	onAccountClicked func(*sharedW.Account, utils.WalletType)
 	walletsList      layout.List
 	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
 	eventQueue       event.Queue
@@ -57,16 +56,16 @@ type selectorModal struct {
 	infoBackdrop     *widget.Clickable
 }
 
-// NewWalletAndAccountSelector creates a wallet selector component.
+// NewXWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
 func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 
-	ws.selectorModal = newSelectorModal(l).
-		walletClicked(func(wallet *dcr.DCRAsset) {
-			if ws.selectedWallet.ID == wallet.ID {
+	ws.selectorModal = newXselectorModal(l).
+		walletClicked(func(wallet *CommonWallets) {
+			if ws.selectedWallet.ID() == wallet.ID() {
 				ws.changed = true
 			}
 			ws.SetSelectedWallet(wallet)
@@ -74,13 +73,13 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 				ws.walletCallback(wallet)
 			}
 		}).
-		accountCliked(func(account *sharedW.Account) {
+		accountCliked(func(account *sharedW.Account, walletType utils.WalletType) {
 			if ws.selectedAccount.Number != account.Number {
 				ws.changed = true
 			}
 			ws.SetSelectedAccount(account)
 			if ws.accountCallback != nil {
-				ws.accountCallback(account)
+				ws.accountCallback(account, walletType)
 			}
 		})
 
@@ -107,7 +106,7 @@ func (ws *WalletAndAccountSelector) SetActionInfoText(text string) *WalletAndAcc
 
 // SelectFirstValidAccount transforms this widget into an Account selector and selects the first valid account from the
 // the wallet passed to this method.
-func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.DCRAsset) error {
+func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *CommonWallets) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
 	}
@@ -123,7 +122,7 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *dcr.DCRAsset
 		if ws.accountIsValid(account) {
 			ws.SetSelectedAccount(account)
 			if ws.accountCallback != nil {
-				ws.accountCallback(account)
+				ws.accountCallback(account, wallet.walletType)
 			}
 			return nil
 		}
@@ -146,12 +145,12 @@ func (ws *WalletAndAccountSelector) Title(title string) *WalletAndAccountSelecto
 	return ws
 }
 
-func (ws *WalletAndAccountSelector) WalletSelected(callback func(*dcr.DCRAsset)) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) WalletSelected(callback func(*CommonWallets)) *WalletAndAccountSelector {
 	ws.walletCallback = callback
 	return ws
 }
 
-func (ws *WalletAndAccountSelector) AccountSelected(callback func(*sharedW.Account)) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) AccountSelected(callback func(*sharedW.Account, utils.WalletType)) *WalletAndAccountSelector {
 	ws.accountCallback = callback
 	return ws
 }
@@ -169,11 +168,11 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 	}
 }
 
-func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *dcr.DCRAsset) {
+func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *CommonWallets) {
 	ws.selectedWallet = wallet
 }
 
-func (ws *WalletAndAccountSelector) SelectedWallet() *dcr.DCRAsset {
+func (ws *WalletAndAccountSelector) SelectedWallet() *CommonWallets {
 	return ws.selectedWallet
 }
 
@@ -207,7 +206,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 					layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
 				)
 			}
-			return ws.Theme.Body1(ws.SelectedWallet().Name).Layout(gtx)
+			return ws.Theme.Body1(ws.SelectedWallet().Name()).Layout(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
@@ -216,7 +215,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 						if ws.accountSelector {
 							return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
 						}
-						totalBal, _ := walletBalance(ws.SelectedWallet())
+						totalBal, _ := xwalletBalance(ws.SelectedWallet())
 						return ws.Theme.Body1(dcrutil.Amount(totalBal).String()).Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -289,14 +288,15 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 
 // SelectorItem models a wallet or an account a long with it's clickable.
 type SelectorItem struct {
-	item      interface{} // Item can either be a wallet or an account.
-	clickable *cryptomaterial.Clickable
+	item       interface{} // Item can either be a wallet or an account.
+	walletType utils.WalletType
+	clickable  *cryptomaterial.Clickable
 }
 
-func newSelectorModal(l *load.Load) *selectorModal {
+func newXselectorModal(l *load.Load) *selectorModal {
 	sm := &selectorModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("SelectorModal"),
+		Modal:        l.Theme.ModalFloatTitle("selectorModal"),
 		walletsList:  layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		infoBackdrop: new(widget.Clickable),
@@ -307,7 +307,20 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
-	sm.selectedWallet = l.WL.SelectedWallet.Wallet // Set the default wallet to wallet loaded by cryptopower.
+	var wallet *CommonWallets
+	//TODO: need to optimize code when restruct to use common wallet
+	if l.WL.SelectedWallet != nil {
+		wallet = &CommonWallets{
+			dcr:        l.WL.SelectedWallet.Wallet,
+			walletType: utils.DCRWalletAsset,
+		}
+	} else if l.WL.SelectedBTCWallet != nil {
+		wallet = &CommonWallets{
+			btc:        l.WL.SelectedBTCWallet.Wallet,
+			walletType: utils.DCRWalletAsset,
+		}
+	}
+	sm.selectedWallet = wallet // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
 	sm.Modal.ShowScrollbar(true)
@@ -324,11 +337,21 @@ func (sm *selectorModal) OnResume() {
 
 func (sm *selectorModal) setupWallet() {
 	selectorItems := make([]*SelectorItem, 0)
-	wallets := sm.WL.SortedWalletList()
-	for _, wal := range wallets {
+	dcrWallets := sm.WL.SortedWalletList()
+	btcWallets := sm.WL.SortedBTCWalletList()
+	for _, wal := range dcrWallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
-				item:      wal,
+				item:      CommonWallets{dcr: wal, walletType: utils.DCRWalletAsset},
+				clickable: sm.Theme.NewClickable(true),
+			})
+		}
+	}
+
+	for _, wal := range btcWallets {
+		if !wal.IsWatchingOnlyWallet() {
+			selectorItems = append(selectorItems, &SelectorItem{
+				item:      CommonWallets{btc: wal, walletType: utils.DCRWalletAsset},
 				clickable: sm.Theme.NewClickable(true),
 			})
 		}
@@ -336,7 +359,7 @@ func (sm *selectorModal) setupWallet() {
 	sm.selectorItems = selectorItems
 }
 
-func (sm *selectorModal) setupAccounts(wal *dcr.DCRAsset) {
+func (sm *selectorModal) setupAccounts(wal *CommonWallets) {
 	selectorItems := make([]*SelectorItem, 0)
 	if !wal.IsWatchingOnlyWallet() {
 		accountsResult, err := wal.GetAccountsRaw()
@@ -369,9 +392,9 @@ func (sm *selectorModal) Handle() {
 				switch item := selectorItem.item.(type) {
 				case *sharedW.Account:
 					if sm.onAccountClicked != nil {
-						sm.onAccountClicked(item)
+						sm.onAccountClicked(item, selectorItem.walletType)
 					}
-				case *dcr.DCRAsset:
+				case *CommonWallets:
 					if sm.onWalletClicked != nil {
 						sm.onWalletClicked(item)
 					}
@@ -399,12 +422,12 @@ func (sm *selectorModal) title(title string) *selectorModal {
 	return sm
 }
 
-func (sm *selectorModal) walletClicked(callback func(*dcr.DCRAsset)) *selectorModal {
+func (sm *selectorModal) walletClicked(callback func(*CommonWallets)) *selectorModal {
 	sm.onWalletClicked = callback
 	return sm
 }
 
-func (sm *selectorModal) accountCliked(callback func(*sharedW.Account)) *selectorModal {
+func (sm *selectorModal) accountCliked(callback func(*sharedW.Account, utils.WalletType)) *selectorModal {
 	sm.onAccountClicked = callback
 	return sm
 }
@@ -492,7 +515,7 @@ func (sm *selectorModal) infoBackdropLayout(gtx C) {
 	}
 }
 
-func walletBalance(wal *dcr.DCRAsset) (totalBalance, spendableBalance int64) {
+func xwalletBalance(wal *CommonWallets) (totalBalance, spendableBalance int64) {
 	accountsResult, _ := wal.GetAccountsRaw()
 	var tBal, sBal int64
 	for _, account := range accountsResult.Acc {
@@ -525,11 +548,11 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				totalBal = dcrutil.Amount(t.TotalBalance).String()
 				spendableBal = dcrutil.Amount(t.Balance.Spendable).String()
 				name = t.Name
-			case *dcr.DCRAsset:
-				tb, sb := walletBalance(t)
+			case *CommonWallets:
+				tb, sb := xwalletBalance(t)
 				totalBal = dcrutil.Amount(tb).String()
 				spendableBal = dcrutil.Amount(sb).String()
-				name = t.Name
+				name = t.Name()
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -569,8 +592,8 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				if t.Number == sm.selectedAccount.Number {
 					return sections(gtx)
 				}
-			case *dcr.DCRAsset:
-				if t.ID == sm.selectedWallet.ID {
+			case *CommonWallets:
+				if t.ID() == sm.selectedWallet.ID() {
 					return sections(gtx)
 				}
 			}
