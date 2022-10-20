@@ -19,6 +19,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	u "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -285,7 +286,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	if mp.WL.SelectedWalletType == "DCR" {
+	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
 		// load wallet account balance first before rendering page contents
 		// TODO update updateBalance() to accommodate BTC balance update as well.
 		mp.updateBalance()
@@ -312,7 +313,7 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
-	} else if mp.WL.SelectedWalletType == "BTC" {
+	} else if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
 		mp.updateBTCBalance()
 
 		if mp.CurrentPage() == nil {
@@ -343,9 +344,9 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 	mp.usdExchangeRate = rate.LastTradePrice
 
-	if mp.WL.SelectedWalletType == "DCR" {
+	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
 		mp.updateBalance()
-	} else if mp.WL.SelectedWalletType == "BTC" {
+	} else if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
 		mp.updateBTCBalance()
 	}
 	mp.usdExchangeSet = true
@@ -610,7 +611,7 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	if mp.WL.SelectedWalletType == "DCR" {
+	if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
@@ -638,10 +639,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					var topBar D
-					if mp.WL.SelectedWalletType == "DCR" {
+					if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
 						topBar = mp.LayoutTopBar(gtx)
 					}
-					if mp.WL.SelectedWalletType == "BTC" {
+					if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
 						topBar = mp.LayoutBTCTopBar(gtx)
 					}
 					return topBar
@@ -654,10 +655,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							var drawer D
-							if mp.WL.SelectedWalletType == "DCR" {
+							if mp.WL.SelectedWalletType == u.DCRWalletAsset.ToString() {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx)
 							}
-							if mp.WL.SelectedWalletType == "BTC" {
+							if mp.WL.SelectedWalletType == u.BTCWalletAsset.ToString() {
 								drawer = mp.drawerNav.LayoutBTCNavDrawer(gtx)
 							}
 							return drawer
