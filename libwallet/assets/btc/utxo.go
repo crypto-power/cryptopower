@@ -104,7 +104,7 @@ func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sh
 	inputScriptSizes := make([]int, len(inputs))
 	inputScripts := make([][]byte, len(inputs))
 	for i, input := range inputs {
-		// totalInputAmount += input.ValueIn
+		// totalInputAmount += input.ValueIn // TODO: get the ValueIn for a BTC transaction if needed
 		inputScriptSizes[i] = txsizes.RedeemP2PKHSigScriptSize
 		inputScripts[i] = input.SignatureScript
 	}
@@ -119,7 +119,7 @@ func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sh
 		return nil, err
 	}
 
-	maxSignedSize := txsizes.EstimateSerializeSize(inputScriptSizes[0] /*de map*/, outputs, true /*get proper bool*/)
+	maxSignedSize := txsizes.EstimateSerializeSize(len(inputScriptSizes), outputs, changeScriptSize > 0)
 	maxRequiredFee := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, maxSignedSize)
 	changeAmount := totalInputAmount - totalSendAmount - int64(maxRequiredFee)
 

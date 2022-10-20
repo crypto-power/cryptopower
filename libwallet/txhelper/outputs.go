@@ -2,7 +2,6 @@ package txhelper
 
 import (
 	btcWire "github.com/btcsuite/btcd/wire"
-	// "github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	dcrutil "github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"

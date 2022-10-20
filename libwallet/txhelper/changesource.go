@@ -39,15 +39,16 @@ func MakeTxChangeSource(destAddr string, net dcrutil.AddressParams) (*txChangeSo
 }
 
 func MakeBTCTxChangeSource(destAddr string, net *btccfg.Params) (*txauthor.ChangeSource, error) {
-	// pkScript, err := addresshelper.BTCPkScript(destAddr, net)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	var pkScript []byte
 	changeSource := &txauthor.ChangeSource{
 		NewScript: func() ([]byte, error) {
-			return addresshelper.BTCPkScript(destAddr, net)
+			pkScript, err := addresshelper.BTCPkScript(destAddr, net)
+			if err != nil {
+				return nil, err
+			}
+			return pkScript, nil
 		},
-		// ScriptSize: 0,
+		ScriptSize: len(pkScript),
 	}
 	return changeSource, nil
 }

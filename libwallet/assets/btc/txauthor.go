@@ -6,10 +6,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	// w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
-	// "github.com/btcsuite/btcwallet/wallet/txhelper"
-
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
@@ -126,7 +123,8 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		return nil, utils.TranslateError(err)
 	}
 
-	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, 0 /*unsignedTx.EstimatedSignedSerializeSize*/)
+	estimatedSignedSerializeSize := unsignedTx.Tx.SerializeSize()
+	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize /*unsignedTx.EstimatedSignedSerializeSize*/)
 	feeAmount := &sharedW.Amount{
 		SatoshiValue: int64(feeToSendTx),
 		BtcValue:     feeToSendTx.ToBTC(),
@@ -142,7 +140,7 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}
 
 	return &sharedW.TxFeeAndSize{
-		// EstimatedSignedSize: unsignedTx.EstimatedSignedSerializeSize,
+		EstimatedSignedSize: estimatedSignedSerializeSize,
 		Fee:    feeAmount,
 		Change: change,
 	}, nil
@@ -169,7 +167,6 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
-	// var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
 	var changeSource *txauthor.ChangeSource
 
 	for _, destination := range tx.destinations {
@@ -183,9 +180,6 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 
 		if destination.SendMax {
-			// This is a send max destination, set output selection algo to all.
-			// outputSelectionAlgorithm = w.OutputSelectionAlgorithmAll
-
 			// Use this destination address to make a changeSource rather than a tx output.
 			changeSource, err = txhelper.MakeBTCTxChangeSource(destination.Address, tx.sourceWallet.chainParams)
 			if err != nil {
@@ -217,7 +211,6 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	// requiredConfirmations := tx.sourceWallet.RequiredConfirmations()
 	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, nil, changeSource)
 }
 
