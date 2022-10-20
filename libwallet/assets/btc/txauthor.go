@@ -126,7 +126,7 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		return nil, utils.TranslateError(err)
 	}
 
-	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, unsignedTx.EstimatedSignedSerializeSize)
+	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, 0 /*unsignedTx.EstimatedSignedSerializeSize*/)
 	feeAmount := &sharedW.Amount{
 		SatoshiValue: int64(feeToSendTx),
 		BtcValue:     feeToSendTx.ToBTC(),
@@ -170,9 +170,8 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	// var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
-	var changeSource txauthor.ChangeSource
+	var changeSource *txauthor.ChangeSource
 
-	ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
 	for _, destination := range tx.destinations {
 		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
 			return nil, err
@@ -218,7 +217,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	requiredConfirmations := tx.sourceWallet.RequiredConfirmations()
+	// requiredConfirmations := tx.sourceWallet.RequiredConfirmations()
 	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, nil, changeSource)
 }
 

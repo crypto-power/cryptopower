@@ -24,7 +24,7 @@ func calculateChangeScriptSize(changeAddress string, chainParams *chaincfg.Param
 	if err != nil {
 		return 0, fmt.Errorf("change address error: %v", err)
 	}
-	return changeSource.ScriptSize(), nil
+	return changeSource.ScriptSize, nil
 }
 
 // ParseOutputsAndChangeDestination generates and returns TxOuts
