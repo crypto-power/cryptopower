@@ -296,22 +296,13 @@ func (asset *BTCAsset) startWallet() error {
 	return nil
 }
 
-// Returns a BTC amount that implements the asset amount interface.
-func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
-	return BTCAmount(btcutil.Amount(v))
-}
-
 func (asset *BTCAsset) SafelyCancelSync() {
-<<<<<<< HEAD
-	log.Info("Safe sync shutdown not implemented for BTC")
-=======
 	//TODO: use a proper logger
 	fmt.Println(utils.ErrBTCMethodNotImplemented("SafelyCancelSync"))
->>>>>>> 90ffffe4 (Resolve all the cases where unique dcr implementation is required)
 }
 
 // Methods added below satisfy the shared asset interface. Each should be
-// implementet fully to avoid panic if invoked.
+// implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsSynced"))
 	return false
@@ -382,11 +373,22 @@ func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
 	return -1
 }
-func (asset *BTCAsset) SignMessage(passphrase string, address string, message string) ([]byte, error) {
+func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
 	err := utils.ErrBTCMethodNotImplemented("IsSynced")
 	return nil, err
 }
-func (asset *BTCAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
+func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
 	err := utils.ErrBTCMethodNotImplemented("IsSynced")
 	return false, err
+}
+
+func (asset *BTCAsset) RemoveSpecificPeer() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("RemoveSpecificPeer"))
+}
+func (asset *BTCAsset) SetSpecificPeer(address string) {
+	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
+}
+func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetExtendedPubKey")
+	return "", err
 }

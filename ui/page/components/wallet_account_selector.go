@@ -15,7 +15,6 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -128,16 +127,7 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet sharedW.Asset
 		return err
 	}
 
-	// wallet.GetAssetType() is always same as ws.SelectedWallet().GetAssetType()
-	var assetAccs []*sharedW.Account
-	switch wallet.GetAssetType() {
-	case utils.BTCWalletAsset:
-		assetAccs = accounts.BTCAccounts
-	case utils.DCRWalletAsset:
-		assetAccs = accounts.DCRAccounts
-	}
-
-	for _, account := range assetAccs {
+	for _, account := range accounts.Accounts {
 		if ws.accountIsValid(account) {
 			ws.SetSelectedAccount(account)
 			if ws.accountCallback != nil {
@@ -152,14 +142,7 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet sharedW.Asset
 
 func (ws *WalletAndAccountSelector) SetSelectedAccount(account *sharedW.Account) {
 	ws.selectedAccount = account
-	switch ws.SelectedWallet().GetAssetType() {
-	case utils.BTCWalletAsset:
-		ws.totalBalance = account.TotalBTCBalance.String()
-	case utils.DCRWalletAsset:
-		if account != nil {
-			ws.totalBalance = account.TotalDCRBalance.String()
-		}
-	}
+	ws.totalBalance = account.Balance.Total.String()
 }
 
 func (ws *WalletAndAccountSelector) Clickable() *cryptomaterial.Clickable {
@@ -371,7 +354,7 @@ func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 			return
 		}
 
-		for _, account := range accountsResult.DCRAccounts {
+		for _, account := range accountsResult.Accounts {
 			if sm.accountIsValid(account) {
 				selectorItems = append(selectorItems, &SelectorItem{
 					item:      account,
@@ -521,17 +504,9 @@ func (sm *selectorModal) infoBackdropLayout(gtx C) {
 func walletBalance(wal sharedW.Asset) (totalBalance, spendableBalance int64) {
 	accountsResult, _ := wal.GetAccountsRaw()
 	var tBal, sBal int64
-	switch wal.GetAssetType() {
-	case utils.BTCWalletAsset:
-		for _, account := range accountsResult.BTCAccounts {
-			tBal += account.TotalBTCBalance.ToInt()
-			sBal += account.Balance.SpendableBTC.ToInt()
-		}
-	case utils.DCRWalletAsset:
-		for _, account := range accountsResult.DCRAccounts {
-			tBal += account.TotalDCRBalance.ToInt()
-			sBal += account.Balance.SpendableDCR.ToInt()
-		}
+	for _, account := range accountsResult.Accounts {
+		tBal += account.Balance.Total.ToInt()
+		sBal += account.Balance.Spendable.ToInt()
 	}
 	return tBal, sBal
 }
@@ -556,14 +531,8 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			var name, totalBal, spendableBal string
 			switch t := selectorItem.item.(type) {
 			case *sharedW.Account:
-				switch sm.WL.SelectedWallet.Wallet.GetAssetType() {
-				case utils.BTCWalletAsset:
-					totalBal = t.TotalBTCBalance.String()
-					spendableBal = t.Balance.SpendableBTC.String()
-				case utils.DCRWalletAsset:
-					totalBal = t.TotalDCRBalance.String()
-					spendableBal = t.Balance.SpendableDCR.String()
-				}
+				totalBal = t.Balance.Total.String()
+				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
 			case sharedW.Asset:
 				tb, sb := walletBalance(t)

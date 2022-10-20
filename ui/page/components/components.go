@@ -20,7 +20,6 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -551,23 +550,14 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		return nil, err
 	}
 
-	switch l.WL.SelectedWallet.Wallet.GetAssetType() {
-	case utils.BTCWalletAsset:
-		for _, account := range accountsResult.BTCAccounts {
-			totalBalance += account.TotalBTCBalance.ToInt()
-			spandableBalance += account.Balance.SpendableBTC.ToInt()
-			immatureReward += account.Balance.ImmatureRewardBTC.ToInt()
-		}
-	case utils.DCRWalletAsset:
-		for _, account := range accountsResult.DCRAccounts {
-			totalBalance += account.TotalDCRBalance.ToInt()
-			spandableBalance += account.Balance.SpendableDCR.ToInt()
-			immatureReward += account.Balance.ImmatureRewardDCR.ToInt()
-			immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
-			lockedByTickets += account.Balance.LockedByTickets.ToInt()
-			votingAuthority += account.Balance.VotingAuthority.ToInt()
-			unConfirmed += account.Balance.UnConfirmed.ToInt()
-		}
+	for _, account := range accountsResult.Accounts {
+		totalBalance += account.Balance.Total.ToInt()
+		spandableBalance += account.Balance.Spendable.ToInt()
+		immatureReward += account.Balance.ImmatureReward.ToInt()
+		immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
+		lockedByTickets += account.Balance.LockedByTickets.ToInt()
+		votingAuthority += account.Balance.VotingAuthority.ToInt()
+		unConfirmed += account.Balance.UnConfirmed.ToInt()
 	}
 
 	toAmount := func(v int64) sharedW.AssetAmount {

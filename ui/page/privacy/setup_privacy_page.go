@@ -9,7 +9,6 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -139,23 +138,11 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 			log.Error(err)
 		}
 
-		var walCount int
-		switch pg.WL.SelectedWallet.Wallet.GetAssetType() {
-		case utils.BTCWalletAsset:
-			walCount = len(accounts.BTCAccounts)
-			// Filter out imported account and default account.
-			for _, v := range accounts.BTCAccounts {
-				if v.Number == dcr.ImportedAccountNumber || v.Number == dcr.DefaultAccountNum {
-					walCount--
-				}
-			}
-		case utils.DCRWalletAsset:
-			walCount = len(accounts.DCRAccounts)
-			// Filter out imported account and default account.
-			for _, v := range accounts.DCRAccounts {
-				if v.Number == dcr.ImportedAccountNumber || v.Number == dcr.DefaultAccountNum {
-					walCount--
-				}
+		walCount := len(accounts.Accounts)
+		// Filter out imported account and default account.
+		for _, v := range accounts.Accounts {
+			if v.Number == dcr.ImportedAccountNumber || v.Number == dcr.DefaultAccountNum {
+				walCount--
 			}
 		}
 

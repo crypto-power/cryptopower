@@ -3,13 +3,13 @@ package wallet
 import (
 	"context"
 
-	// "gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // Asset defines the interface each wallet must satisfy.
 type Asset interface {
+	Shutdown()
 	IsSynced() bool
 	IsSyncing() bool
 	SpvSync() error
@@ -18,7 +18,9 @@ type Asset interface {
 	IsRescanning() bool
 	RescanBlocks() error
 	ConnectedPeers() int32
-	Shutdown()
+	RemoveSpecificPeer()
+	SetSpecificPeer(address string)
+	GetExtendedPubKey(account int32) (string, error)
 
 	LockWallet()
 	IsLocked() bool
@@ -44,7 +46,6 @@ type Asset interface {
 	GetAssetType() utils.AssetType
 	Internal() *loader.LoaderWallets
 	TargetTimePerBlockMinutes() float64
-	// GetWalletDataDB() *walletdata.DB
 	ShutdownContextWithCancel() (context.Context, context.CancelFunc)
 
 	PublishUnminedTransactions() error
@@ -57,11 +58,11 @@ type Asset interface {
 	GetBestBlockHeight() int32
 	GetBestBlockTimeStamp() int64
 
-	HasDiscoveredAccnts() bool
+	HasDiscoveredAccounts() bool
 	GetAccountsRaw() (*Accounts, error)
 	GetAccount(accountNumber int32) (*Account, error)
 	AccountName(accountNumber int32) (string, error)
-	CreateNewAccount(accountName string, privPass string) (int32, error)
+	CreateNewAccount(accountName, privPass string) (int32, error)
 	RenameAccount(accountNumber int32, newName string) error
 	AccountNumber(accountName string) (int32, error)
 	AccountNameRaw(accountNumber uint32) (string, error)
@@ -72,8 +73,8 @@ type Asset interface {
 	IsAddressValid(address string) bool
 	HaveAddress(address string) bool
 
-	SignMessage(passphrase string, address string, message string) ([]byte, error)
-	VerifyMessage(address string, message string, signatureBase64 string) (bool, error)
+	SignMessage(passphrase, address, message string) ([]byte, error)
+	VerifyMessage(address, message, signatureBase64 string) (bool, error)
 
 	SaveUserConfigValue(key string, value interface{})
 	ReadUserConfigValue(key string, valueOut interface{}) error

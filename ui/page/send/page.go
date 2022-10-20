@@ -293,12 +293,12 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 
 	feeAtom := feeAndSize.Fee.UnitValue
 	if SendMax {
-		amountAtom = sourceAccount.Balance.SpendableDCR.ToInt() - feeAtom
+		amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
 	}
 
 	wal := pg.WL.SelectedWallet.Wallet
 	totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
-	balanceAfterSend := wal.ToAmount(sourceAccount.Balance.SpendableDCR.ToInt() - totalSendingAmount.ToInt())
+	balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
@@ -331,7 +331,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 func (pg *Page) showBalaceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-		balanceAfterSend := sourceAccount.Balance.SpendableDCR
+		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}

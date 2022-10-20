@@ -108,7 +108,7 @@ func (pg *BTCWalletSettingsPage) loadWalletAccount() {
 		return
 	}
 
-	for _, acct := range accounts.BTCAccounts {
+	for _, acct := range accounts.Accounts {
 		if acct.AccountNumber == btc.ImportedAccountNumber {
 			continue
 		}

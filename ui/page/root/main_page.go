@@ -925,17 +925,17 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
 	switch t := notifier.(type) {
 	case wallet.NewTransaction:
-
+		wal := mp.WL.SelectedWallet.Wallet
 		switch t.Transaction.Type {
 		case dcr.TxTypeRegular:
 			if t.Transaction.Direction != dcr.TxDirectionReceived {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(dcr.AmountCoin(t.Transaction.Amount), 'f', -1, 64)
+			amount := strconv.FormatFloat(wal.ToAmount(t.Transaction.Amount).ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
 		case dcr.TxTypeVote:
-			reward := strconv.FormatFloat(dcr.AmountCoin(t.Transaction.VoteReward), 'f', -1, 64)
+			reward := strconv.FormatFloat(wal.ToAmount(t.Transaction.VoteReward).ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
 		case dcr.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)

@@ -154,30 +154,16 @@ func (wl *WalletLoad) nilAmount() sharedW.AssetAmount {
 
 func (wl *WalletLoad) getAssetTotalbalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
 	var totalBalance int64
-	switch wl.SelectedWallet.Wallet.GetAssetType() {
-	case utils.BTCWalletAsset:
-		for _, account := range accountsResult.BTCAccounts {
-			totalBalance += account.TotalBTCBalance.ToInt()
-		}
-	case utils.DCRWalletAsset:
-		for _, account := range accountsResult.DCRAccounts {
-			totalBalance += account.TotalDCRBalance.ToInt()
-		}
+	for _, account := range accountsResult.Accounts {
+		totalBalance += account.Balance.Total.ToInt()
 	}
 	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
 }
 
 func (wl *WalletLoad) getAssetSpendablebalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
 	var totalBalance int64
-	switch wl.SelectedWallet.Wallet.GetAssetType() {
-	case utils.BTCWalletAsset:
-		for _, account := range accountsResult.BTCAccounts {
-			totalBalance += account.Balance.SpendableBTC.ToInt()
-		}
-	case utils.DCRWalletAsset:
-		for _, account := range accountsResult.DCRAccounts {
-			totalBalance += account.Balance.SpendableDCR.ToInt()
-		}
+	for _, account := range accountsResult.Accounts {
+		totalBalance += account.Balance.Spendable.ToInt()
 	}
 	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
 }

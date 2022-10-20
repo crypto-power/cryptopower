@@ -115,7 +115,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		}
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
-		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(dcr.AmountCoin(tbConfig.BalanceToMaintain), 'f', 0, 64))
+		w := tb.WL.SelectedWallet.Wallet
+		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(w.ToAmount(tbConfig.BalanceToMaintain).ToCoin(), 'f', 0, 64))
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {

@@ -133,7 +133,7 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		line.Layout,
 		item(values.String(values.StrTransactions), fmt.Sprintf("%d", len(pg.txs))),
 		line.Layout,
-		item(values.String(values.StrAccount)+"s", fmt.Sprintf("%d", len(pg.accounts.DCRAccounts))),
+		item(values.String(values.StrAccount)+"s", fmt.Sprintf("%d", len(pg.accounts.Accounts))),
 	}
 
 	return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, i int) D {

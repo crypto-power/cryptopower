@@ -3,7 +3,6 @@ package wallet
 import (
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
-	btcchainhash "github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -83,19 +82,16 @@ type UnsignedTransaction struct {
 }
 
 type Balance struct {
-	// DCR fields
-	TotalDCR                AssetAmount
-	SpendableDCR            AssetAmount
-	ImmatureRewardDCR       AssetAmount
+	// fields common to both DCR and BTC
+	Total          AssetAmount
+	Spendable      AssetAmount
+	ImmatureReward AssetAmount
+
+	// DCR only fields
 	ImmatureStakeGeneration AssetAmount
 	LockedByTickets         AssetAmount
 	VotingAuthority         AssetAmount
 	UnConfirmed             AssetAmount
-
-	// BTC fields
-	TotalBTC          AssetAmount
-	SpendableBTC      AssetAmount
-	ImmatureRewardBTC AssetAmount
 }
 
 type Account struct {
@@ -103,27 +99,21 @@ type Account struct {
 	WalletID         int
 	Number           int32
 	Name             string
-	Balance          *Balance
-	TotalDCRBalance  AssetAmount
 	ExternalKeyCount int32
 	InternalKeyCount int32
 	ImportedKeyCount int32
 
 	// BTC fields
 	AccountProperties
-	TotalBTCBalance AssetAmount
+
+	// Has some fields common to both BTC and DCR
+	Balance *Balance
 }
 
 type Accounts struct {
-	// DCR fields
-	DCRAccounts           []*Account
-	CurrentDCRBlockHash   []byte
-	CurrentDCRBlockHeight int32
-
-	// BTC fields
-	BTCAccounts           []*Account
-	CurrentBTCBlockHash   *btcchainhash.Hash
-	CurrentBTCBlockHeight int32
+	Accounts           []*Account
+	CurrentBlockHash   []byte
+	CurrentBlockHeight int32
 }
 
 // AccountProperties contains properties associated with each account, such as

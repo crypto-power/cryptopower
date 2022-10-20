@@ -287,7 +287,7 @@ func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error
 
 	hasMixableOutput := false
 	for _, input := range inputDetail.Inputs {
-		if AmountCoin(input.ValueIn) > smalletSplitPoint {
+		if asset.ToAmount(input.ValueIn).ToCoin() > smalletSplitPoint {
 			hasMixableOutput = true
 			break
 		}

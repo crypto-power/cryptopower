@@ -323,7 +323,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 }
 
 func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
-	if !wallet.HasDiscoveredAccnts() && wallet.IsLocked() {
+	if !wallet.HasDiscoveredAccounts() && wallet.IsLocked() {
 		pg.unlockWalletForSyncing(wallet)
 		return
 	}

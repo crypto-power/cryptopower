@@ -10,7 +10,6 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -133,28 +132,14 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 		return
 	}
 
-	switch pg.WL.SelectedWallet.Wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-		for _, acct := range accounts.BTCAccounts {
-			if acct.Number == dcr.ImportedAccountNumber {
-				continue
-			}
-			walletAccounts = append(walletAccounts, &accountData{
-				Account:   acct,
-				clickable: pg.Theme.NewClickable(false),
-			})
+	for _, acct := range accounts.Accounts {
+		if acct.Number == dcr.ImportedAccountNumber {
+			continue
 		}
-
-	case libutils.DCRWalletAsset:
-		for _, acct := range accounts.DCRAccounts {
-			if acct.Number == dcr.ImportedAccountNumber {
-				continue
-			}
-			walletAccounts = append(walletAccounts, &accountData{
-				Account:   acct,
-				clickable: pg.Theme.NewClickable(false),
-			})
-		}
+		walletAccounts = append(walletAccounts, &accountData{
+			Account:   acct,
+			clickable: pg.Theme.NewClickable(false),
+		})
 	}
 
 	pg.accounts = walletAccounts
@@ -517,10 +502,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				return false
 			}
 			if ipAddress != "" {
-				dcrUniqueImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
-				if dcrUniqueImpl != nil {
-					dcrUniqueImpl.SetSpecificPeer(ipAddress)
-				}
+				pg.WL.SelectedWallet.Wallet.SetSpecificPeer(ipAddress)
 				pg.loadPeerAddress()
 			}
 			return true
@@ -566,10 +548,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
-			dcrUniqueImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
-			if dcrUniqueImpl != nil {
-				dcrUniqueImpl.RemoveSpecificPeer()
-			}
+			pg.WL.SelectedWallet.Wallet.RemoveSpecificPeer()
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)

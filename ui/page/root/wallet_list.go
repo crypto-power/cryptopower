@@ -33,8 +33,8 @@ func (pg *WalletDexServerSelector) loadDCRWallets() {
 		}
 
 		var totalBalance int64
-		for _, acc := range accountsResult.DCRAccounts {
-			totalBalance += acc.TotalDCRBalance.ToInt()
+		for _, acc := range accountsResult.Accounts {
+			totalBalance += acc.Balance.Total.ToInt()
 		}
 
 		// sort wallets into normal wallet and watchonly wallets
@@ -73,8 +73,8 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 		}
 
 		var totalBalance int64
-		for _, acc := range accountsResult.BTCAccounts {
-			totalBalance += acc.TotalBTCBalance.ToInt()
+		for _, acc := range accountsResult.Accounts {
+			totalBalance += acc.Balance.Total.ToInt()
 		}
 
 		// sort wallets into normal wallet and watchonly wallets

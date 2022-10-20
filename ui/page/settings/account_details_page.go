@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -87,14 +86,14 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 
 	balance := pg.account.Balance
 
-	pg.stakingBalance = balance.ImmatureRewardDCR.ToInt() +
+	pg.stakingBalance = balance.ImmatureReward.ToInt() +
 		balance.LockedByTickets.ToInt() +
 		balance.VotingAuthority.ToInt() +
 		balance.ImmatureStakeGeneration.ToInt()
 
-	pg.totalBalance = balance.TotalDCR.String()
-	pg.spendable = balance.SpendableDCR.String()
-	pg.immatureRewards = balance.ImmatureRewardDCR.String()
+	pg.totalBalance = balance.Total.String()
+	pg.spendable = balance.Spendable.String()
+	pg.immatureRewards = balance.ImmatureReward.String()
 	pg.lockedByTickets = balance.LockedByTickets.String()
 	pg.votingAuthority = balance.VotingAuthority.String()
 	pg.immatureStakeGen = balance.ImmatureStakeGeneration.String()
@@ -439,8 +438,7 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 }
 
 func (pg *AcctDetailsPage) loadExtendedPubKey() {
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
-	xpub, err := dcrImpl.GetExtendedPubKey(pg.account.Number)
+	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 	}

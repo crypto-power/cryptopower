@@ -143,7 +143,7 @@ func (asset *DCRAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		txOut := unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex]
 		change = &sharedW.Amount{
 			UnitValue: txOut.Value,
-			CoinValue: AmountCoin(txOut.Value),
+			CoinValue: asset.ToAmount(txOut.Value).ToCoin(),
 		}
 	}
 

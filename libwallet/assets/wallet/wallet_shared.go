@@ -29,7 +29,7 @@ type Wallet struct {
 
 	EncryptedSeed         []byte
 	IsRestored            bool
-	HasDiscoveredAccounts bool
+	hasDiscoveredAccounts bool
 	PrivatePassphraseType int32
 
 	netType      utils.NetworkType
@@ -230,10 +230,10 @@ func (wallet *Wallet) GetWalletName() string {
 	defer wallet.mu.RUnlock()
 	return wallet.Name
 }
-func (wallet *Wallet) HasDiscoveredAccnts() bool {
+func (wallet *Wallet) HasDiscoveredAccounts() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
-	return wallet.HasDiscoveredAccounts
+	return wallet.hasDiscoveredAccounts
 }
 
 func (wallet *Wallet) SetNetworkCancelCallback(callback func()) {
@@ -275,7 +275,7 @@ func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 		EncryptedSeed: encryptedSeed,
 
 		PrivatePassphraseType: pass.PrivatePassType,
-		HasDiscoveredAccounts: true,
+		hasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
@@ -329,7 +329,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.A
 		rootDir:  params.RootDir,
 
 		IsRestored:            true,
-		HasDiscoveredAccounts: true,
+		hasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
@@ -378,7 +378,7 @@ func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.Asse
 		EncryptedSeed:         encryptedSeed,
 
 		IsRestored:            true,
-		HasDiscoveredAccounts: false,
+		hasDiscoveredAccounts: false,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,

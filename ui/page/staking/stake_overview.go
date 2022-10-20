@@ -58,9 +58,16 @@ type Page struct {
 }
 
 func NewStakingPage(l *load.Load) *Page {
+	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	if impl == nil {
+		log.Error(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	pg := &Page{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
+		dcrImpl:          impl,
 	}
 
 	pg.list = &widget.List{
@@ -73,14 +80,6 @@ func NewStakingPage(l *load.Load) *Page {
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
-
-	impl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
-	if impl == nil {
-		log.Error("Only DCR implementation is supported")
-		return nil
-	}
-
-	pg.dcrImpl = impl
 
 	return pg
 }
@@ -319,7 +318,7 @@ func (pg *Page) ticketBuyerSettingsModal() {
 
 func (pg *Page) startTicketBuyerPasswordModal() {
 	tbConfig := pg.dcrImpl.AutoTicketsBuyerConfig()
-	balToMaintain := dcr.AmountCoin(tbConfig.BalanceToMaintain)
+	balToMaintain := pg.WL.SelectedWallet.Wallet.ToAmount(tbConfig.BalanceToMaintain).ToCoin()
 	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTicketError, err), modal.DefaultClickFunc())

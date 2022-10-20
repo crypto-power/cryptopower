@@ -53,7 +53,7 @@ func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
 	}
 
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
-	wallet.HasDiscoveredAccounts = true
+	wallet.hasDiscoveredAccounts = true
 	err := wallet.db.Save(wallet)
 	if err != nil {
 		return err

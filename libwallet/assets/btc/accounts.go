@@ -52,14 +52,13 @@ func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 				ImportedKeyCount: a.ImportedKeyCount,
 			},
 			Balance: balance,
-			TotalBTCBalance: balance.TotalBTC,
 		}
 	}
 
 	return &sharedW.Accounts{
-		CurrentBTCBlockHash:   resp.CurrentBlockHash,
-		CurrentBTCBlockHeight: resp.CurrentBlockHeight,
-		BTCAccounts:           accounts,
+		CurrentBlockHash:   resp.CurrentBlockHash[:],
+		CurrentBlockHeight: resp.CurrentBlockHeight,
+		Accounts:           accounts,
 	}, nil
 }
 
@@ -69,7 +68,7 @@ func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 		return nil, err
 	}
 
-	for _, account := range accounts.BTCAccounts {
+	for _, account := range accounts.Accounts {
 		if account.AccountNumber == uint32(accountNumber) {
 			return account, nil
 		}
@@ -85,9 +84,9 @@ func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		TotalBTC:          BTCAmount(balance.Total),
-		SpendableBTC:      BTCAmount(balance.Spendable),
-		ImmatureRewardBTC: BTCAmount(balance.ImmatureReward),
+		Total:          BTCAmount(balance.Total),
+		Spendable:      BTCAmount(balance.Spendable),
+		ImmatureReward: BTCAmount(balance.ImmatureReward),
 	}, nil
 }
 

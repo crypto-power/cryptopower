@@ -66,8 +66,7 @@ func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetai
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
-	balance := pg.account.TotalBTCBalance
-	pg.totalBalance = balance.String()
+	pg.totalBalance = pg.account.Balance.Total.String()
 
 	pg.hdPath = pg.WL.BTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
 

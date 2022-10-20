@@ -25,10 +25,6 @@ type DCRUniqueAsset interface {
 	VSPTicketInfo(hash string) (*VSPTicketInfo, error)
 	StartTicketBuyer(passphrase string) error
 
-	RemoveSpecificPeer()
-	SetSpecificPeer(address string)
-	GetExtendedPubKey(account int32) (string, error)
-
 	KnownVSPs() []*VSP
 	ReloadVSPList(ctx context.Context)
 	TicketBuyerConfigIsSet() bool
@@ -42,7 +38,7 @@ type DCRUniqueAsset interface {
 	TicketMaturity() int32
 	SaveVSP(host string) (err error)
 	TicketHasVotedOrRevoked(ticketHash string) (bool, error)
-	SetVoteChoice(agendaID, choiceID, hash string, passphrase string) error
+	SetVoteChoice(agendaID, choiceID, hash, passphrase string) error
 	TicketSpender(ticketHash string) (*sharedW.Transaction, error)
 
 	AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error)

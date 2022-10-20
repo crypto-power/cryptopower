@@ -3,6 +3,7 @@ package btc
 import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/waddrmgr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (
@@ -30,4 +31,9 @@ func AmountSatoshi(f float64) int64 {
 		return -1
 	}
 	return int64(amount)
+}
+
+// Returns a BTC amount that implements the asset amount interface.
+func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
+	return BTCAmount(btcutil.Amount(v))
 }

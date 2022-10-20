@@ -44,7 +44,6 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
 			Balance:          balance,
-			TotalDCRBalance:  balance.TotalDCR,
 			ExternalKeyCount: int32(a.LastUsedExternalIndex + AddressGapLimit), // Add gap limit
 			InternalKeyCount: int32(a.LastUsedInternalIndex + AddressGapLimit),
 			ImportedKeyCount: int32(a.ImportedKeyCount),
@@ -52,9 +51,9 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	}
 
 	return &sharedW.Accounts{
-		CurrentDCRBlockHash:   resp.CurrentBlockHash[:],
-		CurrentDCRBlockHeight: resp.CurrentBlockHeight,
-		DCRAccounts:           accounts,
+		CurrentBlockHash:   resp.CurrentBlockHash[:],
+		CurrentBlockHeight: resp.CurrentBlockHeight,
+		Accounts:           accounts,
 	}, nil
 }
 
@@ -66,7 +65,7 @@ func (asset *DCRAsset) AccountsIterator() (*AccountsIterator, error) {
 
 	return &AccountsIterator{
 		currentIndex: 0,
-		accounts:     accounts.DCRAccounts,
+		accounts:     accounts.Accounts,
 	}, nil
 }
 
@@ -90,7 +89,7 @@ func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 		return nil, err
 	}
 
-	for _, account := range accounts.DCRAccounts {
+	for _, account := range accounts.Accounts {
 		if account.Number == accountNumber {
 			return account, nil
 		}
@@ -107,9 +106,9 @@ func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		TotalDCR:                DCRAmount(balance.Total),
-		SpendableDCR:            DCRAmount(balance.Spendable),
-		ImmatureRewardDCR:       DCRAmount(balance.ImmatureCoinbaseRewards),
+		Total:                   DCRAmount(balance.Total),
+		Spendable:               DCRAmount(balance.Spendable),
+		ImmatureReward:          DCRAmount(balance.ImmatureCoinbaseRewards),
 		ImmatureStakeGeneration: DCRAmount(balance.ImmatureStakeGeneration),
 		LockedByTickets:         DCRAmount(balance.LockedByTickets),
 		VotingAuthority:         DCRAmount(balance.VotingAuthority),
@@ -178,7 +177,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
 	return unspentOutputs, nil
 }
 
-func (asset *DCRAsset) CreateNewAccount(accountName string, privPass string) (int32, error) {
+func (asset *DCRAsset) CreateNewAccount(accountName, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err

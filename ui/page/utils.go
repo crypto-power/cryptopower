@@ -11,7 +11,6 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -33,18 +32,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-// getLockWallet returns a list of locked wallets
-func getLockedWallets(wallets []*dcr.DCRAsset) []*dcr.DCRAsset {
-	var walletsLocked []*dcr.DCRAsset
-	for _, wl := range wallets {
-		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
-			walletsLocked = append(walletsLocked, wl)
-		}
-	}
-
-	return walletsLocked
 }
 
 func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {

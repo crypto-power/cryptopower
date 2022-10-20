@@ -104,16 +104,16 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	}
 
 	vm := make(map[string]string)
-	for _, acct := range accounts.DCRAccounts {
+	for _, acct := range accounts.Accounts {
 		// add data for change accounts selection
 		if acct.Name != "imported" {
 			vm[acct.Name] = acct.Name
 		}
 
 		if acct.Number == pg.dcrImpl.MixedAccountNumber() {
-			pg.mixedBalance = acct.TotalDCRBalance
+			pg.mixedBalance = acct.Balance.Total
 		} else if acct.Number == pg.dcrImpl.UnmixedAccountNumber() {
-			pg.unmixedBalance = acct.TotalDCRBalance
+			pg.unmixedBalance = acct.Balance.Total
 		}
 	}
 

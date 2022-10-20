@@ -82,7 +82,7 @@ func (asset *DCRAsset) AddressInfo(address string) (*AddressInfo, error) {
 // asset. If that address has already been used to receive funds, the next
 // chained address is returned.
 func (asset *DCRAsset) CurrentAddress(account int32) (string, error) {
-	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+	if asset.IsRestored && !asset.HasDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
@@ -98,7 +98,7 @@ func (asset *DCRAsset) CurrentAddress(account int32) (string, error) {
 // payment address. If that address has already been used to receive funds,
 // the next chained address is returned.
 func (asset *DCRAsset) NextAddress(account int32) (string, error) {
-	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+	if asset.IsRestored && !asset.HasDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 

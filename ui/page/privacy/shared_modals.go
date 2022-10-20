@@ -53,7 +53,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	}
 
 	accounts, _ := conf.WL.SelectedWallet.Wallet.GetAccountsRaw()
-	for _, acct := range accounts.DCRAccounts {
+	for _, acct := range accounts.Accounts {
 		if acct.Name == "mixed" || acct.Name == "unmixed" {
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
 				Body(values.String(values.StrMixerAccErrorMsg)).
@@ -110,7 +110,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 
 	dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
 	// get the first account in the wallet as this is the default
-	sourceAccount := acc.DCRAccounts[0]
+	sourceAccount := acc.Accounts[0]
 	destinationAccount := dcrUniqueImpl.UnmixedAccountNumber()
 
 	destinationAddress, err := conf.WL.SelectedWallet.Wallet.CurrentAddress(destinationAccount)
@@ -130,7 +130,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 	}
 
 	// calculate max amount to be sent
-	amountAtom := sourceAccount.Balance.SpendableDCR.ToInt() - feeAndSize.Fee.UnitValue
+	amountAtom := sourceAccount.Balance.Spendable.ToInt() - feeAndSize.Fee.UnitValue
 	err = dcrUniqueImpl.AddSendDestination(destinationAddress, amountAtom, true)
 	if err != nil {
 		return err

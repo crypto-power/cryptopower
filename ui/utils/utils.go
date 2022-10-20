@@ -19,7 +19,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
@@ -51,18 +50,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-// getLockWallet returns a list of locked wallets
-func GetLockedWallets(wallets []*dcr.DCRAsset) []*dcr.DCRAsset {
-	var walletsLocked []*dcr.DCRAsset
-	for _, wl := range wallets {
-		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
-			walletsLocked = append(walletsLocked, wl)
-		}
-	}
-
-	return walletsLocked
 }
 
 func FormatDateOrTime(timestamp int64) string {
