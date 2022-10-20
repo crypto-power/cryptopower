@@ -41,10 +41,10 @@ type DCRAsset struct {
 	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
 
-// BTCAsset confirm that DCR implements the unique DCR implenatation interface.
+// // Verify that DCR implements the unique DCR interface.
 var _ DCRUniqueAsset = (*DCRAsset)(nil)
 
-// BTCAsset confirm that BTC implements the shared assets interface.
+// Verify that DCR implements the shared assets interface.
 var _ sharedW.Asset = (*DCRAsset)(nil)
 
 // initWalletLoader setups the loader.

@@ -98,7 +98,7 @@ func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
 
 // PurchaseTickets purchases tickets from the asset.
 // Returns a slice of hashes for tickets purchased.
-func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost string, vspPubKey []byte, passphrase string) ([]*chainhash.Hash, error) {
+func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost, passphrase string, vspPubKey []byte) ([]*chainhash.Hash, error) {
 	vspClient, err := asset.VSPClient(vspHost, vspPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)

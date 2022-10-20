@@ -342,12 +342,7 @@ func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 
 func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	wallet := mgr.WalletWithID(walletID)
-
-	// SetNetworkCancelCallback(wallet.SafelyCancelSyncOnly) called before the
-	// asset interface is loaded guarantees that sync shutdown will happen
-	// before upstream wallet deletion happens.
-	err := wallet.DeleteWallet(privPass)
-	if err != nil {
+	if err := wallet.DeleteWallet(privPass); err != nil {
 		return err
 	}
 

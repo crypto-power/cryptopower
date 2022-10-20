@@ -370,18 +370,17 @@ func (asset *BTCAsset) GetBestBlockHeight() int32 {
 	return -1
 }
 func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockTimeStamp"))
 	return -1
 }
 func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
-	err := utils.ErrBTCMethodNotImplemented("IsSynced")
+	err := utils.ErrBTCMethodNotImplemented("SignMessage")
 	return nil, err
 }
 func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
-	err := utils.ErrBTCMethodNotImplemented("IsSynced")
+	err := utils.ErrBTCMethodNotImplemented("VerifyMessage")
 	return false, err
 }
-
 func (asset *BTCAsset) RemoveSpecificPeer() {
 	log.Warn(utils.ErrBTCMethodNotImplemented("RemoveSpecificPeer"))
 }
