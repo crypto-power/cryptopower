@@ -316,7 +316,7 @@ func (mp *MainPage) OnNavigatedTo() {
 		wg := new(sync.WaitGroup)
 		err := mp.WL.SelectedWallet.Wallet.(*btc.BTCAsset).ConnectSPVWallet(wg)
 		if err != nil {
-			fmt.Println("[][][] BTC sync error", err)
+			log.Warn("error occured when starting BTC sync: ", err)
 		}
 
 		if mp.CurrentPage() == nil {
