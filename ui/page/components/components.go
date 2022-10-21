@@ -20,6 +20,7 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -554,10 +555,14 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		totalBalance += account.Balance.Total.ToInt()
 		spandableBalance += account.Balance.Spendable.ToInt()
 		immatureReward += account.Balance.ImmatureReward.ToInt()
-		immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
-		lockedByTickets += account.Balance.LockedByTickets.ToInt()
-		votingAuthority += account.Balance.VotingAuthority.ToInt()
-		unConfirmed += account.Balance.UnConfirmed.ToInt()
+
+		if l.WL.SelectedWallet.Wallet.GetAssetType() == utils.DCRWalletAsset {
+			// Fields required only by DCR
+			immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
+			lockedByTickets += account.Balance.LockedByTickets.ToInt()
+			votingAuthority += account.Balance.VotingAuthority.ToInt()
+			unConfirmed += account.Balance.UnConfirmed.ToInt()
+		}
 	}
 
 	toAmount := func(v int64) sharedW.AssetAmount {
