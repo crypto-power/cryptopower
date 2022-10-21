@@ -685,4 +685,11 @@ const (
 	StrDCRCaps                         = "dcrCaps"
 	StrNoMixable                       = "errNoMixable"
 	StrErrPassEmpty                    = "errPassEmpty"
+	StrGapLimit                        = "gapLimit"
+	StrDiscoverAddressUsage            = "discoverAddressUsage"
+	StrSetGapLimitInfo                 = "setGapLimitInfo"
+	StrGapLimitInputErr                = "gapLimitInputErr"
+	StrAddressDiscoveryStarted         = "addressDiscoveryStarted"
+	StrAddressDiscoveryStartedBody     = "addressDiscoveryStartedBody"
+	StrSetGapLimit                     = "setGapLimit"
 )

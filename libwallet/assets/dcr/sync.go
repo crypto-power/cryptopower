@@ -486,3 +486,49 @@ func (asset *DCRAsset) GetLowestBlockTimestamp() int64 {
 
 	return timestamp
 }
+
+func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
+	netBackend, err := asset.Internal().DCR.NetworkBackend()
+	if err != nil {
+		return errors.E(utils.ErrNotConnected)
+	}
+
+	// prevent usage discovery if the wallet is syncing.
+	if asset.IsSyncing() {
+		return errors.New(utils.ErrSyncAlreadyInProgress)
+	}
+
+	// Prevent usage discovery if wallet isn't synced.
+	if !asset.IsSynced() {
+		return errors.New(utils.ErrNotSynced)
+	}
+
+	// rescan from genesis block. Todo: Allow users to supply rescanpoint.
+	startBlock := asset.Internal().DCR.ChainParams().GenesisHash
+
+	go func() {
+		defer func() {
+			asset.syncData.mu.Lock()
+			asset.syncData.syncing = false
+			asset.syncData.cancelSync = nil
+			asset.syncData.mu.Unlock()
+			asset.discoverAddressesFinished(asset.ID)
+		}()
+
+		ctx, cancel := asset.ShutdownContextWithCancel()
+
+		asset.syncData.mu.Lock()
+		asset.syncData.syncing = true
+		asset.syncData.cancelSync = cancel
+		asset.syncData.mu.Unlock()
+
+		asset.discoverAddressesStarted(asset.ID)
+		
+		err := asset.Internal().DCR.DiscoverActiveAddresses(ctx, netBackend, &startBlock, !asset.Internal().DCR.Locked(), gapLimit)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	return nil
+}

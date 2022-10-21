@@ -20,6 +20,7 @@ const (
 	TicketPriceErrorTemplate       = "TicketPriceError"
 	SecurityToolsInfoTemplate      = "SecurityToolsInfo"
 	RemoveWalletInfoTemplate       = "RemoveWalletInfo"
+	SetGapLimitTemplate            = "SetGapLimit"
 )
 
 func verifyMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
@@ -93,6 +94,13 @@ func allowUnspendUnmixedAcct(l *load.Load) []layout.Widget {
 
 func removeWalletInfo(l *load.Load, walletName string) []layout.Widget {
 	text := values.StringF(values.StrRemoveWalletInfo, `<span style="text-color: gray">`, `<span style="font-weight: bold">`, walletName, `</span>`, `</span>`)
+	return []layout.Widget{
+		renderers.RenderHTML(text, l.Theme).Layout,
+	}
+}
+
+func setGapLimitText(l *load.Load) []layout.Widget {
+	text := values.StringF(values.StrSetGapLimitInfo, `<span style="text-color: gray">`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, l.Theme).Layout,
 	}
