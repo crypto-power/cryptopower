@@ -1,7 +1,6 @@
 package page
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -63,12 +62,7 @@ func (sp *startPage) OnNavigatedTo() {
 		if sp.WL.MultiWallet.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
-			go func() {
-				err := sp.openWallets("")
-				// if err != nil {
-				fmt.Println("VVVVVV <<<< >>> VV ", err)
-				// }
-			}()
+			go sp.openWallets("")
 		}
 	} else {
 		sp.loading = false

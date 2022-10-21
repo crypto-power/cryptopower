@@ -52,10 +52,8 @@ func (wallet *Wallet) MarkWalletAsDiscoveredAccounts() error {
 		return errors.New(utils.ErrNotExist)
 	}
 
-	fmt.Println(" >>>>> MarkWalletAsDiscoveredAccounts <<<<")
-
 	log.Infof("Set discovered accounts = true for wallet %d", wallet.ID)
-	wallet.hasDiscoveredAccounts = true
+	wallet.HasDiscoveredAccounts = true
 	err := wallet.db.Save(wallet)
 	if err != nil {
 		return err

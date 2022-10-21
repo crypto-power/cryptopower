@@ -229,11 +229,11 @@ func (asset *BTCAsset) startWallet() error {
 	// For neutrino to be completely compatible with the walletDbData implementation
 	// in gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata the above
 	// interface needs to be fully implemented.
-	neutrinoDBPath := asset.GetWalletDataDb().Path
-	asset.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
-	if err != nil {
-		return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
-	}
+	// neutrinoDBPath := asset.GetWalletDataDb().Path
+	// asset.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
+	// if err != nil {
+	// 	return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
+	// }
 
 	bailOnWalletAndDB := func() {
 		if err := asset.neutrinoDB.Close(); err != nil {
@@ -259,7 +259,7 @@ func (asset *BTCAsset) startWallet() error {
 	log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
-		Database:      asset.neutrinoDB,
+		Database:      asset.GetWalletDataDb(),
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		AddPeers:      addPeers,

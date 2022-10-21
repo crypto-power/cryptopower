@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -30,7 +29,7 @@ type Wallet struct {
 
 	EncryptedSeed         []byte
 	IsRestored            bool
-	hasDiscoveredAccounts bool
+	HasDiscoveredAccounts bool
 	PrivatePassphraseType int32
 
 	netType      utils.NetworkType
@@ -231,10 +230,10 @@ func (wallet *Wallet) GetWalletName() string {
 	defer wallet.mu.RUnlock()
 	return wallet.Name
 }
-func (wallet *Wallet) HasDiscoveredAccounts() bool {
+func (wallet *Wallet) ContainsDiscoveredAccounts() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
-	return wallet.hasDiscoveredAccounts
+	return wallet.HasDiscoveredAccounts
 }
 
 func (wallet *Wallet) SetNetworkCancelCallback(callback func()) {
@@ -276,7 +275,7 @@ func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 		EncryptedSeed: encryptedSeed,
 
 		PrivatePassphraseType: pass.PrivatePassType,
-		hasDiscoveredAccounts: true,
+		HasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
@@ -330,7 +329,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.A
 		rootDir:  params.RootDir,
 
 		IsRestored:            true,
-		hasDiscoveredAccounts: true,
+		HasDiscoveredAccounts: true,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
@@ -379,7 +378,7 @@ func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.Asse
 		EncryptedSeed:         encryptedSeed,
 
 		IsRestored:            true,
-		hasDiscoveredAccounts: false,
+		HasDiscoveredAccounts: false,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
@@ -560,10 +559,8 @@ func (wallet *Wallet) LockWallet() {
 func (wallet *Wallet) IsLocked() bool {
 	switch wallet.Type {
 	case utils.BTCWalletAsset:
-		fmt.Println("BTC: ", wallet.Internal().BTC.Locked())
 		return wallet.Internal().BTC.Locked()
 	case utils.DCRWalletAsset:
-		fmt.Println("DCR: ", wallet.Internal().DCR.Locked())
 		return wallet.Internal().DCR.Locked()
 	default:
 		return false

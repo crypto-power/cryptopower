@@ -280,7 +280,6 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		err := wallet.OpenWallet()
-		fmt.Println(" >>>>> Wallet name : ", wallet.GetWalletName(), " Wallet is locked ", wallet.IsLocked())
 		if err != nil {
 			return err
 		}

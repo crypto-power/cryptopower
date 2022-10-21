@@ -58,7 +58,7 @@ type Asset interface {
 	GetBestBlockHeight() int32
 	GetBestBlockTimeStamp() int64
 
-	HasDiscoveredAccounts() bool
+	ContainsDiscoveredAccounts() bool
 	GetAccountsRaw() (*Accounts, error)
 	GetAccount(accountNumber int32) (*Account, error)
 	AccountName(accountNumber int32) (string, error)

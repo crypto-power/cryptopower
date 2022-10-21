@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"gioui.org/layout"
@@ -128,7 +127,6 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
 		// Sync implementation for BTC wallet doesn't exist thus btc wallets can't be synced.
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			fmt.Println(">>>>>> Got here >> ", wallet.GetWalletName())
 			pg.startSyncing(wallet)
 		}
 	}
@@ -325,7 +323,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 }
 
 func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
-	if !wallet.HasDiscoveredAccounts() && wallet.IsLocked() {
+	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() {
 		pg.unlockWalletForSyncing(wallet)
 		return
 	}
