@@ -46,19 +46,6 @@ func (db *DB) PrintStats() string {
 	return "---"
 }
 
-// Batch is similar to the package-level Update method, but it will attempt to
-// optismitcally combine the invocation of several transaction functions into a
-// single db write transaction.
-//****
-// This function is part of the walletdb.Db interface implementation.
-func (db *DB) Batch(f func(tx walletdb.ReadWriteTx) error) error {
-	return db.walletDataDB.Bolt.Batch(func(btx *bbolt.Tx) error {
-		interfaceTx := transaction{btx}
-
-		return f(&interfaceTx)
-	})
-}
-
 // View opens a database read transaction and executes the function f
 // with the transaction passed as a parameter. After f exits, the
 // transaction is rolled back. If f errors, its error is returned, not a
@@ -173,7 +160,7 @@ func (tx *transaction) ReadWriteBucket(key []byte) walletdb.ReadWriteBucket {
 		return nil
 	}
 	b := &bucket{upstream: boltBucket}
-	b.NestedReadBucket(key)
+	// fmt.Println("NEsted Bucket ", nil == b.NestedReadBucket(key))
 	return b
 }
 
