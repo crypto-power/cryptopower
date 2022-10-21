@@ -55,9 +55,9 @@ func (tx *TxAuthor) AddSendDestination(address string, satoshiAmount int64, send
 	}
 
 	tx.destinations = append(tx.destinations, sharedW.TransactionDestination{
-		Address:       address,
-		SatoshiAmount: satoshiAmount,
-		SendMax:       sendMax,
+		Address:    address,
+		UnitAmount: satoshiAmount,
+		SendMax:    sendMax,
 	})
 	tx.needsConstruct = true
 
@@ -74,9 +74,9 @@ func (tx *TxAuthor) UpdateSendDestination(index int, address string, satoshiAmou
 	}
 
 	tx.destinations[index] = sharedW.TransactionDestination{
-		Address:       address,
-		SatoshiAmount: satoshiAmount,
-		SendMax:       sendMax,
+		Address:    address,
+		UnitAmount: satoshiAmount,
+		SendMax:    sendMax,
 	}
 	tx.needsConstruct = true
 	return nil
@@ -108,12 +108,12 @@ func (tx *TxAuthor) RemoveChangeDestination() {
 func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
 	var totalSendAmountSatoshi int64 = 0
 	for _, destination := range tx.destinations {
-		totalSendAmountSatoshi += destination.SatoshiAmount
+		totalSendAmountSatoshi += destination.UnitAmount
 	}
 
 	return &sharedW.Amount{
-		SatoshiValue: totalSendAmountSatoshi,
-		BtcValue:     btcutil.Amount(totalSendAmountSatoshi).ToBTC(),
+		UnitValue: totalSendAmountSatoshi,
+		CoinValue: btcutil.Amount(totalSendAmountSatoshi).ToBTC(),
 	}
 }
 
@@ -126,23 +126,23 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	estimatedSignedSerializeSize := unsignedTx.Tx.SerializeSize()
 	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize /*unsignedTx.EstimatedSignedSerializeSize*/)
 	feeAmount := &sharedW.Amount{
-		SatoshiValue: int64(feeToSendTx),
-		BtcValue:     feeToSendTx.ToBTC(),
+		UnitValue: int64(feeToSendTx),
+		CoinValue: feeToSendTx.ToBTC(),
 	}
 
 	var change *sharedW.Amount
 	if unsignedTx.ChangeIndex >= 0 {
 		txOut := unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex]
 		change = &sharedW.Amount{
-			SatoshiValue: txOut.Value,
-			BtcValue:     AmountBTC(txOut.Value),
+			UnitValue: txOut.Value,
+			CoinValue: AmountBTC(txOut.Value),
 		}
 	}
 
 	return &sharedW.TxFeeAndSize{
 		EstimatedSignedSize: estimatedSignedSerializeSize,
-		Fee:    feeAmount,
-		Change: change,
+		Fee:                 feeAmount,
+		Change:              change,
 	}, nil
 }
 
@@ -170,7 +170,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var changeSource *txauthor.ChangeSource
 
 	for _, destination := range tx.destinations {
-		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
+		if err := tx.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
 			return nil, err
 		}
 
@@ -187,7 +187,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
 		} else {
-			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.AtomAmount, tx.sourceWallet.chainParams)
+			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, tx.sourceWallet.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing tx output: %v", err)
 				return nil, fmt.Errorf("make tx output error: %v", err)

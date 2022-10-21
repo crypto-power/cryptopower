@@ -38,7 +38,7 @@ func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.Tr
 	var maxAmountRecipientAddress string
 
 	for _, destination := range txDestinations {
-		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
+		if err := tx.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
 			return nil, 0, "", err
 		}
 
@@ -52,7 +52,7 @@ func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.Tr
 			continue // do not prepare a tx output for this destination
 		}
 
-		output, err := txhelper.MakeTxOutput(destination.Address, destination.AtomAmount, tx.sourceWallet.chainParams)
+		output, err := txhelper.MakeTxOutput(destination.Address, destination.UnitAmount, tx.sourceWallet.chainParams)
 		if err != nil {
 			return nil, 0, "", fmt.Errorf("make tx output error: %v", err)
 		}

@@ -278,7 +278,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		return
 	}
 
-	feeAtom := feeAndSize.Fee.AtomValue
+	feeAtom := feeAndSize.Fee.UnitValue
 	if SendMax {
 		amountAtom = sourceAccount.Balance.Spendable - feeAtom
 	}
@@ -303,7 +303,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.DcrValue))
+		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
 		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 

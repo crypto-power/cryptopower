@@ -44,13 +44,15 @@ type BlockInfo struct {
 }
 
 type Amount struct {
-	// DCR fields.
-	AtomValue int64
-	DcrValue  float64
-
-	// BTC fields.
-	SatoshiValue int64
-	BtcValue     float64
+	// UnitValue holds the base monetary unit value for a cryptocurrency.
+	// The field is currently used for both BTC and DCR.
+	// For Decred it holds the number of Atoms per DCR.
+	// For Bitcoin it holds the number of satoshis per BTC.
+	UnitValue int64
+	// CoinValue holds the monetary amount counted in a cryptocurrency base
+	// units, converted to a floating point value representing the amount
+	// of said cryptocurrency.
+	CoinValue float64
 }
 
 type TxFeeAndSize struct {
@@ -272,14 +274,9 @@ type WalletAccount struct {
 
 type TransactionDestination struct {
 	// Shared fields.
-	Address string
-	SendMax bool
-
-	// DCR fields.
-	AtomAmount int64
-
-	// BTC fields.
-	SatoshiAmount int64
+	Address    string
+	SendMax    bool
+	UnitAmount int64
 }
 
 type TransactionOverview struct {

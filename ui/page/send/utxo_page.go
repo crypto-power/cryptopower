@@ -159,8 +159,8 @@ func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
 		return
 	}
 	pg.txnAmount = dcrutil.Amount(totalAmount).String()
-	pg.txnFee = dcrutil.Amount(feeAndSize.Fee.AtomValue).String()
-	pg.txnAmountAfterFee = dcrutil.Amount(totalAmount - feeAndSize.Fee.AtomValue).String()
+	pg.txnFee = dcrutil.Amount(feeAndSize.Fee.UnitValue).String()
+	pg.txnAmountAfterFee = dcrutil.Amount(totalAmount - feeAndSize.Fee.UnitValue).String()
 }
 
 func (pg *UTXOPage) clearPageData() {
