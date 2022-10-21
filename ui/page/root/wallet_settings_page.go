@@ -771,7 +771,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			}
 
 			if val < 1 || val > 1000 {
-				tm.SetError(values.String(values.StrGapLimitInvalidRange))
+				tm.SetError(values.String(values.StrGapLimitInputErr))
 				tm.SetLoading(false)
 				return false
 			}
@@ -786,7 +786,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			}
 			tm.SetLoading(false)
 			info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddressDiscoveryStarted), modal.DefaultClickFunc()).
-				Body(values.String(values.StrAddressDiscoveryBody))
+				Body(values.String(values.StrAddressDiscoveryStartedBody))
 			pg.ParentWindow().ShowModal(info)
 			pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
 			return true
