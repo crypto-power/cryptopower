@@ -6,7 +6,6 @@ import (
 
 	"github.com/asdine/storm"
 	bolt "go.etcd.io/bbolt"
-	// btcWalletdbData "github.com/btcsuite/btcwallet/walletdb"
 )
 
 const (

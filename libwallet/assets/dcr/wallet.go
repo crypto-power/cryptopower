@@ -260,9 +260,6 @@ func (asset *DCRAsset) Synced() bool {
 func (asset *DCRAsset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
-		defer func() {
-			asset.SpvSync()
-		}()
 	}
 }
 
