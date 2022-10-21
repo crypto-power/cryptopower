@@ -65,7 +65,7 @@ func (tx *TxAuthor) AddSendDestination(address string, atomAmount int64, sendMax
 
 	tx.destinations = append(tx.destinations, sharedW.TransactionDestination{
 		Address:    address,
-		AtomAmount: atomAmount,
+		UnitAmount: atomAmount,
 		SendMax:    sendMax,
 	})
 	tx.needsConstruct = true
@@ -84,7 +84,7 @@ func (tx *TxAuthor) UpdateSendDestination(index int, address string, atomAmount 
 
 	tx.destinations[index] = sharedW.TransactionDestination{
 		Address:    address,
-		AtomAmount: atomAmount,
+		UnitAmount: atomAmount,
 		SendMax:    sendMax,
 	}
 	tx.needsConstruct = true
@@ -117,12 +117,12 @@ func (tx *TxAuthor) RemoveChangeDestination() {
 func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
 	var totalSendAmountAtom int64 = 0
 	for _, destination := range tx.destinations {
-		totalSendAmountAtom += destination.AtomAmount
+		totalSendAmountAtom += destination.UnitAmount
 	}
 
 	return &sharedW.Amount{
-		AtomValue: totalSendAmountAtom,
-		DcrValue:  dcrutil.Amount(totalSendAmountAtom).ToCoin(),
+		UnitValue: totalSendAmountAtom,
+		CoinValue: dcrutil.Amount(totalSendAmountAtom).ToCoin(),
 	}
 }
 
@@ -134,16 +134,16 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 
 	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, unsignedTx.EstimatedSignedSerializeSize)
 	feeAmount := &sharedW.Amount{
-		AtomValue: int64(feeToSendTx),
-		DcrValue:  feeToSendTx.ToCoin(),
+		UnitValue: int64(feeToSendTx),
+		CoinValue: feeToSendTx.ToCoin(),
 	}
 
 	var change *sharedW.Amount
 	if unsignedTx.ChangeIndex >= 0 {
 		txOut := unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex]
 		change = &sharedW.Amount{
-			AtomValue: txOut.Value,
-			DcrValue:  AmountCoin(txOut.Value),
+			UnitValue: txOut.Value,
+			CoinValue: AmountCoin(txOut.Value),
 		}
 	}
 
@@ -165,11 +165,11 @@ func (tx *TxAuthor) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 		return nil, err
 	}
 
-	maxSendableAmount := spendableAccountBalance - txFeeAndSize.Fee.AtomValue
+	maxSendableAmount := spendableAccountBalance - txFeeAndSize.Fee.UnitValue
 
 	return &sharedW.Amount{
-		AtomValue: maxSendableAmount,
-		DcrValue:  dcrutil.Amount(maxSendableAmount).ToCoin(),
+		UnitValue: maxSendableAmount,
+		CoinValue: dcrutil.Amount(maxSendableAmount).ToCoin(),
 	}, nil
 }
 
@@ -322,7 +322,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
 	for _, destination := range tx.destinations {
-		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
+		if err := tx.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
 			return nil, err
 		}
 
@@ -342,7 +342,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
 		} else {
-			output, err := txhelper.MakeTxOutput(destination.Address, destination.AtomAmount, tx.sourceWallet.chainParams)
+			output, err := txhelper.MakeTxOutput(destination.Address, destination.UnitAmount, tx.sourceWallet.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing tx output: %v", err)
 				return nil, fmt.Errorf("make tx output error: %v", err)

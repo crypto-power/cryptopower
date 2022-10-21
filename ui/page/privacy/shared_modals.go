@@ -120,7 +120,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 	}
 
 	// calculate max amount to be sent
-	amountAtom := sourceAccount.Balance.Spendable - feeAndSize.Fee.AtomValue
+	amountAtom := sourceAccount.Balance.Spendable - feeAndSize.Fee.UnitValue
 	err = unsignedTx.AddSendDestination(destinationAddress, amountAtom, true)
 	if err != nil {
 		return err

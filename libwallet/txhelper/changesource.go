@@ -1,6 +1,8 @@
 package txhelper
 
 import (
+	btccfg "github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
 )
@@ -9,8 +11,11 @@ const scriptVersion = 0
 
 // implements Script() and ScriptSize() functions of txauthor.ChangeSource
 type txChangeSource struct {
+	// Shared fields.
+	script []byte
+
+	// DCR fields.
 	version uint16
-	script  []byte
 }
 
 func (src *txChangeSource) Script() ([]byte, uint16, error) {
@@ -29,6 +34,21 @@ func MakeTxChangeSource(destAddr string, net dcrutil.AddressParams) (*txChangeSo
 	changeSource := &txChangeSource{
 		script:  pkScript,
 		version: scriptVersion,
+	}
+	return changeSource, nil
+}
+
+func MakeBTCTxChangeSource(destAddr string, net *btccfg.Params) (*txauthor.ChangeSource, error) {
+	var pkScript []byte
+	changeSource := &txauthor.ChangeSource{
+		NewScript: func() ([]byte, error) {
+			pkScript, err := addresshelper.BTCPkScript(destAddr, net)
+			if err != nil {
+				return nil, err
+			}
+			return pkScript, nil
+		},
+		ScriptSize: len(pkScript),
 	}
 	return changeSource, nil
 }
