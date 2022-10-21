@@ -37,7 +37,8 @@ type BTCAsset struct {
 	cancelFuncs []context.CancelFunc
 	ctx         context.Context
 
-	Synced bool
+	Synced         bool
+	TxAuthoredInfo *TxAuthor
 
 	chainParams *chaincfg.Params
 }

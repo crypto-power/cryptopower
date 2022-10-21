@@ -14,7 +14,6 @@ import (
 )
 
 type TxAuthor struct {
-	sourceWallet        *BTCAsset
 	sourceAccountNumber uint32
 	destinations        []sharedW.TransactionDestination
 	changeAddress       string
@@ -25,89 +24,92 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) (*TxAuthor, error) {
-	sourceWallet := asset
-	if sourceWallet == nil {
-		return nil, fmt.Errorf(utils.ErrWalletNotFound)
+func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
+	if asset == nil {
+		return fmt.Errorf(utils.ErrWalletNotFound)
 	}
 
-	_, err := sourceWallet.GetAccount(sourceAccountNumber)
+	_, err := asset.GetAccount(sourceAccountNumber)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &TxAuthor{
-		sourceWallet:        sourceWallet,
+	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
 		destinations:        make([]sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
-	}, nil
+	}
+	return nil
 }
 
-func (tx *TxAuthor) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
-	_, err := btcutil.DecodeAddress(address, tx.sourceWallet.chainParams)
+func (asset *BTCAsset) GetUnsignedTx() *TxAuthor {
+	return asset.TxAuthoredInfo
+}
+
+func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
+	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
 
-	if err := tx.validateSendAmount(sendMax, satoshiAmount); err != nil {
+	if err := asset.validateSendAmount(sendMax, satoshiAmount); err != nil {
 		return err
 	}
 
-	tx.destinations = append(tx.destinations, sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations, sharedW.TransactionDestination{
 		Address:    address,
 		UnitAmount: satoshiAmount,
 		SendMax:    sendMax,
 	})
-	tx.needsConstruct = true
+	asset.TxAuthoredInfo.needsConstruct = true
 
 	return nil
 }
 
-func (tx *TxAuthor) UpdateSendDestination(index int, address string, satoshiAmount int64, sendMax bool) error {
-	if err := tx.validateSendAmount(sendMax, satoshiAmount); err != nil {
+func (asset *BTCAsset) UpdateSendDestination(index int, address string, satoshiAmount int64, sendMax bool) error {
+	if err := asset.validateSendAmount(sendMax, satoshiAmount); err != nil {
 		return err
 	}
 
-	if len(tx.destinations) < index {
+	if len(asset.TxAuthoredInfo.destinations) < index {
 		return errors.New(utils.ErrIndexOutOfRange)
 	}
 
-	tx.destinations[index] = sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[index] = sharedW.TransactionDestination{
 		Address:    address,
 		UnitAmount: satoshiAmount,
 		SendMax:    sendMax,
 	}
-	tx.needsConstruct = true
+	asset.TxAuthoredInfo.needsConstruct = true
 	return nil
 }
 
-func (tx *TxAuthor) RemoveSendDestination(index int) {
-	if len(tx.destinations) > index {
-		tx.destinations = append(tx.destinations[:index], tx.destinations[index+1:]...)
-		tx.needsConstruct = true
+func (asset *BTCAsset) RemoveSendDestination(index int) {
+	if len(asset.TxAuthoredInfo.destinations) > index {
+		asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations[:index], asset.TxAuthoredInfo.destinations[index+1:]...)
+		asset.TxAuthoredInfo.needsConstruct = true
 	}
 }
 
-func (tx *TxAuthor) SendDestination(atIndex int) *sharedW.TransactionDestination {
-	return &tx.destinations[atIndex]
+func (asset *BTCAsset) SendDestination(atIndex int) *sharedW.TransactionDestination {
+	return &asset.TxAuthoredInfo.destinations[atIndex]
 }
 
-func (tx *TxAuthor) SetChangeDestination(address string) {
-	tx.changeDestination = &sharedW.TransactionDestination{
+func (asset *BTCAsset) SetChangeDestination(address string) {
+	asset.TxAuthoredInfo.changeDestination = &sharedW.TransactionDestination{
 		Address: address,
 	}
-	tx.needsConstruct = true
+	asset.TxAuthoredInfo.needsConstruct = true
 }
 
-func (tx *TxAuthor) RemoveChangeDestination() {
-	tx.changeDestination = nil
-	tx.needsConstruct = true
+func (asset *BTCAsset) RemoveChangeDestination() {
+	asset.TxAuthoredInfo.changeDestination = nil
+	asset.TxAuthoredInfo.needsConstruct = true
 }
 
-func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
+func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
 	var totalSendAmountSatoshi int64 = 0
-	for _, destination := range tx.destinations {
+	for _, destination := range asset.TxAuthoredInfo.destinations {
 		totalSendAmountSatoshi += destination.UnitAmount
 	}
 
@@ -117,14 +119,14 @@ func (tx *TxAuthor) TotalSendAmount() *sharedW.Amount {
 	}
 }
 
-func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
-	unsignedTx, err := tx.unsignedTransaction()
+func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
+	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
 
-	estimatedSignedSerializeSize := unsignedTx.Tx.SerializeSize()
-	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize /*unsignedTx.EstimatedSignedSerializeSize*/)
+	estimatedSignedSerializeSize := asset.TxAuthoredInfo.unsignedTx.Tx.SerializeSize()
+	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize)
 	feeAmount := &sharedW.Amount{
 		UnitValue: int64(feeToSendTx),
 		CoinValue: feeToSendTx.ToBTC(),
@@ -146,31 +148,31 @@ func (tx *TxAuthor) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}, nil
 }
 
-func (tx *TxAuthor) unsignedTransaction() (*txauthor.AuthoredTx, error) {
-	if tx.needsConstruct || tx.unsignedTx == nil {
-		unsignedTx, err := tx.constructTransaction()
+func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
+	if asset.TxAuthoredInfo.needsConstruct || asset.TxAuthoredInfo.unsignedTx == nil {
+		unsignedTx, err := asset.constructTransaction()
 		if err != nil {
 			return nil, err
 		}
 
-		tx.needsConstruct = false
-		tx.unsignedTx = unsignedTx
+		asset.TxAuthoredInfo.needsConstruct = false
+		asset.TxAuthoredInfo.unsignedTx = unsignedTx
 	}
 
-	return tx.unsignedTx, nil
+	return asset.TxAuthoredInfo.unsignedTx, nil
 }
 
-func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
-	if len(tx.inputs) != 0 {
-		return tx.constructCustomTransaction()
+func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
+	if len(asset.TxAuthoredInfo.inputs) != 0 {
+		return asset.constructCustomTransaction()
 	}
 
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
 
-	for _, destination := range tx.destinations {
-		if err := tx.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
+	for _, destination := range asset.TxAuthoredInfo.destinations {
+		if err := asset.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
 			return nil, err
 		}
 
@@ -181,13 +183,13 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 		if destination.SendMax {
 			// Use this destination address to make a changeSource rather than a tx output.
-			changeSource, err = txhelper.MakeBTCTxChangeSource(destination.Address, tx.sourceWallet.chainParams)
+			changeSource, err = txhelper.MakeBTCTxChangeSource(destination.Address, asset.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
 		} else {
-			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, tx.sourceWallet.chainParams)
+			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing tx output: %v", err)
 				return nil, fmt.Errorf("make tx output error: %v", err)
@@ -205,7 +207,7 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 		//
 		// Generating a changeSource manually here, ensures that the gap address
 		// limit exhaustion error is avoided.
-		changeSource, err = tx.changeSource()
+		changeSource, err = asset.changeSource()
 		if err != nil {
 			return nil, err
 		}
@@ -218,19 +220,19 @@ func (tx *TxAuthor) constructTransaction() (*txauthor.AuthoredTx, error) {
 // for this unsigned tx, if a change address had not been previously derived.
 // The derived (or previously derived) address is used to prepare a
 // change source for receiving change from this tx back into the sharedW.
-func (tx *TxAuthor) changeSource() (*txauthor.ChangeSource, error) {
-	if tx.changeAddress == "" {
+func (asset *BTCAsset) changeSource() (*txauthor.ChangeSource, error) {
+	if asset.TxAuthoredInfo.changeAddress == "" {
 
-		changeAccount := tx.sourceAccountNumber
+		changeAccount := asset.TxAuthoredInfo.sourceAccountNumber
 
-		address, err := tx.sourceWallet.Internal().BTC.NewChangeAddress(changeAccount, tx.sourceWallet.GetScope())
+		address, err := asset.Internal().BTC.NewChangeAddress(changeAccount, asset.GetScope())
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
 		}
-		tx.changeAddress = address.String()
+		asset.TxAuthoredInfo.changeAddress = address.String()
 	}
 
-	changeSource, err := txhelper.MakeBTCTxChangeSource(tx.changeAddress, tx.sourceWallet.chainParams)
+	changeSource, err := txhelper.MakeBTCTxChangeSource(asset.TxAuthoredInfo.changeAddress, asset.chainParams)
 	if err != nil {
 		log.Errorf("constructTransaction: error preparing change source: %v", err)
 		return nil, fmt.Errorf("change source error: %v", err)
@@ -240,7 +242,7 @@ func (tx *TxAuthor) changeSource() (*txauthor.ChangeSource, error) {
 }
 
 // validateSendAmount validate the amount to send to a destination address
-func (tx *TxAuthor) validateSendAmount(sendMax bool, satoshiAmount int64) error {
+func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) error {
 	if !sendMax && (satoshiAmount <= 0 || satoshiAmount > maxAmountSatoshi) {
 		return errors.E(errors.Invalid, "invalid amount")
 	}
