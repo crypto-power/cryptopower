@@ -18,8 +18,9 @@ func (pg *Page) listenForTxNotifications() {
 	if pg.TxAndBlockNotificationListener != nil {
 		return
 	}
+
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, OverviewPageID)
+	err := pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, OverviewPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -34,7 +35,7 @@ func (pg *Page) listenForTxNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(OverviewPageID)
+				pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

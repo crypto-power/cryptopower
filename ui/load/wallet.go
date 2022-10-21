@@ -5,21 +5,16 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 type WalletItem struct {
-	Wallet       *dcr.DCRAsset
-	TotalBalance string
-}
-
-type BTCWalletItem struct {
-	Wallet       *btc.BTCAsset
+	Wallet       sharedW.Asset
 	TotalBalance string
 }
 
@@ -30,84 +25,93 @@ type WalletLoad struct {
 	UnspentOutputs *wallet.UnspentOutputs
 	Wallet         *wallet.Wallet
 
-	SelectedWallet     *WalletItem
-	SelectedBTCWallet  *BTCWalletItem
-	SelectedAccount    *int
-	SelectedWalletType string
+	SelectedWallet  *WalletItem
+	SelectedAccount *int
 }
 
-func (wl *WalletLoad) SortedWalletList() []*dcr.DCRAsset {
-	wallets := wl.MultiWallet.AllDCRWallets()
+// SortedWalletList can return sorted wallets based on the current selected wallet
+// type of on the basis of the provided asset type variadic variable.
+func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.Asset {
+	var wallets []sharedW.Asset
+	if len(assetType) > 0 {
+		wallets = wl.getAssets(assetType[0])
+	} else {
+		// On app start up SelectedWallet is usually not set thus the else use.
+		wallets = wl.getAssets()
+	}
+
+	if wallets == nil {
+		return nil
+	}
 
 	sort.Slice(wallets, func(i, j int) bool {
-		return wallets[i].ID < wallets[j].ID
+		return wallets[i].GetWalletID() < wallets[j].GetWalletID()
 	})
 
 	return wallets
 }
 
-func (wl *WalletLoad) SortedBTCWalletList() []*btc.BTCAsset {
-	wallets := wl.MultiWallet.AllBTCWallets()
-
-	sort.Slice(wallets, func(i, j int) bool {
-		return wallets[i].ID < wallets[j].ID
-	})
-
-	return wallets
-}
-
-func (wl *WalletLoad) TotalWalletsBalance() (dcrutil.Amount, error) {
+func (wl *WalletLoad) TotalWalletsBalance() (sharedW.AssetAmount, error) {
 	totalBalance := int64(0)
-	for _, w := range wl.MultiWallet.AllDCRWallets() {
+	var wallets = wl.getAssets()
+	if wallets == nil {
+		return wl.nilAmount(), nil
+	}
+
+	for _, w := range wallets {
 		accountsResult, err := w.GetAccountsRaw()
 		if err != nil {
-			return -1, err
+			return wl.nilAmount(), err
 		}
-
-		for _, account := range accountsResult.Acc {
-			totalBalance += account.TotalBalance
-		}
+		totalBalance += wl.getAssetTotalbalance(accountsResult).ToInt()
 	}
-
-	return dcrutil.Amount(totalBalance), nil
+	return wl.SelectedWallet.Wallet.ToAmount(totalBalance), nil
 }
 
-func (wl *WalletLoad) TotalWalletBalance(walletID int) (dcrutil.Amount, error) {
-	totalBalance := int64(0)
-	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
+func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
+	var wType utils.AssetType
+	if len(assetType) > 0 {
+		wType = assetType[0]
+	} else {
+		// On app start up SelectedWallet is usually not set thus the else use.
+		wType = wl.SelectedWallet.Wallet.GetAssetType()
+	}
+
+	switch wType {
+	case utils.BTCWalletAsset:
+		return wl.MultiWallet.AllBTCWallets()
+	case utils.DCRWalletAsset:
+		return wl.MultiWallet.AllDCRWallets()
+	default:
+		return nil
+	}
+}
+
+func (wl *WalletLoad) TotalWalletBalance(walletID int) (sharedW.AssetAmount, error) {
+	wallet := wl.MultiWallet.WalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(utils.ErrNotExist)
+		return wl.nilAmount(), errors.New(utils.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
 	if err != nil {
-		return -1, err
+		return wl.nilAmount(), err
 	}
 
-	for _, account := range accountsResult.Acc {
-		totalBalance += account.TotalBalance
-	}
-
-	return dcrutil.Amount(totalBalance), nil
+	return wl.getAssetTotalbalance(accountsResult), nil
 }
 
-func (wl *WalletLoad) SpendableWalletBalance(walletID int) (dcrutil.Amount, error) {
-	spendableBal := int64(0)
-	wallet := wl.MultiWallet.DCRWalletWithID(walletID)
+func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount, error) {
+	wallet := wl.MultiWallet.WalletWithID(walletID)
 	if wallet == nil {
-		return -1, errors.New(utils.ErrNotExist)
+		return wl.nilAmount(), errors.New(utils.ErrNotExist)
 	}
 
 	accountsResult, err := wallet.GetAccountsRaw()
 	if err != nil {
-		return -1, err
+		return wl.nilAmount(), err
 	}
-
-	for _, account := range accountsResult.Acc {
-		spendableBal += account.Balance.Spendable
-	}
-
-	return dcrutil.Amount(spendableBal), nil
+	return wl.getAssetSpendablebalance(accountsResult), nil
 }
 
 func (wl *WalletLoad) DCRHDPrefix() string {
@@ -142,4 +146,24 @@ func (wl *WalletLoad) DataSize() string {
 		return "Unknown"
 	}
 	return fmt.Sprintf("%f GB", float64(v)*1e-9)
+}
+
+func (wl *WalletLoad) nilAmount() sharedW.AssetAmount {
+	return wl.SelectedWallet.Wallet.ToAmount(-1)
+}
+
+func (wl *WalletLoad) getAssetTotalbalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
+	var totalBalance int64
+	for _, account := range accountsResult.Accounts {
+		totalBalance += account.Balance.Total.ToInt()
+	}
+	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
+}
+
+func (wl *WalletLoad) getAssetSpendablebalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
+	var totalBalance int64
+	for _, account := range accountsResult.Accounts {
+		totalBalance += account.Balance.Spendable.ToInt()
+	}
+	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
 }

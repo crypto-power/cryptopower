@@ -9,6 +9,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -57,9 +58,17 @@ type WalletInfo struct {
 	syncStep             int
 
 	redirectfunc seedbackup.Redirectfunc
+
+	dcrImpl *dcr.DCRAsset
 }
 
 func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
@@ -68,6 +77,8 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 			List: layout.List{Axis: layout.Vertical},
 		},
 		checkBox: l.Theme.CheckBox(new(widget.Bool), "I am aware of the risk"),
+
+		dcrImpl: impl,
 	}
 
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
@@ -110,13 +121,13 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 									Right: values.MarginPadding10,
 									Left:  values.MarginPadding10,
 								}.Layout(gtx, func(gtx C) D {
-									txt := pg.Theme.Body1(pg.WL.SelectedWallet.Wallet.Name)
+									txt := pg.Theme.Body1(pg.WL.SelectedWallet.Wallet.GetWalletName())
 									txt.Font.Weight = text.SemiBold
 									return txt.Layout(gtx)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								if len(pg.WL.SelectedWallet.Wallet.EncryptedSeed) > 0 {
+								if len(pg.WL.SelectedWallet.Wallet.GetEncryptedSeed()) > 0 {
 									return layout.Inset{
 										Top: values.MarginPadding16,
 									}.Layout(gtx, func(gtx C) D {
@@ -184,21 +195,21 @@ func (pg *WalletInfo) listenForNotifications() {
 	}
 
 	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := pg.WL.SelectedWallet.Wallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
+	err := pg.dcrImpl.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
+	err = pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
 
 	pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
-	pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
+	pg.dcrImpl.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
 
 	go func() {
 		for {
@@ -250,9 +261,9 @@ func (pg *WalletInfo) listenForNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveSyncProgressListener(InfoID)
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(InfoID)
-				pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(nil)
+				pg.dcrImpl.RemoveSyncProgressListener(InfoID)
+				pg.dcrImpl.RemoveTxAndBlockNotificationListener(InfoID)
+				pg.dcrImpl.SetBlocksRescanProgressListener(nil)
 
 				close(pg.SyncStatusChan)
 				close(pg.TxAndBlockNotifChan)

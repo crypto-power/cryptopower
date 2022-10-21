@@ -8,6 +8,7 @@ import (
 	"gioui.org/unit"
 
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
@@ -152,8 +153,9 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, selectedWallet *dcr.DCRAsset, newestFirst bool) []*ConsensusItem {
-	agendas, err := selectedWallet.AllVoteAgendas("", newestFirst)
+func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
+	dcrUniqueImpl := selectedWallet.(*dcr.DCRAsset)
+	agendas, err := dcrUniqueImpl.AllVoteAgendas("", newestFirst)
 	if err != nil {
 		return nil
 	}

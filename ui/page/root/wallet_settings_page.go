@@ -41,7 +41,7 @@ type WalletSettingsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet   *dcr.DCRAsset
+	wallet   sharedW.Asset
 	accounts []*accountData
 
 	pageContainer layout.List
@@ -132,11 +132,10 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 		return
 	}
 
-	for _, acct := range accounts.Acc {
+	for _, acct := range accounts.Accounts {
 		if acct.Number == dcr.ImportedAccountNumber {
 			continue
 		}
-
 		walletAccounts = append(walletAccounts, &accountData{
 			Account:   acct,
 			clickable: pg.Theme.NewClickable(false),
@@ -362,7 +361,7 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.wallet.UnlockWallet([]byte(password))
+			err := pg.wallet.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -377,8 +376,8 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 				PasswordHint(values.String(values.StrNewSpendingPassword)).
 				ConfirmPasswordHint(values.String(values.StrConfirmNewSpendingPassword)).
 				SetPositiveButtonCallback(func(walletName, newPassword string, m *modal.CreatePasswordModal) bool {
-					err := pg.wallet.ChangePrivatePassphraseForWallet([]byte(password),
-						[]byte(newPassword), sharedW.PassphraseTypePass)
+					err := pg.wallet.ChangePrivatePassphraseForWallet(password,
+						newPassword, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -399,10 +398,10 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *WalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.Name).
+		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.GetWalletName()).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
-			if walletName != pg.WL.SelectedWallet.Wallet.Name {
+			if walletName != pg.WL.SelectedWallet.Wallet.GetWalletName() {
 				m.SetError(values.String(values.StrWalletNameMismatch))
 				m.SetLoading(false)
 				return false
@@ -427,7 +426,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, nil)
+				err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -445,7 +444,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteDCRWallet(pg.WL.SelectedWallet.Wallet.ID, []byte(password))
+					err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -732,7 +731,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			EnableConfirmPassword(false).
 			PasswordHint(values.String(values.StrSpendingPassword)).
 			SetPositiveButtonCallback(func(accountName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.wallet.CreateNewAccount(accountName, []byte(password))
+				_, err := pg.wallet.CreateNewAccount(accountName, password)
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -778,7 +777,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			gLimit := uint32(val)
 			tm.SetLoading(true)
 
-			err = pg.WL.SelectedWallet.Wallet.DiscoverUsage(gLimit)
+			err = pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset).DiscoverUsage(gLimit)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)

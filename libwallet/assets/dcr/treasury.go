@@ -18,7 +18,7 @@ import (
 // controlling the ticket. If a ticket hash isn't provided, the vote choice is
 // saved to the local wallet database and the VSPs controlling all unspent,
 // unexpired tickets are updated to use the specified vote policy.
-func (asset *DCRAsset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, passphrase []byte) error {
+func (asset *DCRAsset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, passphrase string) error {
 	var ticketHash *chainhash.Hash
 	if tixHash != "" {
 		tixHash, err := chainhash.NewHashFromStr(tixHash)

@@ -24,6 +24,9 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
+// BTCAsset confirm that BTC implements that shared assets interface.
+var _ sharedW.Asset = (*BTCAsset)(nil)
+
 type BTCAsset struct {
 	*sharedW.Wallet
 
@@ -34,7 +37,8 @@ type BTCAsset struct {
 	cancelFuncs []context.CancelFunc
 	ctx         context.Context
 
-	Synced bool
+	Synced         bool
+	TxAuthoredInfo *TxAuthor
 
 	chainParams *chaincfg.Params
 }
@@ -66,7 +70,7 @@ var _ neutrinoService = (*neutrino.ChainService)(nil)
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -107,7 +111,7 @@ func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.Ass
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*BTCAsset, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -137,7 +141,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*BTCAsset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -166,7 +170,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*BTCAsset, error) {
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.BTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -294,5 +298,97 @@ func (asset *BTCAsset) startWallet() error {
 }
 
 func (asset *BTCAsset) SafelyCancelSync() {
-	log.Info("Safe sync shutdown not implemented for BTC")
+	//TODO: use a proper logger
+	fmt.Println(utils.ErrBTCMethodNotImplemented("SafelyCancelSync"))
+}
+
+// Methods added below satisfy the shared asset interface. Each should be
+// implemented fully to avoid panic if invoked.
+func (asset *BTCAsset) IsSynced() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsSynced"))
+	return false
+}
+func (asset *BTCAsset) IsWaiting() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
+	return false
+}
+func (asset *BTCAsset) IsSyncing() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
+	return false
+}
+func (asset *BTCAsset) SpvSync() error {
+	err := utils.ErrBTCMethodNotImplemented("SpvSync")
+	return err
+}
+func (asset *BTCAsset) CancelRescan() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("CancelRescan"))
+}
+func (asset *BTCAsset) CancelSync() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("CancelSync"))
+}
+func (asset *BTCAsset) IsRescanning() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsRescanning"))
+	return false
+}
+func (asset *BTCAsset) RescanBlocks() error {
+	err := utils.ErrBTCMethodNotImplemented("RescanBlocks")
+	return err
+}
+func (asset *BTCAsset) ConnectedPeers() int32 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("ConnectedPeers"))
+	return -1
+}
+func (asset *BTCAsset) IsConnectedToNetwork() bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("IsConnectedToNetwork"))
+	return false
+}
+func (asset *BTCAsset) PublishUnminedTransactions() error {
+	err := utils.ErrBTCMethodNotImplemented("PublishUnminedTransactions")
+	return err
+}
+func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
+	err := utils.ErrBTCMethodNotImplemented("CountTransactions")
+	return -1, err
+}
+func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetTransactionRaw")
+	return nil, err
+}
+func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
+	log.Warn(utils.ErrBTCMethodNotImplemented("TxMatchesFilter"))
+	return false
+}
+func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetTransactionsRaw")
+	return nil, err
+}
+func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlock"))
+	return nil
+}
+func (asset *BTCAsset) GetBestBlockHeight() int32 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockHeight"))
+	return -1
+}
+func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
+	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockTimeStamp"))
+	return -1
+}
+func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
+	err := utils.ErrBTCMethodNotImplemented("SignMessage")
+	return nil, err
+}
+func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
+	err := utils.ErrBTCMethodNotImplemented("VerifyMessage")
+	return false, err
+}
+func (asset *BTCAsset) RemoveSpecificPeer() {
+	log.Warn(utils.ErrBTCMethodNotImplemented("RemoveSpecificPeer"))
+}
+func (asset *BTCAsset) SetSpecificPeer(address string) {
+	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
+}
+func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
+	err := utils.ErrBTCMethodNotImplemented("GetExtendedPubKey")
+	return "", err
 }

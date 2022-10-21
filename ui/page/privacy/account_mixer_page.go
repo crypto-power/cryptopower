@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
@@ -37,7 +36,7 @@ type AccountMixerPage struct {
 	ctxCancel context.CancelFunc
 
 	pageContainer layout.List
-	wallet        *dcr.DCRAsset
+	wallet        sharedW.Asset
 
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable
@@ -46,16 +45,23 @@ type AccountMixerPage struct {
 	toggleMixer         *cryptomaterial.Switch
 	mixerProgress       cryptomaterial.ProgressBarStyle
 
-	mixedBalance       dcrutil.Amount
-	unmixedBalance     dcrutil.Amount
-	totalWalletBalance dcrutil.Amount
+	mixedBalance       sharedW.AssetAmount
+	unmixedBalance     sharedW.AssetAmount
+	totalWalletBalance sharedW.AssetAmount
 
 	ArrMixerAccounts map[string]string
 
 	mixerCompleted bool
+	dcrImpl        *dcr.DCRAsset
 }
 
 func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	pg := &AccountMixerPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(AccountMixerPageID),
@@ -67,6 +73,8 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 		mixedAccount:        l.Theme.NewClickable(false),
 		coordinationServer:  l.Theme.NewClickable(false),
 		pageContainer:       layout.List{Axis: layout.Vertical},
+
+		dcrImpl: impl,
 	}
 
 	return pg
@@ -80,7 +88,7 @@ func (pg *AccountMixerPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForMixerNotifications()
-	pg.toggleMixer.SetChecked(pg.WL.SelectedWallet.Wallet.IsAccountMixerActive())
+	pg.toggleMixer.SetChecked(pg.dcrImpl.IsAccountMixerActive())
 	pg.mixerProgress.Height = values.MarginPadding18
 	pg.mixerProgress.Radius = cryptomaterial.Radius(2)
 	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load) // TODO - handle error
@@ -96,16 +104,16 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	}
 
 	vm := make(map[string]string)
-	for _, acct := range accounts.Acc {
+	for _, acct := range accounts.Accounts {
 		// add data for change accounts selection
 		if acct.Name != "imported" {
 			vm[acct.Name] = acct.Name
 		}
 
-		if acct.Number == pg.wallet.MixedAccountNumber() {
-			pg.mixedBalance = dcrutil.Amount(acct.TotalBalance)
-		} else if acct.Number == pg.wallet.UnmixedAccountNumber() {
-			pg.unmixedBalance = dcrutil.Amount(acct.TotalBalance)
+		if acct.Number == pg.dcrImpl.MixedAccountNumber() {
+			pg.mixedBalance = acct.Balance.Total
+		} else if acct.Number == pg.dcrImpl.UnmixedAccountNumber() {
+			pg.unmixedBalance = acct.Balance.Total
 		}
 	}
 
@@ -131,7 +139,7 @@ func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickab
 }
 
 func (pg *AccountMixerPage) mixerProgressBarLayout(gtx C) D {
-	totalAmount := (pg.mixedBalance + pg.unmixedBalance).ToCoin()
+	totalAmount := pg.mixedBalance.ToCoin() + pg.unmixedBalance.ToCoin()
 	pacentage := (pg.mixedBalance.ToCoin() / totalAmount) * 100
 
 	items := []cryptomaterial.ProgressBarItem{
@@ -352,7 +360,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				SetPositiveButtonText(values.String(values.StrYes)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
-					go pg.WL.SelectedWallet.Wallet.StopAccountMixer()
+					go pg.dcrImpl.StopAccountMixer()
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -376,7 +384,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 
 	for pg.mixedAccount.Clicked() {
-		name, err := pg.wallet.AccountName(pg.wallet.MixedAccountNumber())
+		name, err := pg.wallet.AccountName(pg.dcrImpl.MixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -400,7 +408,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 
 	for pg.unmixedAccount.Clicked() {
-		name, err := pg.wallet.AccountName(pg.wallet.UnmixedAccountNumber())
+		name, err := pg.wallet.AccountName(pg.dcrImpl.UnmixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -446,7 +454,7 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		}).
 		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
 			go func() {
-				err := pg.WL.SelectedWallet.Wallet.StartAccountMixer(password)
+				err := pg.dcrImpl.StartAccountMixer(password)
 				if err != nil {
 					pg.Toast.NotifyError(err.Error())
 					pm.SetLoading(false)
@@ -470,14 +478,14 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 	}
 
 	pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
-	err := pg.WL.SelectedWallet.Wallet.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
+	err := pg.dcrImpl.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding account mixer notification listener: %+v", err)
 		return
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
+	err = pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -506,8 +514,8 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				}
 
 			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-				pg.WL.SelectedWallet.Wallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
+				pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+				pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 				close(pg.MixerChan)
 				close(pg.TxAndBlockNotifChan)
 				pg.AccountMixerNotificationListener = nil

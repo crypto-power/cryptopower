@@ -21,11 +21,11 @@ import (
 
 type Assets struct {
 	DCR struct {
-		Wallets    map[int]*dcr.DCRAsset
+		Wallets    map[int]sharedW.Asset
 		BadWallets map[int]*sharedW.Wallet
 	}
 	BTC struct {
-		Wallets    map[int]*btc.BTCAsset
+		Wallets    map[int]sharedW.Asset
 		BadWallets map[int]*sharedW.Wallet
 	}
 }
@@ -71,8 +71,8 @@ func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType)
 		Assets: new(Assets),
 	}
 
-	mgr.Assets.BTC.Wallets = make(map[int]*btc.BTCAsset)
-	mgr.Assets.DCR.Wallets = make(map[int]*dcr.DCRAsset)
+	mgr.Assets.BTC.Wallets = make(map[int]sharedW.Asset)
+	mgr.Assets.DCR.Wallets = make(map[int]sharedW.Asset)
 
 	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
@@ -326,18 +326,79 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
-func (mgr *AssetsManager) AllDCRWallets() (wallets []*dcr.DCRAsset) {
+func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallets = append(wallets, wallet)
 	}
 	return wallets
 }
 
-func (mgr *AssetsManager) AllBTCWallets() (wallets []*btc.BTCAsset) {
+func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.BTC.Wallets {
 		wallets = append(wallets, wallet)
 	}
 	return wallets
+}
+
+func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
+	wallet := mgr.WalletWithID(walletID)
+	if err := wallet.DeleteWallet(privPass); err != nil {
+		return err
+	}
+
+	switch wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		delete(mgr.Assets.BTC.Wallets, walletID)
+	case utils.DCRWalletAsset:
+		delete(mgr.Assets.DCR.Wallets, walletID)
+	}
+
+	return nil
+}
+
+func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
+	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
+		return wallet
+	}
+	if wallet, ok := mgr.Assets.DCR.Wallets[walletID]; ok {
+		return wallet
+	}
+	return nil
+}
+
+func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
+	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; !ok {
+		return badWallet
+	}
+	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; !ok {
+		return badWallet
+	}
+	return nil
+}
+
+func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
+	wallet := mgr.getbadWallet(walletID)
+	if wallet == nil {
+		return errors.New(utils.ErrNotExist)
+	}
+
+	log.Info("Deleting bad wallet")
+
+	err := mgr.params.DB.DeleteStruct(wallet)
+	if err != nil {
+		return utils.TranslateError(err)
+	}
+
+	os.RemoveAll(wallet.DataDir())
+
+	switch wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		delete(mgr.Assets.BTC.BadWallets, walletID)
+	case utils.DCRWalletAsset:
+		delete(mgr.Assets.DCR.BadWallets, walletID)
+	}
+
+	return nil
 }
 
 // RootDirFileSizeInBytes returns the total directory size of

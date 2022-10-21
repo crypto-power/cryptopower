@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -34,7 +34,7 @@ type SignMessagePage struct {
 	*app.GenericPageModal
 
 	container layout.List
-	wallet    *dcr.DCRAsset
+	wallet    sharedW.Asset
 
 	isSigningMessage bool
 	addressIsValid   bool
@@ -284,7 +284,7 @@ func (pg *SignMessagePage) HandleUserInteractions() {
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrConfirmToSign)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					sig, err := pg.wallet.SignMessage([]byte(password), address, message)
+					sig, err := pg.wallet.SignMessage(password, address, message)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)

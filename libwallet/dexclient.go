@@ -89,7 +89,7 @@ func (mgr *AssetsManager) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("invalid wallet ID %q in settings", walletIDStr)
 		}
 
-		wallet := mgr.DCRWalletWithID(walletID)
+		wallet := mgr.WalletWithID(walletID)
 		if wallet == nil {
 			return nil, fmt.Errorf("no wallet exists with ID %q", walletIDStr)
 		}
@@ -105,7 +105,7 @@ func (mgr *AssetsManager) prepareDexSupportForDcrWalletLibrary() error {
 			return nil, fmt.Errorf("account error: %v", err)
 		}
 
-		walletDesc := fmt.Sprintf("%q in %s", wallet.Name, wallet.DataDir())
+		walletDesc := fmt.Sprintf("%q in %s", wallet.GetWalletName(), wallet.DataDir())
 		return dexdcr.NewSpvWallet(wallet.Internal().DCR, walletDesc, chainParams, logger.SubLogger("DLWL")), nil
 	}
 

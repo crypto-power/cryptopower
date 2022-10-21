@@ -7,7 +7,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
-func (asset *DCRAsset) SignMessage(passphrase []byte, address string, message string) ([]byte, error) {
+func (asset *DCRAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
 	err := asset.UnlockWallet(passphrase)
 	if err != nil {
 		return nil, utils.TranslateError(err)
@@ -17,7 +17,7 @@ func (asset *DCRAsset) SignMessage(passphrase []byte, address string, message st
 	return asset.signMessage(address, message)
 }
 
-func (asset *DCRAsset) signMessage(address string, message string) ([]byte, error) {
+func (asset *DCRAsset) signMessage(address, message string) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return nil, utils.TranslateError(err)
@@ -41,7 +41,7 @@ func (asset *DCRAsset) signMessage(address string, message string) ([]byte, erro
 	return sig, nil
 }
 
-func (asset *DCRAsset) VerifyMessage(address string, message string, signatureBase64 string) (bool, error) {
+func (asset *DCRAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
 	var valid bool
 
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)

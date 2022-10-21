@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 )
@@ -64,4 +66,12 @@ func TranslateError(err error) error {
 		}
 	}
 	return err
+}
+
+func ErrBTCMethodNotImplemented(method string) error {
+	return fmt.Errorf("%v not implemented for the %v Asset", method, BTCWalletAsset)
+}
+
+func ErrDCRMethodNotImplemented(method string) error {
+	return fmt.Errorf("%v not implemented for the %v Asset", method, DCRWalletAsset)
 }

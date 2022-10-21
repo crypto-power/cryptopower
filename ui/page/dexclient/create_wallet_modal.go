@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
+	libdcr "gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -46,6 +47,12 @@ type walletInfoWidget struct {
 }
 
 func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalletModal {
+	impl := l.WL.SelectedWallet.Wallet.(*libdcr.DCRAsset)
+	if impl == nil {
+		// log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	md := &createWalletModal{
 		Load:             l,
 		Modal:            l.Theme.ModalFloatTitle("dex_create_wallet_modal"),
@@ -61,9 +68,9 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Filter out imported account and mixed.
-			wal := md.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
-				account.Number == wal.MixedAccountNumber() {
+				account.Number == wal.(*libdcr.DCRAsset).MixedAccountNumber() {
 				return false
 			}
 			return true
