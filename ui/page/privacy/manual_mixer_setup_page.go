@@ -36,11 +36,11 @@ type ManualMixerSetupPage struct {
 	infoButton     cryptomaterial.IconButton
 	toPrivacySetup cryptomaterial.Button
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 }
 
 func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil

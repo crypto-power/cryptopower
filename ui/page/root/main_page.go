@@ -458,7 +458,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 				if mp.isSynced() && dcrUniqueImpl != nil {
 					if !dcrUniqueImpl.AccountMixerConfigIsSet() {
 						pg = privacy.NewSetupPrivacyPage(mp.Load)
@@ -1003,7 +1003,7 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	}
 
-	dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 
 	mp.SyncProgressListener = listeners.NewSyncProgress()
 	err := dcrUniqueImpl.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)

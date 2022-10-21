@@ -41,9 +41,6 @@ type DCRAsset struct {
 	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
 
-// // Verify that DCR implements the unique DCR interface.
-var _ DCRUniqueAsset = (*DCRAsset)(nil)
-
 // Verify that DCR implements the shared assets interface.
 var _ sharedW.Asset = (*DCRAsset)(nil)
 
@@ -262,9 +259,10 @@ func (asset *DCRAsset) Synced() bool {
 
 func (asset *DCRAsset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
-		// asset.CancelSync() has access to the context that is passed to syncer.Run
-		// in spvSync(). Once CancelSync is called it triggers spv sync shut down too
 		asset.CancelSync()
+		defer func() {
+			asset.SpvSync()
+		}()
 	}
 }
 

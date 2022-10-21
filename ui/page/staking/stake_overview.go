@@ -54,11 +54,11 @@ type Page struct {
 	ticketPrice  string
 	totalRewards string
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 }
 
 func NewStakingPage(l *load.Load) *Page {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Error(values.ErrDCRSupportedOnly)
 		return nil

@@ -32,7 +32,7 @@ type WalletAndAccountSelector struct {
 	totalBalance string
 	changed      bool
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 }
 
 type selectorModal struct {
@@ -62,7 +62,7 @@ type selectorModal struct {
 // NewWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
 func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil

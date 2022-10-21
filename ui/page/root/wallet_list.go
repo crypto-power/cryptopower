@@ -430,7 +430,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 
 	for k, w := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
 		syncListener := listeners.NewSyncProgress()
-		dcrUniqueImpl := w.(dcr.DCRUniqueAsset)
+		dcrUniqueImpl := w.(*dcr.DCRAsset)
 		err := dcrUniqueImpl.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)

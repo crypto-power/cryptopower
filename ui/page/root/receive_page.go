@@ -119,7 +119,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			// Filter out imported account and mixed.
 			wal := pg.multiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 {
-				dcrIntf := wal.(dcr.DCRUniqueAsset)
+				dcrIntf := wal.(*dcr.DCRAsset)
 				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
 					// only applies if the selected wallet is of type dcr.
 					return true

@@ -59,11 +59,11 @@ type WalletInfo struct {
 
 	redirectfunc seedbackup.Redirectfunc
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 }
 
 func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil

@@ -118,7 +118,7 @@ func NewSendPage(l *load.Load) *Page {
 
 				// only mixed accounts can send to address for wallet with privacy setup
 				if pg.sendDestination.accountSwitch.SelectedIndex() == 1 {
-					impl := wal.(dcr.DCRUniqueAsset)
+					impl := wal.(*dcr.DCRAsset)
 					if impl != nil {
 						accountIsValid = account.Number == impl.MixedAccountNumber()
 					}
@@ -135,7 +135,7 @@ func NewSendPage(l *load.Load) *Page {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 			// Filter imported account and mixed accounts.
 			accountIsValid := account.Number != load.MaxInt32
-			impl := wal.(dcr.DCRUniqueAsset)
+			impl := wal.(*dcr.DCRAsset)
 			if impl != nil {
 				accountIsValid = accountIsValid && account.Number != impl.MixedAccountNumber()
 			}
@@ -265,7 +265,7 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		return
 	}
 
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if dcrImpl == nil {
 		pg.feeEstimationError("Only DCR implementation is supported")
 		// Only DCR implementation is supported past here.

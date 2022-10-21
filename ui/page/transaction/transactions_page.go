@@ -56,13 +56,13 @@ type TransactionsPage struct {
 	transactions    []sharedW.Transaction
 	wallets         []sharedW.Asset
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 
 	tabs *cryptomaterial.ClickableList
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Error("Only DCR implementation is supported")
 		return nil

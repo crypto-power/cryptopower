@@ -23,11 +23,11 @@ type agendaVoteModal struct {
 
 	accountSelector *components.WalletAndAccountSelector
 	accountSelected *sharedW.Account
-	dcrImpl         dcr.DCRUniqueAsset
+	dcrImpl         *dcr.DCRAsset
 }
 
 func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		// log.Warn(values.ErrDCRSupportedOnly)
 		return nil

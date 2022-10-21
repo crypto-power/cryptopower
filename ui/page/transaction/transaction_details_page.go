@@ -75,7 +75,7 @@ type TxDetailsPage struct {
 	ticketSpent   *sharedW.Transaction // ticket spent in a vote or revoke
 	txBackStack   *sharedW.Transaction // track original transaction
 	wallet        sharedW.Asset
-	dcrImpl       dcr.DCRUniqueAsset
+	dcrImpl       *dcr.DCRAsset
 
 	moreItems  []moreItem
 	txnWidgets transactionWdg
@@ -89,7 +89,7 @@ type TxDetailsPage struct {
 }
 
 func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, isTicket bool) *TxDetailsPage {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Error("Only DCR implementation is supported")
 		return nil

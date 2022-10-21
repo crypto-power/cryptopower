@@ -180,7 +180,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 					txStatus.TicketStatus = dcr.TicketStatusExpired
 					txStatus.Background = l.Theme.Color.Gray4
 				} else {
-					ticketSpender, _ := wal.(dcr.DCRUniqueAsset).TicketSpender(tx.Hash)
+					ticketSpender, _ := wal.(*dcr.DCRAsset).TicketSpender(tx.Hash)
 					if ticketSpender != nil {
 						if ticketSpender.Type == dcr.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)

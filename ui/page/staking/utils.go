@@ -33,11 +33,11 @@ type transactionItem struct {
 	daysBehindTooltip *cryptomaterial.Tooltip
 	durationTooltip   *cryptomaterial.Tooltip
 
-	dcrImpl dcr.DCRUniqueAsset
+	dcrImpl *dcr.DCRAsset
 }
 
 func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil, values.ErrDCRSupportedOnly

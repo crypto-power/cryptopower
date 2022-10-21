@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -559,8 +560,10 @@ func (wallet *Wallet) LockWallet() {
 func (wallet *Wallet) IsLocked() bool {
 	switch wallet.Type {
 	case utils.BTCWalletAsset:
+		fmt.Println("BTC: ", wallet.Internal().BTC.Locked())
 		return wallet.Internal().BTC.Locked()
 	case utils.DCRWalletAsset:
+		fmt.Println("DCR: ", wallet.Internal().DCR.Locked())
 		return wallet.Internal().DCR.Locked()
 	default:
 		return false

@@ -85,7 +85,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		_, err := scm.asset.(dcr.DCRUniqueAsset).Broadcast(password)
+		_, err := scm.asset.(*dcr.DCRAsset).Broadcast(password)
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)

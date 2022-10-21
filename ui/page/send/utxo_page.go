@@ -138,7 +138,7 @@ func (pg *UTXOPage) handlerCheckboxes(cb *cryptomaterial.CheckBoxStyle, utxo *wa
 }
 
 func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	err := dcrImpl.NewUnsignedTx(pg.selectedAccountID)
 	if err != nil {
 		return

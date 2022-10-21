@@ -38,8 +38,6 @@ type createWalletModal struct {
 	isRegisterAction      bool
 	walletCreated         func()
 	cancelClicked         func()
-
-	dcrImpl libdcr.DCRUniqueAsset
 }
 
 type walletInfoWidget struct {
@@ -49,7 +47,7 @@ type walletInfoWidget struct {
 }
 
 func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalletModal {
-	impl := l.WL.SelectedWallet.Wallet.(libdcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*libdcr.DCRAsset)
 	if impl == nil {
 		// log.Warn(values.ErrDCRSupportedOnly)
 		return nil
@@ -72,7 +70,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 			// Filter out imported account and mixed.
 			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
-				account.Number == wal.(libdcr.DCRUniqueAsset).MixedAccountNumber() {
+				account.Number == wal.(*libdcr.DCRAsset).MixedAccountNumber() {
 				return false
 			}
 			return true

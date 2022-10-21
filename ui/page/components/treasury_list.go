@@ -135,7 +135,7 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 }
 
 func LoadPolicies(l *load.Load, selectedWallet sharedW.Asset, pikey string) []*TreasuryItem {
-	policies, err := selectedWallet.(dcr.DCRUniqueAsset).TreasuryPolicies(pikey, "")
+	policies, err := selectedWallet.(*dcr.DCRAsset).TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil
 	}

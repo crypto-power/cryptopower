@@ -72,7 +72,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 		EnableConfirmPassword(false).
 		Title("Confirm to create needed accounts").
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+			dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 			err := dcrUniqueImpl.CreateMixerAccounts("mixed", "unmixed", password)
 			if err != nil {
 				pm.SetError(err.Error())
@@ -108,7 +108,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	// get the first account in the wallet as this is the default
 	sourceAccount := acc.Accounts[0]
 	destinationAccount := dcrUniqueImpl.UnmixedAccountNumber()

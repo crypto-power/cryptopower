@@ -52,11 +52,11 @@ type AccountMixerPage struct {
 	ArrMixerAccounts map[string]string
 
 	mixerCompleted bool
-	dcrImpl        dcr.DCRUniqueAsset
+	dcrImpl        *dcr.DCRAsset
 }
 
 func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
-	impl := l.WL.SelectedWallet.Wallet.(dcr.DCRUniqueAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil

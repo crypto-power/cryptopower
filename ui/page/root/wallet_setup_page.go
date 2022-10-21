@@ -517,7 +517,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					}
 					return errFunc(err.Error())
 				}
-				dcrUniqueImpl := wal.(dcr.DCRUniqueAsset)
+				dcrUniqueImpl := wal.(*dcr.DCRAsset)
 				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 				if err != nil {
 					return errFunc(err.Error())
