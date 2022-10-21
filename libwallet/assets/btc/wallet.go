@@ -260,7 +260,7 @@ func (asset *BTCAsset) startWallet() error {
 		BroadcastTimeout: 6 * time.Second,
 	})
 	if err != nil {
-		// bailOnWalletAndDB()
+		log.Error(err)
 		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
@@ -268,7 +268,6 @@ func (asset *BTCAsset) startWallet() error {
 		if err := chainService.Stop(); err != nil {
 			log.Errorf("Error closing neutrino chain service: %v", err)
 		}
-		// bailOnWalletAndDB()
 	}
 
 	asset.cl = chainService
