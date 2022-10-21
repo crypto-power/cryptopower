@@ -1,6 +1,7 @@
 package walletdata
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -31,6 +32,7 @@ func (db *DB) BeginReadWriteTx() (walletdb.ReadWriteTx, error) {
 // Copy writes a copy of the database to the provided writer.  This
 // call will start a read-only transaction to perform all operations.
 func (db *DB) Copy(w io.Writer) error {
+	fmt.Println(" >>>>> COPIED >>>>>> ")
 	return db.walletDataDB.Bolt.View(func(tx *bbolt.Tx) error {
 		return tx.Copy(w)
 	})
@@ -38,12 +40,25 @@ func (db *DB) Copy(w io.Writer) error {
 
 // Close cleanly shuts down the database and syncs all data.
 func (db *DB) Close() error {
-	return db.close()
+	return db.walletDataDB.Bolt.Close()
 }
 
 // PrintStats returns all collected stats pretty printed into a string.
 func (db *DB) PrintStats() string {
 	return "---"
+}
+
+// Batch is similar to the package-level Update method, but it will attempt to
+// optismitcally combine the invocation of several transaction functions into a
+// single db write transaction.
+//****
+// This function is part of the walletdb.Db interface implementation.
+func (db *DB) Batch(f func(tx walletdb.ReadWriteTx) error) error {
+	return db.walletDataDB.Bolt.Batch(func(btx *bbolt.Tx) error {
+		interfaceTx := transaction{btx}
+
+		return f(&interfaceTx)
+	})
 }
 
 // View opens a database read transaction and executes the function f
@@ -67,6 +82,7 @@ func (db *DB) View(f func(tx walletdb.ReadTx) error, reset func()) error {
 		return err
 	}
 
+	fmt.Println(" >>>>> GOT HERE >>>>>> ")
 	// Make sure the transaction rolls back in the event of a panic.
 	defer func() {
 		if tx != nil {
@@ -74,6 +90,7 @@ func (db *DB) View(f func(tx walletdb.ReadTx) error, reset func()) error {
 		}
 	}()
 
+	fmt.Println(" >>>>> 222 GOT HERE >>>>>> ", f == nil, " <<<<< ", tx == nil)
 	err = f(tx)
 	rollbackErr := tx.Rollback()
 	if err != nil {
@@ -101,6 +118,8 @@ func (db *DB) Update(f func(tx walletdb.ReadWriteTx) error, reset func()) error 
 	// We don't do any retries with bolt so we just initially call the reset
 	// function once.
 	reset()
+
+	fmt.Println(" >>>>>>> <<<<<<< ")
 
 	tx, err := db.BeginReadWriteTx()
 	if err != nil {
@@ -156,26 +175,31 @@ func (tx *transaction) Rollback() error {
 // bucket described by the key does not exist, nil is returned.
 func (tx *transaction) ReadWriteBucket(key []byte) walletdb.ReadWriteBucket {
 	boltBucket := tx.boltTx.Bucket(key)
+	fmt.Println(" ReadWriteBucket >>>> **** ", string(key), " is nil ", boltBucket == nil)
 	if boltBucket == nil {
 		return nil
 	}
-	return (*bucket)(boltBucket)
+	b := &bucket{upstream: boltBucket}
+	b.NestedReadBucket(key)
+	return b
 }
 
 // CreateTopLevelBucket creates the top level bucket for a key if it
 // does not exist.  The newly-created bucket it returned.
 func (tx *transaction) CreateTopLevelBucket(key []byte) (walletdb.ReadWriteBucket, error) {
 	boltBucket, err := tx.boltTx.CreateBucketIfNotExists(key)
+	fmt.Println(" TX CreateBucketIfNotExists >>>> **** ", string(key), " is nil ", boltBucket == nil)
 	if err != nil {
 		return nil, err
 	}
-	return (*bucket)(boltBucket), nil
+	return &bucket{upstream: boltBucket}, nil
 }
 
 // DeleteTopLevelBucket deletes the top level bucket for a key.  This
 // errors if the bucket can not be found or the key keys a single value
 // instead of a bucket.
 func (tx *transaction) DeleteTopLevelBucket(key []byte) error {
+	fmt.Println(" DeleteTopLevelBucket >>>> **** ", string(key))
 	err := tx.boltTx.DeleteBucket(key)
 	if err != nil {
 		return err
@@ -195,7 +219,9 @@ func (tx *transaction) OnCommit(f func()) {
 	tx.boltTx.OnCommit(f)
 }
 
-type bucket bbolt.Bucket
+type bucket struct {
+	upstream *bbolt.Bucket
+}
 
 // Verify that bucket implements walletdb.ReadWriteBucket interface.
 var _ walletdb.ReadWriteBucket = (*bucket)(nil)
@@ -217,7 +243,7 @@ func (b *bucket) NestedReadBucket(key []byte) walletdb.ReadBucket {
 // data copies and allows support for memory-mapped database
 // implementations.
 func (b *bucket) ForEach(fn func(k, v []byte) error) error {
-	return (*bbolt.Bucket)(b).ForEach(fn)
+	return b.upstream.ForEach(fn)
 }
 
 // Get returns the value for the given key.  Returns nil if the key does
@@ -229,18 +255,19 @@ func (b *bucket) ForEach(fn func(k, v []byte) error) error {
 // data copies and allows support for memory-mapped database
 // implementations.
 func (b *bucket) Get(key []byte) []byte {
-	return (*bbolt.Bucket)(b).Get(key)
+	return b.upstream.Get(key)
 }
 
 // NestedReadWriteBucket retrieves a nested bucket with the given key.
 // Returns nil if the bucket does not exist.
 func (b *bucket) NestedReadWriteBucket(key []byte) walletdb.ReadWriteBucket {
-	boltBucket := (*bbolt.Bucket)(b).Bucket(key)
+	boltBucket := b.upstream.Bucket(key)
+	fmt.Println(" NestedReadWriteBucket >>>> **** ", string(key), " is nil ", boltBucket == nil)
 	// Don't return a non-nil interface to a nil pointer.
 	if boltBucket == nil {
 		return nil
 	}
-	return (*bucket)(boltBucket)
+	return &bucket{upstream: boltBucket}
 }
 
 // CreateBucket creates and returns a new nested bucket with the given
@@ -250,11 +277,12 @@ func (b *bucket) NestedReadWriteBucket(key []byte) walletdb.ReadWriteBucket {
 // implementation.  Other errors are possible depending on the
 // implementation.
 func (b *bucket) CreateBucket(key []byte) (walletdb.ReadWriteBucket, error) {
-	boltBucket, err := (*bbolt.Bucket)(b).CreateBucket(key)
+	boltBucket, err := b.upstream.CreateBucket(key)
+	fmt.Println(" CreateBucket >>>> **** ", string(key), " is nil ", boltBucket == nil)
 	if err != nil {
 		return nil, err
 	}
-	return (*bucket)(boltBucket), nil
+	return &bucket{upstream: boltBucket}, nil
 }
 
 // CreateBucketIfNotExists creates and returns a new nested bucket with
@@ -263,18 +291,20 @@ func (b *bucket) CreateBucket(key []byte) (walletdb.ReadWriteBucket, error) {
 // if the key value is otherwise invalid for the particular database
 // backend.  Other errors are possible depending on the implementation.
 func (b *bucket) CreateBucketIfNotExists(key []byte) (walletdb.ReadWriteBucket, error) {
-	boltBucket, err := (*bbolt.Bucket)(b).CreateBucketIfNotExists(key)
+	boltBucket, err := b.upstream.CreateBucketIfNotExists(key)
+	fmt.Println(" CreateBucketIfNotExists >>>> **** ", string(key), " is nil ", boltBucket == nil)
 	if err != nil {
 		return nil, err
 	}
-	return (*bucket)(boltBucket), nil
+	return &bucket{upstream: boltBucket}, nil
 }
 
 // DeleteNestedBucket removes a nested bucket with the given key.
 // Returns ErrTxNotWritable if attempted against a read-only transaction
 // and ErrBucketNotFound if the specified bucket does not exist.
 func (b *bucket) DeleteNestedBucket(key []byte) error {
-	return (*bbolt.Bucket)(b).DeleteBucket(key)
+	fmt.Println(" DeleteNestedBucket >>>> **** ", string(key))
+	return b.upstream.DeleteBucket(key)
 }
 
 // Put saves the specified key/value pair to the bucket.  Keys that do
@@ -282,17 +312,20 @@ func (b *bucket) DeleteNestedBucket(key []byte) error {
 // overwritten.  Returns ErrTxNotWritable if attempted against a
 // read-only transaction.
 func (b *bucket) Put(key, value []byte) error {
-	return (*bbolt.Bucket)(b).Put(key, value)
+	fmt.Println(" Put >>>> **** ", string(key))
+	return b.upstream.Put(key, value)
 }
 
 // Delete removes the specified key from the bucket.  Deleting a key
 // that does not exist does not return an error.  Returns
 // ErrTxNotWritable if attempted against a read-only transaction.
 func (b *bucket) Delete(key []byte) error {
-	return (*bbolt.Bucket)(b).Delete(key)
+	fmt.Println(" Delete >>>> **** ", string(key))
+	return b.upstream.Delete(key)
 }
 
 func (b *bucket) ReadCursor() walletdb.ReadCursor {
+	fmt.Println(" ReadCursor >>>> **** ")
 	return b.ReadWriteCursor()
 }
 
@@ -300,68 +333,73 @@ func (b *bucket) ReadCursor() walletdb.ReadCursor {
 // bucket's key/value pairs and nested buckets in forward or backward
 // order.
 func (b *bucket) ReadWriteCursor() walletdb.ReadWriteCursor {
-	return (*cursor)((*bbolt.Bucket)(b).Cursor())
+	fmt.Println(" ReadWriteCursor >>>> **** ")
+	return b.upstream.Cursor()
 }
 
 // Tx returns the bucket's transaction.
 func (b *bucket) Tx() walletdb.ReadWriteTx {
+	fmt.Println(" Tx >>>> **** ")
 	return &transaction{
-		(*bbolt.Bucket)(b).Tx(),
+		b.upstream.Tx(),
 	}
 }
 
 // NextSequence returns an autoincrementing integer for the bucket.
 func (b *bucket) NextSequence() (uint64, error) {
-	return (*bbolt.Bucket)(b).NextSequence()
+	fmt.Println(" NextSequence >>>> **** ")
+	return b.upstream.NextSequence()
 }
 
 // SetSequence updates the sequence number for the bucket.
 func (b *bucket) SetSequence(v uint64) error {
-	return (*bbolt.Bucket)(b).SetSequence(v)
+	fmt.Println(" SetSequence >>>> **** ")
+	return b.upstream.SetSequence(v)
 }
 
 // Sequence returns the current integer for the bucket without
 // incrementing it.
 func (b *bucket) Sequence() uint64 {
-	return (*bbolt.Bucket)(b).Sequence()
+	fmt.Println(" Sequence >>>> **** ")
+	return b.upstream.Sequence()
 }
 
-type cursor bbolt.Cursor
+// type cursor bbolt.Cursor
 
-// First positions the cursor at the first key/value pair and returns
-// the pair.
-func (c *cursor) First() (key, value []byte) {
-	return (*bbolt.Cursor)(c).First()
-}
+// // First positions the cursor at the first key/value pair and returns
+// // the pair.
+// func (c *cursor) First() (key, value []byte) {
+// 	return (*bbolt.Cursor)(c).First()
+// }
 
-// Last positions the cursor at the last key/value pair and returns the
-// pair.
-func (c *cursor) Last() (key, value []byte) {
-	return (*bbolt.Cursor)(c).Last()
-}
+// // Last positions the cursor at the last key/value pair and returns the
+// // pair.
+// func (c *cursor) Last() (key, value []byte) {
+// 	return (*bbolt.Cursor)(c).Last()
+// }
 
-// Next moves the cursor one key/value pair forward and returns the new
-// pair.
-func (c *cursor) Next() (key, value []byte) {
-	return (*bbolt.Cursor)(c).Prev()
-}
+// // Next moves the cursor one key/value pair forward and returns the new
+// // pair.
+// func (c *cursor) Next() (key, value []byte) {
+// 	return (*bbolt.Cursor)(c).Prev()
+// }
 
-// Prev moves the cursor one key/value pair backward and returns the new
-// pair.
-func (c *cursor) Prev() (key, value []byte) {
-	return (*bbolt.Cursor)(c).Prev()
-}
+// // Prev moves the cursor one key/value pair backward and returns the new
+// // pair.
+// func (c *cursor) Prev() (key, value []byte) {
+// 	return (*bbolt.Cursor)(c).Prev()
+// }
 
-// Seek positions the cursor at the passed seek key.  If the key does
-// not exist, the cursor is moved to the next key after seek.  Returns
-// the new pair.
-func (c *cursor) Seek(seek []byte) (key, value []byte) {
-	return (*bbolt.Cursor)(c).Seek(seek)
-}
+// // Seek positions the cursor at the passed seek key.  If the key does
+// // not exist, the cursor is moved to the next key after seek.  Returns
+// // the new pair.
+// func (c *cursor) Seek(seek []byte) (key, value []byte) {
+// 	return (*bbolt.Cursor)(c).Seek(seek)
+// }
 
-// Delete removes the current key/value pair the cursor is at without
-// invalidating the cursor.  Returns ErrIncompatibleValue if attempted
-// when the cursor points to a nested bucket.
-func (c *cursor) Delete() error {
-	return (*bbolt.Cursor)(c).Delete()
-}
+// // Delete removes the current key/value pair the cursor is at without
+// // invalidating the cursor.  Returns ErrIncompatibleValue if attempted
+// // when the cursor points to a nested bucket.
+// func (c *cursor) Delete() error {
+// 	return (*bbolt.Cursor)(c).Delete()
+// }

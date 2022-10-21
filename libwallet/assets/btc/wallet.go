@@ -191,9 +191,18 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
+func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
+	err = asset.connect(wg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // TODO: NOT USED.
 // connect will start the wallet and begin syncing.
-func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
+func (asset *BTCAsset) connect(wg *sync.WaitGroup) error {
 	err := asset.startWallet()
 	if err != nil {
 		return err
@@ -220,10 +229,10 @@ func (asset *BTCAsset) startWallet() error {
 	}
 
 	log.Debug("Starting native BTC wallet...")
-	err = asset.OpenWallet()
-	if err != nil {
-		return fmt.Errorf("couldn't load wallet: %w", err)
-	}
+	// err = asset.OpenWallet()
+	// if err != nil {
+	// 	return fmt.Errorf("couldn't load wallet: %w", err)
+	// }
 
 	// https://pkg.go.dev/github.com/btcsuite/btcwallet/walletdb@v1.4.0#DB
 	// For neutrino to be completely compatible with the walletDbData implementation
@@ -259,7 +268,7 @@ func (asset *BTCAsset) startWallet() error {
 	log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
-		Database:      asset.neutrinoDB,
+		Database:      asset.GetWalletDataDb(),
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		AddPeers:      addPeers,
