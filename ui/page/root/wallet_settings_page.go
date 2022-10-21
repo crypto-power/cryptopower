@@ -771,7 +771,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			}
 
 			if val < 1 || val > 1000 {
-				tm.SetError(values.String(values.StrGapLimitInputErr))
+				tm.SetError(values.String(values.StrGapLimitInvalidRange))
 				tm.SetLoading(false)
 				return false
 			}
