@@ -432,7 +432,7 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrExtendedKey)).
 			Body(values.String(values.StrExtendedInfo)).
-			SetContentAlignment(layout.NW, layout.Center)
+			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		pg.ParentWindow().ShowModal(info)
 	}
 }

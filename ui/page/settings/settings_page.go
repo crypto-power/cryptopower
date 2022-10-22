@@ -352,7 +352,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
-			SetContentAlignment(layout.Center, layout.Center).
+			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
