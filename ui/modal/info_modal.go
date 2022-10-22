@@ -319,7 +319,7 @@ func (in *InfoModal) Handle() {
 func (in *InfoModal) Layout(gtx layout.Context) D {
 	icon := func(gtx C) D {
 		if in.dialogIcon == nil {
-			return layout.Dimensions{}
+			return D{}
 		}
 
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -331,7 +331,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 	checkbox := func(gtx C) D {
 		if in.checkbox.CheckBox == nil {
-			return layout.Dimensions{}
+			return D{}
 		}
 
 		return layout.Inset{Top: values.MarginPaddingMinus5, Left: values.MarginPaddingMinus5}.Layout(gtx, func(gtx C) D {
@@ -401,7 +401,7 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if in.btnNegative.Text == "" || in.isLoading {
-						return layout.Dimensions{}
+						return D{}
 					}
 
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
@@ -413,7 +413,7 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 					}
 
 					if in.btnPositive.Text == "" {
-						return layout.Dimensions{}
+						return D{}
 					}
 
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
