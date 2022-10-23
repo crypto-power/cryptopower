@@ -76,7 +76,7 @@ func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
 // asset. If that address has already been used to receive funds, the next
 // chained address is returned.
 func (asset *BTCAsset) CurrentAddress(account int32) (string, error) {
-	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
@@ -92,7 +92,7 @@ func (asset *BTCAsset) CurrentAddress(account int32) (string, error) {
 // payment address. If that address has already been used to receive funds,
 // the next chained address is returned.
 func (asset *BTCAsset) NextAddress(account int32) (string, error) {
-	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 

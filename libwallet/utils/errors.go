@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 )
@@ -41,6 +43,7 @@ const (
 	ErrIndexOutOfRange              = "err_index_out_of_range"
 	ErrNoMixableOutput              = "err_no_mixable_output"
 	ErrInvalidVoteBit               = "err_invalid_vote_bit"
+	ErrNotSynced                    = "err_not_synced"
 )
 
 var (
@@ -63,4 +66,12 @@ func TranslateError(err error) error {
 		}
 	}
 	return err
+}
+
+func ErrBTCMethodNotImplemented(method string) error {
+	return fmt.Errorf("%v not implemented for the %v Asset", method, BTCWalletAsset)
+}
+
+func ErrDCRMethodNotImplemented(method string) error {
+	return fmt.Errorf("%v not implemented for the %v Asset", method, DCRWalletAsset)
 }

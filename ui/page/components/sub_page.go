@@ -6,6 +6,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -62,7 +63,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(sp.Load.Theme.Label(values.TextSize20, sp.Title).Layout),
 				layout.Rigid(func(gtx C) D {
-					if !StringNotEmpty(sp.SubTitle) {
+					if !utils.StringNotEmpty(sp.SubTitle) {
 						return D{}
 					}
 

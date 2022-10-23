@@ -12,6 +12,7 @@ import (
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 	"gitlab.com/raedah/cryptopower/libwallet"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui"
@@ -62,6 +63,7 @@ var (
 	dlwlLog    = backendLog.Logger("DLWL")
 	dcrLog     = backendLog.Logger("DCR")
 	lstnersLog = backendLog.Logger("LSTN")
+	btcLog     = backendLog.Logger("BTC")
 )
 
 // Initialize package-global logger variables.
@@ -80,6 +82,7 @@ func init() {
 	staking.UseLogger(winLog)
 	privacy.UseLogger(winLog)
 	modal.UseLogger(winLog)
+	btc.UseLogger(btcLog)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -90,6 +93,7 @@ var subsystemLoggers = map[string]slog.Logger{
 	"UI":   winLog,
 	"CRPW": log,
 	"LSTN": lstnersLog,
+	"BTC":  btcLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -108,6 +112,7 @@ func initLogRotator(logFile string, maxRolls int) {
 		os.Exit(1)
 	}
 
+	btc.SetLogRotator(r)
 	logRotator = r
 }
 

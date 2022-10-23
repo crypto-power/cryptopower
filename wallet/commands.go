@@ -10,7 +10,7 @@ func (wal *Wallet) HaveAddress(address string) (bool, string) {
 	for _, wallet := range wal.multi.AllDCRWallets() {
 		result := wallet.HaveAddress(address)
 		if result {
-			return true, wallet.Name
+			return true, wallet.GetWalletName()
 		}
 	}
 	return false, ""

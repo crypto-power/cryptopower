@@ -57,7 +57,7 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 	statusLabel := pg.Theme.Label(values.TextSize14, values.String(values.StrOffline))
 	pg.walletStatusIcon.Color = pg.Theme.Color.Danger
-	if pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
+	if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 		statusLabel.Text = values.String(values.StrOnline)
 		pg.walletStatusIcon.Color = pg.Theme.Color.Success
 	}
@@ -243,7 +243,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 	if rescanUpdate == nil {
 		return D{}
 	}
-	wal := pg.WL.MultiWallet.DCRWalletWithID(rescanUpdate.WalletID)
+	wal := pg.WL.MultiWallet.WalletWithID(rescanUpdate.WalletID)
 	return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		card := pg.Theme.Card()
@@ -253,7 +253,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return inset.Layout(gtx, func(gtx C) D {
-							return pg.Theme.Body1(wal.Name).Layout(gtx)
+							return pg.Theme.Body1(wal.GetWalletName()).Layout(gtx)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {

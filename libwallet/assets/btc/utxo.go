@@ -1,16 +1,17 @@
-package dcr
+package btc
 
 import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/wallet/txauthor"
-	"decred.org/dcrwallet/v2/wallet/txrules"
-	"decred.org/dcrwallet/v2/wallet/txsizes"
-	"github.com/decred/dcrd/chaincfg/v3"
-	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/dcrd/txscript/v4"
-	"github.com/decred/dcrd/wire"
+
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcwallet/wallet/txauthor"
+	"github.com/btcsuite/btcwallet/wallet/txrules"
+	"github.com/btcsuite/btcwallet/wallet/txsizes"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
@@ -19,11 +20,11 @@ import (
 type nextAddressFunc func() (address string, err error)
 
 func calculateChangeScriptSize(changeAddress string, chainParams *chaincfg.Params) (int, error) {
-	changeSource, err := txhelper.MakeTxChangeSource(changeAddress, chainParams)
+	changeSource, err := txhelper.MakeBTCTxChangeSource(changeAddress, chainParams)
 	if err != nil {
 		return 0, fmt.Errorf("change address error: %v", err)
 	}
-	return changeSource.ScriptSize(), nil
+	return changeSource.ScriptSize, nil
 }
 
 // ParseOutputsAndChangeDestination generates and returns TxOuts
@@ -32,13 +33,13 @@ func calculateChangeScriptSize(changeAddress string, chainParams *chaincfg.Param
 // but is instead returned as a change destination.
 // Returns an error if more than 1 max amount recipients identified or
 // if any other error is encountered while processing the addresses and amounts.
-func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
+func (asset *BTCAsset) ParseOutputsAndChangeDestination(txDestinations []sharedW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
 	var outputs = make([]*wire.TxOut, 0)
 	var totalSendAmount int64
 	var maxAmountRecipientAddress string
 
 	for _, destination := range txDestinations {
-		if err := tx.validateSendAmount(destination.SendMax, destination.AtomAmount); err != nil {
+		if err := asset.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
 			return nil, 0, "", err
 		}
 
@@ -52,7 +53,7 @@ func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.Tr
 			continue // do not prepare a tx output for this destination
 		}
 
-		output, err := txhelper.MakeTxOutput(destination.Address, destination.AtomAmount, tx.sourceWallet.chainParams)
+		output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
 		if err != nil {
 			return nil, 0, "", fmt.Errorf("make tx output error: %v", err)
 		}
@@ -64,25 +65,25 @@ func (tx *TxAuthor) ParseOutputsAndChangeDestination(txDestinations []sharedW.Tr
 	return outputs, totalSendAmount, maxAmountRecipientAddress, nil
 }
 
-func (tx *TxAuthor) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
+func (asset *BTCAsset) constructCustomTransaction() (*txauthor.AuthoredTx, error) {
 	// Used to generate an internal address for change,
 	// if no change destination is provided and
 	// no recipient is set to receive max amount.
 	nextInternalAddress := func() (string, error) {
-		ctx, _ := tx.sourceWallet.ShutdownContextWithCancel()
-		addr, err := tx.sourceWallet.Internal().DCR.NewChangeAddress(ctx, tx.sourceAccountNumber)
+		addr, err := asset.Internal().BTC.NewChangeAddress(asset.TxAuthoredInfo.sourceAccountNumber, asset.GetScope())
 		if err != nil {
 			return "", err
 		}
 		return addr.String(), nil
 	}
 
-	return tx.newUnsignedTxUTXO(tx.inputs, tx.destinations, tx.changeDestination, nextInternalAddress)
+	return asset.newUnsignedTxUTXO(asset.TxAuthoredInfo.inputs, asset.TxAuthoredInfo.destinations,
+		asset.TxAuthoredInfo.changeDestination, nextInternalAddress)
 }
 
-func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sharedW.TransactionDestination, changeDestination *sharedW.TransactionDestination,
+func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sharedW.TransactionDestination, changeDestination *sharedW.TransactionDestination,
 	nextInternalAddress nextAddressFunc) (*txauthor.AuthoredTx, error) {
-	outputs, totalSendAmount, maxAmountRecipientAddress, err := tx.ParseOutputsAndChangeDestination(sendDestinations)
+	outputs, totalSendAmount, maxAmountRecipientAddress, err := asset.ParseOutputsAndChangeDestination(sendDestinations)
 	if err != nil {
 		return nil, err
 	}
@@ -104,22 +105,22 @@ func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sh
 	inputScriptSizes := make([]int, len(inputs))
 	inputScripts := make([][]byte, len(inputs))
 	for i, input := range inputs {
-		totalInputAmount += input.ValueIn
+		// totalInputAmount += input.ValueIn // TODO: get the ValueIn for a BTC transaction if needed
 		inputScriptSizes[i] = txsizes.RedeemP2PKHSigScriptSize
 		inputScripts[i] = input.SignatureScript
 	}
 
 	var changeScriptSize int
 	if maxAmountRecipientAddress != "" {
-		changeScriptSize, err = calculateChangeScriptSize(maxAmountRecipientAddress, tx.sourceWallet.chainParams)
+		changeScriptSize, err = calculateChangeScriptSize(maxAmountRecipientAddress, asset.chainParams)
 	} else {
-		changeScriptSize, err = calculateChangeScriptSize(changeDestination.Address, tx.sourceWallet.chainParams)
+		changeScriptSize, err = calculateChangeScriptSize(changeDestination.Address, asset.chainParams)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	maxSignedSize := txsizes.EstimateSerializeSize(inputScriptSizes, outputs, changeScriptSize)
+	maxSignedSize := txsizes.EstimateSerializeSize(len(inputScriptSizes), outputs, changeScriptSize > 0)
 	maxRequiredFee := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, maxSignedSize)
 	changeAmount := totalInputAmount - totalSendAmount - int64(maxRequiredFee)
 
@@ -127,14 +128,14 @@ func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sh
 		return nil, errors.New(utils.ErrInsufficientBalance)
 	}
 
-	if changeAmount != 0 && !txrules.IsDustAmount(dcrutil.Amount(changeAmount), changeScriptSize, txrules.DefaultRelayFeePerKb) {
+	if changeAmount != 0 && !txrules.IsDustAmount(btcutil.Amount(changeAmount), changeScriptSize, txrules.DefaultRelayFeePerKb) {
 		if changeScriptSize > txscript.MaxScriptElementSize {
 			return nil, fmt.Errorf("script size exceed maximum bytes pushable to the stack")
 		}
 		if maxAmountRecipientAddress != "" {
-			outputs, err = tx.changeOutput(changeAmount, maxAmountRecipientAddress, outputs)
+			outputs, err = asset.changeOutput(changeAmount, maxAmountRecipientAddress, outputs)
 		} else if changeDestination != nil {
-			outputs, err = tx.changeOutput(changeAmount, changeDestination.Address, outputs)
+			outputs, err = asset.changeOutput(changeAmount, changeDestination.Address, outputs)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
@@ -142,21 +143,18 @@ func (tx *TxAuthor) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sh
 	}
 
 	return &txauthor.AuthoredTx{
-		TotalInput:                   dcrutil.Amount(totalInputAmount),
-		EstimatedSignedSerializeSize: maxSignedSize,
+		TotalInput: btcutil.Amount(totalInputAmount),
 		Tx: &wire.MsgTx{
-			SerType:  wire.TxSerializeFull,
 			Version:  wire.TxVersion,
 			TxIn:     inputs,
 			TxOut:    outputs,
 			LockTime: 0,
-			Expiry:   0,
 		},
 	}, nil
 }
 
-func (tx *TxAuthor) changeOutput(changeAmount int64, maxAmountRecipientAddress string, outputs []*wire.TxOut) ([]*wire.TxOut, error) {
-	changeOutput, err := txhelper.MakeTxOutput(maxAmountRecipientAddress, changeAmount, tx.sourceWallet.chainParams)
+func (asset *BTCAsset) changeOutput(changeAmount int64, maxAmountRecipientAddress string, outputs []*wire.TxOut) ([]*wire.TxOut, error) {
+	changeOutput, err := txhelper.MakeBTCTxOutput(maxAmountRecipientAddress, changeAmount, asset.chainParams)
 	if err != nil {
 		return nil, err
 	}

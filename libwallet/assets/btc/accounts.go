@@ -7,7 +7,6 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
@@ -31,39 +30,7 @@ func (asset *BTCAsset) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (asset *BTCAsset) GetAccountsRaw() (*AccountsResult, error) {
-	resp, err := asset.Internal().BTC.Accounts(asset.GetScope())
-	if err != nil {
-		return nil, err
-	}
-
-	accounts := make([]*AccountResult, len(resp.Accounts))
-	for i, a := range resp.Accounts {
-		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
-		if err != nil {
-			return nil, err
-		}
-
-		accounts[i] = &AccountResult{
-			AccountProperties: AccountProperties{
-				AccountNumber:    a.AccountNumber,
-				AccountName:      a.AccountName,
-				ExternalKeyCount: a.ExternalKeyCount + AddressGapLimit, // Add gap limit
-				InternalKeyCount: a.InternalKeyCount + AddressGapLimit,
-				ImportedKeyCount: a.ImportedKeyCount,
-			},
-			TotalBalance: btcutil.Amount(balance.Total),
-		}
-	}
-
-	return &AccountsResult{
-		CurrentBlockHash:   resp.CurrentBlockHash,
-		CurrentBlockHeight: resp.CurrentBlockHeight,
-		Accounts:           accounts,
-	}, nil
-}
-
-func (asset *BTCAsset) GetAccountsRawX() (*sharedW.Accounts, error) {
+func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	resp, err := asset.Internal().BTC.Accounts(asset.GetScope())
 	if err != nil {
 		return nil, err
@@ -77,25 +44,26 @@ func (asset *BTCAsset) GetAccountsRawX() (*sharedW.Accounts, error) {
 		}
 
 		accounts[i] = &sharedW.Account{
-			WalletID:         asset.ID,
-			Number:           int32(a.AccountNumber),
-			Name:             a.AccountName,
-			Balance:          balance,
-			TotalBalance:     balance.Total,
-			ExternalKeyCount: int32(a.ExternalKeyCount + AddressGapLimit), // Add gap limit
-			InternalKeyCount: int32(a.InternalKeyCount + AddressGapLimit),
-			ImportedKeyCount: int32(a.ImportedKeyCount),
+			AccountProperties: sharedW.AccountProperties{
+				AccountNumber:    a.AccountNumber,
+				AccountName:      a.AccountName,
+				ExternalKeyCount: a.ExternalKeyCount + AddressGapLimit, // Add gap limit
+				InternalKeyCount: a.InternalKeyCount + AddressGapLimit,
+				ImportedKeyCount: a.ImportedKeyCount,
+			},
+			WalletID: asset.ID,
+			Balance:  balance,
 		}
 	}
 
 	return &sharedW.Accounts{
 		CurrentBlockHash:   resp.CurrentBlockHash[:],
 		CurrentBlockHeight: resp.CurrentBlockHeight,
-		Acc:                accounts,
+		Accounts:           accounts,
 	}, nil
 }
 
-func (asset *BTCAsset) GetAccount(accountNumber int32) (*AccountResult, error) {
+func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -117,9 +85,9 @@ func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		Total:          int64(balance.Total),
-		Spendable:      int64(balance.Spendable),
-		ImmatureReward: int64(balance.ImmatureReward),
+		Total:          BTCAmount(balance.Total),
+		Spendable:      BTCAmount(balance.Spendable),
+		ImmatureReward: BTCAmount(balance.ImmatureReward),
 	}, nil
 }
 
@@ -159,7 +127,7 @@ func (asset *BTCAsset) UnspentOutputs(account int32) ([]*ListUnspentResult, erro
 	return resp, nil
 }
 
-func (asset *BTCAsset) CreateNewAccount(accountName string, privPass []byte) (int32, error) {
+func (asset *BTCAsset) CreateNewAccount(accountName, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err

@@ -13,6 +13,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/libwallet"
+	libdcr "gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -47,6 +48,12 @@ type walletInfoWidget struct {
 }
 
 func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalletModal {
+	impl := l.WL.SelectedWallet.Wallet.(*libdcr.DCRAsset)
+	if impl == nil {
+		// log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	md := &createWalletModal{
 		Load:             l,
 		Modal:            l.Theme.ModalFloatTitle("dex_create_wallet_modal"),
@@ -59,20 +66,21 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 	md.submitBtn.SetEnabled(false)
 	md.sourceAccountSelector = components.NewWalletAndAccountSelector(md.Load).
 		Title(strSelectAccountForDex).
-		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {}).
+		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			if utils.WalletType(md.WL.SelectedWalletType) == utils.BTCWalletAsset {
+			// Filter out imported account and mixed.
+			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
+			//TODO: Implement BTC
+			if utils.IsBTC(wal) {
 				return true
 			}
-			// Filter out imported account and mixed.
-			wal := md.WL.MultiWallet.DCRWalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 ||
-				account.Number == wal.MixedAccountNumber() {
+				account.Number == wal.(*libdcr.DCRAsset).MixedAccountNumber() {
 				return false
 			}
 			return true
 		})
-	wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
 	md.sourceAccountSelector.SelectFirstValidAccount(wl)
 
 	return md
@@ -89,7 +97,7 @@ func (md *createWalletModal) SetError(errStr string) {
 func (md *createWalletModal) OnResume() {
 	md.ctx, md.ctxCancel = context.WithCancel(context.TODO())
 	md.sourceAccountSelector.ListenForTxNotifications(md.ctx, md.ParentWindow())
-	wl := components.NewDCRCommonWallet(md.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(md.WL.SelectedWallet.Wallet)
 	err := md.sourceAccountSelector.SelectFirstValidAccount(wl)
 	if err != nil {
 		md.SetError(err.Error())

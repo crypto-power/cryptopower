@@ -8,7 +8,6 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
@@ -102,13 +101,13 @@ func NewSendPage(l *load.Load) *Page {
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
-		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
+		AccountSelected(func(selectedAccount *sharedW.Account) {
 			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
 				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
@@ -119,21 +118,28 @@ func NewSendPage(l *load.Load) *Page {
 
 				// only mixed accounts can send to address for wallet with privacy setup
 				if pg.sendDestination.accountSwitch.SelectedIndex() == 1 {
-					accountIsValid = account.Number == wal.MixedAccountNumber()
+					impl := wal.(*dcr.DCRAsset)
+					if impl != nil {
+						accountIsValid = account.Number == impl.MixedAccountNumber()
+					}
 				}
 			}
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
 	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 			// Filter out imported account and mixed.
-			wal := pg.Load.WL.MultiWallet.DCRWalletWithID(account.WalletID)
+			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
 			// Filter imported account and mixed accounts.
-			accountIsValid := account.Number != load.MaxInt32 && account.Number != wal.MixedAccountNumber()
+			accountIsValid := account.Number != load.MaxInt32
+			impl := wal.(*dcr.DCRAsset)
+			if impl != nil {
+				accountIsValid = accountIsValid && account.Number != impl.MixedAccountNumber()
+			}
 			// Filter the sending account.
 			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
 				return false
@@ -141,17 +147,16 @@ func NewSendPage(l *load.Load) *Page {
 			return true
 		})
 
-	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
+	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
 		pg.validateAndConstructTx()
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *components.CommonWallets) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		wl := components.NewDCRCommonWallet(l.WL.SelectedWallet.Wallet)
 		pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 		pg.validateAndConstructTx()
 	}
@@ -182,7 +187,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	wl := components.NewDCRCommonWallet(pg.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
 	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
@@ -262,39 +267,47 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		return
 	}
 
+	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if dcrImpl == nil {
+		pg.feeEstimationError("Only DCR implementation is supported")
+		// Only DCR implementation is supported past here.
+		return
+	}
+
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	unsignedTx, err := pg.WL.SelectedWallet.Wallet.NewUnsignedTx(sourceAccount.Number)
+	err = dcrImpl.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	err = unsignedTx.AddSendDestination(destinationAddress, amountAtom, SendMax)
+	err = dcrImpl.AddSendDestination(destinationAddress, amountAtom, SendMax)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	feeAndSize, err := unsignedTx.EstimateFeeAndSize()
+	feeAndSize, err := dcrImpl.EstimateFeeAndSize()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	feeAtom := feeAndSize.Fee.AtomValue
+	feeAtom := feeAndSize.Fee.UnitValue
 	if SendMax {
-		amountAtom = sourceAccount.Balance.Spendable - feeAtom
+		amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
 	}
 
-	totalSendingAmount := dcrutil.Amount(amountAtom + feeAtom)
-	balanceAfterSend := dcrutil.Amount(sourceAccount.Balance.Spendable - int64(totalSendingAmount))
+	wal := pg.WL.SelectedWallet.Wallet
+	totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
+	balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
 
 	// populate display data
-	pg.txFee = dcrutil.Amount(feeAtom).String()
+	pg.txFee = wal.ToAmount(feeAtom).String()
 	pg.estSignedSize = fmt.Sprintf("%d bytes", feeAndSize.EstimatedSignedSize)
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
-	pg.sendAmount = dcrutil.Amount(amountAtom).String()
+	pg.sendAmount = wal.ToAmount(amountAtom).String()
 	pg.destinationAddress = destinationAddress
 	pg.destinationAccount = destinationAccount
 	pg.sourceAccount = sourceAccount
@@ -306,21 +319,21 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.DcrValue))
+		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
 		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
-		usdAmount := utils.DCRToUSD(pg.exchangeRate, dcrutil.Amount(amountAtom).ToCoin())
+		usdAmount := utils.DCRToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
 		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
 
-	pg.txAuthor = unsignedTx
+	pg.txAuthor = dcrImpl.GetUnsignedTx()
 }
 
 func (pg *Page) showBalaceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-		balanceAfterSend := dcrutil.Amount(sourceAccount.Balance.Spendable)
+		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}
@@ -374,7 +387,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	for pg.nextButton.Clicked() {
 		if pg.txAuthor != nil {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData)
+			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.WL.SelectedWallet.Wallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 
 			pg.confirmTxModal.txSent = func() {

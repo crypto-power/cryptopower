@@ -18,7 +18,7 @@ func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 	return chainParams, nil
 }
 
-func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -29,33 +29,33 @@ func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase strin
 		return nil, err
 	}
 
-	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (*btc.BTCAsset, error) {
+func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (sharedW.Asset, error) {
 	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mgr.params)
 	if err != nil {
 		return nil, err
 	}
 
-	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (*btc.BTCAsset, error) {
+func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
@@ -66,35 +66,16 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 		return nil, err
 	}
 
-	mgr.Assets.BTC.Wallets[wallet.ID] = wallet
+	mgr.Assets.BTC.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
 	if mgr.db == nil && wallet != nil {
-		mgr.setDBInterface(wallet)
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
 	return wallet, nil
 }
 
-func (mgr *AssetsManager) DeleteBTCWallet(walletID int, privPass []byte) error {
-	wallet := mgr.BTCWalletWithID(walletID)
-
-	err := wallet.DeleteWallet(privPass)
-	if err != nil {
-		return err
-	}
-
-	delete(mgr.Assets.BTC.Wallets, walletID)
-
-	return nil
-}
-
-func (mgr *AssetsManager) BTCWalletWithID(walletID int) *btc.BTCAsset {
-	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
-		return wallet
-	}
-	return nil
-}
 
 // BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
 // provided xpub. Returns -1 if there is no such wallet.

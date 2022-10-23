@@ -8,9 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -30,7 +28,7 @@ type AcctDetailsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet  *dcr.DCRAsset
+	wallet  sharedW.Asset
 	account *sharedW.Account
 
 	theme                    *cryptomaterial.Theme
@@ -88,15 +86,17 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 
 	balance := pg.account.Balance
 
-	pg.stakingBalance = balance.ImmatureReward + balance.LockedByTickets + balance.VotingAuthority +
-		balance.ImmatureStakeGeneration
+	pg.stakingBalance = balance.ImmatureReward.ToInt() +
+		balance.LockedByTickets.ToInt() +
+		balance.VotingAuthority.ToInt() +
+		balance.ImmatureStakeGeneration.ToInt()
 
-	pg.totalBalance = dcrutil.Amount(balance.Total).String()
-	pg.spendable = dcrutil.Amount(balance.Spendable).String()
-	pg.immatureRewards = dcrutil.Amount(balance.ImmatureReward).String()
-	pg.lockedByTickets = dcrutil.Amount(balance.LockedByTickets).String()
-	pg.votingAuthority = dcrutil.Amount(balance.VotingAuthority).String()
-	pg.immatureStakeGen = dcrutil.Amount(balance.ImmatureStakeGeneration).String()
+	pg.totalBalance = balance.Total.String()
+	pg.spendable = balance.Spendable.String()
+	pg.immatureRewards = balance.ImmatureReward.String()
+	pg.lockedByTickets = balance.LockedByTickets.String()
+	pg.votingAuthority = balance.VotingAuthority.String()
+	pg.immatureStakeGen = balance.ImmatureStakeGeneration.String()
 
 	pg.hdPath = pg.WL.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
 

@@ -12,6 +12,7 @@ import (
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -33,7 +34,7 @@ type TreasuryPage struct {
 	ctxCancel context.CancelFunc
 
 	multiWallet   *libwallet.AssetsManager
-	wallets       []*dcr.DCRAsset
+	wallets       []sharedW.Asset
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List
@@ -272,7 +273,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 			go func(isClosing bool) {
 				selectedWallet := pg.WL.SelectedWallet.Wallet
 				votingPreference := treasuryItem.OptionsRadioGroup.Value
-				err := selectedWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", []byte(password))
+				err := selectedWallet.(*dcr.DCRAsset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)

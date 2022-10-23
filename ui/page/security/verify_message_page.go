@@ -11,6 +11,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -209,12 +210,12 @@ func (pg *VerifyMessagePage) validateAllInputs() bool {
 		return false
 	}
 
-	if !components.StringNotEmpty(pg.signatureEditor.Editor.Text()) {
+	if !utils.StringNotEmpty(pg.signatureEditor.Editor.Text()) {
 		pg.signatureEditor.SetError(values.String(values.StrEmptySign))
 		return false
 	}
 
-	if !components.StringNotEmpty(pg.messageEditor.Editor.Text()) {
+	if !utils.StringNotEmpty(pg.messageEditor.Editor.Text()) {
 		pg.messageEditor.SetError(values.String(values.StrEmptyMsg))
 		return false
 	}
@@ -223,7 +224,7 @@ func (pg *VerifyMessagePage) validateAllInputs() bool {
 }
 
 func (pg *VerifyMessagePage) updateBtn() bool {
-	if pg.addressIsValid || components.StringNotEmpty(pg.signatureEditor.Editor.Text()) || components.StringNotEmpty(pg.messageEditor.Editor.Text()) {
+	if pg.addressIsValid || utils.StringNotEmpty(pg.signatureEditor.Editor.Text()) || utils.StringNotEmpty(pg.messageEditor.Editor.Text()) {
 		return true
 	}
 	return false
@@ -243,7 +244,7 @@ func (pg *VerifyMessagePage) validateAddress() bool {
 	var errorMessage string
 
 	switch {
-	case !components.StringNotEmpty(address):
+	case !utils.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
 	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)

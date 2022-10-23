@@ -19,18 +19,13 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"
-)
-
-type WalletType string
-
-const (
-	BTCWalletAsset WalletType = "BTC"
-	DCRWalletAsset WalletType = "DCR"
 )
 
 // the length of name should be 20 characters
@@ -58,18 +53,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-// getLockWallet returns a list of locked wallets
-func GetLockedWallets(wallets []*dcr.DCRAsset) []*dcr.DCRAsset {
-	var walletsLocked []*dcr.DCRAsset
-	for _, wl := range wallets {
-		if !wl.HasDiscoveredAccounts && wl.IsLocked() {
-			walletsLocked = append(walletsLocked, wl)
-		}
-	}
-
-	return walletsLocked
 }
 
 func FormatDateOrTime(timestamp int64) string {
@@ -276,4 +259,32 @@ func getSkewedText(theme cryptomaterial.Theme, gtx layout.Context, text, reserve
 		}
 	}
 	return skewed, str
+}
+
+func StringNotEmpty(texts ...string) bool {
+	for _, t := range texts {
+		if strings.TrimSpace(t) == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
+func IsDCR(asset sharedW.Asset) bool {
+	switch asset.(type) {
+	case *dcr.DCRAsset:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsBTC(asset sharedW.Asset) bool {
+	switch asset.(type) {
+	case *btc.BTCAsset:
+		return true
+	default:
+		return false
+	}
 }

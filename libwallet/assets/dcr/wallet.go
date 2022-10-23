@@ -27,6 +27,8 @@ type DCRAsset struct {
 	cancelAutoTicketBuyer   context.CancelFunc `json:"-"`
 	cancelAutoTicketBuyerMu sync.RWMutex
 
+	TxAuthoredInfo *TxAuthor
+
 	vspClientsMu sync.Mutex
 	vspClients   map[string]*vsp.Client
 	vspMu        sync.RWMutex
@@ -38,6 +40,9 @@ type DCRAsset struct {
 	txAndBlockNotificationListeners  map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
 }
+
+// Verify that DCR implements the shared assets interface.
+var _ sharedW.Asset = (*DCRAsset)(nil)
 
 // initWalletLoader setups the loader.
 func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
@@ -86,7 +91,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 // shared wallet implemenation.
 // Immediately a new wallet is created, the function to safely cancel network sync
 // is set. There after returning the new wallet's interface.
-func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*DCRAsset, error) {
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -123,7 +128,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 // shared wallet implemenation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
-func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (*DCRAsset, error) {
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -156,7 +161,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (*DCRAsset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -189,7 +194,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 // shared wallet implemenation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
-func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (*DCRAsset, error) {
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -255,14 +260,9 @@ func (asset *DCRAsset) Synced() bool {
 func (asset *DCRAsset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
-		defer func() {
-			asset.SpvSync()
-		}()
 	}
 }
 
-func (asset *DCRAsset) SafelyCancelSyncOnly() {
-	if asset.IsConnectedToDecredNetwork() {
-		asset.CancelSync()
-	}
+func (asset *DCRAsset) IsConnectedToNetwork() bool {
+	return asset.IsConnectedToDecredNetwork()
 }

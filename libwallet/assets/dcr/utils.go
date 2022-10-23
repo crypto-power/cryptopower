@@ -8,6 +8,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (
@@ -20,13 +21,16 @@ const (
 	// Use 80% of estimated total headers fetch time to estimate address discovery time
 	discoveryPercentage = 0.8
 
-	maxAmountAtom = dcrutil.MaxAmount
-
 	TestnetHDPath       = "m / 44' / 1' / "
 	LegacyTestnetHDPath = "m / 44’ / 11’ / "
 	MainnetHDPath       = "m / 44' / 42' / "
 	LegacyMainnetHDPath = "m / 44’ / 20’ / "
 )
+
+// Returns a DCR amount that implements the asset amount interface.
+func (asset *DCRAsset) ToAmount(v int64) sharedW.AssetAmount {
+	return DCRAmount(dcrutil.Amount(v))
+}
 
 func normalizeAddress(addr string, defaultPort string) (string, error) {
 	// If the first SplitHostPort errors because of a missing port and not
@@ -43,10 +47,6 @@ func normalizeAddress(addr string, defaultPort string) (string, error) {
 		return "", origErr
 	}
 	return addr, nil
-}
-
-func AmountCoin(amount int64) float64 {
-	return dcrutil.Amount(amount).ToCoin()
 }
 
 func AmountAtom(f float64) int64 {

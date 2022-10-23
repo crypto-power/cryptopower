@@ -14,7 +14,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -35,9 +34,17 @@ type ticketBuyerModal struct {
 
 	accountSelector *components.WalletAndAccountSelector
 	vspSelector     *components.VSPSelector
+
+	dcrImpl *dcr.DCRAsset
 }
 
 func newTicketBuyerModal(l *load.Load) *ticketBuyerModal {
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if impl == nil {
+		log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	tb := &ticketBuyerModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("staking_modal"),
@@ -45,6 +52,7 @@ func newTicketBuyerModal(l *load.Load) *ticketBuyerModal {
 		cancel:          l.Theme.OutlineButton(values.String(values.StrCancel)),
 		saveSettingsBtn: l.Theme.Button(values.String(values.StrSave)),
 		vspSelector:     components.NewVSPSelector(l).Title(values.String(values.StrSelectVSP)),
+		dcrImpl:         impl,
 	}
 
 	tb.balToMaintainEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrBalToMaintain))
@@ -70,20 +78,27 @@ func (tb *ticketBuyerModal) SetError(err string) {
 }
 
 func (tb *ticketBuyerModal) OnResume() {
+	if tb.dcrImpl == nil {
+		log.Error("Only DCR implementation is supportted")
+		return
+	}
+
 	tb.initializeAccountSelector()
 	tb.ctx, tb.ctxCancel = context.WithCancel(context.TODO())
 	tb.accountSelector.ListenForTxNotifications(tb.ctx, tb.ParentWindow())
 
-	if len(tb.WL.SelectedWallet.Wallet.KnownVSPs()) == 0 {
+	if len(tb.dcrImpl.KnownVSPs()) == 0 {
 		// TODO: Does this modal need this list?
-		go tb.WL.SelectedWallet.Wallet.ReloadVSPList(context.TODO())
+		go tb.dcrImpl.ReloadVSPList(context.TODO())
 	}
+
+	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
 
 	// loop through all available wallets and select the one with ticket buyer config.
 	// if non, set the selected wallet to the first.
 	// temporary work around for only one wallet.
-	if tb.WL.SelectedWallet.Wallet.TicketBuyerConfigIsSet() {
-		tbConfig := tb.WL.SelectedWallet.Wallet.AutoTicketsBuyerConfig()
+	if tb.dcrImpl.TicketBuyerConfigIsSet() {
+		tbConfig := tb.dcrImpl.AutoTicketsBuyerConfig()
 		acct, err := tb.WL.SelectedWallet.Wallet.GetAccount(tbConfig.PurchaseAccount)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
@@ -92,10 +107,9 @@ func (tb *ticketBuyerModal) OnResume() {
 
 		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
-			(tbConfig.PurchaseAccount == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()) {
+			(tbConfig.PurchaseAccount == tb.dcrImpl.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
 			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
@@ -103,11 +117,11 @@ func (tb *ticketBuyerModal) OnResume() {
 		}
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
-		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(dcr.AmountCoin(tbConfig.BalanceToMaintain), 'f', 0, 64))
+		w := tb.WL.SelectedWallet.Wallet
+		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(w.ToAmount(tbConfig.BalanceToMaintain).ToCoin(), 'f', 0, 64))
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
-		wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
 		err := tb.accountSelector.SelectFirstValidAccount(wl)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
@@ -180,7 +194,7 @@ func (tb *ticketBuyerModal) canSave() bool {
 func (tb *ticketBuyerModal) initializeAccountSelector() {
 	tb.accountSelector = components.NewWalletAndAccountSelector(tb.Load).
 		Title(values.String(values.StrPurchasingAcct)).
-		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {}).
+		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
 			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
@@ -188,12 +202,13 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
-				accountIsValid = account.Number == tb.WL.SelectedWallet.Wallet.MixedAccountNumber()
+				dcrImpl := tb.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+				accountIsValid = account.Number == dcrImpl.MixedAccountNumber()
 			}
 
 			return accountIsValid
 		})
-	wl := components.NewDCRCommonWallet(tb.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
 	tb.accountSelector.SelectFirstValidAccount(wl)
 }
 
@@ -220,7 +235,7 @@ func (tb *ticketBuyerModal) Handle() {
 		balToMaintain := dcr.AmountAtom(amount)
 		account := tb.accountSelector.SelectedAccount()
 
-		tb.WL.SelectedWallet.Wallet.SetAutoTicketsBuyerConfig(vspHost, account.Number, balToMaintain)
+		tb.dcrImpl.SetAutoTicketsBuyerConfig(vspHost, account.Number, balToMaintain)
 		tb.settingsSaved()
 		tb.Dismiss()
 	}

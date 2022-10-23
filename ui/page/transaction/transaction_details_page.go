@@ -74,7 +74,8 @@ type TxDetailsPage struct {
 	ticketSpender *sharedW.Transaction // vote or revoke ticket
 	ticketSpent   *sharedW.Transaction // ticket spent in a vote or revoke
 	txBackStack   *sharedW.Transaction // track original transaction
-	wallet        *dcr.DCRAsset
+	wallet        sharedW.Asset
+	dcrImpl       *dcr.DCRAsset
 
 	moreItems  []moreItem
 	txnWidgets transactionWdg
@@ -88,6 +89,12 @@ type TxDetailsPage struct {
 }
 
 func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, isTicket bool) *TxDetailsPage {
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if impl == nil {
+		log.Error("Only DCR implementation is supported")
+		return nil
+	}
+
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -112,6 +119,8 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, i
 		destAddressClickable:      l.Theme.NewClickable(true),
 		moreOption:                l.Theme.NewClickable(false),
 		shadowBox:                 l.Theme.Shadow(),
+
+		dcrImpl: impl,
 
 		transaction:          transaction,
 		wallet:               l.WL.SelectedWallet.Wallet,
@@ -151,7 +160,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 		case dcr.TxDirectionSent:
 			// mixed account number
 			if pg.transaction.Type == dcr.TxTypeMixed &&
-				output.AccountNumber == pg.WL.SelectedWallet.Wallet.UnmixedAccountNumber() {
+				output.AccountNumber == pg.dcrImpl.UnmixedAccountNumber() {
 				accountName, err := pg.wallet.AccountName(output.AccountNumber)
 				if err != nil {
 					log.Error(err)
@@ -188,13 +197,13 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 		pg.ticketSpent, _ = pg.wallet.GetTransactionRaw(pg.transaction.TicketSpentHash)
 	}
 
-	if ok, _ := pg.wallet.TicketHasVotedOrRevoked(pg.transaction.Hash); ok {
-		pg.ticketSpender, _ = pg.wallet.TicketSpender(pg.transaction.Hash)
+	if ok, _ := pg.dcrImpl.TicketHasVotedOrRevoked(pg.transaction.Hash); ok {
+		pg.ticketSpender, _ = pg.dcrImpl.TicketSpender(pg.transaction.Hash)
 	}
 
 	if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterStaking) {
 		go func() {
-			info, err := pg.wallet.VSPTicketInfo(pg.transaction.Hash)
+			info, err := pg.dcrImpl.VSPTicketInfo(pg.transaction.Hash)
 			if err != nil {
 				log.Errorf("VSPTicketInfo error: %v\n", err)
 			}
@@ -396,7 +405,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 
 							switch pg.txnWidgets.txStatus.TicketStatus {
 							case dcr.TicketStatusImmature:
-								maturity := pg.wallet.TicketMaturity()
+								maturity := pg.dcrImpl.TicketMaturity()
 								blockTime := pg.wallet.TargetTimePerBlockMinutes()
 								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 
@@ -413,7 +422,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 										return lbl.Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										expiry := pg.wallet.TicketExpiry()
+										expiry := pg.dcrImpl.TicketExpiry()
 										lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc,
 											expiry, pg.getTimeToMatureOrExpire(), expiry))
 										lbl.Color = col
@@ -483,9 +492,9 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 }
 
 func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
-	progressMax := pg.wallet.TicketMaturity()
+	progressMax := pg.dcrImpl.TicketMaturity()
 	if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusLive {
-		progressMax = pg.wallet.TicketExpiry()
+		progressMax = pg.dcrImpl.TicketExpiry()
 	}
 
 	confs := dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.transaction)
@@ -939,7 +948,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 	if pg.rebroadcastClickable.Clicked() {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
-			if !pg.Load.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
+			if !pg.Load.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 				// if user is not conected to the network, notify the user
 				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)
@@ -991,7 +1000,7 @@ func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionW
 	t := time.Unix(transaction.Timestamp, 0).UTC()
 	txn.time = l.Theme.Body2(t.Format(time.UnixDate))
 	txn.status = l.Theme.Body1("")
-	txn.wallet = l.Theme.Body2(wal.Name)
+	txn.wallet = l.Theme.Body2(wal.GetWalletName())
 
 	if components.TxConfirmations(l, *transaction) > 1 {
 		txn.status.Text = components.FormatDateOrTime(transaction.Timestamp)

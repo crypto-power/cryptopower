@@ -9,7 +9,6 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -24,14 +23,22 @@ type agendaVoteModal struct {
 
 	accountSelector *components.WalletAndAccountSelector
 	accountSelected *sharedW.Account
+	dcrImpl         *dcr.DCRAsset
 }
 
 func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	if impl == nil {
+		// log.Warn(values.ErrDCRSupportedOnly)
+		return nil
+	}
+
 	avm := &agendaVoteModal{
 		agenda:              agenda,
 		CreatePasswordModal: modal.NewCreatePasswordModal(l),
 		voteChoice:          votechoice,
 		onPreferenceUpdated: onPreferenceUpdated,
+		dcrImpl:             impl,
 	}
 	avm.EnableName(false)
 	avm.EnableConfirmPassword(false)
@@ -41,7 +48,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 	// Source account picker
 	avm.accountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrSelectAcc)).
-		AccountSelected(func(selectedAccount *sharedW.Account, walletType utils.WalletType) {
+		AccountSelected(func(selectedAccount *sharedW.Account) {
 			avm.accountSelected = selectedAccount
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
@@ -52,7 +59,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	wl := components.NewDCRCommonWallet(avm.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(avm.WL.SelectedWallet.Wallet)
 	avm.accountSelector.SelectFirstValidAccount(wl)
 }
 
@@ -75,7 +82,7 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 }
 
 func (avm *agendaVoteModal) sendVotes(_, password string, m *modal.CreatePasswordModal) bool {
-	err := avm.CreatePasswordModal.WL.SelectedWallet.Wallet.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", []byte(password))
+	err := avm.dcrImpl.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", password)
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())
 		avm.CreatePasswordModal.SetLoading(false)

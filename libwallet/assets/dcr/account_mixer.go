@@ -57,7 +57,7 @@ func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPas
 		return errors.New(utils.ErrExist)
 	}
 
-	err := asset.UnlockWallet([]byte(privPass))
+	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (asset *DCRAsset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32,
 		return errors.New(utils.ErrNotExist)
 	}
 
-	err = asset.UnlockWallet([]byte(privPass))
+	err = asset.UnlockWallet(privPass)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
 		// c.VotingAccount = 0 // TODO: VotingAccount should be configurable.
 	})
 
-	err = asset.UnlockWallet([]byte(walletPassphrase))
+	err = asset.UnlockWallet(walletPassphrase)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -287,7 +287,7 @@ func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error
 
 	hasMixableOutput := false
 	for _, input := range inputDetail.Inputs {
-		if AmountCoin(input.ValueIn) > smalletSplitPoint {
+		if asset.ToAmount(input.ValueIn).ToCoin() > smalletSplitPoint {
 			hasMixableOutput = true
 			break
 		}

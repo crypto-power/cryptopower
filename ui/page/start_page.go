@@ -33,10 +33,6 @@ type startPage struct {
 
 	addWalletButton cryptomaterial.Button
 
-	// to be removed after full layout migration
-	newlayout    cryptomaterial.Button
-	legacyLayout cryptomaterial.Button
-
 	loading bool
 }
 
@@ -57,11 +53,10 @@ func NewStartPage(l *load.Load) app.Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (sp *startPage) OnNavigatedTo() {
-	sp.setLanguageSetting()
-
 	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
+		sp.setLanguageSetting()
 		// Set the log levels.
 		sp.WL.MultiWallet.GetLogLevels()
 		if sp.WL.MultiWallet.IsStartupSecuritySet() {
@@ -85,6 +80,7 @@ func (sp *startPage) unlock() {
 			sp.WL.MultiWallet.Shutdown()
 			os.Exit(0)
 		}).
+		SetCancelable(false).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			err := sp.openWallets(password)

@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget/material"
 
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -239,10 +240,11 @@ func (pg *CreateWallet) Layout(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.backButton.Layout),
 				layout.Rigid(func(gtx C) D {
-					return pg.list.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+					return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 						return layout.Inset{
 							Top:    values.MarginPadding26,
 							Bottom: values.MarginPadding10,
+							Right:  values.MarginPadding10,
 						}.Layout(gtx, pageContent[i])
 					})
 				}),
@@ -515,7 +517,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					}
 					return errFunc(err.Error())
 				}
-				err = wal.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
+				dcrUniqueImpl := wal.(*dcr.DCRAsset)
+				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 				if err != nil {
 					return errFunc(err.Error())
 				}
@@ -580,7 +583,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 func (pg *CreateWallet) validInputs() bool {
 	pg.walletName.SetError("")
 	pg.watchOnlyWalletHex.SetError("")
-	if !components.StringNotEmpty(pg.walletName.Editor.Text()) {
+	if !utils.StringNotEmpty(pg.walletName.Editor.Text()) {
 		pg.walletName.SetError(values.String(values.StrEnterWalletName))
 		return false
 	}
@@ -590,7 +593,7 @@ func (pg *CreateWallet) validInputs() bool {
 		return false
 	}
 
-	if pg.watchOnlyCheckBox.CheckBox.Value && !components.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
+	if pg.watchOnlyCheckBox.CheckBox.Value && !utils.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
 		pg.watchOnlyWalletHex.SetError(values.String(values.StrEnterExtendedPubKey))
 		return false
 	}

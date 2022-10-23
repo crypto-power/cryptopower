@@ -11,6 +11,7 @@ import (
 
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -35,7 +36,7 @@ type VerifySeedPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet        *dcr.DCRAsset
+	wallet        sharedW.Asset
 	seed          string
 	multiSeedList []shuffledSeedWords
 
@@ -47,7 +48,7 @@ type VerifySeedPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewVerifySeedPage(l *load.Load, wallet *dcr.DCRAsset, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
@@ -167,7 +168,7 @@ func (pg *VerifySeedPage) verifySeed() {
 		Title("Confirm to verify seed").
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed := pg.selectedSeedPhrase()
-			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, []byte(password))
+			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
 			if err != nil {
 				if err.Error() == utils.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)

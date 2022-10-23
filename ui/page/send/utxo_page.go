@@ -8,8 +8,8 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -138,7 +138,8 @@ func (pg *UTXOPage) handlerCheckboxes(cb *cryptomaterial.CheckBoxStyle, utxo *wa
 }
 
 func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
-	unsignedTx, err := pg.WL.SelectedWallet.Wallet.NewUnsignedTx(pg.selectedAccountID)
+	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	err := dcrImpl.NewUnsignedTx(pg.selectedAccountID)
 	if err != nil {
 		return
 	}
@@ -150,17 +151,19 @@ func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
 		totalAmount += utxo.UTXO.Amount
 	}
 
-	err = unsignedTx.UseInputs(utxoKeys)
+	err = dcrImpl.UseInputs(utxoKeys)
 	if err != nil {
 		return
 	}
-	feeAndSize, err := unsignedTx.EstimateFeeAndSize()
+	feeAndSize, err := dcrImpl.EstimateFeeAndSize()
 	if err != nil {
 		return
 	}
-	pg.txnAmount = dcrutil.Amount(totalAmount).String()
-	pg.txnFee = dcrutil.Amount(feeAndSize.Fee.AtomValue).String()
-	pg.txnAmountAfterFee = dcrutil.Amount(totalAmount - feeAndSize.Fee.AtomValue).String()
+
+	wal := pg.WL.SelectedWallet.Wallet
+	pg.txnAmount = wal.ToAmount(totalAmount).String()
+	pg.txnFee = wal.ToAmount(feeAndSize.Fee.UnitValue).String()
+	pg.txnAmountAfterFee = wal.ToAmount(totalAmount - feeAndSize.Fee.UnitValue).String()
 }
 
 func (pg *UTXOPage) clearPageData() {

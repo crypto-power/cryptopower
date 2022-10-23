@@ -5,11 +5,12 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -30,7 +31,7 @@ type BackupInstructionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	wallet *dcr.DCRAsset
+	wallet sharedW.Asset
 
 	backButton  cryptomaterial.IconButton
 	viewSeedBtn cryptomaterial.Button
@@ -40,7 +41,7 @@ type BackupInstructionsPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewBackupInstructionsPage(l *load.Load, wallet *dcr.DCRAsset, redirect Redirectfunc) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
@@ -175,7 +176,7 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 					Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(4)},
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if !components.StringNotEmpty(infoText) {
+						if !utils.StringNotEmpty(infoText) {
 							return D{}
 						}
 						label := theme.Label(values.TextSize14, infoText)

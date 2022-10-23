@@ -138,9 +138,9 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 			log.Error(err)
 		}
 
-		walCount := accounts.Count
+		walCount := len(accounts.Accounts)
 		// Filter out imported account and default account.
-		for _, v := range accounts.Acc {
+		for _, v := range accounts.Accounts {
 			if v.Number == dcr.ImportedAccountNumber || v.Number == dcr.DefaultAccountNum {
 				walCount--
 			}

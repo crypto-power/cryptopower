@@ -8,8 +8,8 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -51,15 +51,19 @@ type WalletDexServerSelector struct {
 	settings        *cryptomaterial.Clickable
 
 	// wallet selector options
-	listLock             sync.Mutex
-	mainWalletList       []*load.WalletItem
-	mainBTCWalletList    []*load.BTCWalletItem
-	watchOnlyWalletList  []*load.WalletItem
-	badWalletsList       []*badWalletListItem
-	walletsList          *cryptomaterial.ClickableList
-	BTCwalletsList       *cryptomaterial.ClickableList
-	watchOnlyWalletsList *cryptomaterial.ClickableList
-	walletSelected       func()
+	listLock               sync.RWMutex
+	dcrWalletList          []*load.WalletItem
+	btcWalletList          []*load.WalletItem
+	btcWatchOnlyWalletList []*load.WalletItem
+	dcrWatchOnlyWalletList []*load.WalletItem
+	dcrBadWalletsList      []*badWalletListItem
+	btcBadWalletsList      []*badWalletListItem
+
+	dcrComponents          *cryptomaterial.ClickableList
+	btcComponents          *cryptomaterial.ClickableList
+	dcrWatchOnlyComponents *cryptomaterial.ClickableList
+	btcWatchOnlyComponents *cryptomaterial.ClickableList
+	walletSelected         func()
 
 	// dex selector options
 	knownDexServers   *cryptomaterial.ClickableList
@@ -96,7 +100,7 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	// init shared page functions
 	toggleSync := func() {
-		if pg.WL.SelectedWallet.Wallet.IsConnectedToDecredNetwork() {
+		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			pg.WL.SelectedWallet.Wallet.CancelSync()
 		} else {
 			pg.startSyncing(pg.WL.SelectedWallet.Wallet)
@@ -115,11 +119,13 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForNotifications()
-	pg.loadWallets()
+	pg.loadDCRWallets()
 	pg.loadBTCWallets()
+	pg.loadBadWallets()
 	pg.startDexClient()
 
-	for _, wallet := range pg.WL.SortedWalletList() {
+	for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
+		// Sync implementation for BTC wallet doesn't exist thus btc wallets can't be synced.
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
 		}
@@ -133,30 +139,35 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	pg.listLock.Lock()
-	mainWalletList := pg.mainWalletList
-	mainBTCWalletList := pg.mainBTCWalletList
-	watchOnlyWalletList := pg.watchOnlyWalletList
-	pg.listLock.Unlock()
+	defer pg.listLock.Unlock()
 
-	if ok, selectedItem := pg.walletsList.ItemClicked(); ok {
-		pg.WL.SelectedWallet = mainWalletList[selectedItem]
-		pg.WL.SelectedWalletType = "DCR"
+	if ok, selectedItem := pg.dcrComponents.ItemClicked(); ok {
+		pg.WL.SelectedWallet = pg.dcrWalletList[selectedItem]
 		pg.walletSelected()
 	}
 
-	if ok, selectedItem := pg.BTCwalletsList.ItemClicked(); ok {
-		pg.WL.SelectedBTCWallet = mainBTCWalletList[selectedItem]
-		pg.WL.SelectedWalletType = "BTC"
+	if ok, selectedItem := pg.btcComponents.ItemClicked(); ok {
+		pg.WL.SelectedWallet = pg.btcWalletList[selectedItem]
 		pg.walletSelected()
 	}
 
-	if ok, selectedItem := pg.watchOnlyWalletsList.ItemClicked(); ok {
-		pg.WL.SelectedWallet = watchOnlyWalletList[selectedItem]
-		pg.WL.SelectedWalletType = "DCR"
+	if ok, selectedItem := pg.btcWatchOnlyComponents.ItemClicked(); ok {
+		pg.WL.SelectedWallet = pg.btcWatchOnlyWalletList[selectedItem]
 		pg.walletSelected()
 	}
 
-	for _, badWallet := range pg.badWalletsList {
+	if ok, selectedItem := pg.dcrWatchOnlyComponents.ItemClicked(); ok {
+		pg.WL.SelectedWallet = pg.dcrWatchOnlyWalletList[selectedItem]
+		pg.walletSelected()
+	}
+
+	for _, badWallet := range pg.btcBadWalletsList {
+		if badWallet.deleteBtn.Clicked() {
+			pg.deleteBadWallet(badWallet.ID)
+		}
+	}
+
+	for _, badWallet := range pg.dcrBadWalletsList {
 		if badWallet.deleteBtn.Clicked() {
 			pg.deleteBadWallet(badWallet.ID)
 		}
@@ -252,7 +263,7 @@ func (pg *WalletDexServerSelector) sectionTitle(title string) layout.Widget {
 func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.walletListLayout,
+		pg.DCRwalletListLayout,
 		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
@@ -311,8 +322,8 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.DCRAsset) {
-	if !wallet.HasDiscoveredAccounts && wallet.IsLocked() {
+func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
+	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() {
 		pg.unlockWalletForSyncing(wallet)
 		return
 	}
@@ -325,7 +336,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet *dcr.DCRAsset) {
 
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.DCRAsset) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -333,7 +344,7 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal *dcr.DCRAsset) {
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := wal.UnlockWallet([]byte(password))
+			err := wal.UnlockWallet(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)

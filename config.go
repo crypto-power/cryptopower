@@ -19,7 +19,7 @@ const (
 	defaultNetwork        = "mainnet"
 	defaultConfigFileName = "cryptopower.conf"
 	defaultLogFilename    = "cryptopower.log"
-	defaultLogLevel       = "info"
+	defaultLogLevel       = "off" // Turn off logging by default.
 	defaultLogDirname     = "logs"
 )
 
@@ -36,7 +36,7 @@ type config struct {
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
 	MaxLogZips       int    `long:"max-log-zips" description:"The number of zipped log files created by the log rotator to be retained. Setting to 0 will keep all."`
 	LogDir           string `long:"logdir" description:"Directory to log output."`
-	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical}"`
+	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"off"`
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the multiwallet to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`

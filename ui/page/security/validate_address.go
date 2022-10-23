@@ -10,6 +10,7 @@ import (
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
+	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -66,7 +67,7 @@ func NewValidateAddressPage(l *load.Load) *ValidateAddressPage {
 func (pg *ValidateAddressPage) OnNavigatedTo() {
 	pg.addressEditor.Editor.Focus()
 
-	pg.validateBtn.SetEnabled(components.StringNotEmpty(pg.addressEditor.Editor.Text()))
+	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 }
 
 // Layout draws the page UI components into the provided C
@@ -145,11 +146,6 @@ func (pg *ValidateAddressPage) actionButtons() layout.Widget {
 	}
 }
 
-func (pg *ValidateAddressPage) lineSeparator(gtx C) D {
-	m := values.MarginPadding10
-	return layout.Inset{Top: m, Bottom: m}.Layout(gtx, pg.Theme.Separator().Layout)
-}
-
 func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
@@ -168,7 +164,7 @@ func (pg *ValidateAddressPage) pageSections(gtx C, body layout.Widget) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ValidateAddressPage) HandleUserInteractions() {
-	pg.validateBtn.SetEnabled(components.StringNotEmpty(pg.addressEditor.Editor.Text()))
+	pg.validateBtn.SetEnabled(utils.StringNotEmpty(pg.addressEditor.Editor.Text()))
 
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.addressEditor.Editor)
 	if isChanged {
@@ -193,7 +189,7 @@ func (pg *ValidateAddressPage) validateAddress() {
 	address := pg.addressEditor.Editor.Text()
 	pg.addressEditor.SetError("")
 
-	if !components.StringNotEmpty(address) {
+	if !utils.StringNotEmpty(address) {
 		pg.addressEditor.SetError(values.String(values.StrEnterValidAddress))
 		return
 	}
