@@ -159,9 +159,7 @@ func (tx *transaction) ReadWriteBucket(key []byte) walletdb.ReadWriteBucket {
 	if boltBucket == nil {
 		return nil
 	}
-	b := &bucket{upstream: boltBucket}
-	// fmt.Println("NEsted Bucket ", nil == b.NestedReadBucket(key))
-	return b
+	return &bucket{upstream: boltBucket}
 }
 
 // CreateTopLevelBucket creates the top level bucket for a key if it

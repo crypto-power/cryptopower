@@ -192,7 +192,8 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 }
 
 func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
-	err = asset.connect(wg)
+	ctx, _ := asset.ShutdownContextWithCancel()
+	err = asset.connect(ctx, wg)
 	if err != nil {
 		return err
 	}
@@ -200,9 +201,8 @@ func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
 	return nil
 }
 
-// TODO: NOT USED.
 // connect will start the wallet and begin syncing.
-func (asset *BTCAsset) connect(wg *sync.WaitGroup) error {
+func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	err := asset.startWallet()
 	if err != nil {
 		return err
@@ -214,7 +214,6 @@ func (asset *BTCAsset) connect(wg *sync.WaitGroup) error {
 	return nil
 }
 
-// TODO: NOT USED.
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() error {
