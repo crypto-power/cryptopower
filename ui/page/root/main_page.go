@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
+	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
@@ -310,6 +312,12 @@ func (mp *MainPage) OnNavigatedTo() {
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
 	} else if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
+		wg := new(sync.WaitGroup)
+		err := mp.WL.SelectedWallet.Wallet.(*btc.BTCAsset).ConnectSPVWallet(wg)
+		if err != nil {
+			log.Warn("error occured when starting BTC sync: ", err)
+		}
+
 		if mp.CurrentPage() == nil {
 			mp.Display(NewBTCWalletSettingsPage(mp.Load)) // TODO: Should pagestack have a start page?
 		}
