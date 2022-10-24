@@ -193,12 +193,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 
 func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
 	ctx, _ := asset.ShutdownContextWithCancel()
-	err = asset.connect(ctx, wg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return asset.connect(ctx, wg)
 }
 
 // connect will start the wallet and begin syncing.

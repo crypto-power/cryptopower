@@ -176,11 +176,7 @@ func (tx *transaction) CreateTopLevelBucket(key []byte) (walletdb.ReadWriteBucke
 // errors if the bucket can not be found or the key keys a single value
 // instead of a bucket.
 func (tx *transaction) DeleteTopLevelBucket(key []byte) error {
-	err := tx.boltTx.DeleteBucket(key)
-	if err != nil {
-		return err
-	}
-	return nil
+	return tx.boltTx.DeleteBucket(key)
 }
 
 // Commit commits all changes that have been on the transaction's root

@@ -92,17 +92,6 @@ func openOrCreateDB(dbPath string) (*storm.DB, error) {
 		}
 	}
 
-	// options := &bbolt.Options{
-	// 	NoFreelistSync: false,
-	// 	FreelistType:   bbolt.FreelistMapType,
-	// 	Timeout:        10 * time.Second,
-	// }
-
-	// walletDataDB.Bolt, err = bolt.Open(dbPath, 0600, options)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	if isNewDbFile {
 		err = walletDataDB.Set(TxBucketName, KeyDbVersion, TxDbVersion)
 		if err != nil {
