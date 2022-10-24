@@ -51,7 +51,6 @@ type ReceivePage struct {
 	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
-	ops               *op.Ops
 	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
 
@@ -453,7 +452,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrReceive)+" DCR").
 			Body(values.String(values.StrReceiveInfo)).
-			SetContentAlignment(layout.NW, layout.Center)
+			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		pg.ParentWindow().ShowModal(info)
 	}
 }

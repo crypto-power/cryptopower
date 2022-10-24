@@ -611,7 +611,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
 			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-			SetContentAlignment(layout.W, layout.Center).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
 			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
 			Title(values.String(values.StrSecurityTools))
 		pg.ParentWindow().ShowModal(info)

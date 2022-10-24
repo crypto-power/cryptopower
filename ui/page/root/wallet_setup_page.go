@@ -40,7 +40,6 @@ type decredAction struct {
 type bitcoinAction struct {
 	title     string
 	clickable *cryptomaterial.Clickable
-	action    func()
 	border    cryptomaterial.Border
 	width     unit.Dp
 }

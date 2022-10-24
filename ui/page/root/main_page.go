@@ -76,7 +76,6 @@ type MainPage struct {
 	usdExchangeRate       float64
 	totalBalance          sharedW.AssetAmount
 	currencyExchangeValue string
-	dcrUsdtBittrex        load.DCRUSDTBittrex
 	btcUsdtBittrex        load.BTCUSDTBittrex
 
 	usdExchangeSet         bool
@@ -1089,7 +1088,7 @@ func (mp *MainPage) showBackupInfo() {
 	backupNowOrLaterModal := modal.NewCustomModal(mp.Load).
 		SetupWithTemplate(modal.WalletBackupInfoTemplate).
 		SetCancelable(false).
-		SetContentAlignment(layout.W, layout.Center).
+		SetContentAlignment(layout.W, layout.W, layout.Center).
 		CheckBox(mp.checkBox, true).
 		SetNegativeButtonText(values.String(values.StrBackupLater)).
 		SetNegativeButtonCallback(func() {
