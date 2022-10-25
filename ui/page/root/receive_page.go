@@ -121,19 +121,19 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Filter out imported account and mixed.
 			if account.Number == load.MaxInt32 {
-				wal := pg.multiWallet.WalletWithID(account.WalletID)
-				if wal.GetAssetType() != utils.DCRWalletAsset {
-					return true
-				} else {
-					dcrIntf := wal.(*dcr.DCRAsset)
-					if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
-						// only applies if the selected wallet is of type dcr.
-						return true
-					}
-					return false
-				}
+				return false
 			}
-			return true
+			wal := pg.multiWallet.WalletWithID(account.WalletID)
+			if wal.GetAssetType() != utils.DCRWalletAsset {
+				return true
+			} else {
+				dcrIntf := wal.(*dcr.DCRAsset)
+				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
+					// only applies if the selected wallet is of type dcr.
+					return true
+				}
+				return false
+			}
 		})
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet)
 
