@@ -619,10 +619,14 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	if pg.fetchProposal.Changed() {
 		if pg.fetchProposal.IsChecked() {
-			go pg.WL.MultiWallet.Politeia.Sync(context.Background())
-			// set proposal notification config when proposal fetching is enabled
-			pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
+			if !pg.WL.MultiWallet.Politeia.IsSyncing() {
+				go pg.WL.MultiWallet.Politeia.Sync(context.Background())
+				// set proposal notification config when proposal fetching is enabled
+				pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
+				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
+			} else {
+				pg.fetchProposal.SetChecked(false)
+			}
 		} else {
 			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrGovernance)).

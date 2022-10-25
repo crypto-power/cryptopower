@@ -31,9 +31,9 @@ const (
 
 // Sync fetches all proposals from the server and
 func (p *Politeia) Sync(ctx context.Context) error {
-	p.mu.Lock()
+	p.mu.RLock()
 	if p.cancelSync != nil {
-		p.mu.Unlock()
+		p.mu.RUnlock()
 		return errors.New(ErrSyncAlreadyInProgress)
 	}
 
@@ -41,10 +41,9 @@ func (p *Politeia) Sync(ctx context.Context) error {
 	defer func() {
 		p.cancelSync = nil
 	}()
-	p.mu.Unlock()
+	p.mu.RUnlock()
 
 	log.Info("Politeia sync: started")
-
 	for {
 		_, err := p.getClient()
 		if err != nil {
@@ -84,12 +83,12 @@ func (p *Politeia) IsSyncing() bool {
 }
 
 func (p *Politeia) StopSync() {
-	p.mu.Lock()
+	p.mu.RLock()
 	if p.cancelSync != nil {
 		p.cancelSync()
 		p.cancelSync = nil
 	}
-	p.mu.Unlock()
+	p.mu.RUnlock()
 	log.Info("Politeia sync: stopped")
 }
 
