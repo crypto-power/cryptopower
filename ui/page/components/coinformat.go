@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/unit"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
@@ -66,11 +67,13 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 	)
 }
 
+// getIndexUnit returns index of unit currency in amount and
+// helps to break out the unit part from the amount string.
 func getIndexUnit(amount string) int {
-	if strings.Contains(amount, "BTC") {
-		return strings.Index(amount, " BTC")
-	} else if strings.Contains(amount, "DCR") {
-		return strings.Index(amount, " DCR")
+	if strings.Contains(amount, string(utils.BTCWalletAsset)) {
+		return strings.Index(amount, " "+string(utils.BTCWalletAsset))
+	} else if strings.Contains(amount, string(utils.DCRWalletAsset)) {
+		return strings.Index(amount, " "+string(utils.DCRWalletAsset))
 	} else {
 		return -1
 	}

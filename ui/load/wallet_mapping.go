@@ -8,6 +8,8 @@ import (
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
+// WalletMapping helps to call a function quickly no matter what currency it is,
+// it is used for separate functions without an interface for general use
 type WalletMapping struct {
 	sharedW.Asset
 }
@@ -23,9 +25,9 @@ func (wallt *WalletMapping) AddTxAndBlockNotificationListener(txAndBlockNotifica
 	case *dcr.DCRAsset:
 		return asset.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, async, uniqueIdentifier)
 	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet not support this function")
+		return fmt.Errorf("btc wallet does not support this function")
 	default:
-		return fmt.Errorf("none type of wallet")
+		return fmt.Errorf("wallet not supported")
 	}
 }
 
@@ -35,8 +37,8 @@ func (wallt *WalletMapping) RemoveTxAndBlockNotificationListener(uniqueIdentifie
 		asset.RemoveTxAndBlockNotificationListener(uniqueIdentifier)
 		return nil
 	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet not support this function")
+		return fmt.Errorf("btc wallet does not support this function")
 	default:
-		return fmt.Errorf("none type of wallet")
+		return fmt.Errorf("wallet not supported")
 	}
 }

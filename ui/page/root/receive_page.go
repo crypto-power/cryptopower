@@ -362,10 +362,7 @@ func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			textWithUnit := values.String(values.StrReceive) + " DCR"
-			if pg.selectedWallet.Asset.GetAssetType() == utils.BTCWalletAsset {
-				textWithUnit = values.String(values.StrReceive) + " BTC"
-			}
+			textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
 			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(textWithUnit).Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
@@ -461,10 +458,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		textWithUnit := values.String(values.StrReceive) + " DCR"
-		if pg.selectedWallet.Asset.GetAssetType() == utils.BTCWalletAsset {
-			textWithUnit = values.String(values.StrReceive) + " BTC"
-		}
+		textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
 			Body(values.String(values.StrReceiveInfo)).
