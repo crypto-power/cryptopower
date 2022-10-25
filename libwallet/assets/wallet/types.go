@@ -96,8 +96,6 @@ type Balance struct {
 
 type Account struct {
 	// DCR fields
-	Number           int32
-	Name             string
 	ExternalKeyCount int32
 	InternalKeyCount int32
 	ImportedKeyCount int32
@@ -108,6 +106,8 @@ type Account struct {
 	// Has some fields common to both BTC and DCR
 	WalletID int
 	Balance  *Balance
+	Number   int32
+	Name     string
 }
 
 type Accounts struct {

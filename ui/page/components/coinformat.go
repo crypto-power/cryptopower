@@ -35,7 +35,11 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 		startIndex = loc[1] // start scaling from the end
 	}
 
-	stopIndex = strings.Index(amount, " DCR")
+	stopIndex = getIndexUnit(amount)
+	isUnitExist := stopIndex != -1
+	if isUnitExist {
+		stopIndex = len(amount)
+	}
 
 	mainText, subText, unitText := amount[:startIndex], amount[startIndex:stopIndex], amount[stopIndex:]
 
@@ -60,6 +64,16 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 			return l.Theme.Label(subTextSize, unitText).Layout(gtx)
 		}),
 	)
+}
+
+func getIndexUnit(amount string) int {
+	if strings.Contains(amount, "BTC") {
+		return strings.Index(amount, " BTC")
+	} else if strings.Contains(amount, "DCR") {
+		return strings.Index(amount, " DCR")
+	} else {
+		return -1
+	}
 }
 
 // LayoutBalance aligns the main and sub DCR balances horizontally, putting the sub

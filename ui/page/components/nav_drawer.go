@@ -127,7 +127,7 @@ func (nd *NavDrawer) LayoutBTCNavDrawer(gtx layout.Context) layout.Dimensions {
 				mGtx := gtx
 				background := nd.Theme.Color.Surface
 
-				if nd.BTCDrawerNavItems[i].PageID != values.String(values.StrSettings) && nd.BTCDrawerNavItems[i].PageID != values.String(values.StrReceive) {
+				if nd.BTCDrawerNavItems[i].PageID != "BTCWalletSettings" && nd.BTCDrawerNavItems[i].PageID != values.String(values.StrReceive) {
 					background = cryptomaterial.Disabled(nd.Theme.Color.Gray5)
 					mGtx = gtx.Disabled()
 				}

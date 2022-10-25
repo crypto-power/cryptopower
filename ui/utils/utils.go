@@ -19,9 +19,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
@@ -269,22 +266,4 @@ func StringNotEmpty(texts ...string) bool {
 	}
 
 	return true
-}
-
-func IsDCR(asset sharedW.Asset) bool {
-	switch asset.(type) {
-	case *dcr.DCRAsset:
-		return true
-	default:
-		return false
-	}
-}
-
-func IsBTC(asset sharedW.Asset) bool {
-	switch asset.(type) {
-	case *btc.BTCAsset:
-		return true
-	default:
-		return false
-	}
 }

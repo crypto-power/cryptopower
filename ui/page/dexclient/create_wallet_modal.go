@@ -15,10 +15,10 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	libdcr "gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	libUtil "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
@@ -71,7 +71,7 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 			// Filter out imported account and mixed.
 			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
 			//TODO: Implement BTC
-			if utils.IsBTC(wal) {
+			if wal.GetAssetType() != libUtil.DCRWalletAsset {
 				return true
 			}
 			if account.Number == load.MaxInt32 ||

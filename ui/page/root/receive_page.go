@@ -20,11 +20,11 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/utils"
 	"gitlab.com/raedah/cryptopower/ui/values"
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )
@@ -119,19 +119,19 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			pg.generateQRForAddress()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.multiWallet.WalletWithID(account.WalletID)
-			if !utils.IsDCR(wal) {
-				return true
-			}
-
 			// Filter out imported account and mixed.
 			if account.Number == load.MaxInt32 {
-				dcrIntf := wal.(*dcr.DCRAsset)
-				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
-					// only applies if the selected wallet is of type dcr.
+				wal := pg.multiWallet.WalletWithID(account.WalletID)
+				if wal.GetAssetType() != utils.DCRWalletAsset {
 					return true
+				} else {
+					dcrIntf := wal.(*dcr.DCRAsset)
+					if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
+						// only applies if the selected wallet is of type dcr.
+						return true
+					}
+					return false
 				}
-				return false
 			}
 			return true
 		})

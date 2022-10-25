@@ -527,7 +527,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				totalBal = t.Balance.Total.String()
 				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
-			case sharedW.Asset:
+			case *load.WalletMapping:
 				tb, sb := walletBalance(t)
 				totalBal = t.ToAmount(tb).String()
 				spendableBal = t.ToAmount(sb).String()
