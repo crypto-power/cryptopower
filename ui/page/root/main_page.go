@@ -500,6 +500,8 @@ func (mp *MainPage) HandleUserInteractions() {
 			switch item.PageID {
 			case BTCWalletSettingsPageID:
 				pg = NewBTCWalletSettingsPage(mp.Load)
+			case ReceivePageID:
+				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			}

@@ -59,7 +59,8 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	avm.accountSelector.SelectFirstValidAccount(avm.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(avm.WL.SelectedWallet.Wallet)
+	avm.accountSelector.SelectFirstValidAccount(wl)
 }
 
 // - Layout

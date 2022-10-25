@@ -92,6 +92,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		go tb.dcrImpl.ReloadVSPList(context.TODO())
 	}
 
+	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
+
 	// loop through all available wallets and select the one with ticket buyer config.
 	// if non, set the selected wallet to the first.
 	// temporary work around for only one wallet.
@@ -108,7 +110,7 @@ func (tb *ticketBuyerModal) OnResume() {
 			(tbConfig.PurchaseAccount == tb.dcrImpl.MixedAccountNumber()) {
 			tb.accountSelector.SetSelectedAccount(acct)
 		} else {
-			if err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet); err != nil {
+			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}
@@ -120,7 +122,7 @@ func (tb *ticketBuyerModal) OnResume() {
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
-		err := tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
+		err := tb.accountSelector.SelectFirstValidAccount(wl)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
@@ -206,7 +208,8 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 
 			return accountIsValid
 		})
-	tb.accountSelector.SelectFirstValidAccount(tb.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
+	tb.accountSelector.SelectFirstValidAccount(wl)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {

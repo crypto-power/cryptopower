@@ -74,7 +74,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	pg.mixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
+	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title("Unmixed account").
@@ -97,7 +98,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	pg.unmixedAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -111,8 +112,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.mixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
+	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
 }
 
 // Layout draws the page UI components into the provided layout context

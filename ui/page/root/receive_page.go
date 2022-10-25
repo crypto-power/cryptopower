@@ -20,6 +20,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -54,9 +55,10 @@ type ReceivePage struct {
 	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
 
-	isCopying  bool
-	backdrop   *widget.Clickable
-	infoButton cryptomaterial.IconButton
+	isCopying      bool
+	backdrop       *widget.Clickable
+	infoButton     cryptomaterial.IconButton
+	selectedWallet *load.WalletMapping
 }
 
 func NewReceivePage(l *load.Load) *ReceivePage {
@@ -77,6 +79,9 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
 		backdrop:       new(widget.Clickable),
+	}
+	pg.selectedWallet = &load.WalletMapping{
+		Asset: l.WL.SelectedWallet.Wallet,
 	}
 
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
@@ -114,10 +119,14 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			pg.generateQRForAddress()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-
 			// Filter out imported account and mixed.
-			wal := pg.multiWallet.WalletWithID(account.WalletID)
 			if account.Number == load.MaxInt32 {
+				return false
+			}
+			wal := pg.multiWallet.WalletWithID(account.WalletID)
+			if wal.GetAssetType() != utils.DCRWalletAsset {
+				return true
+			} else {
 				dcrIntf := wal.(*dcr.DCRAsset)
 				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
 					// only applies if the selected wallet is of type dcr.
@@ -125,9 +134,8 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 				}
 				return false
 			}
-			return true
 		})
-	pg.selector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	pg.selector.SelectFirstValidAccount(pg.selectedWallet)
 
 	return pg
 }
@@ -139,7 +147,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.selector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet) // Want to reset the user's selection everytime this page appears?
+	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
@@ -354,7 +362,8 @@ func (pg *ReceivePage) topNav(gtx C) D {
 	m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(values.String(values.StrReceive)+" DCR").Layout)
+			textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
+			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(textWithUnit).Layout)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
@@ -449,8 +458,9 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
+		textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrReceive)+" DCR").
+			Title(textWithUnit).
 			Body(values.String(values.StrReceiveInfo)).
 			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		pg.ParentWindow().ShowModal(info)

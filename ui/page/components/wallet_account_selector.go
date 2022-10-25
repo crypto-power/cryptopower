@@ -13,7 +13,6 @@ import (
 
 	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
@@ -31,25 +30,22 @@ type WalletAndAccountSelector struct {
 
 	totalBalance string
 	changed      bool
-
-	dcrImpl *dcr.DCRAsset
 }
 
 type selectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedWallet   sharedW.Asset
+	selectedWallet   *load.WalletMapping
 	selectedAccount  *sharedW.Account
 	accountCallback  func(*sharedW.Account)
-	walletCallback   func(sharedW.Asset)
+	walletCallback   func(*load.WalletMapping)
 	accountIsValid   func(*sharedW.Account) bool
 	accountSelector  bool
 	infoActionText   string
 	dialogTitle      string
-	onWalletClicked  func(sharedW.Asset)
+	onWalletClicked  func(*load.WalletMapping)
 	onAccountClicked func(*sharedW.Account)
-	onExit           func()
 	walletsList      layout.List
 	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
 	eventQueue       event.Queue
@@ -62,19 +58,12 @@ type selectorModal struct {
 // NewWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
 func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
-		dcrImpl:            impl,
 	}
 
 	ws.selectorModal = newSelectorModal(l).
-		walletClicked(func(wallet sharedW.Asset) {
+		walletClicked(func(wallet *load.WalletMapping) {
 			if ws.selectedWallet.GetWalletID() == wallet.GetWalletID() {
 				ws.changed = true
 			}
@@ -116,7 +105,7 @@ func (ws *WalletAndAccountSelector) SetActionInfoText(text string) *WalletAndAcc
 
 // SelectFirstValidAccount transforms this widget into an Account selector and selects the first valid account from the
 // the wallet passed to this method.
-func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet sharedW.Asset) error {
+func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletMapping) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
 	}
@@ -154,7 +143,7 @@ func (ws *WalletAndAccountSelector) Title(title string) *WalletAndAccountSelecto
 	return ws
 }
 
-func (ws *WalletAndAccountSelector) WalletSelected(callback func(sharedW.Asset)) *WalletAndAccountSelector {
+func (ws *WalletAndAccountSelector) WalletSelected(callback func(*load.WalletMapping)) *WalletAndAccountSelector {
 	ws.walletCallback = callback
 	return ws
 }
@@ -177,11 +166,11 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 	}
 }
 
-func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet sharedW.Asset) {
+func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *load.WalletMapping) {
 	ws.selectedWallet = wallet
 }
 
-func (ws *WalletAndAccountSelector) SelectedWallet() sharedW.Asset {
+func (ws *WalletAndAccountSelector) SelectedWallet() *load.WalletMapping {
 	return ws.selectedWallet
 }
 
@@ -249,7 +238,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 	}
 
 	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := ws.dcrImpl.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletAndAccountSelectorID)
+	err := ws.selectedWallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletAndAccountSelectorID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -287,7 +276,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 
 				}
 			case <-ctx.Done():
-				ws.dcrImpl.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
+				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
@@ -316,7 +305,9 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
-	sm.selectedWallet = l.WL.SelectedWallet.Wallet // Set the default wallet to wallet loaded by cryptopower.
+	sm.selectedWallet = &load.WalletMapping{
+		Asset: l.WL.SelectedWallet.Wallet,
+	} // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
 	sm.Modal.ShowScrollbar(true)
@@ -337,7 +328,9 @@ func (sm *selectorModal) setupWallet() {
 	for _, wal := range wallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
-				item:      wal,
+				item: load.WalletMapping{
+					Asset: wal,
+				},
 				clickable: sm.Theme.NewClickable(true),
 			})
 		}
@@ -380,7 +373,7 @@ func (sm *selectorModal) Handle() {
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
-				case sharedW.Asset:
+				case *load.WalletMapping:
 					if sm.onWalletClicked != nil {
 						sm.onWalletClicked(item)
 					}
@@ -408,7 +401,7 @@ func (sm *selectorModal) title(title string) *selectorModal {
 	return sm
 }
 
-func (sm *selectorModal) walletClicked(callback func(sharedW.Asset)) *selectorModal {
+func (sm *selectorModal) walletClicked(callback func(*load.WalletMapping)) *selectorModal {
 	sm.onWalletClicked = callback
 	return sm
 }
@@ -534,7 +527,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				totalBal = t.Balance.Total.String()
 				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
-			case sharedW.Asset:
+			case *load.WalletMapping:
 				tb, sb := walletBalance(t)
 				totalBal = t.ToAmount(tb).String()
 				spendableBal = t.ToAmount(sb).String()

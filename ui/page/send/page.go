@@ -127,7 +127,8 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
+	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
@@ -150,13 +151,13 @@ func NewSendPage(l *load.Load) *Page {
 		pg.validateAndConstructTx()
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+		pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 		pg.validateAndConstructTx()
 	}
 
@@ -186,7 +187,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
+	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false

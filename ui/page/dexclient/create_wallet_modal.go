@@ -15,6 +15,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	libdcr "gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	libUtil "gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/page/components"
@@ -69,13 +70,18 @@ func newCreateWalletModal(l *load.Load, wallInfo *walletInfoWidget) *createWalle
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Filter out imported account and mixed.
 			wal := md.WL.MultiWallet.WalletWithID(account.WalletID)
+			//TODO: Implement BTC
+			if wal.GetAssetType() != libUtil.DCRWalletAsset {
+				return true
+			}
 			if account.Number == load.MaxInt32 ||
 				account.Number == wal.(*libdcr.DCRAsset).MixedAccountNumber() {
 				return false
 			}
 			return true
 		})
-	md.sourceAccountSelector.SelectFirstValidAccount(l.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
+	md.sourceAccountSelector.SelectFirstValidAccount(wl)
 
 	return md
 }
@@ -91,8 +97,8 @@ func (md *createWalletModal) SetError(errStr string) {
 func (md *createWalletModal) OnResume() {
 	md.ctx, md.ctxCancel = context.WithCancel(context.TODO())
 	md.sourceAccountSelector.ListenForTxNotifications(md.ctx, md.ParentWindow())
-
-	err := md.sourceAccountSelector.SelectFirstValidAccount(md.WL.SelectedWallet.Wallet)
+	wl := load.NewWalletMapping(md.WL.SelectedWallet.Wallet)
+	err := md.sourceAccountSelector.SelectFirstValidAccount(wl)
 	if err != nil {
 		md.SetError(err.Error())
 	}
