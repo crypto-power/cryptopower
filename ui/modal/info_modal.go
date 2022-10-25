@@ -37,8 +37,9 @@ type InfoModal struct {
 	checkbox      cryptomaterial.CheckBoxStyle
 	mustBeChecked bool
 
-	titleAlignment, btnAlignment layout.Direction
-	materialLoader               material.LoaderStyle
+	titleAlignment, subtitleAlignment, btnAlignment layout.Direction
+	materialLoader                                  material.LoaderStyle
+	titleTextAlignment, subTileTextAlignment        text.Alignment
 
 	isCancelable bool
 	isLoading    bool
@@ -69,13 +70,17 @@ func NewCustomModal(l *load.Load) *InfoModal {
 // NewSuccessModal returns the default success modal UI component.
 func NewSuccessModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 	icon := l.Theme.Icons.SuccessIcon
-	return newModal(l, title, icon, clicked)
+	md := newModal(l, title, icon, clicked)
+	md.SetContentAlignment(layout.Center, layout.Center, layout.Center)
+	return md
 }
 
 // NewErrorModal returns the default error modal UI component.
 func NewErrorModal(l *load.Load, title string, clicked ClickFunc) *InfoModal {
 	icon := l.Theme.Icons.FailedIcon
-	return newModal(l, values.TranslateErr(title), icon, clicked)
+	md := newModal(l, title, icon, clicked)
+	md.SetContentAlignment(layout.Center, layout.Center, layout.Center)
+	return md
 }
 
 // DefaultClickFunc returns the default click function satisfying the positive
@@ -141,8 +146,25 @@ func (in *InfoModal) SetCancelable(min bool) *InfoModal {
 	return in
 }
 
-func (in *InfoModal) SetContentAlignment(title, btn layout.Direction) *InfoModal {
+func (in *InfoModal) SetContentAlignment(title, subTitle, btn layout.Direction) *InfoModal {
 	in.titleAlignment = title
+	in.subtitleAlignment = subTitle
+	switch title {
+	case layout.Center:
+		in.titleTextAlignment = text.Middle
+	case layout.E:
+		in.titleTextAlignment = text.End
+	default:
+		in.titleTextAlignment = text.Start
+	}
+	switch subTitle {
+	case layout.Center:
+		in.subTileTextAlignment = text.Middle
+	case layout.E:
+		in.subTileTextAlignment = text.End
+	default:
+		in.subTileTextAlignment = text.Start
+	}
 	in.btnAlignment = btn
 	return in
 }
@@ -297,7 +319,7 @@ func (in *InfoModal) Handle() {
 func (in *InfoModal) Layout(gtx layout.Context) D {
 	icon := func(gtx C) D {
 		if in.dialogIcon == nil {
-			return layout.Dimensions{}
+			return D{}
 		}
 
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -309,7 +331,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 	checkbox := func(gtx C) D {
 		if in.checkbox.CheckBox == nil {
-			return layout.Dimensions{}
+			return D{}
 		}
 
 		return layout.Inset{Top: values.MarginPaddingMinus5, Left: values.MarginPaddingMinus5}.Layout(gtx, func(gtx C) D {
@@ -325,6 +347,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 	subtitle := func(gtx C) D {
 		text := in.Theme.Body1(in.subtitle)
+		text.Alignment = in.subTileTextAlignment
 		text.Color = in.Theme.Color.GrayText2
 		return text.Layout(gtx)
 	}
@@ -366,6 +389,7 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 func (in *InfoModal) titleLayout() layout.Widget {
 	return func(gtx C) D {
 		t := in.Theme.H6(in.dialogTitle)
+		t.Alignment = in.titleTextAlignment
 		t.Font.Weight = text.SemiBold
 		return in.titleAlignment.Layout(gtx, t.Layout)
 	}
@@ -377,7 +401,7 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if in.btnNegative.Text == "" || in.isLoading {
-						return layout.Dimensions{}
+						return D{}
 					}
 
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)
@@ -389,7 +413,7 @@ func (in *InfoModal) actionButtonsLayout() layout.Widget {
 					}
 
 					if in.btnPositive.Text == "" {
-						return layout.Dimensions{}
+						return D{}
 					}
 
 					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding250)

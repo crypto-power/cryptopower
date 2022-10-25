@@ -119,7 +119,7 @@ func (sp *SubPage) EventHandler(window app.WindowNavigator) {
 			infoModal := modal.NewCustomModal(sp.Load).
 				Title(sp.Title).
 				SetupWithTemplate(sp.InfoTemplate).
-				SetContentAlignment(layout.W, layout.Center).
+				SetContentAlignment(layout.W, layout.W, layout.Center).
 				SetCancelable(true).
 				PositiveButtonStyle(sp.Theme.Color.Primary, sp.Theme.Color.Surface)
 			window.ShowModal(infoModal)

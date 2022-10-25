@@ -52,8 +52,6 @@ type BTCWalletSettingsPage struct {
 	spendUnconfirmed  *cryptomaterial.Switch
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
-
-	peerAddr string
 }
 
 func NewBTCWalletSettingsPage(l *load.Load) *BTCWalletSettingsPage {
@@ -267,12 +265,6 @@ func (pg *BTCWalletSettingsPage) subSection(gtx C, title string, body layout.Wid
 	})
 }
 
-func (pg *BTCWalletSettingsPage) subSectionSwitch(title string, option *cryptomaterial.Switch) layout.Widget {
-	return func(gtx C) D {
-		return pg.subSection(gtx, title, option.Layout)
-	}
-}
-
 func (pg *BTCWalletSettingsPage) changeSpendingPasswordModal() {
 	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		Title(values.String(values.StrChangeSpendingPass)).
@@ -408,21 +400,6 @@ func (pg *BTCWalletSettingsPage) renameWalletModal() {
 	textModal.Title(values.String(values.StrRenameWalletSheetTitle)).
 		SetPositiveButtonText(values.String(values.StrRename))
 	pg.ParentWindow().ShowModal(textModal)
-}
-
-func (pg *BTCWalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
-	return row.clickable.Layout(gtx, func(gtx C) D {
-		return pg.subSection(gtx, row.title, func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize16, row.labelText)
-			lbl.Color = pg.Theme.Color.GrayText2
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(lbl.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-				}),
-			)
-		})
-	})
 }
 
 // HandleUserInteractions is called just before Layout() to determine

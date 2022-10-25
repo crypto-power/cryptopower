@@ -460,7 +460,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 		info := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrReceive)+" DCR").
 			Body(values.String(values.StrReceiveInfo)).
-			SetContentAlignment(layout.NW, layout.Center)
+			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		pg.ParentWindow().ShowModal(info)
 	}
 }

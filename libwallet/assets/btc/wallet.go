@@ -13,7 +13,6 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcwallet/chain"
-	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/lightninglabs/neutrino"
@@ -192,7 +191,11 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
-// TODO: NOT USED.
+func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
+	ctx, _ := asset.ShutdownContextWithCancel()
+	return asset.connect(ctx, wg)
+}
+
 // connect will start the wallet and begin syncing.
 func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	err := asset.startWallet()
@@ -206,7 +209,6 @@ func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
 	return nil
 }
 
-// TODO: NOT USED.
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() error {
@@ -221,26 +223,6 @@ func (asset *BTCAsset) startWallet() error {
 	}
 
 	log.Debug("Starting native BTC wallet...")
-	err = asset.OpenWallet()
-	if err != nil {
-		return fmt.Errorf("couldn't load wallet: %w", err)
-	}
-
-	// https://pkg.go.dev/github.com/btcsuite/btcwallet/walletdb@v1.4.0#DB
-	// For neutrino to be completely compatible with the walletDbData implementation
-	// in gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata the above
-	// interface needs to be fully implemented.
-	neutrinoDBPath := asset.GetWalletDataDb().Path
-	asset.neutrinoDB, err = walletdb.Open("bdb", neutrinoDBPath, true, w.DefaultDBTimeout)
-	if err != nil {
-		return fmt.Errorf("unable to open wallet db at %q: %v", neutrinoDBPath, err)
-	}
-
-	bailOnWalletAndDB := func() {
-		if err := asset.neutrinoDB.Close(); err != nil {
-			log.Errorf("Error closing neutrino database: %v", err)
-		}
-	}
 
 	// Depending on the network, we add some addpeers or a connect peer. On
 	// regtest, if the peers haven't been explicitly set, add the simnet harness
@@ -260,7 +242,7 @@ func (asset *BTCAsset) startWallet() error {
 	log.Debug("Starting neutrino chain service...")
 	chainService, err := neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
-		Database:      asset.neutrinoDB,
+		Database:      asset.GetWalletDataDb(),
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		AddPeers:      addPeers,
@@ -272,7 +254,7 @@ func (asset *BTCAsset) startWallet() error {
 		BroadcastTimeout: 6 * time.Second,
 	})
 	if err != nil {
-		bailOnWalletAndDB()
+		log.Error(err)
 		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
@@ -280,7 +262,6 @@ func (asset *BTCAsset) startWallet() error {
 		if err := chainService.Stop(); err != nil {
 			log.Errorf("Error closing neutrino chain service: %v", err)
 		}
-		bailOnWalletAndDB()
 	}
 
 	asset.cl = chainService
@@ -317,7 +298,11 @@ func (asset *BTCAsset) IsSyncing() bool {
 	return false
 }
 func (asset *BTCAsset) SpvSync() error {
-	err := utils.ErrBTCMethodNotImplemented("SpvSync")
+	wg := new(sync.WaitGroup)
+	err := asset.ConnectSPVWallet(wg)
+	if err != nil {
+		log.Warn("error occured when starting BTC sync: ", err)
+	}
 	return err
 }
 func (asset *BTCAsset) CancelRescan() {

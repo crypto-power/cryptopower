@@ -11,6 +11,7 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -63,12 +64,6 @@ type WalletInfo struct {
 }
 
 func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
@@ -77,10 +72,11 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 			List: layout.List{Axis: layout.Vertical},
 		},
 		checkBox: l.Theme.CheckBox(new(widget.Bool), "I am aware of the risk"),
-
-		dcrImpl: impl,
 	}
-
+	switch l.WL.SelectedWallet.Wallet.GetAssetType() {
+	case utils.DCRWalletAsset:
+		pg.dcrImpl = l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = text.Medium
 	pg.toBackup.TextSize = values.TextSize14
@@ -191,6 +187,9 @@ func (pg *WalletInfo) listenForNotifications() {
 	case pg.TxAndBlockNotificationListener != nil:
 		return
 	case pg.BlocksRescanProgressListener != nil:
+		return
+	case pg.dcrImpl == nil:
+		log.Warn(values.ErrDCRSupportedOnly)
 		return
 	}
 
