@@ -298,7 +298,11 @@ func (asset *BTCAsset) IsSyncing() bool {
 	return false
 }
 func (asset *BTCAsset) SpvSync() error {
-	err := utils.ErrBTCMethodNotImplemented("SpvSync")
+	wg := new(sync.WaitGroup)
+	err := asset.ConnectSPVWallet(wg)
+	if err != nil {
+		log.Warn("error occured when starting BTC sync: ", err)
+	}
 	return err
 }
 func (asset *BTCAsset) CancelRescan() {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"sync"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/gen2brain/beeep"
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
 	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
@@ -119,7 +117,7 @@ func (mp *MainPage) initNavItems() {
 	mp.drawerNav = components.NavDrawer{
 		Load:        mp.Load,
 		CurrentPage: mp.CurrentPageID(),
-		DrawerNavItems: []components.NavHandler{
+		DCRDrawerNavItems: []components.NavHandler{
 			{
 				Clickable:     mp.Theme.NewClickable(true),
 				Image:         mp.Theme.Icons.OverviewIcon,
@@ -286,24 +284,24 @@ func (mp *MainPage) OnNavigatedTo() {
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	mp.updateBalance()
+	mp.updateExchangeSetting()
 
-	if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset {
-		mp.updateExchangeSetting()
-		mp.listenForNotifications()
+	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
+	// reset the checkbox
+	mp.checkBox.CheckBox.Value = false
 
-		backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
-		// reset the checkbox
-		mp.checkBox.CheckBox.Value = false
+	needBackup := mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != ""
+	if needBackup && !backupLater {
+		mp.showBackupInfo()
+	}
 
-		needBackup := mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != ""
-		if needBackup && !backupLater {
-			mp.showBackupInfo()
-		}
+	if mp.CurrentPage() == nil {
+		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
+	}
 
-		if mp.CurrentPage() == nil {
-			mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
-		}
-		mp.CurrentPage().OnNavigatedTo()
+	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.DCRWalletAsset:
+		mp.listenForNotifications() // sync Notifications for BTC not supported for now.
 
 		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
 			if mp.WL.MultiWallet.Politeia.IsSyncing() {
@@ -311,18 +309,10 @@ func (mp *MainPage) OnNavigatedTo() {
 			}
 			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
 		}
-	} else if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
-		wg := new(sync.WaitGroup)
-		err := mp.WL.SelectedWallet.Wallet.(*btc.BTCAsset).ConnectSPVWallet(wg)
-		if err != nil {
-			log.Warn("error occured when starting BTC sync: ", err)
-		}
-
-		if mp.CurrentPage() == nil {
-			mp.Display(NewBTCWalletSettingsPage(mp.Load)) // TODO: Should pagestack have a start page?
-		}
-		mp.CurrentPage().OnNavigatedTo()
+	case libutils.BTCWalletAsset:
 	}
+
+	mp.CurrentPage().OnNavigatedTo()
 }
 
 func (mp *MainPage) updateExchangeSetting() {
@@ -448,7 +438,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		mp.setNavExpanded()
 	}
 
-	for _, item := range mp.drawerNav.DrawerNavItems {
+	for _, item := range mp.drawerNav.DCRDrawerNavItems {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			switch item.PageID {
@@ -508,8 +498,10 @@ func (mp *MainPage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			switch item.PageID {
-			case WalletSettingsPageID:
+			case BTCWalletSettingsPageID:
 				pg = NewBTCWalletSettingsPage(mp.Load)
+			case info.InfoID:
+				pg = info.NewInfoPage(mp.Load, redirect)
 			}
 
 			if pg == nil || mp.ID() == mp.CurrentPageID() {
@@ -659,9 +651,9 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							var drawer D
 							switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 							case libutils.BTCWalletAsset:
-								drawer = mp.drawerNav.LayoutBTCNavDrawer(gtx)
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							case libutils.DCRWalletAsset:
-								drawer = mp.drawerNav.LayoutDCRNavDrawer(gtx)
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
 							}
 							return drawer
 						}),
