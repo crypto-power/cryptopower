@@ -51,8 +51,8 @@ func newPoliteiaClient(host string) *politeiaClient {
 }
 
 func (p *Politeia) getClient() (*politeiaClient, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	client := p.client
 	if client == nil {
 		client = newPoliteiaClient(p.host)
