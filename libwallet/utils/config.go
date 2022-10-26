@@ -13,6 +13,7 @@ import (
 )
 
 type AssetType string
+type SyncStage int8
 
 const (
 	LogFileName = "libwallet.log"
@@ -24,6 +25,12 @@ const (
 	fullDateformat = "2006-01-02 15:04:05"
 	dateOnlyFormat = "2006-01-02"
 	timeOnlyformat = "15:04:05"
+
+	InvalidSyncStage          SyncStage = -1
+	CFiltersFetchSyncStage    SyncStage = 0
+	HeadersFetchSyncStage     SyncStage = 1
+	AddressDiscoverySyncStage SyncStage = 2
+	HeadersRescanSyncStage    SyncStage = 3
 )
 
 // Stringer used in generating the directory path where the lowercase of the
