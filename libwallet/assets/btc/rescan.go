@@ -11,6 +11,10 @@ import (
 	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
+func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
+	asset.blocksRescanProgressListener = blocksRescanProgressListener
+}
+
 func (asset *BTCAsset) RescanBlocks() error {
 	return asset.RescanBlocksFromHeight(0)
 }
@@ -77,8 +81,4 @@ func (asset *BTCAsset) IsRescanning() bool {
 
 func (asset *BTCAsset) CancelRescan() {
 	asset.chainClient.Stop()
-}
-
-func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
-	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }

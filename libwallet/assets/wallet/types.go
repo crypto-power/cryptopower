@@ -274,6 +274,35 @@ type DebugInfo struct {
 	CurrentStageTimeRemaining int64
 }
 
+/** begin tx-related types */
+
+// AsyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that
+// triggers notifcation callbacks asynchronously.
+type AsyncTxAndBlockNotificationListener struct {
+	TxAndBlockNotificationListener
+}
+
+// OnTransaction satisfies the TxAndBlockNotificationListener interface and
+// starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransaction(transaction string) {
+	go asyncTxBlockListener.OnTransaction(transaction)
+}
+
+// OnBlockAttached satisfies the TxAndBlockNotificationListener interface and
+// starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnBlockAttached(walletID int, blockHeight int32) {
+	go asyncTxBlockListener.OnBlockAttached(walletID, blockHeight)
+}
+
+// OnTransactionConfirmed satisfies the TxAndBlockNotificationListener interface
+// and starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransactionConfirmed(walletID int, hash string, blockHeight int32) {
+	go asyncTxBlockListener.OnTransactionConfirmed(walletID, hash, blockHeight)
+}
+
 /** end sync-related types */
 
 type TxAndBlockNotificationListener interface {

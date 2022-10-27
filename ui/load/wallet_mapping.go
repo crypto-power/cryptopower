@@ -1,10 +1,6 @@
 package load
 
 import (
-	"fmt"
-
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
@@ -17,28 +13,5 @@ type WalletMapping struct {
 func NewWalletMapping(asset sharedW.Asset) *WalletMapping {
 	return &WalletMapping{
 		Asset: asset,
-	}
-}
-
-func (wallt *WalletMapping) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
-	switch asset := wallt.Asset.(type) {
-	case *dcr.DCRAsset:
-		return asset.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, async, uniqueIdentifier)
-	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet does not support this function")
-	default:
-		return fmt.Errorf("wallet not supported")
-	}
-}
-
-func (wallt *WalletMapping) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) error {
-	switch asset := wallt.Asset.(type) {
-	case *dcr.DCRAsset:
-		asset.RemoveTxAndBlockNotificationListener(uniqueIdentifier)
-		return nil
-	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet does not support this function")
-	default:
-		return fmt.Errorf("wallet not supported")
 	}
 }

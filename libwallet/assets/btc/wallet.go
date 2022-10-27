@@ -33,6 +33,7 @@ type BTCAsset struct {
 	rescan       *neutrino.Rescan
 
 	syncing        bool
+	synced         bool
 	isRescan       bool
 	TxAuthoredInfo *TxAuthor
 
@@ -95,6 +96,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		syncInfo: SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -144,6 +146,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		syncInfo: SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -180,6 +183,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		syncInfo: SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -211,6 +215,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		syncInfo: SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	err = btcWallet.Prepare(ldr, params)
@@ -234,13 +239,19 @@ func (asset *BTCAsset) SafelyCancelSync() {
 // Methods added below satisfy the shared asset interface. Each should be
 // implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
-	return asset.chainClient.IsCurrent()
+	asset.mu.RLock()
+	defer asset.mu.RUnlock()
+
+	return asset.synced
 }
 func (asset *BTCAsset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 func (asset *BTCAsset) IsSyncing() bool {
+	asset.mu.RLock()
+	defer asset.mu.RUnlock()
+
 	return asset.syncing
 }
 func (asset *BTCAsset) SpvSync() (err error) {
@@ -249,11 +260,16 @@ func (asset *BTCAsset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
+	asset.mu.Lock()
 	asset.syncCtx, asset.cancelSync = asset.ShutdownContextWithCancel()
 	asset.syncing = true
+	asset.synced = false
+	asset.mu.Unlock()
 
 	defer func() {
+		asset.mu.Lock()
 		asset.syncing = false
+		asset.mu.Unlock()
 		asset.cancelSync()
 	}()
 

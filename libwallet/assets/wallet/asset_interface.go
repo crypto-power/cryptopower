@@ -68,6 +68,12 @@ type Asset interface {
 	AccountNameRaw(accountNumber uint32) (string, error)
 	GetAccountBalance(accountNumber int32) (*Balance, error)
 
+	AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error
+	RemoveSyncProgressListener(uniqueIdentifier string)
+	AddTxAndBlockNotificationListener(txAndBlockNotificationListener TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error
+	RemoveTxAndBlockNotificationListener(uniqueIdentifier string)
+	SetBlocksRescanProgressListener(blocksRescanProgressListener BlocksRescanProgressListener)
+
 	CurrentAddress(account int32) (string, error)
 	NextAddress(account int32) (string, error)
 	IsAddressValid(address string) bool
