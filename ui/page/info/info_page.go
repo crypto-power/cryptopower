@@ -9,6 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -98,7 +99,12 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
-	pg.listenForNotifications()
+	switch pg.WL.SelectedWallet.Wallet.GetAssetType() {
+	case utils.BTCWalletAsset:
+		pg.listenForBTCNotifications()
+	case utils.DCRWalletAsset:
+		pg.listenForNotifications()
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -172,6 +178,47 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	if pg.toBackup.Button.Clicked() {
 		pg.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
 	}
+}
+
+func (pg *WalletInfo) listenForBTCNotifications() {
+	if pg.SyncProgressListener != nil {
+		return
+	}
+
+	pg.SyncProgressListener = listeners.NewSyncProgress()
+	btcImpl := pg.WL.SelectedWallet.Wallet.(*btc.BTCAsset)
+
+	err := btcImpl.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
+	if err != nil {
+		log.Errorf("Error adding sync progress listener: %v", err)
+		return
+	}
+
+	go func() {
+		for {
+			select {
+			case n := <-pg.SyncStatusChan:
+				// Update sync progress fields which will be displayed
+				// when the next UI invalidation occurs.
+				switch t := n.ProgressReport.(type) {
+				case *sharedW.HeadersFetchProgressReport:
+					pg.stepFetchProgress = t.HeadersFetchProgress
+					pg.headersToFetchOrScan = t.TotalHeadersToFetch
+					pg.syncProgress = int(t.TotalSyncProgress)
+					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+					pg.syncStep = wallet.FetchHeadersSteps
+				}
+
+			case <-pg.ctx.Done():
+				btcImpl.RemoveSyncProgressListener(InfoID)
+
+				pg.SyncProgressListener = nil
+
+				close(pg.SyncStatusChan)
+			}
+		}
+	}()
+
 }
 
 // listenForNotifications starts a goroutine to watch for sync updates

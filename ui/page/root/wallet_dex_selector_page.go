@@ -9,6 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -123,11 +124,11 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadBadWallets()
 	pg.startDexClient()
 
-	// for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
-	// 	if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-	// 		pg.startSyncing(wallet)
-	// 	}
-	// }
+	for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			pg.startSyncing(wallet)
+		}
+	}
 
 }
 
@@ -196,13 +197,13 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	}
 
 	// start sync for the selected wallets.
-	if pg.WL.SelectedWallet != nil {
-		for _, wallet := range pg.WL.SortedWalletList() {
-			if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-				pg.startSyncing(wallet)
-			}
-		}
-	}
+	// if pg.WL.SelectedWallet != nil {
+	// 	for _, wallet := range pg.WL.SortedWalletList() {
+	// 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+	// 			pg.startSyncing(wallet)
+	// 		}
+	// 	}
+	// }
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

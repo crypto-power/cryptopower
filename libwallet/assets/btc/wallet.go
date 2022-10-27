@@ -1,6 +1,8 @@
 package btc
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -30,21 +32,18 @@ type BTCAsset struct {
 	chainClient  *chain.NeutrinoClient
 	rescan       *neutrino.Rescan
 
-	synced         bool
 	syncing        bool
 	isRescan       bool
 	TxAuthoredInfo *TxAuthor
 
 	chainParams *chaincfg.Params
 
-	quit       chan struct{}
-	rescanQuit chan struct{}
-	rescanErr  <-chan error
-
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
 
-	syncInfo SyncData
+	syncInfo   SyncData
+	cancelSync context.CancelFunc
+	syncCtx    context.Context
 
 	wg sync.WaitGroup
 
@@ -235,7 +234,7 @@ func (asset *BTCAsset) SafelyCancelSync() {
 // Methods added below satisfy the shared asset interface. Each should be
 // implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
-	return asset.synced
+	return asset.chainClient.IsCurrent()
 }
 func (asset *BTCAsset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
@@ -250,16 +249,12 @@ func (asset *BTCAsset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
+	asset.syncCtx, asset.cancelSync = asset.ShutdownContextWithCancel()
 	asset.syncing = true
-	asset.synced = false
 
 	defer func() {
 		asset.syncing = false
-		if err != nil {
-			asset.synced = false
-			return
-		}
-		asset.synced = true
+		asset.cancelSync()
 	}()
 
 	wg := new(sync.WaitGroup)
@@ -297,9 +292,9 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestF
 	return nil, err
 }
 func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
-	block, err := asset.chainService.BestBlock()
+	block, err := asset.chainClient.CS.BestBlock()
 	if err != nil {
-		log.Warn("GetBestBlock for BTC failed, Err: %v", err)
+		fmt.Println("GetBestBlock hash for BTC failed, Err: ", err)
 		return nil
 	}
 
@@ -308,6 +303,7 @@ func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
 		Timestamp: block.Timestamp.Unix(),
 	}
 }
+
 func (asset *BTCAsset) GetBestBlockHeight() int32 {
 	return asset.GetBestBlock().Height
 }
@@ -317,7 +313,7 @@ func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
 }
 
 func (asset *BTCAsset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
-	height, err := asset.chainService.GetBlockHeight(&hash)
+	height, err := asset.chainClient.GetBlockHeight(&hash)
 	if err != nil {
 		log.Warn("GetBlockHeight for BTC failed, Err: %v", err)
 		return -1, err
@@ -326,7 +322,7 @@ func (asset *BTCAsset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
 }
 
 func (asset *BTCAsset) GetBlockHash(height int64) (*chainhash.Hash, error) {
-	blockhash, err := asset.chainService.GetBlockHash(height)
+	blockhash, err := asset.chainClient.GetBlockHash(height)
 	if err != nil {
 		log.Warn("GetBlockHash for BTC failed, Err: %v", err)
 		return nil, err
