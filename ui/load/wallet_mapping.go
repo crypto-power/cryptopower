@@ -42,3 +42,12 @@ func (wallt *WalletMapping) RemoveTxAndBlockNotificationListener(uniqueIdentifie
 		return fmt.Errorf("wallet not supported")
 	}
 }
+
+func (wallt *WalletMapping) MixedAccountNumber() int32 {
+	switch asset := wallt.Asset.(type) {
+	case *dcr.DCRAsset:
+		return asset.MixedAccountNumber()
+	default:
+		return -1
+	}
+}

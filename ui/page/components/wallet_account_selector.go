@@ -11,9 +11,9 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/decred/dcrd/dcrutil/v4"
 	"gitlab.com/raedah/cryptopower/app"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/listeners"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -188,16 +188,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		},
 		Clickable: ws.Clickable(),
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			walletIcon := ws.Theme.Icons.DecredLogo
-			if ws.accountSelector {
-				walletIcon = ws.Theme.Icons.AccountIcon
-			}
-			inset := layout.Inset{
-				Right: values.MarginPadding8,
-			}
-			return inset.Layout(gtx, walletIcon.Layout24dp)
-		}),
+		layout.Rigid(ws.logoWallet),
 		layout.Rigid(func(gtx C) D {
 			if ws.accountSelector {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
@@ -213,8 +204,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 						if ws.accountSelector {
 							return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
 						}
-						totalBal, _ := walletBalance(ws.SelectedWallet())
-						return ws.Theme.Body1(dcrutil.Amount(totalBal).String()).Layout(gtx)
+						selectWallet := ws.SelectedWallet()
+						totalBal, _ := walletBalance(selectWallet)
+						return ws.Theme.Body1(selectWallet.ToAmount(totalBal).String()).Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						inset := layout.Inset{
@@ -230,6 +222,20 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 			})
 		}),
 	)
+}
+
+func (ws *WalletAndAccountSelector) logoWallet(gtx C) D {
+	walletIcon := ws.Theme.Icons.DecredLogo
+	if ws.selectedWallet.GetAssetType() == utils.BTCWalletAsset {
+		walletIcon = ws.Theme.Icons.BTC
+	}
+	if ws.accountSelector {
+		walletIcon = ws.Theme.Icons.AccountIcon
+	}
+	inset := layout.Inset{
+		Right: values.MarginPadding8,
+	}
+	return inset.Layout(gtx, walletIcon.Layout24dp)
 }
 
 func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context, window app.WindowNavigator) {
@@ -328,7 +334,7 @@ func (sm *selectorModal) setupWallet() {
 	for _, wal := range wallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
-				item: load.WalletMapping{
+				item: &load.WalletMapping{
 					Asset: wal,
 				},
 				clickable: sm.Theme.NewClickable(true),
@@ -486,9 +492,9 @@ func (sm *selectorModal) infoBackdropLayout(gtx C) {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		m := op.Record(gtx.Ops)
-		sm.infoBackdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		sm.infoBackdrop.Layout(gtx, func(gtx C) D {
 			semantic.Button.Add(gtx.Ops)
-			return layout.Dimensions{Size: gtx.Constraints.Min}
+			return D{Size: gtx.Constraints.Min}
 		})
 		op.Defer(gtx.Ops, m.Stop())
 	}

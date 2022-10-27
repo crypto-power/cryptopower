@@ -23,11 +23,10 @@ const (
 	SendPageID = "Send"
 )
 
-type moreItem struct {
-	text   string
-	button *cryptomaterial.Clickable
-	action func()
-}
+// type moreItem struct {
+// 	button *cryptomaterial.Clickable
+// 	action func()
+// }
 
 type Page struct {
 	*load.Load
@@ -52,8 +51,6 @@ type Page struct {
 
 	txFeeCollapsible *cryptomaterial.Collapsible
 	shadowBox        *cryptomaterial.Shadow
-	optionsMenuCard  cryptomaterial.Card
-	moreItems        []moreItem
 	backdrop         *widget.Clickable
 
 	isFetchingExchangeRate bool
@@ -66,6 +63,7 @@ type Page struct {
 	currencyExchange    string
 
 	*authoredTxData
+	selectedWallet *load.WalletMapping
 }
 
 type authoredTxData struct {
@@ -97,6 +95,9 @@ func NewSendPage(l *load.Load) *Page {
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
 	}
+	pg.selectedWallet = &load.WalletMapping{
+		Asset: l.WL.SelectedWallet.Wallet,
+	}
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
@@ -107,39 +108,25 @@ func NewSendPage(l *load.Load) *Page {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 
-			// Imported and watch only wallet accounts are invalid for sending
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
-
-			if wal.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!wal.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
+			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
+				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
 				// only mixed accounts can send to address for wallet with privacy setup
 				if pg.sendDestination.accountSwitch.SelectedIndex() == 1 {
-					impl := wal.(*dcr.DCRAsset)
-					if impl != nil {
-						accountIsValid = account.Number == impl.MixedAccountNumber()
-					}
+					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 				}
 			}
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
-	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-			// Filter out imported account and mixed.
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
-			// Filter imported account and mixed accounts.
-			accountIsValid := account.Number != load.MaxInt32
-			impl := wal.(*dcr.DCRAsset)
-			if impl != nil {
-				accountIsValid = accountIsValid && account.Number != impl.MixedAccountNumber()
-			}
+			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 			// Filter the sending account.
 			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
 				return false
@@ -157,7 +144,7 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -187,8 +174,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
-	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
@@ -345,13 +331,14 @@ func (pg *Page) feeEstimationError(err string) {
 }
 
 func (pg *Page) clearEstimates() {
+
 	pg.txAuthor = nil
-	pg.txFee = " - " + values.String(values.StrDCRCaps)
+	pg.txFee = " - " + pg.selectedWallet.GetAssetType().ToString()
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
-	pg.totalCost = " - " + values.String(values.StrDCRCaps)
+	pg.totalCost = " - " + pg.selectedWallet.GetAssetType().ToString()
 	pg.totalCostUSD = " - "
-	pg.balanceAfterSend = " - " + values.String(values.StrDCRCaps)
+	pg.balanceAfterSend = " - " + pg.selectedWallet.GetAssetType().ToString()
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
@@ -374,8 +361,9 @@ func (pg *Page) HandleUserInteractions() {
 	pg.amount.handle()
 
 	if pg.infoButton.Button.Clicked() {
+		textWithUnit := values.String(values.StrSend) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrSend) + " DCR").
+			Title(textWithUnit).
 			Body(values.String(values.StrSendInfo)).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
@@ -396,12 +384,6 @@ func (pg *Page) HandleUserInteractions() {
 			}
 
 			pg.ParentWindow().ShowModal(pg.confirmTxModal)
-		}
-	}
-
-	for _, menu := range pg.moreItems {
-		if menu.button.Clicked() {
-			menu.action()
 		}
 	}
 

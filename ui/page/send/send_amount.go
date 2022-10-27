@@ -37,7 +37,8 @@ func newSendAmount(l *load.Load) *sendAmount {
 		exchangeRate: -1,
 	}
 
-	sa.dcrAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (DCR)")
+	hit := fmt.Sprintf("%s (%s)", values.String(values.StrAmount), string(l.WL.SelectedWallet.Wallet.GetAssetType()))
+	sa.dcrAmountEditor = l.Theme.Editor(new(widget.Editor), hit)
 	sa.dcrAmountEditor.Editor.SetText("")
 	sa.dcrAmountEditor.HasCustomButton = true
 	sa.dcrAmountEditor.Editor.SingleLine = true

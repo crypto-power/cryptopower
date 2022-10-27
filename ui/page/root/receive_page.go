@@ -18,9 +18,7 @@ import (
 	qrcode "github.com/yeqown/go-qrcode"
 	"gitlab.com/raedah/cryptopower/app"
 	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
 	"gitlab.com/raedah/cryptopower/ui/modal"
@@ -108,8 +106,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
-			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
-			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
+			currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
 				log.Errorf("Error getting current address: %v", err)
 			} else {
@@ -123,17 +120,10 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			if account.Number == load.MaxInt32 {
 				return false
 			}
-			wal := pg.multiWallet.WalletWithID(account.WalletID)
-			if wal.GetAssetType() != utils.DCRWalletAsset {
+			if account.Number != pg.selectedWallet.MixedAccountNumber() {
 				return true
-			} else {
-				dcrIntf := wal.(*dcr.DCRAsset)
-				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
-					// only applies if the selected wallet is of type dcr.
-					return true
-				}
-				return false
 			}
+			return false
 		})
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet)
 
