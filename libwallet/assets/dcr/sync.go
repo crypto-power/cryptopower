@@ -523,7 +523,6 @@ func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
 		asset.syncData.mu.Unlock()
 
 		asset.discoverAddressesStarted(asset.ID)
-
 		err := asset.Internal().DCR.DiscoverActiveAddresses(ctx, netBackend, &startBlock, !asset.Internal().DCR.Locked(), gapLimit)
 		if err != nil {
 			log.Error(err)

@@ -133,7 +133,6 @@ func (pg *BTCWalletSettingsPage) Layout(gtx C) D {
 			},
 			pg.generalSection(),
 			pg.account(),
-			pg.debug(),
 			pg.dangerZone(),
 		}
 
@@ -177,20 +176,6 @@ func (pg *BTCWalletSettingsPage) account() layout.Widget {
 	}
 	return func(gtx C) D {
 		return pg.pageSections(gtx, values.String(values.StrAccount), dim)
-	}
-}
-
-func (pg *BTCWalletSettingsPage) debug() layout.Widget {
-	dims := func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
-			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
-			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
-		)
-	}
-
-	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrDebug), dims)
 	}
 }
 
@@ -430,35 +415,6 @@ func (pg *BTCWalletSettingsPage) HandleUserInteractions() {
 
 	for pg.deleteWallet.Clicked() {
 		pg.deleteWalletModal()
-		break
-	}
-
-	for pg.rescan.Clicked() {
-		go func() {
-			info := modal.NewCustomModal(pg.Load).
-				Title(values.String(values.StrRescanBlockchain)).
-				Body(values.String(values.StrRescanInfo)).
-				SetNegativeButtonText(values.String(values.StrCancel)).
-				PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-				SetPositiveButtonText(values.String(values.StrRescan)).
-				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-					err := pg.WL.SelectedWallet.Wallet.RescanBlocks()
-					if err != nil {
-						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-						pg.ParentWindow().ShowModal(errorModal)
-						return false
-					}
-					msg := values.String(values.StrRescanProgressNotification)
-					infoModal := modal.NewSuccessModal(pg.Load, msg, func(_ bool, _ *modal.InfoModal) bool {
-						im.Dismiss() // close the parent modal too
-						return true
-					})
-					pg.ParentWindow().ShowModal(infoModal)
-					return true
-				})
-
-			pg.ParentWindow().ShowModal(info)
-		}()
 		break
 	}
 

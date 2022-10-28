@@ -1,16 +1,16 @@
 package btc
 
 import (
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
-	asset.blocksRescanProgressListener = blocksRescanProgressListener
+	asset.syncInfo.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
 func (asset *BTCAsset) RescanBlocks() error {

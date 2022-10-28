@@ -10,7 +10,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -35,10 +34,7 @@ type BTCAsset struct {
 
 	chainParams *chaincfg.Params
 
-	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
-	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
-
-	syncInfo   SyncData
+	syncInfo   *SyncData
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
 
@@ -89,10 +85,10 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -139,10 +135,10 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -176,10 +172,10 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -208,10 +204,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	err = btcWallet.Prepare(ldr, params)
@@ -238,10 +234,6 @@ func (asset *BTCAsset) IsSynced() bool {
 	asset.syncInfo.mu.RLock()
 	defer asset.syncInfo.mu.RUnlock()
 
-	go func() {
-		asset.syncInfo.synced = asset.chainClient.IsCurrent()
-	}()
-
 	return asset.syncInfo.synced
 }
 func (asset *BTCAsset) IsWaiting() bool {
@@ -253,38 +245,6 @@ func (asset *BTCAsset) IsSyncing() bool {
 	defer asset.syncInfo.mu.RUnlock()
 
 	return asset.syncInfo.syncing
-}
-func (asset *BTCAsset) SpvSync() (err error) {
-	// prevent an attempt to sync when the previous syncing has not been canceled
-	if asset.IsSyncing() || asset.IsSynced() {
-		return errors.New(utils.ErrSyncAlreadyInProgress)
-	}
-
-	ctx, cancel := asset.ShutdownContextWithCancel()
-	asset.mu.Lock()
-	asset.syncCtx = ctx
-	asset.cancelSync = cancel
-	asset.mu.Unlock()
-
-	var restartSyncRequested bool
-
-	asset.syncInfo.mu.Lock()
-	restartSyncRequested = asset.syncInfo.restartedScan
-	asset.syncInfo.restartedScan = false
-	asset.syncInfo.syncing = true
-	asset.syncInfo.synced = false
-	asset.syncInfo.mu.Unlock()
-
-	for _, listener := range asset.syncInfo.syncProgressListeners {
-		listener.OnSyncStarted(restartSyncRequested)
-	}
-
-	wg := new(sync.WaitGroup)
-	err = asset.ConnectSPVWallet(wg)
-	if err != nil {
-		log.Warn("error occured when starting BTC sync: ", err)
-	}
-	return err
 }
 
 func (asset *BTCAsset) ConnectedPeers() int32 {

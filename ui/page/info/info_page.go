@@ -229,14 +229,14 @@ func (pg *WalletInfo) listenForNotifications() {
 
 				// We only care about sync state changes here, to
 				// refresh the window display.
-				// switch n.Stage {
-				// case wallet.SyncStarted:
-				// 	fallthrough
-				// case wallet.SyncCanceled:
-				// 	fallthrough
-				// case wallet.SyncCompleted:
-				pg.ParentWindow().Reload()
-				// }
+				switch n.Stage {
+				case wallet.SyncStarted:
+					fallthrough
+				case wallet.SyncCanceled:
+					fallthrough
+				case wallet.SyncCompleted:
+					pg.ParentWindow().Reload()
+				}
 
 			case n := <-pg.TxAndBlockNotifChan:
 				switch n.Type {
