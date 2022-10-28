@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
 	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"gitlab.com/raedah/cryptopower/ui/load"
@@ -22,11 +21,6 @@ import (
 const (
 	SendPageID = "Send"
 )
-
-// type moreItem struct {
-// 	button *cryptomaterial.Clickable
-// 	action func()
-// }
 
 type Page struct {
 	*load.Load
@@ -67,7 +61,6 @@ type Page struct {
 }
 
 type authoredTxData struct {
-	txAuthor            *dcr.TxAuthor
 	destinationAddress  string
 	destinationAccount  *sharedW.Account
 	sourceAccount       *sharedW.Account
@@ -128,7 +121,9 @@ func NewSendPage(l *load.Load) *Page {
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 			// Filter the sending account.
-			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
+			sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
+			isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
+			if !accountIsValid || isSameAccount {
 				return false
 			}
 			return true
@@ -253,27 +248,20 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		return
 	}
 
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if dcrImpl == nil {
-		pg.feeEstimationError("Only DCR implementation is supported")
-		// Only DCR implementation is supported past here.
-		return
-	}
-
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err = dcrImpl.NewUnsignedTx(sourceAccount.Number)
+	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	err = dcrImpl.AddSendDestination(destinationAddress, amountAtom, SendMax)
+	err = pg.selectedWallet.AddSendDestination(destinationAddress, amountAtom, SendMax)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	feeAndSize, err := dcrImpl.EstimateFeeAndSize()
+	feeAndSize, err := pg.selectedWallet.EstimateFeeAndSize()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -312,8 +300,6 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		usdAmount := utils.DCRToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
 		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
-
-	pg.txAuthor = dcrImpl.GetUnsignedTx()
 }
 
 func (pg *Page) showBalaceAfterSend() {
@@ -332,13 +318,13 @@ func (pg *Page) feeEstimationError(err string) {
 
 func (pg *Page) clearEstimates() {
 
-	pg.txAuthor = nil
-	pg.txFee = " - " + pg.selectedWallet.GetAssetType().ToString()
+	// pg.txAuthor = nil
+	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
-	pg.totalCost = " - " + pg.selectedWallet.GetAssetType().ToString()
+	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "
-	pg.balanceAfterSend = " - " + pg.selectedWallet.GetAssetType().ToString()
+	pg.balanceAfterSend = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
@@ -374,7 +360,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	for pg.nextButton.Clicked() {
-		if pg.txAuthor != nil {
+		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.WL.SelectedWallet.Wallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 

@@ -191,6 +191,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		layout.Rigid(ws.logoWallet),
 		layout.Rigid(func(gtx C) D {
 			if ws.accountSelector {
+				if ws.selectedAccount == nil {
+					return ws.Theme.Body1("").Layout(gtx)
+				}
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
 					layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
 				)
@@ -202,6 +205,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						if ws.accountSelector {
+							if ws.selectedAccount == nil {
+								return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)
+							}
 							return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
 						}
 						selectWallet := ws.SelectedWallet()
