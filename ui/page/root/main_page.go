@@ -884,6 +884,9 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
+								}
 								return mp.Theme.Icons.BTC.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
