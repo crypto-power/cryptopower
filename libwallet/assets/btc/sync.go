@@ -24,13 +24,15 @@ type SyncData struct {
 	syncStartTime time.Time
 
 	// showLogs bool
-	syncing bool
-	synced  bool
+	syncing       bool
+	synced        bool
+	isRescan      bool
+	restartedScan bool
 
 	syncStage             utils.SyncStage
 	syncProgressListeners map[string]sharedW.SyncProgressListener
 
-	// cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
+	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
 	headersFetchProgress     sharedW.HeadersFetchProgressReport
 	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
 	headersRescanProgress    sharedW.HeadersRescanProgressReport
@@ -64,16 +66,13 @@ func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier str
 }
 
 func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
-	fmt.Println(" <<<<<<<<< Listener recieved >>>>>>>> ", uniqueIdentifier)
 	asset.syncInfo.mu.Lock()
 	defer asset.syncInfo.mu.Unlock()
-	fmt.Println(" <<<<<<<<< Listener passed >>>>>>>> ", uniqueIdentifier)
+
 	_, exists := asset.syncInfo.syncProgressListeners[uniqueIdentifier]
 	if exists {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
-
-	fmt.Println(" <<<<<<<<< Listener Added >>>>>>>> ", uniqueIdentifier)
 
 	asset.syncInfo.syncProgressListeners[uniqueIdentifier] = syncProgressListener
 
@@ -88,45 +87,9 @@ func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	delete(asset.syncInfo.syncProgressListeners, uniqueIdentifier)
 }
 
-// func (asset *BTCAsset) syncProgressListeners() []sharedW.SyncProgressListener {
-// 	asset.syncInfo.mu.RLock()
-// 	defer asset.syncInfo.mu.RUnlock()
-
-// 	listeners := make([]sharedW.SyncProgressListener, 0, len(asset.syncInfo.syncProgressListeners))
-// 	for _, listener := range asset.syncInfo.syncProgressListeners {
-// 		listeners = append(listeners, listener)
-// 	}
-
-// 	return listeners
-// }
-
-// func (asset *BTCAsset) publishLastSyncProgress(uniqueIdentifier string) error {
-// 	asset.syncInfo.mu.RLock()
-// 	defer asset.syncInfo.mu.RUnlock()
-
-// 	syncProgressListener, exists := asset.syncInfo.syncProgressListeners[uniqueIdentifier]
-// 	if !exists {
-// 		return errors.New(utils.ErrInvalid)
-// 	}
-
-// 	if asset.syncInfo.syncing {
-// 		switch asset.syncInfo.syncStage {
-// 		case utils.HeadersFetchSyncStage:
-// 			syncProgressListener.OnHeadersFetchProgress(&asset.syncInfo.headersFetchProgress)
-// 		case utils.AddressDiscoverySyncStage:
-// 			syncProgressListener.OnAddressDiscoveryProgress(&asset.syncInfo.addressDiscoveryProgress)
-// 		case utils.HeadersRescanSyncStage:
-// 			syncProgressListener.OnHeadersRescanProgress(&asset.syncInfo.headersRescanProgress)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 // bestServerPeerBlockHeight accesses the connected peers and requests for the
 // last synced block height in each one of them.
 func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
-	fmt.Println(" <<<<<<<<<<<<<<<<<<<<<<<<<< serving best chain tip >>>>>>>>>>>>>>>>>>>>>>>>>>")
 	serverPeers := asset.chainClient.CS.Peers()
 	for _, p := range serverPeers {
 		if p.LastBlock() > height {
@@ -139,7 +102,6 @@ func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
 func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	asset.syncInfo.mu.Lock()
 	defer asset.syncInfo.mu.Unlock()
-	fmt.Println("<<<<<<<<<<<<<<<<< updateSyncProgress >>>>>>>>>>>>>>>>>>>>>>>>")
 
 	// If the rawBlock is nil the network sync must have happenned. Resets the
 	// sync info for the next sync use.
@@ -159,8 +121,6 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	// initial set up when sync begins.
 	if asset.syncInfo.startBlock == nil {
 		asset.syncInfo.headersFetchProgress.GeneralSyncProgress = &sharedW.GeneralSyncProgress{}
-		// asset.syncInfo.headersFetchProgress.BeginFetchTimeStamp = time.Now().Unix()
-		// asset.syncInfo.headersFetchProgress.StartHeaderHeight = rawBlock.Height
 		asset.syncInfo.syncStage = utils.HeadersFetchSyncStage
 		asset.syncInfo.syncStartTime = time.Now()
 		asset.syncInfo.startBlock = rawBlock
@@ -176,11 +136,6 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 		timeSpentSoFar = 1
 	}
 
-	// asset.syncInfo.headersFetchProgress.HeadersFetchTimeSpent = timeSpentSoFar
-	// asset.syncInfo.headersFetchProgress.TotalFetchedHeadersCount = headersFetchedSoFar
-	// asset.syncInfo.headersFetchProgress.CurrentHeaderHeight = rawBlock.Height
-	// asset.syncInfo.headersFetchProgress.CurrentHeaderTimestamp = rawBlock.Time.Unix()
-
 	asset.syncInfo.headersFetchProgress.TotalHeadersToFetch = bestBlockheight
 	asset.syncInfo.headersFetchProgress.HeadersFetchProgress = int32((float64(headersFetchedSoFar) * 100) / float64(allHeadersToFetch))
 	asset.syncInfo.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncInfo.headersFetchProgress.HeadersFetchProgress
@@ -191,8 +146,7 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 		listener.OnHeadersFetchProgress(&asset.syncInfo.headersFetchProgress)
 
 		// when synced send the sync completed status
-		if bestBlockheight == rawBlock.Height {
-			fmt.Println("<<<<<<<<<<<<<<<<< Sync completed >>>>>>>>>>>>>>>>>>>>>>>>")
+		if asset.IsSynced() {
 			listener.OnSyncCompleted()
 		}
 	}
@@ -205,28 +159,24 @@ func (asset *BTCAsset) fetchNotifications() {
 			if !ok {
 				return
 			}
-			// var notificationName string
-			// var err error
 			switch n := n.(type) {
 			case chain.ClientConnected:
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> client connected")
+				// TODO: Implementation to be added
 			case chain.BlockConnected:
 				b := wtxmgr.BlockMeta(n)
 				asset.updateSyncProgress(&b)
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> block connected")
 			case chain.BlockDisconnected:
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> block disconnected")
+				// TODO: Implementation to be added
 			case chain.RelevantTx:
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> relevant tx")
+				// TODO: Implementation to be added
 			case chain.FilteredBlockConnected:
 				if (n.Block.Height % syncIntervalGap) < syncIntervalGap {
 					asset.updateSyncProgress(n.Block)
-					// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> filtered block connected", n.Block.Height)
 				}
 			case *chain.RescanProgress:
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> rescan progress")
+				// TODO: Implementation to be added
 			case *chain.RescanFinished:
-				// fmt.Println(" >>>>>>>>>>>>>>>>>>>>>>>>>> rescan finished")
+				// TODO: Implementation to be added
 			}
 		case <-asset.syncCtx.Done():
 			return
@@ -241,23 +191,11 @@ func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
 
 // connect will start the wallet and begin syncing.
 func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
-	fmt.Println(" <<<<<<<<<<<< Starting sync for: ", asset.GetWalletName())
-	err := asset.startWallet()
-	if err != nil {
-		return err
-	}
-	fmt.Println(" <<<<<<<<<<<< Completed sync for: ", asset.GetWalletName())
-
-	// go func() {
-	// 	err := asset.RescanBlocks()
-	// 	if err != nil {
-	// 		log.Errorf(" >>>> ", err)
-	// 		// return err
-	// 	}
-	// }()
-
-	// Nanny for the caches checkpoints and txBlocks caches.
-	// wg.Add(1)
+	go func() {
+		if err := asset.startWallet(ctx); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	return nil
 }
@@ -317,23 +255,23 @@ func (asset *BTCAsset) prepareChain() error {
 
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
-func (asset *BTCAsset) startWallet() error {
-	fmt.Println(" >>>>>>>> Starting Wallet <<<<<<<<<<<<<")
+func (asset *BTCAsset) startWallet(ctx context.Context) error {
 	if err := asset.chainClient.Start(); err != nil { // lazily starts connmgr
 		asset.CancelSync()
-		return fmt.Errorf("couldn't start Neutrino client: %v", err)
+		log.Errorf("couldn't start Neutrino client: %v", err)
+		return err
 	}
 
-	fmt.Println(" >>>>>>>> Notify blocks <<<<<<<<<<<<<")
 	err := asset.chainClient.NotifyBlocks()
 	if err != nil {
-		fmt.Println(" Error >>>>> <<< ", err)
+		log.Error(err)
+		return err
 	}
+
+	go asset.fetchNotifications()
 
 	log.Info("Synchronizing wallet with network...")
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
-
-	go asset.fetchNotifications()
 
 	asset.chainClient.WaitForShutdown()
 
@@ -352,5 +290,6 @@ func (asset *BTCAsset) CancelSync() {
 func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 	asset.syncInfo.mu.RLock()
 	defer asset.syncInfo.mu.RUnlock()
+
 	return asset.syncInfo.syncing || asset.syncInfo.synced
 }

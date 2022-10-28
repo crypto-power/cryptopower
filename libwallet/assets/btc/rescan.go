@@ -1,8 +1,6 @@
 package btc
 
 import (
-	"fmt"
-
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -30,8 +28,6 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 		return err
 	}
 
-	// asset.chainClient.SetStartTime(block.MsgBlock().Header.Timestamp)
-
 	return asset.rescanBlocks(block.Hash(), nil, nil)
 }
 
@@ -53,32 +49,32 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		outPoints = make(map[wire.OutPoint]btcutil.Address)
 	}
 
-	// asset.mu.Lock()
-	asset.isRescan = true
-	// asset.mu.Unlock()
+	asset.syncInfo.mu.Lock()
+	asset.syncInfo.isRescan = true
+	asset.syncInfo.mu.Unlock()
 
 	go asset.chainClient.Rescan(startHash, addrs, outPoints)
-	// if err != nil {
-	// 	fmt.Println(" Error >>>>> 1 <<< ", err)
-	// }
 
 	err := asset.chainClient.NotifyBlocks()
 	if err != nil {
-		fmt.Println(" Error >>>>> 2 <<< ", err)
+		return err
 	}
 
-	// asset.mu.Lock()
-	asset.isRescan = false
-	// asset.mu.Unlock()
-
 	go asset.fetchNotifications()
-	return err
+	return nil
 }
 
 func (asset *BTCAsset) IsRescanning() bool {
-	return asset.isRescan
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
+
+	return asset.syncInfo.isRescan
 }
 
 func (asset *BTCAsset) CancelRescan() {
+	asset.syncInfo.mu.Lock()
+	asset.syncInfo.isRescan = false
+	asset.syncInfo.mu.Unlock()
+
 	asset.chainClient.Stop()
 }

@@ -30,11 +30,7 @@ type BTCAsset struct {
 
 	chainService neutrinoService
 	chainClient  *chain.NeutrinoClient
-	rescan       *neutrino.Rescan
 
-	syncing        bool
-	synced         bool
-	isRescan       bool
 	TxAuthoredInfo *TxAuthor
 
 	chainParams *chaincfg.Params
@@ -239,20 +235,24 @@ func (asset *BTCAsset) SafelyCancelSync() {
 // Methods added below satisfy the shared asset interface. Each should be
 // implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
-	asset.mu.RLock()
-	defer asset.mu.RUnlock()
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
 
-	return asset.synced
+	go func() {
+		asset.syncInfo.synced = asset.chainClient.IsCurrent()
+	}()
+
+	return asset.syncInfo.synced
 }
 func (asset *BTCAsset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 func (asset *BTCAsset) IsSyncing() bool {
-	asset.mu.RLock()
-	defer asset.mu.RUnlock()
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
 
-	return asset.syncing
+	return asset.syncInfo.syncing
 }
 func (asset *BTCAsset) SpvSync() (err error) {
 	// prevent an attempt to sync when the previous syncing has not been canceled
@@ -260,18 +260,24 @@ func (asset *BTCAsset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
+	ctx, cancel := asset.ShutdownContextWithCancel()
 	asset.mu.Lock()
-	asset.syncCtx, asset.cancelSync = asset.ShutdownContextWithCancel()
-	asset.syncing = true
-	asset.synced = false
+	asset.syncCtx = ctx
+	asset.cancelSync = cancel
 	asset.mu.Unlock()
 
-	defer func() {
-		asset.mu.Lock()
-		asset.syncing = false
-		asset.mu.Unlock()
-		asset.cancelSync()
-	}()
+	var restartSyncRequested bool
+
+	asset.syncInfo.mu.Lock()
+	restartSyncRequested = asset.syncInfo.restartedScan
+	asset.syncInfo.restartedScan = false
+	asset.syncInfo.syncing = true
+	asset.syncInfo.synced = false
+	asset.syncInfo.mu.Unlock()
+
+	for _, listener := range asset.syncInfo.syncProgressListeners {
+		listener.OnSyncStarted(restartSyncRequested)
+	}
 
 	wg := new(sync.WaitGroup)
 	err = asset.ConnectSPVWallet(wg)
