@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/dexdcr"
 	"decred.org/dcrdex/client/asset"
 	"decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"gitlab.com/raedah/cryptopower/libwallet/dexdcr"
 )
 
 const (

@@ -12,8 +12,8 @@ import (
 	"github.com/btcsuite/btcwallet/wallet"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 
-	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 var log = loader.Log

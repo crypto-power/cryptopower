@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"image/color"
 
+	"code.cryptopower.dev/group/cryptopower/app"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/app"
 )
 
 type Modal struct {

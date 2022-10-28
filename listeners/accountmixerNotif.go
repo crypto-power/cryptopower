@@ -1,6 +1,6 @@
 package listeners
 
-import "gitlab.com/raedah/cryptopower/wallet"
+import "code.cryptopower.dev/group/cryptopower/wallet"
 
 // AccountMixerNotificationListener satisfies libwallet
 // AccountMixerNotificationListener interface. Consumers interested in mixer

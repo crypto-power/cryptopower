@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet"
+import "code.cryptopower.dev/group/cryptopower/libwallet"
 
 // TODO command.go file to be deprecated in subsiquent code clean up
 

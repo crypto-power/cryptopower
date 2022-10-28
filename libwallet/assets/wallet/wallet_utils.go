@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
@@ -13,7 +14,6 @@ import (
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
 )
 

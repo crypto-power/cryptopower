@@ -52,7 +52,7 @@ Only submit a MR once the intended edits are either done or nearing completion. 
 - Visual Studio Code with Go extension plus `golangci-lint`
 ### Git Workflow
 
-1. Fork the repository on GitLab.  Just click the little Fork button at https://gitlab.com/raedah/cryptopower
+1. Fork the repository on GitLab.  Just click the little Fork button at https://code.cryptopower.dev/group/cryptopower
 
 
 2. Clone your newly forked cryptopower repository
@@ -67,7 +67,7 @@ Setting your master branch to track this repository makes keeping everything up-
 The rest of this workflow guide will assume that you have completed this step.
 
 ```sh
-git remote add upstream https://gitlab.com/raedah/cryptopower.git
+git remote add upstream https://code.cryptopower.dev/group/cryptopower.git
 git fetch upstream
 git branch -u upstream/master master
 ```

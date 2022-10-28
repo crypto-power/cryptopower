@@ -1,11 +1,11 @@
 package libwallet
 
 import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
 )

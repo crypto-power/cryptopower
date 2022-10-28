@@ -8,12 +8,12 @@ package load
 import (
 	"golang.org/x/text/message"
 
-	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet"
-	"gitlab.com/raedah/cryptopower/ui/assets"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/notification"
-	"gitlab.com/raedah/cryptopower/wallet"
+	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet"
+	"code.cryptopower.dev/group/cryptopower/ui/assets"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/notification"
+	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
 type DCRUSDTBittrex struct {

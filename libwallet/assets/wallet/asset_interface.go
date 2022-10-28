@@ -3,8 +3,8 @@ package wallet
 import (
 	"context"
 
-	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 // Asset defines the interface each wallet must satisfy.

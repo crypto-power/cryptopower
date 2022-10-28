@@ -1,9 +1,9 @@
 package walletdata
 
 import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const (

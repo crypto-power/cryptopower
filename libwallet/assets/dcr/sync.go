@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/p2p"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/spv"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x
@@ -523,7 +523,7 @@ func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
 		asset.syncData.mu.Unlock()
 
 		asset.discoverAddressesStarted(asset.ID)
-		
+
 		err := asset.Internal().DCR.DiscoverActiveAddresses(ctx, netBackend, &startBlock, !asset.Internal().DCR.Locked(), gapLimit)
 		if err != nil {
 			log.Error(err)
