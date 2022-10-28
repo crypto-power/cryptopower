@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/wallet"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
 // BlocksRescanProgressListener satisfies libwallet

@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"
 )

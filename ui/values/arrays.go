@@ -1,6 +1,6 @@
 package values
 
-import "gitlab.com/raedah/cryptopower/ui/values/localizable"
+import "code.cryptopower.dev/group/cryptopower/ui/values/localizable"
 
 var (
 	ArrLanguages          map[string]string

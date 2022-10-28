@@ -10,10 +10,10 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gomarkdown/markdown/ast"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
 )
 
 type HTMLProvider struct {

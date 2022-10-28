@@ -1,10 +1,10 @@
 package dcr
 
 import (
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/wallet/walletdata"
 )
 
 func (asset *DCRAsset) IndexTransactions() error {

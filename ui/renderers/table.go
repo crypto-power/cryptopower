@@ -9,7 +9,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 )
 
 type cellAlign int

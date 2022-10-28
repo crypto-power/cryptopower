@@ -3,6 +3,8 @@ package dcr
 import (
 	"fmt"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/v3"
@@ -10,8 +12,6 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrdata/v7/txhelpers"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
 )
 
 const BlockValid = 1 << 0

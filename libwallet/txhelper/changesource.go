@@ -1,10 +1,10 @@
 package txhelper
 
 import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/addresshelper"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
 )
 
 const scriptVersion = 0

@@ -1,6 +1,6 @@
 package wallet
 
-import sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+import sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 
 // NewBlock is sent when a block is attached to the multiwallet.
 type NewBlock struct {

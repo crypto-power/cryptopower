@@ -3,9 +3,9 @@ package dcr
 import (
 	"fmt"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const BlockHeightInvalid int32 = -1

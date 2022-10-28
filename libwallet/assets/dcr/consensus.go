@@ -8,10 +8,10 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // AgendaStatusType defines the various agenda statuses.

@@ -1,4 +1,4 @@
-module gitlab.com/raedah/cryptopower
+module code.cryptopower.dev/group/cryptopower
 
 go 1.17
 
@@ -54,6 +54,9 @@ require (
 
 require (
 	decred.org/dcrwallet v1.7.0
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.1.0
+	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.1.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
 	github.com/lightninglabs/neutrino v0.13.1-0.20211214231330-53b628ce1756
 )
@@ -70,9 +73,6 @@ require (
 	github.com/benoitkugler/textlayout v0.1.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.1.1 // indirect
 	github.com/btcsuite/btcutil/psbt v1.0.3-0.20201208143702-a53e38424cce // indirect
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.1.0 // indirect
-	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0 // indirect
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.1.0 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect

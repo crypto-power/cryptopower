@@ -1,9 +1,9 @@
 package btc
 
 import (
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/waddrmgr"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
 )
 
 const (

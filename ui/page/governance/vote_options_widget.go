@@ -5,11 +5,11 @@ import (
 	"image/color"
 	"strconv"
 
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/text"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type inputVoteOptionsWidgets struct {

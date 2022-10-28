@@ -5,6 +5,9 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -12,9 +15,6 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/txhelper"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 type nextAddressFunc func() (address string, err error)
