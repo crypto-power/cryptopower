@@ -3,6 +3,7 @@ package components
 import (
 	"context"
 	"errors"
+	// "fmt"
 
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
@@ -117,13 +118,13 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	}
 
 	for _, account := range accounts.Accounts {
-		if ws.accountIsValid(account) {
-			ws.SetSelectedAccount(account)
-			if ws.accountCallback != nil {
-				ws.accountCallback(account)
-			}
-			return nil
+		// if ws.accountIsValid(account) {
+		ws.SetSelectedAccount(account)
+		if ws.accountCallback != nil {
+			ws.accountCallback(account)
 		}
+		return nil
+		// }
 	}
 
 	ws.ResetAccount()
@@ -196,6 +197,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 	}.Layout(gtx,
 		layout.Rigid(ws.setWalletLogo),
 		layout.Rigid(func(gtx C) D {
+			// fmt.Println("[][][][] selected account", ws.SelectedAccount())
 			if ws.accountSelector {
 				if ws.selectedAccount == nil {
 					return ws.Theme.Body1("").Layout(gtx)
@@ -323,8 +325,10 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
+
+	wallets := sm.WL.MultiWallet.AllWallets()
 	sm.selectedWallet = &load.WalletMapping{
-		Asset: l.WL.SelectedWallet.Wallet,
+		Asset: wallets[0],
 	} // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
@@ -333,6 +337,7 @@ func newSelectorModal(l *load.Load) *selectorModal {
 }
 
 func (sm *selectorModal) OnResume() {
+	// fmt.Println("[][][][] selected wallet", sm.selectedWallet)
 	if sm.accountSelector {
 		sm.setupAccounts(sm.selectedWallet)
 		return
@@ -342,7 +347,8 @@ func (sm *selectorModal) OnResume() {
 
 func (sm *selectorModal) setupWallet() {
 	selectorItems := make([]*SelectorItem, 0)
-	wallets := sm.WL.SortedWalletList()
+	// wallets := sm.WL.SortedWalletList()
+	wallets := sm.WL.MultiWallet.AllWallets()
 	for _, wal := range wallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
@@ -366,12 +372,12 @@ func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 		}
 
 		for _, account := range accountsResult.Accounts {
-			if sm.accountIsValid(account) {
-				selectorItems = append(selectorItems, &SelectorItem{
-					item:      account,
-					clickable: sm.Theme.NewClickable(true),
-				})
-			}
+			// if sm.accountIsValid(account) {
+			selectorItems = append(selectorItems, &SelectorItem{
+				item:      account,
+				clickable: sm.Theme.NewClickable(true),
+			})
+			// }
 		}
 	}
 	sm.selectorItems = selectorItems
@@ -391,9 +397,10 @@ func (sm *selectorModal) Handle() {
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
-				case *load.WalletMapping:
+				case sharedW.Asset:
 					if sm.onWalletClicked != nil {
-						sm.onWalletClicked(item)
+						wl := load.NewWalletMapping(item)
+						sm.onWalletClicked(wl)
 					}
 				}
 				sm.Dismiss()
@@ -524,6 +531,18 @@ func walletBalance(wal sharedW.Asset) (totalBalance, spendableBalance int64) {
 
 func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
 	accountIcon := sm.Theme.Icons.AccountIcon
+	switch selectorItem.item.(type) {
+	case *sharedW.Account:
+		accountIcon = sm.Theme.Icons.AccountIcon
+	case sharedW.Asset:
+		{
+			if selectorItem.item.(sharedW.Asset).GetAssetType() == "BTC" {
+				accountIcon = sm.Theme.Icons.BTC
+			} else if selectorItem.item.(sharedW.Asset).GetAssetType() == "DCR" {
+				accountIcon = sm.Theme.Icons.DecredLogo
+			}
+		}
+	}
 
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
@@ -539,15 +558,15 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			}.Layout(gtx, accountIcon.Layout16dp)
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
-			var name, totalBal, spendableBal string
+			var name, _, spendableBal string
 			switch t := selectorItem.item.(type) {
 			case *sharedW.Account:
-				totalBal = t.Balance.Total.String()
+				// totalBal = t.Balance.Total.String()
 				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
-			case *load.WalletMapping:
-				tb, sb := walletBalance(t)
-				totalBal = t.ToAmount(tb).String()
+			case sharedW.Asset:
+				_, sb := walletBalance(t)
+				// totalBal = t.ToAmount(tb).String()
 				spendableBal = t.ToAmount(sb).String()
 				name = t.GetWalletName()
 			}
@@ -557,7 +576,8 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 					acct.Color = sm.Theme.Color.Text
 					acct.Font.Weight = text.Normal
 					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
-						return LayoutBalance(gtx, sm.Load, totalBal)
+						// return LayoutBalance(gtx, sm.Load, totalBal)
+						return D{}
 					})
 				}),
 				layout.Rigid(func(gtx C) D {

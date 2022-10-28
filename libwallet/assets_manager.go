@@ -342,6 +342,17 @@ func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
+func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
+	for _, wallet := range mgr.Assets.DCR.Wallets {
+		wallets = append(wallets, wallet)
+	}
+
+	for _, wallet := range mgr.Assets.BTC.Wallets {
+		wallets = append(wallets, wallet)
+	}
+	return wallets
+}
+
 func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	wallet := mgr.WalletWithID(walletID)
 	if err := wallet.DeleteWallet(privPass); err != nil {

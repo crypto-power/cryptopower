@@ -420,3 +420,9 @@ type TransactionOverview struct {
 }
 
 /** end tx-related types */
+
+type Trade struct {
+	UUID                int
+	SourceWalletID      int `json:"sourceWwalletID"`
+	DestinationWalletID int `json:"destinationWalletID"`
+}
