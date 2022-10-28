@@ -347,7 +347,7 @@ func (pg *Page) HandleUserInteractions() {
 	pg.amount.handle()
 
 	if pg.infoButton.Button.Clicked() {
-		textWithUnit := values.String(values.StrSend) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
+		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
 			Body(values.String(values.StrSendInfo)).
@@ -379,32 +379,32 @@ func (pg *Page) HandleUserInteractions() {
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			if !pg.amount.dcrAmountEditor.Editor.Focused() && !modalShown {
-				pg.amount.dcrAmountEditor.Editor.Focus()
+			if !pg.amount.amountEditor.Editor.Focused() && !modalShown {
+				pg.amount.amountEditor.Editor.Focus()
 			}
 		default:
 			if pg.sendDestination.accountSwitch.Changed() {
 				if !pg.sendDestination.validate() {
 					pg.sendDestination.destinationAddressEditor.Editor.Focus()
 				} else {
-					pg.amount.dcrAmountEditor.Editor.Focus()
+					pg.amount.amountEditor.Editor.Focus()
 				}
 
 			}
 		}
 	} else {
 		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 			if !modalShown {
-				pg.amount.dcrAmountEditor.Editor.Focus()
+				pg.amount.amountEditor.Editor.Focus()
 			}
-		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 		default:
 			if pg.sendDestination.accountSwitch.Changed() {
 				if !pg.sendDestination.validate() {
 					pg.sendDestination.destinationAddressEditor.Editor.Focus()
 				} else {
-					pg.amount.dcrAmountEditor.Editor.Focus()
+					pg.amount.amountEditor.Editor.Focus()
 				}
 			}
 		}
@@ -414,11 +414,11 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
 			if currencyValue == values.DefaultExchangeValue {
-				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
 			} else {
-				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.usdAmountEditor.Editor.SetText("")
 					pg.amount.SendMax = false
 				}
@@ -426,18 +426,18 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	} else {
 		if currencyValue == values.DefaultExchangeValue {
-			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
 		} else {
-			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.usdAmountEditor.Editor.SetText("")
 				pg.amount.SendMax = false
 			}
 		}
 	}
 
-	if len(pg.amount.dcrAmountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
+	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
 		pg.amount.validateDCRAmount()
 		pg.validateAndConstructTxAmountOnly()
 	}
@@ -469,17 +469,17 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.amountEditor.Editor)
 		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor)
 		}
 	} else {
 		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.amountEditor.Editor)
 		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor, pg.amount.usdAmountEditor.Editor)
 		}
 	}
 }

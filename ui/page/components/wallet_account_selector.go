@@ -188,7 +188,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		},
 		Clickable: ws.Clickable(),
 	}.Layout(gtx,
-		layout.Rigid(ws.logoWallet),
+		layout.Rigid(ws.setWalletLogo),
 		layout.Rigid(func(gtx C) D {
 			if ws.accountSelector {
 				if ws.selectedAccount == nil {
@@ -230,7 +230,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 	)
 }
 
-func (ws *WalletAndAccountSelector) logoWallet(gtx C) D {
+func (ws *WalletAndAccountSelector) setWalletLogo(gtx C) D {
 	walletIcon := ws.Theme.Icons.DecredLogo
 	if ws.selectedWallet.GetAssetType() == utils.BTCWalletAsset {
 		walletIcon = ws.Theme.Icons.BTC

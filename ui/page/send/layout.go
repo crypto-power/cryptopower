@@ -239,7 +239,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						Alignment: layout.Middle,
 					}.Layout(gtx,
 						layout.Flexed(0.45, func(gtx C) D {
-							return pg.amount.dcrAmountEditor.Layout(gtx)
+							return pg.amount.amountEditor.Layout(gtx)
 						}),
 						layout.Flexed(0.1, func(gtx C) D {
 							return layout.Center.Layout(gtx, func(gtx C) D {
@@ -252,7 +252,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						}),
 					)
 				}
-				return pg.amount.dcrAmountEditor.Layout(gtx)
+				return pg.amount.amountEditor.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.exchangeRateMessage == "" {
