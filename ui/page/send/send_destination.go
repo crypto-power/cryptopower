@@ -52,14 +52,7 @@ func newSendDestination(l *load.Load) *destination {
 	return dst
 }
 
-func (dst *destination) destinationAddress(useDefaultParams bool) (string, error) {
-	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
-	wal := dst.WL.MultiWallet.WalletWithID(destinationAccount.WalletID)
-
-	if useDefaultParams {
-		return wal.CurrentAddress(destinationAccount.Number)
-	}
-
+func (dst *destination) destinationAddress() (string, error) {
 	if dst.sendToAddress {
 		valid, address := dst.validateDestinationAddress()
 		if valid {
@@ -68,20 +61,22 @@ func (dst *destination) destinationAddress(useDefaultParams bool) (string, error
 
 		return "", fmt.Errorf(values.String(values.StrInvalidAddress))
 	}
+	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
+	wal := dst.WL.MultiWallet.WalletWithID(destinationAccount.WalletID)
 
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
-func (dst *destination) destinationAccount(useDefaultParams bool) *sharedW.Account {
-	if useDefaultParams {
-		return dst.destinationAccountSelector.SelectedAccount()
-	}
-
+func (dst *destination) destinationAccount() *sharedW.Account {
 	if dst.sendToAddress {
 		return nil
 	}
 
 	return dst.destinationAccountSelector.SelectedAccount()
+}
+
+func (dst *destination) isDestinationAccountExist() bool {
+	return dst.destinationAccountSelector.SelectedAccount() != nil
 }
 
 func (dst *destination) validateDestinationAddress() (bool, string) {

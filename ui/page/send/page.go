@@ -208,7 +208,7 @@ func (pg *Page) fetchExchangeRate() {
 
 func (pg *Page) validateAndConstructTx() {
 	if pg.validate() {
-		pg.constructTx(false)
+		pg.constructTx()
 	} else {
 		pg.clearEstimates()
 		pg.showBalaceAfterSend()
@@ -219,7 +219,7 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 	defer pg.RefreshTheme(pg.ParentWindow())
 
 	if !pg.sendDestination.validate() && pg.amount.amountIsValid() {
-		pg.constructTx(true)
+		pg.constructTx()
 	} else {
 		pg.validateAndConstructTx()
 	}
@@ -234,13 +234,13 @@ func (pg *Page) validate() bool {
 	return validForSending
 }
 
-func (pg *Page) constructTx(useDefaultParams bool) {
-	destinationAddress, err := pg.sendDestination.destinationAddress(useDefaultParams)
+func (pg *Page) constructTx() {
+	destinationAddress, err := pg.sendDestination.destinationAddress()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
-	destinationAccount := pg.sendDestination.destinationAccount(useDefaultParams)
+	destinationAccount := pg.sendDestination.destinationAccount()
 
 	amountAtom, SendMax, err := pg.amount.validAmount()
 	if err != nil {
