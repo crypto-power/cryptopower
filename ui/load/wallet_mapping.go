@@ -51,16 +51,3 @@ func (wallt *WalletMapping) MixedAccountNumber() int32 {
 		return -1
 	}
 }
-
-func (wallt *WalletMapping) IsUnsignedTxExist() bool {
-	switch asset := wallt.Asset.(type) {
-	case *dcr.DCRAsset:
-		unsignedTx := asset.GetUnsignedTx()
-		return unsignedTx != nil
-	case *btc.BTCAsset:
-		unsignedTx := asset.GetUnsignedTx()
-		return unsignedTx != nil
-	default:
-		return false
-	}
-}

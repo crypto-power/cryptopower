@@ -46,6 +46,10 @@ func (asset *BTCAsset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
+func (asset *BTCAsset) IsUnsignedTxExist() bool {
+	return asset.TxAuthoredInfo != nil
+}
+
 func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
@@ -213,7 +217,9 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, nil, changeSource)
+	inputSource := makeInputSource(outputs)
+
+	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, inputSource, changeSource)
 }
 
 // changeSource derives an internal address from the source wallet and account
@@ -247,4 +253,23 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil
+}
+
+func makeInputSource(unspents []*wire.TxOut) txauthor.InputSource {
+	// Return outputs in order.
+	currentTotal := btcutil.Amount(0)
+	currentInputs := make([]*wire.TxIn, 0, len(unspents))
+	currentInputValues := make([]btcutil.Amount, 0, len(unspents))
+	f := func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
+		for currentTotal < target && len(unspents) != 0 {
+			u := unspents[0]
+			unspents = unspents[1:]
+			nextInput := wire.NewTxIn(&wire.OutPoint{}, nil, nil)
+			currentTotal += btcutil.Amount(u.Value)
+			currentInputs = append(currentInputs, nextInput)
+			currentInputValues = append(currentInputValues, btcutil.Amount(u.Value))
+		}
+		return currentTotal, currentInputs, currentInputValues, make([][]byte, len(currentInputs)), nil
+	}
+	return txauthor.InputSource(f)
 }

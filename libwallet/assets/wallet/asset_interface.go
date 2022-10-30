@@ -96,4 +96,5 @@ type Asset interface {
 	NewUnsignedTx(accountNumber int32) error
 	AddSendDestination(address string, satoshiAmount int64, sendMax bool) error
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
+	IsUnsignedTxExist() bool
 }

@@ -126,7 +126,13 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 		}
 	}
 
+	ws.ResetAccount()
 	return errors.New(values.String(values.StrNoValidAccountFound))
+}
+
+func (ws *WalletAndAccountSelector) ResetAccount() {
+	ws.selectedAccount = nil
+	ws.totalBalance = ""
 }
 
 func (ws *WalletAndAccountSelector) SetSelectedAccount(account *sharedW.Account) {
