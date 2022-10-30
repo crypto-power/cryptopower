@@ -225,7 +225,9 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 }
 
 func (asset *BTCAsset) SafelyCancelSync() {
-	log.Warn(utils.ErrBTCMethodNotImplemented("SafelyCancelSync"))
+	if asset.IsConnectedToNetwork() {
+		asset.cancelSync()
+	}
 }
 
 // Methods added below satisfy the shared asset interface. Each should be

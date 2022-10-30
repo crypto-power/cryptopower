@@ -367,10 +367,10 @@ func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 }
 
 func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
-	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; !ok {
+	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; ok {
 		return badWallet
 	}
-	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; !ok {
+	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; ok {
 		return badWallet
 	}
 	return nil

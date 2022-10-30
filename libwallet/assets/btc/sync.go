@@ -1,12 +1,14 @@
 package btc
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/lightninglabs/neutrino"
@@ -22,6 +24,7 @@ type SyncData struct {
 
 	startBlock    *wtxmgr.BlockMeta
 	syncStartTime time.Time
+	lastlogging   time.Time
 
 	// showLogs bool
 	syncing       bool
@@ -125,8 +128,19 @@ func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
 }
 
 func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
+	// sync must be running for further execution to proceed
+	if !asset.IsSyncing() {
+		log.Warn("Sync not running")
+		return
+	}
+
 	asset.syncInfo.mu.Lock()
-	defer asset.syncInfo.mu.Unlock()
+	// asset.syncInfo.isfetchingData = true
+
+	defer func() {
+		// asset.syncInfo.isfetchingData = false
+		asset.syncInfo.mu.Unlock()
+	}()
 
 	// If the rawBlock is nil the network sync must have happenned. Resets the
 	// sync info for the next sync use.
@@ -135,20 +149,31 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 		return
 	}
 
-	// sync must be running for further execution to proceed
-	if !asset.IsSyncing() {
-		return
-	}
-
 	// Best block synced in the connected peers
 	bestBlockheight := asset.bestServerPeerBlockHeight()
+	isSyncComplete := bestBlockheight == rawBlock.Height
 
 	// initial set up when sync begins.
 	if asset.syncInfo.startBlock == nil {
 		asset.syncInfo.syncStage = utils.HeadersFetchSyncStage
 		asset.syncInfo.syncStartTime = time.Now()
+		asset.syncInfo.lastlogging = time.Now()
 		asset.syncInfo.startBlock = rawBlock
+
+		// Handle initial set up that also sync ups the local chain.
+		for _, listener := range asset.syncInfo.syncProgressListeners {
+			if isSyncComplete {
+				listener.OnSyncCompleted()
+			}
+		}
 		return
+	}
+
+	// log at intervals of 10 seconds or more to reduce excessive logging when faster
+	// updates are streaming in.
+	if time.Since(asset.syncInfo.lastlogging) >= 10*time.Second {
+		log.Infof("Current sync progress update on block is %v, target sync block is %v", rawBlock.Height, bestBlockheight)
+		asset.syncInfo.lastlogging = time.Now()
 	}
 
 	timeSpentSoFar := time.Since(asset.syncInfo.syncStartTime).Seconds()
@@ -170,41 +195,64 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 		listener.OnHeadersFetchProgress(&asset.syncInfo.headersFetchProgress)
 
 		// when synced send the sync completed status
-		if bestBlockheight == rawBlock.Height {
+		if isSyncComplete {
 			listener.OnSyncCompleted()
 		}
 	}
 }
 
 func (asset *BTCAsset) fetchNotifications() {
+	fmt.Println(" >>>>>> fetchNotifications() <<<<<<<")
+	t := time.NewTicker(time.Second * 2)
 	for {
 		select {
 		case n, ok := <-asset.chainClient.Notifications():
 			if !ok {
 				return
 			}
+
+			select {
+			case <-t.C:
+				d, _ := json.Marshal(n)
+				log.Warn(" >>>>>> <-asset.chainClient.Notifications() <<<<<<<", string(d))
+			case <-asset.syncCtx.Done():
+				return
+			}
+
 			switch n := n.(type) {
 			case chain.ClientConnected:
-				// Notification type sent immediately sync happens and it initialize the
-				// sync progress report data.
+				// Notification type sent is sent when the client connects or reconnects
+				// to the RPC server. It initialize the sync progress data report.
 				asset.initSyncProgressData()
 
 			case chain.BlockConnected:
-				b := wtxmgr.BlockMeta(n)
-				asset.updateSyncProgress(&b)
+				// Notification type is sent when a new block connects to the longest chain.
+				// Trigger the progress report only when the block to be reported
+				// is the best chaintip.
+				if asset.bestServerPeerBlockHeight() == n.Block.Height {
+					b := wtxmgr.BlockMeta(n)
+					asset.updateSyncProgress(&b)
+				}
 
 			case chain.BlockDisconnected:
 				// TODO: Implementation to be added
+				fmt.Println(" >>>>>>>>>>>>>>>>>> BlockDisconnected <<<<<<<<<<<<<", n.Block.Height)
 			case chain.RelevantTx:
 				// TODO: Implementation to be added
+				fmt.Println(" >>>>>>>>>>>>>>>>>> relevant tx <<<<<<<<<<<<<", n.Block.Height)
 			case chain.FilteredBlockConnected:
-				if (n.Block.Height % syncIntervalGap) < syncIntervalGap {
+				// Update the progress at the interval of syncIntervalGap or if current block is the last one.
+				if (n.Block.Height%syncIntervalGap) == 0 || asset.bestServerPeerBlockHeight() == n.Block.Height {
 					asset.updateSyncProgress(n.Block)
 				}
 			case *chain.RescanProgress:
+				fmt.Println(" >>>>>>>>>>>>>>>>>> Rescan Progress <<<<<<<<<<<<<", n.Height)
 				// TODO: Implementation to be added
 			case *chain.RescanFinished:
 				// TODO: Implementation to be added
+				fmt.Println(" >>>>>>>>>>>>>>>>>> Rescan Finished <<<<<<<<<<<<<", n.Height)
+			default:
+				fmt.Println(" >>>>>>>>>>>>>>>>>> Default case <<<<<<<<<<<<<", n)
 			}
 		case <-asset.syncCtx.Done():
 			return
@@ -266,6 +314,7 @@ func (asset *BTCAsset) prepareChain() error {
 }
 
 func (asset *BTCAsset) CancelSync() {
+	fmt.Println(" Canceling the sync for wallet: ", asset.GetWalletName())
 	// stop the local sync notifications
 	asset.cancelSync()
 
@@ -284,17 +333,18 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-	g, _ := errgroup.WithContext(asset.syncCtx)
-	g.Go(asset.chainClient.Start)
-
-	if asset.chainClient.NotifyBlocks(); err != nil {
+	if asset.chainClient.NotifyReceived([]btcutil.Address{}); err != nil {
 		log.Error(err)
 		return err
 	}
 
+	g, _ := errgroup.WithContext(asset.syncCtx)
+	g.Go(asset.chainClient.Start)
+
 	go asset.fetchNotifications()
 
 	log.Info("Synchronizing BTC wallet with network...")
+
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	asset.chainClient.WaitForShutdown()
@@ -360,6 +410,7 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	go asset.waitUntilBackendIsSynced()
 
 	go func() {
+		fmt.Println(" >>>>>> ConnectSPVWallet() <<<<<<<")
 		err = asset.ConnectSPVWallet()
 		if err != nil {
 			log.Warn("error occured when starting BTC sync: ", err)
