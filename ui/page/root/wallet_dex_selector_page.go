@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"gioui.org/layout"
@@ -101,12 +100,9 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	// init shared page functions
 	toggleSync := func() {
-		w := pg.WL.SelectedWallet.Wallet
 		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
-			fmt.Printf(" >>>>> BTC (%v) <<<<< is connected to network: %v \n", w.IsConnectedToNetwork(), w.GetWalletName())
 			pg.WL.SelectedWallet.Wallet.CancelSync()
 		} else {
-			fmt.Println(" >>>>>> Sync starting up now since we are connected upstream! <<<<<<<<  Name: ", w.GetWalletName())
 			pg.startSyncing(pg.WL.SelectedWallet.Wallet)
 		}
 	}
@@ -128,14 +124,14 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadBadWallets()
 	pg.startDexClient()
 
-	// // Initiate the auto sync for all the DCR wallets with set.
+	// Initiate the auto sync for all the DCR wallets with set autosync.
 	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
 		}
 	}
 
-	// Initiate the auto sync for all the BTC wallets with set.
+	// Initiate the auto sync for all the BTC wallets with set autosync.
 	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
@@ -338,8 +334,6 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
 		pg.unlockWalletForSyncing(wallet)
 		return
 	}
-
-	fmt.Println(" >>>>>> SpvSync() <<<<<<<")
 
 	err := wallet.SpvSync()
 	if err != nil {

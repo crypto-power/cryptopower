@@ -89,10 +89,6 @@ func (pg *WalletInfo) OnNavigatedTo() {
 
 	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
-	if autoSync {
-		// Trigger wallet sync if the current wallet has autosync set.
-		pg.handleWalletSync()
-	}
 
 	pg.listenForNotifications()
 }
@@ -148,17 +144,6 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 	return components.UniformPadding(gtx, body)
 }
 
-func (pg *WalletInfo) handleWalletSync() {
-	if pg.WL.SelectedWallet.Wallet.IsRescanning() {
-		pg.WL.SelectedWallet.Wallet.CancelRescan()
-	} else {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
-		go func() {
-			pg.ToggleSync()
-		}()
-	}
-}
-
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -166,7 +151,14 @@ func (pg *WalletInfo) handleWalletSync() {
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
 	if pg.syncSwitch.Changed() {
-		pg.handleWalletSync()
+		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
+			pg.WL.SelectedWallet.Wallet.CancelRescan()
+		} else {
+			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
+			go func() {
+				pg.ToggleSync()
+			}()
+		}
 	}
 
 	if pg.toBackup.Button.Clicked() {

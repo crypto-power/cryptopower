@@ -50,7 +50,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	}
 
 	asset.syncInfo.mu.Lock()
-	asset.syncInfo.isRescan = true
+	asset.syncInfo.isRescan = false
 	asset.syncInfo.mu.Unlock()
 
 	go asset.chainClient.Rescan(startHash, addrs, outPoints)
@@ -60,7 +60,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		return err
 	}
 
-	go asset.fetchNotifications()
+	go asset.handleNotifications()
 	return nil
 }
 

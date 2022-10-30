@@ -208,6 +208,10 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 			} else {
 				mgr.Assets.DCR.Wallets[wallet.ID] = w
 			}
+
+		default:
+			// Classify all wallets with missing AsseTtypes as DCR badwallets.
+			mgr.Assets.DCR.BadWallets[wallet.ID] = wallet
 		}
 	}
 	return nil

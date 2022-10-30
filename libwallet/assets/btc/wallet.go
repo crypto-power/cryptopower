@@ -2,7 +2,6 @@ package btc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -37,8 +36,6 @@ type BTCAsset struct {
 	syncInfo   *SyncData
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
-
-	wg sync.WaitGroup
 
 	mu sync.RWMutex
 }
@@ -278,7 +275,7 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestF
 func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
 	block, err := asset.chainClient.CS.BestBlock()
 	if err != nil {
-		fmt.Println("GetBestBlock hash for BTC failed, Err: ", err)
+		log.Error("GetBestBlock hash for BTC failed, Err: ", err)
 		return nil
 	}
 

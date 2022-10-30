@@ -349,7 +349,6 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType
 				switch wType {
 				case libutils.BTCWalletAsset:
 					if isWatchingOnlyWallet {
-						//TODO: Use a proper BTC watch only icon.
 						return pg.Theme.Icons.BtcWatchOnly.Layout36dp(gtx)
 					}
 					return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding30)

@@ -158,7 +158,7 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeightFetched.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							currentSeconds := time.Now().UnixNano() / int64(time.Second)
+							currentSeconds := time.Now().Unix()
 							w := pg.WL.SelectedWallet.Wallet
 							daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
 
