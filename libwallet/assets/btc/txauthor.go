@@ -1,13 +1,18 @@
 package btc
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
@@ -155,6 +160,130 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		Fee:                 feeAmount,
 		Change:              change,
 	}, nil
+}
+
+func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
+	txFeeAndSize, err := asset.EstimateFeeAndSize()
+	if err != nil {
+		return nil, err
+	}
+
+	spendableAccountBalance, err := asset.SpendableForAccount(int32(asset.TxAuthoredInfo.sourceAccountNumber))
+	if err != nil {
+		return nil, err
+	}
+
+	maxSendableAmount := spendableAccountBalance - txFeeAndSize.Fee.UnitValue
+
+	return &sharedW.Amount{
+		UnitValue: maxSendableAmount,
+		CoinValue: btcutil.Amount(maxSendableAmount).ToBTC(),
+	}, nil
+}
+
+func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
+	// first clear any previously set inputs
+	// so that an outdated set of inputs isn't used if an error occurs from this function
+	asset.TxAuthoredInfo.inputs = nil
+	inputs := make([]*wire.TxIn, 0, len(utxoKeys))
+	for _, utxoKey := range utxoKeys {
+		idx := strings.Index(utxoKey, ":")
+		hash := utxoKey[:idx]
+		hashIndex := utxoKey[idx+1:]
+		index, err := strconv.Atoi(hashIndex)
+		if err != nil {
+			return fmt.Errorf("no valid utxo found for '%s' in the source account at index %d", utxoKey, index)
+		}
+
+		txHash, err := chainhash.NewHashFromStr(hash)
+		if err != nil {
+			return err
+		}
+
+		op := &wire.OutPoint{
+			Hash:  *txHash,
+			Index: uint32(index),
+		}
+
+		input := wire.NewTxIn(op, nil, nil)
+		inputs = append(inputs, input)
+	}
+
+	asset.TxAuthoredInfo.inputs = inputs
+	asset.TxAuthoredInfo.needsConstruct = true
+	return nil
+}
+
+func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) error {
+	unsignedTx, err := asset.unsignedTransaction()
+	if err != nil {
+		return utils.TranslateError(err)
+	}
+
+	if unsignedTx.ChangeIndex >= 0 {
+		unsignedTx.RandomizeChangePosition()
+	}
+
+	var txBuf bytes.Buffer
+	txBuf.Grow(unsignedTx.Tx.SerializeSize())
+	err = unsignedTx.Tx.Serialize(&txBuf)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	var msgTx wire.MsgTx
+	err = msgTx.Deserialize(bytes.NewReader(txBuf.Bytes()))
+	if err != nil {
+		log.Error(err)
+		// Bytes do not represent a valid raw transaction
+		return err
+	}
+
+	lock := make(chan time.Time, 1)
+	defer func() {
+		lock <- time.Time{}
+	}()
+
+	err = asset.Internal().BTC.Unlock([]byte(privatePassphrase), lock)
+	if err != nil {
+		log.Error(err)
+		return errors.New(utils.ErrInvalidPassphrase)
+	}
+
+	var additionalPkScripts map[wire.OutPoint][]byte
+
+	invalidSigs, err := asset.Internal().BTC.SignTransaction(&msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	invalidInputIndexes := make([]uint32, len(invalidSigs))
+	for i, e := range invalidSigs {
+		invalidInputIndexes[i] = e.InputIndex
+	}
+
+	var serializedTransaction bytes.Buffer
+	serializedTransaction.Grow(msgTx.SerializeSize())
+	err = msgTx.Serialize(&serializedTransaction)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
+	if err != nil {
+		// Invalid tx
+		log.Error(err)
+		return err
+	}
+
+	err = asset.Internal().BTC.PublishTransaction(&msgTx, transactionLabel)
+	if err != nil {
+		return utils.TranslateError(err)
+	}
+	return nil
 }
 
 func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
