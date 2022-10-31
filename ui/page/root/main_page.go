@@ -884,6 +884,9 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
+								}
 								return mp.Theme.Icons.BTC.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -998,23 +1001,17 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	}
 
-	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.DCRWalletAsset {
-		log.Warnf("MainPage listener for (%v) not implemented.",
-			mp.WL.SelectedWallet.Wallet.GetAssetType())
-		return
-	}
-
-	dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	selectedWallet := mp.WL.SelectedWallet.Wallet
 
 	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := dcrUniqueImpl.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = dcrUniqueImpl.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	err = selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -1068,8 +1065,8 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				dcrUniqueImpl.RemoveSyncProgressListener(MainPageID)
-				dcrUniqueImpl.RemoveTxAndBlockNotificationListener(MainPageID)
+				selectedWallet.RemoveSyncProgressListener(MainPageID)
+				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.MultiWallet.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)

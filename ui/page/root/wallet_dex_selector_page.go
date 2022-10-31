@@ -9,7 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -124,8 +124,15 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadBadWallets()
 	pg.startDexClient()
 
-	for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
-		// Sync implementation for BTC wallet doesn't exist thus btc wallets can't be synced.
+	// Initiate the auto sync for all the DCR wallets with set autosync.
+	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			pg.startSyncing(wallet)
+		}
+	}
+
+	// Initiate the auto sync for all the BTC wallets with set autosync.
+	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
 		}

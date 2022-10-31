@@ -95,8 +95,8 @@ func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 	}
 
 	if async {
-		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &asyncTxAndBlockNotificationListener{
-			l: txAndBlockNotificationListener,
+		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.AsyncTxAndBlockNotificationListener{
+			TxAndBlockNotificationListener: txAndBlockNotificationListener,
 		}
 	} else {
 		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener

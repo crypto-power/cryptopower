@@ -70,5 +70,10 @@ func UseLogger(sLogger slog.Logger) {
 	lvl, _ := btclog.LevelFromString(lvlStr)
 	logger := backendLog.Logger("BTC")
 	logger.SetLevel(lvl)
-	UseLoggers(logger, logger, logger, logger, logger)
+
+	// Neutrino Info logs are silenced to avoid masking important error with its
+	// excessive logging of info messages.
+	ntrn := backendLog.Logger("NTRN")
+	ntrn.SetLevel(btclog.LevelError)
+	UseLoggers(logger, logger, ntrn, logger, logger)
 }

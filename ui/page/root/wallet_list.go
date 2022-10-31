@@ -3,7 +3,6 @@ package root
 import (
 	"gioui.org/layout"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
@@ -227,7 +226,7 @@ func (pg *WalletDexServerSelector) DCRWalletSection(gtx C) D {
 	mainWalletList := pg.dcrWalletList
 
 	return pg.dcrComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
-		return pg.DCRwalletWrapper(gtx, mainWalletList[i], false)
+		return pg.walletWrapper(gtx, libutils.DCRWalletAsset, mainWalletList[i], false)
 	})
 }
 
@@ -237,7 +236,7 @@ func (pg *WalletDexServerSelector) BTCWalletSection(gtx C) D {
 	mainWalletList := pg.btcWalletList
 
 	return pg.btcComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
-		return pg.BTCwalletWrapper(gtx, mainWalletList[i], false)
+		return pg.walletWrapper(gtx, libutils.BTCWalletAsset, mainWalletList[i], false)
 	})
 }
 
@@ -247,7 +246,7 @@ func (pg *WalletDexServerSelector) DCRwatchOnlyWalletSection(gtx C) D {
 	watchOnlyWalletList := pg.dcrWatchOnlyWalletList
 
 	return pg.dcrWatchOnlyComponents.Layout(gtx, len(watchOnlyWalletList), func(gtx C, i int) D {
-		return pg.DCRwalletWrapper(gtx, watchOnlyWalletList[i], true)
+		return pg.walletWrapper(gtx, libutils.DCRWalletAsset, watchOnlyWalletList[i], true)
 	})
 }
 
@@ -257,7 +256,7 @@ func (pg *WalletDexServerSelector) BTCwatchOnlyWalletSection(gtx C) D {
 	watchOnlyWalletList := pg.btcWatchOnlyWalletList
 
 	return pg.btcWatchOnlyComponents.Layout(gtx, len(watchOnlyWalletList), func(gtx C, i int) D {
-		return pg.BTCwalletWrapper(gtx, watchOnlyWalletList[i], true)
+		return pg.walletWrapper(gtx, libutils.BTCWalletAsset, watchOnlyWalletList[i], true)
 	})
 }
 
@@ -330,7 +329,7 @@ func (pg *WalletDexServerSelector) badWalletsWrapper(gtx C, badWalletsList []*ba
 	})
 }
 
-func (pg *WalletDexServerSelector) DCRwalletWrapper(gtx C, item *load.WalletItem, isWatchingOnlyWallet bool) D {
+func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem, isWatchingOnlyWallet bool) D {
 	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
@@ -347,10 +346,19 @@ func (pg *WalletDexServerSelector) DCRwalletWrapper(gtx C, item *load.WalletItem
 				Right: values.MarginPadding10,
 				Left:  values.MarginPadding10,
 			}.Layout(gtx, func(gtx C) D {
-				if isWatchingOnlyWallet {
-					return pg.Theme.Icons.DcrWatchOnly.Layout36dp(gtx)
+				switch wType {
+				case libutils.BTCWalletAsset:
+					if isWatchingOnlyWallet {
+						return pg.Theme.Icons.BtcWatchOnly.Layout36dp(gtx)
+					}
+					return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding30)
+				case libutils.DCRWalletAsset:
+					if isWatchingOnlyWallet {
+						return pg.Theme.Icons.DcrWatchOnly.Layout36dp(gtx)
+					}
+					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding30)
 				}
-				return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding30)
+				return D{}
 			})
 		}),
 		layout.Rigid(pg.Theme.Label(values.TextSize16, item.Wallet.GetWalletName()).Layout),
@@ -385,41 +393,6 @@ func (pg *WalletDexServerSelector) DCRwalletWrapper(gtx C, item *load.WalletItem
 	)
 }
 
-func (pg *WalletDexServerSelector) BTCwalletWrapper(gtx C, item *load.WalletItem, isWatchingOnlyWallet bool) D {
-	pg.shadowBox.SetShadowRadius(14)
-	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.UniformInset(values.MarginPadding9),
-		Background: pg.Theme.Color.Surface,
-		Alignment:  layout.Middle,
-		Shadow:     pg.shadowBox,
-		Margin:     layout.UniformInset(values.MarginPadding5),
-		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Right: values.MarginPadding10,
-				Left:  values.MarginPadding10,
-			}.Layout(gtx, func(gtx C) D {
-				if isWatchingOnlyWallet {
-					return pg.Theme.Icons.DcrWatchOnly.Layout36dp(gtx)
-				}
-				return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding30)
-			})
-		}),
-		layout.Rigid(pg.Theme.Label(values.TextSize16, item.Wallet.GetWalletName()).Layout),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{
-					Axis:      layout.Horizontal,
-					Alignment: layout.Middle,
-				}.Layout(gtx)
-			})
-		}),
-	)
-}
-
 // start sync listener
 func (pg *WalletDexServerSelector) listenForNotifications() {
 	if pg.isListenerAdded {
@@ -428,10 +401,13 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 
 	pg.isListenerAdded = true
 
-	for k, w := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
+	allWallets := make([]sharedW.Asset, 0)
+	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.DCRWalletAsset)...)
+	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.BTCWalletAsset)...)
+
+	for k, w := range allWallets {
 		syncListener := listeners.NewSyncProgress()
-		dcrUniqueImpl := w.(*dcr.DCRAsset)
-		err := dcrUniqueImpl.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
+		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
@@ -445,7 +421,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
-					dcrUniqueImpl.RemoveSyncProgressListener(WalletDexServerSelectorID)
+					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
 					close(syncListener.SyncStatusChan)
 					syncListener = nil
 					pg.isListenerAdded = false

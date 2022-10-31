@@ -9,9 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -59,8 +57,6 @@ type WalletInfo struct {
 	syncStep             int
 
 	redirectfunc seedbackup.Redirectfunc
-
-	dcrImpl *dcr.DCRAsset
 }
 
 func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
@@ -72,10 +68,6 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 			List: layout.List{Axis: layout.Vertical},
 		},
 		checkBox: l.Theme.CheckBox(new(widget.Bool), "I am aware of the risk"),
-	}
-	switch l.WL.SelectedWallet.Wallet.GetAssetType() {
-	case utils.DCRWalletAsset:
-		pg.dcrImpl = l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = text.Medium
@@ -188,27 +180,26 @@ func (pg *WalletInfo) listenForNotifications() {
 		return
 	case pg.BlocksRescanProgressListener != nil:
 		return
-	case pg.dcrImpl == nil:
-		log.Warn(values.ErrDCRSupportedOnly)
-		return
 	}
 
+	selectedWallet := pg.WL.SelectedWallet.Wallet
+
 	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := pg.dcrImpl.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
+	err := selectedWallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
+	err = selectedWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
 
 	pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
-	pg.dcrImpl.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
+	selectedWallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
 
 	go func() {
 		for {
@@ -238,14 +229,7 @@ func (pg *WalletInfo) listenForNotifications() {
 
 				// We only care about sync state changes here, to
 				// refresh the window display.
-				switch n.Stage {
-				case wallet.SyncStarted:
-					fallthrough
-				case wallet.SyncCanceled:
-					fallthrough
-				case wallet.SyncCompleted:
-					pg.ParentWindow().Reload()
-				}
+				pg.ParentWindow().Reload()
 
 			case n := <-pg.TxAndBlockNotifChan:
 				switch n.Type {
@@ -260,9 +244,9 @@ func (pg *WalletInfo) listenForNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveSyncProgressListener(InfoID)
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(InfoID)
-				pg.dcrImpl.SetBlocksRescanProgressListener(nil)
+				selectedWallet.RemoveSyncProgressListener(InfoID)
+				selectedWallet.RemoveTxAndBlockNotificationListener(InfoID)
+				selectedWallet.SetBlocksRescanProgressListener(nil)
 
 				close(pg.SyncStatusChan)
 				close(pg.TxAndBlockNotifChan)

@@ -44,7 +44,7 @@ type SyncData struct {
 type activeSyncData struct {
 	syncer *spv.Syncer
 
-	syncStage int32
+	syncStage utils.SyncStage
 
 	cfiltersFetchProgress    sharedW.CFiltersFetchProgressReport
 	headersFetchProgress     sharedW.HeadersFetchProgressReport
@@ -59,11 +59,11 @@ type activeSyncData struct {
 }
 
 const (
-	InvalidSyncStage          = -1
-	CFiltersFetchSyncStage    = 0
-	HeadersFetchSyncStage     = 1
-	AddressDiscoverySyncStage = 2
-	HeadersRescanSyncStage    = 3
+	InvalidSyncStage          = utils.InvalidSyncStage
+	CFiltersFetchSyncStage    = utils.CFiltersFetchSyncStage
+	HeadersFetchSyncStage     = utils.HeadersFetchSyncStage
+	AddressDiscoverySyncStage = utils.AddressDiscoverySyncStage
+	HeadersRescanSyncStage    = utils.HeadersRescanSyncStage
 )
 
 func (asset *DCRAsset) initActiveSyncData() {
@@ -341,7 +341,7 @@ func (asset *DCRAsset) IsSynced() bool {
 	return asset.syncData.synced
 }
 
-func (asset *DCRAsset) CurrentSyncStage() int32 {
+func (asset *DCRAsset) CurrentSyncStage() utils.SyncStage {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 

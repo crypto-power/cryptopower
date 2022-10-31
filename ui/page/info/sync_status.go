@@ -6,8 +6,6 @@ import (
 
 	"gioui.org/layout"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -112,10 +110,6 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
-	if bestBlock == nil && pg.WL.SelectedWallet.Wallet.GetAssetType() == utils.BTCWalletAsset {
-		// To be deleted once BTC full sync implementation is ready
-		bestBlock = &wallet.BlockInfo{}
-	}
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -164,7 +158,7 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeightFetched.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							currentSeconds := time.Now().UnixNano() / int64(time.Second)
+							currentSeconds := time.Now().Unix()
 							w := pg.WL.SelectedWallet.Wallet
 							daysBehind := components.TimeFormat(int(currentSeconds-w.GetBestBlockTimeStamp()), true)
 

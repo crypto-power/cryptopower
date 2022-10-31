@@ -2,7 +2,6 @@ package btc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -10,14 +9,12 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcwallet/chain"
-	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
@@ -29,17 +26,18 @@ var _ sharedW.Asset = (*BTCAsset)(nil)
 type BTCAsset struct {
 	*sharedW.Wallet
 
-	cl          neutrinoService
-	neutrinoDB  walletdb.DB
-	chainClient *chain.NeutrinoClient
+	chainService neutrinoService
+	chainClient  *chain.NeutrinoClient
 
-	cancelFuncs []context.CancelFunc
-	ctx         context.Context
-
-	Synced         bool
 	TxAuthoredInfo *TxAuthor
 
 	chainParams *chaincfg.Params
+
+	syncInfo   *SyncData
+	cancelSync context.CancelFunc
+	syncCtx    context.Context
+
+	mu sync.RWMutex
 }
 
 const (
@@ -84,6 +82,14 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		},
+	}
+
+	if err := btcWallet.prepareChain(); err != nil {
+		return nil, err
 	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
@@ -126,6 +132,14 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		},
+	}
+
+	if err := btcWallet.prepareChain(); err != nil {
+		return nil, err
 	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
@@ -155,6 +169,14 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		},
+	}
+
+	if err := btcWallet.prepareChain(); err != nil {
+		return nil, err
 	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
@@ -179,10 +201,18 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
+		syncInfo: &SyncData{
+			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
+			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		},
 	}
 
 	err = btcWallet.Prepare(ldr, params)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := btcWallet.prepareChain(); err != nil {
 		return nil, err
 	}
 
@@ -191,141 +221,36 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
-func (asset *BTCAsset) ConnectSPVWallet(wg *sync.WaitGroup) (err error) {
-	ctx, _ := asset.ShutdownContextWithCancel()
-	return asset.connect(ctx, wg)
-}
-
-// connect will start the wallet and begin syncing.
-func (asset *BTCAsset) connect(ctx context.Context, wg *sync.WaitGroup) error {
-	err := asset.startWallet()
-	if err != nil {
-		return err
-	}
-
-	// Nanny for the caches checkpoints and txBlocks caches.
-	wg.Add(1)
-
-	return nil
-}
-
-// startWallet initializes the *btcwallet.Wallet and its supporting players and
-// starts syncing.
-func (asset *BTCAsset) startWallet() error {
-	// timeout and recoverWindow arguments borrowed from btcwallet directly.
-
-	exists, err := asset.WalletExists()
-	if err != nil {
-		return fmt.Errorf("error verifying wallet existence: %v", err)
-	}
-	if !exists {
-		return errors.New("wallet not found")
-	}
-
-	log.Debug("Starting native BTC wallet...")
-
-	// Depending on the network, we add some addpeers or a connect peer. On
-	// regtest, if the peers haven't been explicitly set, add the simnet harness
-	// alpha node as an additional peer so we don't have to type it in. On
-	// mainet and testnet3, add a known reliable persistent peer to be used in
-	// addition to normal DNS seed-based peer discovery.
-	var addPeers []string
-	var connectPeers []string
-	switch asset.chainParams.Net {
-	case wire.MainNet:
-		addPeers = []string{"cfilters.ssgen.io"}
-	case wire.TestNet3:
-		addPeers = []string{"dex-test.ssgen.io"}
-	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
-		connectPeers = []string{"localhost:20575"}
-	}
-	log.Debug("Starting neutrino chain service...")
-	chainService, err := neutrino.NewChainService(neutrino.Config{
-		DataDir:       asset.DataDir(),
-		Database:      asset.GetWalletDataDb(),
-		ChainParams:   *asset.chainParams,
-		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
-		AddPeers:      addPeers,
-		ConnectPeers:  connectPeers,
-		// WARNING: PublishTransaction currently uses the entire duration
-		// because if an external bug, but even if the resolved, a typical
-		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
-		// not cancel queries too readily.
-		BroadcastTimeout: 6 * time.Second,
-	})
-	if err != nil {
-		log.Error(err)
-		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
-	}
-
-	bailOnEverything := func() {
-		if err := chainService.Stop(); err != nil {
-			log.Errorf("Error closing neutrino chain service: %v", err)
-		}
-	}
-
-	asset.cl = chainService
-	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
-
-	if err = asset.chainClient.Start(); err != nil { // lazily starts connmgr
-		bailOnEverything()
-		return fmt.Errorf("couldn't start Neutrino client: %v", err)
-	}
-
-	log.Info("Synchronizing wallet with network...")
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
-
-	return nil
-}
-
 func (asset *BTCAsset) SafelyCancelSync() {
-	//TODO: use a proper logger
-	fmt.Println(utils.ErrBTCMethodNotImplemented("SafelyCancelSync"))
+	if asset.IsConnectedToNetwork() {
+		asset.cancelSync()
+	}
 }
 
 // Methods added below satisfy the shared asset interface. Each should be
 // implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsSynced"))
-	return false
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
+
+	return asset.syncInfo.synced
 }
 func (asset *BTCAsset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 func (asset *BTCAsset) IsSyncing() bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsSyncing"))
-	return false
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
+
+	return asset.syncInfo.syncing
 }
-func (asset *BTCAsset) SpvSync() error {
-	wg := new(sync.WaitGroup)
-	err := asset.ConnectSPVWallet(wg)
-	if err != nil {
-		log.Warn("error occured when starting BTC sync: ", err)
-	}
-	return err
-}
-func (asset *BTCAsset) CancelRescan() {
-	log.Warn(utils.ErrBTCMethodNotImplemented("CancelRescan"))
-}
-func (asset *BTCAsset) CancelSync() {
-	log.Warn(utils.ErrBTCMethodNotImplemented("CancelSync"))
-}
-func (asset *BTCAsset) IsRescanning() bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsRescanning"))
-	return false
-}
-func (asset *BTCAsset) RescanBlocks() error {
-	err := utils.ErrBTCMethodNotImplemented("RescanBlocks")
-	return err
-}
+
 func (asset *BTCAsset) ConnectedPeers() int32 {
-	log.Warn(utils.ErrBTCMethodNotImplemented("ConnectedPeers"))
-	return -1
+	return asset.chainClient.CS.ConnectedCount()
 }
 func (asset *BTCAsset) IsConnectedToNetwork() bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsConnectedToNetwork"))
-	return false
+	return asset.IsConnectedToBitcoinNetwork()
 }
 func (asset *BTCAsset) PublishUnminedTransactions() error {
 	err := utils.ErrBTCMethodNotImplemented("PublishUnminedTransactions")
@@ -347,18 +272,47 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestF
 	err := utils.ErrBTCMethodNotImplemented("GetTransactionsRaw")
 	return nil, err
 }
+
 func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
-	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlock"))
-	return nil
+	block, err := asset.chainClient.CS.BestBlock()
+	if err != nil {
+		log.Error("GetBestBlock hash for BTC failed, Err: ", err)
+		return nil
+	}
+
+	return &sharedW.BlockInfo{
+		Height:    block.Height,
+		Timestamp: block.Timestamp.Unix(),
+	}
 }
+
 func (asset *BTCAsset) GetBestBlockHeight() int32 {
-	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockHeight"))
-	return -1
+	return asset.GetBestBlock().Height
 }
+
 func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
-	log.Warn(utils.ErrBTCMethodNotImplemented("GetBestBlockTimeStamp"))
-	return -1
+	return asset.GetBestBlock().Timestamp
 }
+
+func (asset *BTCAsset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
+	height, err := asset.chainClient.GetBlockHeight(&hash)
+	if err != nil {
+		log.Warn("GetBlockHeight for BTC failed, Err: %v", err)
+		return -1, err
+	}
+	return height, nil
+}
+
+func (asset *BTCAsset) GetBlockHash(height int64) (*chainhash.Hash, error) {
+	blockhash, err := asset.chainClient.GetBlockHash(height)
+	if err != nil {
+		log.Warn("GetBlockHash for BTC failed, Err: %v", err)
+		return nil, err
+	}
+
+	return blockhash, nil
+}
+
 func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
 	err := utils.ErrBTCMethodNotImplemented("SignMessage")
 	return nil, err
