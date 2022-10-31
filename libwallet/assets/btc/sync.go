@@ -187,14 +187,15 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 }
 
 func (asset *BTCAsset) publishHeadersFetchComplete() {
+	asset.syncInfo.mu.Lock()
+	defer asset.syncInfo.mu.Unlock()
+
 	for _, listener := range asset.syncInfo.syncProgressListeners {
 		listener.OnSyncCompleted()
 	}
 
-	asset.syncInfo.mu.Lock()
 	asset.syncInfo.synced = true
 	asset.syncInfo.syncing = false
-	asset.syncInfo.mu.Unlock()
 }
 
 // publishRelevantTxs publishes all the relevant tx identified in a filtered
@@ -230,6 +231,9 @@ func (asset *BTCAsset) publishRelevantTxs(txs []*wtxmgr.TxRecord) {
 // publishNewBlock once the initial sync is complete all the new blocks recieved
 // are published through this method.
 func (asset *BTCAsset) publishNewBlock(rawBlock *wtxmgr.BlockMeta) {
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
+
 	for _, listener := range asset.syncInfo.txAndBlockNotificationListeners {
 		listener.OnBlockAttached(asset.ID, rawBlock.Height)
 	}
@@ -397,7 +401,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 
 	asset.chainClient.WaitForShutdown()
 
-	if err = g.Wait(); err != nil { // lazily starts connmgr
+	if err = g.Wait(); err != nil {
 		asset.CancelSync()
 		log.Errorf("couldn't start Neutrino client: %v", err)
 		return err
@@ -423,7 +427,36 @@ func (asset *BTCAsset) startWallet() (err error) {
 	return nil
 }
 
+// waitForSyncCompletion polls if the chain considers if itself as the current
+// view of the network as synced. This is most helpful for the cases where the
+// current block on the wallet is already synced but the next notification
+// showing this change in chain view might take close to 10 minutes to come.
+func (asset *BTCAsset) waitForSyncCompletion() {
+	t := time.NewTicker(time.Second * 5)
+	defer t.Stop()
+
+	for {
+		select {
+		case <-t.C:
+			if asset.chainClient.IsCurrent() {
+				asset.syncInfo.mu.Lock()
+				asset.syncInfo.synced = true
+				asset.syncInfo.syncing = false
+				asset.syncInfo.mu.Unlock()
+				return
+			}
+		case <-asset.syncCtx.Done():
+			return
+		}
+	}
+}
+
 func (asset *BTCAsset) SpvSync() (err error) {
+	if !asset.IsSynced() {
+		// instead of waiting until the next block's notification comes run this.
+		go asset.waitForSyncCompletion()
+	}
+
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)

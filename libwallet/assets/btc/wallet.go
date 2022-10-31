@@ -272,6 +272,7 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestF
 	err := utils.ErrBTCMethodNotImplemented("GetTransactionsRaw")
 	return nil, err
 }
+
 func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
 	block, err := asset.chainClient.CS.BestBlock()
 	if err != nil {
