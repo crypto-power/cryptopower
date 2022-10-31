@@ -1,11 +1,12 @@
 package btc
 
 import (
+	"sync/atomic"
+
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 )
 
@@ -28,11 +29,10 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 		return err
 	}
 
-	return asset.rescanBlocks(block.Hash(), nil, nil)
+	return asset.rescanBlocks(block.Hash(), nil)
 }
 
-func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address,
-	outPoints map[wire.OutPoint]btcutil.Address) error {
+func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
 	if asset.IsRescanning() || !asset.IsSynced() {
 		return errors.E(utils.ErrInvalid)
 	}
@@ -42,25 +42,25 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	}
 
 	if addrs == nil {
-		addrs = make([]btcutil.Address, 0)
-	}
-
-	if outPoints == nil {
-		outPoints = make(map[wire.OutPoint]btcutil.Address)
+		addrs = []btcutil.Address{}
 	}
 
 	asset.syncInfo.mu.Lock()
-	asset.syncInfo.isRescan = false
+	asset.syncInfo.isRescan = true
 	asset.syncInfo.mu.Unlock()
 
-	go asset.chainClient.Rescan(startHash, addrs, outPoints)
-
-	err := asset.chainClient.NotifyBlocks()
+	err := asset.chainClient.NotifyReceived(addrs)
 	if err != nil {
 		return err
 	}
 
-	go asset.handleNotifications()
+	go func() {
+		// Attempt to start up the notifications handler.
+		if atomic.CompareAndSwapInt32(&asset.syncInfo.syncstarted, stop, start) {
+			asset.handleNotifications()
+		}
+	}()
+
 	return nil
 }
 

@@ -1,11 +1,14 @@
 package btc
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/wire"
@@ -16,15 +19,26 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// syncIntervalGap defines the interval at which to publish and log progress
-// without unnecessarily spamming the reciever.
-const syncIntervalGap = time.Second * 3
+const (
+	// syncIntervalGap defines the interval at which to publish and log progress
+	// without unnecessarily spamming the reciever.
+	syncIntervalGap = time.Second * 3
+
+	// start helps to syncchronously execute compare-and-swap operation when
+	// initiating the notifications listener.
+	start int32 = 0
+
+	// stop helps to syncchronously execute compare-and-swap operation when
+	// terminating the notifications listener.
+	stop int32 = 1
+)
 
 type SyncData struct {
 	mu sync.RWMutex
 
 	startBlock    *wtxmgr.BlockMeta
 	syncStartTime time.Time
+	syncstarted   int32
 
 	syncing       bool
 	synced        bool
@@ -183,8 +197,52 @@ func (asset *BTCAsset) publishHeadersFetchComplete() {
 	}
 }
 
+// publishRelevantTxs publishes all the relevant tx identified in a filtered
+// block. A valid list of addresses associated with the current block need to
+// be provided.
+func (asset *BTCAsset) publishRelevantTxs(txs []*wtxmgr.TxRecord) {
+	if txs == nil {
+		return
+	}
+
+	asset.syncInfo.mu.RLock()
+	defer asset.syncInfo.mu.RUnlock()
+
+	for _, tx := range txs {
+		//TODO: Properly decode a btc TxRecord into the sharedW.Transaction
+		tempTransaction := sharedW.Transaction{
+			WalletID:  asset.GetWalletID(),
+			Hash:      tx.Hash.String(),
+			Type:      txhelper.TxTypeRegular,
+			Direction: txhelper.TxDirectionReceived,
+		}
+		for _, listener := range asset.syncInfo.txAndBlockNotificationListeners {
+			result, err := json.Marshal(tempTransaction)
+			if err != nil {
+				log.Error(err)
+			}
+			listener.OnTransaction(string(result))
+		}
+	}
+}
+
+// publishNewBlock once the initial sync is complete all the new blocks recieved
+// are published through this method.
+func (asset *BTCAsset) publishNewBlock(rawBlock *wtxmgr.BlockMeta) {
+	for _, listener := range asset.syncInfo.txAndBlockNotificationListeners {
+		listener.OnBlockAttached(asset.ID, rawBlock.Height)
+	}
+}
+
 func (asset *BTCAsset) handleNotifications() {
 	t := time.NewTicker(syncIntervalGap)
+
+	defer func() {
+		// stop the ticker timer.
+		t.Stop()
+		// Signal that handleNotifications can be safely started next time its needed.
+		atomic.StoreInt32(&asset.syncInfo.syncstarted, stop)
+	}()
 
 	for {
 		select {
@@ -205,15 +263,22 @@ func (asset *BTCAsset) handleNotifications() {
 				select {
 				case <-t.C:
 					b := wtxmgr.BlockMeta(n)
-					asset.updateSyncProgress(&b)
+					if !asset.IsSynced() {
+						// initial sync is inprogress.
+						asset.updateSyncProgress(&b)
+					} else {
+						// initial sync is complete
+						asset.publishNewBlock(&b)
+					}
 				default:
 				}
 
 			case chain.BlockDisconnected:
 				// TODO: Implementation to be added
-			case chain.RelevantTx:
-				// TODO: Implementation to be added
 			case chain.FilteredBlockConnected:
+				// if relevants txs were detected. Atempt to send them first
+				asset.publishRelevantTxs(n.RelevantTxs)
+
 				// Update the progress at the interval of syncIntervalGap.
 				select {
 				case <-t.C:
@@ -233,6 +298,10 @@ func (asset *BTCAsset) handleNotifications() {
 				}
 				asset.updateSyncProgress(&b)
 				asset.publishHeadersFetchComplete()
+
+				// once initial scan is complete reset the ticket to track every
+				// new block or transaction detected.
+				t = time.NewTicker(1 * time.Second)
 			}
 		case <-asset.syncCtx.Done():
 			return
@@ -332,12 +401,18 @@ func (asset *BTCAsset) startWallet() (err error) {
 		return err
 	}
 
+	//TODO: set a valid list of addresses to track. This helps to received all
+	// the relevant tx identified in a block.
 	if asset.chainClient.NotifyReceived([]btcutil.Address{}); err != nil {
 		log.Error(err)
 		return err
 	}
 
-	go asset.handleNotifications()
+	go func() {
+		if atomic.CompareAndSwapInt32(&asset.syncInfo.syncstarted, stop, start) {
+			asset.handleNotifications()
+		}
+	}()
 
 	log.Info("Synchronizing BTC wallet with network...")
 
