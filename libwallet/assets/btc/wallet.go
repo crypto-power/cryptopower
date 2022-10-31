@@ -247,7 +247,7 @@ func (asset *BTCAsset) IsSyncing() bool {
 }
 
 func (asset *BTCAsset) ConnectedPeers() int32 {
-	return int32(len(asset.chainClient.CS.Peers()))
+	return asset.chainClient.CS.ConnectedCount()
 }
 func (asset *BTCAsset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToBitcoinNetwork()

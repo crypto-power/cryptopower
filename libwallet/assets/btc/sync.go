@@ -24,13 +24,13 @@ const (
 	// without unnecessarily spamming the reciever.
 	syncIntervalGap = time.Second * 3
 
-	// start helps to syncchronously execute compare-and-swap operation when
-	// initiating the notifications listener.
-	start int32 = 0
+	// start helps to synchronously execute compare-and-swap operation when
+	// initiating the notifications handler.
+	start int32 = 1
 
-	// stop helps to syncchronously execute compare-and-swap operation when
-	// terminating the notifications listener.
-	stop int32 = 1
+	// stop helps to synchronously execute compare-and-swap operation when
+	// terminating the notifications handler.
+	stop int32 = 0
 )
 
 type SyncData struct {
@@ -237,18 +237,12 @@ func (asset *BTCAsset) publishNewBlock(rawBlock *wtxmgr.BlockMeta) {
 func (asset *BTCAsset) handleNotifications() {
 	t := time.NewTicker(syncIntervalGap)
 
-	defer func() {
-		// stop the ticker timer.
-		t.Stop()
-		// Signal that handleNotifications can be safely started next time its needed.
-		atomic.StoreInt32(&asset.syncInfo.syncstarted, stop)
-	}()
-
+notificationsLoop:
 	for {
 		select {
 		case n, ok := <-asset.chainClient.Notifications():
 			if !ok {
-				return
+				continue notificationsLoop
 			}
 
 			switch n := n.(type) {
@@ -304,9 +298,14 @@ func (asset *BTCAsset) handleNotifications() {
 				t = time.NewTicker(1 * time.Second)
 			}
 		case <-asset.syncCtx.Done():
-			return
+			break notificationsLoop
 		}
 	}
+
+	// stop the ticker timer.
+	t.Stop()
+	// Signal that handleNotifications can be safely started next time its needed.
+	atomic.StoreInt32(&asset.syncInfo.syncstarted, stop)
 }
 
 // prepareChain sets up the chain service and the chain source
