@@ -7,6 +7,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
@@ -23,6 +24,14 @@ type TxAuthor struct {
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 }
+
+// noInputValue describes an error returned by the input source when no inputs
+// were selected because each previous output value was zero.  Callers of
+// txauthor.NewUnsignedTransaction need not report these errors to the user.
+type noInputValue struct {
+}
+
+func (noInputValue) Error() string { return "no input value" }
 
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
@@ -213,7 +222,13 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, nil, changeSource)
+	unspents, err := asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
+	if err != nil {
+		return nil, err
+	}
+	inputSource := makeInputSource(unspents)
+
+	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, inputSource, changeSource)
 }
 
 // changeSource derives an internal address from the source wallet and account
@@ -247,4 +262,70 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil
+}
+
+// makeInputSource creates an InputSource that creates inputs for every unspent
+// output with non-zero output values.  The target amount is ignored since every
+// output is consumed.  The InputSource does not return any previous output
+// scripts as they are not needed for creating the unsinged transaction and are
+// looked up again by the wallet during the call to signrawtransaction.
+func makeInputSource(outputs []*ListUnspentResult) txauthor.InputSource {
+	var (
+		totalInputValue btcutil.Amount
+		inputs          = make([]*wire.TxIn, 0, len(outputs))
+		inputValues     = make([]btcutil.Amount, 0, len(outputs))
+		sourceErr       error
+	)
+	for _, output := range outputs {
+		output := output
+
+		outputAmount, err := btcutil.NewAmount(output.Amount)
+		if err != nil {
+			sourceErr = fmt.Errorf(
+				"invalid amount `%v` in listunspent result",
+				output.Amount)
+			break
+		}
+		if outputAmount == 0 {
+			continue
+		}
+		if !saneOutputValue(outputAmount) {
+			sourceErr = fmt.Errorf(
+				"impossible output amount `%v` in listunspent result",
+				outputAmount)
+			break
+		}
+		totalInputValue += outputAmount
+
+		previousOutPoint, err := parseOutPoint(output)
+		if err != nil {
+			sourceErr = fmt.Errorf(
+				"invalid data in listunspent result: %v",
+				err)
+			break
+		}
+
+		inputs = append(inputs, wire.NewTxIn(&previousOutPoint, nil, nil))
+		inputValues = append(inputValues, outputAmount)
+	}
+
+	if sourceErr == nil && totalInputValue == 0 {
+		sourceErr = noInputValue{}
+	}
+
+	return func(btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
+		return totalInputValue, inputs, inputValues, nil, sourceErr
+	}
+}
+
+func saneOutputValue(amount btcutil.Amount) bool {
+	return amount >= 0 && amount <= btcutil.MaxSatoshi
+}
+
+func parseOutPoint(input *ListUnspentResult) (wire.OutPoint, error) {
+	txHash, err := chainhash.NewHashFromStr(input.TxID)
+	if err != nil {
+		return wire.OutPoint{}, err
+	}
+	return wire.OutPoint{Hash: *txHash, Index: input.Vout}, nil
 }
