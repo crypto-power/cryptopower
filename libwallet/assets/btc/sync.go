@@ -159,26 +159,26 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlock.Height, bestBlockheight)
 
 	timeSpentSoFar := time.Since(asset.syncInfo.syncStartTime).Seconds()
-	headersFetchedSoFar := float64(rawBlock.Height - asset.syncInfo.startBlock.Height)
-	remainingHeaders := float64(bestBlockheight - rawBlock.Height)
-	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
-
 	if timeSpentSoFar < 1 {
 		timeSpentSoFar = 1
 	}
 
+	headersFetchedSoFar := float64(rawBlock.Height - asset.syncInfo.startBlock.Height)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
+	remainingHeaders := float64(bestBlockheight - rawBlock.Height)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
 
+	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+
 	asset.syncInfo.headersFetchProgress.TotalHeadersToFetch = bestBlockheight
-	asset.syncInfo.headersFetchProgress.HeadersFetchProgress = int32((float64(headersFetchedSoFar) * 100) / float64(allHeadersToFetch))
+	asset.syncInfo.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 	asset.syncInfo.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncInfo.headersFetchProgress.HeadersFetchProgress
-	asset.syncInfo.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((float64(timeSpentSoFar) * float64(remainingHeaders)) / float64(headersFetchedSoFar))
+	asset.syncInfo.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
 
 	// publish the sync progress results to all listeners.
 	for _, listener := range asset.syncInfo.syncProgressListeners {
