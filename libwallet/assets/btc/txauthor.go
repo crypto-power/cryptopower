@@ -168,6 +168,10 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 		return nil, err
 	}
 
+	if asset.TxAuthoredInfo == nil {
+		return nil, fmt.Errorf("TxAuthoredInfo is nil")
+	}
+
 	spendableAccountBalance, err := asset.SpendableForAccount(int32(asset.TxAuthoredInfo.sourceAccountNumber))
 	if err != nil {
 		return nil, err
@@ -182,6 +186,9 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 }
 
 func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
+	if asset.TxAuthoredInfo == nil {
+		return fmt.Errorf("TxAuthoredInfo is nil")
+	}
 	// first clear any previously set inputs
 	// so that an outdated set of inputs isn't used if an error occurs from this function
 	asset.TxAuthoredInfo.inputs = nil
