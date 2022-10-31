@@ -187,14 +187,14 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 }
 
 func (asset *BTCAsset) publishHeadersFetchComplete() {
+	for _, listener := range asset.syncInfo.syncProgressListeners {
+		listener.OnSyncCompleted()
+	}
+
 	asset.syncInfo.mu.Lock()
 	asset.syncInfo.synced = true
 	asset.syncInfo.syncing = false
 	asset.syncInfo.mu.Unlock()
-
-	for _, listener := range asset.syncInfo.syncProgressListeners {
-		listener.OnSyncCompleted()
-	}
 }
 
 // publishRelevantTxs publishes all the relevant tx identified in a filtered
@@ -210,6 +210,7 @@ func (asset *BTCAsset) publishRelevantTxs(txs []*wtxmgr.TxRecord) {
 
 	for _, tx := range txs {
 		//TODO: Properly decode a btc TxRecord into the sharedW.Transaction
+		// Issue referenced here: https://code.cryptopower.dev/group/cryptopower/-/issues/1160
 		tempTransaction := sharedW.Transaction{
 			WalletID:  asset.GetWalletID(),
 			Hash:      tx.Hash.String(),
@@ -329,8 +330,10 @@ func (asset *BTCAsset) prepareChain() error {
 	var connectPeers []string
 	switch asset.chainParams.Net {
 	case wire.MainNet:
+		//TODO: Add more servers to connect peers from.
 		addPeers = []string{"cfilters.ssgen.io"}
 	case wire.TestNet3:
+		//TODO: Add more servers to connect peers from.
 		addPeers = []string{"dex-test.ssgen.io"}
 	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
 		connectPeers = []string{"localhost:20575"}
@@ -420,11 +423,6 @@ func (asset *BTCAsset) startWallet() (err error) {
 	return nil
 }
 
-func (asset *BTCAsset) ConnectSPVWallet() (err error) {
-	// start the wallet and begin syncing.
-	return asset.startWallet()
-}
-
 func (asset *BTCAsset) SpvSync() (err error) {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
@@ -454,7 +452,7 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	}
 
 	go func() {
-		err = asset.ConnectSPVWallet()
+		err = asset.startWallet()
 		if err != nil {
 			log.Warn("error occured when starting BTC sync: ", err)
 		}

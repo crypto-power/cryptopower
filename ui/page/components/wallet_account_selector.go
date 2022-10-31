@@ -276,7 +276,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 
 				}
 			case <-ctx.Done():
-				ws.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
+				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
