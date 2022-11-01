@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
@@ -45,14 +44,13 @@ func (pg *Page) initLayoutWidgets() {
 		Left:   values.MarginPadding8,
 	}
 	pg.coinSelectionLabel = pg.Theme.NewClickable(false)
-	pg.moreItems = pg.getMoreItem()
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+values.String(values.StrDCRCaps)).Layout),
+				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+string(pg.WL.SelectedWallet.Wallet.GetAssetType())).Layout),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
@@ -63,51 +61,6 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 			})
 		}),
 	)
-}
-
-func (pg *Page) getMoreItem() []moreItem {
-	return []moreItem{
-		// TODO: temp removal till issue #658 is resolved and V1.0 is release
-		// {
-		// 	text:   "Advanced mode",
-		// 	button: pg.Theme.NewClickable(true),
-		// 	id:     UTXOPageID,
-		// 	action: func() {
-		// 		pg.ChangeFragment(NewUTXOPage(pg.Load, pg.sourceAccountSelector.SelectedAccount()))
-		// 	},
-		// },
-	}
-}
-
-func (pg *Page) layoutOptionsMenu(gtx layout.Context) {
-	inset := layout.Inset{
-		Top:  values.MarginPadding30,
-		Left: values.MarginPaddingMinus100,
-	}
-
-	m := op.Record(gtx.Ops)
-	inset.Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding130)
-		return pg.shadowBox.Layout(gtx, func(gtx C) D {
-			optionsMenuCard := cryptomaterial.Card{Color: pg.Theme.Color.Surface}
-			optionsMenuCard.Radius = cryptomaterial.Radius(5)
-			return optionsMenuCard.Layout(gtx, func(gtx C) D {
-				return (&layout.List{Axis: layout.Vertical}).Layout(gtx, len(pg.moreItems), func(gtx C, i int) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1(pg.moreItems[i].text).Layout(gtx)
-								})
-							})
-						}),
-					)
-				})
-			})
-		})
-	})
-	op.Defer(gtx.Ops, m.Stop())
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -286,7 +239,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						Alignment: layout.Middle,
 					}.Layout(gtx,
 						layout.Flexed(0.45, func(gtx C) D {
-							return pg.amount.dcrAmountEditor.Layout(gtx)
+							return pg.amount.amountEditor.Layout(gtx)
 						}),
 						layout.Flexed(0.1, func(gtx C) D {
 							return layout.Center.Layout(gtx, func(gtx C) D {
@@ -299,7 +252,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						}),
 					)
 				}
-				return pg.amount.dcrAmountEditor.Layout(gtx)
+				return pg.amount.amountEditor.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.exchangeRateMessage == "" {

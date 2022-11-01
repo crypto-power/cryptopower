@@ -9,8 +9,8 @@ import (
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -22,12 +22,6 @@ import (
 const (
 	SendPageID = "Send"
 )
-
-type moreItem struct {
-	text   string
-	button *cryptomaterial.Clickable
-	action func()
-}
 
 type Page struct {
 	*load.Load
@@ -52,8 +46,6 @@ type Page struct {
 
 	txFeeCollapsible *cryptomaterial.Collapsible
 	shadowBox        *cryptomaterial.Shadow
-	optionsMenuCard  cryptomaterial.Card
-	moreItems        []moreItem
 	backdrop         *widget.Clickable
 
 	isFetchingExchangeRate bool
@@ -66,10 +58,10 @@ type Page struct {
 	currencyExchange    string
 
 	*authoredTxData
+	selectedWallet *load.WalletMapping
 }
 
 type authoredTxData struct {
-	txAuthor            *dcr.TxAuthor
 	destinationAddress  string
 	destinationAccount  *sharedW.Account
 	sourceAccount       *sharedW.Account
@@ -97,6 +89,9 @@ func NewSendPage(l *load.Load) *Page {
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
 	}
+	pg.selectedWallet = &load.WalletMapping{
+		Asset: l.WL.SelectedWallet.Wallet,
+	}
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
@@ -107,41 +102,29 @@ func NewSendPage(l *load.Load) *Page {
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
+			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 
-			// Imported and watch only wallet accounts are invalid for sending
-			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet()
-
-			if wal.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!wal.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
+			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
+				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
 				// only mixed accounts can send to address for wallet with privacy setup
 				if pg.sendDestination.accountSwitch.SelectedIndex() == 1 {
-					impl := wal.(*dcr.DCRAsset)
-					if impl != nil {
-						accountIsValid = account.Number == impl.MixedAccountNumber()
-					}
+					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 				}
 			}
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
-	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 
 	pg.sendDestination.destinationAccountSelector =
 		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-			// Filter out imported account and mixed.
-			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
-			// Filter imported account and mixed accounts.
-			accountIsValid := account.Number != load.MaxInt32
-			impl := wal.(*dcr.DCRAsset)
-			if impl != nil {
-				accountIsValid = accountIsValid && account.Number != impl.MixedAccountNumber()
-			}
+			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
 			// Filter the sending account.
-			if !accountIsValid || account.Number == pg.sourceAccountSelector.SelectedAccount().Number {
+			sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
+			isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
+			if !accountIsValid || isSameAccount {
 				return false
 			}
 			return true
@@ -157,7 +140,7 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.addressChanged = func() {
 		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -187,8 +170,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
-	pg.sourceAccountSelector.SelectFirstValidAccount(wl)
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
@@ -211,7 +193,11 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 	pg.isFetchingExchangeRate = true
-	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, values.DCRUSDTMarket)
+	market := values.DCRUSDTMarket
+	if pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+		market = values.BTCUSDTMarket
+	}
+	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
 		log.Printf("Error fetching exchange rate : %s \n", err)
 		return
@@ -227,7 +213,7 @@ func (pg *Page) fetchExchangeRate() {
 
 func (pg *Page) validateAndConstructTx() {
 	if pg.validate() {
-		pg.constructTx(false)
+		pg.constructTx()
 	} else {
 		pg.clearEstimates()
 		pg.showBalaceAfterSend()
@@ -238,7 +224,7 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 	defer pg.RefreshTheme(pg.ParentWindow())
 
 	if !pg.sendDestination.validate() && pg.amount.amountIsValid() {
-		pg.constructTx(true)
+		pg.constructTx()
 	} else {
 		pg.validateAndConstructTx()
 	}
@@ -253,13 +239,13 @@ func (pg *Page) validate() bool {
 	return validForSending
 }
 
-func (pg *Page) constructTx(useDefaultParams bool) {
-	destinationAddress, err := pg.sendDestination.destinationAddress(useDefaultParams)
+func (pg *Page) constructTx() {
+	destinationAddress, err := pg.sendDestination.destinationAddress()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
-	destinationAccount := pg.sendDestination.destinationAccount(useDefaultParams)
+	destinationAccount := pg.sendDestination.destinationAccount()
 
 	amountAtom, SendMax, err := pg.amount.validAmount()
 	if err != nil {
@@ -267,27 +253,20 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 		return
 	}
 
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if dcrImpl == nil {
-		pg.feeEstimationError("Only DCR implementation is supported")
-		// Only DCR implementation is supported past here.
-		return
-	}
-
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err = dcrImpl.NewUnsignedTx(sourceAccount.Number)
+	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	err = dcrImpl.AddSendDestination(destinationAddress, amountAtom, SendMax)
+	err = pg.selectedWallet.AddSendDestination(destinationAddress, amountAtom, SendMax)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
 	}
 
-	feeAndSize, err := dcrImpl.EstimateFeeAndSize()
+	feeAndSize, err := pg.selectedWallet.EstimateFeeAndSize()
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -319,15 +298,13 @@ func (pg *Page) constructTx(useDefaultParams bool) {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
-		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
+		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
-		usdAmount := utils.DCRToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
+		usdAmount := utils.CryptoToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
 		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
-
-	pg.txAuthor = dcrImpl.GetUnsignedTx()
 }
 
 func (pg *Page) showBalaceAfterSend() {
@@ -335,7 +312,7 @@ func (pg *Page) showBalaceAfterSend() {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}
 }
 
@@ -345,13 +322,14 @@ func (pg *Page) feeEstimationError(err string) {
 }
 
 func (pg *Page) clearEstimates() {
-	pg.txAuthor = nil
-	pg.txFee = " - " + values.String(values.StrDCRCaps)
+
+	// pg.txAuthor = nil
+	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
-	pg.totalCost = " - " + values.String(values.StrDCRCaps)
+	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "
-	pg.balanceAfterSend = " - " + values.String(values.StrDCRCaps)
+	pg.balanceAfterSend = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
@@ -374,8 +352,9 @@ func (pg *Page) HandleUserInteractions() {
 	pg.amount.handle()
 
 	if pg.infoButton.Button.Clicked() {
+		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrSend) + " DCR").
+			Title(textWithUnit).
 			Body(values.String(values.StrSendInfo)).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)
@@ -386,8 +365,8 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	for pg.nextButton.Clicked() {
-		if pg.txAuthor != nil {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.WL.SelectedWallet.Wallet)
+		if pg.selectedWallet.IsUnsignedTxExist() {
+			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 
 			pg.confirmTxModal.txSent = func() {
@@ -399,44 +378,38 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	for _, menu := range pg.moreItems {
-		if menu.button.Clicked() {
-			menu.action()
-		}
-	}
-
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 
 	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			if !pg.amount.dcrAmountEditor.Editor.Focused() && !modalShown {
-				pg.amount.dcrAmountEditor.Editor.Focus()
+			if !pg.amount.amountEditor.Editor.Focused() && !modalShown {
+				pg.amount.amountEditor.Editor.Focus()
 			}
 		default:
 			if pg.sendDestination.accountSwitch.Changed() {
 				if !pg.sendDestination.validate() {
 					pg.sendDestination.destinationAddressEditor.Editor.Focus()
 				} else {
-					pg.amount.dcrAmountEditor.Editor.Focus()
+					pg.amount.amountEditor.Editor.Focus()
 				}
 
 			}
 		}
 	} else {
 		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 			if !modalShown {
-				pg.amount.dcrAmountEditor.Editor.Focus()
+				pg.amount.amountEditor.Editor.Focus()
 			}
-		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
 		default:
 			if pg.sendDestination.accountSwitch.Changed() {
 				if !pg.sendDestination.validate() {
 					pg.sendDestination.destinationAddressEditor.Editor.Focus()
 				} else {
-					pg.amount.dcrAmountEditor.Editor.Focus()
+					pg.amount.amountEditor.Editor.Focus()
 				}
 			}
 		}
@@ -446,11 +419,11 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
 			if currencyValue == values.DefaultExchangeValue {
-				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
 			} else {
-				if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.usdAmountEditor.Editor.SetText("")
 					pg.amount.SendMax = false
 				}
@@ -458,19 +431,19 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	} else {
 		if currencyValue == values.DefaultExchangeValue {
-			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
 		} else {
-			if len(pg.amount.dcrAmountEditor.Editor.Text()) == 0 {
+			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.usdAmountEditor.Editor.SetText("")
 				pg.amount.SendMax = false
 			}
 		}
 	}
 
-	if len(pg.amount.dcrAmountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
-		pg.amount.validateDCRAmount()
+	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
+		pg.amount.validateAmount()
 		pg.validateAndConstructTxAmountOnly()
 	}
 
@@ -501,17 +474,17 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 	if currencyValue == values.DefaultExchangeValue {
 		switch {
 		case !pg.sendDestination.sendToAddress:
-			cryptomaterial.SwitchEditors(evt, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.amount.amountEditor.Editor)
 		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor)
 		}
 	} else {
 		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-		case !pg.sendDestination.sendToAddress && (pg.amount.dcrAmountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.dcrAmountEditor.Editor)
+		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
+			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.amountEditor.Editor)
 		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.dcrAmountEditor.Editor, pg.amount.usdAmountEditor.Editor)
+			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor, pg.amount.usdAmountEditor.Editor)
 		}
 	}
 }

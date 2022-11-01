@@ -60,6 +60,10 @@ func (asset *BTCAsset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
+func (asset *BTCAsset) IsUnsignedTxExist() bool {
+	return asset.TxAuthoredInfo != nil
+}
+
 func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {

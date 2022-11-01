@@ -17,9 +17,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -108,8 +106,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
-			selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
-			currentAddress, err := selectedWallet.CurrentAddress(selectedAccount.Number)
+			currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
 				log.Errorf("Error getting current address: %v", err)
 			} else {
@@ -123,17 +120,10 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			if account.Number == load.MaxInt32 {
 				return false
 			}
-			wal := pg.multiWallet.WalletWithID(account.WalletID)
-			if wal.GetAssetType() != utils.DCRWalletAsset {
+			if account.Number != pg.selectedWallet.MixedAccountNumber() {
 				return true
-			} else {
-				dcrIntf := wal.(*dcr.DCRAsset)
-				if dcrIntf != nil && account.Number != dcrIntf.MixedAccountNumber() {
-					// only applies if the selected wallet is of type dcr.
-					return true
-				}
-				return false
 			}
+			return false
 		})
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet)
 

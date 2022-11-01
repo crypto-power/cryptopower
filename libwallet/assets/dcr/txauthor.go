@@ -51,6 +51,10 @@ func (asset *DCRAsset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
+func (asset *DCRAsset) IsUnsignedTxExist() bool {
+	return asset.TxAuthoredInfo != nil
+}
+
 func (asset *DCRAsset) AddSendDestination(address string, atomAmount int64, sendMax bool) error {
 	_, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {

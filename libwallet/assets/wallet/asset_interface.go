@@ -98,4 +98,9 @@ type Asset interface {
 	ReadInt32ConfigValueForKey(key string, defaultValue int32) int32
 	ReadLongConfigValueForKey(key string, defaultValue int64) int64
 	ReadStringConfigValueForKey(key string, defaultValue string) string
+
+	NewUnsignedTx(accountNumber int32) error
+	AddSendDestination(address string, unitAmount int64, sendMax bool) error
+	EstimateFeeAndSize() (*TxFeeAndSize, error)
+	IsUnsignedTxExist() bool
 }

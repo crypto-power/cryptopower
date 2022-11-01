@@ -112,7 +112,7 @@ func FormatUSDBalance(p *message.Printer, balance float64) string {
 	return p.Sprintf("$%.2f", balance)
 }
 
-func DCRToUSD(exchangeRate, dcr float64) float64 {
+func CryptoToUSD(exchangeRate, dcr float64) float64 {
 	return dcr * exchangeRate
 }
 

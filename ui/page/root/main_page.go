@@ -502,6 +502,8 @@ func (mp *MainPage) HandleUserInteractions() {
 				pg = NewBTCWalletSettingsPage(mp.Load)
 			case ReceivePageID:
 				pg = NewReceivePage(mp.Load)
+			case send.SendPageID:
+				pg = send.NewSendPage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			}
