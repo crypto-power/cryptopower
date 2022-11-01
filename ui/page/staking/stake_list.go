@@ -4,10 +4,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/listeners"
+	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
 func (pg *Page) initTicketList() {

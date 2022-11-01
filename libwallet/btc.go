@@ -4,9 +4,9 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params, error) {
@@ -75,7 +75,6 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 
 	return wallet, nil
 }
-
 
 // BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
 // provided xpub. Returns -1 if there is no such wallet.

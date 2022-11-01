@@ -3,12 +3,12 @@ package cryptomaterial
 import (
 	"image"
 
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/raedah/cryptopower/ui/values"
 )
 
 type Clickable struct {

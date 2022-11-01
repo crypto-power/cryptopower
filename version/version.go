@@ -29,7 +29,7 @@ const (
 	AppPatch uint   = 0
 )
 
-// go build -v -ldflags "-X gitlab.com/raedah/cryptopower/version.appPreRelease= -X gitlab.com/raedah/cryptopower/version.appBuild=`git rev-parse --short HEAD`"
+// go build -v -ldflags "-X code.cryptopower.dev/group/cryptopower/version.appPreRelease= -X code.cryptopower.dev/group/cryptopower/version.appBuild=`git rev-parse --short HEAD`"
 var (
 	// appPreRelease is defined as a variable so it can be overridden during the
 	// build process. It MUST only contain characters from semanticAlphabet per

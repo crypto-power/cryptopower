@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.com/raedah/cryptopower/libwallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet"
 )
 
 const (

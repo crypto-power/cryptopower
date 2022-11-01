@@ -1,10 +1,10 @@
 package wallet
 
 import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 type AssetAmount interface {
@@ -272,6 +272,35 @@ type DebugInfo struct {
 	TotalTimeRemaining        int64
 	CurrentStageTimeElapsed   int64
 	CurrentStageTimeRemaining int64
+}
+
+/** begin tx-related types */
+
+// AsyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that
+// triggers notifcation callbacks asynchronously.
+type AsyncTxAndBlockNotificationListener struct {
+	TxAndBlockNotificationListener
+}
+
+// OnTransaction satisfies the TxAndBlockNotificationListener interface and
+// starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransaction(transaction string) {
+	go asyncTxBlockListener.OnTransaction(transaction)
+}
+
+// OnBlockAttached satisfies the TxAndBlockNotificationListener interface and
+// starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnBlockAttached(walletID int, blockHeight int32) {
+	go asyncTxBlockListener.OnBlockAttached(walletID, blockHeight)
+}
+
+// OnTransactionConfirmed satisfies the TxAndBlockNotificationListener interface
+// and starts a goroutine to actually handle the notification using the embedded
+// listener.
+func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransactionConfirmed(walletID int, hash string, blockHeight int32) {
+	go asyncTxBlockListener.OnTransactionConfirmed(walletID, hash, blockHeight)
 }
 
 /** end sync-related types */

@@ -11,14 +11,14 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/app"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/renderers"
-	"gitlab.com/raedah/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/app"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/listeners"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/renderers"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
 const WalletAndAccountSelectorID = "WalletAndAccountSelector"

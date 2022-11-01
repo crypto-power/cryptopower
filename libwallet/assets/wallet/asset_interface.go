@@ -3,8 +3,8 @@ package wallet
 import (
 	"context"
 
-	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 // Asset defines the interface each wallet must satisfy.
@@ -67,6 +67,12 @@ type Asset interface {
 	AccountNumber(accountName string) (int32, error)
 	AccountNameRaw(accountNumber uint32) (string, error)
 	GetAccountBalance(accountNumber int32) (*Balance, error)
+
+	AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error
+	RemoveSyncProgressListener(uniqueIdentifier string)
+	AddTxAndBlockNotificationListener(txAndBlockNotificationListener TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error
+	RemoveTxAndBlockNotificationListener(uniqueIdentifier string)
+	SetBlocksRescanProgressListener(blocksRescanProgressListener BlocksRescanProgressListener)
 
 	CurrentAddress(account int32) (string, error)
 	NextAddress(account int32) (string, error)

@@ -1,11 +1,8 @@
 package load
 
 import (
-	"fmt"
-
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
 // WalletMapping helps to call a function quickly no matter what currency it is,
@@ -20,28 +17,28 @@ func NewWalletMapping(asset sharedW.Asset) *WalletMapping {
 	}
 }
 
-func (wallt *WalletMapping) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
-	switch asset := wallt.Asset.(type) {
-	case *dcr.DCRAsset:
-		return asset.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, async, uniqueIdentifier)
-	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet does not support this function")
-	default:
-		return fmt.Errorf("wallet not supported")
-	}
-}
+// func (wallt *WalletMapping) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+// 	switch asset := wallt.Asset.(type) {
+// 	case *dcr.DCRAsset:
+// 		return asset.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, async, uniqueIdentifier)
+// 	case *btc.BTCAsset:
+// 		return fmt.Errorf("btc wallet does not support this function")
+// 	default:
+// 		return fmt.Errorf("wallet not supported")
+// 	}
+// }
 
-func (wallt *WalletMapping) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) error {
-	switch asset := wallt.Asset.(type) {
-	case *dcr.DCRAsset:
-		asset.RemoveTxAndBlockNotificationListener(uniqueIdentifier)
-		return nil
-	case *btc.BTCAsset:
-		return fmt.Errorf("btc wallet does not support this function")
-	default:
-		return fmt.Errorf("wallet not supported")
-	}
-}
+// func (wallt *WalletMapping) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) error {
+// 	switch asset := wallt.Asset.(type) {
+// 	case *dcr.DCRAsset:
+// 		asset.RemoveTxAndBlockNotificationListener(uniqueIdentifier)
+// 		return nil
+// 	case *btc.BTCAsset:
+// 		return fmt.Errorf("btc wallet does not support this function")
+// 	default:
+// 		return fmt.Errorf("wallet not supported")
+// 	}
+// }
 
 func (wallt *WalletMapping) MixedAccountNumber() int32 {
 	switch asset := wallt.Asset.(type) {
@@ -50,4 +47,8 @@ func (wallt *WalletMapping) MixedAccountNumber() int32 {
 	default:
 		return -1
 	}
+}
+
+func (wallt *WalletMapping) Broadcast(passphrase string) error {
+
 }

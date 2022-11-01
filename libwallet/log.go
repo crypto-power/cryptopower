@@ -8,6 +8,12 @@ package libwallet
 import (
 	"os"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
+	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/p2p"
 	"decred.org/dcrwallet/v2/ticketbuyer"
@@ -17,12 +23,6 @@ import (
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"gitlab.com/raedah/cryptopower/libwallet/ext"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/loader"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
-	"gitlab.com/raedah/cryptopower/libwallet/spv"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

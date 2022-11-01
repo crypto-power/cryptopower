@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
 )
 
 // DCRAmount implements the Asset amount interface for the DCR asset
@@ -63,35 +63,6 @@ type CSPPConfig struct {
 type AccountMixerNotificationListener interface {
 	OnAccountMixerStarted(walletID int)
 	OnAccountMixerEnded(walletID int)
-}
-
-/** begin tx-related types */
-
-// asyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that
-// triggers notifcation callbacks asynchronously.
-type asyncTxAndBlockNotificationListener struct {
-	l sharedW.TxAndBlockNotificationListener
-}
-
-// OnTransaction satisfies the TxAndBlockNotificationListener interface and
-// starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *asyncTxAndBlockNotificationListener) OnTransaction(transaction string) {
-	go asyncTxBlockListener.l.OnTransaction(transaction)
-}
-
-// OnBlockAttached satisfies the TxAndBlockNotificationListener interface and
-// starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *asyncTxAndBlockNotificationListener) OnBlockAttached(walletID int, blockHeight int32) {
-	go asyncTxBlockListener.l.OnBlockAttached(walletID, blockHeight)
-}
-
-// OnTransactionConfirmed satisfies the TxAndBlockNotificationListener interface
-// and starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *asyncTxAndBlockNotificationListener) OnTransactionConfirmed(walletID int, hash string, blockHeight int32) {
-	go asyncTxBlockListener.l.OnTransactionConfirmed(walletID, hash, blockHeight)
 }
 
 /** begin ticket-related types */

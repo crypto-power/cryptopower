@@ -7,7 +7,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
 type IconStyle uint8

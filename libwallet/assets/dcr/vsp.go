@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"strings"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/vsp"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.

@@ -13,27 +13,27 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/listeners"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/dexclient"
+	"code.cryptopower.dev/group/cryptopower/ui/page/governance"
+	"code.cryptopower.dev/group/cryptopower/ui/page/info"
+	"code.cryptopower.dev/group/cryptopower/ui/page/privacy"
+	"code.cryptopower.dev/group/cryptopower/ui/page/seedbackup"
+	"code.cryptopower.dev/group/cryptopower/ui/page/send"
+	"code.cryptopower.dev/group/cryptopower/ui/page/staking"
+	"code.cryptopower.dev/group/cryptopower/ui/page/transaction"
+	"code.cryptopower.dev/group/cryptopower/ui/utils"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/wallet"
 	"github.com/gen2brain/beeep"
-	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	libutils "gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/listeners"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/page/dexclient"
-	"gitlab.com/raedah/cryptopower/ui/page/governance"
-	"gitlab.com/raedah/cryptopower/ui/page/info"
-	"gitlab.com/raedah/cryptopower/ui/page/privacy"
-	"gitlab.com/raedah/cryptopower/ui/page/seedbackup"
-	"gitlab.com/raedah/cryptopower/ui/page/send"
-	"gitlab.com/raedah/cryptopower/ui/page/staking"
-	"gitlab.com/raedah/cryptopower/ui/page/transaction"
-	"gitlab.com/raedah/cryptopower/ui/utils"
-	"gitlab.com/raedah/cryptopower/ui/values"
-	"gitlab.com/raedah/cryptopower/wallet"
 )
 
 const (
@@ -886,6 +886,9 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
+								}
 								return mp.Theme.Icons.BTC.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -1000,23 +1003,17 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	}
 
-	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.DCRWalletAsset {
-		log.Warnf("MainPage listener for (%v) not implemented.",
-			mp.WL.SelectedWallet.Wallet.GetAssetType())
-		return
-	}
-
-	dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	selectedWallet := mp.WL.SelectedWallet.Wallet
 
 	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := dcrUniqueImpl.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = dcrUniqueImpl.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	err = selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -1070,8 +1067,8 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				dcrUniqueImpl.RemoveSyncProgressListener(MainPageID)
-				dcrUniqueImpl.RemoveTxAndBlockNotificationListener(MainPageID)
+				selectedWallet.RemoveSyncProgressListener(MainPageID)
+				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.MultiWallet.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)

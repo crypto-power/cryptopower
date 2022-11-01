@@ -1,11 +1,11 @@
 package txhelper
 
 import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/addresshelper"
 	"github.com/btcsuite/btcd/chaincfg"
 	btcWire "github.com/btcsuite/btcd/wire"
 	dcrutil "github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
-	"gitlab.com/raedah/cryptopower/libwallet/addresshelper"
 )
 
 func MakeTxOutput(address string, amountInAtom int64, net dcrutil.AddressParams) (output *wire.TxOut, err error) {

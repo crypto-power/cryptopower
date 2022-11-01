@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 // This files holds implementation to translate errors into user friendly messages.

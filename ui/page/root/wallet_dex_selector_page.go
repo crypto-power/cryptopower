@@ -7,16 +7,16 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/app"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/modal"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/page/dexclient"
-	"gitlab.com/raedah/cryptopower/ui/page/settings"
-	"gitlab.com/raedah/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/app"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/dexclient"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
 const WalletDexServerSelectorID = "wallet_dex_server_selector"
@@ -124,8 +124,15 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadBadWallets()
 	pg.startDexClient()
 
-	for _, wallet := range pg.WL.SortedWalletList(utils.DCRWalletAsset) {
-		// Sync implementation for BTC wallet doesn't exist thus btc wallets can't be synced.
+	// Initiate the auto sync for all the DCR wallets with set autosync.
+	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			pg.startSyncing(wallet)
+		}
+	}
+
+	// Initiate the auto sync for all the BTC wallets with set autosync.
+	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet)
 		}

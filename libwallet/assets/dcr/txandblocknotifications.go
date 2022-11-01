@@ -3,9 +3,9 @@ package dcr
 import (
 	"encoding/json"
 
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 )
 
 func (asset *DCRAsset) listenForTransactions() {
@@ -95,8 +95,8 @@ func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 	}
 
 	if async {
-		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &asyncTxAndBlockNotificationListener{
-			l: txAndBlockNotificationListener,
+		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.AsyncTxAndBlockNotificationListener{
+			TxAndBlockNotificationListener: txAndBlockNotificationListener,
 		}
 	} else {
 		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener

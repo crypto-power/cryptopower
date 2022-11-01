@@ -3,8 +3,8 @@ package notification
 import (
 	"path/filepath"
 
+	"code.cryptopower.dev/group/cryptopower/ui/utils"
 	"github.com/gen2brain/beeep"
-	"gitlab.com/raedah/cryptopower/ui/utils"
 )
 
 const (

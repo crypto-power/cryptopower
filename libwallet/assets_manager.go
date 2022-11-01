@@ -6,17 +6,17 @@ import (
 	"os"
 	"path/filepath"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"gitlab.com/raedah/cryptopower/libwallet/ext"
-	"gitlab.com/raedah/cryptopower/libwallet/internal/politeia"
-	"gitlab.com/raedah/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
-	"gitlab.com/raedah/cryptopower/libwallet/assets/btc"
-	"gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
-	sharedW "gitlab.com/raedah/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
 type Assets struct {
@@ -208,6 +208,10 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 			} else {
 				mgr.Assets.DCR.Wallets[wallet.ID] = w
 			}
+
+		default:
+			// Classify all wallets with missing AssetTypes as DCR badwallets.
+			mgr.Assets.DCR.BadWallets[wallet.ID] = wallet
 		}
 	}
 	return nil
@@ -367,10 +371,10 @@ func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 }
 
 func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
-	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; !ok {
+	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; ok {
 		return badWallet
 	}
-	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; !ok {
+	if badWallet, ok := mgr.Assets.DCR.BadWallets[walletID]; ok {
 		return badWallet
 	}
 	return nil

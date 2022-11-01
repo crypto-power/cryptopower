@@ -1,6 +1,6 @@
 package wallet
 
-import "gitlab.com/raedah/cryptopower/libwallet/assets/dcr"
+import "code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 
 // TODO: responses.go file to be deprecated with future code clean up
 

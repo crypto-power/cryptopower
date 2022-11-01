@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
-	"gitlab.com/raedah/cryptopower/ui/assets"
+	"code.cryptopower.dev/group/cryptopower/ui/assets"
 )
 
 type Icons struct {
@@ -16,7 +16,7 @@ type Icons struct {
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
-	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly,
+	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly, BtcWatchOnly,
 	Next, SettingsIcon, SecurityIcon, HelpIcon, AboutIcon, DebugIcon, VerifyMessageIcon, LocationPinIcon, SignMessageIcon,
 	HeaderSettingsIcon, AlertGray, ArrowDownIcon, WatchOnlyWalletIcon, CurrencySwapIcon, SyncingIcon, TransactionFingerprint,
 	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, DecredLogo, EllipseVert,
@@ -144,6 +144,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.DarkmodeIcon = NewImage(decredIcons["darkmodeIcon"])
 	i.MixerInactive = NewImage(decredIcons["mixer_inactive"])
 	i.DcrWatchOnly = NewImage(decredIcons["dcr_watch_only"])
+	i.BtcWatchOnly = NewImage(decredIcons["btc_watch_only"])
 	i.RedAlert = NewImage(decredIcons["red_alert"])
 	i.ChevronExpand = NewImage(decredIcons["chevron_expand"])
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
