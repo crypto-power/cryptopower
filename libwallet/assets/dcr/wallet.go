@@ -147,6 +147,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -179,7 +180,9 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
-		vspClients: make(map[string]*vsp.Client),
+		vspClients:                       make(map[string]*vsp.Client),
+		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
