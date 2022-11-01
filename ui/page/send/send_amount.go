@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"strconv"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
@@ -74,15 +77,20 @@ func (sa *sendAmount) styleWidgets() {
 
 func (sa *sendAmount) setExchangeRate(exchangeRate float64) {
 	sa.exchangeRate = exchangeRate
-	sa.validateDCRAmount() // convert dcr input to usd
+	sa.validateAmount() // convert dcr input to usd
 }
 
 func (sa *sendAmount) setAmount(amount int64) {
 	// TODO: this workaround ignores the change events from the
 	// amount input to avoid construct tx cycle.
 	sa.sendMaxChangeEvent = sa.SendMax
-	sa.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", dcrutil.Amount(amount).ToCoin()))
+	amountSet := dcrutil.Amount(amount).ToCoin()
+	if sa.Load.WL.SelectedWallet.Wallet.GetAssetType() == libUtil.BTCWalletAsset {
+		amountSet = btcutil.Amount(amount).ToBTC()
+	}
+	sa.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", amountSet))
 
+	//only for dcr
 	if sa.exchangeRate != -1 {
 		usdAmount := utils.DCRToUSD(sa.exchangeRate, dcrutil.Amount(amount).ToCoin())
 
@@ -107,13 +115,16 @@ func (sa *sendAmount) validAmount() (int64, bool, error) {
 		return -1, sa.SendMax, err
 	}
 
+	if sa.Load.WL.SelectedWallet.Wallet.GetAssetType() == libUtil.BTCWalletAsset {
+		return btc.AmountSatoshi(amount), sa.SendMax, nil
+	}
 	return dcr.AmountAtom(amount), sa.SendMax, nil
 }
 
-func (sa *sendAmount) validateDCRAmount() {
+func (sa *sendAmount) validateAmount() {
 	sa.amountErrorText = ""
 	if sa.inputsNotEmpty(sa.amountEditor.Editor) {
-		dcrAmount, err := strconv.ParseFloat(sa.amountEditor.Editor.Text(), 64)
+		amount, err := strconv.ParseFloat(sa.amountEditor.Editor.Text(), 64)
 		if err != nil {
 			// empty usd input
 			sa.usdAmountEditor.Editor.SetText("")
@@ -122,7 +133,7 @@ func (sa *sendAmount) validateDCRAmount() {
 		}
 
 		if sa.exchangeRate != -1 {
-			usdAmount := utils.DCRToUSD(sa.exchangeRate, dcrAmount)
+			usdAmount := utils.DCRToUSD(sa.exchangeRate, amount)
 			sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount)) // 2 decimal places
 		}
 
@@ -212,7 +223,7 @@ func (sa *sendAmount) handle() {
 					continue
 				}
 				sa.SendMax = false
-				sa.validateDCRAmount()
+				sa.validateAmount()
 				sa.amountChanged()
 
 			}

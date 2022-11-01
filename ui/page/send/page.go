@@ -361,7 +361,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	for pg.nextButton.Clicked() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.WL.SelectedWallet.Wallet)
+			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 
 			pg.confirmTxModal.txSent = func() {
@@ -438,7 +438,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
-		pg.amount.validateDCRAmount()
+		pg.amount.validateAmount()
 		pg.validateAndConstructTxAmountOnly()
 	}
 

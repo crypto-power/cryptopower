@@ -252,11 +252,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 						}),
 					)
 				}
-				mGtx := gtx
-				if !pg.sendDestination.sendToAddress && !pg.sendDestination.isDestinationAccountExist() {
-					mGtx = gtx.Disabled()
-				}
-				return pg.amount.amountEditor.Layout(mGtx)
+				return pg.amount.amountEditor.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.exchangeRateMessage == "" {

@@ -12,8 +12,6 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -33,13 +31,13 @@ type sendConfirmModal struct {
 	isSending bool
 
 	*authoredTxData
-	asset           sharedW.Asset
+	asset           load.WalletMapping
 	exchangeRateSet bool
 }
 
 type broadcastfn func(password string) ([]byte, error)
 
-func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
+func newSendConfirmModal(l *load.Load, data *authoredTxData, asset load.WalletMapping) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
 		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal"),
@@ -85,7 +83,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		_, err := scm.asset.(*dcr.DCRAsset).Broadcast(password)
+		err := scm.asset.Broadcast(password)
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)
