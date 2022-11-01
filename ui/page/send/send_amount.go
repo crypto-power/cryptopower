@@ -90,10 +90,8 @@ func (sa *sendAmount) setAmount(amount int64) {
 	}
 	sa.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", amountSet))
 
-	//only for dcr
 	if sa.exchangeRate != -1 {
-		usdAmount := utils.DCRToUSD(sa.exchangeRate, dcrutil.Amount(amount).ToCoin())
-
+		usdAmount := utils.CryptoToUSD(sa.exchangeRate, amountSet)
 		sa.usdSendMaxChangeEvent = true
 		sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount))
 	}
@@ -133,7 +131,7 @@ func (sa *sendAmount) validateAmount() {
 		}
 
 		if sa.exchangeRate != -1 {
-			usdAmount := utils.DCRToUSD(sa.exchangeRate, amount)
+			usdAmount := utils.CryptoToUSD(sa.exchangeRate, amount)
 			sa.usdAmountEditor.Editor.SetText(fmt.Sprintf("%.2f", usdAmount)) // 2 decimal places
 		}
 

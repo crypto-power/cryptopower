@@ -12,6 +12,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -34,8 +35,6 @@ type sendConfirmModal struct {
 	asset           load.WalletMapping
 	exchangeRateSet bool
 }
-
-type broadcastfn func(password string) ([]byte, error)
 
 func newSendConfirmModal(l *load.Load, data *authoredTxData, asset load.WalletMapping) *sendConfirmModal {
 	scm := &sendConfirmModal{
@@ -189,13 +188,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 								txt.Color = scm.Theme.Color.GrayText2
 								return txt.Layout(gtx)
 							}),
-							layout.Rigid(func(gtx C) D {
-								walletIcon := scm.Theme.Icons.DecredLogo
-								inset := layout.Inset{
-									Right: values.MarginPadding8, Left: values.MarginPadding8,
-								}
-								return inset.Layout(gtx, walletIcon.Layout16dp)
-							}),
+							layout.Rigid(scm.setWalletLogo),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{}.Layout(gtx, func(gtx C) D {
 									txt := scm.Theme.Label(unit.Sp(16), sendWallet.GetWalletName())
@@ -241,13 +234,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 								if scm.destinationAccount != nil {
 									return layout.E.Layout(gtx, func(gtx C) D {
 										return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												walletIcon := scm.Theme.Icons.DecredLogo
-												inset := layout.Inset{
-													Right: values.MarginPadding8, Left: values.MarginPadding25,
-												}
-												return inset.Layout(gtx, walletIcon.Layout16dp)
-											}),
+											layout.Rigid(scm.setWalletLogo),
 											layout.Rigid(func(gtx C) D {
 												return layout.Inset{}.Layout(gtx, func(gtx C) D {
 													destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
@@ -381,4 +368,15 @@ func (scm *sendConfirmModal) contentRow(gtx layout.Context, leftValue, rightValu
 			})
 		}),
 	)
+}
+
+func (scm *sendConfirmModal) setWalletLogo(gtx C) D {
+	walletIcon := scm.Theme.Icons.DecredLogo
+	if scm.asset.GetAssetType() == utils.BTCWalletAsset {
+		walletIcon = scm.Theme.Icons.BTC
+	}
+	inset := layout.Inset{
+		Right: values.MarginPadding8, Left: values.MarginPadding25,
+	}
+	return inset.Layout(gtx, walletIcon.Layout16dp)
 }

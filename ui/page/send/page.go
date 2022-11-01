@@ -10,6 +10,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -192,7 +193,11 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 	pg.isFetchingExchangeRate = true
-	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, values.DCRUSDTMarket)
+	market := values.DCRUSDTMarket
+	if pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+		market = values.BTCUSDTMarket
+	}
+	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
 		log.Printf("Error fetching exchange rate : %s \n", err)
 		return
@@ -293,11 +298,11 @@ func (pg *Page) constructTx() {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
-		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
+		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
-		usdAmount := utils.DCRToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
+		usdAmount := utils.CryptoToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
 		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
 	}
 }
@@ -307,7 +312,7 @@ func (pg *Page) showBalaceAfterSend() {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}
 }
 

@@ -100,7 +100,7 @@ type Asset interface {
 	ReadStringConfigValueForKey(key string, defaultValue string) string
 
 	NewUnsignedTx(accountNumber int32) error
-	AddSendDestination(address string, satoshiAmount int64, sendMax bool) error
+	AddSendDestination(address string, unitAmount int64, sendMax bool) error
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool
 }
