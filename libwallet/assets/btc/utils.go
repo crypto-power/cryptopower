@@ -1,8 +1,13 @@
 package btc
 
 import (
+	"encoding/binary"
+
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"decred.org/dcrwallet/walletseed"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 )
 
@@ -36,4 +41,70 @@ func AmountSatoshi(f float64) int64 {
 // Returns a BTC amount that implements the asset amount interface.
 func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
 	return BTCAmount(btcutil.Amount(v))
+}
+
+func hardenedKey(key uint32) uint32 {
+	return key + hdkeychain.HardenedKeyStart
+}
+
+func (asset *BTCAsset) deriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
+	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		for i := range seed {
+			seed[i] = 0
+		}
+	}()
+
+	// Derive the master extended key from the provided seed.
+	masterNode, err := hdkeychain.NewMaster(seed, params)
+	if err != nil {
+		return "", err
+	}
+	defer masterNode.Zero()
+
+	path := []uint32{hardenedKey(asset.GetScope().Purpose), hardenedKey(asset.GetScope().Coin)}
+	path = append(path, account)
+
+	var currentKey = masterNode
+	for _, pathPart := range path {
+		currentKey, err = currentKey.Derive(pathPart)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	pubVersionBytes := make([]byte, 4)
+	copy(pubVersionBytes, params.HDPublicKeyID[:])
+
+	switch params.Name {
+	case chaincfg.TestNet3Params.Name:
+		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
+			waddrmgr.HDVersionTestNetBIP0084,
+		))
+
+	case chaincfg.MainNetParams.Name:
+		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
+			waddrmgr.HDVersionMainNetBIP0084,
+		))
+	}
+
+	currentKey, err = currentKey.CloneWithVersion(
+		params.HDPrivateKeyID[:],
+	)
+	if err != nil {
+		return "", err
+	}
+	currentKey, err = currentKey.Neuter()
+	if err != nil {
+		return "", err
+	}
+	currentKey, err = currentKey.CloneWithVersion(pubVersionBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return currentKey.String(), nil
 }
