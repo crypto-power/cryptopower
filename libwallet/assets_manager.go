@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
@@ -41,6 +42,7 @@ type AssetsManager struct {
 	chainsParams utils.ChainsParams
 
 	Politeia        *politeia.Politeia
+	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
 }
 
@@ -124,8 +126,14 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 		return nil, err
 	}
 
+	instantSwap, err := instantswap.NewInstantSwap(mwDB)
+	if err != nil {
+		return nil, err
+	}
+
 	mgr.params.DB = mwDB
 	mgr.Politeia = politeia
+	mgr.InstantSwap = instantSwap
 
 	// initialize the ExternalService. ExternalService provides multiwallet with
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.

@@ -421,8 +421,16 @@ type TransactionOverview struct {
 
 /** end tx-related types */
 
-type Trade struct {
-	UUID                int
-	SourceWalletID      int `json:"sourceWwalletID"`
-	DestinationWalletID int `json:"destinationWalletID"`
+type Order struct {
+	UUID                 string `storm:"id,unique" json:"uuid"`
+	SourceWalletID       int    `json:"sourceWalletID"`
+	SourceAccountID      int    `json:"sourceAccountID"`
+	DestinationWalletID  int    `json:"destinationWalletID"`
+	DestinationAccountID int    `json:"destinationAccountID"`
+
+	DepositAddress string `json:"depositAddress"`
+	RefundAddress  string `json:"refundAddress"`
+
+	Timestamp int64  `storm:"index" json:"timestamp"`
+	Status    string `json:"status"`
 }
