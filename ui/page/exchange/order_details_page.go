@@ -8,11 +8,11 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"gitlab.com/raedah/cryptopower/app"
-	"gitlab.com/raedah/cryptopower/ui/cryptomaterial"
-	"gitlab.com/raedah/cryptopower/ui/load"
-	"gitlab.com/raedah/cryptopower/ui/page/components"
-	"gitlab.com/raedah/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
+	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 
 	"code.cryptopower.dev/exchange/instantswap"
 )
@@ -32,10 +32,11 @@ type OrderDetailsPage struct {
 
 	scrollContainer *widget.List
 
-	exchange  instantswap.IDExchange
-	UUID      string
-	orderInfo *instantswap.OrderInfoResult
-
+	exchange   instantswap.IDExchange
+	order      *instantswap.CreateResultInfo
+	UUID       string
+	orderInfo  *instantswap.OrderInfoResult
+	status     string
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 
@@ -43,7 +44,7 @@ type OrderDetailsPage struct {
 	createOrderBtn cryptomaterial.Button
 }
 
-func NewOrderDetailsPage(l *load.Load, exchange instantswap.IDExchange, UUID string) *OrderDetailsPage {
+func NewOrderDetailsPage(l *load.Load, exchange instantswap.IDExchange, order *instantswap.CreateResultInfo) *OrderDetailsPage {
 	pg := &OrderDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderDetailsPageID),
@@ -54,7 +55,7 @@ func NewOrderDetailsPage(l *load.Load, exchange instantswap.IDExchange, UUID str
 			},
 		},
 		exchange: exchange,
-		UUID:     UUID,
+		order:    order,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -64,7 +65,11 @@ func NewOrderDetailsPage(l *load.Load, exchange instantswap.IDExchange, UUID str
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
 	pg.refreshBtn = pg.Theme.Button("Refresh")
 
-	pg.orderInfo, _ = pg.getOrderInfo(UUID)
+	fmt.Println("[][][][] UUID", pg.order.UUID)
+	pg.orderInfo, _ = pg.getOrderInfo(pg.order.UUID)
+	fmt.Println("[][][][] status", pg.orderInfo.Status)
+
+	pg.status = pg.orderInfo.Status
 
 	return pg
 }
@@ -86,6 +91,8 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
 		pg.orderInfo, _ = pg.getOrderInfo(pg.UUID)
+		fmt.Println("[][][][] status new", pg.orderInfo.Status)
+		pg.status = pg.orderInfo.Status
 	}
 }
 
@@ -123,7 +130,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 					layout.Flexed(0.45, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.Label(values.TextSize16, pg.orderInfo.Status)
+								txt := pg.Theme.Label(values.TextSize16, pg.status)
 								txt.Font.Weight = text.SemiBold
 								return txt.Layout(gtx)
 							}),
@@ -213,6 +220,12 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 				Top:   values.MarginPadding24,
 				Right: values.MarginPadding16,
 			}.Layout(gtx, pg.createOrderBtn.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Top:   values.MarginPadding24,
+				Right: values.MarginPadding16,
+			}.Layout(gtx, pg.refreshBtn.Layout)
 		}),
 	)
 }
