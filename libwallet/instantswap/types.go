@@ -2,6 +2,22 @@ package instantswap
 
 import "github.com/asdine/storm"
 
+type ExchangeServer string
+
+const (
+	Changelly  ExchangeServer = "changelly"
+	ChangeNow  ExchangeServer = "changenow"
+	CoinSwitch ExchangeServer = "coinswitch"
+	FlypMe     ExchangeServer = "flypme"
+	GoDex      ExchangeServer = "godex"
+	SimpleSwap ExchangeServer = "simpleswap"
+	SwapZone   ExchangeServer = "swapzone"
+)
+
+func (str ExchangeServer) ToString() string {
+	return string(str)
+}
+
 type InstantSwap struct {
 	db *storm.DB
 }

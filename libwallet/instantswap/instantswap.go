@@ -53,10 +53,10 @@ func (instantSwap *InstantSwap) updateOrder(order *Order) error {
 	return instantSwap.db.Update(order)
 }
 
-func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer, ApiKey, ApiSecret string) (instantswap.IDExchange, error) {
+func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer, ApiKey, ApiSecret string) (instantswap.IDExchange, error) {
 	const op errors.Op = "instantSwap.NewExchanageServer"
 
-	exchange, err := instantswap.NewExchange(exchangeServer, instantswap.ExchangeConfig{
+	exchange, err := instantswap.NewExchange(exchangeServer.ToString(), instantswap.ExchangeConfig{
 		Debug:     false,
 		ApiKey:    ApiKey,
 		ApiSecret: ApiSecret,
@@ -148,10 +148,10 @@ func (instantSwap *InstantSwap) GetOrder(orderUUID string) (string, error) {
 	return instantSwap.marshalResult(instantSwap.GetOrderRaw(orderUUID))
 }
 
-func (instantSwap *InstantSwap) CreateOrder(exchangeServer instantswap.IDExchange, params instantswap.CreateOrder) (*Order, error) {
+func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params instantswap.CreateOrder) (*Order, error) {
 	const op errors.Op = "instantSwap.CreateOrder"
 
-	res, err := exchangeServer.CreateOrder(params)
+	res, err := exchangeObject.CreateOrder(params)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -178,10 +178,10 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeServer instantswap.IDExchang
 	return order, nil
 }
 
-func (instantSwap *InstantSwap) GetOrderInfo(exchangeServer instantswap.IDExchange, orderUUID string) (*Order, error) {
+func (instantSwap *InstantSwap) GetOrderInfo(exchangeObject instantswap.IDExchange, orderUUID string) (*Order, error) {
 	const op errors.Op = "instantSwap.GetOrderInfo"
 
-	res, err := exchangeServer.OrderInfo(orderUUID)
+	res, err := exchangeObject.OrderInfo(orderUUID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -203,10 +203,10 @@ func (instantSwap *InstantSwap) GetOrderInfo(exchangeServer instantswap.IDExchan
 	return order, nil
 }
 
-func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeServer instantswap.IDExchange, params instantswap.ExchangeRateRequest) (*instantswap.ExchangeRateInfo, error) {
+func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeObject instantswap.IDExchange, params instantswap.ExchangeRateRequest) (*instantswap.ExchangeRateInfo, error) {
 	const op errors.Op = "instantSwap.GetExchangeRateInfo"
 
-	res, err := exchangeServer.GetExchangeRateInfo(params)
+	res, err := exchangeObject.GetExchangeRateInfo(params)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
