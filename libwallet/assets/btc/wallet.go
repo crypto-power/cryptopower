@@ -2,6 +2,7 @@ package btc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -327,7 +328,19 @@ func (asset *BTCAsset) RemoveSpecificPeer() {
 func (asset *BTCAsset) SetSpecificPeer(address string) {
 	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
 }
+
+// GetExtendedPubkey returns the extended public key of the given account,
+// to do that it calls btcwallet's AccountProperties method, using KeyScopeBIP0084
+// and the account number. On failure it returns error.
 func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
-	err := utils.ErrBTCMethodNotImplemented("GetExtendedPubKey")
-	return "", err
+	loadedAsset := asset.Internal().BTC
+	if loadedAsset == nil {
+		return "", fmt.Errorf("btc asset not initialised")
+	}
+
+	extendedPublicKey, err := loadedAsset.AccountProperties(asset.GetScope(), uint32(account))
+	if err != nil {
+		return "", err
+	}
+	return extendedPublicKey.AccountPubKey.String(), nil
 }
