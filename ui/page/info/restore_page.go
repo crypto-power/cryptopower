@@ -10,6 +10,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -36,17 +37,19 @@ type Restore struct {
 	backButton      cryptomaterial.IconButton
 	seedRestorePage *SeedRestore
 	walletName      string
+	walletType      utils.AssetType
 }
 
-func NewRestorePage(l *load.Load, walletName string, onRestoreComplete func()) *Restore {
+func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType, onRestoreComplete func()) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
-		seedRestorePage:  NewSeedRestorePage(l, walletName, onRestoreComplete),
+		seedRestorePage:  NewSeedRestorePage(l, walletName, walletType, onRestoreComplete),
 		tabIndex:         0,
 		tabList:          l.Theme.NewClickableList(layout.Horizontal),
 		restoreComplete:  onRestoreComplete,
 		walletName:       walletName,
+		walletType:       walletType,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -242,7 +245,7 @@ func (pg *Restore) showHexRestoreModal() {
 					pg.switchTab(pg.tabIndex)
 				}).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.MultiWallet.RestoreDCRWallet(pg.walletName, hex, password, sharedW.PassphraseTypePass)
+					_, err := pg.WL.MultiWallet.RestoreWallet(pg.walletType, pg.walletName, hex, password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -280,7 +283,7 @@ func (pg *Restore) verifyHex(hex string) bool {
 
 	// Compare with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.MultiWallet.DCRWalletWithSeed(hex)
+	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(pg.walletType, hex)
 	if err != nil {
 		log.Error(err)
 		return false

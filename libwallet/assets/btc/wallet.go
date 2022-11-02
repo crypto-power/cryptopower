@@ -331,3 +331,16 @@ func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
 	err := utils.ErrBTCMethodNotImplemented("GetExtendedPubKey")
 	return "", err
 }
+
+func (asset *BTCAsset) AccountXPubMatches(account uint32, legacyXPub string) (bool, error) {
+	accountProperty, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), account)
+	if err != nil {
+		return false, err
+	}
+	acctXPub := accountProperty.AccountPubKey.String()
+
+	if asset.IsWatchingOnlyWallet() {
+		return acctXPub == legacyXPub, nil
+	}
+	return acctXPub == legacyXPub, nil
+}

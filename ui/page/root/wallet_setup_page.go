@@ -557,7 +557,11 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
 		}
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), afterRestore))
+		walletType := libutils.DCRWalletAsset
+		if pg.selectedWalletType == 1 {
+			walletType = libutils.BTCWalletAsset
+		}
+		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), walletType, afterRestore))
 	}
 
 	// imported wallet click action control
