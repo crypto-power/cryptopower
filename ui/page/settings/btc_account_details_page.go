@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -13,6 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -35,9 +37,14 @@ type BTCAcctDetailsPage struct {
 	backButton               cryptomaterial.IconButton
 	renameAccount            *cryptomaterial.Clickable
 
-	totalBalance string
-	hdPath       string
-	keys         string
+	totalBalance            string
+	hdPath                  string
+	keys                    string
+	extendedKey             string
+	extendedKeyClickable    *cryptomaterial.Clickable
+	showExtendedKeyButton   *cryptomaterial.Clickable
+	isHiddenExtendedxPubkey bool
+	infoButton              cryptomaterial.IconButton
 }
 
 func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetailsPage {
@@ -52,8 +59,11 @@ func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetai
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		backButton:    l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
-		renameAccount: l.Theme.NewClickable(false),
+		backButton:              l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack),
+		renameAccount:           l.Theme.NewClickable(false),
+		extendedKeyClickable:    l.Theme.NewClickable(true),
+		showExtendedKeyButton:   l.Theme.NewClickable(false),
+		isHiddenExtendedxPubkey: true,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -74,18 +84,20 @@ func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
 	internal := pg.account.InternalKeyCount
 	imp := pg.account.ImportedKeyCount
 	pg.keys = values.StringF(values.StrAcctDetailsKey, ext, internal, imp)
+	_, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
+	pg.loadExtendedPubKey()
 }
 
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BTCAcctDetailsPage) Layout(gtx C) D {
+	m := values.MarginPadding10
 	widgets := []func(gtx C) D{
 		func(gtx C) D {
 			return pg.accountBalanceLayout(gtx)
 		},
 		func(gtx C) D {
-			m := values.MarginPadding10
 			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, func(gtx C) D {
 				return pg.theme.Separator().Layout(gtx)
 			})
@@ -93,11 +105,69 @@ func (pg *BTCAcctDetailsPage) Layout(gtx C) D {
 		func(gtx C) D {
 			return pg.accountInfoLayout(gtx)
 		},
+		func(gtx C) D {
+			return layout.Inset{Top: m, Bottom: m}.Layout(gtx, pg.theme.Separator().Layout)
+		},
+		func(gtx C) D {
+			return layout.Inset{Bottom: m}.Layout(gtx, pg.extendedPubkey)
+		},
 	}
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx, widgets)
 	}
 	return pg.layoutDesktop(gtx, widgets)
+}
+
+func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
+	return pg.pageSections(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				leftTextLabel := pg.theme.Label(values.TextSize14, values.String(values.StrExtendedKey))
+				leftTextLabel.Color = pg.theme.Color.GrayText2
+				return leftTextLabel.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
+				pg.infoButton.Size = values.MarginPadding16
+				return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, pg.infoButton.Layout)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								icon := pg.Theme.Icons.RevealIcon
+								if pg.isHiddenExtendedxPubkey {
+									icon = pg.Theme.Icons.ConcealIcon
+								}
+								return layout.Inset{
+									Right: values.MarginPadding9,
+								}.Layout(gtx, func(gtx C) D {
+									return pg.showExtendedKeyButton.Layout(gtx, icon.Layout16dp)
+								})
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									lbl := pg.Theme.Label(values.TextSize14, "********")
+									lbl.Color = pg.Theme.Color.GrayText1
+									if !pg.isHiddenExtendedxPubkey {
+										if pg.extendedKeyClickable.Clicked() {
+											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
+											pg.Toast.Notify(values.String(values.StrExtendedCopied))
+										}
+										lbl.Text = utils.AutoSplitSingleString(*pg.Theme, gtx, pg.extendedKey, lbl.Font, values.TextSize14)
+										lbl.Color = pg.Theme.Color.Primary
+										return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
+									}
+									return lbl.Layout(gtx)
+								})
+							}),
+						)
+					})
+				})
+			}),
+		)
+	})
 }
 
 func (pg *BTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
@@ -312,6 +382,29 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 
 		pg.ParentWindow().ShowModal(textModal)
 	}
+
+	if pg.infoButton.Button.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrExtendedKey)).
+			Body(values.String(values.StrExtendedInfo)).
+			SetContentAlignment(layout.NW, layout.W, layout.Center)
+		pg.ParentWindow().ShowModal(info)
+	}
+
+	for pg.showExtendedKeyButton.Clicked() {
+		if pg.extendedKey != "" {
+			pg.isHiddenExtendedxPubkey = !pg.isHiddenExtendedxPubkey
+		}
+	}
+
+}
+
+func (pg *BTCAcctDetailsPage) loadExtendedPubKey() {
+	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	if err != nil {
+		pg.Toast.NotifyError(err.Error())
+	}
+	pg.extendedKey = xpub
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
