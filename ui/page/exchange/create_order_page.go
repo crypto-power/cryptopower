@@ -45,6 +45,9 @@ type CreateOrderPage struct {
 
 	exchange api.IDExchange
 
+	exchangeSelector *ExchangeSelector
+	selectedExchange *Exchange
+
 	fromAmountEditor cryptomaterial.Editor
 	toAmountEditor   cryptomaterial.Editor
 
@@ -75,6 +78,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 				Alignment: layout.Middle,
 			},
 		},
+		exchangeSelector: NewExchangeSelector(l),
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -147,6 +151,10 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.exchange = exchange
 
+	pg.exchangeSelector.ExchangeSelected(func(es *Exchange) {
+		pg.selectedExchange = es
+	})
+
 	return pg
 }
 
@@ -183,7 +191,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
 			Title:      "Create Order",
-			SubTitle:   "flypme",
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -211,6 +218,13 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Bottom: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+						})
+					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
 							Bottom: values.MarginPadding16,
@@ -277,7 +291,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-											pg.infoButton.Size = values.MarginPadding20
+											pg.infoButton.Size = values.MarginPadding14
 											return pg.infoButton.Layout(gtx)
 										}),
 									)
@@ -315,7 +329,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-											pg.infoButton.Size = values.MarginPadding20
+											pg.infoButton.Size = values.MarginPadding14
 											return pg.infoButton.Layout(gtx)
 										}),
 									)
@@ -351,6 +365,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 			})
 		})
 	})
+}
+
+func (pg *CreateOrderPage) exchangeSelectorLayout(gtx C) layout.Widget {
+	return func(gtx C) D {
+		return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+	}
 }
 
 func (pg *CreateOrderPage) confirmSourcePassword() {

@@ -25,7 +25,7 @@ func (asset *BTCAsset) GetScope() waddrmgr.KeyScope {
 	// Construct the key scope that will be used within the waddrmgr to
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
-	return waddrmgr.KeyScopeBIP0044
+	return waddrmgr.KeyScopeBIP0084
 }
 
 func AmountBTC(amount int64) float64 {

@@ -234,3 +234,15 @@ func (instantSwap *InstantSwap) marshalResult(result interface{}, err error) (st
 
 	return string(response), nil
 }
+
+func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
+	return []ExchangeServer {
+		Changelly,
+		ChangeNow,
+		CoinSwitch,
+		FlypMe,
+		GoDex,
+		SimpleSwap,
+		SwapZone,
+	}
+}

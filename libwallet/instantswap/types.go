@@ -1,6 +1,9 @@
 package instantswap
 
-import "github.com/asdine/storm"
+import (
+	"strings"
+	"github.com/asdine/storm"
+)
 
 type ExchangeServer string
 
@@ -14,8 +17,13 @@ const (
 	SwapZone   ExchangeServer = "swapzone"
 )
 
-func (str ExchangeServer) ToString() string {
-	return string(str)
+func (es ExchangeServer) ToString() string {
+	return string(es)
+}
+
+// CapFirstLetter capitalizes the first letter of the ExchangeServer
+func (es ExchangeServer) CapFirstLetter() string {
+	return strings.Title(string(es))
 }
 
 type InstantSwap struct {
