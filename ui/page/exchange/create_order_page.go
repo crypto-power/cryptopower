@@ -12,15 +12,15 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
-	"decred.org/dcrwallet/v2/errors"
 
-	"code.cryptopower.dev/exchange/instantswap"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/flypme" //register flyp.me
+	api "code.cryptopower.dev/exchange/instantswap"
+	// _ "code.cryptopower.dev/exchange/instantswap/exchange/flypme" //register flyp.me
 )
 
 const CreateOrderPageID = "CreateOrder"
@@ -42,6 +42,8 @@ type CreateOrderPage struct {
 	ctxCancel context.CancelFunc
 
 	scrollContainer *widget.List
+
+	exchange api.IDExchange
 
 	fromAmountEditor cryptomaterial.Editor
 	toAmountEditor   cryptomaterial.Editor
@@ -136,6 +138,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.addressEditor.Editor.SetText(address)
 
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
+
+	// Initialize a new exchange using the selected exchange server
+	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(instantswap.FlypMe, "", "")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	pg.exchange = exchange
 
 	return pg
 }
@@ -345,14 +355,14 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 			}
 
 			// pm.Dismiss() // calls RefreshWindow.
-			exchange, order, err := pg.createOrder()
+			order, err := pg.createOrder()
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
 
-			err = pg.constructTx(order.DepositAddress, order.InvoicedAmount)
+			err = pg.constructTx(order.DepositAddress, order.OrderedAmount)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -366,7 +376,7 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 				return false
 			}
 			pm.Dismiss()
-			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, exchange, order))
+			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, pg.exchange, order))
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
@@ -391,66 +401,54 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 	// pg.ParentWindow().ShowModal(spendingPasswordModal)
 }
 
-func (pg *CreateOrderPage) createOrder() (instantswap.IDExchange, *instantswap.CreateResultInfo, error) {
-	const op errors.Op = "CreateOrderPage.createOrder"
-	// Initialize a new wxchange using the selected exchange server
-	exchange, err := instantswap.NewExchange("flypme", instantswap.ExchangeConfig{
-		Debug:     false,
-		ApiKey:    "", // Optional
-		ApiSecret: "", // Optional
-	})
+func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
+	fmt.Println("[][][][] ", pg.fromAmountEditor.Editor.Text())
+	orderedAmount, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, err
 	}
+	fmt.Println("[][][][] ", orderedAmount)
 
-	res, err := exchange.GetExchangeRateInfo(instantswap.ExchangeRateRequest{
+	params := api.ExchangeRateRequest{
 		From:   "DCR",
 		To:     "BTC",
-		Amount: 5,
-	})
+		Amount: orderedAmount,
+	}
+	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, err
 	}
 
 	refundAddress, err := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, err
 	}
 
 	destinationAddress, err := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, err
 	}
 
-	fmt.Println("[][][][] ", pg.fromAmountEditor.Editor.Text())
-	invoicedAmount, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
-	if err != nil {
-		return nil, nil, errors.E(op, err)
-	}
-	fmt.Println("[][][][] ", invoicedAmount)
-
-	order, err := exchange.CreateOrder(instantswap.CreateOrder{
-		RefundAddress:   refundAddress,      // if the trading fail, the exchange will refund here
-		Destination:     destinationAddress, // your received dcr address
+	data := api.CreateOrder{
+		RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
+		Destination:     destinationAddress, // your exchanged coins will be sent here
 		FromCurrency:    "DCR",
-		OrderedAmount:   0, // use OrderedAmount or InvoicedAmount
-		InvoicedAmount:  invoicedAmount,
+		OrderedAmount:   orderedAmount, // use OrderedAmount or InvoicedAmount
 		ToCurrency:      "BTC",
 		ExtraID:         "",
 		Signature:       res.Signature,
 		UserReferenceID: "",
 		RefundExtraID:   "",
-	})
+	}
+	order, err := pg.WL.MultiWallet.InstantSwap.CreateOrder(pg.exchange, data)
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, err
 	}
 
-	return exchange, &order, nil
+	return order, nil
 }
 
 func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64) error {
-	const op errors.Op = "CreateOrderPage.constructTx"
-
 	destinationAddress := depositAddress
 
 	// destinationAccount := pg.destinationAccountSelector.SelectedAccount()
@@ -472,20 +470,20 @@ func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64
 	err := pg.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
 		// pg.feeEstimationError(err.Error())
-		return errors.E(op, err)
+		return err
 	}
 
 	amount := btc.AmountSatoshi(unitAmount)
 	err = pg.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
 	if err != nil {
 		// pg.feeEstimationError(err.Error())
-		return errors.E(op, err)
+		return err
 	}
 
 	_, err = pg.sourceWalletSelector.SelectedWallet().EstimateFeeAndSize()
 	if err != nil {
 		// pg.feeEstimationError(err.Error())
-		return errors.E(op, err)
+		return err
 	}
 
 	// feeAtom := feeAndSize.Fee.UnitValue
@@ -528,20 +526,12 @@ func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64
 }
 
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
-	exchange, err := instantswap.NewExchange("flypme", instantswap.ExchangeConfig{
-		Debug:     false,
-		ApiKey:    "",
-		ApiSecret: "",
-	})
-	if err != nil {
-		return err
-	}
-
-	res, err := exchange.GetExchangeRateInfo(instantswap.ExchangeRateRequest{
+	params := api.ExchangeRateRequest{
 		From:   "DCR",
 		To:     "BTC",
 		Amount: 1,
-	})
+	}
+	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
 		return err
 	}

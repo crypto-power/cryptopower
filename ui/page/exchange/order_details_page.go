@@ -9,12 +9,13 @@ import (
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 
-	"code.cryptopower.dev/exchange/instantswap"
+	api "code.cryptopower.dev/exchange/instantswap"
 )
 
 const OrderDetailsPageID = "OrderDetailsPage"
@@ -32,10 +33,10 @@ type OrderDetailsPage struct {
 
 	scrollContainer *widget.List
 
-	exchange   instantswap.IDExchange
-	order      *instantswap.CreateResultInfo
+	exchange   api.IDExchange
+	order      *instantswap.Order
 	UUID       string
-	orderInfo  *instantswap.OrderInfoResult
+	orderInfo  *api.OrderInfoResult
 	status     string
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
@@ -44,7 +45,7 @@ type OrderDetailsPage struct {
 	createOrderBtn cryptomaterial.Button
 }
 
-func NewOrderDetailsPage(l *load.Load, exchange instantswap.IDExchange, order *instantswap.CreateResultInfo) *OrderDetailsPage {
+func NewOrderDetailsPage(l *load.Load, exchange api.IDExchange, order *instantswap.Order) *OrderDetailsPage {
 	pg := &OrderDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderDetailsPageID),
@@ -230,7 +231,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 	)
 }
 
-func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*instantswap.OrderInfoResult, error) {
+func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*api.OrderInfoResult, error) {
 	orderInfo, err := pg.exchange.OrderInfo(UUID)
 	if err != nil {
 		return nil, err
