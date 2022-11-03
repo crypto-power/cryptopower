@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/walletseed"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -14,8 +15,8 @@ import (
 const (
 	maxAmountSatoshi = btcutil.MaxSatoshi // MaxSatoshi is the maximum transaction amount allowed in satoshi.
 
-	TestnetHDPath = "m / 44' / 1' / " // TODO: confirm if this is the correct HD path for btc
-	MainnetHDPath = "m / 44' / 0' / " // TODO: confirm if this is the correct HD path for btc
+	TestnetHDPath = "m / 84' / 1' / "
+	MainnetHDPath = "m / 84' / 0' / "
 )
 
 func (asset *BTCAsset) GetScope() waddrmgr.KeyScope {
@@ -47,7 +48,7 @@ func hardenedKey(key uint32) uint32 {
 	return key + hdkeychain.HardenedKeyStart
 }
 
-func (asset *BTCAsset) deriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
+func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
 	seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", err
@@ -66,7 +67,7 @@ func (asset *BTCAsset) deriveAccountXpub(seedMnemonic string, account uint32, pa
 	defer masterNode.Zero()
 
 	path := []uint32{hardenedKey(asset.GetScope().Purpose), hardenedKey(asset.GetScope().Coin)}
-	path = append(path, account)
+	path = append(path, hardenedKey(account))
 
 	var currentKey = masterNode
 	for _, pathPart := range path {
@@ -89,6 +90,12 @@ func (asset *BTCAsset) deriveAccountXpub(seedMnemonic string, account uint32, pa
 		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
 			waddrmgr.HDVersionMainNetBIP0084,
 		))
+	case chaincfg.SigNetParams.Name:
+		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
+			waddrmgr.HDVersionSimNetBIP0044,
+		))
+	default:
+		return "", utils.ErrInvalidNet
 	}
 
 	currentKey, err = currentKey.CloneWithVersion(

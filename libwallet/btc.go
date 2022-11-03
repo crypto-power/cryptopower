@@ -1,8 +1,11 @@
 package libwallet
 
 import (
+	"fmt"
+
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcwallet/waddrmgr"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -79,12 +82,82 @@ func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePass
 // BTCWalletWithXPub returns the ID of the BTC wallet that has an account with the
 // provided xpub. Returns -1 if there is no such wallet.
 func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
-	return -1, errors.New("Not implemented")
+	for _, wallet := range mgr.Assets.BTC.Wallets {
+		if !wallet.WalletOpened() {
+			return -1, errors.Errorf("wallet %d is not open and cannot be checked", wallet.GetWalletID())
+		}
+
+		asset, ok := wallet.(*btc.BTCAsset)
+		if !ok {
+			return -1, fmt.Errorf("invalid asset type")
+		}
+
+		wAccs, err := asset.GetAccountsRaw()
+		if err != nil {
+			return -1, err
+		}
+
+		for _, accs := range wAccs.Accounts {
+			if accs.AccountNumber == btc.ImportedAccountNumber {
+				continue
+			}
+			acctXPubKey, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
+			if err != nil {
+				return -1, err
+			}
+
+			if acctXPubKey.AccountPubKey.String() == xpub {
+				return wallet.GetWalletID(), nil
+			}
+		}
+	}
+	return -1, nil
 }
 
 // BTCWalletWithSeed returns the ID of the BTC wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
 func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
-	return -1, errors.New("Not implemented")
+	if len(seedMnemonic) == 0 {
+		return -1, errors.New(utils.ErrEmptySeed)
+	}
+
+	for _, wallet := range mgr.Assets.BTC.Wallets {
+		if !wallet.WalletOpened() {
+			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.GetWalletID())
+		}
+
+		asset, ok := wallet.(*btc.BTCAsset)
+		if !ok {
+			return -1, fmt.Errorf("invalid asset type")
+		}
+
+		wAccs, err := asset.GetAccountsRaw()
+		if err != nil {
+			return -1, err
+		}
+
+		for _, accs := range wAccs.Accounts {
+			if accs.AccountNumber == waddrmgr.ImportedAddrAccount {
+				continue
+			}
+			xpub, err := asset.DeriveAccountXpub(seedMnemonic,
+				accs.AccountNumber, wallet.Internal().BTC.ChainParams())
+			if err != nil {
+				return -1, err
+			}
+
+			fn := wallet.(interface {
+				AccountXPubMatches(account uint32, xpub string) (bool, error)
+			})
+			usesSameSeed, err := fn.AccountXPubMatches(accs.AccountNumber, xpub)
+			if err != nil {
+				return -1, err
+			}
+			if usesSameSeed {
+				return wallet.GetWalletID(), nil
+			}
+		}
+	}
+	return -1, nil
 }

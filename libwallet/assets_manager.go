@@ -420,3 +420,14 @@ func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {
 	})
 	return size, err
 }
+
+func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string) (int, error) {
+	switch walletType {
+	case utils.DCRWalletAsset:
+		return mgr.DCRWalletWithXPub(xPub)
+	case utils.BTCWalletAsset:
+		return mgr.BTCWalletWithXPub(xPub)
+	default:
+		return -1, utils.ErrAssetUnknown
+	}
+}

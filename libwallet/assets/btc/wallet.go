@@ -344,3 +344,15 @@ func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
 	}
 	return extendedPublicKey.AccountPubKey.String(), nil
 }
+
+// AccountXPubMatches checks if the xpub of the provided account matches the
+// provided xpub.
+func (asset *BTCAsset) AccountXPubMatches(account uint32, xPub string) (bool, error) {
+	acctXPubKey, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), account)
+	if err != nil {
+		return false, err
+	}
+	acctXPub := acctXPubKey.AccountPubKey.String()
+
+	return acctXPub == xPub, nil
+}
