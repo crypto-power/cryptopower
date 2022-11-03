@@ -369,12 +369,12 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 				return false
 			}
 
-			err = pg.sourceWalletSelector.SelectedWallet().Broadcast(password)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
+			// err = pg.sourceWalletSelector.SelectedWallet().Broadcast(password)
+			// if err != nil {
+			// 	pm.SetError(err.Error())
+			// 	pm.SetLoading(false)
+			// 	return false
+			// }
 			pm.Dismiss()
 			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, pg.exchange, order))
 			return true
@@ -433,7 +433,7 @@ func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
 		RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
 		Destination:     destinationAddress, // your exchanged coins will be sent here
 		FromCurrency:    "DCR",
-		OrderedAmount:   orderedAmount, // use OrderedAmount or InvoicedAmount
+		InvoicedAmount:  orderedAmount, // use OrderedAmount or InvoicedAmount
 		ToCurrency:      "BTC",
 		ExtraID:         "",
 		Signature:       res.Signature,

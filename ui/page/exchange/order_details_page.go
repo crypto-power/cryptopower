@@ -91,7 +91,7 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 
 func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
-		pg.orderInfo, _ = pg.getOrderInfo(pg.UUID)
+		pg.orderInfo, _ = pg.getOrderInfo(pg.order.UUID)
 		fmt.Println("[][][][] status new", pg.orderInfo.Status)
 		pg.status = pg.orderInfo.Status
 	}

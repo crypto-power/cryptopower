@@ -160,7 +160,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	order := &Order{
 		UUID: res.UUID,
 
-		OrderedAmount: res.OrderedAmount,
+		OrderedAmount: res.InvoicedAmount,
 		FromCurrency:  res.FromCurrency,
 		ToCurrency:    res.ToCurrency,
 
