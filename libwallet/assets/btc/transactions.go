@@ -7,8 +7,10 @@ import (
 	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -57,7 +59,7 @@ func (asset *BTCAsset) PublishUnminedTransactions() error {
 }
 
 func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
-	transactions, err := asset.getTransactionsRaw(0, 0, true)
+	transactions, err := asset.filterTxs(0, 0, txFilter, true)
 	return len(transactions), err
 }
 
@@ -72,13 +74,43 @@ func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 }
 
 func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("TxMatchesFilter"))
-	return false
+	return tx.Type == asset.btcSupportedTxFilter(txFilter)
 }
 
 func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
-	transactions, err = asset.getTransactionsRaw(offset, limit, newestFirst)
+	transactions, err = asset.filterTxs(offset, limit, txFilter, newestFirst)
 	return
+}
+
+func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) string {
+	switch txFilter {
+	case walletdata.TxFilterCoinBase:
+		return txhelper.TxTypeCoinBase
+	case walletdata.TxFilterRegular:
+		return txhelper.TxTypeRegular
+	default:
+		return ""
+	}
+}
+
+func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+	txType := asset.btcSupportedTxFilter(txFilter)
+	if txType == "" {
+		return []sharedW.Transaction{}, nil
+	}
+
+	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
+	if err != nil {
+		return []sharedW.Transaction{}, nil
+	}
+
+	txsCopy := make([]sharedW.Transaction, 0, len(transactions))
+	for _, tx := range transactions {
+		if tx.Type == txType {
+			txsCopy = append(txsCopy, tx)
+		}
+	}
+	return txsCopy, nil
 }
 
 // getTransactionsRaw returns the transactions between the start block and the endblock.
@@ -158,6 +190,12 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 		txSize := decodedTx.SerializeSize()
 		feeRate := rawtx.Fee * 1000 / btcutil.Amount(txSize)
 
+		// BTC transactions are either coinbase or regular txs.
+		txType := txhelper.TxTypeRegular
+		if blockchain.IsCoinBaseTx(decodedTx) {
+			txType = txhelper.TxTypeCoinBase
+		}
+
 		inputs, totalInputsAmount := asset.decodeTxInputs(decodedTx, rawtx.MyInputs)
 		outputs, totalOutputsAmount := asset.decodeTxOutputs(decodedTx, rawtx.MyOutputs)
 		amount, direction := txhelper.TransactionAmountAndDirection(totalInputsAmount, totalOutputsAmount, int64(rawtx.Fee))
@@ -165,7 +203,7 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 		txs = append(txs, sharedW.Transaction{
 			WalletID:    asset.GetWalletID(),
 			Hash:        rawtx.Hash.String(),
-			Type:        "",
+			Type:        txType,
 			Hex:         txHex,
 			Timestamp:   rawtx.Timestamp,
 			BlockHeight: blockheight,
