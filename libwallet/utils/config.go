@@ -31,6 +31,22 @@ const (
 	HeadersFetchSyncStage     SyncStage = 1
 	AddressDiscoverySyncStage SyncStage = 2
 	HeadersRescanSyncStage    SyncStage = 3
+
+	TxFilterAll         int32 = 0
+	TxFilterSent        int32 = 1
+	TxFilterReceived    int32 = 2
+	TxFilterTransferred int32 = 3
+	TxFilterStaking     int32 = 4
+	TxFilterCoinBase    int32 = 5
+	TxFilterRegular     int32 = 6
+	TxFilterMixed       int32 = 7
+	TxFilterVoted       int32 = 8
+	TxFilterRevoked     int32 = 9
+	TxFilterImmature    int32 = 10
+	TxFilterLive        int32 = 11
+	TxFilterUnmined     int32 = 12
+	TxFilterExpired     int32 = 13
+	TxFilterTickets     int32 = 14
 )
 
 // Stringer used in generating the directory path where the lowercase of the

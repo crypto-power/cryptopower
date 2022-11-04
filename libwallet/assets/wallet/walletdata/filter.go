@@ -2,26 +2,9 @@ package walletdata
 
 import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-)
-
-const (
-	TxFilterAll         int32 = 0
-	TxFilterSent        int32 = 1
-	TxFilterReceived    int32 = 2
-	TxFilterTransferred int32 = 3
-	TxFilterStaking     int32 = 4
-	TxFilterCoinBase    int32 = 5
-	TxFilterRegular     int32 = 6
-	TxFilterMixed       int32 = 7
-	TxFilterVoted       int32 = 8
-	TxFilterRevoked     int32 = 9
-	TxFilterImmature    int32 = 10
-	TxFilterLive        int32 = 11
-	TxFilterUnmined     int32 = 12
-	TxFilterExpired     int32 = 13
-	TxFilterTickets     int32 = 14
 )
 
 func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (query storm.Query) {
@@ -32,22 +15,22 @@ func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (
 	expiryBlock := bestBlock - (db.ticketMaturity + db.ticketExpiry)
 
 	switch txFilter {
-	case TxFilterSent:
+	case utils.TxFilterSent:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeRegular),
 			q.Eq("Direction", txhelper.TxDirectionSent),
 		)
-	case TxFilterReceived:
+	case utils.TxFilterReceived:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeRegular),
 			q.Eq("Direction", txhelper.TxDirectionReceived),
 		)
-	case TxFilterTransferred:
+	case utils.TxFilterTransferred:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeRegular),
 			q.Eq("Direction", txhelper.TxDirectionTransferred),
 		)
-	case TxFilterStaking:
+	case utils.TxFilterStaking:
 		query = db.walletDataDB.Select(
 			q.Or(
 				q.Eq("Type", txhelper.TxTypeTicketPurchase),
@@ -55,34 +38,34 @@ func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (
 				q.Eq("Type", txhelper.TxTypeRevocation),
 			),
 		)
-	case TxFilterCoinBase:
+	case utils.TxFilterCoinBase:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeCoinBase),
 		)
-	case TxFilterRegular:
+	case utils.TxFilterRegular:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeRegular),
 		)
-	case TxFilterMixed:
+	case utils.TxFilterMixed:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeMixed),
 		)
-	case TxFilterVoted:
+	case utils.TxFilterVoted:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeVote),
 		)
-	case TxFilterRevoked:
+	case utils.TxFilterRevoked:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeRevocation),
 		)
-	case TxFilterImmature:
+	case utils.TxFilterImmature:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeTicketPurchase),
 			q.And(
 				q.Gt("BlockHeight", maturityBlock),
 			),
 		)
-	case TxFilterLive:
+	case utils.TxFilterLive:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeTicketPurchase),
 			q.Eq("TicketSpender", ""),           // not spent by a vote or revoke
@@ -90,21 +73,21 @@ func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (
 			q.Lte("BlockHeight", maturityBlock), // must be matured
 			q.Gt("BlockHeight", expiryBlock),    // not expired
 		)
-	case TxFilterUnmined:
+	case utils.TxFilterUnmined:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeTicketPurchase),
 			q.Or(
 				q.Eq("BlockHeight", -1),
 			),
 		)
-	case TxFilterExpired:
+	case utils.TxFilterExpired:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeTicketPurchase),
 			q.Eq("TicketSpender", ""), // not spent by a vote or revoke
 			q.Gt("BlockHeight", 0),    // mined
 			q.Lte("BlockHeight", expiryBlock),
 		)
-	case TxFilterTickets:
+	case utils.TxFilterTickets:
 		query = db.walletDataDB.Select(
 			q.Eq("Type", txhelper.TxTypeTicketPurchase),
 		)

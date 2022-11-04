@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
@@ -13,21 +13,21 @@ import (
 const (
 	// Export constants for use in mobile apps
 	// since gomobile excludes fields from sub packages.
-	TxFilterAll         = walletdata.TxFilterAll
-	TxFilterSent        = walletdata.TxFilterSent
-	TxFilterReceived    = walletdata.TxFilterReceived
-	TxFilterTransferred = walletdata.TxFilterTransferred
-	TxFilterStaking     = walletdata.TxFilterStaking
-	TxFilterCoinBase    = walletdata.TxFilterCoinBase
-	TxFilterRegular     = walletdata.TxFilterRegular
-	TxFilterMixed       = walletdata.TxFilterMixed
-	TxFilterVoted       = walletdata.TxFilterVoted
-	TxFilterRevoked     = walletdata.TxFilterRevoked
-	TxFilterImmature    = walletdata.TxFilterImmature
-	TxFilterLive        = walletdata.TxFilterLive
-	TxFilterUnmined     = walletdata.TxFilterUnmined
-	TxFilterExpired     = walletdata.TxFilterExpired
-	TxFilterTickets     = walletdata.TxFilterTickets
+	TxFilterAll         = utils.TxFilterAll
+	TxFilterSent        = utils.TxFilterSent
+	TxFilterReceived    = utils.TxFilterReceived
+	TxFilterTransferred = utils.TxFilterTransferred
+	TxFilterStaking     = utils.TxFilterStaking
+	TxFilterCoinBase    = utils.TxFilterCoinBase
+	TxFilterRegular     = utils.TxFilterRegular
+	TxFilterMixed       = utils.TxFilterMixed
+	TxFilterVoted       = utils.TxFilterVoted
+	TxFilterRevoked     = utils.TxFilterRevoked
+	TxFilterImmature    = utils.TxFilterImmature
+	TxFilterLive        = utils.TxFilterLive
+	TxFilterUnmined     = utils.TxFilterUnmined
+	TxFilterExpired     = utils.TxFilterExpired
+	TxFilterTickets     = utils.TxFilterTickets
 
 	TxDirectionInvalid     = txhelper.TxDirectionInvalid
 	TxDirectionSent        = txhelper.TxDirectionSent
@@ -216,7 +216,7 @@ func (asset *DCRAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) 
 		return tx.Type == TxTypeVote
 	case TxFilterRevoked:
 		return tx.Type == TxTypeRevocation
-	case walletdata.TxFilterImmature:
+	case TxFilterImmature:
 		return tx.Type == TxTypeTicketPurchase &&
 			(tx.BlockHeight > maturityBlock) // not matured
 	case TxFilterLive:

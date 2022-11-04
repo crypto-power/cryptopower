@@ -18,7 +18,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -526,9 +526,37 @@ func TimeFormat(secs int, long bool) string {
 	return fmt.Sprintf("%d %s", secs, val)
 }
 
-func CreateOrderDropDown(l *load.Load, grp uint, pos uint) *cryptomaterial.DropDown {
-	return l.Theme.DropDown([]cryptomaterial.DropDownItem{{Text: values.String(values.StrNewest)},
-		{Text: values.String(values.StrOldest)}}, grp, pos)
+// TxPageDropDownFields returns the fields for the required drop down with the
+// transactions view page.
+func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) map[string]int32 {
+	switch {
+	case wType == libutils.BTCWalletAsset && tabIndex == 0:
+		// BTC Transactions Activities dropdown fields.
+		return map[string]int32{
+			values.String(values.StrAll):      libutils.TxFilterAll,
+			values.String(values.StrSent):     libutils.TxFilterSent,
+			values.String(values.StrReceived): libutils.TxFilterReceived,
+		}
+	case wType == libutils.DCRWalletAsset && tabIndex == 0:
+		// DCR Transactions Activities dropdown fields.
+		return map[string]int32{
+			values.String(values.StrAll):         libutils.TxFilterAll,
+			values.String(values.StrSent):        libutils.TxFilterSent,
+			values.String(values.StrReceived):    libutils.TxFilterReceived,
+			values.String(values.StrTransferred): libutils.TxFilterTransferred,
+			values.String(values.StrMixed):       libutils.TxFilterMixed,
+			values.String(values.StrStaking):     libutils.TxFilterStaking,
+		}
+	case wType == libutils.DCRWalletAsset && tabIndex == 1:
+		// DCR staking Activities dropdown fields.
+		return map[string]int32{
+			values.String(values.StrAll):        libutils.TxFilterVoted,
+			values.String(values.StrVote):       libutils.TxFilterRevoked,
+			values.String(values.StrRevocation): libutils.TxFilterStaking,
+		}
+	default:
+		return map[string]int32{}
+	}
 }
 
 // CoinImageBySymbol returns image widget for supported asset coins.
@@ -556,7 +584,7 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		spandableBalance += account.Balance.Spendable.ToInt()
 		immatureReward += account.Balance.ImmatureReward.ToInt()
 
-		if l.WL.SelectedWallet.Wallet.GetAssetType() == utils.DCRWalletAsset {
+		if l.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset {
 			// Fields required only by DCR
 			immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
 			lockedByTickets += account.Balance.LockedByTickets.ToInt()

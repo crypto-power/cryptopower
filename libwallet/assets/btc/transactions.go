@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/btcsuite/btcd/blockchain"
@@ -74,7 +73,7 @@ func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 }
 
 func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
-	return tx.Type == asset.btcSupportedTxFilter(txFilter)
+	return txhelper.TxDirectionInvalid != asset.btcSupportedTxFilter(txFilter)
 }
 
 func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
@@ -83,37 +82,33 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
 	return
 }
 
-func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) string {
+func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) int32 {
 	switch txFilter {
-	case walletdata.TxFilterCoinBase:
-		return txhelper.TxTypeCoinBase
-	case walletdata.TxFilterRegular:
-		return txhelper.TxTypeRegular
-	case walletdata.TxFilterAll:
-		return "all"
+	case utils.TxFilterSent:
+		return txhelper.TxDirectionSent
+	case utils.TxFilterReceived:
+		return txhelper.TxDirectionReceived
+	case utils.TxFilterAll:
+		return txhelper.TxDirectionAll
 	default:
-		return ""
+		return txhelper.TxDirectionInvalid
 	}
 }
 
 func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	txType := asset.btcSupportedTxFilter(txFilter)
-	if txType == "" {
-		return []sharedW.Transaction{}, nil
-	}
-
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
 	if err != nil {
 		return []sharedW.Transaction{}, nil
 	}
 
-	if txType == "all" {
+	if txType == txhelper.TxDirectionAll {
 		return transactions, err
 	}
 
 	txsCopy := make([]sharedW.Transaction, 0, len(transactions))
 	for _, tx := range transactions {
-		if tx.Type == txType {
+		if tx.Direction == txType {
 			txsCopy = append(txsCopy, tx)
 		}
 	}
