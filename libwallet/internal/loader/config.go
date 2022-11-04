@@ -91,7 +91,7 @@ func (l *Loader) CreateDirPath(WalletID, walletDbName string, assetType utils.As
 		}
 	}()
 
-	folderPath := filepath.Join(l.DbDirPath, assetType.ToString(), WalletID)
+	folderPath := filepath.Join(l.DbDirPath, assetType.ToStringLower(), WalletID)
 	// Ensure that the network directory exists.
 	file, err := os.Stat(folderPath)
 	if err != nil {
@@ -129,7 +129,7 @@ func (l *Loader) CreateDirPath(WalletID, walletDbName string, assetType utils.As
 // FileExists checks if db bucket path identified by the following parameters
 // exists.
 func (l *Loader) FileExists(WalletID, walletDbName string, assetType utils.AssetType) (string, bool, error) {
-	path := filepath.Join(l.DbDirPath, assetType.ToString(), WalletID, walletDbName)
+	path := filepath.Join(l.DbDirPath, assetType.ToStringLower(), WalletID, walletDbName)
 	b, err := fileExists(path)
 	return path, b, err
 }

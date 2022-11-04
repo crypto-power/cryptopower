@@ -6,6 +6,7 @@ import (
 	"gioui.org/text"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -22,8 +23,9 @@ type ExchangeSelector struct {
 
 // Exchange models exchanges.
 type Exchange struct {
-	Name string
-	Icon *cryptomaterial.Image
+	Name   string
+	Server instantswap.ExchangeServer
+	Icon   *cryptomaterial.Image
 }
 
 // exchangeItem wraps the exchangeserver in a clickable.
@@ -77,8 +79,9 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 	var exchange []*Exchange
 	for _, server := range servers {
 		exchng := &Exchange{
-			Name: server.CapFirstLetter(),
-			Icon: es.setServerIcon(server.ToString()),
+			Name:   server.CapFirstLetter(),
+			Server: server,
+			Icon:   es.setServerIcon(server.ToString()),
 		}
 		exchange = append(exchange, exchng)
 	}

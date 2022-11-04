@@ -1,12 +1,12 @@
 package components
 
 import (
-	"fmt"
 	"strconv"
 
 	"gioui.org/layout"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -33,14 +33,13 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 									Right: values.MarginPadding10,
 									Left:  values.MarginPadding10,
 								}.Layout(gtx, func(gtx C) D {
-									if orderItem.FromCurrency == "DCR" {
+									if orderItem.FromCurrency == utils.DCRWalletAsset.String() {
 										return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding24)
 									}
 									return l.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding24)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								fmt.Println("[][][][] amount", orderItem.OrderedAmount)
 								orderedAmount := strconv.FormatFloat(orderItem.OrderedAmount, 'f', -1, 64)
 								return l.Theme.Label(values.TextSize16, orderedAmount).Layout(gtx)
 							}),
@@ -55,7 +54,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 												Right: values.MarginPadding10,
 												Left:  values.MarginPadding10,
 											}.Layout(gtx, func(gtx C) D {
-												if orderItem.ToCurrency == "DCR" {
+												if orderItem.ToCurrency == utils.DCRWalletAsset.String() {
 													return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding24)
 												}
 												return l.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding24)
@@ -90,8 +89,8 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 									Alignment: layout.Middle,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										timestamp := strconv.FormatFloat(orderItem.ReceiveAmount, 'f', -1, 64)
-										return l.Theme.Label(values.TextSize16, timestamp).Layout(gtx)
+										createdAt := strconv.Itoa(int(orderItem.CreatedAt))
+										return l.Theme.Label(values.TextSize16, createdAt).Layout(gtx)
 									}),
 								)
 							})

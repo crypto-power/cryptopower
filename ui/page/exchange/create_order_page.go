@@ -60,9 +60,11 @@ type CreateOrderPage struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	backButton cryptomaterial.IconButton
-	infoButton cryptomaterial.IconButton
+	// infoButton cryptomaterial.IconButton
 
 	createOrderBtn cryptomaterial.Button
+	infoButton     cryptomaterial.IconButton
+	settingsButton cryptomaterial.IconButton
 
 	min float64
 	max float64
@@ -84,7 +86,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExchangeSelector(l),
 	}
 
-	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.backButton, _ = components.SubpageHeaderButtons(l)
+
+	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
+	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
+	pg.infoButton.Size = values.MarginPadding18
+	buttonInset := layout.UniformInset(values.MarginPadding0)
+	pg.settingsButton.Inset, pg.infoButton.Inset = buttonInset, buttonInset
 
 	pg.fromAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (DCR)")
 	pg.fromAmountEditor.Editor.SetText("")
@@ -145,17 +153,20 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.addressEditor.Editor.SetText(address)
 
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
-
-	// Initialize a new exchange using the selected exchange server
-	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(instantswap.FlypMe, "", "")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pg.exchange = exchange
+	pg.createOrderBtn.SetEnabled(false)
 
 	pg.exchangeSelector.ExchangeSelected(func(es *Exchange) {
 		pg.selectedExchange = es
+
+		// Initialize a new exchange using the selected exchange server
+		exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(pg.selectedExchange.Server, "", "")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		pg.exchange = exchange
+
+		pg.createOrderBtn.SetEnabled(true)
 	})
 
 	return pg
@@ -168,12 +179,12 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	go func() {
-		err := pg.getExchangeRateInfo()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	// go func() {
+	// 	err := pg.getExchangeRateInfo()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// }()
 
 	pg.FetchOrders()
 }
@@ -187,6 +198,16 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 func (pg *CreateOrderPage) HandleUserInteractions() {
 	if pg.createOrderBtn.Clicked() {
 		pg.confirmSourcePassword()
+	}
+
+	if pg.settingsButton.Button.Clicked() {
+		orderSettingsModal := newOrderSettingsModalModal(pg.Load).OnSettingsSaved(func() {
+			infoModal := modal.NewSuccessModal(pg.Load, "Saved", modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(infoModal)
+		}).
+		OnCancel(func() {
+		})
+		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 }
 
@@ -226,7 +247,50 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 						return layout.Inset{
 							Bottom: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
-							return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Flexed(0.65, func(gtx C) D {
+									return layout.E.Layout(gtx, func(gtx C) D {
+										return layout.Flex{
+											Axis:      layout.Horizontal,
+											Alignment: layout.Middle,
+										}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{
+													Right: values.MarginPadding10,
+												}.Layout(gtx, func(gtx C) D {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															txt := pg.Theme.Label(values.TextSize16, "Select the exchange server you would like to use.")
+															return txt.Layout(gtx)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+														}),
+													)
+												})
+											}),
+										)
+									})
+								}),
+								layout.Flexed(0.35, func(gtx C) D {
+									return layout.E.Layout(gtx, func(gtx C) D {
+										return layout.Flex{
+											Axis:      layout.Horizontal,
+											Alignment: layout.Middle,
+										}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{
+													Right: values.MarginPadding10,
+													Left:  values.MarginPadding10,
+												}.Layout(gtx, func(gtx C) D {
+													return pg.infoButton.Layout(gtx)
+												})
+											}),
+											layout.Rigid(pg.settingsButton.Layout),
+										)
+									})
+								}),
+							)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -278,96 +342,28 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
-							Bottom: values.MarginPadding16,
-						}.Layout(gtx, func(gtx C) D {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.MatchParent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Vertical,
-								Margin:      layout.Inset{Bottom: values.MarginPadding16},
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											txt := pg.Theme.Label(values.TextSize16, "Source")
-											txt.Font.Weight = text.SemiBold
-											return txt.Layout(gtx)
-										}),
-										layout.Rigid(func(gtx C) D {
-											pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-											pg.infoButton.Size = values.MarginPadding14
-											return pg.infoButton.Layout(gtx)
-										}),
-									)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Bottom: values.MarginPadding16,
-									}.Layout(gtx, func(gtx C) D {
-										return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
-								}),
-							)
-
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Bottom: values.MarginPadding16,
-						}.Layout(gtx, func(gtx C) D {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.MatchParent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Vertical,
-								Margin:      layout.Inset{Bottom: values.MarginPadding16},
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											txt := pg.Theme.Label(values.TextSize16, "Destination")
-											txt.Font.Weight = text.SemiBold
-											return txt.Layout(gtx)
-										}),
-										layout.Rigid(func(gtx C) D {
-											pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-											pg.infoButton.Size = values.MarginPadding14
-											return pg.infoButton.Layout(gtx)
-										}),
-									)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Bottom: values.MarginPadding16,
-									}.Layout(gtx, func(gtx C) D {
-										return pg.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Bottom: values.MarginPadding16,
-									}.Layout(gtx, func(gtx C) D {
-										return pg.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.addressEditor.Layout(gtx)
-								}),
-							)
-
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
 							Top:   values.MarginPadding24,
 							Right: values.MarginPadding16,
 						}.Layout(gtx, pg.createOrderBtn.Layout)
 					}),
 
 					layout.Rigid(func(gtx C) D {
-						return pg.layoutHistory(gtx)
+						return layout.Inset{
+							Top: values.MarginPadding24,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									txt := pg.Theme.Label(values.TextSize18, "History")
+									txt.Font.Weight = text.SemiBold
+									return txt.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Top: values.MarginPadding10,
+									}.Layout(gtx, pg.layoutHistory)
+								}),
+							)
+						})
 					}),
 				)
 			})

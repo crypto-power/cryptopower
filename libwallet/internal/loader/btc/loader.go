@@ -219,7 +219,7 @@ func (l *btcLoader) GetDbDirPath() string {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	return filepath.Join(l.DbDirPath, utils.BTCWalletAsset.ToString())
+	return filepath.Join(l.DbDirPath, utils.BTCWalletAsset.ToStringLower())
 }
 
 // LoadedWallet returns the loaded wallet, if any, and a bool for whether the
