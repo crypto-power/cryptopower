@@ -90,7 +90,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 		var ticketInvestment int64
 		for _, input := range ticketPurchaseTx.Inputs {
 			if input.AccountNumber > -1 {
-				ticketInvestment += input.Amount.ToInt()
+				ticketInvestment += input.Amount
 			}
 		}
 
@@ -101,7 +101,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			}
 		}
 
-		decodedTx.VoteReward = asset.ToAmount(ticketOutput - ticketInvestment)
+		decodedTx.VoteReward = ticketOutput - ticketInvestment
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash

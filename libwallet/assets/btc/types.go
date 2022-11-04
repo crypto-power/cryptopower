@@ -1,8 +1,6 @@
 package btc
 
 import (
-	"encoding/json"
-
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"github.com/btcsuite/btcutil"
 )
@@ -28,19 +26,6 @@ func (a BTCAmount) MulF64(f float64) sharedW.AssetAmount {
 // ToInt return the original unformatted amount BTCs
 func (a BTCAmount) ToInt() int64 {
 	return int64(btcutil.Amount(a))
-}
-
-func (a BTCAmount) MarshalJSON() ([]byte, error) {
-	return json.Marshal(btcutil.Amount(a))
-}
-
-func (a BTCAmount) UnmarshalJSON(data []byte) error {
-	var s int64
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	a = BTCAmount(s)
-	return nil
 }
 
 type ListUnspentResult struct {

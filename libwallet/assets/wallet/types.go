@@ -16,7 +16,6 @@ type AssetAmount interface {
 	MulF64(f float64) AssetAmount
 	// ToInt() returns the complete int64 value without formatting.
 	ToInt() int64
-	UnmarshalJSON(data []byte) error
 }
 
 // WalletConfig defines options for configuring wallet behaviour.
@@ -332,44 +331,44 @@ type Transaction struct {
 	MixDenomination int64 `json:"mix_denom,omitempty"` // (DCR Field)
 	MixCount        int32 `json:"mix_count,omitempty"` // (DCR Field)
 
-	Version  int32       `json:"version"`
-	LockTime int32       `json:"lock_time"`
-	Expiry   int32       `json:"expiry,omitempty"` // (DCR Field)
-	Fee      AssetAmount `json:"fee"`
-	FeeRate  AssetAmount `json:"fee_rate"`
-	Size     int         `json:"size"`
-	Label    string      `json:"label,omitempty"` // (BTC Field)
+	Version  int32  `json:"version"`
+	LockTime int32  `json:"lock_time"`
+	Expiry   int32  `json:"expiry,omitempty"` // (DCR Field)
+	Fee      int64  `json:"fee"`
+	FeeRate  int64  `json:"fee_rate"`
+	Size     int    `json:"size"`
+	Label    string `json:"label,omitempty"` // (BTC Field)
 
 	Direction int32       `storm:"index" json:"direction"`
-	Amount    AssetAmount `json:"amount"`
+	Amount    int64       `json:"amount"`
 	Inputs    []*TxInput  `json:"inputs"`
 	Outputs   []*TxOutput `json:"outputs"`
 
 	// Vote Info (DCR fields)
-	VoteVersion        int32       `json:"vote_version,omitempty"`
-	LastBlockValid     bool        `json:"last_block_valid,omitempty"`
-	VoteBits           string      `json:"vote_bits,omitempty"`
-	VoteReward         AssetAmount `json:"vote_reward,omitempty"`
-	TicketSpentHash    string      `storm:"unique" json:"ticket_spent_hash,omitempty"`
-	DaysToVoteOrRevoke int32       `json:"days_to_vote_revoke,omitempty"`
+	VoteVersion        int32  `json:"vote_version,omitempty"`
+	LastBlockValid     bool   `json:"last_block_valid,omitempty"`
+	VoteBits           string `json:"vote_bits,omitempty"`
+	VoteReward         int64  `json:"vote_reward,omitempty"`
+	TicketSpentHash    string `storm:"unique" json:"ticket_spent_hash,omitempty"`
+	DaysToVoteOrRevoke int32  `json:"days_to_vote_revoke,omitempty"`
 }
 
 type TxInput struct {
-	PreviousTransactionHash  string      `json:"previous_transaction_hash"`
-	PreviousTransactionIndex int32       `json:"previous_transaction_index"`
-	PreviousOutpoint         string      `json:"previous_outpoint"`
-	Amount                   AssetAmount `json:"amount"`
-	AccountNumber            int32       `json:"account_number"`
+	PreviousTransactionHash  string `json:"previous_transaction_hash"`
+	PreviousTransactionIndex int32  `json:"previous_transaction_index"`
+	PreviousOutpoint         string `json:"previous_outpoint"`
+	Amount                   int64  `json:"amount"`
+	AccountNumber            int32  `json:"account_number"`
 }
 
 type TxOutput struct {
-	Index         int32       `json:"index"`
-	Amount        AssetAmount `json:"amount"`
-	Version       int32       `json:"version,omitempty"` // (DCR Field)
-	ScriptType    string      `json:"script_type"`
-	Address       string      `json:"address"`
-	Internal      bool        `json:"internal"`
-	AccountNumber int32       `json:"account_number"`
+	Index         int32  `json:"index"`
+	Amount        int64  `json:"amount"`
+	Version       int32  `json:"version,omitempty"` // (DCR Field)
+	ScriptType    string `json:"script_type"`
+	Address       string `json:"address"`
+	Internal      bool   `json:"internal"`
+	AccountNumber int32  `json:"account_number"`
 }
 
 // TxInfoFromWallet contains tx data that relates to the querying wallet.

@@ -64,12 +64,12 @@ func (asset *DCRAsset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, net
 		Version:  int32(msgTx.Version),
 		LockTime: int32(msgTx.LockTime),
 		Expiry:   int32(msgTx.Expiry),
-		Fee:      DCRAmount(txFee),
-		FeeRate:  DCRAmount(txFeeRate),
+		Fee:      int64(txFee),
+		FeeRate:  int64(txFeeRate),
 		Size:     txSize,
 
 		Direction: direction,
-		Amount:    asset.ToAmount(amount),
+		Amount:    amount,
 		Inputs:    inputs,
 		Outputs:   outputs,
 
@@ -89,7 +89,7 @@ func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.W
 			PreviousTransactionHash:  txIn.PreviousOutPoint.Hash.String(),
 			PreviousTransactionIndex: int32(txIn.PreviousOutPoint.Index),
 			PreviousOutpoint:         txIn.PreviousOutPoint.String(),
-			Amount:                   asset.ToAmount(txIn.ValueIn),
+			Amount:                   txIn.ValueIn,
 			AccountNumber:            -1, // correct account number is set below if this is a wallet output
 		}
 
@@ -102,9 +102,9 @@ func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.W
 		}
 
 		if input.AccountNumber != -1 {
-			totalWalletInputs += input.Amount.ToInt()
+			totalWalletInputs += input.Amount
 			if input.AccountNumber == unmixedAccountNumber {
-				totalWalletUnmixedInputs += input.Amount.ToInt()
+				totalWalletUnmixedInputs += input.Amount
 			}
 		}
 
@@ -142,7 +142,7 @@ func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Para
 
 		output := &sharedW.TxOutput{
 			Index:         int32(i),
-			Amount:        asset.ToAmount(txOut.Value),
+			Amount:        txOut.Value,
 			Version:       int32(txOut.Version),
 			ScriptType:    scriptType,
 			Address:       address, // correct address, account name and number set below if this is a wallet output
@@ -160,9 +160,9 @@ func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Para
 		}
 
 		if output.AccountNumber != -1 {
-			totalWalletOutput += output.Amount.ToInt()
+			totalWalletOutput += output.Amount
 			if output.AccountNumber == mixedAccountNumber {
-				totalWalletMixedOutputs += output.Amount.ToInt()
+				totalWalletMixedOutputs += output.Amount
 				mixedOutputsCount++
 			}
 		}

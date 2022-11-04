@@ -313,6 +313,7 @@ func (pg *TxDetailsPage) layoutMobile(gtx C, body layout.Widget) D {
 }
 
 func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
+	wal := pg.WL.SelectedWallet.Wallet
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -357,10 +358,10 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 								col := pg.Theme.Color.GrayText2
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										title := pg.transaction.Amount.String()
+										title := wal.ToAmount(pg.transaction.Amount).String()
 										switch pg.transaction.Type {
 										case dcr.TxTypeMixed:
-											title = dcrutil.Amount(pg.transaction.MixDenomination).String()
+											title = wal.ToAmount(pg.transaction.MixDenomination).String()
 										case dcr.TxTypeRegular:
 											if pg.transaction.Direction == dcr.TxDirectionSent && !strings.Contains(title, "-") {
 												title = "-" + title
@@ -440,7 +441,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 												return lbl.Layout(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
-												lbl := pg.Theme.Label(values.TextSize16, pg.ticketSpender.VoteReward.String())
+												lbl := pg.Theme.Label(values.TextSize16, wal.ToAmount(pg.ticketSpender.VoteReward).String())
 												lbl.Color = col
 												return lbl.Layout(gtx)
 											}),
@@ -598,6 +599,7 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 }
 
 func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
+	wal := pg.WL.SelectedWallet.Wallet
 	transaction := pg.transaction
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -653,7 +655,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				return D{}
 			}
 
-			amount := pg.transaction.Amount.String()
+			amount := wal.ToAmount(pg.transaction.Amount).String()
 			if pg.transaction.Type == dcr.TxTypeMixed {
 				amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
 			} else if pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction == dcr.TxDirectionSent {
@@ -664,7 +666,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			// revocation and vote transaction reward
 			if pg.transaction.Type == dcr.TxTypeVote {
-				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, pg.transaction.VoteReward.String()).Layout)
+				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, wal.ToAmount(pg.transaction.VoteReward).String()).Layout)
 			}
 			return D{}
 		}),
@@ -747,7 +749,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, transaction.Fee.String()).Layout)
+			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, wal.ToAmount(transaction.Fee).String()).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide section for non ticket transactions
@@ -794,7 +796,7 @@ func (pg *TxDetailsPage) txnInputs(gtx C) D {
 		return pg.transactionInputsContainer.Layout(gtx, len(transaction.Inputs), func(gtx C, i int) D {
 			input := transaction.Inputs[i]
 			addr := utils.SplitSingleString(input.PreviousOutpoint, 20)
-			return pg.txnIORow(gtx, input.Amount.ToInt(), input.AccountNumber, addr, i)
+			return pg.txnIORow(gtx, input.Amount, input.AccountNumber, addr, i)
 		})
 	}
 	return pg.pageSections(gtx, func(gtx C) D {
@@ -815,7 +817,7 @@ func (pg *TxDetailsPage) txnOutputs(gtx C) D {
 		x := len(transaction.Inputs)
 		return pg.transactionOutputsContainer.Layout(gtx, len(transaction.Outputs), func(gtx C, i int) D {
 			output := transaction.Outputs[i]
-			return pg.txnIORow(gtx, output.Amount.ToInt(), output.AccountNumber, output.Address, i+x)
+			return pg.txnIORow(gtx, output.Amount, output.AccountNumber, output.Address, i+x)
 		})
 	}
 	return pg.pageSections(gtx, func(gtx C) D {

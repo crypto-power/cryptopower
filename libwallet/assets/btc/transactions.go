@@ -227,13 +227,13 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 
 			Version:  decodedTx.Version,
 			LockTime: int32(decodedTx.LockTime),
-			Fee:      BTCAmount(rawtx.Fee),
-			FeeRate:  BTCAmount(feeRate),
+			Fee:      int64(rawtx.Fee),
+			FeeRate:  int64(feeRate),
 			Size:     txSize,
 			Label:    rawtx.Label,
 
 			Direction: direction,
-			Amount:    asset.ToAmount(amount),
+			Amount:    amount,
 			Inputs:    inputs,
 			Outputs:   outputs,
 		})
@@ -271,13 +271,13 @@ func (asset *BTCAsset) decodeTxInputs(mtx *wire.MsgTx,
 		for _, walletInput := range walletInputs {
 			if int(walletInput.Index) == i {
 				input.AccountNumber = int32(walletInput.PreviousAccount)
-				input.Amount = BTCAmount(walletInput.PreviousAmount)
+				input.Amount = int64(walletInput.PreviousAmount)
 				break
 			}
 		}
 
 		if input.AccountNumber != -1 {
-			totalWalletInputs += input.Amount.ToInt()
+			totalWalletInputs += input.Amount
 		}
 
 		inputs[i] = input
@@ -304,7 +304,7 @@ func (asset *BTCAsset) decodeTxOutputs(mtx *wire.MsgTx,
 
 		output := &sharedW.TxOutput{
 			Index:         int32(i),
-			Amount:        asset.ToAmount(txOut.Value),
+			Amount:        txOut.Value,
 			ScriptType:    scriptType,
 			Address:       address, // correct address, account name and number set below if this is a wallet output
 			AccountNumber: -1,
@@ -320,7 +320,7 @@ func (asset *BTCAsset) decodeTxOutputs(mtx *wire.MsgTx,
 		}
 
 		if output.AccountNumber != -1 {
-			totalWalletOutput += output.Amount.ToInt()
+			totalWalletOutput += output.Amount
 		}
 
 		outputs[i] = output

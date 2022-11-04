@@ -931,6 +931,7 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 // postDdesktopNotification posts notifications to the desktop.
 func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
+	wal := mp.WL.SelectedWallet.Wallet
 	switch t := notifier.(type) {
 	case wallet.NewTransaction:
 		switch t.Transaction.Type {
@@ -939,10 +940,10 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(t.Transaction.Amount.ToCoin(), 'f', -1, 64)
+			amount := strconv.FormatFloat(wal.ToAmount(t.Transaction.Amount).ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
 		case dcr.TxTypeVote:
-			reward := strconv.FormatFloat(t.Transaction.VoteReward.ToCoin(), 'f', -1, 64)
+			reward := strconv.FormatFloat(wal.ToAmount(t.Transaction.VoteReward).ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
 		case dcr.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)
