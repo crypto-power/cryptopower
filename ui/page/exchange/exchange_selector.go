@@ -76,7 +76,7 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 
 	var exchange []*Exchange
 	for _, server := range servers {
-		exchng:= &Exchange{
+		exchng := &Exchange{
 			Name: server.CapFirstLetter(),
 			Icon: es.setServerIcon(server.ToString()),
 		}

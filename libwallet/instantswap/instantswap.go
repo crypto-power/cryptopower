@@ -98,7 +98,7 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	if err != nil && err != storm.ErrNotFound {
 		return nil, fmt.Errorf("error fetching orders: %s", err.Error())
 	}
-fmt.Println("orders backend", orders)
+	
 	return orders, nil
 }
 
