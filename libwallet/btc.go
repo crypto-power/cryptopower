@@ -147,10 +147,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 				return -1, err
 			}
 
-			fn := wallet.(interface {
-				AccountXPubMatches(account uint32, xpub string) (bool, error)
-			})
-			usesSameSeed, err := fn.AccountXPubMatches(accs.AccountNumber, xpub)
+			usesSameSeed, err := asset.AccountXPubMatches(accs.AccountNumber, xpub)
 			if err != nil {
 				return -1, err
 			}
