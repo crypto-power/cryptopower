@@ -327,7 +327,30 @@ func (asset *BTCAsset) RemoveSpecificPeer() {
 func (asset *BTCAsset) SetSpecificPeer(address string) {
 	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
 }
+
+// GetExtendedPubkey returns the extended public key of the given account,
+// to do that it calls btcwallet's AccountProperties method, using KeyScopeBIP0084
+// and the account number. On failure it returns error.
 func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
-	err := utils.ErrBTCMethodNotImplemented("GetExtendedPubKey")
-	return "", err
+	loadedAsset := asset.Internal().BTC
+	if loadedAsset == nil {
+		return "", utils.ErrBTCNotInitialized
+	}
+
+	extendedPublicKey, err := loadedAsset.AccountProperties(asset.GetScope(), uint32(account))
+	if err != nil {
+		return "", err
+	}
+	return extendedPublicKey.AccountPubKey.String(), nil
+}
+
+// AccountXPubMatches checks if the xpub of the provided account matches the
+// provided xpub.
+func (asset *BTCAsset) AccountXPubMatches(account uint32, xPub string) (bool, error) {
+	acctXPubKey, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), account)
+	if err != nil {
+		return false, err
+	}
+
+	return acctXPubKey.AccountPubKey.String() == xPub, nil
 }
