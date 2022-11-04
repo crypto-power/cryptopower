@@ -1,8 +1,8 @@
 package instantswap
 
 import (
-	"strings"
 	"github.com/asdine/storm"
+	"strings"
 )
 
 type ExchangeServer string
@@ -55,7 +55,7 @@ type Order struct {
 	Status        string `json:"status"`
 	ExpiryTime    int    `json:"expiryTime"` // in seconds
 	CreatedAt     int64  `storm:"index" json:"createdAt"`
-	LastUpdate    string `json:"lastUpdate"`
+	LastUpdate    string `json:"lastUpdate"` // should be timestamp (api currently returns string)
 
 	ExtraID string `json:"extraId"` //changenow.io requirement //changelly payinExtraId value
 }

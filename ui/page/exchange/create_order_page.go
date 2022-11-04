@@ -20,7 +20,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 
 	api "code.cryptopower.dev/exchange/instantswap"
-	// _ "code.cryptopower.dev/exchange/instantswap/exchange/flypme" //register flyp.me
 )
 
 const CreateOrderPageID = "CreateOrder"
@@ -42,9 +41,10 @@ type CreateOrderPage struct {
 	ctxCancel context.CancelFunc
 
 	scrollContainer *widget.List
+	listContainer   *widget.List
 
-	exchange api.IDExchange
-
+	exchange         api.IDExchange
+	orderItems       []*instantswap.Order
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
@@ -77,6 +77,9 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 				Axis:      layout.Vertical,
 				Alignment: layout.Middle,
 			},
+		},
+		listContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
 		},
 		exchangeSelector: NewExchangeSelector(l),
 	}
@@ -172,6 +175,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 		}
 	}()
 
+	pg.FetchOrders()
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -361,16 +365,50 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							Right: values.MarginPadding16,
 						}.Layout(gtx, pg.createOrderBtn.Layout)
 					}),
+
+					layout.Rigid(func(gtx C) D {
+						return pg.layoutHistory(gtx)
+					}),
 				)
 			})
 		})
 	})
 }
 
-func (pg *CreateOrderPage) exchangeSelectorLayout(gtx C) layout.Widget {
-	return func(gtx C) D {
-		return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+func (pg *CreateOrderPage) FetchOrders() {
+	items := components.LoadOrders(pg.Load, true)
+	pg.orderItems = items
+
+	pg.ParentWindow().Reload()
+}
+
+func (pg *CreateOrderPage) layoutHistory(gtx C) D {
+	if len(pg.orderItems) == 0 {
+		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			list := layout.List{Axis: layout.Vertical}
+			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+					return list.Layout(gtx, len(pg.orderItems), func(gtx C, i int) D {
+						return cryptomaterial.LinearLayout{
+							Orientation: layout.Vertical,
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
+							Background:  pg.Theme.Color.Surface,
+							Direction:   layout.W,
+							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+							Padding:     layout.UniformInset(values.MarginPadding15),
+							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
+							Layout2(gtx, func(gtx C) D {
+								return components.OrderItemWidget(gtx, pg.Load, pg.orderItems[i])
+							})
+					})
+				})
+			})
+		}),
+	)
 }
 
 func (pg *CreateOrderPage) confirmSourcePassword() {
@@ -414,24 +452,6 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 
-	// spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-	// 	EnableName(false).
-	// 	EnableConfirmPassword(false).
-	// 	Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-	// 	PasswordHint(values.String(values.StrSpendingPassword)).
-	// 	SetPositiveButtonText(values.String(values.StrUnlock)).
-	// 	SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-	// 		err := pg.WL.SelectedWallet.Wallet.UnlockWallet(password)
-	// 		if err != nil {
-	// 			pm.SetError(err.Error())
-	// 			pm.SetLoading(false)
-	// 			return false
-	// 		}
-	// 		pm.Dismiss()
-	// 		// pg.startSyncing(wal)
-	// 		return true
-	// 	})
-	// pg.ParentWindow().ShowModal(spendingPasswordModal)
 }
 
 func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {

@@ -23,7 +23,6 @@ type ExchangeSelector struct {
 // Exchange models exchanges.
 type Exchange struct {
 	Name string
-	URL  string
 	Icon *cryptomaterial.Image
 }
 
@@ -92,7 +91,7 @@ func (es *ExchangeSelector) setServerIcon(serverName string) *cryptomaterial.Ima
 	case "changelly":
 		return es.Theme.Icons.ChangellyIcon
 	case "changenow":
-		return es.Theme.Icons.CoinSwitchIcon
+		return es.Theme.Icons.ChangeNowIcon
 	case "coinswitch":
 		return es.Theme.Icons.CoinSwitchIcon
 	case "flypme":

@@ -8,6 +8,7 @@ import (
 	"code.cryptopower.dev/exchange/instantswap"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 
 	// Initialize exchange servers.
 	_ "code.cryptopower.dev/exchange/instantswap/exchange/changelly"
@@ -74,6 +75,10 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 
 	var query storm.Query
 
+	query = instantSwap.db.Select(
+		q.True(),
+	)
+
 	if offset > 0 {
 		query = query.Skip(int(offset))
 	}
@@ -83,9 +88,9 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	}
 
 	if newestFirst {
-		query = query.OrderBy("Timestamp").Reverse()
+		query = query.OrderBy("CreatedAt").Reverse()
 	} else {
-		query = query.OrderBy("Timestamp")
+		query = query.OrderBy("CreatedAt")
 	}
 
 	var orders []Order
@@ -93,7 +98,7 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	if err != nil && err != storm.ErrNotFound {
 		return nil, fmt.Errorf("error fetching orders: %s", err.Error())
 	}
-
+fmt.Println("orders backend", orders)
 	return orders, nil
 }
 
@@ -170,6 +175,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 		ExchangeRate:       res.ExchangeRate,
 		ChargedFee:         res.ChargedFee,
 		ExpiryTime:         res.Expires,
+		Status:             "WAITING_FOR_DEPOSIT",
 		CreatedAt:          time.Now().Unix(),
 
 		ExtraID: res.ExtraID, //changenow.io requirement //changelly payinExtraId value
@@ -236,7 +242,7 @@ func (instantSwap *InstantSwap) marshalResult(result interface{}, err error) (st
 }
 
 func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
-	return []ExchangeServer {
+	return []ExchangeServer{
 		Changelly,
 		ChangeNow,
 		CoinSwitch,
@@ -245,4 +251,13 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 		SimpleSwap,
 		SwapZone,
 	}
+}
+
+func (instantSwap *InstantSwap) ClearSavedOrders() error {
+	err := instantSwap.db.Drop(&Order{})
+	if err != nil {
+		return err
+	}
+
+	return instantSwap.db.Init(&Order{})
 }
