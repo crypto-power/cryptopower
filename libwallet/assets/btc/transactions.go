@@ -77,7 +77,8 @@ func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) 
 	return tx.Type == asset.btcSupportedTxFilter(txFilter)
 }
 
-func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
+func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
+	newestFirst bool) (transactions []sharedW.Transaction, err error) {
 	transactions, err = asset.filterTxs(offset, limit, txFilter, newestFirst)
 	return
 }
@@ -88,6 +89,8 @@ func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) string {
 		return txhelper.TxTypeCoinBase
 	case walletdata.TxFilterRegular:
 		return txhelper.TxTypeRegular
+	case walletdata.TxFilterAll:
+		return "all"
 	default:
 		return ""
 	}
@@ -102,6 +105,10 @@ func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
 	if err != nil {
 		return []sharedW.Transaction{}, nil
+	}
+
+	if txType == "all" {
+		return transactions, err
 	}
 
 	txsCopy := make([]sharedW.Transaction, 0, len(transactions))
@@ -120,7 +127,7 @@ func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool
 // (starts with the oldest) otherwise its in descending (starts with the newest) order.
 func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	asset.txs.mu.RLock()
-	allTxs := append(asset.txs.uminedTxs, asset.txs.uminedTxs...)
+	allTxs := append(asset.txs.uminedTxs, asset.txs.minedTxs...)
 	txCacheHeight := asset.txs.blockHeight
 	asset.txs.mu.RUnlock()
 
@@ -210,13 +217,13 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 
 			Version:  decodedTx.Version,
 			LockTime: int32(decodedTx.LockTime),
-			Fee:      int64(rawtx.Fee),
-			FeeRate:  int64(feeRate),
+			Fee:      BTCAmount(rawtx.Fee),
+			FeeRate:  BTCAmount(feeRate),
 			Size:     txSize,
 			Label:    rawtx.Label,
 
 			Direction: direction,
-			Amount:    amount,
+			Amount:    asset.ToAmount(amount),
 			Inputs:    inputs,
 			Outputs:   outputs,
 		})
@@ -254,13 +261,13 @@ func (asset *BTCAsset) decodeTxInputs(mtx *wire.MsgTx,
 		for _, walletInput := range walletInputs {
 			if int(walletInput.Index) == i {
 				input.AccountNumber = int32(walletInput.PreviousAccount)
-				input.Amount = int64(walletInput.PreviousAmount)
+				input.Amount = BTCAmount(walletInput.PreviousAmount)
 				break
 			}
 		}
 
 		if input.AccountNumber != -1 {
-			totalWalletInputs += input.Amount
+			totalWalletInputs += input.Amount.ToInt()
 		}
 
 		inputs[i] = input
@@ -287,7 +294,7 @@ func (asset *BTCAsset) decodeTxOutputs(mtx *wire.MsgTx,
 
 		output := &sharedW.TxOutput{
 			Index:         int32(i),
-			Amount:        txOut.Value,
+			Amount:        asset.ToAmount(txOut.Value),
 			ScriptType:    scriptType,
 			Address:       address, // correct address, account name and number set below if this is a wallet output
 			AccountNumber: -1,
@@ -303,7 +310,7 @@ func (asset *BTCAsset) decodeTxOutputs(mtx *wire.MsgTx,
 		}
 
 		if output.AccountNumber != -1 {
-			totalWalletOutput += output.Amount
+			totalWalletOutput += output.Amount.ToInt()
 		}
 
 		outputs[i] = output

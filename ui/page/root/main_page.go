@@ -504,6 +504,8 @@ func (mp *MainPage) HandleUserInteractions() {
 				pg = NewReceivePage(mp.Load)
 			case send.SendPageID:
 				pg = send.NewSendPage(mp.Load)
+			case transaction.TransactionsPageID:
+				pg = transaction.NewTransactionsPage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			}
@@ -931,17 +933,16 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
 	switch t := notifier.(type) {
 	case wallet.NewTransaction:
-		wal := mp.WL.SelectedWallet.Wallet
 		switch t.Transaction.Type {
 		case dcr.TxTypeRegular:
 			if t.Transaction.Direction != dcr.TxDirectionReceived {
 				return
 			}
 			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(wal.ToAmount(t.Transaction.Amount).ToCoin(), 'f', -1, 64)
+			amount := strconv.FormatFloat(t.Transaction.Amount.ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrDcrReceived, amount)
 		case dcr.TxTypeVote:
-			reward := strconv.FormatFloat(wal.ToAmount(t.Transaction.VoteReward).ToCoin(), 'f', -1, 64)
+			reward := strconv.FormatFloat(t.Transaction.VoteReward.ToCoin(), 'f', -1, 64)
 			notification = values.StringF(values.StrTicektVoted, reward)
 		case dcr.TxTypeRevocation:
 			notification = values.String(values.StrTicketRevoked)

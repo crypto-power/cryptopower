@@ -56,18 +56,10 @@ type TransactionsPage struct {
 	transactions    []sharedW.Transaction
 	wallets         []sharedW.Asset
 
-	dcrImpl *dcr.DCRAsset
-
 	tabs *cryptomaterial.ClickableList
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if impl == nil {
-		log.Error("Only DCR implementation is supported")
-		return nil
-	}
-
 	pg := &TransactionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
@@ -76,7 +68,6 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 		},
 		separator:       l.Theme.Separator(),
 		transactionList: l.Theme.NewClickableList(layout.Vertical),
-		dcrImpl:         impl,
 	}
 
 	pg.tabs = l.Theme.NewClickableList(layout.Horizontal)
@@ -163,37 +154,19 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	stakingTxCount, _ := pg.WL.SelectedWallet.Wallet.CountTransactions(dcr.TxFilterStaking)
 
 	items := []cryptomaterial.DropDownItem{
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrAll), txCount),
-		},
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrSent), sentTxCount),
-		},
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrReceived), receivedTxCount),
-		},
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrTransferred), transferredTxCount),
-		},
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrMixed), mixedTxCount),
-		},
-		{
-			Text: fmt.Sprintf("%s (%d)", values.String(values.StrStaking), stakingTxCount),
-		},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrAll), txCount)},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrSent), sentTxCount)},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrReceived), receivedTxCount)},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrTransferred), transferredTxCount)},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrMixed), mixedTxCount)},
+		{Text: fmt.Sprintf("%s (%d)", values.String(values.StrStaking), stakingTxCount)},
 	}
 
 	if pg.selectedTabIndex == 1 {
 		items = []cryptomaterial.DropDownItem{
-			{
-				Text: values.String(values.StrAll),
-			},
-			{
-				Text: values.String(values.StrVote),
-			},
-			{
-				Text: values.String(values.StrRevocation),
-			},
+			{Text: values.String(values.StrAll)},
+			{Text: values.String(values.StrVote)},
+			{Text: values.String(values.StrRevocation)},
 		}
 	}
 
@@ -424,7 +397,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 		return
 	}
 	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -439,7 +412,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

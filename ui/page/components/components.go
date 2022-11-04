@@ -316,7 +316,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if row.Transaction.Type == dcr.TxTypeRegular {
-						amount := dcrutil.Amount(row.Transaction.Amount).String()
+						amount := row.Transaction.Amount.String()
 						if row.Transaction.Direction == dcr.TxDirectionSent && !strings.Contains(amount, "-") {
 							amount = "-" + amount
 						}

@@ -25,7 +25,7 @@ func (asset *DCRAsset) TotalStakingRewards() (int64, error) {
 
 	var totalRewards int64
 	for _, tx := range voteTransactions {
-		totalRewards += tx.VoteReward
+		totalRewards += tx.VoteReward.ToInt()
 	}
 
 	return totalRewards, nil
