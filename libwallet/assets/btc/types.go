@@ -34,12 +34,12 @@ func (a BTCAmount) MarshalJSON() ([]byte, error) {
 	return json.Marshal(btcutil.Amount(a))
 }
 
-func (a *BTCAmount) UnmarshalJSON(data []byte) error {
-	var s btcutil.Amount
+func (a BTCAmount) UnmarshalJSON(data []byte) error {
+	var s int64
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	*a = BTCAmount(s)
+	a = BTCAmount(s)
 	return nil
 }
 

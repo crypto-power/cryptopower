@@ -16,6 +16,7 @@ type AssetAmount interface {
 	MulF64(f float64) AssetAmount
 	// ToInt() returns the complete int64 value without formatting.
 	ToInt() int64
+	UnmarshalJSON(data []byte) error
 }
 
 // WalletConfig defines options for configuring wallet behaviour.

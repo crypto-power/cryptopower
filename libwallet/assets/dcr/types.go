@@ -40,12 +40,12 @@ func (a DCRAmount) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dcrutil.Amount(a))
 }
 
-func (a *DCRAmount) UnmarshalJSON(data []byte) error {
-	var s dcrutil.Amount
+func (a DCRAmount) UnmarshalJSON(data []byte) error {
+	var s int64
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	*a = DCRAmount(s)
+	a = DCRAmount(s)
 	return nil
 }
 

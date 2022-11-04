@@ -3,6 +3,7 @@ package btc
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -74,6 +75,20 @@ func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 
 func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
 	return txhelper.TxDirectionInvalid != asset.btcSupportedTxFilter(txFilter)
+}
+
+func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
+	transactions, err := asset.filterTxs(offset, limit, txFilter, newestFirst)
+	if err != nil {
+		return "", err
+	}
+
+	jsonEncodedTransactions, err := json.Marshal(&transactions)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonEncodedTransactions), nil
 }
 
 func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
