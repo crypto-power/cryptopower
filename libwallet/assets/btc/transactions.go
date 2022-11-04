@@ -20,7 +20,7 @@ import (
 // UnMinedTxHeight defines the height of the txs
 const UnMinedTxHeight int32 = -1
 
-// txCache helps to cache the transac
+// txCache helps to cache the transactions fetched.
 type txCache struct {
 	blockHeight int32
 
@@ -36,9 +36,8 @@ func (asset *BTCAsset) PublishUnminedTransactions() error {
 		return utils.ErrBTCNotInitialized
 	}
 
-	// Trigger the mempool txs to be updated if they are outdated
-	_, err := asset.getTransactionsRaw(0, 0, true)
-	if err != nil {
+	// Triggers the mempool txs updated if they are outdated
+	if _, err := asset.getTransactionsRaw(0, 0, true); err != nil {
 		return err
 	}
 
@@ -186,7 +185,7 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 	asset.txs.blockHeight = asset.GetBestBlockHeight()
 	asset.txs.mu.Unlock()
 
-	// Return the unmined and the mined txs.
+	// Return the summation of unmined and the mined txs.
 	return append(unminedTxs, minedTxs...), nil
 }
 
@@ -205,7 +204,10 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 		txHex := fmt.Sprintf("%x", rawtx.Transaction)
 		decodedTx, _ := asset.decodeTxHex(txHex)
 		txSize := decodedTx.SerializeSize()
+
+		//TODO: Check why tx fee returned is zero despite int not being zero on the explorer
 		feeRate := rawtx.Fee * 1000 / btcutil.Amount(txSize)
+
 		// BTC transactions are either coinbase or regular txs.
 		txType := txhelper.TxTypeRegular
 		if blockchain.IsCoinBaseTx(decodedTx) {

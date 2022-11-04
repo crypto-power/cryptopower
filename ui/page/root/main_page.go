@@ -931,9 +931,9 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 // postDdesktopNotification posts notifications to the desktop.
 func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
-	wal := mp.WL.SelectedWallet.Wallet
 	switch t := notifier.(type) {
 	case wallet.NewTransaction:
+		wal := mp.WL.SelectedWallet.Wallet
 		switch t.Transaction.Type {
 		case dcr.TxTypeRegular:
 			if t.Transaction.Direction != dcr.TxDirectionReceived {
