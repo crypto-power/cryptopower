@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 
@@ -33,6 +34,19 @@ func (a DCRAmount) MulF64(f float64) sharedW.AssetAmount {
 // ToInt return the original unformatted amount DCRs
 func (a DCRAmount) ToInt() int64 {
 	return int64(dcrutil.Amount(a))
+}
+
+func (a DCRAmount) MarshalJSON() ([]byte, error) {
+	return json.Marshal(dcrutil.Amount(a))
+}
+
+func (a *DCRAmount) UnmarshalJSON(data []byte) error {
+	var s dcrutil.Amount
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	*a = DCRAmount(s)
+	return nil
 }
 
 const (
