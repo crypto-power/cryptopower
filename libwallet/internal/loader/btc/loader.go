@@ -179,7 +179,7 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 	}
 
 	// Import account into the newly created watch-only wallet.
-	// The first arguement to ImportAccount {default} will be the account when imported.
+	// The first argument to ImportAccount {default} will be the account when imported.
 	// It doesn't matter what the account name use to be on a previous wallet, it'll be imported as default.
 	addrType := waddrmgr.WitnessPubKey
 	_, err = wal.ImportAccount("default", extendedKety, extendedKety.ParentFingerprint(), &addrType)
