@@ -206,7 +206,6 @@ func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsumma
 		decodedTx, _ := asset.decodeTxHex(txHex)
 		txSize := decodedTx.SerializeSize()
 		feeRate := rawtx.Fee * 1000 / btcutil.Amount(txSize)
-
 		// BTC transactions are either coinbase or regular txs.
 		txType := txhelper.TxTypeRegular
 		if blockchain.IsCoinBaseTx(decodedTx) {

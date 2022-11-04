@@ -48,15 +48,12 @@ type TransactionsPage struct {
 	ctxCancel context.CancelFunc
 	separator cryptomaterial.Line
 
-	// selectedCategoryIndex int
 	selectedTabIndex int
-	// changed               bool
 
 	txTypeDropDown  *cryptomaterial.DropDown
 	transactionList *cryptomaterial.ClickableList
 	container       *widget.List
 	transactions    []sharedW.Transaction
-	// wallets         []sharedW.Asset
 
 	tabs *cryptomaterial.ClickableList
 }

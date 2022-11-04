@@ -15,6 +15,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -75,7 +76,6 @@ type TxDetailsPage struct {
 	ticketSpent   *sharedW.Transaction // ticket spent in a vote or revoke
 	txBackStack   *sharedW.Transaction // track original transaction
 	wallet        sharedW.Asset
-	dcrImpl       *dcr.DCRAsset
 
 	moreItems  []moreItem
 	txnWidgets transactionWdg
@@ -89,12 +89,6 @@ type TxDetailsPage struct {
 }
 
 func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, isTicket bool) *TxDetailsPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	if impl == nil {
-		log.Error("Only DCR implementation is supported")
-		return nil
-	}
-
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -120,8 +114,6 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, i
 		moreOption:                l.Theme.NewClickable(false),
 		shadowBox:                 l.Theme.Shadow(),
 
-		dcrImpl: impl,
-
 		transaction:          transaction,
 		wallet:               l.WL.SelectedWallet.Wallet,
 		rebroadcast:          rebroadcast,
@@ -142,7 +134,6 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, i
 func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 	// find source account
 	for _, input := range pg.transaction.Inputs {
-		fmt.Println(input.AccountNumber, "input.AccountNumber")
 		if input.AccountNumber != -1 {
 			accountName, err := pg.wallet.AccountName(input.AccountNumber)
 			if err != nil {
@@ -155,23 +146,28 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 	}
 
 	// find destination address
+destinationAddrLoop:
 	for _, output := range pg.transaction.Outputs {
 		switch pg.transaction.Direction {
 		case dcr.TxDirectionSent:
 			// mixed account number
+			var mixedAcc int32 = -1
+			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
+				mixedAcc = pg.wallet.(*dcr.DCRAsset).UnmixedAccountNumber()
+			}
 			if pg.transaction.Type == dcr.TxTypeMixed &&
-				output.AccountNumber == pg.dcrImpl.UnmixedAccountNumber() {
+				output.AccountNumber == mixedAcc {
 				accountName, err := pg.wallet.AccountName(output.AccountNumber)
 				if err != nil {
 					log.Error(err)
 				} else {
 					pg.txDestinationAddress = accountName
 				}
-				break
+				break destinationAddrLoop
 			}
 			if output.AccountNumber == -1 {
 				pg.txDestinationAddress = output.Address
-				break
+				break destinationAddrLoop
 			}
 		case dcr.TxDirectionReceived:
 			if output.AccountNumber != -1 {
@@ -181,7 +177,7 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 				} else {
 					pg.txDestinationAddress = accountName
 				}
-				break
+				break destinationAddrLoop
 			}
 		}
 	}
@@ -192,27 +188,29 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedTo() {
-	// this tx is a vote transaction
-	if pg.transaction.TicketSpentHash != "" {
-		pg.ticketSpent, _ = pg.wallet.GetTransactionRaw(pg.transaction.TicketSpentHash)
-	}
+	if dcrImp, ok := pg.wallet.(*dcr.DCRAsset); ok {
+		// this tx is a vote transaction
+		if pg.transaction.TicketSpentHash != "" {
+			pg.ticketSpent, _ = pg.wallet.GetTransactionRaw(pg.transaction.TicketSpentHash)
+		}
 
-	if ok, _ := pg.dcrImpl.TicketHasVotedOrRevoked(pg.transaction.Hash); ok {
-		pg.ticketSpender, _ = pg.dcrImpl.TicketSpender(pg.transaction.Hash)
-	}
+		if ok, _ := dcrImp.TicketHasVotedOrRevoked(pg.transaction.Hash); ok {
+			pg.ticketSpender, _ = dcrImp.TicketSpender(pg.transaction.Hash)
+		}
 
-	if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterStaking) {
-		go func() {
-			info, err := pg.dcrImpl.VSPTicketInfo(pg.transaction.Hash)
-			if err != nil {
-				log.Errorf("VSPTicketInfo error: %v\n", err)
-			}
+		if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterStaking) {
+			go func() {
+				info, err := dcrImp.VSPTicketInfo(pg.transaction.Hash)
+				if err != nil {
+					log.Errorf("VSPTicketInfo error: %v\n", err)
+				}
 
-			pg.vspHost = values.String(values.StrNotAvailable)
-			if info != nil {
-				pg.vspHost = info.VSP
-			}
-		}()
+				pg.vspHost = values.String(values.StrNotAvailable)
+				if info != nil {
+					pg.vspHost = info.VSP
+				}
+			}()
+		}
 	}
 
 	pg.title = values.String(values.StrTransactionDetails)
@@ -313,7 +311,6 @@ func (pg *TxDetailsPage) layoutMobile(gtx C, body layout.Widget) D {
 }
 
 func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
-	wal := pg.WL.SelectedWallet.Wallet
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -358,10 +355,10 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 								col := pg.Theme.Color.GrayText2
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										title := wal.ToAmount(pg.transaction.Amount).String()
+										title := pg.wallet.ToAmount(pg.transaction.Amount).String()
 										switch pg.transaction.Type {
 										case dcr.TxTypeMixed:
-											title = wal.ToAmount(pg.transaction.MixDenomination).String()
+											title = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
 										case dcr.TxTypeRegular:
 											if pg.transaction.Direction == dcr.TxDirectionSent && !strings.Contains(title, "-") {
 												title = "-" + title
@@ -404,54 +401,55 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							col := pg.Theme.Color.GrayText2
 
-							switch pg.txnWidgets.txStatus.TicketStatus {
-							case dcr.TicketStatusImmature:
-								maturity := pg.dcrImpl.TicketMaturity()
-								blockTime := pg.wallet.TargetTimePerBlockMinutes()
-								maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
+							if dcrImpl, ok := pg.wallet.(*dcr.DCRAsset); ok {
+								switch pg.txnWidgets.txStatus.TicketStatus {
+								case dcr.TicketStatusImmature:
+									maturity := dcrImpl.TicketMaturity()
+									blockTime := pg.wallet.TargetTimePerBlockMinutes()
+									maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 
-								lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo,
-									pg.getTimeToMatureOrExpire(), maturity, maturityDuration.String()))
-								lbl.Color = col
-								return lbl.Layout(gtx)
+									lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo,
+										pg.getTimeToMatureOrExpire(), maturity, maturityDuration.String()))
+									lbl.Color = col
+									return lbl.Layout(gtx)
 
-							case dcr.TicketStatusLive:
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrLifeSpan)+": ")
-										lbl.Color = col
-										return lbl.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										expiry := pg.dcrImpl.TicketExpiry()
-										lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc,
-											expiry, pg.getTimeToMatureOrExpire(), expiry))
-										lbl.Color = col
-										return lbl.Layout(gtx)
-									}),
-								)
+								case dcr.TicketStatusLive:
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrLifeSpan)+": ")
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											expiry := dcrImpl.TicketExpiry()
+											lbl := pg.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc,
+												expiry, pg.getTimeToMatureOrExpire(), expiry))
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}),
+									)
 
-							case dcr.TicketStatusVotedOrRevoked:
-								if pg.ticketSpender != nil { // voted or revoked
-									if pg.ticketSpender.Type == dcr.TxTypeVote {
-										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
-												lbl.Color = col
-												return lbl.Layout(gtx)
-											}),
-											layout.Rigid(func(gtx C) D {
-												lbl := pg.Theme.Label(values.TextSize16, wal.ToAmount(pg.ticketSpender.VoteReward).String())
-												lbl.Color = col
-												return lbl.Layout(gtx)
-											}),
-										)
+								case dcr.TicketStatusVotedOrRevoked:
+									if pg.ticketSpender != nil { // voted or revoked
+										if pg.ticketSpender.Type == dcr.TxTypeVote {
+											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
+													lbl.Color = col
+													return lbl.Layout(gtx)
+												}),
+												layout.Rigid(func(gtx C) D {
+													lbl := pg.Theme.Label(values.TextSize16, pg.wallet.ToAmount(pg.ticketSpender.VoteReward).String())
+													lbl.Color = col
+													return lbl.Layout(gtx)
+												}),
+											)
+										}
 									}
+									return D{}
 								}
-								return D{}
-							default:
-								return D{}
 							}
+							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
 							if pg.transaction.BlockHeight == -1 {
@@ -493,17 +491,20 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 }
 
 func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
-	progressMax := pg.dcrImpl.TicketMaturity()
-	if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusLive {
-		progressMax = pg.dcrImpl.TicketExpiry()
-	}
+	var progress float32
+	if dcrImpl, ok := pg.wallet.(*dcr.DCRAsset); ok {
+		progressMax := dcrImpl.TicketMaturity()
+		if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusLive {
+			progressMax = dcrImpl.TicketExpiry()
+		}
 
-	confs := dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.transaction)
-	if pg.ticketSpender != nil {
-		confs = dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.ticketSpender)
-	}
+		confs := dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.transaction)
+		if pg.ticketSpender != nil {
+			confs = dcr.Confirmations(pg.wallet.GetBestBlockHeight(), *pg.ticketSpender)
+		}
 
-	progress := (float32(confs) / float32(progressMax)) * 100
+		progress = (float32(confs) / float32(progressMax)) * 100
+	}
 	return int(progress)
 }
 
@@ -592,14 +593,13 @@ func (pg *TxDetailsPage) associatedTicket(gtx C) D {
 func (pg *TxDetailsPage) txConfirmations() int32 {
 	transaction := pg.transaction
 	if transaction.BlockHeight != -1 {
-		return (pg.WL.SelectedWallet.Wallet.GetBestBlockHeight() - transaction.BlockHeight) + 1
+		return (pg.wallet.GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0
 }
 
 func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
-	wal := pg.WL.SelectedWallet.Wallet
 	transaction := pg.transaction
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -655,7 +655,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				return D{}
 			}
 
-			amount := wal.ToAmount(pg.transaction.Amount).String()
+			amount := pg.wallet.ToAmount(pg.transaction.Amount).String()
 			if pg.transaction.Type == dcr.TxTypeMixed {
 				amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
 			} else if pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction == dcr.TxDirectionSent {
@@ -666,7 +666,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			// revocation and vote transaction reward
 			if pg.transaction.Type == dcr.TxTypeVote {
-				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, wal.ToAmount(pg.transaction.VoteReward).String()).Layout)
+				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, pg.wallet.ToAmount(pg.transaction.VoteReward).String()).Layout)
 			}
 			return D{}
 		}),
@@ -749,7 +749,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, wal.ToAmount(transaction.Fee).String()).Layout)
+			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, pg.wallet.ToAmount(transaction.Fee).String()).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide section for non ticket transactions
@@ -950,7 +950,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 	if pg.rebroadcastClickable.Clicked() {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
-			if !pg.Load.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
+			if !pg.wallet.IsConnectedToNetwork() {
 				// if user is not conected to the network, notify the user
 				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)
