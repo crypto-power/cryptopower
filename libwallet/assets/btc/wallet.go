@@ -2,7 +2,6 @@ package btc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -335,7 +334,7 @@ func (asset *BTCAsset) SetSpecificPeer(address string) {
 func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset == nil {
-		return "", fmt.Errorf("btc asset not initialised")
+		return "", utils.ErrBTCNotInitialized
 	}
 
 	extendedPublicKey, err := loadedAsset.AccountProperties(asset.GetScope(), uint32(account))
@@ -352,7 +351,6 @@ func (asset *BTCAsset) AccountXPubMatches(account uint32, xPub string) (bool, er
 	if err != nil {
 		return false, err
 	}
-	acctXPub := acctXPubKey.AccountPubKey.String()
 
-	return acctXPub == xPub, nil
+	return acctXPubKey.AccountPubKey.String() == xPub, nil
 }

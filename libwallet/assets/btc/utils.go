@@ -77,7 +77,7 @@ func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, pa
 		}
 	}
 
-	pubVersionBytes := make([]byte, 4)
+	pubVersionBytes := make([]byte, len(params.HDPublicKeyID))
 	copy(pubVersionBytes, params.HDPublicKeyID[:])
 
 	switch params.Name {
@@ -90,7 +90,7 @@ func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, pa
 		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
 			waddrmgr.HDVersionMainNetBIP0084,
 		))
-	case chaincfg.SigNetParams.Name:
+	case chaincfg.SimNetParams.Name:
 		binary.BigEndian.PutUint32(pubVersionBytes, uint32(
 			waddrmgr.HDVersionSimNetBIP0044,
 		))

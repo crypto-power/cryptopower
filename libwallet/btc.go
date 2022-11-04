@@ -87,21 +87,21 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 			return -1, errors.Errorf("wallet %d is not open and cannot be checked", wallet.GetWalletID())
 		}
 
+		wAccs, err := wallet.GetAccountsRaw()
+		if err != nil {
+			return -1, err
+		}
+
 		asset, ok := wallet.(*btc.BTCAsset)
 		if !ok {
 			return -1, fmt.Errorf("invalid asset type")
-		}
-
-		wAccs, err := asset.GetAccountsRaw()
-		if err != nil {
-			return -1, err
 		}
 
 		for _, accs := range wAccs.Accounts {
 			if accs.AccountNumber == btc.ImportedAccountNumber {
 				continue
 			}
-			acctXPubKey, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
+			acctXPubKey, err := wallet.Internal().BTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
 			if err != nil {
 				return -1, err
 			}
@@ -132,7 +132,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 			return -1, fmt.Errorf("invalid asset type")
 		}
 
-		wAccs, err := asset.GetAccountsRaw()
+		wAccs, err := wallet.GetAccountsRaw()
 		if err != nil {
 			return -1, err
 		}
