@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/btcsuite/btcwallet/waddrmgr"
 	"github.com/btcsuite/btcwallet/wallet"
+	"github.com/btcsuite/btcwallet/walletdb"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
@@ -148,7 +151,37 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 
 	wal, err := ldr.CreateNewWatchingOnlyWallet(params.PubPassphrase, time.Now().UTC())
 	if err != nil {
-		log.Errorf("Failed to create watch only btc wallet: %v", err)
+		return nil, err
+	}
+
+	// Newly created watch-only wallets is missing scope information.
+	// Update wallet DB with scope data.
+	err = walletdb.Update(wal.Database(), func(tx walletdb.ReadWriteTx) error {
+		ns := tx.ReadWriteBucket([]byte("waddrmgr"))
+		for scope, schema := range waddrmgr.ScopeAddrMap {
+			_, err := wal.Manager.NewScopedKeyManager(
+				ns, scope, schema,
+			)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create extended key from the xpub string.
+	extendedKety, err := hdkeychain.NewKeyFromString(params.ExtendedPubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Import account into the newly created watch-only wallet.
+	addrType := waddrmgr.WitnessPubKey
+	_, err = wal.ImportAccount("default", extendedKety, extendedKety.ParentFingerprint(), &addrType)
+	if err != nil {
 		return nil, err
 	}
 
