@@ -151,7 +151,9 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}
 
 	items := []cryptomaterial.DropDownItem{}
-	for name, fieldtype := range components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex) {
+	mapinfo, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+	for _, name := range keysinfo {
+		fieldtype := mapinfo[name]
 		item := cryptomaterial.DropDownItem{}
 		if pg.selectedTabIndex == 0 {
 			item.Text = fmt.Sprintf("%s (%d)", name, countfn(fieldtype))
@@ -166,14 +168,14 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 
 func (pg *TransactionsPage) loadTransactions() {
 	wal := pg.WL.SelectedWallet.Wallet
-	filterTypes := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
-	if len(filterTypes) < 1 {
+	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+	if len(mapinfo) < 1 {
 		log.Warnf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
 		return
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
-	txFilter, ok := filterTypes[selectedVal]
+	txFilter, ok := mapinfo[selectedVal]
 	if !ok {
 		log.Warnf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)

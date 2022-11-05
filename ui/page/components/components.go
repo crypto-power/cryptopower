@@ -527,19 +527,26 @@ func TimeFormat(secs int, long bool) string {
 }
 
 // TxPageDropDownFields returns the fields for the required drop down with the
-// transactions view page.
-func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) map[string]int32 {
+// transactions view page. Since maps access of items order is always random
+// an array of keys is provided guarrantee the dropdown order will always be
+// maintained.
+func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[string]int32, keysInfo []string) {
 	switch {
 	case wType == libutils.BTCWalletAsset && tabIndex == 0:
 		// BTC Transactions Activities dropdown fields.
-		return map[string]int32{
+		mapInfo = map[string]int32{
 			values.String(values.StrAll):      libutils.TxFilterAll,
 			values.String(values.StrSent):     libutils.TxFilterSent,
 			values.String(values.StrReceived): libutils.TxFilterReceived,
 		}
+		keysInfo = []string{
+			values.String(values.StrAll),
+			values.String(values.StrSent),
+			values.String(values.StrReceived),
+		}
 	case wType == libutils.DCRWalletAsset && tabIndex == 0:
 		// DCR Transactions Activities dropdown fields.
-		return map[string]int32{
+		mapInfo = map[string]int32{
 			values.String(values.StrAll):         libutils.TxFilterAll,
 			values.String(values.StrSent):        libutils.TxFilterSent,
 			values.String(values.StrReceived):    libutils.TxFilterReceived,
@@ -547,16 +554,28 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) map[string]int
 			values.String(values.StrMixed):       libutils.TxFilterMixed,
 			values.String(values.StrStaking):     libutils.TxFilterStaking,
 		}
+		keysInfo = []string{
+			values.String(values.StrAll),
+			values.String(values.StrSent),
+			values.String(values.StrReceived),
+			values.String(values.StrTransferred),
+			values.String(values.StrMixed),
+			values.String(values.StrStaking),
+		}
 	case wType == libutils.DCRWalletAsset && tabIndex == 1:
 		// DCR staking Activities dropdown fields.
-		return map[string]int32{
+		mapInfo = map[string]int32{
 			values.String(values.StrAll):        libutils.TxFilterVoted,
 			values.String(values.StrVote):       libutils.TxFilterRevoked,
 			values.String(values.StrRevocation): libutils.TxFilterStaking,
 		}
-	default:
-		return map[string]int32{}
+		keysInfo = []string{
+			values.String(values.StrAll),
+			values.String(values.StrVote),
+			values.String(values.StrRevocation),
+		}
 	}
+	return
 }
 
 // CoinImageBySymbol returns image widget for supported asset coins.
