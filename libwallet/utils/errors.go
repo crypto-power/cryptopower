@@ -47,8 +47,9 @@ const (
 )
 
 var (
-	ErrInvalidNet   = errors.New("invalid network type found")
-	ErrAssetUnknown = errors.New("unknown asset found")
+	ErrInvalidNet        = errors.New("invalid network type found")
+	ErrAssetUnknown      = errors.New("unknown asset found")
+	ErrBTCNotInitialized = errors.New("btc asset not initialized")
 )
 
 // todo, should update this method to translate more error kinds.

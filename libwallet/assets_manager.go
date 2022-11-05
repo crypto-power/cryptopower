@@ -442,3 +442,14 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 		return nil, errors.New("wallet not support")
 	}
 }
+
+func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string) (int, error) {
+	switch walletType {
+	case utils.DCRWalletAsset:
+		return mgr.DCRWalletWithXPub(xPub)
+	case utils.BTCWalletAsset:
+		return mgr.BTCWalletWithXPub(xPub)
+	default:
+		return -1, utils.ErrAssetUnknown
+	}
+}

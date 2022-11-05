@@ -1,6 +1,8 @@
 package root
 
 import (
+	"errors"
+
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -567,8 +569,27 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	// imported wallet click action control
 	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
 		pg.showLoader = true
+		var err error
 		go func() {
-			_, err := pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+			switch pg.selectedWalletType {
+			case 0:
+				var walletWithXPub int
+				walletWithXPub, err = pg.WL.MultiWallet.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				if walletWithXPub == -1 {
+					_, err = pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+				} else {
+					err = errors.New(values.String(values.StrXpubWalletExist))
+				}
+			case 1:
+				var walletWithXPub int
+				walletWithXPub, err = pg.WL.MultiWallet.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				if walletWithXPub == -1 {
+					_, err = pg.WL.MultiWallet.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+				} else {
+					err = errors.New(values.String(values.StrXpubWalletExist))
+				}
+			}
+
 			if err != nil {
 				if err.Error() == libutils.ErrExist {
 					pg.watchOnlyWalletHex.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
