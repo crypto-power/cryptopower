@@ -6,10 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"gioui.org/op"
-
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -22,7 +21,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
-	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 const (
@@ -657,7 +655,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 
 			amount := pg.wallet.ToAmount(pg.transaction.Amount).String()
 			if pg.transaction.Type == dcr.TxTypeMixed {
-				amount = dcrutil.Amount(pg.transaction.MixDenomination).String()
+				amount = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
 			} else if pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction == dcr.TxDirectionSent {
 				amount = "-" + amount
 			}
@@ -835,7 +833,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 	}
 
 	accountName = fmt.Sprintf("(%s)", accountName)
-	amt := dcrutil.Amount(amount).String()
+	amt := pg.wallet.ToAmount(amount).String()
 
 	return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 		card := pg.Theme.Card()
@@ -969,7 +967,8 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 				errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)
 			} else {
-				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrRepublished), modal.DefaultClickFunc())
+				title := values.StringF(values.StrRepublished, pg.wallet.GetAssetType().ToFull())
+				infoModal := modal.NewSuccessModal(pg.Load, title, modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(infoModal)
 			}
 			if !pg.rebroadcastClickable.Enabled() {

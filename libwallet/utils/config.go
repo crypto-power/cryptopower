@@ -56,6 +56,18 @@ func (str AssetType) ToString() string {
 	return strings.ToLower(string(str))
 }
 
+// ToFull returns the full network name of the provided asset.
+func (str AssetType) ToFull() string {
+	switch str {
+	case BTCWalletAsset:
+		return "Bitcoin"
+	case DCRWalletAsset:
+		return "Decred"
+	default:
+		return "Unknown"
+	}
+}
+
 // ExtractDateOrTime returns the date represented by the timestamp as a date string
 // if the timestamp is over 24 hours ago. Otherwise, the time alone is returned as a string.
 func ExtractDateOrTime(timestamp int64) string {
