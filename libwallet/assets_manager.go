@@ -428,7 +428,7 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 	case utils.DCRWalletAsset:
 		return mgr.DCRWalletWithSeed(seedMnemonic)
 	default:
-		return -1, errors.New("wallet not support")
+		return -1, utils.ErrAssetUnknown
 	}
 }
 
@@ -439,7 +439,7 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 	case utils.DCRWalletAsset:
 		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
 	default:
-		return nil, errors.New("wallet not support")
+		return nil, utils.ErrAssetUnknown
 	}
 }
 
