@@ -208,7 +208,7 @@ const EN = `
 "reward" = "Reward";
 "viewTicket" = "View associated ticket";
 "external" = "External"
-"republished" = "Republished unmined transactions to the decred network";
+"republished" = "Republished unmined transactions to the %s network";
 "copied" = "Copied!";
 "txHashCopied" = "Transaction Hash copied";
 "addressCopied" = "Address copied";
@@ -585,4 +585,5 @@ const EN = `
 "addressDiscoveryStarted" = "Address discovery started successfully"
 "addressDiscoveryStartedBody"    = "See wallet information page for progress"
 "setGapLimit"             = "Set Gap Limit"
+"explorerURL" = "Explorer URL for %v Asset"
 `

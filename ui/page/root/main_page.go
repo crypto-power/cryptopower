@@ -438,6 +438,23 @@ func (mp *MainPage) HandleUserInteractions() {
 		mp.setNavExpanded()
 	}
 
+	displayPage := func(pg app.Page) {
+		// check if wallet is synced and clear stack
+		if mp.ID() == send.SendPageID || mp.ID() == ReceivePageID {
+			if mp.WL.SelectedWallet.Wallet.IsSynced() {
+				mp.Display(pg)
+			} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
+				mp.ParentWindow().ShowModal(errModal)
+			} else {
+				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
+				mp.ParentWindow().ShowModal(errModal)
+			}
+		} else {
+			mp.Display(pg)
+		}
+	}
+
 	for _, item := range mp.drawerNav.DCRDrawerNavItems {
 		for item.Clickable.Clicked() {
 			var pg app.Page
@@ -477,20 +494,7 @@ func (mp *MainPage) HandleUserInteractions() {
 				continue
 			}
 
-			// check if wallet is synced and clear stack
-			if mp.ID() == send.SendPageID || mp.ID() == ReceivePageID {
-				if mp.WL.SelectedWallet.Wallet.IsSynced() {
-					mp.Display(pg)
-				} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
-					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
-					mp.ParentWindow().ShowModal(errModal)
-				} else {
-					errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
-					mp.ParentWindow().ShowModal(errModal)
-				}
-			} else {
-				mp.Display(pg)
-			}
+			displayPage(pg)
 		}
 	}
 
@@ -501,9 +505,17 @@ func (mp *MainPage) HandleUserInteractions() {
 			case BTCWalletSettingsPageID:
 				pg = NewBTCWalletSettingsPage(mp.Load)
 			case ReceivePageID:
-				pg = NewReceivePage(mp.Load)
+				if mp.isSynced() {
+					pg = NewReceivePage(mp.Load)
+				}
 			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load)
+				if mp.isSynced() {
+					pg = send.NewSendPage(mp.Load)
+				}
+			case transaction.TransactionsPageID:
+				if mp.isSynced() {
+					pg = transaction.NewTransactionsPage(mp.Load)
+				}
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			}
@@ -511,7 +523,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			if pg == nil || mp.ID() == mp.CurrentPageID() {
 				continue
 			}
-			mp.Display(pg)
+			displayPage(pg)
 		}
 	}
 
@@ -534,7 +546,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			}
 
 			// clear stack
-			mp.Display(pg)
+			displayPage(pg)
 		}
 	}
 

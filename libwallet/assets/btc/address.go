@@ -82,7 +82,7 @@ func (asset *BTCAsset) CurrentAddress(account int32) (string, error) {
 
 	addr, err := asset.Internal().BTC.CurrentAddress(uint32(account), asset.GetScope())
 	if err != nil {
-		log.Errorf("CurrentAddress error: %w", err)
+		log.Errorf("CurrentAddress error: %v", err)
 		return "", err
 	}
 	return addr.String(), nil

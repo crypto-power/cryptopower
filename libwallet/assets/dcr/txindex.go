@@ -2,7 +2,7 @@ package dcr
 
 import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
@@ -68,7 +68,7 @@ func (asset *DCRAsset) IndexTransactions() error {
 	endBlock := w.NewBlockIdentifierFromHeight(endHeight)
 
 	defer func() {
-		count, err := asset.GetWalletDataDb().Count(walletdata.TxFilterAll, asset.RequiredConfirmations(), endHeight, &sharedW.Transaction{})
+		count, err := asset.GetWalletDataDb().Count(utils.TxFilterAll, asset.RequiredConfirmations(), endHeight, &sharedW.Transaction{})
 		if err != nil {
 			log.Errorf("[%d] Post-indexing tx count error :%v", asset.ID, err)
 		} else if count > 0 {

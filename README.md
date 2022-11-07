@@ -4,7 +4,7 @@ A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 ## Building
 
-Note: You need to have [Go 1.16](https://golang.org/dl/) or above to build.
+Note: You need to have [Go 1.19](https://golang.org/dl/) or above to build.
 
 Then `go build`.
 

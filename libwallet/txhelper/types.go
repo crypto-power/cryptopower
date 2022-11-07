@@ -5,6 +5,7 @@ const (
 	TxDirectionSent        int32 = 0
 	TxDirectionReceived    int32 = 1
 	TxDirectionTransferred int32 = 2
+	TxDirectionAll         int32 = 3
 
 	TxTypeRegular        = "Regular"
 	TxTypeMixed          = "Mixed"
