@@ -47,6 +47,11 @@ const (
 	TxFilterUnmined     int32 = 12
 	TxFilterExpired     int32 = 13
 	TxFilterTickets     int32 = 14
+
+	TypeFilter          = "Type"
+	DirectionFilter     = "Direction"
+	HeightFilter        = "BlockHeight"
+	TicketSpenderFilter = "TicketSpender"
 )
 
 // Stringer used in generating the directory path where the lowercase of the

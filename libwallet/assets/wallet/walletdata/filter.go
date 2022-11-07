@@ -17,79 +17,79 @@ func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (
 	switch txFilter {
 	case utils.TxFilterSent:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeRegular),
-			q.Eq("Direction", txhelper.TxDirectionSent),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeRegular),
+			q.Eq(utils.DirectionFilter, txhelper.TxDirectionSent),
 		)
 	case utils.TxFilterReceived:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeRegular),
-			q.Eq("Direction", txhelper.TxDirectionReceived),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeRegular),
+			q.Eq(utils.DirectionFilter, txhelper.TxDirectionReceived),
 		)
 	case utils.TxFilterTransferred:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeRegular),
-			q.Eq("Direction", txhelper.TxDirectionTransferred),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeRegular),
+			q.Eq(utils.DirectionFilter, txhelper.TxDirectionTransferred),
 		)
 	case utils.TxFilterStaking:
 		query = db.walletDataDB.Select(
 			q.Or(
-				q.Eq("Type", txhelper.TxTypeTicketPurchase),
-				q.Eq("Type", txhelper.TxTypeVote),
-				q.Eq("Type", txhelper.TxTypeRevocation),
+				q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
+				q.Eq(utils.TypeFilter, txhelper.TxTypeVote),
+				q.Eq(utils.TypeFilter, txhelper.TxTypeRevocation),
 			),
 		)
 	case utils.TxFilterCoinBase:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeCoinBase),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeCoinBase),
 		)
 	case utils.TxFilterRegular:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeRegular),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeRegular),
 		)
 	case utils.TxFilterMixed:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeMixed),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeMixed),
 		)
 	case utils.TxFilterVoted:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeVote),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeVote),
 		)
 	case utils.TxFilterRevoked:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeRevocation),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeRevocation),
 		)
 	case utils.TxFilterImmature:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeTicketPurchase),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
 			q.And(
-				q.Gt("BlockHeight", maturityBlock),
+				q.Gt(utils.HeightFilter, maturityBlock),
 			),
 		)
 	case utils.TxFilterLive:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeTicketPurchase),
-			q.Eq("TicketSpender", ""),           // not spent by a vote or revoke
-			q.Gt("BlockHeight", 0),              // mined
-			q.Lte("BlockHeight", maturityBlock), // must be matured
-			q.Gt("BlockHeight", expiryBlock),    // not expired
+			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
+			q.Eq(utils.TicketSpenderFilter, ""),      // not spent by a vote or revoke
+			q.Gt(utils.HeightFilter, 0),              // mined
+			q.Lte(utils.HeightFilter, maturityBlock), // must be matured
+			q.Gt(utils.HeightFilter, expiryBlock),    // not expired
 		)
 	case utils.TxFilterUnmined:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeTicketPurchase),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
 			q.Or(
-				q.Eq("BlockHeight", -1),
+				q.Eq(utils.HeightFilter, -1),
 			),
 		)
 	case utils.TxFilterExpired:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeTicketPurchase),
-			q.Eq("TicketSpender", ""), // not spent by a vote or revoke
-			q.Gt("BlockHeight", 0),    // mined
-			q.Lte("BlockHeight", expiryBlock),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
+			q.Eq(utils.TicketSpenderFilter, ""), // not spent by a vote or revoke
+			q.Gt(utils.HeightFilter, 0),         // mined
+			q.Lte(utils.HeightFilter, expiryBlock),
 		)
 	case utils.TxFilterTickets:
 		query = db.walletDataDB.Select(
-			q.Eq("Type", txhelper.TxTypeTicketPurchase),
+			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
 		)
 	default:
 		query = db.walletDataDB.Select(
