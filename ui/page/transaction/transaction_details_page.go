@@ -27,7 +27,6 @@ import (
 const (
 	TransactionDetailsPageID = "TransactionDetails"
 	viewBlockID              = "viewBlock"
-	copyBlockID              = "copyBlock"
 )
 
 type transactionWdg struct {
@@ -227,11 +226,6 @@ func (pg *TxDetailsPage) getMoreItem() []moreItem {
 			text:   values.String(values.StrViewOnExplorer),
 			button: pg.Theme.NewClickable(true),
 			id:     viewBlockID,
-		},
-		{
-			text:   values.String(values.StrCopyBlockLink),
-			button: pg.Theme.NewClickable(true),
-			id:     copyBlockID,
 		},
 	}
 }
@@ -874,6 +868,25 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 	})
 }
 
+func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clickable) {
+	redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
+	if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
+		redirectURL = pg.WL.Wallet.GetBTCBlockExplorerURL(pg.transaction.Hash)
+	}
+
+	info := modal.NewCustomModal(pg.Load).
+		Title(values.StringF(values.StrExplorerURL, pg.wallet.GetAssetType().ToFull())).
+		Body(values.String(values.StrCopyLink)).
+		SetCancelable(true).
+		UseCustomWidget(func(gtx C) D {
+			return components.BrowserURLWidget(gtx, pg.Load, redirectURL, copyredirect)
+		}).
+		SetPositiveButtonText(values.String(values.StrGotIt))
+
+	pg.moreOptionIsOpen = false
+	pg.ParentWindow().ShowModal(info)
+}
+
 func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 	inset := layout.Inset{
 		Left: values.MarginPaddingMinus145,
@@ -891,18 +904,11 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
-									if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
-										redirectURL = pg.WL.Wallet.GetBTCBlockExplorerURL(pg.transaction.Hash)
-									}
+
 									if pg.moreItems[i].button.Clicked() {
 										switch pg.moreItems[i].id {
-										case copyBlockID: // copy the redirect url
-											clipboard.WriteOp{Text: redirectURL}.Add(gtx.Ops)
-											pg.Toast.Notify(values.String(values.StrCopied))
-											pg.moreOptionIsOpen = false
 										case viewBlockID: // redirect to browser
-											components.GoToURL(redirectURL)
+											pg.showbrowserURLModal(pg.moreItems[i].button)
 											pg.moreOptionIsOpen = false
 										default:
 										}
@@ -976,18 +982,6 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 				pg.rebroadcastClickable.SetEnabled(true, nil)
 			}
 		}()
-	}
-
-	redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
-	if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
-		redirectURL = pg.WL.Wallet.GetBTCBlockExplorerURL(pg.transaction.Hash)
-	}
-	for _, menu := range pg.moreItems {
-		if menu.button.Clicked() && menu.id == viewBlockID {
-			components.GoToURL(redirectURL)
-			pg.moreOptionIsOpen = false
-			break
-		}
 	}
 }
 

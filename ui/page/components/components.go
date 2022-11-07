@@ -13,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/unit"
+	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -644,4 +646,42 @@ func divMod(numerator, denominator int64) (quotient, remainder int64) {
 	quotient = numerator / denominator // integer division, decimals are truncated
 	remainder = numerator % denominator
 	return
+}
+
+func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomaterial.Clickable) D {
+	return layout.Stack{}.Layout(gtx,
+		layout.Stacked(func(gtx C) D {
+			border := widget.Border{Color: l.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+			wrapper := l.Theme.Card()
+			wrapper.Color = l.Theme.Color.Gray4
+			return border.Layout(gtx, func(gtx C) D {
+				return wrapper.Layout(gtx, func(gtx C) D {
+					return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Flexed(0.9, l.Theme.Body1(url).Layout),
+							layout.Flexed(0.1, func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									if copyRedirect.Clicked() {
+										clipboard.WriteOp{Text: url}.Add(gtx.Ops)
+										l.Toast.Notify(values.String(values.StrCopied))
+									}
+									return copyRedirect.Layout(gtx, l.Theme.Icons.CopyIcon.Layout24dp)
+								})
+							}),
+						)
+					})
+				})
+			})
+		}),
+		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{
+				Top:  values.MarginPaddingMinus10,
+				Left: values.MarginPadding10,
+			}.Layout(gtx, func(gtx C) D {
+				label := l.Theme.Body2(values.String(values.StrWebURL))
+				label.Color = l.Theme.Color.GrayText2
+				return label.Layout(gtx)
+			})
+		}),
+	)
 }

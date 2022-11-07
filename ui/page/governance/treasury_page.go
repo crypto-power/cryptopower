@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"time"
 
-	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -113,41 +112,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 			Body(values.String(values.StrCopyLink)).
 			SetCancelable(true).
 			UseCustomWidget(func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Stacked(func(gtx C) D {
-						border := widget.Border{Color: pg.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-						wrapper := pg.Theme.Card()
-						wrapper.Color = pg.Theme.Color.Gray4
-						return border.Layout(gtx, func(gtx C) D {
-							return wrapper.Layout(gtx, func(gtx C) D {
-								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									return layout.Flex{}.Layout(gtx,
-										layout.Flexed(0.9, pg.Theme.Body1(host).Layout),
-										layout.Flexed(0.1, func(gtx C) D {
-											return layout.E.Layout(gtx, func(gtx C) D {
-												if pg.copyRedirectURL.Clicked() {
-													clipboard.WriteOp{Text: host}.Add(gtx.Ops)
-													pg.Toast.Notify(values.String(values.StrCopied))
-												}
-												return pg.copyRedirectURL.Layout(gtx, pg.Theme.Icons.CopyIcon.Layout24dp)
-											})
-										}),
-									)
-								})
-							})
-						})
-					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-						return layout.Inset{
-							Top:  values.MarginPaddingMinus10,
-							Left: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							label := pg.Theme.Body2(values.String(values.StrWebURL))
-							label.Color = pg.Theme.Color.GrayText2
-							return label.Layout(gtx)
-						})
-					}),
-				)
+				return components.BrowserURLWidget(gtx, pg.Load, host, pg.copyRedirectURL)
 			}).
 			SetPositiveButtonText(values.String(values.StrGotIt))
 		pg.ParentWindow().ShowModal(info)

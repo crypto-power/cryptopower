@@ -585,4 +585,5 @@ const EN = `
 "addressDiscoveryStarted" = "Address discovery started successfully"
 "addressDiscoveryStartedBody"    = "See wallet information page for progress"
 "setGapLimit"             = "Set Gap Limit"
+"explorerURL" = "Explorer URL for %v Asset"
 `
