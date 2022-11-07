@@ -875,7 +875,7 @@ func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clicka
 	}
 
 	info := modal.NewCustomModal(pg.Load).
-		Title(values.StringF(values.StrExplorerURL, pg.wallet.GetAssetType().ToFull())).
+		Title(values.String(values.StrViewOnExplorer)).
 		Body(values.String(values.StrCopyLink)).
 		SetCancelable(true).
 		UseCustomWidget(func(gtx C) D {
