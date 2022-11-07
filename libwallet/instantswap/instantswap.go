@@ -98,7 +98,7 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	if err != nil && err != storm.ErrNotFound {
 		return nil, fmt.Errorf("error fetching orders: %s", err.Error())
 	}
-	
+
 	return orders, nil
 }
 
@@ -165,9 +165,10 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	order := &Order{
 		UUID: res.UUID,
 
-		OrderedAmount: res.InvoicedAmount,
-		FromCurrency:  res.FromCurrency,
-		ToCurrency:    res.ToCurrency,
+		InvoicedAmount: res.InvoicedAmount,
+		OrderedAmount:  res.OrderedAmount,
+		FromCurrency:   res.FromCurrency,
+		ToCurrency:     res.ToCurrency,
 
 		DepositAddress:     res.DepositAddress,
 		RefundAddress:      res.DepositAddress,

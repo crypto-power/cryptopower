@@ -78,12 +78,15 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 
 	var exchange []*Exchange
 	for _, server := range servers {
-		exchng := &Exchange{
-			Name:   server.CapFirstLetter(),
-			Server: server,
-			Icon:   es.setServerIcon(server.ToString()),
+		if server.ToString() == "flypme" { // Display flypme only
+			exchng := &Exchange{
+				Name:   server.CapFirstLetter(),
+				Server: server,
+				Icon:   es.setServerIcon(server.ToString()),
+			}
+
+			exchange = append(exchange, exchng)
 		}
-		exchange = append(exchange, exchng)
 	}
 
 	return exchange
@@ -208,7 +211,7 @@ func newExchangeModal(l *load.Load) *exchangeModal {
 		Modal:        l.Theme.ModalFloatTitle("ExchangeModal"),
 		exchangeList: layout.List{Axis: layout.Vertical},
 		isCancelable: true,
-		// dialogTitle:  values.String(values.StrSelectAServer),
+		dialogTitle:  values.String(values.StrSelectAServer),
 	}
 
 	em.Modal.ShowScrollbar(true)

@@ -712,4 +712,5 @@ const (
 	StrFeeRates                        = "feerates"
 	StrCanceling                       = "canceling"
 	StrTxStatusPending                 = "txStatusPending"
+	StrSelectAServer                   = "selectAServer"
 )

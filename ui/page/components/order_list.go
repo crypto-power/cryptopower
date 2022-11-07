@@ -40,8 +40,8 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								orderedAmount := strconv.FormatFloat(orderItem.OrderedAmount, 'f', -1, 64)
-								return l.Theme.Label(values.TextSize16, orderedAmount).Layout(gtx)
+								invoicedAmount := strconv.FormatFloat(orderItem.InvoicedAmount, 'f', -1, 64)
+								return l.Theme.Label(values.TextSize16, invoicedAmount).Layout(gtx)
 							}),
 							layout.Flexed(1, func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
@@ -61,8 +61,8 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 											})
 										}),
 										layout.Rigid(func(gtx C) D {
-											receiveAmount := strconv.FormatFloat(orderItem.ReceiveAmount, 'f', -1, 64)
-											return l.Theme.Label(values.TextSize16, receiveAmount).Layout(gtx)
+											orderedAmount := strconv.FormatFloat(orderItem.OrderedAmount, 'f', -1, 64)
+											return l.Theme.Label(values.TextSize16, orderedAmount).Layout(gtx)
 										}),
 									)
 								})

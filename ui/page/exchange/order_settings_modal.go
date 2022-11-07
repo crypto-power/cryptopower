@@ -5,9 +5,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
-	"gioui.org/unit"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	// "code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -18,6 +16,14 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
+type callbackParams struct {
+	sourceAccountSelector *components.WalletAndAccountSelector
+	sourceWalletSelector  *components.WalletAndAccountSelector
+
+	destinationAccountSelector *components.WalletAndAccountSelector
+	destinationWalletSelector  *components.WalletAndAccountSelector
+}
+
 type orderSettingsModal struct {
 	*load.Load
 	*cryptomaterial.Modal
@@ -25,11 +31,11 @@ type orderSettingsModal struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	settingsSaved func()
+	settingsSaved func(params *callbackParams)
 	onCancel      func()
 
 	cancelBtn      cryptomaterial.Button
-	confirmButton  cryptomaterial.Button
+	saveBtn        cryptomaterial.Button
 	passwordEditor cryptomaterial.Editor
 
 	scrollContainer *widget.List
@@ -46,8 +52,6 @@ type orderSettingsModal struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	addressEditor cryptomaterial.Editor
-
-	exchangeRateSet bool
 }
 
 func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
@@ -60,16 +64,14 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 				Alignment: layout.Middle,
 			},
 		},
-		// authoredTxData: data,
-		// asset:          asset,
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
 	osm.cancelBtn.Font.Weight = text.Medium
 
-	osm.confirmButton = l.Theme.Button("")
-	osm.confirmButton.Font.Weight = text.Medium
-	osm.confirmButton.SetEnabled(false)
+	osm.saveBtn = l.Theme.Button(values.String(values.StrSave))
+	osm.saveBtn.Font.Weight = text.Medium
+	osm.saveBtn.SetEnabled(false)
 
 	osm.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
 	osm.passwordEditor.Editor.SetText("")
@@ -83,7 +85,6 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	osm.sourceInfoButton.Inset, osm.destinationInfoButton.Inset = buttonInset, buttonInset
 
 	osm.addressEditor = l.Theme.Editor(new(widget.Editor), "")
-	osm.addressEditor.Editor.SetText("")
 	osm.addressEditor.Editor.SingleLine = true
 
 	// Source wallet picker
@@ -107,6 +108,8 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
 		Title(values.String(values.StrAccount))
 	osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
+	address, _ := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+	osm.addressEditor.Editor.SetText(address)
 
 	osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
@@ -122,7 +125,7 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	return osm
 }
 
-func (osm *orderSettingsModal) OnSettingsSaved(settingsSaved func()) *orderSettingsModal {
+func (osm *orderSettingsModal) OnSettingsSaved(settingsSaved func(params *callbackParams)) *orderSettingsModal {
 	osm.settingsSaved = settingsSaved
 	return osm
 }
@@ -152,8 +155,17 @@ func (osm *orderSettingsModal) OnDismiss() {
 }
 
 func (osm *orderSettingsModal) Handle() {
-	for osm.confirmButton.Clicked() {
-		osm.settingsSaved()
+	osm.saveBtn.SetEnabled(osm.canSave())
+
+	for osm.saveBtn.Clicked() {
+		params := &callbackParams{
+			sourceAccountSelector: osm.sourceAccountSelector,
+			sourceWalletSelector:  osm.sourceWalletSelector,
+
+			destinationAccountSelector: osm.destinationAccountSelector,
+			destinationWalletSelector:  osm.destinationWalletSelector,
+		}
+		osm.settingsSaved(params)
 		osm.Dismiss()
 	}
 
@@ -161,6 +173,30 @@ func (osm *orderSettingsModal) Handle() {
 		osm.onCancel()
 		osm.Dismiss()
 	}
+}
+
+func (osm *orderSettingsModal) canSave() bool {
+	if osm.sourceWalletSelector.SelectedWallet() == nil {
+		return false
+	}
+
+	if osm.sourceAccountSelector.SelectedAccount() == nil {
+		return false
+	}
+
+	if osm.destinationWalletSelector.SelectedWallet() == nil {
+		return false
+	}
+
+	if osm.destinationAccountSelector.SelectedAccount() == nil {
+		return false
+	}
+
+	if osm.addressEditor.Editor.Text() == "" {
+		return false
+	}
+
+	return true
 }
 
 func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
@@ -260,6 +296,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 											})
 										}),
 										layout.Rigid(func(gtx C) D {
+											gtx = gtx.Disabled()
 											return osm.addressEditor.Layout(gtx)
 										}),
 									)
@@ -272,30 +309,17 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 			})
 		},
 		func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Right: values.MarginPadding8,
-							}.Layout(gtx, func(gtx C) D {
-								if osm.isSending {
-									return D{}
-								}
-								return osm.cancelBtn.Layout(gtx)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							if osm.isSending {
-								return layout.Inset{Top: unit.Dp(7)}.Layout(gtx, func(gtx C) D {
-									return material.Loader(osm.Theme.Base).Layout(gtx)
-								})
-							}
-							osm.confirmButton.Text = values.StrSave
-							return osm.confirmButton.Layout(gtx)
-						}),
-					)
-				})
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Right: values.MarginPadding4,
+						}.Layout(gtx, osm.cancelBtn.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return osm.saveBtn.Layout(gtx)
+					}),
+				)
 			})
 		},
 	}

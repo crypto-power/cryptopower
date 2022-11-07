@@ -606,4 +606,5 @@ const EN = `
 "unconfirmedTx"    = "unconfirmed"
 "unconfirmedTx"    = "Unconfirmed"
 "txStatusPending"         = "Pending (%v of %v confirmations)" 
+"selectAServer" = "Select A Server"
 `

@@ -60,7 +60,6 @@ type CreateOrderPage struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	backButton cryptomaterial.IconButton
-	// infoButton cryptomaterial.IconButton
 
 	createOrderBtn cryptomaterial.Button
 	infoButton     cryptomaterial.IconButton
@@ -105,11 +104,11 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.toAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (BTC)")
 	pg.toAmountEditor.Editor.SetText("")
-	pg.toAmountEditor.HasCustomButton = false
+	pg.toAmountEditor.HasCustomButton = true
 	pg.toAmountEditor.Editor.SingleLine = true
 
 	pg.toAmountEditor.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
-	pg.toAmountEditor.CustomButton.Text = values.String(values.StrMax)
+	// pg.toAmountEditor.CustomButton.Text = values.String(values.StrMax)
 	pg.toAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
 	pg.addressEditor = l.Theme.Editor(new(widget.Editor), "")
@@ -137,6 +136,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrAccount))
 	pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
+	address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+	pg.addressEditor.Editor.SetText(address)
 
 	pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
@@ -148,9 +149,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
 		pg.addressEditor.Editor.SetText(address)
 	})
-
-	address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
-	pg.addressEditor.Editor.SetText(address)
 
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
 	pg.createOrderBtn.SetEnabled(false)
@@ -179,6 +177,19 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
+	orderSettingsModal := newOrderSettingsModalModal(pg.Load).OnSettingsSaved(func(params *callbackParams) {
+		pg.sourceAccountSelector = params.sourceAccountSelector
+		pg.sourceWalletSelector = params.sourceWalletSelector
+		pg.destinationAccountSelector = params.destinationAccountSelector
+		pg.destinationWalletSelector = params.destinationWalletSelector
+
+		infoModal := modal.NewSuccessModal(pg.Load, "Order settings saved", modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(infoModal)
+	}).
+		OnCancel(func() {
+		})
+	pg.ParentWindow().ShowModal(orderSettingsModal)
+
 	// go func() {
 	// 	err := pg.getExchangeRateInfo()
 	// 	if err != nil {
@@ -201,12 +212,17 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.settingsButton.Button.Clicked() {
-		orderSettingsModal := newOrderSettingsModalModal(pg.Load).OnSettingsSaved(func() {
-			infoModal := modal.NewSuccessModal(pg.Load, "Saved", modal.DefaultClickFunc())
+		orderSettingsModal := newOrderSettingsModalModal(pg.Load).OnSettingsSaved(func(params *callbackParams) {
+			pg.sourceAccountSelector = params.sourceAccountSelector
+			pg.sourceWalletSelector = params.sourceWalletSelector
+			pg.destinationAccountSelector = params.destinationAccountSelector
+			pg.destinationWalletSelector = params.destinationWalletSelector
+
+			infoModal := modal.NewSuccessModal(pg.Load, "Order settings saved", modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(infoModal)
 		}).
-		OnCancel(func() {
-		})
+			OnCancel(func() {
+			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 }
@@ -341,10 +357,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Top:   values.MarginPadding24,
-							Right: values.MarginPadding16,
-						}.Layout(gtx, pg.createOrderBtn.Layout)
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return layout.Inset{
+								Top: values.MarginPadding16,
+							}.Layout(gtx, pg.createOrderBtn.Layout)
+						})
+
 					}),
 
 					layout.Rigid(func(gtx C) D {
@@ -429,7 +447,7 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 				return false
 			}
 
-			err = pg.constructTx(order.DepositAddress, order.OrderedAmount)
+			err = pg.constructTx(order.DepositAddress, order.InvoicedAmount)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -452,16 +470,16 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 
 func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
 	fmt.Println("[][][][] ", pg.fromAmountEditor.Editor.Text())
-	orderedAmount, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
+	invoicedAmount, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("[][][][] ", orderedAmount)
+	fmt.Println("[][][][] ", invoicedAmount)
 
 	params := api.ExchangeRateRequest{
 		From:   "DCR",
 		To:     "BTC",
-		Amount: orderedAmount,
+		Amount: invoicedAmount,
 	}
 	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
@@ -482,7 +500,7 @@ func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
 		RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
 		Destination:     destinationAddress, // your exchanged coins will be sent here
 		FromCurrency:    "DCR",
-		InvoicedAmount:  orderedAmount, // use OrderedAmount or InvoicedAmount
+		InvoicedAmount:  invoicedAmount, // use InvoicedAmount or InvoicedAmount
 		ToCurrency:      "BTC",
 		ExtraID:         "",
 		Signature:       res.Signature,

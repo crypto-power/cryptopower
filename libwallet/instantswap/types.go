@@ -38,9 +38,10 @@ type Order struct {
 	DestinationWalletID  int    `json:"destinationWalletID"`
 	DestinationAccountID int    `json:"destinationAccountID"`
 
-	OrderedAmount float64 `json:"orderedAmount"`
-	ReceiveAmount float64 `json:"receiveAmount"`
-	TxID          string  `json:"txid"`
+	OrderedAmount  float64 `json:"orderedAmount"`
+	InvoicedAmount float64 `json:"invoicedAmount"`
+	ReceiveAmount  float64 `json:"receiveAmount"`
+	TxID           string  `json:"txid"`
 
 	FromCurrency string `json:"fromCurrency"`
 	ToCurrency   string `json:"toCurrency"`
