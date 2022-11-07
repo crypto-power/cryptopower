@@ -24,8 +24,8 @@ const UnMinedTxHeight int32 = -1
 type txCache struct {
 	blockHeight int32
 
-	uminedTxs []sharedW.Transaction
-	minedTxs  []sharedW.Transaction
+	unminedTxs []sharedW.Transaction
+	minedTxs   []sharedW.Transaction
 
 	mu sync.RWMutex
 }
@@ -42,7 +42,7 @@ func (asset *BTCAsset) PublishUnminedTransactions() error {
 	}
 
 	asset.txs.mu.RLock()
-	mempoolTxs := asset.txs.uminedTxs
+	mempoolTxs := asset.txs.unminedTxs
 	asset.txs.mu.RUnlock()
 
 	for _, tx := range mempoolTxs {
@@ -136,7 +136,7 @@ func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool
 // (starts with the oldest) otherwise its in descending (starts with the newest) order.
 func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	asset.txs.mu.RLock()
-	allTxs := append(asset.txs.uminedTxs, asset.txs.minedTxs...)
+	allTxs := append(asset.txs.unminedTxs, asset.txs.minedTxs...)
 	txCacheHeight := asset.txs.blockHeight
 	asset.txs.mu.RUnlock()
 
@@ -180,7 +180,7 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 
 	// Cache the recent data.
 	asset.txs.mu.Lock()
-	asset.txs.uminedTxs = unminedTxs
+	asset.txs.unminedTxs = unminedTxs
 	asset.txs.minedTxs = minedTxs
 	asset.txs.blockHeight = asset.GetBestBlockHeight()
 	asset.txs.mu.Unlock()

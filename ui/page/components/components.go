@@ -18,12 +18,12 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/ararog/timeago"
-	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 const (
@@ -136,10 +136,10 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	var txStatus TxStatus
 
 	switch tx.Direction {
-	case dcr.TxDirectionSent:
+	case txhelper.TxDirectionSent:
 		txStatus.Title = values.String(values.StrSent)
 		txStatus.Icon = l.Theme.Icons.SendIcon
-	case dcr.TxDirectionReceived:
+	case txhelper.TxDirectionReceived:
 		txStatus.Title = values.String(values.StrReceived)
 		txStatus.Icon = l.Theme.Icons.ReceiveIcon
 	default:
@@ -148,17 +148,17 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	}
 
 	// replace icon for staking tx types
-	if wal.TxMatchesFilter(tx, dcr.TxFilterStaking) {
+	if wal.TxMatchesFilter(tx, libutils.TxFilterStaking) {
 		switch tx.Type {
-		case dcr.TxTypeTicketPurchase:
+		case txhelper.TxTypeTicketPurchase:
 			{
-				if wal.TxMatchesFilter(tx, dcr.TxFilterUnmined) {
+				if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
 					txStatus.Title = values.String(values.StrUmined)
 					txStatus.Icon = l.Theme.Icons.TicketUnminedIcon
 					txStatus.TicketStatus = dcr.TicketStatusUnmined
 					txStatus.Color = l.Theme.Color.LightBlue6
 					txStatus.Background = l.Theme.Color.LightBlue
-				} else if wal.TxMatchesFilter(tx, dcr.TxFilterImmature) {
+				} else if wal.TxMatchesFilter(tx, libutils.TxFilterImmature) {
 					txStatus.Title = values.String(values.StrImmature)
 					txStatus.Icon = l.Theme.Icons.TicketImmatureIcon
 					txStatus.Color = l.Theme.Color.Yellow
@@ -166,7 +166,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 					txStatus.ProgressBarColor = l.Theme.Color.OrangeYellow
 					txStatus.ProgressTrackColor = l.Theme.Color.Gray6
 					txStatus.Background = l.Theme.Color.Yellow
-				} else if wal.TxMatchesFilter(tx, dcr.TxFilterLive) {
+				} else if wal.TxMatchesFilter(tx, libutils.TxFilterLive) {
 					txStatus.Title = values.String(values.StrLive)
 					txStatus.Icon = l.Theme.Icons.TicketLiveIcon
 					txStatus.Color = l.Theme.Color.Success2
@@ -174,7 +174,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 					txStatus.ProgressBarColor = l.Theme.Color.Success2
 					txStatus.ProgressTrackColor = l.Theme.Color.Success2
 					txStatus.Background = l.Theme.Color.Success2
-				} else if wal.TxMatchesFilter(tx, dcr.TxFilterExpired) {
+				} else if wal.TxMatchesFilter(tx, libutils.TxFilterExpired) {
 					txStatus.Title = values.String(values.StrExpired)
 					txStatus.Icon = l.Theme.Icons.TicketExpiredIcon
 					txStatus.Color = l.Theme.Color.GrayText2
@@ -183,7 +183,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 				} else {
 					ticketSpender, _ := wal.(*dcr.DCRAsset).TicketSpender(tx.Hash)
 					if ticketSpender != nil {
-						if ticketSpender.Type == dcr.TxTypeVote {
+						if ticketSpender.Type == txhelper.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)
 							txStatus.Icon = l.Theme.Icons.TicketVotedIcon
 							txStatus.Color = l.Theme.Color.Turquoise700
@@ -203,7 +203,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 					}
 				}
 			}
-		case dcr.TxTypeVote:
+		case txhelper.TxTypeVote:
 			txStatus.Title = values.String(values.StrVote)
 			txStatus.Icon = l.Theme.Icons.TicketVotedIcon
 			txStatus.Color = l.Theme.Color.Turquoise700
@@ -220,7 +220,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 			txStatus.ProgressTrackColor = l.Theme.Color.Orange3
 			txStatus.Background = l.Theme.Color.Orange2
 		}
-	} else if tx.Type == dcr.TxTypeMixed {
+	} else if tx.Type == txhelper.TxTypeMixed {
 		txStatus.Title = values.String(values.StrMixed)
 		txStatus.Icon = l.Theme.Icons.MixedTx
 	}
@@ -315,9 +315,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				Direction:   layout.Center,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if row.Transaction.Type == dcr.TxTypeRegular {
+					if row.Transaction.Type == txhelper.TxTypeRegular {
 						amount := wal.ToAmount(row.Transaction.Amount).String()
-						if row.Transaction.Direction == dcr.TxDirectionSent && !strings.Contains(amount, "-") {
+						if row.Transaction.Direction == txhelper.TxDirectionSent && !strings.Contains(amount, "-") {
 							amount = "-" + amount
 						}
 						return LayoutBalanceSize(gtx, l, amount, values.TextSize18)
@@ -326,7 +326,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if row.Transaction.Type == dcr.TxTypeMixed {
+					if row.Transaction.Type == txhelper.TxTypeMixed {
 
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
@@ -337,14 +337,14 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								// mix denomination
-								mixedDenom := dcrutil.Amount(row.Transaction.MixDenomination).String()
+								mixedDenom := wal.ToAmount(row.Transaction.MixDenomination).String()
 								txt := l.Theme.Label(values.TextSize12, mixedDenom)
 								txt.Color = l.Theme.Color.GrayText2
 								return txt.Layout(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
 								// Mixed outputs count
-								if row.Transaction.Type == dcr.TxTypeMixed && row.Transaction.MixCount > 1 {
+								if row.Transaction.Type == txhelper.TxTypeMixed && row.Transaction.MixCount > 1 {
 									label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
 									label.Color = l.Theme.Color.GrayText2
 									return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
@@ -371,9 +371,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if row.Transaction.Type == dcr.TxTypeVote || row.Transaction.Type == dcr.TxTypeRevocation {
+						if row.Transaction.Type == txhelper.TxTypeVote || row.Transaction.Type == txhelper.TxTypeRevocation {
 							title := values.String(values.StrRevoke)
-							if row.Transaction.Type == dcr.TxTypeVote {
+							if row.Transaction.Type == txhelper.TxTypeVote {
 								title = values.String(values.StrVote)
 							}
 

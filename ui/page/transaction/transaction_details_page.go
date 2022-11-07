@@ -14,6 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -147,13 +148,13 @@ func (pg *TxDetailsPage) getTXSourceAccountAndDirection() {
 destinationAddrLoop:
 	for _, output := range pg.transaction.Outputs {
 		switch pg.transaction.Direction {
-		case dcr.TxDirectionSent:
+		case txhelper.TxDirectionSent:
 			// mixed account number
 			var mixedAcc int32 = -1
 			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
 				mixedAcc = pg.wallet.(*dcr.DCRAsset).UnmixedAccountNumber()
 			}
-			if pg.transaction.Type == dcr.TxTypeMixed &&
+			if pg.transaction.Type == txhelper.TxTypeMixed &&
 				output.AccountNumber == mixedAcc {
 				accountName, err := pg.wallet.AccountName(output.AccountNumber)
 				if err != nil {
@@ -167,7 +168,7 @@ destinationAddrLoop:
 				pg.txDestinationAddress = output.Address
 				break destinationAddrLoop
 			}
-		case dcr.TxDirectionReceived:
+		case txhelper.TxDirectionReceived:
 			if output.AccountNumber != -1 {
 				accountName, err := pg.wallet.AccountName(output.AccountNumber)
 				if err != nil {
@@ -196,7 +197,7 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 			pg.ticketSpender, _ = dcrImp.TicketSpender(pg.transaction.Hash)
 		}
 
-		if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterStaking) {
+		if pg.wallet.TxMatchesFilter(pg.transaction, libutils.TxFilterStaking) {
 			go func() {
 				info, err := dcrImp.VSPTicketInfo(pg.transaction.Hash)
 				if err != nil {
@@ -355,13 +356,13 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										title := pg.wallet.ToAmount(pg.transaction.Amount).String()
 										switch pg.transaction.Type {
-										case dcr.TxTypeMixed:
+										case txhelper.TxTypeMixed:
 											title = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
-										case dcr.TxTypeRegular:
-											if pg.transaction.Direction == dcr.TxDirectionSent && !strings.Contains(title, "-") {
+										case txhelper.TxTypeRegular:
+											if pg.transaction.Direction == txhelper.TxDirectionSent && !strings.Contains(title, "-") {
 												title = "-" + title
 											}
-										case dcr.TxTypeRevocation, dcr.TxTypeVote:
+										case txhelper.TxTypeRevocation, txhelper.TxTypeVote:
 											return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
 										}
 										return components.LayoutBalanceWithUnit(gtx, pg.Load, title)
@@ -380,9 +381,9 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									}),
 									layout.Rigid(func(gtx C) D {
 										// immature tx section
-										if pg.transaction.Type == dcr.TxTypeVote || pg.transaction.Type == dcr.TxTypeRevocation {
+										if pg.transaction.Type == txhelper.TxTypeVote || pg.transaction.Type == txhelper.TxTypeRevocation {
 											title := values.String(values.StrRevoke)
-											if pg.transaction.Type == dcr.TxTypeVote {
+											if pg.transaction.Type == txhelper.TxTypeVote {
 												title = values.String(values.StrVote)
 											}
 
@@ -429,7 +430,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 
 								case dcr.TicketStatusVotedOrRevoked:
 									if pg.ticketSpender != nil { // voted or revoked
-										if pg.ticketSpender.Type == dcr.TxTypeVote {
+										if pg.ticketSpender.Type == txhelper.TxTypeVote {
 											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
 													lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
@@ -561,7 +562,7 @@ func (pg *TxDetailsPage) keyValue(gtx C, key string, value layout.Widget) D {
 }
 
 func (pg *TxDetailsPage) associatedTicket(gtx C) D {
-	if pg.transaction.Type != dcr.TxTypeVote && pg.transaction.Type != dcr.TxTypeRevocation {
+	if pg.transaction.Type != txhelper.TxTypeVote && pg.transaction.Type != txhelper.TxTypeRevocation {
 		return D{}
 	}
 
@@ -612,22 +613,22 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			// hide section for recieved transactions
-			if pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction == dcr.TxDirectionReceived {
+			if pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction == txhelper.TxDirectionReceived {
 				return D{}
 			}
 
 			label := values.String(values.StrFrom)
-			if pg.transaction.Type == dcr.TxTypeTicketPurchase {
+			if pg.transaction.Type == txhelper.TxTypeTicketPurchase {
 				label = values.String(values.StrAccount)
 			}
 			return pg.keyValue(gtx, label, pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if (pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction != dcr.TxDirectionTransferred) || pg.transaction.Type == dcr.TxTypeMixed {
+			if (pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction != txhelper.TxDirectionTransferred) || pg.transaction.Type == txhelper.TxTypeMixed {
 				dim := func(gtx C) D {
 					lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddress, 0))
 
-					if pg.transaction.Direction == dcr.TxDirectionReceived {
+					if pg.transaction.Direction == txhelper.TxDirectionReceived {
 						return lbl.Layout(gtx)
 					}
 
@@ -646,24 +647,24 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide this section for sent, received and mixed transaction
-			if pg.transaction.Type == dcr.TxTypeRegular &&
-				pg.transaction.Direction == dcr.TxDirectionSent ||
-				pg.transaction.Direction == dcr.TxDirectionReceived ||
-				pg.transaction.Type == dcr.TxTypeMixed {
+			if pg.transaction.Type == txhelper.TxTypeRegular &&
+				pg.transaction.Direction == txhelper.TxDirectionSent ||
+				pg.transaction.Direction == txhelper.TxDirectionReceived ||
+				pg.transaction.Type == txhelper.TxTypeMixed {
 				return D{}
 			}
 
 			amount := pg.wallet.ToAmount(pg.transaction.Amount).String()
-			if pg.transaction.Type == dcr.TxTypeMixed {
+			if pg.transaction.Type == txhelper.TxTypeMixed {
 				amount = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
-			} else if pg.transaction.Type == dcr.TxTypeRegular && pg.transaction.Direction == dcr.TxDirectionSent {
+			} else if pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction == txhelper.TxDirectionSent {
 				amount = "-" + amount
 			}
 			return pg.keyValue(gtx, values.String(values.StrTicketPrice), pg.Theme.Label(values.TextSize14, amount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// revocation and vote transaction reward
-			if pg.transaction.Type == dcr.TxTypeVote {
+			if pg.transaction.Type == txhelper.TxTypeVote {
 				return pg.keyValue(gtx, values.String(values.StrReward), pg.Theme.Label(values.TextSize14, pg.wallet.ToAmount(pg.transaction.VoteReward).String()).Layout)
 			}
 			return D{}
@@ -676,21 +677,21 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide section for tickets
-			if pg.transaction.Type == dcr.TxTypeTicketPurchase {
+			if pg.transaction.Type == txhelper.TxTypeTicketPurchase {
 				return D{}
 			}
 			return pg.keyValue(gtx, values.String(values.StrType), pg.Theme.Label(values.TextSize14, pg.transaction.Type).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide section for non ticket transactions
-			if pg.transaction.Type != dcr.TxTypeTicketPurchase {
+			if pg.transaction.Type != txhelper.TxTypeTicketPurchase {
 				return D{}
 			}
 
 			if pg.ticketSpender != nil { // voted or revoked
-				if pg.ticketSpender.Type == dcr.TxTypeVote {
+				if pg.ticketSpender.Type == txhelper.TxTypeVote {
 					return pg.keyValue(gtx, values.String(values.StrVotedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
-				} else if pg.ticketSpender.Type == dcr.TxTypeRevocation {
+				} else if pg.ticketSpender.Type == txhelper.TxTypeRevocation {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return pg.keyValue(gtx, values.String(values.StrMissedOn), pg.Theme.Label(values.TextSize14, timeString(pg.ticketSpender.Timestamp)).Layout)
@@ -702,7 +703,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				}
 			}
 
-			if pg.wallet.TxMatchesFilter(pg.transaction, dcr.TxFilterExpired) {
+			if pg.wallet.TxMatchesFilter(pg.transaction, libutils.TxFilterExpired) {
 				return pg.keyValue(gtx, values.String(values.StrExpiredOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
 			}
 
@@ -751,7 +752,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			// hide section for non ticket transactions
-			if pg.transaction.Type != dcr.TxTypeTicketPurchase {
+			if pg.transaction.Type != txhelper.TxTypeTicketPurchase {
 				return D{}
 			}
 
