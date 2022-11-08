@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
@@ -84,7 +85,7 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	buttonInset := layout.UniformInset(values.MarginPadding0)
 	osm.sourceInfoButton.Inset, osm.destinationInfoButton.Inset = buttonInset, buttonInset
 
-	osm.addressEditor = l.Theme.Editor(new(widget.Editor), "")
+	osm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
 	osm.addressEditor.Editor.SingleLine = true
 
 	// Source wallet picker
@@ -184,6 +185,14 @@ func (osm *orderSettingsModal) Handle() {
 		osm.onCancel()
 		osm.Dismiss()
 	}
+
+}
+
+func (osm *orderSettingsModal) handleCopyEvent(gtx C) {
+	osm.addressEditor.EditorIconButtonEvent = func() {
+		clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
+		osm.Toast.Notify("Copied")
+	}
 }
 
 func (osm *orderSettingsModal) canSave() bool {
@@ -211,7 +220,7 @@ func (osm *orderSettingsModal) canSave() bool {
 }
 
 func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
-
+	osm.handleCopyEvent(gtx)
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Inset{

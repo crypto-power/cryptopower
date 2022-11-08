@@ -49,8 +49,8 @@ type CreateOrderPage struct {
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
-	fromCurrencyType string
-	toCurrencyType   string
+	fromCurrencyType utils.AssetType
+	toCurrencyType   utils.AssetType
 	exchangeRateInfo string
 	fetchingRate     bool
 	rateError        bool
@@ -176,8 +176,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.addressEditor.Editor.SetText(address)
 	})
 
-	pg.fromCurrencyType = pg.sourceWalletSelector.SelectedWallet().GetAssetType().String()
-	pg.toCurrencyType = pg.destinationWalletSelector.SelectedWallet().GetAssetType().String()
+	pg.fromCurrencyType = pg.sourceWalletSelector.SelectedWallet().GetAssetType()
+	pg.toCurrencyType = pg.destinationWalletSelector.SelectedWallet().GetAssetType()
 
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
 	pg.createOrderBtn.SetEnabled(false)
@@ -227,12 +227,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 	if pg.swapButton.Button.Clicked() {
 		pg.swapCurrency()
-		go func() {
-			err := pg.getExchangeRateInfo()
-			if err != nil {
-				fmt.Println(err)
-			}
-		}()
+		if pg.exchange != nil {
+			go func() {
+				err := pg.getExchangeRateInfo()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
+		}
 	}
 
 	if pg.refreshExchangeRateBtn.Button.Clicked() {
@@ -733,8 +735,8 @@ func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	pg.fetchingRate = true
 	params := api.ExchangeRateRequest{
-		From:   pg.fromCurrencyType,
-		To:     pg.toCurrencyType,
+		From:   pg.fromCurrencyType.String(),
+		To:     pg.toCurrencyType.String(),
 		Amount: 0,
 	}
 	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
