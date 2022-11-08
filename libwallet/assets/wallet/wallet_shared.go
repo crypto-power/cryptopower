@@ -653,5 +653,16 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 	}
 
 	log.Info("Deleting Wallet")
-	return os.RemoveAll(wallet.dataDir())
+	err = os.RemoveAll(wallet.dataDir())
+	if err != nil {
+		// Currently there is no way to close the file in the datadir
+		// before deleting it in the window.
+		// Will have to wait for Neutrino's update to provide a way to do this
+
+		// TODO: Added method to scan folders on application restart to
+		// delete deleted wallet data in windows
+		log.Errorf("Wallet deleted without remove data dir: %v", err)
+		err = nil
+	}
+	return err
 }

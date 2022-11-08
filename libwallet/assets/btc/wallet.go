@@ -228,7 +228,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 
 func (asset *BTCAsset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
-		asset.cancelSync()
+		asset.CancelSync()
 	}
 }
 
