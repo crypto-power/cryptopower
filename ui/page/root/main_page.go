@@ -329,13 +329,17 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 
 	mp.isFetchingExchangeRate = true
-	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, values.DCRUSDTMarket)
+	market := values.DCRUSDTMarket
+	if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
+		market = values.BTCUSDTMarket
+	}
+	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, market)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	mp.usdExchangeRate = rate.LastTradePrice
 
+	mp.usdExchangeRate = rate.LastTradePrice
 	mp.updateBalance()
 	mp.usdExchangeSet = true
 	mp.ParentWindow().Reload()
@@ -348,23 +352,8 @@ func (mp *MainPage) updateBalance() {
 		log.Error(err)
 	}
 	mp.totalBalance = totalBalance.Total
-	balanceInUSD := totalBalance.Total.MulF64(mp.getExchangeRate()).ToCoin()
+	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
-}
-
-func (mp *MainPage) getExchangeRate() float64 {
-	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-		if mp.usdExchangeSet && mp.btcUsdtBittrex.LastTradeRate != "" {
-			usdExchangeRate, err := strconv.ParseFloat(mp.btcUsdtBittrex.LastTradeRate, 64)
-			if err == nil {
-				return usdExchangeRate
-			}
-		}
-	case libutils.DCRWalletAsset:
-		return mp.usdExchangeRate
-	}
-	return -1
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
