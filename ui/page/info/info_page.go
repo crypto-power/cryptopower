@@ -162,7 +162,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 
 	if pg.toBackup.Button.Clicked() {
-		pg.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libUtils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -74,10 +74,10 @@ type SeedRestore struct {
 	currentCaretPosition     int // current caret position
 	selectedSeedEditor       int // stores the current focus index of seed editors
 
-	walletType utils.AssetType
+	walletType libUtils.AssetType
 }
 
-func NewSeedRestorePage(l *load.Load, walletName string, walletType utils.AssetType, onRestoreComplete func()) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, walletType libUtils.AssetType, onRestoreComplete func()) *SeedRestore {
 	pg := &SeedRestore{
 		Load:            l,
 		restoreComplete: onRestoreComplete,
@@ -539,7 +539,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				_, err := pg.WL.MultiWallet.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
 				if err != nil {
 					errString := err.Error()
-					if err.Error() == utils.ErrExist {
+					if err.Error() == libUtils.ErrExist {
 						errString = values.StringF(values.StrWalletExist, pg.walletName)
 					}
 					m.SetError(errString)

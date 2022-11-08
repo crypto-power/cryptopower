@@ -95,7 +95,6 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		restoreBtn:                  l.Theme.Button(values.String(values.StrRestore)),
 		importBtn:                   l.Theme.Button(values.String(values.StrImport)),
 		watchOnlyCheckBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrImportWatchingOnlyWallet)),
-		selectedWalletType:          "",
 		selectedDecredWalletAction:  -1,
 		selectedBitcoinWalletAction: -1,
 
@@ -126,13 +125,13 @@ func (pg *CreateWallet) initPageItems() {
 	walletTypes := []*walletType{
 		{
 			logo:       pg.Theme.Icons.DecredLogo,
-			name:       "Decred",
+			name:       libutils.DCRWalletAsset.ToFull(),
 			clickable:  pg.Theme.NewClickable(true),
 			walletType: libutils.DCRWalletAsset,
 		},
 		{
 			logo:       pg.Theme.Icons.BTC,
-			name:       "Bitcoin",
+			name:       libutils.BTCWalletAsset.ToFull(),
 			clickable:  pg.Theme.NewClickable(true),
 			walletType: libutils.BTCWalletAsset,
 		},
@@ -265,7 +264,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 
 		// set selected item background color
 		backgroundColor := pg.Theme.Color.Surface
-		if item.walletType == libutils.BTCWalletAsset {
+		if pg.selectedWalletType == item.walletType {
 			backgroundColor = pg.Theme.Color.Gray2
 		}
 

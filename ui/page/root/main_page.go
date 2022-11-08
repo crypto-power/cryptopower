@@ -1131,7 +1131,7 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 	}.Layout2(gtx, indexLabel.Layout)
 }
 
-func redirect(l *load.Load, pg app.PageNavigator) {
+func redirect(l *load.Load, pg app.WindowNavigator) {
 	onWalSelected := func() {
 		pg.ClearStackAndDisplay(NewMainPage(l))
 	}
