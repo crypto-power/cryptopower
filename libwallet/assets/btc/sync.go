@@ -376,6 +376,11 @@ func (asset *BTCAsset) CancelSync() {
 	asset.resetSyncProgressData()
 
 	g, _ := errgroup.WithContext(asset.syncCtx)
+	g.Go(func() error {
+		asset.chainClient.Stop()
+		return nil
+	})
+
 	g.Go(asset.chainService.Stop)
 
 	// stop the local sync notifications
