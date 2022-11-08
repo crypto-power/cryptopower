@@ -3,7 +3,7 @@ package components
 import (
 	"context"
 	"errors"
-	// "fmt"
+	"fmt"
 
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
@@ -49,6 +49,7 @@ type selectorModal struct {
 	onAccountClicked func(*sharedW.Account)
 	walletsList      layout.List
 	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
+	assetType        []utils.AssetType
 	eventQueue       event.Queue
 	isCancelable     bool
 	infoButton       cryptomaterial.IconButton
@@ -58,12 +59,12 @@ type selectorModal struct {
 
 // NewWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
-func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
+func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *WalletAndAccountSelector {
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 
-	ws.selectorModal = newSelectorModal(l).
+	ws.selectorModal = newSelectorModal(l, assetType...).
 		walletClicked(func(wallet *load.WalletMapping) {
 			if ws.selectedWallet.GetWalletID() != wallet.GetWalletID() {
 				ws.changed = true
@@ -118,13 +119,13 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	}
 
 	for _, account := range accounts.Accounts {
-		// if ws.accountIsValid(account) {
-		ws.SetSelectedAccount(account)
-		if ws.accountCallback != nil {
-			ws.accountCallback(account)
+		if ws.accountIsValid(account) {
+			ws.SetSelectedAccount(account)
+			if ws.accountCallback != nil {
+				ws.accountCallback(account)
+			}
+			return nil
 		}
-		return nil
-		// }
 	}
 
 	ws.ResetAccount()
@@ -311,13 +312,14 @@ type SelectorItem struct {
 	clickable *cryptomaterial.Clickable
 }
 
-func newSelectorModal(l *load.Load) *selectorModal {
+func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal {
 	sm := &selectorModal{
 		Load:         l,
 		Modal:        l.Theme.ModalFloatTitle("SelectorModal"),
 		walletsList:  layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		infoBackdrop: new(widget.Clickable),
+		assetType:    assetType,
 	}
 
 	sm.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -325,8 +327,17 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
-
 	wallets := sm.WL.MultiWallet.AllWallets()
+
+	if len(assetType) > 0 { // no asset type was passed, load all wallets
+		switch assetType[0] {
+		case utils.BTCWalletAsset:
+			wallets = sm.WL.MultiWallet.AllBTCWallets()
+		case utils.DCRWalletAsset:
+			wallets = sm.WL.MultiWallet.AllDCRWallets()
+		}
+	}
+
 	sm.selectedWallet = &load.WalletMapping{
 		Asset: wallets[0],
 	} // Set the default wallet to wallet loaded by cryptopower.
@@ -337,18 +348,27 @@ func newSelectorModal(l *load.Load) *selectorModal {
 }
 
 func (sm *selectorModal) OnResume() {
-	// fmt.Println("[][][][] selected wallet", sm.selectedWallet)
 	if sm.accountSelector {
 		sm.setupAccounts(sm.selectedWallet)
 		return
 	}
-	sm.setupWallet()
+	fmt.Println("[][][][] setup wallet", sm.assetType)
+	sm.setupWallet(sm.assetType...)
 }
 
-func (sm *selectorModal) setupWallet() {
+func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
-	// wallets := sm.WL.SortedWalletList()
 	wallets := sm.WL.MultiWallet.AllWallets()
+
+	if len(assetType) > 0 { // no asset type was passed, load all wallets
+		switch assetType[0] {
+		case utils.BTCWalletAsset:
+			wallets = sm.WL.MultiWallet.AllBTCWallets()
+		case utils.DCRWalletAsset:
+			wallets = sm.WL.MultiWallet.AllDCRWallets()
+		}
+	}
+
 	for _, wal := range wallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
@@ -372,12 +392,12 @@ func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 		}
 
 		for _, account := range accountsResult.Accounts {
-			// if sm.accountIsValid(account) {
-			selectorItems = append(selectorItems, &SelectorItem{
-				item:      account,
-				clickable: sm.Theme.NewClickable(true),
-			})
-			// }
+			if sm.accountIsValid(account) {
+				selectorItems = append(selectorItems, &SelectorItem{
+					item:      account,
+					clickable: sm.Theme.NewClickable(true),
+				})
+			}
 		}
 	}
 	sm.selectorItems = selectorItems

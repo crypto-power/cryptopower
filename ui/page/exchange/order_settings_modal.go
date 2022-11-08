@@ -8,7 +8,7 @@ import (
 	"gioui.org/widget"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	// "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	// "code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -88,12 +88,17 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	osm.addressEditor.Editor.SingleLine = true
 
 	// Source wallet picker
-	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load).
-		Title(values.String(values.StrTo))
+	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, utils.DCRWalletAsset).
+		Title(values.String(values.StrFrom))
 
 	// Source account picker
 	osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-		Title(values.String(values.StrAccount))
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+			return accountIsValid
+		})
 	osm.sourceAccountSelector.SelectFirstValidAccount(osm.sourceWalletSelector.SelectedWallet())
 
 	osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
@@ -101,12 +106,18 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	})
 
 	// Destination wallet picker
-	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load).
+	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, utils.BTCWalletAsset).
 		Title(values.String(values.StrTo))
 
 	// Destination account picker
 	osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-		Title(values.String(values.StrAccount))
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			// Imported accounts and watch only accounts are imvalid
+			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+			return accountIsValid
+		})
 	osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
 	address, _ := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
 	osm.addressEditor.Editor.SetText(address)
@@ -297,6 +308,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											gtx = gtx.Disabled()
+											osm.addressEditor.SelectionColor = osm.Theme.Color.Gray5
 											return osm.addressEditor.Layout(gtx)
 										}),
 									)
