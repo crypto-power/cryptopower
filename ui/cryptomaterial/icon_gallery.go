@@ -11,7 +11,8 @@ import (
 type Icons struct {
 	ContentAdd, NavigationCheck, NavigationMore, ActionCheckCircle, ActionInfo, NavigationArrowBack,
 	NavigationArrowForward, ActionCheck, NavigationCancel, NavMoreIcon,
-	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon, ActionSettings *widget.Icon
+	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon,
+	ActionSettings, ActionSwapHoriz, NavigationRefresh *widget.Icon
 
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
@@ -57,6 +58,8 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.SearchIcon = MustIcon(widget.NewIcon(icons.ActionSearch))
 	i.PlayIcon = MustIcon(widget.NewIcon(icons.AVPlayArrow))
 	i.ActionSettings = MustIcon(widget.NewIcon(icons.ActionSettings))
+	i.ActionSwapHoriz = MustIcon(widget.NewIcon(icons.ActionSwapHoriz))
+	i.NavigationRefresh = MustIcon(widget.NewIcon(icons.NavigationRefresh))
 
 	return i
 }

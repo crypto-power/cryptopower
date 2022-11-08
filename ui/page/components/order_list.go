@@ -1,7 +1,9 @@
 package components
 
 import (
+	"fmt"
 	"strconv"
+	"time"
 
 	"gioui.org/layout"
 
@@ -76,7 +78,6 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Right: values.MarginPadding10,
-								Left:  values.MarginPadding10,
 							}.Layout(gtx, func(gtx C) D {
 								return D{}
 							})
@@ -89,8 +90,12 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 									Alignment: layout.Middle,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										createdAt := strconv.Itoa(int(orderItem.CreatedAt))
-										return l.Theme.Label(values.TextSize16, createdAt).Layout(gtx)
+										date := time.Unix(orderItem.CreatedAt, 0).Format("Jan 2, 2006")
+										timeSplit := time.Unix(orderItem.CreatedAt, 0).Format("03:04:05 PM")
+										createdAt := fmt.Sprintf("%v at %v", date, timeSplit)
+										timestamp := l.Theme.Label(values.TextSize16, createdAt)
+										timestamp.Color = l.Theme.Color.GrayText2
+										return timestamp.Layout(gtx)
 									}),
 								)
 							})

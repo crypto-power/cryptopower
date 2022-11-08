@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
@@ -48,10 +49,17 @@ type CreateOrderPage struct {
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
+	fromCurrencyType string
+	toCurrencyType   string
+	exchangeRateInfo string
+	fetchingRate     bool
+	rateError        bool
+
+	materialLoader material.LoaderStyle
+
 	fromAmountEditor cryptomaterial.Editor
 	toAmountEditor   cryptomaterial.Editor
-
-	addressEditor cryptomaterial.Editor
+	addressEditor    cryptomaterial.Editor
 
 	sourceAccountSelector *components.WalletAndAccountSelector
 	sourceWalletSelector  *components.WalletAndAccountSelector
@@ -61,12 +69,15 @@ type CreateOrderPage struct {
 
 	backButton cryptomaterial.IconButton
 
-	createOrderBtn cryptomaterial.Button
-	infoButton     cryptomaterial.IconButton
-	settingsButton cryptomaterial.IconButton
+	createOrderBtn         cryptomaterial.Button
+	swapButton             cryptomaterial.IconButton
+	refreshExchangeRateBtn cryptomaterial.IconButton
+	infoButton             cryptomaterial.IconButton
+	settingsButton         cryptomaterial.IconButton
 
-	min float64
-	max float64
+	min          float64
+	max          float64
+	exchangeRate float64
 }
 
 func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
@@ -81,11 +92,20 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
+	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
+	pg.refreshExchangeRateBtn = l.Theme.IconButton(l.Theme.Icons.NavigationRefresh)
+	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
+
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	pg.infoButton.Size = values.MarginPadding18
 	buttonInset := layout.UniformInset(values.MarginPadding0)
-	pg.settingsButton.Inset, pg.infoButton.Inset = buttonInset, buttonInset
+	pg.settingsButton.Inset, pg.infoButton.Inset,
+		pg.swapButton.Inset, pg.refreshExchangeRateBtn.Inset = buttonInset, buttonInset, buttonInset, buttonInset
+
+	// pg.exchangeRateInfo = "Please select a server"
+	pg.exchangeRateInfo = fmt.Sprintf("Min: %f . Max: %f", pg.min, pg.max)
+	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	pg.fromAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (DCR)")
 	pg.fromAmountEditor.Editor.SetText("")
@@ -94,7 +114,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.fromAmountEditor.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
 	pg.fromAmountEditor.CustomButton.Text = "DCR"
-	pg.toAmountEditor.CustomButton.Background = l.Theme.Color.Primary
+	pg.fromAmountEditor.CustomButton.Background = l.Theme.Color.Primary
 	pg.fromAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
 	pg.toAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (BTC)")
@@ -156,6 +176,9 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.addressEditor.Editor.SetText(address)
 	})
 
+	pg.fromCurrencyType = pg.sourceWalletSelector.SelectedWallet().GetAssetType().String()
+	pg.toCurrencyType = pg.destinationWalletSelector.SelectedWallet().GetAssetType().String()
+
 	pg.createOrderBtn = pg.Theme.Button("Create Order")
 	pg.createOrderBtn.SetEnabled(false)
 
@@ -166,9 +189,16 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(pg.selectedExchange.Server, "", "")
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
-
 		pg.exchange = exchange
+
+		go func() {
+			err := pg.getExchangeRateInfo()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
 
 		pg.createOrderBtn.SetEnabled(true)
 	})
@@ -183,13 +213,6 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	// go func() {
-	// 	err := pg.getExchangeRateInfo()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }()
-
 	pg.FetchOrders()
 }
 
@@ -200,6 +223,27 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
+	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
+
+	if pg.swapButton.Button.Clicked() {
+		pg.swapCurrency()
+		go func() {
+			err := pg.getExchangeRateInfo()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+	}
+
+	if pg.refreshExchangeRateBtn.Button.Clicked() {
+		go func() {
+			err := pg.getExchangeRateInfo()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+	}
+
 	if pg.createOrderBtn.Clicked() {
 		pg.confirmSourcePassword()
 	}
@@ -218,6 +262,87 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
+
+	for _, evt := range pg.fromAmountEditor.Editor.Events() {
+		if pg.fromAmountEditor.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				if pg.inputsNotEmpty(pg.fromAmountEditor.Editor) {
+					f, _ := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
+					value := f / pg.exchangeRate
+					v := strconv.FormatFloat(value, 'f', -1, 64)
+					pg.toAmountEditor.Editor.SetText(v)
+				}
+
+			}
+		}
+	}
+
+	for _, evt := range pg.toAmountEditor.Editor.Events() {
+		if pg.toAmountEditor.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				if pg.inputsNotEmpty(pg.toAmountEditor.Editor) {
+					f, _ := strconv.ParseFloat(pg.toAmountEditor.Editor.Text(), 8)
+					value := f * pg.exchangeRate
+					v := strconv.FormatFloat(value, 'f', -1, 64)
+					pg.fromAmountEditor.Editor.SetText(v)
+				}
+
+			}
+		}
+	}
+
+}
+
+func (pg *CreateOrderPage) canCreateOrder() bool {
+	if pg.selectedExchange == nil {
+		return false
+	}
+
+	if pg.fromAmountEditor.Editor.Text() == "" {
+		return false
+	}
+
+	if pg.toAmountEditor.Editor.Text() == "" {
+		return false
+	}
+
+	return true
+}
+
+func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
+	for _, e := range editors {
+		if e.Text() == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// swapCurrency swaps the values of the from and to currency fields.
+func (pg *CreateOrderPage) swapCurrency() {
+	// store the current value of the from currency in a temp variable
+	tempFromCurrencyType := pg.fromCurrencyType
+	tempFromCurrencyValue := pg.fromAmountEditor.Editor.Text()
+	tempFromButtonText := pg.fromAmountEditor.CustomButton.Text
+	tempFromButtonBackground := pg.fromAmountEditor.CustomButton.Background
+	// store the current value of the to currency in a temp variable
+	tempToCurrencyType := pg.fromCurrencyType
+	tempToCurrencyValue := pg.toAmountEditor.Editor.Text()
+	tempToButtonText := pg.toAmountEditor.CustomButton.Text
+	tempToButtonBackground := pg.toAmountEditor.CustomButton.Background
+
+	// Swap values
+	pg.fromCurrencyType = tempToCurrencyType
+	pg.fromAmountEditor.Editor.SetText(tempToCurrencyValue)
+	pg.fromAmountEditor.CustomButton.Text = tempToButtonText
+	pg.fromAmountEditor.CustomButton.Background = tempToButtonBackground
+
+	pg.toCurrencyType = tempFromCurrencyType
+	pg.toAmountEditor.Editor.SetText(tempFromCurrencyValue)
+	pg.toAmountEditor.CustomButton.Text = tempFromButtonText
+	pg.toAmountEditor.CustomButton.Background = tempFromButtonBackground
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
@@ -303,7 +428,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
-						Bottom: values.MarginPadding16,
+						// Bottom: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{
 							Axis:      layout.Horizontal,
@@ -319,18 +444,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										return pg.fromAmountEditor.Layout(gtx)
 									}),
-									layout.Rigid(func(gtx C) D {
-										t := fmt.Sprintf("Min: %f . Max: %f", pg.min, pg.max)
-										txt := pg.Theme.Label(values.TextSize14, t)
-										// txt.Font.Weight = text.SemiBold
-										return txt.Layout(gtx)
-									}),
 								)
 							}),
 							layout.Flexed(0.1, func(gtx C) D {
 								return layout.Center.Layout(gtx, func(gtx C) D {
-									icon := pg.Theme.Icons.CurrencySwapIcon
-									return icon.Layout12dp(gtx)
+									return pg.swapButton.Layout(gtx)
 								})
 							}),
 							layout.Flexed(0.45, func(gtx C) D {
@@ -342,6 +460,37 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}),
 									layout.Rigid(func(gtx C) D {
 										return pg.toAmountEditor.Layout(gtx)
+									}),
+								)
+							}),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{
+							Axis:      layout.Horizontal,
+							Alignment: layout.Middle,
+						}.Layout(gtx,
+							layout.Flexed(0.45, func(gtx C) D {
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										if pg.fetchingRate {
+											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
+											return pg.materialLoader.Layout(gtx)
+										}
+										txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
+										// txt.Font.Weight = text.SemiBold
+										return txt.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										if !pg.fetchingRate && pg.rateError {
+											return pg.refreshExchangeRateBtn.Layout(gtx)
+										}
+										return D{}
 									}),
 								)
 							}),
@@ -582,18 +731,28 @@ func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64
 }
 
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
+	pg.fetchingRate = true
 	params := api.ExchangeRateRequest{
-		From:   "DCR",
-		To:     "BTC",
-		Amount: 1,
+		From:   pg.fromCurrencyType,
+		To:     pg.toCurrencyType,
+		Amount: 0,
 	}
 	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
+		pg.exchangeRateInfo = "error fetching rate"
+		pg.rateError = true
+		pg.fetchingRate = false
 		return err
 	}
 
 	pg.min = res.Min
 	pg.max = res.Max
+	pg.exchangeRate = res.ExchangeRate
+
+	pg.exchangeRateInfo = fmt.Sprintf("Min: %f . Max: %f", pg.min, pg.max)
+
+	pg.fetchingRate = false
+	pg.rateError = false
 
 	return nil
 }
