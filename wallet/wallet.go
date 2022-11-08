@@ -96,6 +96,19 @@ func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	}
 }
 
+// GetBTCBlockExplorerURL accept transaction hash,
+// return the block explorer URL with respect to the network
+func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
+	switch wal.Net {
+	case string(libwallet.Testnet3):
+		return "https://live.blockcypher.com/btc-testnet/tx/" + txnHash
+	case string(libwallet.Mainnet):
+		return "https://www.blockchain.com/btc/tx/" + txnHash
+	default:
+		return ""
+	}
+}
+
 //GetUSDExchangeValues gets the exchange rate of DCR - USDT from a specified endpoint
 func (wal *Wallet) GetUSDExchangeValues(target interface{}) error {
 	url := "https://api.bittrex.com/v3/markets/DCR-USDT/ticker"

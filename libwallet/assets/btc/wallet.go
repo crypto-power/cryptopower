@@ -37,6 +37,11 @@ type BTCAsset struct {
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
 
+	// This field has been added to cache the expensive call to GetTransactions.
+	// If the best block height hasn't changed there is no need to make another
+	// expensive GetTransactions call.
+	txs txCache
+
 	mu sync.RWMutex
 }
 
@@ -235,10 +240,12 @@ func (asset *BTCAsset) IsSynced() bool {
 
 	return asset.syncInfo.synced
 }
+
 func (asset *BTCAsset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
 	return false
 }
+
 func (asset *BTCAsset) IsSyncing() bool {
 	asset.syncInfo.mu.RLock()
 	defer asset.syncInfo.mu.RUnlock()
@@ -249,28 +256,9 @@ func (asset *BTCAsset) IsSyncing() bool {
 func (asset *BTCAsset) ConnectedPeers() int32 {
 	return asset.chainClient.CS.ConnectedCount()
 }
+
 func (asset *BTCAsset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToBitcoinNetwork()
-}
-func (asset *BTCAsset) PublishUnminedTransactions() error {
-	err := utils.ErrBTCMethodNotImplemented("PublishUnminedTransactions")
-	return err
-}
-func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
-	err := utils.ErrBTCMethodNotImplemented("CountTransactions")
-	return -1, err
-}
-func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
-	err := utils.ErrBTCMethodNotImplemented("GetTransactionRaw")
-	return nil, err
-}
-func (asset *BTCAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("TxMatchesFilter"))
-	return false
-}
-func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
-	err := utils.ErrBTCMethodNotImplemented("GetTransactionsRaw")
-	return nil, err
 }
 
 func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {

@@ -322,34 +322,35 @@ type BlocksRescanProgressListener interface {
 type Transaction struct {
 	WalletID      int    `json:"walletID"`
 	Hash          string `storm:"id,unique" json:"hash"`
-	Type          string `storm:"index" json:"type"`
+	Type          string `storm:"index" json:"type,omitempty"`
 	Hex           string `json:"hex"`
 	Timestamp     int64  `storm:"index" json:"timestamp"`
 	BlockHeight   int32  `storm:"index" json:"block_height"`
-	TicketSpender string `storm:"index" json:"ticket_spender"`
+	TicketSpender string `storm:"index" json:"ticket_spender,omitempty"` // (DCR Field)
 
-	MixDenomination int64 `json:"mix_denom"`
-	MixCount        int32 `json:"mix_count"`
+	MixDenomination int64 `json:"mix_denom,omitempty"` // (DCR Field)
+	MixCount        int32 `json:"mix_count,omitempty"` // (DCR Field)
 
-	Version  int32 `json:"version"`
-	LockTime int32 `json:"lock_time"`
-	Expiry   int32 `json:"expiry"`
-	Fee      int64 `json:"fee"`
-	FeeRate  int64 `json:"fee_rate"`
-	Size     int   `json:"size"`
+	Version  int32  `json:"version"`
+	LockTime int32  `json:"lock_time"`
+	Expiry   int32  `json:"expiry,omitempty"` // (DCR Field)
+	Fee      int64  `json:"fee"`
+	FeeRate  int64  `json:"fee_rate"`
+	Size     int    `json:"size"`
+	Label    string `json:"label,omitempty"` // (BTC Field)
 
 	Direction int32       `storm:"index" json:"direction"`
 	Amount    int64       `json:"amount"`
 	Inputs    []*TxInput  `json:"inputs"`
 	Outputs   []*TxOutput `json:"outputs"`
 
-	// Vote Info
-	VoteVersion        int32  `json:"vote_version"`
-	LastBlockValid     bool   `json:"last_block_valid"`
-	VoteBits           string `json:"vote_bits"`
-	VoteReward         int64  `json:"vote_reward"`
-	TicketSpentHash    string `storm:"unique" json:"ticket_spent_hash"`
-	DaysToVoteOrRevoke int32  `json:"days_to_vote_revoke"`
+	// Vote Info (DCR fields)
+	VoteVersion        int32  `json:"vote_version,omitempty"`
+	LastBlockValid     bool   `json:"last_block_valid,omitempty"`
+	VoteBits           string `json:"vote_bits,omitempty"`
+	VoteReward         int64  `json:"vote_reward,omitempty"`
+	TicketSpentHash    string `storm:"unique" json:"ticket_spent_hash,omitempty"`
+	DaysToVoteOrRevoke int32  `json:"days_to_vote_revoke,omitempty"`
 }
 
 type TxInput struct {
@@ -363,7 +364,7 @@ type TxInput struct {
 type TxOutput struct {
 	Index         int32  `json:"index"`
 	Amount        int64  `json:"amount"`
-	Version       int32  `json:"version"`
+	Version       int32  `json:"version,omitempty"` // (DCR Field)
 	ScriptType    string `json:"script_type"`
 	Address       string `json:"address"`
 	Internal      bool   `json:"internal"`

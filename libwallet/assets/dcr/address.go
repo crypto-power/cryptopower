@@ -88,7 +88,7 @@ func (asset *DCRAsset) CurrentAddress(account int32) (string, error) {
 
 	addr, err := asset.Internal().DCR.CurrentAddress(uint32(account))
 	if err != nil {
-		log.Errorf("CurrentAddress error: %w", err)
+		log.Errorf("CurrentAddress error: %v", err)
 		return "", err
 	}
 	return addr.String(), nil

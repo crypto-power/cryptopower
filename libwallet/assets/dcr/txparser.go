@@ -101,8 +101,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			}
 		}
 
-		reward := ticketOutput - ticketInvestment
-		decodedTx.VoteReward = reward
+		decodedTx.VoteReward = ticketOutput - ticketInvestment
 
 		// update ticket with spender hash
 		ticketPurchaseTx.TicketSpender = decodedTx.Hash
