@@ -168,6 +168,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
 
+	/* Start exchange icons */
 	i.FlypMeIcon = NewImage(decredIcons["flypme"])
 	i.ChangellyIcon = NewImage(decredIcons["changelly"])
 	i.SimpleSwapIcon = NewImage(decredIcons["simpleswap"])
@@ -176,6 +177,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.GodexIcon = NewImage(decredIcons["godex"])
 	i.CoinSwitchIcon = NewImage(decredIcons["coinswitch"])
 	i.ChangeNowIcon = NewImage(decredIcons["changenow"])
+	/* End exchange icons */
 
 	return i
 }

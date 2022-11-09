@@ -46,6 +46,7 @@ type CreateOrderPage struct {
 
 	exchange         api.IDExchange
 	orderItems       []*instantswap.Order
+	ordersList       *cryptomaterial.ClickableList
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
@@ -106,6 +107,9 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	// pg.exchangeRateInfo = "Please select a server"
 	pg.exchangeRateInfo = fmt.Sprintf("Min: %f . Max: %f", pg.min, pg.max)
 	pg.materialLoader = material.Loader(l.Theme.Base)
+
+	pg.ordersList = pg.Theme.NewClickableList(layout.Vertical)
+	pg.ordersList.IsShadowEnabled = true
 
 	pg.fromAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (DCR)")
 	pg.fromAmountEditor.Editor.SetText("")
@@ -235,6 +239,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 				}
 			}()
 		}
+	}
+
+	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
+		// pg.proposalMu.RLock()
+		selectedOrder := pg.orderItems[selectedItem]
+		// pg.proposalMu.RUnlock()
+
+		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, selectedOrder))
 	}
 
 	if pg.refreshExchangeRateBtn.Button.Clicked() {
@@ -542,10 +554,9 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			list := layout.List{Axis: layout.Vertical}
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return list.Layout(gtx, len(pg.orderItems), func(gtx C, i int) D {
+					return pg.ordersList.Layout(gtx, len(pg.orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{
 							Orientation: layout.Vertical,
 							Width:       cryptomaterial.MatchParent,
@@ -601,7 +612,7 @@ func (pg *CreateOrderPage) confirmSourcePassword() {
 			// 	return false
 			// }
 			pm.Dismiss()
-			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, pg.exchange, order))
+			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, order))
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
@@ -616,16 +627,6 @@ func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
 	}
 	fmt.Println("[][][][] ", invoicedAmount)
 
-	params := api.ExchangeRateRequest{
-		From:   "DCR",
-		To:     "BTC",
-		Amount: invoicedAmount,
-	}
-	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
-	if err != nil {
-		return nil, err
-	}
-
 	refundAddress, err := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
 	if err != nil {
 		return nil, err
@@ -636,17 +637,32 @@ func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
 		return nil, err
 	}
 
-	data := api.CreateOrder{
-		RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
-		Destination:     destinationAddress, // your exchanged coins will be sent here
-		FromCurrency:    "DCR",
-		InvoicedAmount:  invoicedAmount, // use InvoicedAmount or InvoicedAmount
-		ToCurrency:      "BTC",
-		ExtraID:         "",
-		Signature:       res.Signature,
-		UserReferenceID: "",
-		RefundExtraID:   "",
+	data := instantswap.Order{
+		Server:                   pg.selectedExchange.Server,
+		SourceWalletID:           pg.sourceWalletSelector.SelectedWallet().GetWalletID(),
+		SourceAccountNumber:      pg.sourceAccountSelector.SelectedAccount().Number,
+		DestinationWalletID:      pg.destinationWalletSelector.SelectedWallet().GetWalletID(),
+		DestinationAccountNumber: pg.destinationAccountSelector.SelectedAccount().Number,
+
+		InvoicedAmount: invoicedAmount,
+		FromCurrency:   pg.fromCurrencyType.String(),
+		ToCurrency:     pg.toCurrencyType.String(),
+
+		RefundAddress:      refundAddress,
+		DestinationAddress: destinationAddress,
 	}
+
+	// data := api.CreateOrder{
+	// 	RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
+	// 	Destination:     destinationAddress, // your exchanged coins will be sent here
+	// 	FromCurrency:    "DCR",
+	// 	InvoicedAmount:  invoicedAmount, // use InvoicedAmount or InvoicedAmount
+	// 	ToCurrency:      "BTC",
+	// 	ExtraID:         "",
+	// 	Signature:       res.Signature,
+	// 	UserReferenceID: "",
+	// 	RefundExtraID:   "",
+	// }
 	order, err := pg.WL.MultiWallet.InstantSwap.CreateOrder(pg.exchange, data)
 	if err != nil {
 		return nil, err

@@ -154,16 +154,30 @@ func (instantSwap *InstantSwap) GetOrderByID(orderID int) (string, error) {
 	return instantSwap.marshalResult(instantSwap.GetOrderByIDRaw(orderID))
 }
 
-func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params instantswap.CreateOrder) (*Order, error) {
+func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params Order) (*Order, error) {
 	const op errors.Op = "instantSwap.CreateOrder"
 
-	res, err := exchangeObject.CreateOrder(params)
+	data := instantswap.CreateOrder{
+		RefundAddress:  params.RefundAddress,      // if the trading fails, the exchange will refund coins here
+		Destination:    params.DestinationAddress, // your exchanged coins will be sent here
+		FromCurrency:   params.FromCurrency,
+		ToCurrency:     params.ToCurrency,
+		InvoicedAmount: params.InvoicedAmount, // use InvoicedAmount or InvoicedAmount
+	}
+
+	res, err := exchangeObject.CreateOrder(data)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	order := &Order{
 		UUID: res.UUID,
+
+		Server:                   params.Server,
+		SourceWalletID:           params.SourceWalletID,
+		SourceAccountNumber:      params.SourceAccountNumber,
+		DestinationWalletID:      params.DestinationWalletID,
+		DestinationAccountNumber: params.DestinationAccountNumber,
 
 		InvoicedAmount: res.InvoicedAmount,
 		OrderedAmount:  res.OrderedAmount,
@@ -176,7 +190,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 		ExchangeRate:       res.ExchangeRate,
 		ChargedFee:         res.ChargedFee,
 		ExpiryTime:         res.Expires,
-		Status:             "WAITING_FOR_DEPOSIT",
+		Status:             instantswap.OrderStatusWaitingForDeposit,
 		CreatedAt:          time.Now().Unix(),
 
 		ExtraID: res.ExtraID, //changenow.io requirement //changelly payinExtraId value
@@ -203,7 +217,7 @@ func (instantSwap *InstantSwap) GetOrderInfo(exchangeObject instantswap.IDExchan
 	order = &Order{
 		TxID:          res.TxID,
 		ReceiveAmount: res.ReceiveAmount,
-		Status:        res.Status,
+		Status:        res.InternalStatus,
 		ExpiryTime:    res.Expires,
 		Confirmations: res.Confirmations,
 		LastUpdate:    res.LastUpdate,

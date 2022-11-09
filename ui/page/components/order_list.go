@@ -2,16 +2,19 @@ package components
 
 import (
 	"fmt"
-	"strconv"
+	// "strconv"
 	"time"
 
 	"gioui.org/layout"
 
+	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"github.com/btcsuite/btcutil"
+	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
@@ -42,8 +45,13 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								invoicedAmount := strconv.FormatFloat(orderItem.InvoicedAmount, 'f', -1, 64)
-								return l.Theme.Label(values.TextSize16, invoicedAmount).Layout(gtx)
+								if orderItem.FromCurrency == utils.DCRWalletAsset.String() {
+									invoicedAmount, _ := dcrutil.NewAmount(orderItem.InvoicedAmount)
+									return l.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
+
+								}
+								invoicedAmount, _ := btcutil.NewAmount(orderItem.InvoicedAmount)
+								return l.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
 							}),
 							layout.Flexed(1, func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
@@ -63,8 +71,12 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 											})
 										}),
 										layout.Rigid(func(gtx C) D {
-											orderedAmount := strconv.FormatFloat(orderItem.OrderedAmount, 'f', -1, 64)
-											return l.Theme.Label(values.TextSize16, orderedAmount).Layout(gtx)
+											if orderItem.ToCurrency == utils.DCRWalletAsset.String() {
+												orderedAmount, _ := dcrutil.NewAmount(orderItem.OrderedAmount)
+												return l.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
+											}
+											orderedAmount, _ := btcutil.NewAmount(orderItem.OrderedAmount)
+											return l.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
 										}),
 									)
 								})
@@ -82,7 +94,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 								return D{}
 							})
 						}),
-						layout.Rigid(l.Theme.Label(values.TextSize16, orderItem.Status).Layout),
+						layout.Rigid(l.Theme.Label(values.TextSize16, orderItem.Status.String()).Layout),
 						layout.Flexed(1, func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return layout.Flex{
@@ -124,6 +136,8 @@ func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
 
 func LoadOrders(l *load.Load, newestFirst bool) []*instantswap.Order {
 	orderItems := make([]*instantswap.Order, 0)
+
+	// l.WL.MultiWallet.InstantSwap.ClearSavedOrders()
 
 	orders, err := l.WL.MultiWallet.InstantSwap.GetOrdersRaw(0, 0, true)
 	if err == nil {
