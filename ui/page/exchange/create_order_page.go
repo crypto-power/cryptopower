@@ -11,7 +11,6 @@ import (
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -79,6 +78,33 @@ type CreateOrderPage struct {
 	min          float64
 	max          float64
 	exchangeRate float64
+
+	*orderData
+}
+
+type orderData struct {
+	exchange api.IDExchange
+	server   instantswap.ExchangeServer
+
+	sourceAccountSelector *components.WalletAndAccountSelector
+	sourceWalletSelector  *components.WalletAndAccountSelector
+
+	destinationAccountSelector *components.WalletAndAccountSelector
+	destinationWalletSelector  *components.WalletAndAccountSelector
+
+	sourceWalletID           int
+	sourceAccountNumber      int32
+	destinationWalletID      int
+	destinationAccountNumber int32
+
+	invoicedAmount float64
+	orderedAmount  float64
+
+	fromCurrency string
+	toCurrency   string
+
+	refundAddress      string
+	destinationAddress string
 }
 
 func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
@@ -89,6 +115,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			List: layout.List{Axis: layout.Vertical},
 		},
 		exchangeSelector: NewExchangeSelector(l),
+		orderData:        &orderData{},
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -242,10 +269,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
-		// pg.proposalMu.RLock()
 		selectedOrder := pg.orderItems[selectedItem]
-		// pg.proposalMu.RUnlock()
-
 		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, selectedOrder))
 	}
 
@@ -259,7 +283,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.createOrderBtn.Clicked() {
-		pg.confirmSourcePassword()
+		pg.showConfirmOrderModal()
 	}
 
 	if pg.settingsButton.Button.Clicked() {
@@ -311,6 +335,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 func (pg *CreateOrderPage) canCreateOrder() bool {
 	if pg.selectedExchange == nil {
+		return false
+	}
+
+	if pg.exchangeRate == 0 {
 		return false
 	}
 
@@ -576,176 +604,45 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	)
 }
 
-func (pg *CreateOrderPage) confirmSourcePassword() {
-	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-		EnableName(false).
-		EnableConfirmPassword(false).
-		Title("Unlock to create order").
-		PasswordHint(values.String(values.StrSpendingPassword)).
-		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := pg.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
+func (pg *CreateOrderPage) showConfirmOrderModal() {
+	invoicedAmount, _ := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
+	orderedAmount, _ := strconv.ParseFloat(pg.toAmountEditor.Editor.Text(), 8)
 
-			// pm.Dismiss() // calls RefreshWindow.
-			order, err := pg.createOrder()
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
+	refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
 
-			err = pg.constructTx(order.DepositAddress, order.InvoicedAmount)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
+	destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
 
-			// err = pg.sourceWalletSelector.SelectedWallet().Broadcast(password)
-			// if err != nil {
-			// 	pm.SetError(err.Error())
-			// 	pm.SetLoading(false)
-			// 	return false
-			// }
-			pm.Dismiss()
-			pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, order))
-			return true
-		})
-	pg.ParentWindow().ShowModal(walletPasswordModal)
+	// fmt.Println("[][][][ wallet selcevotr", pg.sourceWalletSelector.SelectedWallet().GetWalletID())
+	pg.orderData.exchange = pg.exchange
+	pg.orderData.server = pg.selectedExchange.Server
+	pg.orderData.sourceWalletSelector = pg.sourceWalletSelector
+	pg.orderData.sourceAccountSelector = pg.sourceAccountSelector
+	pg.orderData.destinationWalletSelector = pg.sourceWalletSelector
+	pg.orderData.destinationAccountSelector = pg.destinationAccountSelector
 
-}
+	pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
+	pg.sourceAccountNumber = pg.sourceAccountSelector.SelectedAccount().Number
+	pg.destinationWalletID = pg.destinationWalletSelector.SelectedWallet().GetWalletID()
+	pg.destinationAccountNumber = pg.destinationAccountSelector.SelectedAccount().Number
 
-func (pg *CreateOrderPage) createOrder() (*instantswap.Order, error) {
-	fmt.Println("[][][][] ", pg.fromAmountEditor.Editor.Text())
-	invoicedAmount, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("[][][][] ", invoicedAmount)
+	// pg.orderedAmount  =
+	pg.invoicedAmount = invoicedAmount
+	pg.orderedAmount = orderedAmount
 
-	refundAddress, err := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
-	if err != nil {
-		return nil, err
-	}
+	pg.fromCurrency = pg.fromCurrencyType.String()
+	pg.toCurrency = pg.toCurrencyType.String()
 
-	destinationAddress, err := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
-	if err != nil {
-		return nil, err
-	}
+	pg.refundAddress = refundAddress
+	pg.destinationAddress = destinationAddress
 
-	data := instantswap.Order{
-		Server:                   pg.selectedExchange.Server,
-		SourceWalletID:           pg.sourceWalletSelector.SelectedWallet().GetWalletID(),
-		SourceAccountNumber:      pg.sourceAccountSelector.SelectedAccount().Number,
-		DestinationWalletID:      pg.destinationWalletSelector.SelectedWallet().GetWalletID(),
-		DestinationAccountNumber: pg.destinationAccountSelector.SelectedAccount().Number,
-
-		InvoicedAmount: invoicedAmount,
-		FromCurrency:   pg.fromCurrencyType.String(),
-		ToCurrency:     pg.toCurrencyType.String(),
-
-		RefundAddress:      refundAddress,
-		DestinationAddress: destinationAddress,
-	}
-
-	// data := api.CreateOrder{
-	// 	RefundAddress:   refundAddress,      // if the trading fails, the exchange will refund coins here
-	// 	Destination:     destinationAddress, // your exchanged coins will be sent here
-	// 	FromCurrency:    "DCR",
-	// 	InvoicedAmount:  invoicedAmount, // use InvoicedAmount or InvoicedAmount
-	// 	ToCurrency:      "BTC",
-	// 	ExtraID:         "",
-	// 	Signature:       res.Signature,
-	// 	UserReferenceID: "",
-	// 	RefundExtraID:   "",
-	// }
-	order, err := pg.WL.MultiWallet.InstantSwap.CreateOrder(pg.exchange, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return order, nil
-}
-
-func (pg *CreateOrderPage) constructTx(depositAddress string, unitAmount float64) error {
-	destinationAddress := depositAddress
-
-	// destinationAccount := pg.destinationAccountSelector.SelectedAccount()
-
-	// amountAtom, SendMax, err := pg.amount.validAmount()
-	// if err != nil {
-	// 	pg.feeEstimationError(err.Error())
-	// 	return
+	// if pg.selectedWallet.IsUnsignedTxExist() {
+	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData)
+	// confirmOrderModal.orderCreated = func() {
+	// 	pg.ParentWindow().Reload()
 	// }
 
-	// dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	// if dcrImpl == nil {
-	// 	pg.feeEstimationError("Only DCR implementation is supported")
-	// 	// Only DCR implementation is supported past here.
-	// 	return
-	// }
+	pg.ParentWindow().ShowModal(confirmOrderModal)
 
-	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err := pg.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
-	if err != nil {
-		// pg.feeEstimationError(err.Error())
-		return err
-	}
-
-	amount := btc.AmountSatoshi(unitAmount)
-	err = pg.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
-	if err != nil {
-		// pg.feeEstimationError(err.Error())
-		return err
-	}
-
-	_, err = pg.sourceWalletSelector.SelectedWallet().EstimateFeeAndSize()
-	if err != nil {
-		// pg.feeEstimationError(err.Error())
-		return err
-	}
-
-	// feeAtom := feeAndSize.Fee.UnitValue
-	// if SendMax {
-	// 	amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
-	// }
-
-	// wal := pg.sourceWalletSelector.SelectedWallet()
-	// totalSendingAmount := wal.ToAmount(unitAmount + feeAtom)
-	// balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
-
-	// populate display data
-	// pg.txFee = wal.ToAmount(feeAtom).String()
-	// pg.estSignedSize = fmt.Sprintf("%d bytes", feeAndSize.EstimatedSignedSize)
-	// pg.totalCost = totalSendingAmount.String()
-	// pg.balanceAfterSend = balanceAfterSend.String()
-	// pg.sendAmount = wal.ToAmount(amountAtom).String()
-	// pg.destinationAddress = destinationAddress
-	// pg.destinationAccount = destinationAccount
-	// pg.sourceAccount = sourceAccount
-
-	// if SendMax {
-	// 	// TODO: this workaround ignores the change events from the
-	// 	// amount input to avoid construct tx cycle.
-	// 	pg.amount.setAmount(amountAtom)
-	// }
-
-	// if pg.exchangeRate != -1 && pg.usdExchangeSet {
-	// 	pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
-	// 	pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
-	// 	pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.DCRToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
-
-	// 	usdAmount := utils.DCRToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
-	// 	pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
-	// }
-
-	// pg.txAuthor = pg.sourceWalletSelector.SelectedWallet().GetUnsignedTx()
-
-	return nil
 }
 
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
