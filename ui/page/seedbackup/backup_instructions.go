@@ -104,7 +104,7 @@ func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.W
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pageNavigator.CloseCurrentPage()
+			pageNavigator.ClosePagesAfter("Main")
 			return true
 		})
 	window.ShowModal(infoModal)

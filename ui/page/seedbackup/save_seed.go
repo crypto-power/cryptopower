@@ -59,9 +59,9 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),
 		wallet:           wallet,
 		hexLabel:         l.Theme.Label(values.TextSize12, ""),
-		copy:             l.Theme.Button("Copy"),
-		infoText:         "You will be asked to enter the seed word on the next screen.",
-		actionButton:     l.Theme.Button("I have written down all 33 words"),
+		copy:             l.Theme.Button(values.String(values.StrCopy)),
+		infoText:         values.String(values.StrAskedEnterSeedWords),
+		actionButton:     l.Theme.Button(values.String(values.StrWroteAllWords)),
 		seedList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -93,7 +93,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 	passwordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title("Confirm to show seed").
+		Title(values.String(values.StrConfirmShowSeed)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed, err := pg.wallet.DecryptSeed(password)
 			if err != nil {
@@ -142,7 +142,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
-			pg.ParentNavigator().CloseCurrentPage()
+			pg.ParentNavigator().ClosePagesAfter("Main")
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 
@@ -181,8 +181,8 @@ func (pg *SaveSeedPage) Layout(gtx C) D {
 func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 	sp := components.SubPage{
 		Load:       pg.Load,
-		Title:      "Write down seed word",
-		SubTitle:   "Step 1/2",
+		Title:      values.String(values.StrWriteDownSeed),
+		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -191,12 +191,12 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, "Write down all 33 words in the correct order.")
+					label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize14, "Your 33-word seed word")
+					label := pg.Theme.Label(values.TextSize14, values.String(values.StrYourSeedWords))
 					label.Color = pg.Theme.Color.GrayText1
 					return cryptomaterial.LinearLayout{
 						Width:       cryptomaterial.MatchParent,
@@ -230,8 +230,8 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 	sp := components.SubPage{
 		Load:       pg.Load,
-		Title:      "Write down seed word",
-		SubTitle:   "Step 1/2",
+		Title:      values.String(values.StrWriteDownSeed),
+		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -239,12 +239,12 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, "Write down all 33 words in the correct order.")
+					label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize14, "Your 33-word seed word")
+					label := pg.Theme.Label(values.TextSize14, values.String(values.StrYourSeedWords))
 					label.Color = pg.Theme.Color.GrayText1
 
 					return cryptomaterial.LinearLayout{
@@ -314,7 +314,7 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 		Padding:     layout.Inset{Top: values.MarginPadding5, Right: values.MarginPadding16, Bottom: values.MarginPadding16, Left: values.MarginPadding16},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			label := pg.Theme.Label(values.TextSize14, "Seed hex")
+			label := pg.Theme.Label(values.TextSize14, values.String(values.StrSeedHex))
 			label.Color = pg.Theme.Color.GrayText1
 
 			return label.Layout(gtx)
@@ -351,10 +351,10 @@ func (pg *SaveSeedPage) handleCopyEvent(gtx layout.Context) {
 	if pg.copy.Clicked() {
 		clipboard.WriteOp{Text: pg.hexLabel.Text}.Add(gtx.Ops)
 
-		pg.copy.Text = "Copied!"
+		pg.copy.Text = values.String(values.StrCopied)
 		pg.copy.Color = pg.Theme.Color.Success
 		time.AfterFunc(time.Second*3, func() {
-			pg.copy.Text = "Copy"
+			pg.copy.Text = values.String(values.StrCopy)
 			pg.copy.Color = pg.Theme.Color.Primary
 			pg.ParentWindow().Reload()
 		})
