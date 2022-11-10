@@ -12,7 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
-	// "code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
@@ -186,6 +186,23 @@ func (osm *orderSettingsModal) Handle() {
 		osm.Dismiss()
 	}
 
+	if osm.sourceInfoButton.Button.Clicked() {
+		info := modal.NewCustomModal(osm.Load).
+			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			Body("Wallets that have not completed sync will be hidden from the list Refunds and leftover change will be returned to the selected source account").
+			Title("Source")
+		osm.ParentWindow().ShowModal(info)
+	}
+
+	if osm.destinationInfoButton.Button.Clicked() {
+		info := modal.NewCustomModal(osm.Load).
+			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
+			Title("Destination")
+		osm.ParentWindow().ShowModal(info)
+	}
 }
 
 func (osm *orderSettingsModal) handleCopyEvent(gtx C) {

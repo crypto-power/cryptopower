@@ -215,6 +215,7 @@ func (instantSwap *InstantSwap) GetOrderInfo(exchangeObject instantswap.IDExchan
 	}
 
 	order = &Order{
+		ID:            order.ID,
 		TxID:          res.TxID,
 		ReceiveAmount: res.ReceiveAmount,
 		Status:        res.InternalStatus,
@@ -224,6 +225,11 @@ func (instantSwap *InstantSwap) GetOrderInfo(exchangeObject instantswap.IDExchan
 	}
 
 	err = instantSwap.updateOrder(order)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	order, err = instantSwap.GetOrderByIDRaw(order.ID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

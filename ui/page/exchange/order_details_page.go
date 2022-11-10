@@ -39,10 +39,8 @@ type OrderDetailsPage struct {
 	container       *widget.List
 
 	exchange   api.IDExchange
-	order      *instantswap.Order
 	UUID       string
-	orderInfo  *api.OrderInfoResult
-	status     string
+	orderInfo  *instantswap.Order
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 
@@ -66,7 +64,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 				Alignment: layout.Middle,
 			},
 		},
-		order: order,
+		orderInfo: order,
 	}
 
 	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(order.Server, "", "")
@@ -82,11 +80,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	pg.createOrderBtn = pg.Theme.Button("Create New Order")
 	pg.refreshBtn = pg.Theme.Button("Refresh")
 
-	// fmt.Println("[][][][] UUID", pg.order.UUID)
-	pg.orderInfo, _ = pg.getOrderInfo(pg.order.UUID)
-	// fmt.Println("[][][][] status", pg.orderInfo.Status)
-
-	pg.status = pg.orderInfo.Status
+	pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
 
 	return pg
 }
@@ -107,9 +101,9 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 
 func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
-		pg.orderInfo, _ = pg.getOrderInfo(pg.order.UUID)
+		pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
 		// fmt.Println("[][][][] status new", pg.orderInfo.Status)
-		pg.status = pg.orderInfo.Status
+		// pg.status = pg.orderInfo.Status.String()
 	}
 }
 
@@ -171,10 +165,10 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																	layout.Rigid(func(gtx C) D {
 																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																			layout.Rigid(func(gtx C) D {
-																				if pg.order.FromCurrency == utils.DCRWalletAsset.String() {
-																					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding60)
+																				if pg.orderInfo.FromCurrency == utils.DCRWalletAsset.String() {
+																					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
 																				}
-																				return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding60)
+																				return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
 																			}),
 																			layout.Rigid(func(gtx C) D {
 																				return layout.Inset{
@@ -186,18 +180,18 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																							return pg.Theme.Label(values.TextSize16, "Sending").Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							if pg.order.FromCurrency == utils.DCRWalletAsset.String() {
-																								invoicedAmount, _ := dcrutil.NewAmount(pg.order.InvoicedAmount)
+																							if pg.orderInfo.FromCurrency == utils.DCRWalletAsset.String() {
+																								invoicedAmount, _ := dcrutil.NewAmount(pg.orderInfo.InvoicedAmount)
 																								return pg.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
 
 																							}
-																							invoicedAmount, _ := btcutil.NewAmount(pg.order.InvoicedAmount)
+																							invoicedAmount, _ := btcutil.NewAmount(pg.orderInfo.InvoicedAmount)
 																							return pg.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							sourceWallet := pg.WL.MultiWallet.WalletWithID(pg.order.SourceWalletID)
+																							sourceWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.SourceWalletID)
 																							sourceWalletName := sourceWallet.GetWalletName()
-																							sourceAccount, _ := sourceWallet.GetAccount(pg.order.SourceAccountNumber)
+																							sourceAccount, _ := sourceWallet.GetAccount(pg.orderInfo.SourceAccountNumber)
 																							fromText := fmt.Sprintf("From: %s (%s)", sourceWalletName, sourceAccount.Name)
 																							return pg.Theme.Label(values.TextSize16, fromText).Layout(gtx)
 																						}),
@@ -217,10 +211,10 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																	layout.Rigid(func(gtx C) D {
 																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																			layout.Rigid(func(gtx C) D {
-																				if pg.order.ToCurrency == utils.DCRWalletAsset.String() {
-																					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding60)
+																				if pg.orderInfo.ToCurrency == utils.DCRWalletAsset.String() {
+																					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
 																				}
-																				return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding60)
+																				return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
 																			}),
 																			layout.Rigid(func(gtx C) D {
 																				return layout.Inset{
@@ -232,22 +226,22 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																							return pg.Theme.Label(values.TextSize16, "Receiving").Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							if pg.order.ToCurrency == utils.DCRWalletAsset.String() {
-																								orderedAmount, _ := dcrutil.NewAmount(pg.order.OrderedAmount)
+																							if pg.orderInfo.ToCurrency == utils.DCRWalletAsset.String() {
+																								orderedAmount, _ := dcrutil.NewAmount(pg.orderInfo.OrderedAmount)
 																								return pg.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
 																							}
-																							orderedAmount, _ := btcutil.NewAmount(pg.order.OrderedAmount)
+																							orderedAmount, _ := btcutil.NewAmount(pg.orderInfo.OrderedAmount)
 																							return pg.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							destinationWallet := pg.WL.MultiWallet.WalletWithID(pg.order.DestinationWalletID)
+																							destinationWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.DestinationWalletID)
 																							destinationWalletName := destinationWallet.GetWalletName()
-																							destinationAccount, _ := destinationWallet.GetAccount(pg.order.DestinationAccountNumber)
+																							destinationAccount, _ := destinationWallet.GetAccount(pg.orderInfo.DestinationAccountNumber)
 																							toText := fmt.Sprintf("To: %s (%s)", destinationWalletName, destinationAccount.Name)
 																							return pg.Theme.Label(values.TextSize16, toText).Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							return pg.Theme.Label(values.TextSize16, pg.order.DestinationAddress).Layout(gtx)
+																							return pg.Theme.Label(values.TextSize16, pg.orderInfo.DestinationAddress).Layout(gtx)
 																						}),
 																					)
 																				})
@@ -277,7 +271,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.Theme.Label(values.TextSize28, pg.order.Status.String()).Layout(gtx)
+					return pg.Theme.Label(values.TextSize28, pg.orderInfo.Status.String()).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
@@ -304,15 +298,11 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 	})
 }
 
-func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*api.OrderInfoResult, error) {
-	orderInfo, err := pg.exchange.OrderInfo(UUID)
+func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*instantswap.Order, error) {
+	orderInfo, err := pg.WL.MultiWallet.InstantSwap.GetOrderInfo(pg.exchange, UUID)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(orderInfo)
-
-	fmt.Println(orderInfo.InternalStatus.String())
-
-	return &orderInfo, nil
+	return orderInfo, nil
 }

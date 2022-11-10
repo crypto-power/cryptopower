@@ -34,18 +34,13 @@ type confirmOrderModal struct {
 	isCreating   bool
 
 	*orderData
-
-	// *authoredTxData
-	// asset           load.WalletMapping
 	exchangeRateSet bool
 }
 
 func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	com := &confirmOrderModal{
-		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("send_confirm_modal"),
-		// authoredTxData: data,
-		// asset:          asset,
+		Load:      l,
+		Modal:     l.Theme.ModalFloatTitle("send_confirm_modal"),
 		orderData: data,
 	}
 
@@ -101,8 +96,6 @@ func (com *confirmOrderModal) confirmOrder() {
 			return
 		}
 
-		fmt.Println("[][][][]] ORDER", order)
-
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
 			com.SetError(err.Error())
@@ -110,6 +103,7 @@ func (com *confirmOrderModal) confirmOrder() {
 			return
 		}
 
+		// TODO: Enable to allow debit of account
 		// err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
 		// if err != nil {
 		// 	com.SetError(err.Error())
@@ -162,10 +156,10 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if com.orderData.fromCurrency == utils.DCRWalletAsset.String() {
-								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding60)
+							if com.orderData.fromCurrency == utils.DCRWalletAsset {
+								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
 							}
-							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding60)
+							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -177,7 +171,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 										return com.Theme.Label(values.TextSize16, "Sending").Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										if com.orderData.fromCurrency == utils.DCRWalletAsset.String() {
+										if com.orderData.fromCurrency == utils.DCRWalletAsset {
 											invoicedAmount, _ := dcrutil.NewAmount(com.orderData.invoicedAmount)
 											return com.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
 
@@ -208,10 +202,10 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if com.orderData.toCurrency == utils.DCRWalletAsset.String() {
-								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding60)
+							if com.orderData.toCurrency == utils.DCRWalletAsset {
+								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
 							}
-							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding60)
+							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -223,7 +217,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 										return com.Theme.Label(values.TextSize16, "Receiving").Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										if com.orderData.toCurrency == utils.DCRWalletAsset.String() {
+										if com.orderData.toCurrency == utils.DCRWalletAsset {
 											orderedAmount, _ := dcrutil.NewAmount(com.orderData.orderedAmount)
 											return com.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
 										}
@@ -293,23 +287,6 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 // }
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
-	// fmt.Println("[][][][] ", com.fromAmountEditor.Editor.Text())
-	// invoicedAmount, err := strconv.ParseFloat(com.fromAmountEditor.Editor.Text(), 8)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	fmt.Println("[][][][] ", com.invoicedAmount)
-
-	// refundAddress, err := com.sourceWalletSelector.SelectedWallet().CurrentAddress(com.sourceAccountSelector.SelectedAccount().Number)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// destinationAddress, err := com.destinationWalletSelector.SelectedWallet().CurrentAddress(com.destinationAccountSelector.SelectedAccount().Number)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	data := instantswap.Order{
 		Server:                   com.server,
 		SourceWalletID:           com.sourceWalletSelector.SelectedWallet().GetWalletID(),
@@ -318,8 +295,8 @@ func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 		DestinationAccountNumber: com.destinationAccountSelector.SelectedAccount().Number,
 
 		InvoicedAmount: com.invoicedAmount,
-		FromCurrency:   com.fromCurrency,
-		ToCurrency:     com.toCurrency,
+		FromCurrency:   com.fromCurrency.String(),
+		ToCurrency:     com.toCurrency.String(),
 
 		RefundAddress:      com.refundAddress,
 		DestinationAddress: com.destinationAddress,

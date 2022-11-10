@@ -100,8 +100,8 @@ type orderData struct {
 	invoicedAmount float64
 	orderedAmount  float64
 
-	fromCurrency string
-	toCurrency   string
+	fromCurrency utils.AssetType
+	toCurrency   utils.AssetType
 
 	refundAddress      string
 	destinationAddress string
@@ -301,6 +301,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 
+	if pg.infoButton.Button.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			SetContentAlignment(layout.Center, layout.Center, layout.Center).
+			Body("To change the default source and destination wallet/account for exchange, click the settings icon.").
+			PositiveButtonWidth(values.MarginPadding100)
+		pg.ParentWindow().ShowModal(info)
+	}
+
 	for _, evt := range pg.fromAmountEditor.Editor.Events() {
 		if pg.fromAmountEditor.Editor.Focused() {
 			switch evt.(type) {
@@ -365,22 +373,23 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 // swapCurrency swaps the values of the from and to currency fields.
 func (pg *CreateOrderPage) swapCurrency() {
 	// store the current value of the from currency in a temp variable
+	tempSourceWalletSelector := pg.sourceWalletSelector
+	tempSourceAccountSelector := pg.sourceAccountSelector
 	tempFromCurrencyType := pg.fromCurrencyType
 	tempFromCurrencyValue := pg.fromAmountEditor.Editor.Text()
 	tempFromButtonText := pg.fromAmountEditor.CustomButton.Text
 	tempFromButtonBackground := pg.fromAmountEditor.CustomButton.Background
-	// store the current value of the to currency in a temp variable
-	tempToCurrencyType := pg.fromCurrencyType
-	tempToCurrencyValue := pg.toAmountEditor.Editor.Text()
-	tempToButtonText := pg.toAmountEditor.CustomButton.Text
-	tempToButtonBackground := pg.toAmountEditor.CustomButton.Background
 
 	// Swap values
-	pg.fromCurrencyType = tempToCurrencyType
-	pg.fromAmountEditor.Editor.SetText(tempToCurrencyValue)
-	pg.fromAmountEditor.CustomButton.Text = tempToButtonText
-	pg.fromAmountEditor.CustomButton.Background = tempToButtonBackground
+	pg.sourceWalletSelector = pg.destinationWalletSelector
+	pg.sourceAccountSelector = pg.destinationAccountSelector
+	pg.fromCurrencyType = pg.toCurrencyType
+	pg.fromAmountEditor.Editor.SetText(pg.toAmountEditor.Editor.Text())
+	pg.fromAmountEditor.CustomButton.Text = pg.toAmountEditor.CustomButton.Text
+	pg.fromAmountEditor.CustomButton.Background = pg.toAmountEditor.CustomButton.Background
 
+	pg.destinationWalletSelector = tempSourceWalletSelector
+	pg.destinationAccountSelector = tempSourceAccountSelector
 	pg.toCurrencyType = tempFromCurrencyType
 	pg.toAmountEditor.Editor.SetText(tempFromCurrencyValue)
 	pg.toAmountEditor.CustomButton.Text = tempFromButtonText
@@ -629,8 +638,8 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 	pg.invoicedAmount = invoicedAmount
 	pg.orderedAmount = orderedAmount
 
-	pg.fromCurrency = pg.fromCurrencyType.String()
-	pg.toCurrency = pg.toCurrencyType.String()
+	pg.fromCurrency = pg.fromCurrencyType
+	pg.toCurrency = pg.toCurrencyType
 
 	pg.refundAddress = refundAddress
 	pg.destinationAddress = destinationAddress
