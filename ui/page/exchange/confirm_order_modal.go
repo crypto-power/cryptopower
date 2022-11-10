@@ -100,13 +100,13 @@ func (com *confirmOrderModal) confirmOrder() {
 			return
 		}
 
-		// TODO: Enable to allow debit of account
-		// err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
-		// if err != nil {
-		// 	com.SetError(err.Error())
-		// 	com.SetLoading(false)
-		// 	return
-		// }
+		// FOR DEVELOPMENT: Comment this block to prevent debit of account
+		err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
+		if err != nil {
+			com.SetError(err.Error())
+			com.SetLoading(false)
+			return
+		}
 
 		successModal := modal.NewSuccessModal(com.Load, values.String(values.StrOrderCeated), modal.DefaultClickFunc())
 		com.ParentWindow().ShowModal(successModal)
