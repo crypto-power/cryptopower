@@ -607,4 +607,8 @@ const EN = `
 "unconfirmedTx"    = "Unconfirmed"
 "txStatusPending"         = "Pending (%v of %v confirmations)" 
 "selectAServer" = "Select A Server"
+"source" = "Source"
+"destination" = "Destination"
+"sourceModalInfo" = "Wallets that have not completed sync will be hidden from the list. %v Refunds and leftover change will be returned to the selected source account"
+"destinationModalInfo" = "A new receiving address will be automatically generated within the selected account."
 `

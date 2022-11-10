@@ -21,6 +21,7 @@ const (
 	SecurityToolsInfoTemplate      = "SecurityToolsInfo"
 	RemoveWalletInfoTemplate       = "RemoveWalletInfo"
 	SetGapLimitTemplate            = "SetGapLimit"
+	SourceModalInfoTemplate        = "SourceModalInfo"
 )
 
 func verifyMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
@@ -103,5 +104,12 @@ func setGapLimitText(l *load.Load) []layout.Widget {
 	text := values.StringF(values.StrSetGapLimitInfo, `<span style="text-color: gray">`, `</span>`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, l.Theme).Layout,
+	}
+}
+
+func sourceModalInfo(th *cryptomaterial.Theme) []layout.Widget {
+	text := values.StringF(values.StrSourceModalInfo, `<br><br>`)
+	return []layout.Widget{
+		renderers.RenderHTML(text, th).Layout,
 	}
 }

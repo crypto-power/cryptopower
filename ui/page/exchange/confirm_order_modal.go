@@ -156,10 +156,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if com.orderData.fromCurrency == utils.DCRWalletAsset {
-								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
-							}
-							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
+							return com.setWalletLogo(gtx, com.orderData.fromCurrency)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -202,15 +199,11 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if com.orderData.toCurrency == utils.DCRWalletAsset {
-								return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
-							}
-							return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
+							return com.setWalletLogo(gtx, com.orderData.toCurrency)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Left: values.MarginPadding10,
-								// Right: values.MarginPadding50,
 							}.Layout(gtx, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
@@ -275,16 +268,12 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 	return com.Modal.Layout(gtx, w)
 }
 
-// func (com *confirmOrderModal) setWalletLogo(gtx C) D {
-// 	walletIcon := com.Theme.Icons.DecredLogo
-// 	if com.asset.GetAssetType() == utils.BTCWalletAsset {
-// 		walletIcon = com.Theme.Icons.BTC
-// 	}
-// 	inset := layout.Inset{
-// 		Right: values.MarginPadding8, Left: values.MarginPadding25,
-// 	}
-// 	return inset.Layout(gtx, walletIcon.Layout16dp)
-// }
+func (com *confirmOrderModal) setWalletLogo(gtx C, currency utils.AssetType) D {
+	if currency == utils.DCRWalletAsset {
+		return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
+	}
+	return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
+}
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 	data := instantswap.Order{
@@ -313,76 +302,17 @@ func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 func (com *confirmOrderModal) constructTx(depositAddress string, unitAmount float64) error {
 	destinationAddress := depositAddress
 
-	// destinationAccount := com.destinationAccountSelector.SelectedAccount()
-
-	// amountAtom, SendMax, err := com.amount.validAmount()
-	// if err != nil {
-	// 	com.feeEstimationError(err.Error())
-	// 	return
-	// }
-
-	// dcrImpl := com.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	// if dcrImpl == nil {
-	// 	com.feeEstimationError("Only DCR implementation is supported")
-	// 	// Only DCR implementation is supported past here.
-	// 	return
-	// }
-
 	sourceAccount := com.sourceAccountSelector.SelectedAccount()
 	err := com.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
 	if err != nil {
-		// com.feeEstimationError(err.Error())
 		return err
 	}
 
 	amount := btc.AmountSatoshi(unitAmount)
 	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
 	if err != nil {
-		// com.feeEstimationError(err.Error())
 		return err
 	}
-
-	_, err = com.sourceWalletSelector.SelectedWallet().EstimateFeeAndSize()
-	if err != nil {
-		// com.feeEstimationError(err.Error())
-		return err
-	}
-
-	// feeAtom := feeAndSize.Fee.UnitValue
-	// if SendMax {
-	// 	amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
-	// }
-
-	// wal := com.sourceWalletSelector.SelectedWallet()
-	// totalSendingAmount := wal.ToAmount(unitAmount + feeAtom)
-	// balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
-
-	// populate display data
-	// com.txFee = wal.ToAmount(feeAtom).String()
-	// com.estSignedSize = fmt.Sprintf("%d bytes", feeAndSize.EstimatedSignedSize)
-	// com.totalCost = totalSendingAmount.String()
-	// com.balanceAfterSend = balanceAfterSend.String()
-	// com.sendAmount = wal.ToAmount(amountAtom).String()
-	// com.destinationAddress = destinationAddress
-	// com.destinationAccount = destinationAccount
-	// com.sourceAccount = sourceAccount
-
-	// if SendMax {
-	// 	// TODO: this workaround ignores the change events from the
-	// 	// amount input to avoid construct tx cycle.
-	// 	com.amount.setAmount(amountAtom)
-	// }
-
-	// if com.exchangeRate != -1 && com.usdExchangeSet {
-	// 	com.txFeeUSD = fmt.Sprintf("$%.4f", utils.DCRToUSD(com.exchangeRate, feeAndSize.Fee.CoinValue))
-	// 	com.totalCostUSD = utils.FormatUSDBalance(com.Printer, utils.DCRToUSD(com.exchangeRate, totalSendingAmount.ToCoin()))
-	// 	com.balanceAfterSendUSD = utils.FormatUSDBalance(com.Printer, utils.DCRToUSD(com.exchangeRate, balanceAfterSend.ToCoin()))
-
-	// 	usdAmount := utils.DCRToUSD(com.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
-	// 	com.sendAmountUSD = utils.FormatUSDBalance(com.Printer, usdAmount)
-	// }
-
-	// com.txAuthor = com.sourceWalletSelector.SelectedWallet().GetUnsignedTx()
 
 	return nil
 }

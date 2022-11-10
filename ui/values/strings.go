@@ -713,4 +713,8 @@ const (
 	StrCanceling                       = "canceling"
 	StrTxStatusPending                 = "txStatusPending"
 	StrSelectAServer                   = "selectAServer"
+	StrSource                          = "source"
+	StrDestination                     = "destination"
+	StrSourceModalInfo                 = "sourceModalInfo"
+	StrDestinationModalInfo            = "destinationModalInfo"
 )

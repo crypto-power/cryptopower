@@ -34,13 +34,8 @@ type orderSettingsModal struct {
 	settingsSaved func(params *callbackParams)
 	onCancel      func()
 
-	cancelBtn      cryptomaterial.Button
-	saveBtn        cryptomaterial.Button
-	passwordEditor cryptomaterial.Editor
-
-	scrollContainer *widget.List
-
-	isSending bool
+	cancelBtn cryptomaterial.Button
+	saveBtn   cryptomaterial.Button
 
 	sourceInfoButton      cryptomaterial.IconButton
 	destinationInfoButton cryptomaterial.IconButton
@@ -58,14 +53,8 @@ type orderSettingsModal struct {
 
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
-		Load:  l,
-		Modal: l.Theme.ModalFloatTitle("Settings"),
-		scrollContainer: &widget.List{
-			List: layout.List{
-				Axis:      layout.Vertical,
-				Alignment: layout.Middle,
-			},
-		},
+		Load:      l,
+		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		orderData: data,
 	}
 
@@ -75,11 +64,6 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	osm.saveBtn = l.Theme.Button(values.String(values.StrSave))
 	osm.saveBtn.Font.Weight = text.Medium
 	osm.saveBtn.SetEnabled(false)
-
-	osm.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
-	osm.passwordEditor.Editor.SetText("")
-	osm.passwordEditor.Editor.SingleLine = true
-	osm.passwordEditor.Editor.Submit = true
 
 	osm.sourceInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	osm.destinationInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -151,16 +135,9 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
-
-	osm.passwordEditor.Editor.Focus()
-}
-
-func (osm *orderSettingsModal) SetError(err string) {
-	osm.passwordEditor.SetError(values.TranslateErr(err))
 }
 
 func (osm *orderSettingsModal) SetLoading(loading bool) {
-	osm.isSending = loading
 	osm.Modal.SetDisabled(loading)
 }
 
@@ -192,8 +169,8 @@ func (osm *orderSettingsModal) Handle() {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
-			Body("Wallets that have not completed sync will be hidden from the list Refunds and leftover change will be returned to the selected source account").
-			Title("Source")
+			SetupWithTemplate(modal.SourceModalInfoTemplate).
+			Title(values.String(values.StrSource))
 		osm.ParentWindow().ShowModal(info)
 	}
 
@@ -201,8 +178,8 @@ func (osm *orderSettingsModal) Handle() {
 		info := modal.NewCustomModal(osm.Load).
 			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
-			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
-			Title("Destination")
+			Body(values.String(values.StrDestinationModalInfo)).
+			Title(values.String(values.StrDestination))
 		osm.ParentWindow().ShowModal(info)
 	}
 }
@@ -210,7 +187,7 @@ func (osm *orderSettingsModal) Handle() {
 func (osm *orderSettingsModal) handleCopyEvent(gtx C) {
 	osm.addressEditor.EditorIconButtonEvent = func() {
 		clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
-		osm.Toast.Notify("Copied")
+		osm.Toast.Notify(values.String(values.StrCopied))
 	}
 }
 
@@ -245,7 +222,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 			return layout.Inset{
 				Bottom: values.MarginPadding8,
 			}.Layout(gtx, func(gtx C) D {
-				txt := osm.Theme.Label(values.TextSize20, "Settings")
+				txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
 				txt.Font.Weight = text.SemiBold
 				return txt.Layout(gtx)
 			})
@@ -260,91 +237,89 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 					Width:  cryptomaterial.MatchParent,
 					Height: cryptomaterial.WrapContent,
 				}.Layout2(gtx, func(gtx C) D {
-					return osm.Theme.List(osm.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Bottom: values.MarginPadding16,
-								}.Layout(gtx, func(gtx C) D {
-									return cryptomaterial.LinearLayout{
-										Width:       cryptomaterial.MatchParent,
-										Height:      cryptomaterial.WrapContent,
-										Orientation: layout.Vertical,
-										Margin:      layout.Inset{Bottom: values.MarginPadding16},
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													txt := osm.Theme.Label(values.TextSize16, "Source")
-													txt.Font.Weight = text.SemiBold
-													return txt.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													return osm.sourceInfoButton.Layout(gtx)
-												}),
-											)
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Bottom: values.MarginPadding16,
-											}.Layout(gtx, func(gtx C) D {
-												return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
-											})
-										}),
-										layout.Rigid(func(gtx C) D {
-											return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
-										}),
-									)
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{
+								Bottom: values.MarginPadding16,
+							}.Layout(gtx, func(gtx C) D {
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.MatchParent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Vertical,
+									Margin:      layout.Inset{Bottom: values.MarginPadding16},
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
+												txt.Font.Weight = text.SemiBold
+												return txt.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return osm.sourceInfoButton.Layout(gtx)
+											}),
+										)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{
+											Bottom: values.MarginPadding16,
+										}.Layout(gtx, func(gtx C) D {
+											return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
+									}),
+								)
 
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Bottom: values.MarginPadding16,
-								}.Layout(gtx, func(gtx C) D {
-									return cryptomaterial.LinearLayout{
-										Width:       cryptomaterial.MatchParent,
-										Height:      cryptomaterial.WrapContent,
-										Orientation: layout.Vertical,
-										Margin:      layout.Inset{Bottom: values.MarginPadding16},
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													txt := osm.Theme.Label(values.TextSize16, "Destination")
-													txt.Font.Weight = text.SemiBold
-													return txt.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													return osm.destinationInfoButton.Layout(gtx)
-												}),
-											)
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Bottom: values.MarginPadding16,
-											}.Layout(gtx, func(gtx C) D {
-												return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
-											})
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Bottom: values.MarginPadding16,
-											}.Layout(gtx, func(gtx C) D {
-												return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
-											})
-										}),
-										layout.Rigid(func(gtx C) D {
-											gtx = gtx.Disabled()
-											osm.addressEditor.SelectionColor = osm.Theme.Color.Gray5
-											return osm.addressEditor.Layout(gtx)
-										}),
-									)
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{
+								Bottom: values.MarginPadding16,
+							}.Layout(gtx, func(gtx C) D {
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.MatchParent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Vertical,
+									Margin:      layout.Inset{Bottom: values.MarginPadding16},
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
+												txt.Font.Weight = text.SemiBold
+												return txt.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return osm.destinationInfoButton.Layout(gtx)
+											}),
+										)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{
+											Bottom: values.MarginPadding16,
+										}.Layout(gtx, func(gtx C) D {
+											return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{
+											Bottom: values.MarginPadding16,
+										}.Layout(gtx, func(gtx C) D {
+											return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										gtx = gtx.Disabled() // since this is disabled, the copy icon doesn't work
+										osm.addressEditor.SelectionColor = osm.Theme.Color.Gray5
+										return osm.addressEditor.Layout(gtx)
+									}),
+								)
 
-								})
-							}),
-						)
-					})
+							})
+						}),
+					)
 				})
 			})
 		},
