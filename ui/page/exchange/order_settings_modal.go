@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -53,9 +52,11 @@ type orderSettingsModal struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	addressEditor cryptomaterial.Editor
+
+	*orderData
 }
 
-func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
+func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("Settings"),
@@ -65,6 +66,7 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 				Alignment: layout.Middle,
 			},
 		},
+		orderData: data,
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
@@ -89,7 +91,7 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	osm.addressEditor.Editor.SingleLine = true
 
 	// Source wallet picker
-	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, utils.DCRWalletAsset).
+	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
 		Title(values.String(values.StrFrom))
 
 	// Source account picker
@@ -107,7 +109,7 @@ func newOrderSettingsModalModal(l *load.Load) *orderSettingsModal {
 	})
 
 	// Destination wallet picker
-	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, utils.BTCWalletAsset).
+	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
 		Title(values.String(values.StrTo))
 
 	// Destination account picker

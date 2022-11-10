@@ -287,7 +287,9 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.settingsButton.Button.Clicked() {
-		orderSettingsModal := newOrderSettingsModalModal(pg.Load).OnSettingsSaved(func(params *callbackParams) {
+		pg.fromCurrency = pg.fromCurrencyType
+		pg.toCurrency = pg.toCurrencyType
+		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).OnSettingsSaved(func(params *callbackParams) {
 			pg.sourceAccountSelector = params.sourceAccountSelector
 			pg.sourceWalletSelector = params.sourceWalletSelector
 			pg.destinationAccountSelector = params.destinationAccountSelector
