@@ -14,8 +14,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
-	"github.com/btcsuite/btcutil"
-	"github.com/decred/dcrd/dcrutil/v4"
 
 	api "code.cryptopower.dev/exchange/instantswap"
 )
@@ -139,7 +137,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																layout.Rigid(func(gtx C) D {
 																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																		layout.Rigid(func(gtx C) D {
-																			return pg.setWalletLogo(gtx, pg.orderInfo.FromCurrency, values.MarginPadding30)
+																			return components.SetWalletLogo(pg.Load, gtx, pg.orderInfo.FromCurrency, values.MarginPadding30)
 																		}),
 																		layout.Rigid(func(gtx C) D {
 																			return layout.Inset{
@@ -150,13 +148,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return pg.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						if pg.orderInfo.FromCurrency == utils.DCRWalletAsset.String() {
-																							invoicedAmount, _ := dcrutil.NewAmount(pg.orderInfo.InvoicedAmount)
-																							return pg.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
-
-																						}
-																						invoicedAmount, _ := btcutil.NewAmount(pg.orderInfo.InvoicedAmount)
-																						return pg.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
+																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.FromCurrency, pg.orderInfo.InvoicedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
 																						sourceWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.SourceWalletID)
@@ -181,7 +173,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																layout.Rigid(func(gtx C) D {
 																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																		layout.Rigid(func(gtx C) D {
-																			return pg.setWalletLogo(gtx, pg.orderInfo.ToCurrency, values.MarginPadding30)
+																			return components.SetWalletLogo(pg.Load, gtx, pg.orderInfo.ToCurrency, values.MarginPadding30)
 																		}),
 																		layout.Rigid(func(gtx C) D {
 																			return layout.Inset{
@@ -192,12 +184,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return pg.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						if pg.orderInfo.ToCurrency == utils.DCRWalletAsset.String() {
-																							orderedAmount, _ := dcrutil.NewAmount(pg.orderInfo.OrderedAmount)
-																							return pg.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
-																						}
-																						orderedAmount, _ := btcutil.NewAmount(pg.orderInfo.OrderedAmount)
-																						return pg.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
+																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.ToCurrency, pg.orderInfo.OrderedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
 																						destinationWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.DestinationWalletID)

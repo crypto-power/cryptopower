@@ -626,4 +626,7 @@ const EN = `
 "selectServerTitle" = "Select the exchange server you would like to use."
 "history" = "History"
 "fetchRateError" = "error fetching rate"
+"confirmYourOrder" = "Confirm your order"
+"confirmOrder" = "Confirm Order"
+"orderCreated" = "Order created successfully"
 `

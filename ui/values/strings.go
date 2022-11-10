@@ -732,4 +732,7 @@ const (
 	StrSelectServerTitle               = "selectServerTitle"
 	StrHistory                         = "history"
 	StrFetchRateError                  = "fetchRateError"
+	StrConfirmYourOrder                = "confirmYourOrder"
+	StrConfirmOrder                    = "confirmOrder"
+	StrOrderCeated                     = "orderCreated"
 )

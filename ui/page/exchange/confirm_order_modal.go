@@ -11,14 +11,11 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
-	"github.com/btcsuite/btcutil"
-	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 type confirmOrderModal struct {
@@ -40,7 +37,7 @@ type confirmOrderModal struct {
 func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	com := &confirmOrderModal{
 		Load:      l,
-		Modal:     l.Theme.ModalFloatTitle("send_confirm_modal"),
+		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrConfirmYourOrder)),
 		orderData: data,
 	}
 
@@ -111,10 +108,9 @@ func (com *confirmOrderModal) confirmOrder() {
 		// 	return
 		// }
 
-		successModal := modal.NewSuccessModal(com.Load, "Order created successfully!", modal.DefaultClickFunc())
+		successModal := modal.NewSuccessModal(com.Load, values.String(values.StrOrderCeated), modal.DefaultClickFunc())
 		com.ParentWindow().ShowModal(successModal)
 
-		// com.orderCreated()
 		com.Dismiss()
 		com.ParentNavigator().Display(NewOrderDetailsPage(com.Load, order))
 
@@ -149,38 +145,31 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 
 	w := []layout.Widget{
 		func(gtx C) D {
-			return com.Theme.Label(values.TextSize18, "Confirm your order").Layout(gtx)
+			return com.Theme.Label(values.TextSize18, values.String(values.StrConfirmYourOrder)).Layout(gtx)
 		},
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return com.setWalletLogo(gtx, com.orderData.fromCurrency, values.MarginPadding30)
+							return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency.String(), values.MarginPadding30)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Left: values.MarginPadding10,
-								// Right: values.MarginPadding50,
 							}.Layout(gtx, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, "Sending").Layout(gtx)
+										return com.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										if com.orderData.fromCurrency == utils.DCRWalletAsset {
-											invoicedAmount, _ := dcrutil.NewAmount(com.orderData.invoicedAmount)
-											return com.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
-
-										}
-										invoicedAmount, _ := btcutil.NewAmount(com.orderData.invoicedAmount)
-										return com.Theme.Label(values.TextSize16, invoicedAmount.String()).Layout(gtx)
+										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.fromCurrency.String(), com.orderData.invoicedAmount)
 									}),
 									layout.Rigid(func(gtx C) D {
 										sourceWallet := com.WL.MultiWallet.WalletWithID(com.orderData.sourceWalletID)
 										sourceWalletName := sourceWallet.GetWalletName()
 										sourceAccount, _ := sourceWallet.GetAccount(com.orderData.sourceAccountNumber)
-										fromText := fmt.Sprintf("From: %s (%s)", sourceWalletName, sourceAccount.Name)
+										fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
 										return com.Theme.Label(values.TextSize16, fromText).Layout(gtx)
 									}),
 								)
@@ -199,7 +188,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return com.setWalletLogo(gtx, com.orderData.toCurrency, values.MarginPadding30)
+							return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency.String(), values.MarginPadding30)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -207,21 +196,16 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 							}.Layout(gtx, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, "Receiving").Layout(gtx)
+										return com.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
-										if com.orderData.toCurrency == utils.DCRWalletAsset {
-											orderedAmount, _ := dcrutil.NewAmount(com.orderData.orderedAmount)
-											return com.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
-										}
-										orderedAmount, _ := btcutil.NewAmount(com.orderData.orderedAmount)
-										return com.Theme.Label(values.TextSize16, orderedAmount.String()).Layout(gtx)
+										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.toCurrency.String(), com.orderData.orderedAmount)
 									}),
 									layout.Rigid(func(gtx C) D {
 										destinationWallet := com.WL.MultiWallet.WalletWithID(com.orderData.destinationWalletID)
 										destinationWalletName := destinationWallet.GetWalletName()
 										destinationAccount, _ := destinationWallet.GetAccount(com.orderData.destinationAccountNumber)
-										toText := fmt.Sprintf("To: %s (%s)", destinationWalletName, destinationAccount.Name)
+										toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
 										return com.Theme.Label(values.TextSize16, toText).Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
@@ -257,7 +241,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 									return material.Loader(com.Theme.Base).Layout(gtx)
 								})
 							}
-							com.confirmButton.Text = "Confirm Order"
+							com.confirmButton.Text = values.String(values.StrConfirmOrder)
 							return com.confirmButton.Layout(gtx)
 						}),
 					)
@@ -266,13 +250,6 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return com.Modal.Layout(gtx, w)
-}
-
-func (com *confirmOrderModal) setWalletLogo(gtx C, currency utils.AssetType, size unit.Dp) D {
-	if currency == utils.DCRWalletAsset {
-		return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
-	}
-	return com.Theme.Icons.BTC.LayoutSize(gtx, size)
 }
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
