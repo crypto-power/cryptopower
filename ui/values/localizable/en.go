@@ -619,4 +619,11 @@ const EN = `
 "createNewOrder" = "Create new order"
 "orderDetails" = "Order Details"
 "expiresIn" = "Expires in"
+"minMax" = "Min: %f . Max: %f"
+"createOrder" = "Create Order"
+"orderSettingsSaved" = "Order Settings saved!"
+"createOrderPageInfo" = "To change the default source and destination wallet/account used for exchange, click the settings icon."
+"selectServerTitle" = "Select the exchange server you would like to use."
+"history" = "History"
+"fetchRateError" = "error fetching rate"
 `

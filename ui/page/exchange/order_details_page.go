@@ -49,7 +49,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		orderInfo:        order,
 	}
 
-	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(order.Server, "", "")
+	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(order.Server)
 	if err != nil {
 		fmt.Println(err)
 	}

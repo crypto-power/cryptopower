@@ -725,4 +725,11 @@ const (
 	StrCreateNewOrder                  = "createNewOrder"
 	StrOrderDetails                    = "orderDetails"
 	StrExpiresIn                       = "expiresIn"
+	StrMinMax                          = "minMax"
+	StrCreateOrder                     = "createOrder"
+	StrOrderSettingsSaved              = "orderSettingsSaved"
+	StrCreateOrderPageInfo             = "createOrderPageInfo"
+	StrSelectServerTitle               = "selectServerTitle"
+	StrHistory                         = "history"
+	StrFetchRateError                  = "fetchRateError"
 )

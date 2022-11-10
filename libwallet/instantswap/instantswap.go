@@ -55,13 +55,13 @@ func (instantSwap *InstantSwap) updateOrder(order *Order) error {
 }
 
 // NewExchanageServer sets up a new exchange server for use.
-func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer, ApiKey, ApiSecret string) (instantswap.IDExchange, error) {
+func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer) (instantswap.IDExchange, error) {
 	const op errors.Op = "instantSwap.NewExchanageServer"
 
 	exchange, err := instantswap.NewExchange(exchangeServer.ToString(), instantswap.ExchangeConfig{
 		Debug:     false,
-		ApiKey:    ApiKey,
-		ApiSecret: ApiSecret,
+		ApiKey:    "",
+		ApiSecret: "",
 	})
 	if err != nil {
 		return nil, errors.E(op, err)
