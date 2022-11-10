@@ -3,7 +3,6 @@ package components
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
@@ -198,7 +197,6 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 	}.Layout(gtx,
 		layout.Rigid(ws.setWalletLogo),
 		layout.Rigid(func(gtx C) D {
-			// fmt.Println("[][][][] selected account", ws.SelectedAccount())
 			if ws.accountSelector {
 				if ws.selectedAccount == nil {
 					return ws.Theme.Body1("").Layout(gtx)
@@ -329,7 +327,7 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
 	wallets := sm.WL.MultiWallet.AllWallets()
 
-	if len(assetType) > 0 { // no asset type was passed, load all wallets
+	if len(assetType) > 0 { // load specific wallet type
 		switch assetType[0] {
 		case utils.BTCWalletAsset:
 			wallets = sm.WL.MultiWallet.AllBTCWallets()
@@ -352,7 +350,6 @@ func (sm *selectorModal) OnResume() {
 		sm.setupAccounts(sm.selectedWallet)
 		return
 	}
-	fmt.Println("[][][][] setup wallet", sm.assetType)
 	sm.setupWallet(sm.assetType...)
 }
 
@@ -360,7 +357,7 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
 	wallets := sm.WL.MultiWallet.AllWallets()
 
-	if len(assetType) > 0 { // no asset type was passed, load all wallets
+	if len(assetType) > 0 { // load specific wallet type
 		switch assetType[0] {
 		case utils.BTCWalletAsset:
 			wallets = sm.WL.MultiWallet.AllBTCWallets()
@@ -556,9 +553,9 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 		accountIcon = sm.Theme.Icons.AccountIcon
 	case sharedW.Asset:
 		{
-			if selectorItem.item.(sharedW.Asset).GetAssetType() == "BTC" {
+			if selectorItem.item.(sharedW.Asset).GetAssetType() == utils.BTCWalletAsset {
 				accountIcon = sm.Theme.Icons.BTC
-			} else if selectorItem.item.(sharedW.Asset).GetAssetType() == "DCR" {
+			} else if selectorItem.item.(sharedW.Asset).GetAssetType() == utils.DCRWalletAsset {
 				accountIcon = sm.Theme.Icons.DecredLogo
 			}
 		}
@@ -578,15 +575,15 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			}.Layout(gtx, accountIcon.Layout16dp)
 		}),
 		layout.Flexed(0.8, func(gtx C) D {
-			var name, _, spendableBal string
+			var name, totalBal, spendableBal string
 			switch t := selectorItem.item.(type) {
 			case *sharedW.Account:
-				// totalBal = t.Balance.Total.String()
+				totalBal = t.Balance.Total.String()
 				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
 			case sharedW.Asset:
-				_, sb := walletBalance(t)
-				// totalBal = t.ToAmount(tb).String()
+				tb, sb := walletBalance(t)
+				totalBal = t.ToAmount(tb).String()
 				spendableBal = t.ToAmount(sb).String()
 				name = t.GetWalletName()
 			}
@@ -596,8 +593,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 					acct.Color = sm.Theme.Color.Text
 					acct.Font.Weight = text.Normal
 					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
-						// return LayoutBalance(gtx, sm.Load, totalBal)
-						return D{}
+						return LayoutBalance(gtx, sm.Load, totalBal)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
