@@ -156,7 +156,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return com.setWalletLogo(gtx, com.orderData.fromCurrency)
+							return com.setWalletLogo(gtx, com.orderData.fromCurrency, values.MarginPadding30)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -199,7 +199,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return com.setWalletLogo(gtx, com.orderData.toCurrency)
+							return com.setWalletLogo(gtx, com.orderData.toCurrency, values.MarginPadding30)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
@@ -268,11 +268,11 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 	return com.Modal.Layout(gtx, w)
 }
 
-func (com *confirmOrderModal) setWalletLogo(gtx C, currency utils.AssetType) D {
+func (com *confirmOrderModal) setWalletLogo(gtx C, currency utils.AssetType, size unit.Dp) D {
 	if currency == utils.DCRWalletAsset {
-		return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
+		return com.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
 	}
-	return com.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
+	return com.Theme.Icons.BTC.LayoutSize(gtx, size)
 }
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {

@@ -717,4 +717,12 @@ const (
 	StrDestination                     = "destination"
 	StrSourceModalInfo                 = "sourceModalInfo"
 	StrDestinationModalInfo            = "destinationModalInfo"
+	StrOrderSendingFrom                = "orderSendingFrom"
+	StrOrderReceivingTo                = "orderReceivingTo"
+	StrSending                         = "sending"
+	StrReceiving                       = "receiving"
+	StrRefresh                         = "refresh"
+	StrCreateNewOrder                  = "createNewOrder"
+	StrOrderDetails                    = "orderDetails"
+	StrExpiresIn                       = "expiresIn"
 )

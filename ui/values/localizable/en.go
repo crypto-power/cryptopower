@@ -611,4 +611,12 @@ const EN = `
 "destination" = "Destination"
 "sourceModalInfo" = "Wallets that have not completed sync will be hidden from the list. %v Refunds and leftover change will be returned to the selected source account"
 "destinationModalInfo" = "A new receiving address will be automatically generated within the selected account."
+"orderSendingFrom" = "From: %s (%s)"
+"orderReceivingTo" = "To: %s (%s)"
+"sending" = "Sending"
+"receiving" = "Receiving"
+"refresh" = "Refresh"
+"createNewOrder" = "Create new order"
+"orderDetails" = "Order Details"
+"expiresIn" = "Expires in"
 `
