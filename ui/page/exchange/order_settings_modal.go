@@ -256,7 +256,12 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 												return txt.Layout(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
-												return osm.sourceInfoButton.Layout(gtx)
+												return layout.Inset{
+													Top:  values.MarginPadding4,
+													Left: values.MarginPadding4,
+												}.Layout(gtx, func(gtx C) D {
+													return osm.sourceInfoButton.Layout(gtx)
+												})
 											}),
 										)
 									}),
@@ -292,7 +297,12 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 												return txt.Layout(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
-												return osm.destinationInfoButton.Layout(gtx)
+												return layout.Inset{
+													Top:  values.MarginPadding4,
+													Left: values.MarginPadding4,
+												}.Layout(gtx, func(gtx C) D {
+													return osm.destinationInfoButton.Layout(gtx)
+												})
 											}),
 										)
 									}),
