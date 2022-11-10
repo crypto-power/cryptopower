@@ -629,4 +629,7 @@ const EN = `
 "confirmYourOrder" = "Confirm your order"
 "confirmOrder" = "Confirm Order"
 "orderCreated" = "Order created successfully"
+"fetchingOrders" = "Fetching Orders"
+"noOrders" = "Orders you create will be shown here."
+"server" = "Server"
 `

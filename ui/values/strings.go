@@ -735,4 +735,7 @@ const (
 	StrConfirmYourOrder                = "confirmYourOrder"
 	StrConfirmOrder                    = "confirmOrder"
 	StrOrderCeated                     = "orderCreated"
+	StrFetchingOrders                  = "fetchingOrders"
+	StrNoOrders                        = "noOrders"
+	StrServer                          = "server"
 )

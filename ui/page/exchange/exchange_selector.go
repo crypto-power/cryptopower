@@ -181,7 +181,7 @@ func (es *ExchangeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			}.Layout(gtx, es.selectedExchange.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := es.Theme.Label(values.TextSize16, "Server")
+			txt := es.Theme.Label(values.TextSize16, values.String(values.StrServer))
 			txt.Color = es.Theme.Color.Gray7
 			if es.selectedExchange != nil {
 				txt = es.Theme.Label(values.TextSize16, es.selectedExchange.Name)
@@ -208,7 +208,7 @@ func (es *ExchangeSelector) Layout(window app.WindowNavigator, gtx C) D {
 func newExchangeModal(l *load.Load) *exchangeModal {
 	em := &exchangeModal{
 		Load:         l,
-		Modal:        l.Theme.ModalFloatTitle("ExchangeModal"),
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer)),
 		exchangeList: layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		dialogTitle:  values.String(values.StrSelectAServer),

@@ -99,10 +99,10 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 
 func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	text := l.Theme.Body1("Orders you create will be shown here.")
+	text := l.Theme.Body1(values.String(values.StrNoOrders))
 	text.Color = l.Theme.Color.GrayText3
 	if syncing {
-		text = l.Theme.Body1("Fetching Orders")
+		text = l.Theme.Body1(values.String(values.StrFetchingOrders))
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Inset{
