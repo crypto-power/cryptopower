@@ -274,6 +274,20 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 					return pg.Theme.Label(values.TextSize28, pg.orderInfo.Status.String()).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
+					if pg.orderInfo.Status == api.OrderStatusWaitingForDeposit {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.Label(values.TextSize18, "Expires in ").Layout(gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.Label(values.TextSize18, fmt.Sprint(pg.orderInfo.ExpiryTime)).Layout(gtx)
+							}),
+						)
+					}
+
+					return D{}
+				}),
+				layout.Rigid(func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						return layout.Inset{
 							Top: values.MarginPadding16,
