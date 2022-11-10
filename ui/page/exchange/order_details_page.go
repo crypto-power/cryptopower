@@ -83,6 +83,10 @@ func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
 		pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
 	}
+
+	if pg.createOrderBtn.Clicked() {
+		pg.ParentNavigator().CloseCurrentPage()
+	}
 }
 
 func (pg *OrderDetailsPage) Layout(gtx C) D {
