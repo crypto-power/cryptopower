@@ -9,11 +9,13 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcwallet/waddrmgr"
 )
 
 const (
 	AddressGapLimit       uint32 = 20
-	ImportedAccountNumber        = 2147483647
+	ImportedAccountNumber        = waddrmgr.ImportedAddrAccount
+	DefaultAccountNum            = waddrmgr.DefaultAccountNum
 )
 
 func (asset *BTCAsset) GetAccounts() (string, error) {

@@ -421,6 +421,28 @@ func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {
 	return size, err
 }
 
+func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemonic string) (int, error) {
+	switch walletType {
+	case utils.BTCWalletAsset:
+		return mgr.BTCWalletWithSeed(seedMnemonic)
+	case utils.DCRWalletAsset:
+		return mgr.DCRWalletWithSeed(seedMnemonic)
+	default:
+		return -1, utils.ErrAssetUnknown
+	}
+}
+
+func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
+	switch walletType {
+	case utils.BTCWalletAsset:
+		return mgr.RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+	case utils.DCRWalletAsset:
+		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+	default:
+		return nil, utils.ErrAssetUnknown
+	}
+}
+
 func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string) (int, error) {
 	switch walletType {
 	case utils.DCRWalletAsset:

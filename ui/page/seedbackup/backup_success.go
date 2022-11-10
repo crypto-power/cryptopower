@@ -50,7 +50,7 @@ func (pg *BackupSuccessPage) OnNavigatedTo() {}
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) HandleUserInteractions() {
 	for pg.actionButton.Clicked() {
-		pg.redirectCallback(pg.Load, pg.ParentNavigator())
+		pg.redirectCallback(pg.Load, pg.ParentWindow())
 	}
 }
 

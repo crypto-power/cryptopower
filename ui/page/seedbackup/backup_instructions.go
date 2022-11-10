@@ -21,7 +21,7 @@ type (
 	D = layout.Dimensions
 )
 
-type Redirectfunc func(load *load.Load, pg app.PageNavigator)
+type Redirectfunc func(load *load.Load, pg app.WindowNavigator)
 
 type BackupInstructionsPage struct {
 	*load.Load
@@ -104,7 +104,7 @@ func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.W
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pageNavigator.CloseCurrentPage()
+			pageNavigator.ClosePagesAfter("Main")
 			return true
 		})
 	window.ShowModal(infoModal)

@@ -586,4 +586,12 @@ const EN = `
 "addressDiscoveryStartedBody"    = "See wallet information page for progress"
 "setGapLimit"             = "Set Gap Limit"
 "explorerURL" = "Explorer URL for %v Asset"
+"confirmToShowSeed" = "Confirm to show seed"
+"writeDownSeed" = "Write down seed word"
+"step1" = "Step 1/2"
+"writeDownAll33Words" = "Write down all 33 words in the correct order."
+"yourSeedWord" = "Your 33-word seed word"
+"wroteAllWords" = "I have written down all 33 words"
+"askedEnterSeedWords" = "You will be asked to enter the seed word on the next screen."
+"seedHex" = "Seed hex"
 `

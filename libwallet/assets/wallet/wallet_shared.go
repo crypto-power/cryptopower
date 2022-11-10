@@ -364,18 +364,12 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 
 func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
-	encryptedSeed, err := encryptWalletSeed([]byte(pass.PrivatePass), seedMnemonic)
-	if err != nil {
-		return nil, err
-	}
-
 	wallet := &Wallet{
 		Name:                  pass.Name,
 		PrivatePassphraseType: pass.PrivatePassType,
 		db:                    params.DB,
 		dbDriver:              params.DbDriver,
 		rootDir:               params.RootDir,
-		EncryptedSeed:         encryptedSeed,
 
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,

@@ -27,9 +27,10 @@ const (
 )
 
 type walletType struct {
-	clickable *cryptomaterial.Clickable
-	logo      *cryptomaterial.Image
-	name      string
+	clickable  *cryptomaterial.Clickable
+	logo       *cryptomaterial.Image
+	name       string
+	walletType libutils.AssetType
 }
 
 type decredAction struct {
@@ -71,7 +72,7 @@ type CreateWallet struct {
 	importBtn      cryptomaterial.Button
 	backButton     cryptomaterial.IconButton
 
-	selectedWalletType          int
+	selectedWalletType          libutils.AssetType
 	selectedDecredWalletAction  int
 	selectedBitcoinWalletAction int
 
@@ -94,7 +95,6 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		restoreBtn:                  l.Theme.Button(values.String(values.StrRestore)),
 		importBtn:                   l.Theme.Button(values.String(values.StrImport)),
 		watchOnlyCheckBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrImportWatchingOnlyWallet)),
-		selectedWalletType:          -1,
 		selectedDecredWalletAction:  -1,
 		selectedBitcoinWalletAction: -1,
 
@@ -124,14 +124,16 @@ func (pg *CreateWallet) OnNavigatedTo() {
 func (pg *CreateWallet) initPageItems() {
 	walletTypes := []*walletType{
 		{
-			logo:      pg.Theme.Icons.DecredLogo,
-			name:      "Decred",
-			clickable: pg.Theme.NewClickable(true),
+			logo:       pg.Theme.Icons.DecredLogo,
+			name:       libutils.DCRWalletAsset.ToFull(),
+			clickable:  pg.Theme.NewClickable(true),
+			walletType: libutils.DCRWalletAsset,
 		},
 		{
-			logo:      pg.Theme.Icons.BTC,
-			name:      "Bitcoin",
-			clickable: pg.Theme.NewClickable(true),
+			logo:       pg.Theme.Icons.BTC,
+			name:       libutils.BTCWalletAsset.ToFull(),
+			clickable:  pg.Theme.NewClickable(true),
+			walletType: libutils.BTCWalletAsset,
 		},
 	}
 
@@ -214,9 +216,9 @@ func (pg *CreateWallet) Layout(gtx C) D {
 		pg.walletTypeSection,
 		func(gtx C) D {
 			switch pg.selectedWalletType {
-			case 0:
+			case libutils.DCRWalletAsset:
 				return pg.decredWalletOptions(gtx)
-			case 1:
+			case libutils.BTCWalletAsset:
 				return pg.bitcoinWalletOptions(gtx) // todo btc functionality
 			default:
 				return D{}
@@ -262,7 +264,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 
 		// set selected item background color
 		backgroundColor := pg.Theme.Color.Surface
-		if pg.selectedWalletType == i {
+		if pg.selectedWalletType == item.walletType {
 			backgroundColor = pg.Theme.Color.Gray2
 		}
 
@@ -475,9 +477,9 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// wallet type selection action
-	for i, item := range pg.walletTypes {
+	for _, item := range pg.walletTypes {
 		for item.clickable.Clicked() {
-			pg.selectedWalletType = i
+			pg.selectedWalletType = item.walletType
 		}
 	}
 
@@ -559,7 +561,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
 		}
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), afterRestore))
+		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), pg.selectedWalletType, afterRestore))
 	}
 
 	// imported wallet click action control
@@ -568,7 +570,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		var err error
 		go func() {
 			switch pg.selectedWalletType {
-			case 0:
+			case libutils.DCRWalletAsset:
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.MultiWallet.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -576,7 +578,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case 1:
+			case libutils.BTCWalletAsset:
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.MultiWallet.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {

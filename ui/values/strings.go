@@ -693,4 +693,12 @@ const (
 	StrAddressDiscoveryStartedBody     = "addressDiscoveryStartedBody"
 	StrSetGapLimit                     = "setGapLimit"
 	StrExplorerURL                     = "explorerURL"
+	StrConfirmShowSeed                 = "confirmToShowSeed"
+	StrWriteDownSeed                   = "writeDownSeed"
+	StrStep1                           = "step1"
+	StrWriteDownAll33Words             = "writeDownAll33Words"
+	StrYourSeedWords                   = "yourSeedWord"
+	StrWroteAllWords                   = "wroteAllWords"
+	StrAskedEnterSeedWords             = "askedEnterSeedWords"
+	StrSeedHex                         = "seedHex"
 )
