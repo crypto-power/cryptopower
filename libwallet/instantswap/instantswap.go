@@ -102,26 +102,6 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	return orders, nil
 }
 
-// GetOrders returns the result of GetOrdersRaw as a JSON string
-func (instantSwap *InstantSwap) GetOrders(offset, limit int32, newestFirst bool) (string, error) {
-
-	result, err := instantSwap.GetOrdersRaw(offset, limit, newestFirst)
-	if err != nil {
-		return "", err
-	}
-
-	if len(result) == 0 {
-		return "[]", nil
-	}
-
-	response, err := json.Marshal(result)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling result: %s", err.Error())
-	}
-
-	return string(response), nil
-}
-
 // GetOrderRaw fetches and returns a single order specified by it's UUID.
 func (instantSwap *InstantSwap) GetOrderRaw(orderUUID string) (*Order, error) {
 	var order Order
@@ -133,11 +113,6 @@ func (instantSwap *InstantSwap) GetOrderRaw(orderUUID string) (*Order, error) {
 	return &order, nil
 }
 
-// GetOrder returns the result of GetOrderRaw as a JSON string
-func (instantSwap *InstantSwap) GetOrder(orderUUID string) (string, error) {
-	return instantSwap.marshalResult(instantSwap.GetOrderRaw(orderUUID))
-}
-
 // GetOrderByIDRaw fetches and returns a single order specified by it's ID
 func (instantSwap *InstantSwap) GetOrderByIDRaw(orderID int) (*Order, error) {
 	var order Order
@@ -147,11 +122,6 @@ func (instantSwap *InstantSwap) GetOrderByIDRaw(orderID int) (*Order, error) {
 	}
 
 	return &order, nil
-}
-
-// GetOrderByID returns the result of GetOrderByIDRaw as a JSON string
-func (instantSwap *InstantSwap) GetOrderByID(orderID int) (string, error) {
-	return instantSwap.marshalResult(instantSwap.GetOrderByIDRaw(orderID))
 }
 
 func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params Order) (*Order, error) {
