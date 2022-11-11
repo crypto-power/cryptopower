@@ -218,7 +218,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		// Initialize a new exchange using the selected exchange server
 		exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(pg.selectedExchange.Server)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 			return
 		}
 		pg.exchange = exchange
@@ -226,7 +226,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		go func() {
 			err := pg.getExchangeRateInfo()
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err)
 			}
 		}()
 
@@ -261,7 +261,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			go func() {
 				err := pg.getExchangeRateInfo()
 				if err != nil {
-					fmt.Println(err)
+					log.Error(err)
 				}
 			}()
 		}
@@ -276,7 +276,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		go func() {
 			err := pg.getExchangeRateInfo()
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err)
 			}
 		}()
 	}

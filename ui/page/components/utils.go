@@ -130,15 +130,15 @@ func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.
 	})
 }
 
-func SetWalletLogo(l *load.Load, gtx C, currency string, size unit.Dp) D {
-	if currency == utils.DCRWalletAsset.String() {
+func SetWalletLogo(l *load.Load, gtx C, assetType string, size unit.Dp) D {
+	if assetType == utils.DCRWalletAsset.String() {
 		return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
 	}
 	return l.Theme.Icons.BTC.LayoutSize(gtx, size)
 }
 
-func LayoutOrderAmount(l *load.Load, gtx C, currency string, amount float64) D {
-	if currency == utils.DCRWalletAsset.String() {
+func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D {
+	if assetType == utils.DCRWalletAsset.String() {
 		convertedAmount, _ := dcrutil.NewAmount(amount)
 		return l.Theme.Label(values.TextSize16, convertedAmount.String()).Layout(gtx)
 	}

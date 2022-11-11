@@ -1,7 +1,6 @@
 package instantswap
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -71,7 +70,7 @@ func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer
 }
 
 // GetOrdersRaw fetches and returns all saved orders.
-func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool) ([]Order, error) {
+func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool) ([]*Order, error) {
 
 	var query storm.Query
 
@@ -93,7 +92,7 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 		query = query.OrderBy("CreatedAt")
 	}
 
-	var orders []Order
+	var orders []*Order
 	err := query.Find(&orders)
 	if err != nil && err != storm.ErrNotFound {
 		return nil, fmt.Errorf("error fetching orders: %s", err.Error())
@@ -210,20 +209,6 @@ func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeObject instantswap.I
 	return &res, nil
 }
 
-func (instantSwap *InstantSwap) marshalResult(result interface{}, err error) (string, error) {
-
-	if err != nil {
-		return "", err
-	}
-
-	response, err := json.Marshal(result)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling result: %s", err.Error())
-	}
-
-	return string(response), nil
-}
-
 func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 	return []ExchangeServer{
 		Changelly,
@@ -236,7 +221,8 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 	}
 }
 
-func (instantSwap *InstantSwap) ClearSavedOrders() error {
+// DeleteOrders deletes all orders saved to the DB.
+func (instantSwap *InstantSwap) DeleteOrders() error {
 	err := instantSwap.db.Drop(&Order{})
 	if err != nil {
 		return err

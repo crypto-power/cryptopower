@@ -548,16 +548,18 @@ func walletBalance(wal sharedW.Asset) (totalBalance, spendableBalance int64) {
 
 func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
 	accountIcon := sm.Theme.Icons.AccountIcon
-	switch selectorItem.item.(type) {
+	switch n := selectorItem.item.(type) {
 	case *sharedW.Account:
 		accountIcon = sm.Theme.Icons.AccountIcon
 	case sharedW.Asset:
 		{
-			if selectorItem.item.(sharedW.Asset).GetAssetType() == utils.BTCWalletAsset {
+			switch n.GetAssetType() {
+			case utils.BTCWalletAsset:
 				accountIcon = sm.Theme.Icons.BTC
-			} else if selectorItem.item.(sharedW.Asset).GetAssetType() == utils.DCRWalletAsset {
+			case utils.DCRWalletAsset:
 				accountIcon = sm.Theme.Icons.DecredLogo
 			}
+
 		}
 	}
 
