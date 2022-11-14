@@ -10,6 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -191,15 +192,25 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
 			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
-			layout.Rigid(pg.subSectionSwitch(values.String(values.StrFetchProposals), pg.fetchProposal)),
 			layout.Rigid(func(gtx C) D {
-				if !pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
-					return D{}
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+					return pg.subSection(gtx, values.String(values.StrFetchProposals), pg.fetchProposal.Layout)
 				}
-				return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
+				return D{}
+			}),
+			layout.Rigid(func(gtx C) D {
+				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+					return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
+				}
+				return D{}
 			}),
 			layout.Rigid(pg.subSectionSwitch(values.String(values.StrUnconfirmedFunds), pg.spendUnconfirmed)),
-			layout.Rigid(pg.subSectionSwitch(values.String(values.StrAllowSpendingFromUnmixedAccount), pg.spendUnmixedFunds)),
+			layout.Rigid(func(gtx C) D {
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+					return pg.subSection(gtx, values.String(values.StrAllowSpendingFromUnmixedAccount), pg.spendUnmixedFunds.Layout)
+				}
+				return D{}
+			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
@@ -240,9 +251,20 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 	dims := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
-			layout.Rigid(pg.sectionContent(pg.setGapLimit, values.String(values.StrSetGapLimit))),
+			layout.Rigid(func(gtx C) D {
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+					return pg.sectionDimension(gtx, pg.setGapLimit, values.String(values.StrSetGapLimit))
+				}
+				return D{}
+			}),
 			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
+			layout.Rigid(func(gtx C) D {
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+					return pg.sectionDimension(gtx, pg.resetDexData, values.String(values.StrResetDexClient))
+				}
+				return D{}
+			}),
 		)
 	}
 
@@ -321,23 +343,27 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 
 func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable, title string) layout.Widget {
 	return func(gtx C) D {
-		return clickable.Layout(gtx, func(gtx C) D {
-			textLabel := pg.Theme.Label(values.TextSize16, title)
-			if title == values.String(values.StrRemoveWallet) {
-				textLabel.Color = pg.Theme.Color.Danger
-			}
-			return layout.Inset{
-				Bottom: values.MarginPadding20,
-			}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(textLabel.Layout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-					}),
-				)
-			})
-		})
+		return pg.sectionDimension(gtx, clickable, title)
 	}
+}
+
+func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clickable, title string) D {
+	return clickable.Layout(gtx, func(gtx C) D {
+		textLabel := pg.Theme.Label(values.TextSize16, title)
+		if title == values.String(values.StrRemoveWallet) {
+			textLabel.Color = pg.Theme.Color.Danger
+		}
+		return layout.Inset{
+			Bottom: values.MarginPadding20,
+		}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(textLabel.Layout),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+				}),
+			)
+		})
+	})
 }
 
 func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget) D {

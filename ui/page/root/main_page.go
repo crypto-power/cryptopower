@@ -495,7 +495,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.PageID {
 			case BTCWalletSettingsPageID:
-				pg = NewBTCWalletSettingsPage(mp.Load)
+				pg = NewWalletSettingsPage(mp.Load)
 			case ReceivePageID:
 				if mp.isSynced() {
 					pg = NewReceivePage(mp.Load)
