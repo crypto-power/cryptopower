@@ -385,7 +385,7 @@ func (pg *WalletSettingsPage) subSectionSwitch(title string, option *cryptomater
 
 func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 	currentSpendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-		Title(values.String(values.StrChangeSpendingPass)).
+		Title(values.String(values.StrConfirmSpendingPassword)).
 		PasswordHint(values.String(values.StrCurrentSpendingPassword)).
 		EnableName(false).
 		EnableConfirmPassword(false).
