@@ -78,7 +78,7 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 
 	var exchange []*Exchange
 	for _, server := range servers {
-		if server.ToString() == "flypme" { // Display flypme only
+		if server.ToString() == instantswap.FlypMe.ToString() { // Display flypme only
 			exchng := &Exchange{
 				Name:   server.CapFirstLetter(),
 				Server: server,
@@ -94,21 +94,19 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 
 func (es *ExchangeSelector) setServerIcon(serverName string) *cryptomaterial.Image {
 	switch serverName {
-	case "changelly":
+	case instantswap.Changelly.ToString():
 		return es.Theme.Icons.ChangellyIcon
-	case "changenow":
+	case instantswap.ChangeNow.ToString():
 		return es.Theme.Icons.ChangeNowIcon
-	case "coinswitch":
+	case instantswap.CoinSwitch.ToString():
 		return es.Theme.Icons.CoinSwitchIcon
-	case "flypme":
+	case instantswap.FlypMe.ToString():
 		return es.Theme.Icons.FlypMeIcon
-	case "godex":
+	case instantswap.GoDex.ToString():
 		return es.Theme.Icons.GodexIcon
-	case "shapeshift":
-		return es.Theme.Icons.ShapeShiftIcon
-	case "simpleswap":
+	case instantswap.SimpleSwap.ToString():
 		return es.Theme.Icons.SimpleSwapIcon
-	case "swapzone":
+	case instantswap.SwapZone.ToString():
 		return es.Theme.Icons.SwapzoneIcon
 	default:
 		return es.Theme.Icons.AddExchange

@@ -86,10 +86,9 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 		query = query.Limit(int(limit))
 	}
 
+	query = query.OrderBy("CreatedAt")
 	if newestFirst {
-		query = query.OrderBy("CreatedAt").Reverse()
-	} else {
-		query = query.OrderBy("CreatedAt")
+		query = query.Reverse()
 	}
 
 	var orders []*Order
@@ -101,8 +100,8 @@ func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bo
 	return orders, nil
 }
 
-// GetOrderRaw fetches and returns a single order specified by it's UUID.
-func (instantSwap *InstantSwap) GetOrderRaw(orderUUID string) (*Order, error) {
+// GetOrderByUUIDRaw fetches and returns a single order specified by it's UUID.
+func (instantSwap *InstantSwap) GetOrderByUUIDRaw(orderUUID string) (*Order, error) {
 	var order Order
 	err := instantSwap.db.One("UUID", orderUUID, &order)
 	if err != nil {
@@ -173,7 +172,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 func (instantSwap *InstantSwap) GetOrderInfo(exchangeObject instantswap.IDExchange, orderUUID string) (*Order, error) {
 	const op errors.Op = "instantSwap.GetOrderInfo"
 
-	order, err := instantSwap.GetOrderRaw(orderUUID)
+	order, err := instantSwap.GetOrderByUUIDRaw(orderUUID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

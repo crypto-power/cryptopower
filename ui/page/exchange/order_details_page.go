@@ -49,18 +49,19 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 
 	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(order.Server)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 	pg.exchange = exchange
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
-	_, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
-
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateNewOrder))
 	pg.refreshBtn = pg.Theme.Button(values.String(values.StrRefresh))
 
 	pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
+	if err != nil {
+		log.Error(err)
+	}
 
 	return pg
 }

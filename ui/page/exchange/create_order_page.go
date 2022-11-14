@@ -192,17 +192,26 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			return accountIsValid
 		})
 	pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
-	address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+	address, err := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+	if err != nil {
+		log.Error(err)
+	}
 	pg.addressEditor.Editor.SetText(address)
 
 	pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+		address, err := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
 		pg.addressEditor.Editor.SetText(address)
 	})
 
 	pg.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-		address, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+		address, err := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
 		pg.addressEditor.Editor.SetText(address)
 	})
 
@@ -296,9 +305,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(infoModal)
-		}).
-			OnCancel(func() {
-			})
+		})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 
