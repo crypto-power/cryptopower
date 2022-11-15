@@ -305,7 +305,9 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(infoModal)
-		})
+		}).
+			OnCancel(func() {
+			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
 
