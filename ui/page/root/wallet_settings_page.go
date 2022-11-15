@@ -779,7 +779,12 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
+		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+			pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
+		} else if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
+			pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
+		}
+
 	}
 }
 
