@@ -149,9 +149,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																				Left: values.MarginPadding10,
 																			}.Layout(gtx, func(gtx C) D {
 																				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-																					layout.Rigid(func(gtx C) D {
-																						return pg.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
-																					}),
+																					layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout),
 																					layout.Rigid(func(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.FromCurrency, pg.orderInfo.InvoicedAmount)
 																					}),
@@ -185,9 +183,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																				Left: values.MarginPadding10,
 																			}.Layout(gtx, func(gtx C) D {
 																				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-																					layout.Rigid(func(gtx C) D {
-																						return pg.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
-																					}),
+																					layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout),
 																					layout.Rigid(func(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.ToCurrency, pg.orderInfo.OrderedAmount)
 																					}),
@@ -198,9 +194,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
 																						return pg.Theme.Label(values.TextSize16, toText).Layout(gtx)
 																					}),
-																					layout.Rigid(func(gtx C) D {
-																						return pg.Theme.Label(values.TextSize16, pg.orderInfo.DestinationAddress).Layout(gtx)
-																					}),
+																					layout.Rigid(pg.Theme.Label(values.TextSize16, pg.orderInfo.DestinationAddress).Layout),
 																				)
 																			})
 																		}),
@@ -219,18 +213,12 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 						)
 					})
 				}),
-				layout.Rigid(func(gtx C) D {
-					return pg.Theme.Label(values.TextSize28, pg.orderInfo.Status.String()).Layout(gtx)
-				}),
+				layout.Rigid(pg.Theme.Label(values.TextSize28, pg.orderInfo.Status.String()).Layout),
 				layout.Rigid(func(gtx C) D {
 					if pg.orderInfo.Status == api.OrderStatusWaitingForDeposit {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return pg.Theme.Label(values.TextSize18, values.String(values.StrExpiresIn)).Layout(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								return pg.Theme.Label(values.TextSize18, fmt.Sprint(pg.orderInfo.ExpiryTime)).Layout(gtx)
-							}),
+							layout.Rigid(pg.Theme.Label(values.TextSize18, values.String(values.StrExpiresIn)).Layout),
+							layout.Rigid(pg.Theme.Label(values.TextSize18, fmt.Sprint(pg.orderInfo.ExpiryTime)).Layout),
 						)
 					}
 					return D{}
@@ -241,15 +229,11 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 							Top: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
 							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return pg.refreshBtn.Layout(gtx)
-								}),
+								layout.Rigid(pg.refreshBtn.Layout),
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{
 										Left: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return pg.createOrderBtn.Layout(gtx)
-									})
+									}.Layout(gtx, pg.createOrderBtn.Layout)
 								}),
 							)
 						})

@@ -499,15 +499,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									txt.Font.Weight = text.SemiBold
 									return txt.Layout(gtx)
 								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.fromAmountEditor.Layout(gtx)
-								}),
+								layout.Rigid(pg.fromAmountEditor.Layout),
 							)
 						}),
 						layout.Flexed(0.1, func(gtx C) D {
-							return layout.Center.Layout(gtx, func(gtx C) D {
-								return pg.swapButton.Layout(gtx)
-							})
+							return layout.Center.Layout(gtx, pg.swapButton.Layout)
 						}),
 						layout.Flexed(0.45, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -516,9 +512,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									txt.Font.Weight = text.SemiBold
 									return txt.Layout(gtx)
 								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.toAmountEditor.Layout(gtx)
-								}),
+								layout.Rigid(pg.toAmountEditor.Layout),
 							)
 						}),
 					)
