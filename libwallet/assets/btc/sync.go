@@ -435,7 +435,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 	for i, addr := range addrs {
 		relevantAddresses[i], err = btcutil.DecodeAddress(addr, asset.chainParams)
 		if err != nil {
-			log.Errorf("unable to decode addresst: %v", err)
+			log.Errorf("unable to decode address: %v", err)
 		}
 	}
 

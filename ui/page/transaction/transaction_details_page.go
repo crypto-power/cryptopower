@@ -713,7 +713,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						txt := pg.Theme.Body2("")
-						if pg.txConfirmations() > pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
 							txt.Text = strings.Title(values.String(values.StrConfirmed))
 							txt.Color = pg.Theme.Color.Success
 						} else {
@@ -1004,7 +1004,7 @@ func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionW
 	txn.status = l.Theme.Body1("")
 	txn.wallet = l.Theme.Body2(wal.GetWalletName())
 
-	if components.TxConfirmations(l, *transaction) > l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+	if components.TxConfirmations(l, *transaction) >= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
 		txn.status.Text = components.FormatDateOrTime(transaction.Timestamp)
 		txn.confirmationIcons = l.Theme.Icons.ConfirmIcon
 	} else {
