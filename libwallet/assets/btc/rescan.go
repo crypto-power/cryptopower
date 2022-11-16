@@ -11,7 +11,7 @@ import (
 )
 
 func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
-	asset.syncInfo.blocksRescanProgressListener = blocksRescanProgressListener
+	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
 func (asset *BTCAsset) RescanBlocks() error {
@@ -45,9 +45,9 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		addrs = []btcutil.Address{}
 	}
 
-	asset.syncInfo.mu.Lock()
-	asset.syncInfo.isRescan = true
-	asset.syncInfo.mu.Unlock()
+	asset.syncData.mu.Lock()
+	asset.syncData.isRescan = true
+	asset.syncData.mu.Unlock()
 
 	err := asset.chainClient.NotifyReceived(addrs)
 	if err != nil {
@@ -56,7 +56,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 
 	go func() {
 		// Attempt to start up the notifications handler.
-		if atomic.CompareAndSwapInt32(&asset.syncInfo.syncstarted, stop, start) {
+		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
 			asset.handleNotifications()
 		}
 	}()
@@ -65,16 +65,16 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 }
 
 func (asset *BTCAsset) IsRescanning() bool {
-	asset.syncInfo.mu.RLock()
-	defer asset.syncInfo.mu.RUnlock()
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	return asset.syncInfo.isRescan
+	return asset.syncData.isRescan
 }
 
 func (asset *BTCAsset) CancelRescan() {
-	asset.syncInfo.mu.Lock()
-	asset.syncInfo.isRescan = false
-	asset.syncInfo.mu.Unlock()
+	asset.syncData.mu.Lock()
+	asset.syncData.isRescan = false
+	asset.syncData.mu.Unlock()
 
 	asset.chainClient.Stop()
 }

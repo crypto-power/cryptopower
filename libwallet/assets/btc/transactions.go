@@ -2,6 +2,7 @@ package btc
 
 import (
 	"encoding/json"
+	"sort"
 	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -170,8 +171,22 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 		return nil, err
 	}
 
-	unminedTxs := asset.decodeTransactionWithTxSummary(UnminedTxHeight, txResult.UnminedTransactions)
+	unminedTxs := make([]sharedW.Transaction, 0)
+	for _, transaction := range txResult.UnminedTransactions {
+		unminedTx := asset.decodeTransactionWithTxSummary(UnminedTxHeight, transaction)
+		unminedTxs = append(unminedTxs, unminedTx)
+	}
+
 	minedTxs := asset.extractTxs(txResult.MinedTransactions)
+
+	if newestFirst {
+		sort.Slice(unminedTxs, func(i, j int) bool {
+			return unminedTxs[i].Timestamp > unminedTxs[j].Timestamp
+		})
+		sort.Slice(minedTxs, func(i, j int) bool {
+			return minedTxs[i].Timestamp > minedTxs[j].Timestamp
+		})
+	}
 
 	// Cache the recent data.
 	asset.txs.mu.Lock()
@@ -187,8 +202,10 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 func (asset *BTCAsset) extractTxs(blocks []wallet.Block) []sharedW.Transaction {
 	txs := make([]sharedW.Transaction, 0)
 	for _, block := range blocks {
-		decodedTxs := asset.decodeTransactionWithTxSummary(block.Height, block.Transactions)
-		txs = append(txs, decodedTxs...)
+		for _, transaction := range block.Transactions {
+			decodedTx := asset.decodeTransactionWithTxSummary(block.Height, transaction)
+			txs = append(txs, decodedTx)
+		}
 	}
 	return txs
 }

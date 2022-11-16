@@ -33,7 +33,6 @@ type BTCAsset struct {
 
 	chainParams *chaincfg.Params
 
-	syncInfo   *SyncData
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
 
@@ -43,6 +42,11 @@ type BTCAsset struct {
 	txs txCache
 
 	mu sync.RWMutex
+
+	notificationListenersMu         sync.RWMutex
+	syncData                        *SyncData
+	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
+	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
 }
 
 const (
@@ -87,10 +91,10 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: &SyncData{
-			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
-			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -137,10 +141,10 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: &SyncData{
-			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
-			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -174,10 +178,10 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: &SyncData{
-			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
-			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := btcWallet.prepareChain(); err != nil {
@@ -206,10 +210,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncInfo: &SyncData{
-			syncProgressListeners:           make(map[string]sharedW.SyncProgressListener),
-			txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	err = btcWallet.Prepare(ldr, params)
@@ -235,10 +239,10 @@ func (asset *BTCAsset) SafelyCancelSync() {
 // Methods added below satisfy the shared asset interface. Each should be
 // implemented fully to avoid panic if invoked.
 func (asset *BTCAsset) IsSynced() bool {
-	asset.syncInfo.mu.RLock()
-	defer asset.syncInfo.mu.RUnlock()
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	return asset.syncInfo.synced
+	return asset.syncData.synced
 }
 
 func (asset *BTCAsset) IsWaiting() bool {
@@ -247,10 +251,10 @@ func (asset *BTCAsset) IsWaiting() bool {
 }
 
 func (asset *BTCAsset) IsSyncing() bool {
-	asset.syncInfo.mu.RLock()
-	defer asset.syncInfo.mu.RUnlock()
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
 
-	return asset.syncInfo.syncing
+	return asset.syncData.syncing
 }
 
 func (asset *BTCAsset) ConnectedPeers() int32 {

@@ -46,6 +46,7 @@ type Asset interface {
 	GetAssetType() utils.AssetType
 	Internal() *loader.LoaderWallets
 	TargetTimePerBlockMinutes() float64
+	RequiredConfirmations() int32
 	ShutdownContextWithCancel() (context.Context, context.CancelFunc)
 
 	PublishUnminedTransactions() error
