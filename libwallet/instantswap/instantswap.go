@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"code.cryptopower.dev/exchange/instantswap"
+	"code.cryptopower.dev/group/instantswap"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 
 	// Initialize exchange servers.
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/changelly"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/changenow"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/coinswitch"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/flypme"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/godex"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/simpleswap"
-	_ "code.cryptopower.dev/exchange/instantswap/exchange/swapzone"
+	_ "code.cryptopower.dev/group/instantswap/exchange/changelly"
+	_ "code.cryptopower.dev/group/instantswap/exchange/changenow"
+	_ "code.cryptopower.dev/group/instantswap/exchange/coinswitch"
+	_ "code.cryptopower.dev/group/instantswap/exchange/flypme"
+	_ "code.cryptopower.dev/group/instantswap/exchange/godex"
+	_ "code.cryptopower.dev/group/instantswap/exchange/simpleswap"
+	_ "code.cryptopower.dev/group/instantswap/exchange/swapzone"
 )
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {

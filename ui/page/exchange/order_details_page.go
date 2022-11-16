@@ -15,7 +15,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 
-	api "code.cryptopower.dev/exchange/instantswap"
+	api "code.cryptopower.dev/group/instantswap"
 )
 
 const OrderDetailsPageID = "OrderDetailsPage"

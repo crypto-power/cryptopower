@@ -3,7 +3,7 @@ package instantswap
 import (
 	"strings"
 
-	"code.cryptopower.dev/exchange/instantswap"
+	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
 )
 
