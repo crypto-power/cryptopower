@@ -106,17 +106,26 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 			return accountIsValid
 		})
 	osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
-	address, _ := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+	if err != nil {
+		log.Error(err)
+	}
 	osm.addressEditor.Editor.SetText(address)
 
 	osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		address, _ := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
 		osm.addressEditor.Editor.SetText(address)
 	})
 
 	osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-		address, _ := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
 		osm.addressEditor.Editor.SetText(address)
 	})
 

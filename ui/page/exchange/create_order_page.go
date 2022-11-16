@@ -297,16 +297,17 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	if pg.settingsButton.Button.Clicked() {
 		pg.fromCurrency = pg.fromCurrencyType
 		pg.toCurrency = pg.toCurrencyType
-		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).OnSettingsSaved(func(params *callbackParams) {
-			pg.sourceAccountSelector = params.sourceAccountSelector
-			pg.sourceWalletSelector = params.sourceWalletSelector
-			pg.destinationAccountSelector = params.destinationAccountSelector
-			pg.destinationWalletSelector = params.destinationWalletSelector
+		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+			OnSettingsSaved(func(params *callbackParams) {
+				pg.sourceAccountSelector = params.sourceAccountSelector
+				pg.sourceWalletSelector = params.sourceWalletSelector
+				pg.destinationAccountSelector = params.destinationAccountSelector
+				pg.destinationWalletSelector = params.destinationWalletSelector
 
-			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
-			pg.ParentWindow().ShowModal(infoModal)
-		}).
-			OnCancel(func() {
+				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(infoModal)
+			}).
+			OnCancel(func() { // needed to satisfy the modal instance
 			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
 	}
