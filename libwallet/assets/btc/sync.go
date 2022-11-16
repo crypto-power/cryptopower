@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -9,7 +10,6 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/lightninglabs/neutrino"
 	"golang.org/x/sync/errgroup"
@@ -311,43 +311,44 @@ func (asset *BTCAsset) prepareChain() error {
 	}
 
 	log.Debug("Starting native BTC wallet sync...")
-
-	asset.chainClient, err = asset.newChainClient()
+	chainService, err := asset.loadChainService()
 	if err != nil {
-		log.Error(err)
-		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return err
 	}
+
+	asset.chainService = chainService
+	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
 	return nil
 }
 
-func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
-	// Depending on the network, we add some addpeers or a connect peer. On
-	// regtest, if the peers haven't been explicitly set, add the simnet harness
-	// alpha node as an additional peer so we don't have to type it in. On
-	// mainet and testnet3, add a known reliable persistent peer to be used in
-	// addition to normal DNS seed-based peer discovery.
-	var addPeers []string
-	var connectPeers []string
-	switch asset.chainParams.Net {
-	case wire.MainNet:
-		//TODO: Add more servers to connect peers from.
-		addPeers = []string{"cfilters.ssgen.io"}
-	case wire.TestNet3:
-		//TODO: Add more servers to connect peers from.
-		addPeers = []string{"dex-test.ssgen.io"}
-	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
-		connectPeers = []string{"localhost:20575"}
+func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, err error) {
+	// Read config for persistent peers, if set parse and set neutrino's ConnectedPeers
+	// persistentPeers.
+	var persistentPeers []string
+	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	if peerAddresses != "" {
+		addresses := strings.Split(peerAddresses, ";")
+		for _, address := range addresses {
+			peerAddress, err := utils.NormalizeAddress(address, asset.chainParams.DefaultPort)
+			if err != nil {
+				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
+			} else {
+				persistentPeers = append(persistentPeers, peerAddress)
+			}
+		}
+
+		if len(persistentPeers) == 0 {
+			return chainService, errors.New(utils.ErrInvalidPeers)
+		}
 	}
 
-	log.Debug("Starting neutrino chain service...")
-	chainService, err := neutrino.NewChainService(neutrino.Config{
+	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb(),
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
-		AddPeers:      addPeers,
-		ConnectPeers:  connectPeers,
+		ConnectPeers:  persistentPeers,
 		// WARNING: PublishTransaction currently uses the entire duration
 		// because if an external bug, but even if the resolved, a typical
 		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
@@ -356,10 +357,10 @@ func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
 	})
 	if err != nil {
 		log.Error(err)
-		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return chainService, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
-	return chain.NewNeutrinoClient(asset.chainParams, chainService), nil
+	return chainService, nil
 }
 
 func (asset *BTCAsset) CancelSync() {
@@ -552,4 +553,21 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	}()
 
 	return err
+}
+
+func (asset *BTCAsset) ResetChainService() error {
+	chainService, err := asset.loadChainService()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	asset.SafelyCancelSync()
+	asset.chainClient.CS, asset.chainService = chainService, chainService
+
+	asset.syncInfo.mu.Lock()
+	asset.syncInfo.restartedScan = true
+	asset.syncInfo.mu.Unlock()
+
+	return asset.SpvSync()
 }

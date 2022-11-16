@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -138,4 +139,21 @@ func HttpGet(url string, respObj interface{}) (*http.Response, []byte, error) {
 
 	err = json.Unmarshal(respBytes, respObj)
 	return resp, respBytes, err
+}
+
+func NormalizeAddress(addr string, defaultPort string) (string, error) {
+	// If the first SplitHostPort errors because of a missing port and not
+	// for an invalid host, add the port.  If the second SplitHostPort
+	// fails, then a port is not missing and the original error should be
+	// returned.
+	host, port, origErr := net.SplitHostPort(addr)
+	if origErr == nil {
+		return net.JoinHostPort(host, port), nil
+	}
+	addr = net.JoinHostPort(addr, defaultPort)
+	_, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", origErr
+	}
+	return addr, nil
 }

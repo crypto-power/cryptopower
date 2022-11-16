@@ -350,11 +350,25 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 	err := utils.ErrBTCMethodNotImplemented("VerifyMessage")
 	return false, err
 }
+
 func (asset *BTCAsset) RemoveSpecificPeer() {
-	log.Warn(utils.ErrBTCMethodNotImplemented("RemoveSpecificPeer"))
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	go func() {
+		err := asset.ResetChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
+
 func (asset *BTCAsset) SetSpecificPeer(address string) {
-	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
+	go func() {
+		err := asset.ResetChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
 
 // GetExtendedPubkey returns the extended public key of the given account,

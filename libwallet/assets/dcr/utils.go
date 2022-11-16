@@ -3,7 +3,6 @@ package dcr
 import (
 	"fmt"
 	"math"
-	"net"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
@@ -30,23 +29,6 @@ const (
 // Returns a DCR amount that implements the asset amount interface.
 func (asset *DCRAsset) ToAmount(v int64) sharedW.AssetAmount {
 	return DCRAmount(dcrutil.Amount(v))
-}
-
-func normalizeAddress(addr string, defaultPort string) (string, error) {
-	// If the first SplitHostPort errors because of a missing port and not
-	// for an invalid host, add the port.  If the second SplitHostPort
-	// fails, then a port is not missing and the original error should be
-	// returned.
-	host, port, origErr := net.SplitHostPort(addr)
-	if origErr == nil {
-		return net.JoinHostPort(host, port), nil
-	}
-	addr = net.JoinHostPort(addr, defaultPort)
-	_, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return "", origErr
-	}
-	return addr, nil
 }
 
 func AmountAtom(f float64) int64 {
