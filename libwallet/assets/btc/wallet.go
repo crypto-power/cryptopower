@@ -295,6 +295,12 @@ func (asset *BTCAsset) IsSyncShuttingDown() bool {
 }
 
 func (asset *BTCAsset) ConnectedPeers() int32 {
+	// Calling CS.ConnectedCount() before the first sync is
+	// Performed will freez the application, because the function never return.
+	// Return 0 when not connected to bitcoin network as work around.
+	if !asset.IsConnectedToNetwork() {
+		return 0
+	}
 	return asset.chainClient.CS.ConnectedCount()
 }
 
