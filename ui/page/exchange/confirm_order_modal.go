@@ -182,7 +182,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 						Top:    values.MarginPadding24,
 						Bottom: values.MarginPadding24,
 					}.Layout(gtx, func(gtx C) D {
-						return com.Theme.Icons.ArrowDownIcon.LayoutSize(gtx, values.MarginPadding60)
+						return com.Theme.Icons.ArrowDownIcon.LayoutSize(gtx, values.MarginPadding20)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
