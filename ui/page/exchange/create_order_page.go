@@ -52,6 +52,7 @@ type CreateOrderPage struct {
 	fromCurrencyType utils.AssetType
 	toCurrencyType   utils.AssetType
 	exchangeRateInfo string
+	amountErrorText  string
 	fetchingRate     bool
 	rateError        bool
 
@@ -116,6 +117,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		},
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
+		exchangeRate:     -1,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -325,10 +327,24 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
 				if pg.inputsNotEmpty(pg.fromAmountEditor.Editor) {
-					f, _ := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
-					value := f / pg.exchangeRate
-					v := strconv.FormatFloat(value, 'f', -1, 64)
-					pg.toAmountEditor.Editor.SetText(v)
+					f, err := strconv.ParseFloat(pg.fromAmountEditor.Editor.Text(), 8)
+					if err != nil {
+						// empty usd input
+						pg.toAmountEditor.Editor.SetText("")
+						pg.amountErrorText = values.String(values.StrInvalidAmount)
+						pg.fromAmountEditor.LineColor = pg.Theme.Color.Danger
+						pg.toAmountEditor.LineColor = pg.Theme.Color.Danger
+						return
+					}
+					pg.amountErrorText = ""
+					if pg.exchangeRate != -1 {
+						value := f / pg.exchangeRate
+						v := strconv.FormatFloat(value, 'f', -1, 64)
+						pg.amountErrorText = ""
+						pg.fromAmountEditor.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.Editor.SetText(v) // 2 decimal places
+					}
 				}
 
 			}
@@ -340,10 +356,24 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
 				if pg.inputsNotEmpty(pg.toAmountEditor.Editor) {
-					f, _ := strconv.ParseFloat(pg.toAmountEditor.Editor.Text(), 8)
-					value := f * pg.exchangeRate
-					v := strconv.FormatFloat(value, 'f', -1, 64)
-					pg.fromAmountEditor.Editor.SetText(v)
+					f, err := strconv.ParseFloat(pg.toAmountEditor.Editor.Text(), 8)
+					if err != nil {
+						// empty usd input
+						pg.fromAmountEditor.Editor.SetText("")
+						pg.amountErrorText = values.String(values.StrInvalidAmount)
+						pg.fromAmountEditor.LineColor = pg.Theme.Color.Danger
+						pg.toAmountEditor.LineColor = pg.Theme.Color.Danger
+						return
+					}
+					pg.amountErrorText = ""
+					if pg.exchangeRate != -1 {
+						value := f * pg.exchangeRate
+						v := strconv.FormatFloat(value, 'f', -1, 64)
+						pg.amountErrorText = ""
+						pg.fromAmountEditor.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.LineColor = pg.Theme.Color.Gray2
+						pg.fromAmountEditor.Editor.SetText(v)
+					}
 				}
 
 			}
@@ -369,12 +399,17 @@ func (pg *CreateOrderPage) canCreateOrder() bool {
 		return false
 	}
 
+	if pg.amountErrorText != "" {
+		return false
+	}
+
 	return true
 }
 
 func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 	for _, e := range editors {
 		if e.Text() == "" {
+			pg.amountErrorText = ""
 			return false
 		}
 	}
@@ -527,23 +562,37 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							Alignment: layout.Middle,
 						}.Layout(gtx,
 							layout.Flexed(0.45, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										if pg.fetchingRate {
-											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return pg.materialLoader.Layout(gtx)
+										if pg.amountErrorText != "" {
+											txt := pg.Theme.Label(values.TextSize14, pg.amountErrorText)
+											txt.Font.Weight = text.SemiBold
+											txt.Color = pg.Theme.Color.Danger
+											return txt.Layout(gtx)
 										}
-										txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
-										txt.Color = pg.Theme.Color.Gray1
-										txt.Font.Weight = text.SemiBold
-										return txt.Layout(gtx)
+
+										return D{}
 									}),
 									layout.Rigid(func(gtx C) D {
-										if !pg.fetchingRate && pg.rateError {
-											return pg.refreshExchangeRateBtn.Layout(gtx)
-										}
-										return D{}
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												if pg.fetchingRate {
+													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+													gtx.Constraints.Min.X = gtx.Constraints.Max.X
+													return pg.materialLoader.Layout(gtx)
+												}
+												txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
+												txt.Color = pg.Theme.Color.Gray1
+												txt.Font.Weight = text.SemiBold
+												return txt.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												if !pg.fetchingRate && pg.rateError {
+													return pg.refreshExchangeRateBtn.Layout(gtx)
+												}
+												return D{}
+											}),
+										)
 									}),
 								)
 							}),
