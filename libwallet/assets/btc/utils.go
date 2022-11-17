@@ -2,6 +2,7 @@ package btc
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -116,4 +117,16 @@ func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, pa
 	}
 
 	return currentKey.String(), nil
+}
+
+func decodeAddress(s string, params *chaincfg.Params) (btcutil.Address, error) {
+	addr, err := btcutil.DecodeAddress(s, params)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address %q: decode failed with %#q", s, err)
+	}
+	if !addr.IsForNet(params) {
+		return nil, fmt.Errorf("invalid address %q: not intended for use on %s",
+			addr, params.Name)
+	}
+	return addr, nil
 }
