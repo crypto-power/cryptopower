@@ -207,7 +207,7 @@ func (mp *MainPage) initNavItems() {
 				Image:         mp.Theme.Icons.MoreIcon,
 				ImageInactive: mp.Theme.Icons.MoreIconInactive,
 				Title:         values.String(values.StrSettings),
-				PageID:        BTCWalletSettingsPageID,
+				PageID:        WalletSettingsPageID,
 			},
 		},
 		MinimizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowBack),
@@ -494,7 +494,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			switch item.PageID {
-			case BTCWalletSettingsPageID:
+			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			case ReceivePageID:
 				if mp.isSynced() {
