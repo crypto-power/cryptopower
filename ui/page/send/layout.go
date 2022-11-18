@@ -6,6 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -44,6 +45,7 @@ func (pg *Page) initLayoutWidgets() {
 		Left:   values.MarginPadding8,
 	}
 	pg.coinSelectionLabel = pg.Theme.NewClickable(false)
+	pg.txFeeRateLabel = pg.Theme.NewClickable(false)
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -87,6 +89,14 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 			return pg.coinSelectionSection(gtx)
 		},
 	}
+
+	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
+		// Display the transaction fee rate selection only for btc wallets.
+		pageContent = append(pageContent,
+			func(gtx C) D { return pg.transctionFeeSection(gtx) },
+		)
+	}
+
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
@@ -293,9 +303,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	m := values.MarginPadding20
-	inset := layout.Inset{
-		Bottom: values.MarginPadding100,
-	}
+	inset := layout.Inset{}
 	return inset.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			inset := layout.Inset{
@@ -314,6 +322,44 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
 									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 										layout.Rigid(pg.Theme.Label(values.TextSize16, "Automatic").Layout),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+										}),
+									)
+								})
+							}),
+						)
+					})
+				})
+			})
+		})
+	})
+}
+
+// transctionFeeSection only supports btc fee rate setting.
+func (pg *Page) transctionFeeSection(gtx layout.Context) D {
+	m := values.MarginPadding20
+	inset := layout.Inset{
+		Bottom: values.MarginPadding100,
+	}
+	return inset.Layout(gtx, func(gtx C) D {
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			inset := layout.Inset{
+				Top:    values.MarginPadding15,
+				Right:  values.MarginPadding15,
+				Bottom: values.MarginPadding15,
+				Left:   values.MarginPadding15,
+			}
+			return inset.Layout(gtx, func(gtx C) D {
+				return pg.txFeeRateLabel.Layout(gtx, func(gtx C) D {
+					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrTxFee))
+					return layout.Inset{}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(textLabel.Layout),
+							layout.Rigid(func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrTxFee)).Layout),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
 										}),

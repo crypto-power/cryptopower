@@ -55,6 +55,7 @@ type Page struct {
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
 	coinSelectionLabel  *cryptomaterial.Clickable
+	txFeeRateLabel      *cryptomaterial.Clickable
 	currencyExchange    string
 
 	*authoredTxData
