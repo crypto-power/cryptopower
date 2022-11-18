@@ -223,7 +223,8 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		return utils.TranslateError(err)
 	}
 
-	if unsignedTx.ChangeIndex >= 0 {
+	// If the change output is the only one, no need to change position.
+	if unsignedTx.ChangeIndex > 0 {
 		unsignedTx.RandomizeChangePosition()
 	}
 
@@ -254,7 +255,10 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		return errors.New(utils.ErrInvalidPassphrase)
 	}
 
+	// To discourage fee sniping, LockTime is explicity set in the raw tx.
+	// More documentation on this: https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
 	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
+
 	sigHashes := txscript.NewTxSigHashes(&msgTx)
 
 	for index, txIn := range msgTx.TxIn {
@@ -355,7 +359,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				continue
 			}
 
-			// txout failed the dust check validation.
+			// txout failed the dust threshold validation.
 			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallbackfeerate)
 			return nil, fmt.Errorf("minimum amount to send should be %v", minAmount)
 		}
@@ -389,7 +393,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	if unsignedTx.ChangeIndex == -1 {
 		// The change amount is zero or the Txout is likely to be considered as dust
-		// if sent to the mempool and thus rejected.
+		// if sent to the mempool the whole tx will be rejected.
 		return nil, errors.New("adding the change Txout or sendMax tx failed")
 	}
 
@@ -484,12 +488,12 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 	}
 
 	return func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
-		// if error found return it
+		// if error found return it first.
 		if sourceErr != nil {
 			return 0, nil, nil, nil, sourceErr
 		}
 
-		// All utxo are to be spent with no change amount expected.
+		// All utxos are to be spent with no change amount expected.
 		if sendMax {
 			return totalInputValue, inputs, inputValues, nil, nil
 		}
@@ -500,7 +504,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 			if totalutxo < target {
 				totalutxo += utxoAmount
 			} else {
-				// Found utxo(s) we can spend in the current tx.
+				// Found some utxo(s) we can spend in the current tx.
 				index = i + 1
 				break
 			}
