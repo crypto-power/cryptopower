@@ -360,11 +360,11 @@ func (pg *Page) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	for pg.retryExchange.Clicked() {
+	if pg.retryExchange.Clicked() {
 		go pg.fetchExchangeRate()
 	}
 
-	for pg.nextButton.Clicked() {
+	if pg.nextButton.Clicked() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet

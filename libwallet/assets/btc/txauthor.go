@@ -3,6 +3,7 @@ package btc
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,22 +22,31 @@ import (
 
 type TxAuthor struct {
 	sourceAccountNumber uint32
-	destinations        []sharedW.TransactionDestination
-	changeAddress       string
-	inputs              []*wire.TxIn
-	changeDestination   *sharedW.TransactionDestination
+	// A map is used in place of an array because every destination address
+	// is supposed to be unique.
+	destinations      map[string]*sharedW.TransactionDestination
+	changeAddress     string
+	inputs            []*wire.TxIn
+	changeDestination *sharedW.TransactionDestination
 
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 }
 
+// fallbackfeerate defines the default fee rate to be used if API source of the
+// current fee rates fails.
+const fallbackfeerate = txrules.DefaultRelayFeePerKb
+
 // noInputValue describes an error returned by the input source when no inputs
 // were selected because each previous output value was zero.  Callers of
 // txauthor.NewUnsignedTransaction need not report these errors to the user.
 type noInputValue struct {
+	confirmations int32
 }
 
-func (noInputValue) Error() string { return "no input value" }
+func (in noInputValue) Error() string {
+	return fmt.Sprintf("inputs not spendable or have less than %d confirmations", in.confirmations)
+}
 
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
@@ -50,7 +60,7 @@ func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make([]sharedW.TransactionDestination, 0),
+		destinations:        make(map[string]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 	}
 	return nil
@@ -74,43 +84,25 @@ func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, s
 		return err
 	}
 
-	asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations, sharedW.TransactionDestination{
-		Address:    address,
-		UnitAmount: satoshiAmount,
-		SendMax:    sendMax,
-	})
-	asset.TxAuthoredInfo.needsConstruct = true
-
-	return nil
-}
-
-func (asset *BTCAsset) UpdateSendDestination(index int, address string, satoshiAmount int64, sendMax bool) error {
-	if err := asset.validateSendAmount(sendMax, satoshiAmount); err != nil {
-		return err
-	}
-
-	if len(asset.TxAuthoredInfo.destinations) < index {
-		return errors.New(utils.ErrIndexOutOfRange)
-	}
-
-	asset.TxAuthoredInfo.destinations[index] = sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[address] = &sharedW.TransactionDestination{
 		Address:    address,
 		UnitAmount: satoshiAmount,
 		SendMax:    sendMax,
 	}
 	asset.TxAuthoredInfo.needsConstruct = true
+
 	return nil
 }
 
-func (asset *BTCAsset) RemoveSendDestination(index int) {
-	if len(asset.TxAuthoredInfo.destinations) > index {
-		asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations[:index], asset.TxAuthoredInfo.destinations[index+1:]...)
+func (asset *BTCAsset) RemoveSendDestination(address string) {
+	if _, ok := asset.TxAuthoredInfo.destinations[address]; ok {
+		delete(asset.TxAuthoredInfo.destinations, address)
 		asset.TxAuthoredInfo.needsConstruct = true
 	}
 }
 
-func (asset *BTCAsset) SendDestination(atIndex int) *sharedW.TransactionDestination {
-	return &asset.TxAuthoredInfo.destinations[atIndex]
+func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDestination {
+	return asset.TxAuthoredInfo.destinations[address]
 }
 
 func (asset *BTCAsset) SetChangeDestination(address string) {
@@ -144,7 +136,7 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}
 
 	estimatedSignedSerializeSize := asset.TxAuthoredInfo.unsignedTx.Tx.SerializeSize()
-	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize)
+	feeToSendTx := txrules.FeeForSerializeSize(fallbackfeerate, estimatedSignedSerializeSize)
 	feeAmount := &sharedW.Amount{
 		UnitValue: int64(feeToSendTx),
 		CoinValue: feeToSendTx.ToBTC(),
@@ -262,17 +254,27 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		return errors.New(utils.ErrInvalidPassphrase)
 	}
 
-	var additionalPkScripts map[wire.OutPoint][]byte
+	msgTx.LockTime = uint32(asset.GetBestBlockHeight()) + 1
+	sigHashes := txscript.NewTxSigHashes(&msgTx)
 
-	invalidSigs, err := asset.Internal().BTC.SignTransaction(&msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	for index, txIn := range msgTx.TxIn {
+		_, previousTXout, _, _, err := asset.Internal().BTC.FetchInputInfo(&txIn.PreviousOutPoint)
+		if err != nil {
+			log.Errorf("fetch previous outpoint txout failed: %v", err)
+			return err
+		}
 
-	invalidInputIndexes := make([]uint32, len(invalidSigs))
-	for i, e := range invalidSigs {
-		invalidInputIndexes[i] = e.InputIndex
+		witness, signature, err := asset.Internal().BTC.ComputeInputScript(
+			&msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
+		)
+
+		if err != nil {
+			log.Errorf("generating input signatures failed: %v", err)
+			return err
+		}
+
+		msgTx.TxIn[index].Witness = witness
+		msgTx.TxIn[index].SignatureScript = signature
 	}
 
 	var serializedTransaction bytes.Buffer
@@ -312,13 +314,14 @@ func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
-	if len(asset.TxAuthoredInfo.inputs) != 0 {
-		return asset.constructCustomTransaction()
-	}
+	// if len(asset.TxAuthoredInfo.inputs) != 0 {
+	// 	return asset.constructCustomTransaction()
+	// }
 
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
+	var sendMax bool
 
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		if err := asset.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
@@ -337,6 +340,8 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
+			sendMax = true
+
 		} else {
 			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
 			if err != nil {
@@ -344,10 +349,20 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				return nil, fmt.Errorf("make tx output error: %v", err)
 			}
 
-			outputs = append(outputs, output)
+			// confirm that the txout will not be labelled dust on hitting mempool.
+			if !txrules.IsDustOutput(output, fallbackfeerate) {
+				outputs = append(outputs, output)
+				continue
+			}
+
+			// txout failed the dust check validation.
+			// Despite what the actual fee rate could be, defaultrelayfee rate is needed here.
+			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallbackfeerate)
+			return nil, fmt.Errorf("minimum amount to send should be %v", minAmount)
 		}
 	}
 
+	// Case activated when sendMax is false.
 	if changeSource == nil {
 		// btcwallet should ordinarily handle cases where a nil changeSource
 		// is passed to `sharedW.NewUnsignedTransaction` but the changeSource
@@ -366,9 +381,20 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	inputSource := makeInputSource(unspents)
 
-	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, inputSource, changeSource)
+	inputSource := asset.makeInputSource(unspents, sendMax)
+	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, fallbackfeerate, inputSource, changeSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating unsigned tx failed: %v", err)
+	}
+
+	if unsignedTx.ChangeIndex == -1 {
+		// The change amount is zero or the Txout is likely to be considered as dust
+		// if sent to the mempool and thus rejected.
+		return nil, errors.New("adding the change Txout or sendMax tx failed")
+	}
+
+	return unsignedTx, nil
 }
 
 // changeSource derives an internal address from the source wallet and account
@@ -377,9 +403,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 // change source for receiving change from this tx back into the sharedW.
 func (asset *BTCAsset) changeSource() (*txauthor.ChangeSource, error) {
 	if asset.TxAuthoredInfo.changeAddress == "" {
-
 		changeAccount := asset.TxAuthoredInfo.sourceAccountNumber
-
 		address, err := asset.Internal().BTC.NewChangeAddress(changeAccount, asset.GetScope())
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
@@ -405,56 +429,84 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 }
 
 // makeInputSource creates an InputSource that creates inputs for every unspent
-// output with non-zero output values.  The target amount is ignored since every
-// output is consumed.  The InputSource does not return any previous output
-// scripts as they are not needed for creating the unsinged transaction and are
-// looked up again by the wallet during the call to signrawtransaction.
-func makeInputSource(outputs []*ListUnspentResult) txauthor.InputSource {
+// output with non-zero output values. The importsource aims to create the leanest
+// transaction if its possible not to spend all the utxos available when servicing
+// the current transaction spending amount. The sendMax shows that all utxos must
+// be spent without any balances left in the account.
+func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
 	var (
 		totalInputValue btcutil.Amount
 		inputs          = make([]*wire.TxIn, 0, len(outputs))
 		inputValues     = make([]btcutil.Amount, 0, len(outputs))
 		sourceErr       error
 	)
+
+	// Sorts the outputs in the descending order (utxo with largest amount start)
+	// This descending order helps in selecting the least number of utxos need
+	// in the transactions to be made.
+	sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount > outputs[j].Amount })
+
+	// validates the utxo amounts and if an invalid amount is discovered and
+	// error is returned.
 	for _, output := range outputs {
-		output := output
+		// Ignore unspendable utxos
+		if !output.Spendable {
+			continue
+		}
 
 		outputAmount, err := btcutil.NewAmount(output.Amount)
 		if err != nil {
-			sourceErr = fmt.Errorf(
-				"invalid amount `%v` in listunspent result",
-				output.Amount)
+			sourceErr = fmt.Errorf("invalid amount `%v` in listunspent result", output.Amount)
 			break
 		}
+
 		if outputAmount == 0 {
 			continue
 		}
+
 		if !saneOutputValue(outputAmount) {
-			sourceErr = fmt.Errorf(
-				"impossible output amount `%v` in listunspent result",
-				outputAmount)
+			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", outputAmount)
 			break
 		}
 		totalInputValue += outputAmount
 
 		previousOutPoint, err := parseOutPoint(output)
 		if err != nil {
-			sourceErr = fmt.Errorf(
-				"invalid data in listunspent result: %v",
-				err)
+			sourceErr = fmt.Errorf("invalid data in listunspent result: %v", err)
 			break
 		}
 
-		inputs = append(inputs, wire.NewTxIn(&previousOutPoint, nil, nil))
+		inputs = append(inputs, wire.NewTxIn(previousOutPoint, nil, nil))
 		inputValues = append(inputValues, outputAmount)
 	}
 
 	if sourceErr == nil && totalInputValue == 0 {
-		sourceErr = noInputValue{}
+		sourceErr = noInputValue{confirmations: asset.RequiredConfirmations()}
 	}
 
-	return func(btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
-		return totalInputValue, inputs, inputValues, nil, sourceErr
+	return func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
+		// if error found return it
+		if sourceErr != nil {
+			return 0, nil, nil, nil, sourceErr
+		}
+
+		// All utxo are to be spent with no change amount expected.
+		if sendMax {
+			return totalInputValue, inputs, inputValues, nil, nil
+		}
+
+		var totalutxo btcutil.Amount
+		var index int
+		for i, utxoAmount := range inputValues {
+			if totalutxo < target {
+				totalutxo += utxoAmount
+			} else {
+				// Found utxo(s) we can spend in the current tx.
+				index = i + 1
+				break
+			}
+		}
+		return totalutxo, inputs[:index], inputValues[:index], nil, nil
 	}
 }
 
@@ -462,10 +514,10 @@ func saneOutputValue(amount btcutil.Amount) bool {
 	return amount >= 0 && amount <= btcutil.MaxSatoshi
 }
 
-func parseOutPoint(input *ListUnspentResult) (wire.OutPoint, error) {
+func parseOutPoint(input *ListUnspentResult) (*wire.OutPoint, error) {
 	txHash, err := chainhash.NewHashFromStr(input.TxID)
 	if err != nil {
-		return wire.OutPoint{}, err
+		return nil, err
 	}
-	return wire.OutPoint{Hash: *txHash, Index: input.Vout}, nil
+	return wire.NewOutPoint(txHash, input.Vout), nil
 }

@@ -33,7 +33,7 @@ func calculateChangeScriptSize(changeAddress string, chainParams *chaincfg.Param
 // but is instead returned as a change destination.
 // Returns an error if more than 1 max amount recipients identified or
 // if any other error is encountered while processing the addresses and amounts.
-func (asset *BTCAsset) ParseOutputsAndChangeDestination(txDestinations []sharedW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
+func (asset *BTCAsset) ParseOutputsAndChangeDestination(txDestinations map[string]*sharedW.TransactionDestination) ([]*wire.TxOut, int64, string, error) {
 	var outputs = make([]*wire.TxOut, 0)
 	var totalSendAmount int64
 	var maxAmountRecipientAddress string
@@ -77,17 +77,17 @@ func (asset *BTCAsset) constructCustomTransaction() (*txauthor.AuthoredTx, error
 		return addr.String(), nil
 	}
 
-	return asset.newUnsignedTxUTXO(asset.TxAuthoredInfo.inputs, asset.TxAuthoredInfo.destinations,
-		asset.TxAuthoredInfo.changeDestination, nextInternalAddress)
+	return asset.newUnsignedTxUTXO(nextInternalAddress)
 }
 
-func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations []sharedW.TransactionDestination, changeDestination *sharedW.TransactionDestination,
-	nextInternalAddress nextAddressFunc) (*txauthor.AuthoredTx, error) {
+func (asset *BTCAsset) newUnsignedTxUTXO(nextInternalAddress nextAddressFunc) (*txauthor.AuthoredTx, error) {
+	sendDestinations := asset.TxAuthoredInfo.destinations
 	outputs, totalSendAmount, maxAmountRecipientAddress, err := asset.ParseOutputsAndChangeDestination(sendDestinations)
 	if err != nil {
 		return nil, err
 	}
 
+	changeDestination := asset.TxAuthoredInfo.changeDestination
 	if maxAmountRecipientAddress != "" && changeDestination != nil {
 		return nil, errors.E(errors.Invalid, "no change is generated when sending max amount,"+
 			" change destinations must not be provided")
@@ -101,13 +101,18 @@ func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations [
 		}
 	}
 
+	var txMsg = wire.NewMsgTx(wire.TxVersion)
+
 	var totalInputAmount int64
+	inputs := asset.TxAuthoredInfo.inputs
 	inputScriptSizes := make([]int, len(inputs))
 	inputScripts := make([][]byte, len(inputs))
 	for i, input := range inputs {
 		// totalInputAmount += input.ValueIn // TODO: get the ValueIn for a BTC transaction if needed
 		inputScriptSizes[i] = txsizes.RedeemP2PKHSigScriptSize
 		inputScripts[i] = input.SignatureScript
+
+		txMsg.AddTxIn(input)
 	}
 
 	var changeScriptSize int
@@ -121,7 +126,7 @@ func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations [
 	}
 
 	maxSignedSize := txsizes.EstimateSerializeSize(len(inputScriptSizes), outputs, changeScriptSize > 0)
-	maxRequiredFee := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, maxSignedSize)
+	maxRequiredFee := txrules.FeeForSerializeSize(fallbackfeerate, maxSignedSize)
 	changeAmount := totalInputAmount - totalSendAmount - int64(maxRequiredFee)
 
 	if changeAmount < 0 {
@@ -144,14 +149,14 @@ func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations [
 		}
 	}
 
+	// Add the outputs.
+	txMsg.TxOut = append(txMsg.TxOut, outputs...)
+	txMsg.LockTime = uint32(asset.GetBestBlockHeight())
+
 	return &txauthor.AuthoredTx{
 		TotalInput: btcutil.Amount(totalInputAmount),
-		Tx: &wire.MsgTx{
-			Version:  wire.TxVersion,
-			TxIn:     inputs,
-			TxOut:    outputs,
-			LockTime: 0,
-		},
+		// PrevInputValues: asset.TxAuthoredInfo.inputAmounts,
+		Tx: txMsg,
 	}, nil
 }
 
