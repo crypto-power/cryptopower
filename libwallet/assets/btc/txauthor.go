@@ -254,7 +254,7 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		return errors.New(utils.ErrInvalidPassphrase)
 	}
 
-	msgTx.LockTime = uint32(asset.GetBestBlockHeight()) + 1
+	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
 	sigHashes := txscript.NewTxSigHashes(&msgTx)
 
 	for index, txIn := range msgTx.TxIn {
@@ -356,7 +356,6 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 			}
 
 			// txout failed the dust check validation.
-			// Despite what the actual fee rate could be, defaultrelayfee rate is needed here.
 			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallbackfeerate)
 			return nil, fmt.Errorf("minimum amount to send should be %v", minAmount)
 		}
