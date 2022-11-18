@@ -41,6 +41,10 @@ type BTCAsset struct {
 	// expensive GetTransactions call.
 	txs txCache
 
+	// This fields helps to prevent unnecessary api calls if an new block hasn't
+	// been introduced.
+	fees feeEstimateCache
+
 	mu sync.RWMutex
 
 	// rescanStarting is set while reloading the wallet and dropping
