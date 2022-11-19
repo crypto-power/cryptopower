@@ -33,9 +33,9 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-// fallbackfeerate defines the default fee rate to be used if API source of the
+// fallBackFeeRate defines the default fee rate to be used if API source of the
 // current fee rates fails.
-const fallbackfeerate = txrules.DefaultRelayFeePerKb
+const fallBackFeeRate = txrules.DefaultRelayFeePerKb
 
 // noInputValue describes an error returned by the input source when no inputs
 // were selected because each previous output value was zero.  Callers of
@@ -136,7 +136,7 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}
 
 	estimatedSignedSerializeSize := asset.TxAuthoredInfo.unsignedTx.Tx.SerializeSize()
-	feeToSendTx := txrules.FeeForSerializeSize(fallbackfeerate, estimatedSignedSerializeSize)
+	feeToSendTx := txrules.FeeForSerializeSize(fallBackFeeRate, estimatedSignedSerializeSize)
 	feeAmount := &sharedW.Amount{
 		UnitValue: int64(feeToSendTx),
 		CoinValue: feeToSendTx.ToBTC(),
@@ -228,21 +228,8 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		unsignedTx.RandomizeChangePosition()
 	}
 
-	var txBuf bytes.Buffer
-	txBuf.Grow(unsignedTx.Tx.SerializeSize())
-	err = unsignedTx.Tx.Serialize(&txBuf)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	var msgTx wire.MsgTx
-	err = msgTx.Deserialize(bytes.NewReader(txBuf.Bytes()))
-	if err != nil {
-		log.Error(err)
-		// Bytes do not represent a valid raw transaction
-		return err
-	}
+	// Test encode and decode the tx to check its validity after being signed.
+	msgTx := unsignedTx.Tx
 
 	lock := make(chan time.Time, 1)
 	defer func() {
@@ -256,10 +243,11 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 	}
 
 	// To discourage fee sniping, LockTime is explicity set in the raw tx.
-	// More documentation on this: https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
+	// More documentation on this:
+	// https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
 	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
 
-	sigHashes := txscript.NewTxSigHashes(&msgTx)
+	sigHashes := txscript.NewTxSigHashes(msgTx)
 
 	for index, txIn := range msgTx.TxIn {
 		_, previousTXout, _, _, err := asset.Internal().BTC.FetchInputInfo(&txIn.PreviousOutPoint)
@@ -269,7 +257,7 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		}
 
 		witness, signature, err := asset.Internal().BTC.ComputeInputScript(
-			&msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
+			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
 		)
 
 		if err != nil {
@@ -285,18 +273,18 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 	serializedTransaction.Grow(msgTx.SerializeSize())
 	err = msgTx.Serialize(&serializedTransaction)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("encoding the tx to test its validity failed: %v", err)
 		return err
 	}
 
 	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
 	if err != nil {
 		// Invalid tx
-		log.Error(err)
+		log.Errorf("decoding the tx to test its validity failed: %v", err)
 		return err
 	}
 
-	err = asset.Internal().BTC.PublishTransaction(&msgTx, transactionLabel)
+	err = asset.Internal().BTC.PublishTransaction(msgTx, transactionLabel)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -318,6 +306,9 @@ func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
+	//TODO: Code commented pending the evaluation if `libwallet/assets/btc/utxo.go`
+	// implementation is still necessary. It ought to be deleted with that file
+	// should we decide to pursue that route.
 	// if len(asset.TxAuthoredInfo.inputs) != 0 {
 	// 	return asset.constructCustomTransaction()
 	// }
@@ -354,13 +345,13 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 			}
 
 			// confirm that the txout will not be labelled dust on hitting mempool.
-			if !txrules.IsDustOutput(output, fallbackfeerate) {
+			if !txrules.IsDustOutput(output, fallBackFeeRate) {
 				outputs = append(outputs, output)
 				continue
 			}
 
 			// txout failed the dust threshold validation.
-			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallbackfeerate)
+			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallBackFeeRate)
 			return nil, fmt.Errorf("minimum amount to send should be %v", minAmount)
 		}
 	}
@@ -386,7 +377,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	}
 
 	inputSource := asset.makeInputSource(unspents, sendMax)
-	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, fallbackfeerate, inputSource, changeSource)
+	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, fallBackFeeRate, inputSource, changeSource)
 	if err != nil {
 		return nil, fmt.Errorf("creating unsigned tx failed: %v", err)
 	}
@@ -433,9 +424,9 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 
 // makeInputSource creates an InputSource that creates inputs for every unspent
 // output with non-zero output values. The importsource aims to create the leanest
-// transaction if its possible not to spend all the utxos available when servicing
-// the current transaction spending amount. The sendMax shows that all utxos must
-// be spent without any balances left in the account.
+// transaction possible. It plans not to spend all the utxos available when servicing
+// the current transaction spending amount if possible. The sendMax shows that 
+// all utxos must be spent without any balance(unspent utxo) left in the account.
 func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
 	var (
 		totalInputValue btcutil.Amount
@@ -444,12 +435,15 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 		sourceErr       error
 	)
 
-	// Sorts the outputs in the descending order (utxo with largest amount start)
-	// This descending order helps in selecting the least number of utxos need
-	// in the transactions to be made.
-	sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount > outputs[j].Amount })
+	// sorting is only necessary when send max is false.
+	if !sendMax {
+		// Sorts the outputs in the descending order (utxo with largest amount start)
+		// This descending order helps in selecting the least number of utxos needed
+		// in the servicing the transaction to be made.
+		sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount > outputs[j].Amount })
+	}
 
-	// validates the utxo amounts and if an invalid amount is discovered and
+	// validates the utxo amounts and if an invalid amount is discovered an
 	// error is returned.
 	for _, output := range outputs {
 		// Ignore unspendable utxos
@@ -488,7 +482,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 	}
 
 	return func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
-		// if error found return it first.
+		// If an error was found return it first.
 		if sourceErr != nil {
 			return 0, nil, nil, nil, sourceErr
 		}
@@ -498,18 +492,19 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 			return totalInputValue, inputs, inputValues, nil, nil
 		}
 
-		var totalutxo btcutil.Amount
 		var index int
+		var totalUtxo btcutil.Amount
+
 		for i, utxoAmount := range inputValues {
-			if totalutxo < target {
-				totalutxo += utxoAmount
+			if totalUtxo < target {
+				totalUtxo += utxoAmount
 			} else {
 				// Found some utxo(s) we can spend in the current tx.
 				index = i + 1
 				break
 			}
 		}
-		return totalutxo, inputs[:index], inputValues[:index], nil, nil
+		return totalUtxo, inputs[:index], inputValues[:index], nil, nil
 	}
 }
 

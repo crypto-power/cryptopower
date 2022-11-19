@@ -126,7 +126,7 @@ func (asset *BTCAsset) newUnsignedTxUTXO(nextInternalAddress nextAddressFunc) (*
 	}
 
 	maxSignedSize := txsizes.EstimateSerializeSize(len(inputScriptSizes), outputs, changeScriptSize > 0)
-	maxRequiredFee := txrules.FeeForSerializeSize(fallbackfeerate, maxSignedSize)
+	maxRequiredFee := txrules.FeeForSerializeSize(fallBackFeeRate, maxSignedSize)
 	changeAmount := totalInputAmount - totalSendAmount - int64(maxRequiredFee)
 
 	if changeAmount < 0 {
