@@ -35,11 +35,10 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log         = backendLog.Logger("BTC")
-	neutrinoLog = backendLog.Logger("NTRNO")
-	wtxmgrLog   = backendLog.Logger("TXMGR")
-	chainLog    = backendLog.Logger("CHAIN")
-	walletLog   = backendLog.Logger("WLLT")
+	log       = backendLog.Logger("BTC")
+	wtxmgrLog = backendLog.Logger("TXMGR")
+	chainLog  = backendLog.Logger("CHAIN")
+	ntrn      = backendLog.Logger("NTRN")
 )
 
 // SetLogRotator assigns logrotator to be used for logging outputs.
@@ -49,31 +48,27 @@ func SetLogRotator(rotator *rotator.Rotator) {
 
 // Initialize package-global logger variables.
 func init() {
-	neutrino.UseLogger(neutrinoLog)
+	neutrino.UseLogger(ntrn)
 	wtxmgr.UseLogger(wtxmgrLog)
 	chain.UseLogger(chainLog)
-	wallet.UseLogger(walletLog)
+	wallet.UseLogger(log)
 }
 
 // UseLoggers sets the subsystem logs to use the provided loggers.
-func UseLoggers(main, walletLog, neutrinoLog, wtxmgrLog, chainLog btclog.Logger) {
-	log = main
-	neutrino.UseLogger(neutrinoLog)
-	wtxmgr.UseLogger(wtxmgrLog)
-	chain.UseLogger(chainLog)
-	wallet.UseLogger(walletLog)
+func UseLoggers(logger btclog.Logger) {
+	neutrino.UseLogger(ntrn)
+	wtxmgr.UseLogger(logger)
+	chain.UseLogger(logger)
+	wallet.UseLogger(logger)
 }
 
-// UseLogger sets the subsystem logs to use the provided logger.
 func UseLogger(sLogger slog.Logger) {
 	lvlStr := sLogger.Level().String()
 	lvl, _ := btclog.LevelFromString(lvlStr)
-	logger := backendLog.Logger("BTC")
-	logger.SetLevel(lvl)
+	log.SetLevel(lvl)
 
 	// Neutrino Info logs are silenced to avoid masking important error with its
 	// excessive logging of info messages.
-	ntrn := backendLog.Logger("NTRN")
 	ntrn.SetLevel(btclog.LevelError)
-	UseLoggers(logger, logger, ntrn, logger, logger)
+	UseLoggers(log)
 }

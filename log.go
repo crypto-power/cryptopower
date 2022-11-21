@@ -129,6 +129,9 @@ func setLogLevel(subsystemID string, logLevel string) {
 	// Defaults to info if the log level is invalid.
 	level, _ := slog.LevelFromString(logLevel)
 	logger.SetLevel(level)
+	if subsystemID == "BTC" {
+		btc.UseLogger(logger)
+	}
 }
 
 // setLogLevels sets the log level for all subsystem loggers to the passed
