@@ -259,7 +259,6 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		witness, signature, err := asset.Internal().BTC.ComputeInputScript(
 			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
 		)
-
 		if err != nil {
 			log.Errorf("generating input signatures failed: %v", err)
 			return err
@@ -267,6 +266,21 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 
 		msgTx.TxIn[index].Witness = witness
 		msgTx.TxIn[index].SignatureScript = signature
+
+		// Prove that the transaction has been validly signed by executing the
+		// script pair.
+		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
+			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
+		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0,
+			flags, nil, nil, previousTXout.Value)
+		if err != nil {
+			log.Errorf("creating validation engine failed: %v", err)
+			return err
+		}
+		if err := vm.Execute(); err != nil {
+			log.Errorf("executing the validation engine failed: %v", err)
+			return err
+		}
 	}
 
 	var serializedTransaction bytes.Buffer
@@ -285,10 +299,7 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 	}
 
 	err = asset.Internal().BTC.PublishTransaction(msgTx, transactionLabel)
-	if err != nil {
-		return utils.TranslateError(err)
-	}
-	return nil
+	return utils.TranslateError(err)
 }
 
 func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
@@ -425,14 +436,15 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 // makeInputSource creates an InputSource that creates inputs for every unspent
 // output with non-zero output values. The importsource aims to create the leanest
 // transaction possible. It plans not to spend all the utxos available when servicing
-// the current transaction spending amount if possible. The sendMax shows that 
+// the current transaction spending amount if possible. The sendMax shows that
 // all utxos must be spent without any balance(unspent utxo) left in the account.
 func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
 	var (
-		totalInputValue btcutil.Amount
-		inputs          = make([]*wire.TxIn, 0, len(outputs))
-		inputValues     = make([]btcutil.Amount, 0, len(outputs))
 		sourceErr       error
+		totalInputValue btcutil.Amount
+
+		inputs      = make([]*wire.TxIn, 0, len(outputs))
+		inputValues = make([]btcutil.Amount, 0, len(outputs))
 	)
 
 	// sorting is only necessary when send max is false.
@@ -465,16 +477,16 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", outputAmount)
 			break
 		}
-		totalInputValue += outputAmount
 
 		previousOutPoint, err := parseOutPoint(output)
 		if err != nil {
-			sourceErr = fmt.Errorf("invalid data in listunspent result: %v", err)
+			sourceErr = fmt.Errorf("invalid TxIn data found: %v", err)
 			break
 		}
 
-		inputs = append(inputs, wire.NewTxIn(previousOutPoint, nil, nil))
+		totalInputValue += outputAmount
 		inputValues = append(inputValues, outputAmount)
+		inputs = append(inputs, wire.NewTxIn(previousOutPoint, nil, nil))
 	}
 
 	if sourceErr == nil && totalInputValue == 0 {
@@ -495,14 +507,15 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 		var index int
 		var totalUtxo btcutil.Amount
 
-		for i, utxoAmount := range inputValues {
+		for _, utxoAmount := range inputValues {
 			if totalUtxo < target {
-				totalUtxo += utxoAmount
-			} else {
 				// Found some utxo(s) we can spend in the current tx.
-				index = i + 1
-				break
+				index++
+
+				totalUtxo += utxoAmount
+				continue
 			}
+			break
 		}
 		return totalUtxo, inputs[:index], inputValues[:index], nil, nil
 	}

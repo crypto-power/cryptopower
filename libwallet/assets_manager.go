@@ -177,11 +177,14 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
+		path := filepath.Join(mgr.params.RootDir, wallet.DataDir())
+		log.Infof("loading properties of wallet=%v at location=%v", wallet.Name, path)
+
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
 			w, err := btc.LoadExisting(wallet, mgr.params)
 			if err == nil && !isOK(w) {
-				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
+				err = fmt.Errorf("missing wallet database file: %v", path)
 				log.Warn(err)
 			}
 			if err != nil {
@@ -194,7 +197,7 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 		case utils.DCRWalletAsset:
 			w, err := dcr.LoadExisting(wallet, mgr.params)
 			if err == nil && !isOK(w) {
-				err = fmt.Errorf("missing wallet database file: %v", wallet.DataDir())
+				err = fmt.Errorf("missing wallet database file: %v", path)
 				log.Debug(err)
 			}
 			if err != nil {
