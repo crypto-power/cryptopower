@@ -8,7 +8,6 @@ package libwallet
 import (
 	"os"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
@@ -16,11 +15,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/p2p"
-	"decred.org/dcrwallet/v2/ticketbuyer"
 	"decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
-	"github.com/decred/dcrd/addrmgr/v2"
-	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -53,49 +48,16 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log          = backendLog.Logger("DLWL")
-	loaderLog    = backendLog.Logger("LODR")
-	walletLog    = backendLog.Logger("WLLT")
-	tkbyLog      = backendLog.Logger("TKBY")
-	syncLog      = backendLog.Logger("SYNC")
-	grpcLog      = backendLog.Logger("GRPC")
-	legacyRPCLog = backendLog.Logger("RPCS")
-	cmgrLog      = backendLog.Logger("CMGR")
-	amgrLog      = backendLog.Logger("AMGR")
-	vspcLog      = backendLog.Logger("VSPC")
-	politeiaLog  = backendLog.Logger("POLT")
-	extLog       = backendLog.Logger("EXT")
+	log         = backendLog.Logger("DLWL")
+	vspcLog     = backendLog.Logger("VSPC")
+	politeiaLog = backendLog.Logger("POLT")
 )
-
-// Initialize package-global logger variables.
-func init() {
-	loader.UseLogger(loaderLog)
-	wallet.UseLogger(walletLog)
-	udb.UseLogger(walletLog)
-	ticketbuyer.UseLogger(tkbyLog)
-	spv.UseLogger(syncLog)
-	p2p.UseLogger(syncLog)
-	connmgr.UseLogger(cmgrLog)
-	addrmgr.UseLogger(amgrLog)
-	vsp.UseLogger(vspcLog)
-	politeia.UseLogger(politeiaLog)
-	ext.UseLogger(extLog)
-}
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemLoggers = map[string]slog.Logger{
 	"DLWL": log,
-	"LODR": loaderLog,
-	"WLLT": walletLog,
-	"TKBY": tkbyLog,
-	"SYNC": syncLog,
-	"GRPC": grpcLog,
-	"RPCS": legacyRPCLog,
-	"CMGR": cmgrLog,
-	"AMGR": amgrLog,
 	"VSPC": vspcLog,
 	"POLT": politeiaLog,
-	"EXT":  extLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -117,12 +79,10 @@ func UseLoggers(main, loaderLog, walletLog, tkbyLog,
 	log = main
 	loader.UseLogger(loaderLog)
 	wallet.UseLogger(walletLog)
-	udb.UseLogger(walletLog)
-	ticketbuyer.UseLogger(tkbyLog)
 	spv.UseLogger(syncLog)
 	p2p.UseLogger(syncLog)
-	connmgr.UseLogger(cmgrLog)
-	addrmgr.UseLogger(amgrLog)
+	vsp.UseLogger(vspcLog)
+	politeia.UseLogger(politeiaLog)
 }
 
 // UseLogger sets the subsystem logs to use the provided logger.

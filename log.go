@@ -12,6 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -24,6 +25,11 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/staking"
 	"code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/wallet"
+	"decred.org/dcrwallet/v2/p2p"
+	"decred.org/dcrwallet/v2/ticketbuyer"
+	"decred.org/dcrwallet/wallet/udb"
+	"github.com/decred/dcrd/addrmgr/v2"
+	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -58,12 +64,18 @@ var (
 
 	log = backendLog.Logger("CRPW")
 
-	walletLog  = backendLog.Logger("WALL")
-	winLog     = backendLog.Logger("UI")
-	dlwlLog    = backendLog.Logger("DLWL")
-	dcrLog     = backendLog.Logger("DCR")
-	lstnersLog = backendLog.Logger("LSTN")
-	btcLog     = backendLog.Logger("BTC")
+	walletLog    = backendLog.Logger("WALL")
+	winLog       = backendLog.Logger("UI")
+	dlwlLog      = backendLog.Logger("DLWL")
+	dcrLog       = backendLog.Logger("DCR")
+	lstnersLog   = backendLog.Logger("LSTN")
+	btcLog       = backendLog.Logger("BTC")
+	extLog       = backendLog.Logger("EXT")
+	amgrLog      = backendLog.Logger("AMGR")
+	cmgrLog      = backendLog.Logger("CMGR")
+	syncLog      = backendLog.Logger("SYNC")
+	tkbyLog      = backendLog.Logger("TKBY")
+	dcrWalletLog = backendLog.Logger("WLLT")
 )
 
 // Initialize package-global logger variables.
@@ -83,6 +95,12 @@ func init() {
 	privacy.UseLogger(winLog)
 	modal.UseLogger(winLog)
 	btc.UseLogger(btcLog)
+	ext.UseLogger(extLog)
+	addrmgr.UseLogger(amgrLog)
+	connmgr.UseLogger(cmgrLog)
+	p2p.UseLogger(syncLog)
+	ticketbuyer.UseLogger(tkbyLog)
+	udb.UseLogger(dcrWalletLog)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -94,6 +112,12 @@ var subsystemLoggers = map[string]slog.Logger{
 	"CRPW": log,
 	"LSTN": lstnersLog,
 	"BTC":  btcLog,
+	"EXT":  extLog,
+	"AMGR": amgrLog,
+	"CMGR": cmgrLog,
+	"SYNC": syncLog,
+	"TKBY": tkbyLog,
+	"WLLT": walletLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
