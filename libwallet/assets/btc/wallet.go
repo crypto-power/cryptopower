@@ -43,6 +43,10 @@ type BTCAsset struct {
 
 	mu sync.RWMutex
 
+	// rescanStarting is set while reloading the wallet and dropping
+	// transactions from the wallet db.
+	rescanStarting uint32 // atomic
+
 	notificationListenersMu         sync.RWMutex
 	syncData                        *SyncData
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener

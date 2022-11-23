@@ -14,6 +14,8 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
+	"github.com/btcsuite/btcwallet/waddrmgr"
+	"github.com/btcsuite/btcwallet/walletdb"
 	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/lightninglabs/neutrino"
 	"golang.org/x/sync/errgroup"
@@ -155,6 +157,8 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
+	asset.setSyncedTo(rawBlock)
+
 	// Best block synced in the connected peers
 	bestBlockheight := asset.bestServerPeerBlockHeight()
 
@@ -198,6 +202,22 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
 	}
+}
+
+// setSyncedTo marks the address manager to be in sync with the recently-seen
+// block described by the blockstamp
+func (asset *BTCAsset) setSyncedTo(rawBlock *wtxmgr.BlockMeta) {
+	wdb := asset.Internal().BTC.Database()
+	bs := waddrmgr.BlockStamp{
+		Height:    rawBlock.Height,
+		Hash:      rawBlock.Hash,
+		Timestamp: rawBlock.Time,
+	}
+	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
+		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+		return asset.Internal().BTC.Manager.SetSyncedTo(ns, &bs)
+	})
+	log.Error(err)
 }
 
 func (asset *BTCAsset) publishHeadersFetchComplete() {
@@ -248,6 +268,8 @@ func (asset *BTCAsset) publishNewBlock(rawBlock *wtxmgr.BlockMeta) {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
+	asset.setSyncedTo(rawBlock)
+
 	for _, listener := range asset.txAndBlockNotificationListeners {
 		listener.OnBlockAttached(asset.ID, rawBlock.Height)
 	}
@@ -273,6 +295,7 @@ notificationsLoop:
 				// Notification type is sent when a new block connects to the longest chain.
 				// Trigger the progress report only when the block to be reported
 				// is the best chaintip.
+
 				select {
 				case <-t.C:
 					b := wtxmgr.BlockMeta(n)
@@ -282,13 +305,23 @@ notificationsLoop:
 					} else {
 						// initial sync is complete
 						asset.publishNewBlock(&b)
-						asset.listenForTransactions()
 					}
 				default:
 				}
 
 			case chain.BlockDisconnected:
-				// TODO: Implementation to be added
+				select {
+				case <-t.C:
+					b := wtxmgr.BlockMeta(n)
+					if !asset.IsSynced() {
+						// initial sync is inprogress.
+						asset.updateSyncProgress(&b)
+					} else {
+						// initial sync is complete
+						asset.publishNewBlock(&b)
+					}
+				default:
+				}
 			case chain.FilteredBlockConnected:
 				// if relevants txs were detected. Atempt to send them first
 				asset.publishRelevantTxs(n.RelevantTxs)
@@ -300,7 +333,18 @@ notificationsLoop:
 				default:
 				}
 			case *chain.RescanProgress:
-				// TODO: Implementation to be added
+				select {
+				case <-t.C:
+					b := wtxmgr.BlockMeta{
+						Block: wtxmgr.Block{
+							Hash:   *n.Hash,
+							Height: n.Height,
+						},
+						Time: n.Time,
+					}
+					asset.updateSyncProgress(&b)
+				default:
+				}
 			case *chain.RescanFinished:
 				// Notification type is sent when the rescan is completed.
 				b := wtxmgr.BlockMeta{
@@ -383,25 +427,35 @@ func (asset *BTCAsset) prepareChain() error {
 	return nil
 }
 
+func (asset *BTCAsset) Birthday() time.Time {
+	return asset.Wallet.CreatedAt
+}
+
+func (asset *BTCAsset) updateDBBirthday(bday time.Time) error {
+	return walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
+		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+		return asset.Internal().BTC.Manager.SetBirthday(ns, bday)
+	})
+}
+
 func (asset *BTCAsset) CancelSync() {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
+	log.Info("Canceling sync. May take a while for sync to fully cancel.")
+
 	// reset the sync data first.
 	asset.resetSyncProgressData()
 
-	g, _ := errgroup.WithContext(asset.syncCtx)
-	g.Go(func() error {
+	if asset.chainClient != nil {
+		log.Info("Stopping neutrino client chain interface")
 		asset.chainClient.Stop()
-		return nil
-	})
+		asset.chainClient.WaitForShutdown()
+	}
 
 	// stop the local sync notifications
 	asset.cancelSync()
-
-	if err := g.Wait(); err != nil {
-		log.Warnf("Error closing neutrino chain service: %v", err)
-	}
+	log.Info("SPV wallet closed")
 }
 
 func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
@@ -414,33 +468,31 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
+
+	oldBday := asset.Internal().BTC.Manager.Birthday()
+
+	performRescan := asset.Birthday().Before(oldBday)
+	if performRescan && !asset.AllowAutomaticRescan() {
+		return errors.New("cannot set earlier birthday while there are active deals")
+	}
+
+	if !oldBday.Equal(asset.Birthday()) {
+		if err := asset.updateDBBirthday(asset.Birthday()); err != nil {
+			log.Errorf("Failed to reset wallet manager birthday: %v", err)
+			performRescan = false
+		}
+	}
+
+	if performRescan {
+		asset.ForceRescan()
+	}
+
 	g, _ := errgroup.WithContext(asset.syncCtx)
 	g.Go(asset.chainClient.Start)
-
-	asset.chainClient.WaitForShutdown()
 
 	if err = g.Wait(); err != nil {
 		asset.CancelSync()
 		log.Errorf("couldn't start Neutrino client: %v", err)
-		return err
-	}
-
-	addrs, err := asset.Internal().BTC.SortedActivePaymentAddresses()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	var relevantAddresses = make([]btcutil.Address, len(addrs))
-	for i, addr := range addrs {
-		relevantAddresses[i], err = btcutil.DecodeAddress(addr, asset.chainParams)
-		if err != nil {
-			log.Errorf("unable to decode address: %v", err)
-		}
-	}
-
-	if asset.chainClient.NotifyReceived(relevantAddresses); err != nil {
-		log.Error(err)
 		return err
 	}
 
@@ -451,8 +503,13 @@ func (asset *BTCAsset) startWallet() (err error) {
 	}()
 
 	log.Info("Synchronizing BTC wallet with network...")
-
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+
+	go func() {
+		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
+			asset.listenForTransactions()
+		}
+	}()
 
 	return nil
 }

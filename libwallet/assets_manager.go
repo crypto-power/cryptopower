@@ -239,6 +239,8 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 
 	for _, wallet := range mgr.Assets.BTC.Wallets {
+		wallet.CancelRescan()
+		wallet.CancelSync()
 		wallet.Shutdown()
 	}
 

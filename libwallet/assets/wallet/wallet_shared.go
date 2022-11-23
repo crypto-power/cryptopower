@@ -30,6 +30,10 @@ type Wallet struct {
 	EncryptedSeed         []byte
 	IsRestored            bool
 	HasDiscoveredAccounts bool
+	// if allowAutomaticRescan is true, if when connect is called,
+	// spvWallet.birthday is earlier than the birthday stored in the btcwallet
+	// database, the transaction history will be wiped and a rescan will start.
+	allowAutomaticRescan  bool
 	PrivatePassphraseType int32
 
 	netType      utils.NetworkType
@@ -194,6 +198,14 @@ func (wallet *Wallet) NetType() utils.NetworkType {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	return wallet.netType
+}
+
+// Loader returns the wallet loader. It is exported via the interface thus the
+// the need to thread safe.
+func (wallet *Wallet) Loader() loader.AssetLoader {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.loader
 }
 
 // GetAssetType returns the current wallet's asset type. It is exported via the
@@ -659,4 +671,10 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		err = nil
 	}
 	return err
+}
+
+func (wallet *Wallet) AllowAutomaticRescan() bool {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.allowAutomaticRescan
 }

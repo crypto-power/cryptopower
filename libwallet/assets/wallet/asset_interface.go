@@ -42,6 +42,7 @@ type Asset interface {
 	GetEncryptedSeed() string
 	IsConnectedToNetwork() bool
 	NetType() utils.NetworkType
+	Loader() loader.AssetLoader
 	ToAmount(v int64) AssetAmount
 	GetAssetType() utils.AssetType
 	Internal() *loader.LoaderWallets

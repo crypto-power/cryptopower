@@ -403,7 +403,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					layout.Rigid(status.Layout),
 					layout.Rigid(func(gtx C) D {
 						statusIcon := l.Theme.Icons.ConfirmIcon
-						if TxConfirmations(l, row.Transaction) <= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if TxConfirmations(l, row.Transaction) < l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
 							statusIcon = l.Theme.Icons.PendingIcon
 						}
 
