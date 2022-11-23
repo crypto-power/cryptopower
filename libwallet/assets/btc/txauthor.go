@@ -20,6 +20,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
+	"github.com/btcsuite/btcwallet/wallet/txsizes"
 )
 
 type TxAuthor struct {
@@ -171,9 +172,13 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		}
 	}
 
-	estimatedSignedSerializeSize := feeToSpend.ToBTC() / fallBackFeeRate.ToBTC()
+	// TODO: confirm if the size on UI needs to be in vB to B.
+	// This estimation returns size in Bytes (B).
+	estimatedSize := txsizes.EstimateSerializeSize(len(unsignedTx.Tx.TxIn), unsignedTx.Tx.TxOut, true)
+
 	return &sharedW.TxFeeAndSize{
-		EstimatedSignedSize: int(estimatedSignedSerializeSize),
+		FeeRate:             fmt.Sprintf("%d Sat/kvB", asset.GetUserFeeRate()),
+		EstimatedSignedSize: estimatedSize,
 		Fee:                 feeAmount,
 		Change:              change,
 	}, nil

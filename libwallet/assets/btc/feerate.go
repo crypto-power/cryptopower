@@ -144,7 +144,7 @@ func (asset *BTCAsset) GetUserFeeRate() sharedW.AssetAmount {
 	asset.fees.mu.RLock()
 	defer asset.fees.mu.RUnlock()
 
-	if asset.fees.SetFeeRatePerKvB.ToInt() == 0 {
+	if asset.fees.SetFeeRatePerKvB == nil {
 		// If not set, defaults to the fall back fee of 1000 sats/kvB = (1 Sat/vB)
 		return FallBackFeeRatePerkvB
 	}

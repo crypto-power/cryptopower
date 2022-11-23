@@ -43,10 +43,11 @@ type Page struct {
 	infoButton    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
+	editRates     cryptomaterial.Button
+	fetchRates    cryptomaterial.Button
 
-	txFeeCollapsible *cryptomaterial.Collapsible
-	shadowBox        *cryptomaterial.Shadow
-	backdrop         *widget.Clickable
+	shadowBox *cryptomaterial.Shadow
+	backdrop  *widget.Clickable
 
 	isFetchingExchangeRate bool
 
@@ -54,8 +55,6 @@ type Page struct {
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
-	coinSelectionLabel  *cryptomaterial.Clickable
-	txFeeRateLabel      *cryptomaterial.Clickable
 	currencyExchange    string
 
 	*authoredTxData
@@ -68,6 +67,8 @@ type authoredTxData struct {
 	sourceAccount       *sharedW.Account
 	txFee               string
 	txFeeUSD            string
+	txFeeRate           string
+	priority            string
 	estSignedSize       string
 	totalCost           string
 	totalCostUSD        string
@@ -284,7 +285,8 @@ func (pg *Page) constructTx() {
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
-	pg.estSignedSize = fmt.Sprintf("%d bytes", feeAndSize.EstimatedSignedSize)
+	pg.txFeeRate = feeAndSize.FeeRate
+	pg.estSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -327,6 +329,8 @@ func (pg *Page) clearEstimates() {
 	// pg.txAuthor = nil
 	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.txFeeUSD = " - "
+	pg.priority = "Unknown"
+	pg.txFeeRate = " - "
 	pg.estSignedSize = " - "
 	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "

@@ -595,4 +595,9 @@ const EN = `
 "seedHex" = "Seed hex"
 "warningWatchWallet" = "You would be receiving to a read only wallet"
 "warningVote" = "You cannot vote with a watch only wallet"
+"edit" = "Edit"
+"fetchRates" = "FetchRates"
+"priority" = "Priority%v"
+"cost" = "Cost%v"
+"txSize" = "Transaction Size%v"
 `

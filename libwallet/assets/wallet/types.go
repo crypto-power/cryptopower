@@ -70,6 +70,7 @@ type Amount struct {
 type TxFeeAndSize struct {
 	Fee                 *Amount
 	Change              *Amount
+	FeeRate             string // calculated in Sat/kvB
 	EstimatedSignedSize int
 }
 
