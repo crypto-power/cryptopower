@@ -2,7 +2,6 @@ package btc
 
 import (
 	"encoding/json"
-	"fmt"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -13,23 +12,18 @@ func (asset *BTCAsset) listenForTransactions() {
 	go func() {
 
 		n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
-		fmt.Println("[][][][] TransactionNotifications BTC", n)
 		for {
 			select {
 			case v := <-n.C:
 				if v == nil {
-					fmt.Println("[][][][] V is nil", v)
 					return
 				}
-				fmt.Println("[][][][] V", v)
-				fmt.Println("[][][][] UNMINED transactionS", v.UnminedTransactions)
 
 				for _, transaction := range v.UnminedTransactions {
-					fmt.Println("[][][][] UNMINED transaction", transaction)
 
 					tempTransaction := asset.decodeTransactionWithTxSummary(-1, transaction)
 
-					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
+					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
 					if err != nil {
 						log.Errorf("[%d] New Tx save err: %v", asset.ID, err)
 						return
@@ -48,17 +42,13 @@ func (asset *BTCAsset) listenForTransactions() {
 				}
 
 				for _, block := range v.AttachedBlocks {
-					fmt.Println("[][][][] AttachedBlocks BTC", block)
-
 					blockHeight := block.Height
-					fmt.Println("[][][][] MINED transactionS", block.Transactions)
 
 					for _, transaction := range block.Transactions {
-						fmt.Println("[][][][] MINED transaction", transaction)
 
 						tempTransaction := asset.decodeTransactionWithTxSummary(blockHeight, transaction)
 
-						_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tempTransaction)
+						_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
 						if err != nil {
 							log.Errorf("[%d] Incoming block replace tx error :%v", asset.ID, err)
 							return
