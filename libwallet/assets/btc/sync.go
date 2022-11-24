@@ -99,8 +99,6 @@ func (asset *BTCAsset) initSyncProgressData() {
 
 	asset.syncData.mu.Lock()
 	asset.syncData.activeSyncData = &activeSyncData{
-		// syncStage: InvalidSyncStage, TODO: Handle sync stage
-
 		cfiltersFetchProgress:    cfiltersFetchProgress,
 		headersFetchProgress:     headersFetchProgress,
 		addressDiscoveryProgress: addressDiscoveryProgress,

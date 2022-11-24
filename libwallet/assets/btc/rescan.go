@@ -95,7 +95,7 @@ func (asset *BTCAsset) CancelRescan() {
 func (asset *BTCAsset) RescanAsync() error {
 	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
 		log.Error("rescan already in progress")
-		return nil
+		return fmt.Errorf("rescan already in progress")
 	}
 	defer atomic.StoreUint32(&asset.rescanStarting, 0)
 	log.Info("Stopping wallet and chain client...")
