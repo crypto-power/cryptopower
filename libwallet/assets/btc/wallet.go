@@ -9,11 +9,11 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcwallet/chain"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/lightninglabs/neutrino"

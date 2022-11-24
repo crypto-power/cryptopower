@@ -14,7 +14,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/page/dexclient"
 	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
@@ -96,7 +95,6 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	pg.settings = l.Theme.NewClickable(false)
 
 	pg.initWalletSelectorOptions()
-	pg.initDexServerSelectorOption()
 
 	// init shared page functions
 	toggleSync := func() {
@@ -122,7 +120,6 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadDCRWallets()
 	pg.loadBTCWallets()
 	pg.loadBadWallets()
-	pg.startDexClient()
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
 	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
@@ -184,23 +181,8 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 		pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
 	}
 
-	if pg.addDexClickable.Clicked() {
-		dm := dexclient.NewAddDexModal(pg.Load)
-		dm.OnDexAdded(func() {
-			// TODO: go to the trade form
-			log.Info("TODO: go to the trade form")
-		})
-		pg.ParentWindow().ShowModal(dm)
-	}
-
 	if pg.settings.Clicked() {
 		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
-	}
-
-	if ok, index := pg.knownDexServers.ItemClicked(); ok {
-		knownDexServers := pg.mapKnowDexServers()
-		dexServers := sortDexExchanges(knownDexServers)
-		pg.dexServerSelected(dexServers[index])
 	}
 }
 
@@ -274,7 +256,6 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.dexServersLayout,
 		pg.layoutAddMoreRowSection(pg.addDexClickable, values.String(values.StrAddDexServer), pg.Theme.Icons.DexIcon.Layout16dp),
 	}
 

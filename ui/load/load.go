@@ -9,7 +9,6 @@ import (
 	"golang.org/x/text/message"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/ui/assets"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/notification"
@@ -49,8 +48,4 @@ func (l *Load) RefreshTheme(window app.WindowNavigator) {
 	l.LanguageSettingChanged()
 	l.CurrencySettingChanged()
 	window.Reload()
-}
-
-func (l *Load) Dexc() *libwallet.DexClient {
-	return l.WL.MultiWallet.DexClient()
 }

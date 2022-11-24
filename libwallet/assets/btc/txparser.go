@@ -6,7 +6,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"github.com/btcsuite/btcd/blockchain"
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcwallet/wallet"
 )
 

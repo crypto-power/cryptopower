@@ -3,9 +3,9 @@ package addresshelper
 import (
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcutil"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"

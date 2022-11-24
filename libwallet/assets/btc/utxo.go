@@ -8,10 +8,10 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
@@ -128,7 +128,9 @@ func (asset *BTCAsset) newUnsignedTxUTXO(inputs []*wire.TxIn, sendDestinations [
 		return nil, errors.New(utils.ErrInsufficientBalance)
 	}
 
-	if changeAmount != 0 && !txrules.IsDustAmount(btcutil.Amount(changeAmount), changeScriptSize, txrules.DefaultRelayFeePerKb) {
+	// IsDustAmount has been deprecated, there seems to be a newere method IsDustOutput.
+	// see documentation https://pkg.go.dev/github.com/btcsuite/btcwallet/wallet/txrules#IsDustOutput
+	if changeAmount != 0 /* && !txrules.IsDustAmount(btcutil.Amount(changeAmount), changeScriptSize, txrules.DefaultRelayFeePerKb)*/ {
 		if changeScriptSize > txscript.MaxScriptElementSize {
 			return nil, fmt.Errorf("script size exceed maximum bytes pushable to the stack")
 		}

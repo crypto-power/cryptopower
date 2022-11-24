@@ -418,7 +418,6 @@ const ES = `
 "dexStartupErr" = "No se puede iniciar el cliente DEX:% v"
 "confirmDexReset" = "Confirmar restablecimiento del cliente DEX"
 "dexResetInfo" = "Es posible que deba reiniciar Cryptopower antes de poder usar el DEX nuevamente. ¿Continuar?"
-"resetDexClient" = "Restablecer cliente DEX"
 "walletLog" = "Registro de billetera"
 "build" = "Construir"
 "peersConnected" = "Compañeros conectados"
