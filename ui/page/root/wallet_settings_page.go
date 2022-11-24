@@ -185,7 +185,12 @@ func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
 func (pg *WalletSettingsPage) generalSection() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword))),
+			layout.Rigid(func(gtx C) D {
+				if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+					return D{}
+				}
+				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
+			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
 			layout.Rigid(pg.subSectionSwitch(values.String(values.StrFetchProposals), pg.fetchProposal)),
 			layout.Rigid(func(gtx C) D {

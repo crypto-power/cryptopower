@@ -76,7 +76,6 @@ type MainPage struct {
 	usdExchangeRate       float64
 	totalBalance          sharedW.AssetAmount
 	currencyExchangeValue string
-	btcUsdtBittrex        load.BTCUSDTBittrex
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool

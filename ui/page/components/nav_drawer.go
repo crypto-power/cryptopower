@@ -59,8 +59,7 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context, navItems []NavHandler) 
 				if nd.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() && (navItems[i].PageID == values.String(values.StrSend) ||
 					navItems[i].PageID == values.String(values.StrReceive) ||
 					navItems[i].PageID == values.String(values.StrAccountMixer)) {
-					background = cryptomaterial.Disabled(nd.Theme.Color.Gray5)
-					mGtx = gtx.Disabled()
+					return D{}
 				}
 
 				if navItems[i].PageID == nd.CurrentPage {
