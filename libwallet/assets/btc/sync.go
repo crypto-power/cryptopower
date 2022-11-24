@@ -62,12 +62,6 @@ type activeSyncData struct {
 	headersFetchProgress     sharedW.HeadersFetchProgressReport
 	addressDiscoveryProgress sharedW.AddressDiscoveryProgressReport
 	headersRescanProgress    sharedW.HeadersRescanProgressReport
-
-	addressDiscoveryCompletedOrCanceled chan bool
-
-	rescanStartTime int64
-
-	totalInactiveSeconds int64
 }
 
 const (
@@ -217,7 +211,9 @@ func (asset *BTCAsset) setSyncedTo(rawBlock *wtxmgr.BlockMeta) {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
 		return asset.Internal().BTC.Manager.SetSyncedTo(ns, &bs)
 	})
-	log.Error(err)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func (asset *BTCAsset) publishHeadersFetchComplete() {
@@ -502,7 +498,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 		}
 	}()
 
-	log.Info("Synchronizing BTC wallet with network...")
+	log.Infof("Synchronizing BTC wallet (%s) with network...", asset.GetWalletName())
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	go func() {

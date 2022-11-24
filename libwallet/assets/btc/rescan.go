@@ -95,6 +95,7 @@ func (asset *BTCAsset) CancelRescan() {
 func (asset *BTCAsset) RescanAsync() error {
 	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
 		log.Error("rescan already in progress")
+		return nil
 	}
 	defer atomic.StoreUint32(&asset.rescanStarting, 0)
 	log.Info("Stopping wallet and chain client...")
@@ -111,7 +112,7 @@ func (asset *BTCAsset) RescanAsync() error {
 		return fmt.Errorf("couldn't start Neutrino client: %v", err)
 	}
 
-	log.Info("Synchronizing wallet with network...")
+	log.Infof("Synchronizing wallet (%d) with network...", asset.GetWalletName())
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 	return nil
 }

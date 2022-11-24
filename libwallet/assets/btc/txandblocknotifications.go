@@ -10,8 +10,9 @@ import (
 
 func (asset *BTCAsset) listenForTransactions() {
 	go func() {
-
+		log.Infof("Subscribing wallet (%s) for transaction notifications", asset.GetWalletName())
 		n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
+
 		for {
 			select {
 			case v := <-n.C:
@@ -20,6 +21,7 @@ func (asset *BTCAsset) listenForTransactions() {
 				}
 
 				for _, transaction := range v.UnminedTransactions {
+					log.Debugf("Incoming unmined transaction with hash (%v)", transaction.Hash)
 
 					tempTransaction := asset.decodeTransactionWithTxSummary(-1, transaction)
 
@@ -43,8 +45,10 @@ func (asset *BTCAsset) listenForTransactions() {
 
 				for _, block := range v.AttachedBlocks {
 					blockHeight := block.Height
+					log.Infof("Incoming block with height (%d), and hash (%v)", blockHeight, block.Hash)
 
 					for _, transaction := range block.Transactions {
+						log.Debugf("Incoming mined transaction with hash (%v)", transaction.Hash)
 
 						tempTransaction := asset.decodeTransactionWithTxSummary(blockHeight, transaction)
 
