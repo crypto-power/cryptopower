@@ -54,6 +54,13 @@ func (pg *Page) initLayoutWidgets() {
 
 	pg.editRates.Inset = buttonInset
 	pg.fetchRates.Inset = buttonInset
+
+	pg.ratesEditor = pg.Theme.Editor(new(widget.Editor), "in Sat/kvB")
+	pg.ratesEditor.HasCustomButton = false
+	pg.ratesEditor.Editor.SingleLine = true
+	pg.ratesEditor.TextSize = values.TextSize14
+
+	pg.editOrDisplay = pg.txFeeRate
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -373,7 +380,7 @@ func (pg *Page) transctionFeeSection(gtx layout.Context) D {
 								}
 
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									pg.widgetsRow(gtx, pg.txFeeRate, pg.editRates, pg.fetchRates),
+									pg.widgetsRow(gtx, pg.editOrDisplay, pg.editRates, pg.fetchRates),
 									pg.widgetsRow(gtx, values.StringF(values.StrPriority, " : "), pg.priority),
 									pg.widgetsRow(gtx, values.StringF(values.StrTxSize, " : "), pg.estSignedSize),
 									pg.widgetsRow(gtx, values.StringF(values.StrCost, " : "), feeText),
@@ -467,6 +474,12 @@ func (pg *Page) widgetsRow(gtx layout.Context, items ...interface{}) layout.Flex
 		case cryptomaterial.Button:
 			widgets = append(widgets, layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, n.Layout)
+			}))
+		case cryptomaterial.Editor:
+			widgets = append(widgets, layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Max.X = gtx.Constraints.Max.X / 5
+				gtx.Constraints.Max.Y = int(float64(gtx.Constraints.Max.Y) / 1.5)
+				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, n.Layout)
 			}))
 		default:
 			continue

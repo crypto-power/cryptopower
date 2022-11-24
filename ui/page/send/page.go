@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"gioui.org/io/key"
+	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -45,6 +48,11 @@ type Page struct {
 	nextButton    cryptomaterial.Button
 	editRates     cryptomaterial.Button
 	fetchRates    cryptomaterial.Button
+
+	ratesEditor cryptomaterial.Editor
+	// editOrDisplay holds an editor or label component depending on the state of
+	// editRates button.
+	editOrDisplay interface{}
 
 	shadowBox *cryptomaterial.Shadow
 	backdrop  *widget.Clickable
@@ -180,6 +188,12 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
+	}
+
+	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
+		// This API call may take sometime to return. Call this before and cache
+		// results.
+		go pg.selectedWallet.GetAPIFeeRate()
 	}
 }
 
@@ -352,6 +366,8 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
+	pg.feeRateAPIHandler()
+	pg.editsOrDisplayRatesHandler()
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
 	pg.amount.handle()
@@ -503,4 +519,76 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
 	pg.ctxCancel() // causes crash if nil, when the main page is closed if send page is created but never displayed (because sync in progress)
+}
+
+func (pg *Page) editsOrDisplayRatesHandler() {
+	if pg.editRates.Clicked() {
+		// handle save operation first.
+		if pg.editRates.Text == values.String(values.StrEdit) {
+			pg.ratesEditor.ClearError()
+
+			text := pg.ratesEditor.Editor.Text()
+			if text == "" {
+				// wait for user input
+				return
+			}
+
+			pg.txFeeRate = text + " Sat/kvB"
+			pg.editOrDisplay = pg.txFeeRate
+			pg.editRates.Text = values.String(values.StrEdit)
+
+			if err := pg.selectedWallet.SetAPIFeeRate(text); err != nil {
+				pg.ratesEditor.SetError(err.Error())
+				// only proceed if the operation is successful.
+				return
+			}
+		}
+		pg.editOrDisplay = pg.ratesEditor
+		pg.editRates.Text = values.String(values.StrSave)
+
+		// TODO set the feerate in the backend.
+	}
+}
+
+func (pg *Page) feeRateAPIHandler() {
+	if !pg.fetchRates.Clicked() {
+		// if button not clicked do nothing.
+		return
+	}
+
+	data, err := pg.selectedWallet.GetAPIFeeRate()
+	if err != nil {
+		// TODO: show error modal on API failure.
+		return
+	}
+
+	radiogroupbtns := new(widget.Enum)
+	items := make([]layout.FlexChild, 0)
+	for i, feerate := range data {
+		key := strconv.Itoa(int(feerate.Feerate.ToInt()))
+		value := fmt.Sprintf("%d Sat/kvB - %d block(s)", feerate.Feerate.ToInt(), feerate.ConfirmedBlocks)
+		radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value, pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
+		radioItem := layout.Rigid(radioBtn.Layout)
+		items = append(items, radioItem)
+
+		if i == 0 { // set the first one as the default value.
+			radiogroupbtns.Value = value
+		}
+	}
+
+	info := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrFeeRates)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		}).
+		SetCancelable(true).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrSave)).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			data := strings.Fields(radiogroupbtns.Value)
+			pg.selectedWallet.SetAPIFeeRate(data[0])
+			im.Dismiss()
+			return true
+		})
+	pg.ParentWindow().ShowModal((info))
 }

@@ -707,4 +707,5 @@ const (
 	StrPriority                        = "priority"
 	StrCost                            = "cost"
 	StrTxSize                          = "txSize"
+	StrFeeRates                        = "feerates"
 )

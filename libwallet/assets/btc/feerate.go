@@ -127,15 +127,16 @@ func (asset *BTCAsset) GetAPIFeeEstimateRate() ([]FeeEstimate, error) {
 
 // SetUserFeeRate sets the fee rate in kvB units. Setting fee rate less than
 // FallBackFeeRatePerkvB is not allowed.
-func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) {
+func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 	asset.fees.mu.Lock()
 	defer asset.fees.mu.Unlock()
 
 	if feeRatePerkvB.ToInt() < FallBackFeeRatePerkvB.ToInt() {
-		feeRatePerkvB = FallBackFeeRatePerkvB
+		return fmt.Errorf("minimum rate is %v Sat/kvB", FallBackFeeRatePerkvB)
 	}
 
 	asset.fees.SetFeeRatePerKvB = feeRatePerkvB
+	return nil
 }
 
 // GetUserFeeRate returns the fee rate in kvB units. If not set it defaults to

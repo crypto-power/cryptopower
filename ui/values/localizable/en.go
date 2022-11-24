@@ -600,4 +600,5 @@ const EN = `
 "priority" = "Priority%v"
 "cost" = "Cost%v"
 "txSize" = "Transaction Size%v"
+"feerates" = "Fee Rates"
 `
