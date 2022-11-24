@@ -524,29 +524,23 @@ func (pg *Page) OnNavigatedFrom() {
 func (pg *Page) editsOrDisplayRatesHandler() {
 	if pg.editRates.Clicked() {
 		// handle save operation first.
-		if pg.editRates.Text == values.String(values.StrEdit) {
+		if pg.editRates.Text == values.String(values.StrSave) {
 			pg.ratesEditor.ClearError()
 
 			text := pg.ratesEditor.Editor.Text()
-			if text == "" {
-				// wait for user input
+			if err := pg.selectedWallet.SetAPIFeeRate(text); err != nil {
+				pg.ratesEditor.SetError(err.Error())
 				return
 			}
 
 			pg.txFeeRate = text + " Sat/kvB"
 			pg.editOrDisplay = pg.txFeeRate
 			pg.editRates.Text = values.String(values.StrEdit)
-
-			if err := pg.selectedWallet.SetAPIFeeRate(text); err != nil {
-				pg.ratesEditor.SetError(err.Error())
-				// only proceed if the operation is successful.
-				return
-			}
+			return
 		}
 		pg.editOrDisplay = pg.ratesEditor
 		pg.editRates.Text = values.String(values.StrSave)
 
-		// TODO set the feerate in the backend.
 	}
 }
 
@@ -565,7 +559,7 @@ func (pg *Page) feeRateAPIHandler() {
 	radiogroupbtns := new(widget.Enum)
 	items := make([]layout.FlexChild, 0)
 	for i, feerate := range data {
-		key := strconv.Itoa(int(feerate.Feerate.ToInt()))
+		key := strconv.Itoa(int(feerate.ConfirmedBlocks))
 		value := fmt.Sprintf("%d Sat/kvB - %d block(s)", feerate.Feerate.ToInt(), feerate.ConfirmedBlocks)
 		radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value, pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
 		radioItem := layout.Rigid(radioBtn.Layout)

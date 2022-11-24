@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -98,16 +99,18 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	return results, nil
 }
 
-func (asset *BTCAsset) GetAPIFeeEstimateRate() ([]FeeEstimate, error) {
+func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) {
 	asset.fees.mu.RLock()
+	feerates = asset.fees.APIFeeRates
+	lastblock := asset.fees.LastBestblock
+	asset.fees.mu.RUnlock()
+
 	// If best block hasn't changed, return the cached estimates.
-	if asset.GetBestBlockHeight() == asset.fees.LastBestblock &&
-		asset.fees.LastBestblock > 0 {
-		defer asset.fees.mu.RUnlock()
-		return asset.fees.APIFeeRates, nil
+	if asset.GetBestBlockHeight() == lastblock && lastblock > 0 {
+		return feerates, nil
 	}
 
-	feerates, err := asset.fetchAPIFeeRate()
+	feerates, err = asset.fetchAPIFeeRate()
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +118,15 @@ func (asset *BTCAsset) GetAPIFeeEstimateRate() ([]FeeEstimate, error) {
 	// Do not cache empty results.
 	if len(feerates) == 0 {
 		return nil, errors.New("API feerates not available")
+	}
+
+	sort.Slice(feerates, func(i, j int) bool {
+		return feerates[i].ConfirmedBlocks < feerates[j].ConfirmedBlocks
+	})
+
+	if len(feerates) > 5 {
+		// persist top seven fee rates only.
+		feerates = feerates[:5]
 	}
 
 	asset.fees.mu.Lock()
