@@ -541,7 +541,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 			return 0, nil, nil, nil, sourceErr
 		}
 
-		// This sets the amount the tx is needs to spend if utxos to balance that exists.
+		// This sets the amount the tx will spend if utxos to balance it exists.
 		// This spend amount will be crucial in calculating the projected tx fee.
 		asset.TxAuthoredInfo.txSpendAmount = target
 

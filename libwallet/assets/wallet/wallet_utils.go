@@ -34,8 +34,8 @@ const (
 	defaultBTCRequiredConfirmations = 6
 )
 
-// RequiredConfirmations specifies the minimum number of blocks that ought
-// to be on top required block or block information.
+// RequiredConfirmations specifies the minimum number of confirmations
+// a transaction needs to be consider as confirmed.
 func (wallet *Wallet) RequiredConfirmations() int32 {
 	var spendUnconfirmed bool
 	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)
