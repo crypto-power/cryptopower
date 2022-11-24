@@ -60,8 +60,12 @@ func validLogLevel(logLevel string) bool {
 // logging purposes.
 func supportedSubsystems() []string {
 	// Convert the subsystemLoggers map keys to a slice.
-	subsystems := make([]string, 0, len(subsystemLoggers))
-	for subsysID := range subsystemLoggers {
+	subsystems := make([]string, 0, len(subsystemSLoggers)+len(subsystemBLoggers))
+	for subsysID := range subsystemSLoggers {
+		subsystems = append(subsystems, subsysID)
+	}
+
+	for subsysID := range subsystemBLoggers {
 		subsystems = append(subsystems, subsysID)
 	}
 
@@ -103,7 +107,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		subsysID, logLevel := fields[0], fields[1]
 
 		// Validate subsystem.
-		if _, exists := subsystemLoggers[subsysID]; !exists {
+		if !isExistSystem(subsysID) {
 			str := "the specified subsystem [%v] is invalid -- " +
 				"supported subsystems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())

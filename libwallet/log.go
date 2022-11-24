@@ -11,11 +11,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
-	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/p2p"
-	"decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -48,10 +45,11 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	log         = backendLog.Logger("DLWL")
 	vspcLog     = backendLog.Logger("VSPC")
 	politeiaLog = backendLog.Logger("POLT")
 )
+
+var log = slog.Disabled
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemLoggers = map[string]slog.Logger{
@@ -74,20 +72,11 @@ func initLogRotator(logFile string) error {
 }
 
 // UseLoggers sets the subsystem logs to use the provided loggers.
-func UseLoggers(main, loaderLog, walletLog, tkbyLog,
-	syncLog, cmgrLog, amgrLog slog.Logger) {
-	log = main
-	loader.UseLogger(loaderLog)
-	wallet.UseLogger(walletLog)
-	spv.UseLogger(syncLog)
-	p2p.UseLogger(syncLog)
+func UseLogger(logger slog.Logger) {
+	log = logger
+	loader.UseLogger(logger)
 	vsp.UseLogger(vspcLog)
 	politeia.UseLogger(politeiaLog)
-}
-
-// UseLogger sets the subsystem logs to use the provided logger.
-func UseLogger(logger slog.Logger) {
-	UseLoggers(logger, logger, logger, logger, logger, logger, logger)
 }
 
 // RegisterLogger should be called before logRotator is initialized.
