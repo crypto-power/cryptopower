@@ -51,7 +51,7 @@ type Page struct {
 
 	ratesEditor cryptomaterial.Editor
 	// editOrDisplay holds an editor or label component depending on the state of
-	// editRates button.
+	// editRates(Save -> holds Editor or Edit -> holds a Label) button.
 	editOrDisplay interface{}
 
 	shadowBox *cryptomaterial.Shadow
@@ -498,10 +498,9 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 	if pg.editRates.Clicked() {
 		// reset fields
 		pg.feeEstimationError("")
-		// Enable after saving is complete
+		// Enable after saving is complete successfully
 		pg.fetchRates.SetEnabled(false)
 
-		// handle save operation first.
 		if pg.editRates.Text == values.String(values.StrSave) {
 			text := pg.ratesEditor.Editor.Text()
 			if err := pg.selectedWallet.SetAPIFeeRate(text); err != nil {
@@ -510,6 +509,7 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 			} else {
 				text = pg.addRatesUnits(text)
 				pg.amount.amountChanged()
+				// saving is complete successfully
 				pg.fetchRates.SetEnabled(true)
 			}
 
@@ -528,6 +528,7 @@ func (pg *Page) feeRateAPIHandler() {
 	if pg.fetchRates.Clicked() {
 		// reset fields
 		pg.feeEstimationError("")
+		// Enable after the fee rate selection is complete successfully.
 		pg.editRates.SetEnabled(false)
 
 		feeRates, err := pg.selectedWallet.GetAPIFeeRate()
@@ -574,6 +575,7 @@ func (pg *Page) feeRateAPIHandler() {
 			})
 
 		pg.ParentWindow().ShowModal((info))
+		// fee rate selection is complete successfully.
 		pg.editRates.SetEnabled(true)
 		pg.amount.amountChanged()
 	}

@@ -16,7 +16,7 @@ const (
 	TestnetAPIFeeRateURL = "https://blockstream.info/testnet/api/fee-estimates"
 )
 
-// Since the introduction of segwit account different size measument was
+// Since the introduction of segwit account, a different tx size measument was
 // introduced (Sat/VB). When sending a transaction from the legacy account,
 // 1B (byte) = 1vB (virtual byte). When sending a transaction from segwit
 // (legacy segwit, bech32, taproot), then 1B = 4vB.
@@ -34,28 +34,27 @@ var FallBackFeeRatePerkvB sharedW.AssetAmount = BTCAmount(1000) // Equals to 1 s
 // feeEstimateCache helps to cache the resolved fee rate until a new
 // block is mined
 type feeEstimateCache struct {
-	// SetFeeRate defines the fee rate if set, the user wants to apply for
+	// SetFeeRatePerkvB defines the fee rate. If set, the user wants to apply for
 	// all his transactions.
-	SetFeeRatePerKvB sharedW.AssetAmount
+	SetFeeRatePerkvB sharedW.AssetAmount
 	// If not empty, they hold the fee rate queries from the API when the best
 	// block was set at LastBestBlock.
 	APIFeeRates []FeeEstimate
-	// LastBestblock defines the last height where Max and Min fee rate were last
-	// evaluated. This helps to keep the API calls to fetch the fee rate under
-	// control.
+	// LastBestblock defines the last height when results were cached. This
+	// helps to keep the API calls to under control.
 	LastBestblock int32
 
 	mu sync.RWMutex
 }
 
 type FeeEstimate struct {
-	// Number of confrmed blocks that show the average fee rate below.
+	// Number of confrmed blocks that show the average fee rate represented below.
 	ConfirmedBlocks int32
 	// Feerate shows estimate fee rate in Sat/kvB.
 	Feerate sharedW.AssetAmount
 }
 
-// fetchAPIFeeRate queries the API fee rate for the provided blocks.
+// fetchAPIFeeRate queries the API fee rate.
 func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	var feerateURL string
 	net := asset.NetType()
@@ -147,19 +146,19 @@ func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 		return fmt.Errorf("minimum rate is %d Sat/kvB", FallBackFeeRatePerkvB.ToInt())
 	}
 
-	asset.fees.SetFeeRatePerKvB = feeRatePerkvB
+	asset.fees.SetFeeRatePerkvB = feeRatePerkvB
 	return nil
 }
 
 // GetUserFeeRate returns the fee rate in kvB units. If not set it defaults to
-// 1000 Sats/kvB if appropriate fee rate hasn't been set.
+// FallBackFeeRatePerkvB.
 func (asset *BTCAsset) GetUserFeeRate() sharedW.AssetAmount {
 	asset.fees.mu.RLock()
 	defer asset.fees.mu.RUnlock()
 
-	if asset.fees.SetFeeRatePerKvB == nil {
+	if asset.fees.SetFeeRatePerkvB == nil {
 		// If not set, defaults to the fall back fee of 1000 sats/kvB = (1 Sat/vB)
 		return FallBackFeeRatePerkvB
 	}
-	return asset.fees.SetFeeRatePerKvB
+	return asset.fees.SetFeeRatePerkvB
 }

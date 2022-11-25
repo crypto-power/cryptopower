@@ -41,7 +41,7 @@ type BTCAsset struct {
 	// expensive GetTransactions call.
 	txs txCache
 
-	// This fields helps to prevent unnecessary api calls if an new block hasn't
+	// This fields helps to prevent unnecessary API calls if a new block hasn't
 	// been introduced.
 	fees feeEstimateCache
 

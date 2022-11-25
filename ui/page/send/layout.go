@@ -109,7 +109,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
 		// Display the transaction fee rate selection only for btc wallets.
 		pageContent = append(pageContent,
-			func(gtx C) D { return pg.transctionFeeSection(gtx) },
+			func(gtx C) D { return pg.transactionFeeSection(gtx) },
 		)
 	}
 
@@ -350,8 +350,8 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	})
 }
 
-// transctionFeeSection only supports btc fee rate setting.
-func (pg *Page) transctionFeeSection(gtx layout.Context) D {
+// transactionFeeSection only supports btc fee rate setting.
+func (pg *Page) transactionFeeSection(gtx layout.Context) D {
 	inset := layout.Inset{
 		Bottom: values.MarginPadding100,
 	}
@@ -360,7 +360,7 @@ func (pg *Page) transctionFeeSection(gtx layout.Context) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			topContainer := layout.UniformInset(values.MarginPadding15)
 			return topContainer.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.Y // use maximum width
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X // use maximum width
 
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
@@ -373,7 +373,7 @@ func (pg *Page) transctionFeeSection(gtx layout.Context) D {
 
 						return card.Layout(gtx, func(gtx C) D {
 							return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.Y // use maximum width
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X // use maximum width
 
 								feeText := pg.txFee
 								if pg.exchangeRate != -1 && pg.usdExchangeSet {
@@ -479,8 +479,8 @@ func (pg *Page) widgetsRow(gtx layout.Context, items ...interface{}) layout.Flex
 		case cryptomaterial.Editor:
 			widgets = append(widgets, layout.Rigid(func(gtx C) D {
 				n.Editor.Focus()
+				// Resize the height to fit 1/5 of the original height.
 				gtx.Constraints.Max.X = gtx.Constraints.Max.X / 5
-				gtx.Constraints.Max.Y = int(float64(gtx.Constraints.Max.Y) / 1.5)
 				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, n.Layout)
 			}))
 		default:
