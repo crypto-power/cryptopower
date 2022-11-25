@@ -19,7 +19,7 @@ const (
 	defaultNetwork        = "mainnet"
 	defaultConfigFileName = "cryptopower.conf"
 	defaultLogFilename    = "cryptopower.log"
-	defaultLogLevel       = "off" // Turn off logging by default.
+	defaultLogLevel       = "info" // info by default.
 	defaultLogDirname     = "logs"
 )
 
@@ -36,7 +36,7 @@ type config struct {
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
 	MaxLogZips       int    `long:"max-log-zips" description:"The number of zipped log files created by the log rotator to be retained. Setting to 0 will keep all."`
 	LogDir           string `long:"logdir" description:"Directory to log output."`
-	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"off"`
+	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the multiwallet to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
@@ -60,8 +60,12 @@ func validLogLevel(logLevel string) bool {
 // logging purposes.
 func supportedSubsystems() []string {
 	// Convert the subsystemLoggers map keys to a slice.
-	subsystems := make([]string, 0, len(subsystemLoggers))
-	for subsysID := range subsystemLoggers {
+	subsystems := make([]string, 0, len(subsystemSLoggers)+len(subsystemBLoggers))
+	for subsysID := range subsystemSLoggers {
+		subsystems = append(subsystems, subsysID)
+	}
+
+	for subsysID := range subsystemBLoggers {
 		subsystems = append(subsystems, subsysID)
 	}
 
@@ -79,7 +83,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
 		// Validate debug log level.
 		if !validLogLevel(debugLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
 		}
 
@@ -93,7 +97,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// issues and update the log levels accordingly.
 	for _, logLevelPair := range strings.Split(debugLevel, ",") {
 		if !strings.Contains(logLevelPair, "=") {
-			str := "The specified debug level contains an invalid " +
+			str := "the specified debug level contains an invalid " +
 				"subsystem/level pair [%v]"
 			return fmt.Errorf(str, logLevelPair)
 		}
@@ -103,18 +107,17 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		subsysID, logLevel := fields[0], fields[1]
 
 		// Validate subsystem.
-		if _, exists := subsystemLoggers[subsysID]; !exists {
-			str := "The specified subsystem [%v] is invalid -- " +
+		if !isExistSystem(subsysID) {
+			str := "the specified subsystem [%v] is invalid -- " +
 				"supported subsystems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
 		// Validate log level.
 		if !validLogLevel(logLevel) {
-			str := "The specified debug level [%v] is invalid"
+			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)
 		}
-
 		setLogLevel(subsysID, logLevel)
 	}
 

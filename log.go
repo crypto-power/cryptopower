@@ -12,6 +12,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
+	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -24,8 +26,19 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/staking"
 	"code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/wallet"
+	"decred.org/dcrwallet/v2/p2p"
+	"decred.org/dcrwallet/v2/ticketbuyer"
+	dcrw "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/wallet/udb"
+	"github.com/btcsuite/btclog"
+	"github.com/btcsuite/btcwallet/chain"
+	bw "github.com/btcsuite/btcwallet/wallet"
+	"github.com/btcsuite/btcwallet/wtxmgr"
+	"github.com/decred/dcrd/addrmgr/v2"
+	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
+	"github.com/lightninglabs/neutrino"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -50,7 +63,8 @@ var (
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
-	backendLog = slog.NewBackend(logWriter{})
+	backendLog    = slog.NewBackend(logWriter{})
+	btcBackendLog = btclog.NewBackend(logWriter{})
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
@@ -58,12 +72,19 @@ var (
 
 	log = backendLog.Logger("CRPW")
 
-	walletLog  = backendLog.Logger("WALL")
-	winLog     = backendLog.Logger("UI")
-	dlwlLog    = backendLog.Logger("DLWL")
-	dcrLog     = backendLog.Logger("DCR")
-	lstnersLog = backendLog.Logger("LSTN")
-	btcLog     = backendLog.Logger("BTC")
+	walletLog    = backendLog.Logger("WALL")
+	winLog       = backendLog.Logger("UI")
+	dlwlLog      = backendLog.Logger("DLWL")
+	dcrLog       = backendLog.Logger("DCR")
+	lstnersLog   = backendLog.Logger("LSTN")
+	extLog       = backendLog.Logger("EXT")
+	amgrLog      = backendLog.Logger("AMGR")
+	cmgrLog      = backendLog.Logger("CMGR")
+	syncLog      = backendLog.Logger("SYNC")
+	tkbyLog      = backendLog.Logger("TKBY")
+	dcrWalletLog = backendLog.Logger("WLLT")
+	ntrn         = btcBackendLog.Logger("NTRN")
+	btcLog       = btcBackendLog.Logger("BTC")
 )
 
 // Initialize package-global logger variables.
@@ -83,17 +104,38 @@ func init() {
 	privacy.UseLogger(winLog)
 	modal.UseLogger(winLog)
 	btc.UseLogger(btcLog)
+	ext.UseLogger(extLog)
+	addrmgr.UseLogger(dcrLog)
+	connmgr.UseLogger(dcrLog)
+	p2p.UseLogger(syncLog)
+	ticketbuyer.UseLogger(tkbyLog)
+	udb.UseLogger(dcrWalletLog)
+	neutrino.UseLogger(ntrn)
+	wtxmgr.UseLogger(btcLog)
+	chain.UseLogger(btcLog)
+	bw.UseLogger(btcLog)
+	dcrw.UseLogger(dcrLog)
+	spv.UseLogger(dcrLog)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
-var subsystemLoggers = map[string]slog.Logger{
+var subsystemSLoggers = map[string]slog.Logger{
 	"WALL": walletLog,
 	"DLWL": dlwlLog,
 	"DCR":  dcrLog,
 	"UI":   winLog,
 	"CRPW": log,
 	"LSTN": lstnersLog,
-	"BTC":  btcLog,
+	"EXT":  extLog,
+	"AMGR": amgrLog,
+	"CMGR": cmgrLog,
+	"SYNC": syncLog,
+	"TKBY": tkbyLog,
+	"WLLT": walletLog,
+}
+
+var subsystemBLoggers = map[string]btclog.Logger{
+	"BTC": btcLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -112,7 +154,6 @@ func initLogRotator(logFile string, maxRolls int) {
 		os.Exit(1)
 	}
 
-	btc.SetLogRotator(r)
 	logRotator = r
 }
 
@@ -121,7 +162,7 @@ func initLogRotator(logFile string, maxRolls int) {
 // needed.
 func setLogLevel(subsystemID string, logLevel string) {
 	// Ignore invalid subsystems.
-	logger, ok := subsystemLoggers[subsystemID]
+	logger, ok := subsystemSLoggers[subsystemID]
 	if !ok {
 		return
 	}
@@ -131,13 +172,34 @@ func setLogLevel(subsystemID string, logLevel string) {
 	logger.SetLevel(level)
 }
 
+func setBTCLogLevel(subsystemID string, logLevel string) {
+	// Ignore invalid subsystems.
+	logger, ok := subsystemBLoggers[subsystemID]
+	if !ok {
+		return
+	}
+	lvl, _ := btclog.LevelFromString(logLevel)
+	logger.SetLevel(lvl)
+}
+
 // setLogLevels sets the log level for all subsystem loggers to the passed
 // level.  It also dynamically creates the subsystem loggers as needed, so it
 // can be used to initialize the logging system.
 func setLogLevels(logLevel string) {
 	// Configure all sub-systems with the new logging level.  Dynamically
 	// create loggers as needed.
-	for subsystemID := range subsystemLoggers {
+	for subsystemID := range subsystemSLoggers {
 		setLogLevel(subsystemID, logLevel)
 	}
+	for subsystemID := range subsystemBLoggers {
+		setBTCLogLevel(subsystemID, logLevel)
+	}
+	ntrn.SetLevel(btclog.LevelError)
+}
+
+func isExistSystem(subsysID string) bool {
+	// Validate subsystem.
+	_, slExists := subsystemSLoggers[subsysID]
+	_, btcExists := subsystemBLoggers[subsysID]
+	return slExists || btcExists
 }
