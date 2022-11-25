@@ -381,7 +381,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 		layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
 		layout.Rigid(pg.layoutProposalVoteBar),
 		layout.Rigid(func(gtx C) D {
-			if proposal.Category != libwallet.ProposalCategoryActive {
+			if proposal.Category != libwallet.ProposalCategoryActive || pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
 				return D{}
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

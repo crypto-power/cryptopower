@@ -33,6 +33,9 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
+			if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				return D{}
+			}
 			return layoutAgendaVoteAction(gtx, l, consensusItem)
 		}),
 	)

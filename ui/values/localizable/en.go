@@ -594,4 +594,5 @@ const EN = `
 "wroteAllWords" = "I have written down all 33 words"
 "askedEnterSeedWords" = "You will be asked to enter the seed word on the next screen."
 "seedHex" = "Seed hex"
+"warningWatchWallet" = "Warning: you are using watch-only wallet"
 `

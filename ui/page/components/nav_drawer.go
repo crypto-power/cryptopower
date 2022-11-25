@@ -57,7 +57,6 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context, navItems []NavHandler) 
 				background := nd.Theme.Color.Surface
 
 				if nd.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() && (navItems[i].PageID == values.String(values.StrSend) ||
-					navItems[i].PageID == values.String(values.StrReceive) ||
 					navItems[i].PageID == values.String(values.StrAccountMixer)) {
 					return D{}
 				}

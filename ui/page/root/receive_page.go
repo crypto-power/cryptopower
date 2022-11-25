@@ -203,6 +203,14 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						return pg.titleLayout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+							warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningWatchWallet))
+							warning.Color = pg.Theme.Color.Danger
+							return layout.Center.Layout(gtx, warning.Layout)
+						}
+						return D{}
+					}),
+					layout.Rigid(func(gtx C) D {
 						return layout.Center.Layout(gtx, func(gtx C) D {
 							return layout.Flex{
 								Axis:      layout.Vertical,
