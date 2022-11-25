@@ -22,9 +22,14 @@ const (
 	reservedWalletPrefix = "wallet-"
 
 	defaultDCRRequiredConfirmations = 2
+
+	//  - 6 confirmation is the standard for most transactions to be considered
+	// secure, enough for large payments between $10,000 - $1,000,000.
 	defaultBTCRequiredConfirmations = 6
 )
 
+// RequiredConfirmations specifies the minimum number of confirmations
+// a transaction needs to be consider as confirmed.
 func (wallet *Wallet) RequiredConfirmations() int32 {
 	var spendUnconfirmed bool
 	wallet.ReadUserConfigValue(SpendUnconfirmedConfigKey, &spendUnconfirmed)

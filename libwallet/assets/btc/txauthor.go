@@ -2,9 +2,12 @@ package btc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -21,22 +24,24 @@ import (
 
 type TxAuthor struct {
 	sourceAccountNumber uint32
-	destinations        []sharedW.TransactionDestination
-	changeAddress       string
-	inputs              []*wire.TxIn
-	changeDestination   *sharedW.TransactionDestination
+	// A map is used in place of an array because every destination address
+	// is supposed to be unique.
+	destinations      map[string]*sharedW.TransactionDestination
+	changeAddress     string
+	inputs            []*wire.TxIn
+	inputValues       []btcutil.Amount
+	txSpendAmount     btcutil.Amount // Equal to fee + send amount
+	changeDestination *sharedW.TransactionDestination
 
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
+
+	mu sync.RWMutex
 }
 
-// noInputValue describes an error returned by the input source when no inputs
-// were selected because each previous output value was zero.  Callers of
-// txauthor.NewUnsignedTransaction need not report these errors to the user.
-type noInputValue struct {
-}
-
-func (noInputValue) Error() string { return "no input value" }
+// fallBackFeeRate defines the default fee rate to be used if API source of the
+// current fee rates fails. Fee rate in Sat/kvB => 50,000 Sat/kvB = 50 Sat/vB.
+const fallBackFeeRate btcutil.Amount = 50 * 1000
 
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
@@ -50,7 +55,7 @@ func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
-		destinations:        make([]sharedW.TransactionDestination, 0),
+		destinations:        make(map[string]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
 	}
 	return nil
@@ -74,46 +79,40 @@ func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, s
 		return err
 	}
 
-	asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations, sharedW.TransactionDestination{
-		Address:    address,
-		UnitAmount: satoshiAmount,
-		SendMax:    sendMax,
-	})
-	asset.TxAuthoredInfo.needsConstruct = true
+	asset.TxAuthoredInfo.mu.Lock()
+	defer asset.TxAuthoredInfo.mu.Unlock()
 
-	return nil
-}
-
-func (asset *BTCAsset) UpdateSendDestination(index int, address string, satoshiAmount int64, sendMax bool) error {
-	if err := asset.validateSendAmount(sendMax, satoshiAmount); err != nil {
-		return err
-	}
-
-	if len(asset.TxAuthoredInfo.destinations) < index {
-		return errors.New(utils.ErrIndexOutOfRange)
-	}
-
-	asset.TxAuthoredInfo.destinations[index] = sharedW.TransactionDestination{
+	asset.TxAuthoredInfo.destinations[address] = &sharedW.TransactionDestination{
 		Address:    address,
 		UnitAmount: satoshiAmount,
 		SendMax:    sendMax,
 	}
 	asset.TxAuthoredInfo.needsConstruct = true
+
 	return nil
 }
 
-func (asset *BTCAsset) RemoveSendDestination(index int) {
-	if len(asset.TxAuthoredInfo.destinations) > index {
-		asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations[:index], asset.TxAuthoredInfo.destinations[index+1:]...)
+func (asset *BTCAsset) RemoveSendDestination(address string) {
+	asset.TxAuthoredInfo.mu.Lock()
+	defer asset.TxAuthoredInfo.mu.Unlock()
+
+	if _, ok := asset.TxAuthoredInfo.destinations[address]; ok {
+		delete(asset.TxAuthoredInfo.destinations, address)
 		asset.TxAuthoredInfo.needsConstruct = true
 	}
 }
 
-func (asset *BTCAsset) SendDestination(atIndex int) *sharedW.TransactionDestination {
-	return &asset.TxAuthoredInfo.destinations[atIndex]
+func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDestination {
+	asset.TxAuthoredInfo.mu.RLock()
+	defer asset.TxAuthoredInfo.mu.RUnlock()
+
+	return asset.TxAuthoredInfo.destinations[address]
 }
 
 func (asset *BTCAsset) SetChangeDestination(address string) {
+	asset.TxAuthoredInfo.mu.Lock()
+	defer asset.TxAuthoredInfo.mu.Unlock()
+
 	asset.TxAuthoredInfo.changeDestination = &sharedW.TransactionDestination{
 		Address: address,
 	}
@@ -121,11 +120,17 @@ func (asset *BTCAsset) SetChangeDestination(address string) {
 }
 
 func (asset *BTCAsset) RemoveChangeDestination() {
+	asset.TxAuthoredInfo.mu.RLock()
+	defer asset.TxAuthoredInfo.mu.RUnlock()
+
 	asset.TxAuthoredInfo.changeDestination = nil
 	asset.TxAuthoredInfo.needsConstruct = true
 }
 
 func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
+	asset.TxAuthoredInfo.mu.RLock()
+	defer asset.TxAuthoredInfo.mu.RUnlock()
+
 	var totalSendAmountSatoshi int64 = 0
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		totalSendAmountSatoshi += destination.UnitAmount
@@ -138,16 +143,23 @@ func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
 }
 
 func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
+	// compute the amount to be sent in the current tx.
+	var sendAmount = btcutil.Amount(asset.TotalSendAmount().UnitValue)
+
+	asset.TxAuthoredInfo.mu.Lock()
+	defer asset.TxAuthoredInfo.mu.Unlock()
+
 	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
 
-	estimatedSignedSerializeSize := asset.TxAuthoredInfo.unsignedTx.Tx.SerializeSize()
-	feeToSendTx := txrules.FeeForSerializeSize(txrules.DefaultRelayFeePerKb, estimatedSignedSerializeSize)
+	// Since the fee is already calculated when computing the change source out
+	// or single destination to send max amount, no need to repeat calculations again.
+	feeToSpend := asset.TxAuthoredInfo.txSpendAmount - sendAmount
 	feeAmount := &sharedW.Amount{
-		UnitValue: int64(feeToSendTx),
-		CoinValue: feeToSendTx.ToBTC(),
+		UnitValue: int64(feeToSpend),
+		CoinValue: feeToSpend.ToBTC(),
 	}
 
 	var change *sharedW.Amount
@@ -159,8 +171,9 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 		}
 	}
 
+	estimatedSignedSerializeSize := feeToSpend.ToBTC() / fallBackFeeRate.ToBTC()
 	return &sharedW.TxFeeAndSize{
-		EstimatedSignedSize: estimatedSignedSerializeSize,
+		EstimatedSignedSize: int(estimatedSignedSerializeSize),
 		Fee:                 feeAmount,
 		Change:              change,
 	}, nil
@@ -189,6 +202,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
+//TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
 func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 	if asset.TxAuthoredInfo == nil {
 		return fmt.Errorf("TxAuthoredInfo is nil")
@@ -226,30 +240,21 @@ func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 }
 
 func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) error {
+	asset.TxAuthoredInfo.mu.Lock()
+	defer asset.TxAuthoredInfo.mu.Unlock()
+
 	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
 		return utils.TranslateError(err)
 	}
 
-	if unsignedTx.ChangeIndex >= 0 {
+	// If the change output is the only one, no need to change position.
+	if unsignedTx.ChangeIndex > 0 {
 		unsignedTx.RandomizeChangePosition()
 	}
 
-	var txBuf bytes.Buffer
-	txBuf.Grow(unsignedTx.Tx.SerializeSize())
-	err = unsignedTx.Tx.Serialize(&txBuf)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	var msgTx wire.MsgTx
-	err = msgTx.Deserialize(bytes.NewReader(txBuf.Bytes()))
-	if err != nil {
-		log.Error(err)
-		// Bytes do not represent a valid raw transaction
-		return err
-	}
+	// Test encode and decode the tx to check its validity after being signed.
+	msgTx := unsignedTx.Tx
 
 	lock := make(chan time.Time, 1)
 	defer func() {
@@ -262,39 +267,67 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		return errors.New(utils.ErrInvalidPassphrase)
 	}
 
-	var additionalPkScripts map[wire.OutPoint][]byte
+	// To discourage fee sniping, LockTime is explicity set in the raw tx.
+	// More documentation on this:
+	// https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
+	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
 
-	invalidSigs, err := asset.Internal().BTC.SignTransaction(&msgTx, txscript.SigHashAll, additionalPkScripts, nil, nil)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	for index, txIn := range msgTx.TxIn {
+		_, previousTXout, _, _, err := asset.Internal().BTC.FetchInputInfo(&txIn.PreviousOutPoint)
+		if err != nil {
+			log.Errorf("fetch previous outpoint txout failed: %v", err)
+			return err
+		}
 
-	invalidInputIndexes := make([]uint32, len(invalidSigs))
-	for i, e := range invalidSigs {
-		invalidInputIndexes[i] = e.InputIndex
+		prevOutScript := unsignedTx.PrevScripts[index]
+		prevOutAmount := int64(asset.TxAuthoredInfo.inputValues[index])
+		prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
+		sigHashes := txscript.NewTxSigHashes(msgTx, prevOutFetcher)
+
+		witness, signature, err := asset.Internal().BTC.ComputeInputScript(
+			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
+		)
+		if err != nil {
+			log.Errorf("generating input signatures failed: %v", err)
+			return err
+		}
+
+		msgTx.TxIn[index].Witness = witness
+		msgTx.TxIn[index].SignatureScript = signature
+
+		// Prove that the transaction has been validly signed by executing the
+		// script pair.
+		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
+			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
+		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil,
+			prevOutAmount, prevOutFetcher)
+		if err != nil {
+			log.Errorf("creating validation engine failed: %v", err)
+			return err
+		}
+		if err := vm.Execute(); err != nil {
+			log.Errorf("executing the validation engine failed: %v", err)
+			return err
+		}
 	}
 
 	var serializedTransaction bytes.Buffer
 	serializedTransaction.Grow(msgTx.SerializeSize())
 	err = msgTx.Serialize(&serializedTransaction)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("encoding the tx to test its validity failed: %v", err)
 		return err
 	}
 
 	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
 	if err != nil {
 		// Invalid tx
-		log.Error(err)
+		log.Errorf("decoding the tx to test its validity failed: %v", err)
 		return err
 	}
 
-	err = asset.Internal().BTC.PublishTransaction(&msgTx, transactionLabel)
-	if err != nil {
-		return utils.TranslateError(err)
-	}
-	return nil
+	err = asset.Internal().BTC.PublishTransaction(msgTx, transactionLabel)
+	return utils.TranslateError(err)
 }
 
 func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
@@ -312,13 +345,17 @@ func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
-	if len(asset.TxAuthoredInfo.inputs) != 0 {
-		return asset.constructCustomTransaction()
-	}
+	//TODO: Code commented pending the evaluation if `libwallet/assets/btc/utxo.go`
+	// implementation is still necessary. It ought to be deleted with that file
+	// should we decide to pursue that route.
+	// if len(asset.TxAuthoredInfo.inputs) != 0 {
+	// 	return asset.constructCustomTransaction()
+	// }
 
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
+	var sendMax bool
 
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		if err := asset.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
@@ -337,6 +374,8 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
+			sendMax = true
+
 		} else {
 			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
 			if err != nil {
@@ -344,10 +383,15 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				return nil, fmt.Errorf("make tx output error: %v", err)
 			}
 
+			// confirm that the txout will not be rejected on hitting the mempool.
+			if err = txrules.CheckOutput(output, fallBackFeeRate); err != nil {
+				return nil, fmt.Errorf("main txOut validation failed %v", err)
+			}
 			outputs = append(outputs, output)
 		}
 	}
 
+	// Case activated when sendMax is false.
 	if changeSource == nil {
 		// btcwallet should ordinarily handle cases where a nil changeSource
 		// is passed to `sharedW.NewUnsignedTransaction` but the changeSource
@@ -366,9 +410,25 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	inputSource := makeInputSource(unspents)
 
-	return txauthor.NewUnsignedTransaction(outputs, txrules.DefaultRelayFeePerKb, inputSource, changeSource)
+	inputSource := asset.makeInputSource(unspents, sendMax)
+	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, fallBackFeeRate, inputSource, changeSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating unsigned tx failed: %v", err)
+	}
+
+	if unsignedTx.ChangeIndex == -1 {
+		// The change amount is zero or the Txout is likely to be considered as dust
+		// if sent to the mempool the whole tx will be rejected.
+		return nil, errors.New("adding the change txOut or sendMax tx failed")
+	}
+
+	// Confirm that the change output is valid too.
+	if err = txrules.CheckOutput(unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex], fallBackFeeRate); err != nil {
+		return nil, fmt.Errorf("change txOut validation failed %v", err)
+	}
+
+	return unsignedTx, nil
 }
 
 // changeSource derives an internal address from the source wallet and account
@@ -377,9 +437,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 // change source for receiving change from this tx back into the sharedW.
 func (asset *BTCAsset) changeSource() (*txauthor.ChangeSource, error) {
 	if asset.TxAuthoredInfo.changeAddress == "" {
-
 		changeAccount := asset.TxAuthoredInfo.sourceAccountNumber
-
 		address, err := asset.Internal().BTC.NewChangeAddress(changeAccount, asset.GetScope())
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
@@ -405,56 +463,109 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 }
 
 // makeInputSource creates an InputSource that creates inputs for every unspent
-// output with non-zero output values.  The target amount is ignored since every
-// output is consumed.  The InputSource does not return any previous output
-// scripts as they are not needed for creating the unsinged transaction and are
-// looked up again by the wallet during the call to signrawtransaction.
-func makeInputSource(outputs []*ListUnspentResult) txauthor.InputSource {
+// output with non-zero output values. The importsource aims to create the leanest
+// transaction possible. It plans not to spend all the utxos available when servicing
+// the current transaction spending amount if possible. The sendMax shows that
+// all utxos must be spent without any balance(unspent utxo) left in the account.
+func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
 	var (
-		totalInputValue btcutil.Amount
-		inputs          = make([]*wire.TxIn, 0, len(outputs))
-		inputValues     = make([]btcutil.Amount, 0, len(outputs))
 		sourceErr       error
+		totalInputValue btcutil.Amount
+
+		inputs      = make([]*wire.TxIn, 0, len(outputs))
+		inputValues = make([]btcutil.Amount, 0, len(outputs))
+		pkScripts   = make([][]byte, 0, len(outputs))
 	)
+
+	// sorting is only necessary when send max is false.
+	if !sendMax {
+		// Sorts the outputs in the descending order (utxo with largest amount start)
+		// This descending order helps in selecting the least number of utxos needed
+		// in the servicing the transaction to be made.
+		sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount > outputs[j].Amount })
+	}
+
+	// validates the utxo amounts and if an invalid amount is discovered an
+	// error is returned.
 	for _, output := range outputs {
-		output := output
+		// Ignore unspendable utxos
+		if !output.Spendable {
+			continue
+		}
 
 		outputAmount, err := btcutil.NewAmount(output.Amount)
 		if err != nil {
-			sourceErr = fmt.Errorf(
-				"invalid amount `%v` in listunspent result",
-				output.Amount)
+			sourceErr = fmt.Errorf("invalid amount `%v` in listunspent result", output.Amount)
 			break
 		}
+
 		if outputAmount == 0 {
 			continue
 		}
+
 		if !saneOutputValue(outputAmount) {
-			sourceErr = fmt.Errorf(
-				"impossible output amount `%v` in listunspent result",
-				outputAmount)
+			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", outputAmount)
 			break
 		}
-		totalInputValue += outputAmount
 
 		previousOutPoint, err := parseOutPoint(output)
 		if err != nil {
-			sourceErr = fmt.Errorf(
-				"invalid data in listunspent result: %v",
-				err)
+			sourceErr = fmt.Errorf("invalid TxIn data found: %v", err)
 			break
 		}
 
-		inputs = append(inputs, wire.NewTxIn(&previousOutPoint, nil, nil))
+		script, err := hex.DecodeString(output.ScriptPubKey)
+		if err != nil {
+			sourceErr = fmt.Errorf("invalid TxIn pkScript data found: %v", err)
+			break
+		}
+
+		totalInputValue += outputAmount
+		pkScripts = append(pkScripts, script)
 		inputValues = append(inputValues, outputAmount)
+		inputs = append(inputs, wire.NewTxIn(previousOutPoint, nil, nil))
 	}
 
 	if sourceErr == nil && totalInputValue == 0 {
-		sourceErr = noInputValue{}
+		// Constructs an error describing the possible reasons why the
+		// wallet balance cannot be spent.
+		sourceErr = fmt.Errorf("inputs not spendable or have less than %d confirmations",
+			asset.RequiredConfirmations())
 	}
 
-	return func(btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
-		return totalInputValue, inputs, inputValues, nil, sourceErr
+	return func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {
+		// If an error was found return it first.
+		if sourceErr != nil {
+			return 0, nil, nil, nil, sourceErr
+		}
+
+		// This sets the amount the tx will spend if utxos to balance it exists.
+		// This spend amount will be crucial in calculating the projected tx fee.
+		asset.TxAuthoredInfo.txSpendAmount = target
+
+		// All utxos are to be spent with no change amount expected.
+		if sendMax {
+			asset.TxAuthoredInfo.inputs = inputs
+			asset.TxAuthoredInfo.inputValues = inputValues
+			return totalInputValue, inputs, inputValues, pkScripts, nil
+		}
+
+		var index int
+		var totalUtxo btcutil.Amount
+
+		for _, utxoAmount := range inputValues {
+			if totalUtxo < target {
+				// Found some utxo(s) we can spend in the current tx.
+				index++
+
+				totalUtxo += utxoAmount
+				continue
+			}
+			break
+		}
+		asset.TxAuthoredInfo.inputs = inputs[:index]
+		asset.TxAuthoredInfo.inputValues = inputValues[:index]
+		return totalUtxo, inputs[:index], inputValues[:index], pkScripts[:index], nil
 	}
 }
 
@@ -462,10 +573,10 @@ func saneOutputValue(amount btcutil.Amount) bool {
 	return amount >= 0 && amount <= btcutil.MaxSatoshi
 }
 
-func parseOutPoint(input *ListUnspentResult) (wire.OutPoint, error) {
+func parseOutPoint(input *ListUnspentResult) (*wire.OutPoint, error) {
 	txHash, err := chainhash.NewHashFromStr(input.TxID)
 	if err != nil {
-		return wire.OutPoint{}, err
+		return nil, err
 	}
-	return wire.OutPoint{Hash: *txHash, Index: input.Vout}, nil
+	return wire.NewOutPoint(txHash, input.Vout), nil
 }

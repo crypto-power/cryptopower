@@ -103,13 +103,17 @@ func (asset *BTCAsset) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
+// UnspentOutputs returns all the unspent outputs available for the provided
+// account index.
 func (asset *BTCAsset) UnspentOutputs(account int32) ([]*ListUnspentResult, error) {
 	accountName, err := asset.AccountName(account)
 	if err != nil {
 		return nil, err
 	}
 
-	unspents, err := asset.Internal().BTC.ListUnspent(0, math.MaxInt32, accountName)
+	// Only return UTXOs with the required number of confirmations.
+	unspents, err := asset.Internal().BTC.ListUnspent(asset.RequiredConfirmations(),
+		math.MaxInt32, accountName)
 	if err != nil {
 		return nil, err
 	}

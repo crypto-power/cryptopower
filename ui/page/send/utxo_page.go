@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -138,8 +137,8 @@ func (pg *UTXOPage) handlerCheckboxes(cb *cryptomaterial.CheckBoxStyle, utxo *wa
 }
 
 func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
-	dcrImpl := pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-	err := dcrImpl.NewUnsignedTx(pg.selectedAccountID)
+	wal := pg.WL.SelectedWallet.Wallet
+	err := wal.NewUnsignedTx(pg.selectedAccountID)
 	if err != nil {
 		return
 	}
@@ -151,16 +150,16 @@ func (pg *UTXOPage) calculateAmountAndFeeUTXO() {
 		totalAmount += utxo.UTXO.Amount
 	}
 
-	err = dcrImpl.UseInputs(utxoKeys)
-	if err != nil {
-		return
-	}
-	feeAndSize, err := dcrImpl.EstimateFeeAndSize()
+	err = wal.UseInputs(utxoKeys)
 	if err != nil {
 		return
 	}
 
-	wal := pg.WL.SelectedWallet.Wallet
+	feeAndSize, err := wal.EstimateFeeAndSize()
+	if err != nil {
+		return
+	}
+
 	pg.txnAmount = wal.ToAmount(totalAmount).String()
 	pg.txnFee = wal.ToAmount(feeAndSize.Fee.UnitValue).String()
 	pg.txnAmountAfterFee = wal.ToAmount(totalAmount - feeAndSize.Fee.UnitValue).String()
