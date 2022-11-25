@@ -43,17 +43,6 @@ type TxAuthor struct {
 // current fee rates fails. Fee rate in Sat/kvB => 50,000 Sat/kvB = 50 Sat/vB.
 const fallBackFeeRate btcutil.Amount = 50 * 1000
 
-// noInputValue describes an error returned by the input source when no inputs
-// were selected because each previous output value was zero.  Callers of
-// txauthor.NewUnsignedTransaction need not report these errors to the user.
-type noInputValue struct {
-	confirmations int32
-}
-
-func (in noInputValue) Error() string {
-	return fmt.Sprintf("inputs not spendable or have less than %d confirmations", in.confirmations)
-}
-
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
@@ -538,7 +527,10 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 	}
 
 	if sourceErr == nil && totalInputValue == 0 {
-		sourceErr = noInputValue{confirmations: asset.RequiredConfirmations()}
+		// Constructs an error describing the possible reasons why the
+		// wallet balance cannot be spent.
+		sourceErr = fmt.Errorf("inputs not spendable or have less than %d confirmations",
+			asset.RequiredConfirmations())
 	}
 
 	return func(target btcutil.Amount) (btcutil.Amount, []*wire.TxIn, []btcutil.Amount, [][]byte, error) {

@@ -23,14 +23,8 @@ const (
 
 	defaultDCRRequiredConfirmations = 2
 
-	// How many Bitcoin Confirmations are Enough?
-	//  - Payments with 0 confirmations can still be reversed! Wait for at least one.
-	//  - One confirmation is enough for small Bitcoin payments less than $1,000.
-	//  - Most exchanges require 3 confirmations for deposits, enough for payments
-	// between $1,000 - $10,000.
 	//  - 6 confirmation is the standard for most transactions to be considered
 	// secure, enough for large payments between $10,000 - $1,000,000.
-	//  - 60 confirmations is suggested for large payments greater than $1,000,000.
 	defaultBTCRequiredConfirmations = 6
 )
 
