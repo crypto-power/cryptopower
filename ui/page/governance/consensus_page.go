@@ -325,12 +325,6 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	)
 }
 
-func (pg *ConsensusPage) lineSeparator(inset layout.Inset) layout.Widget {
-	return func(gtx C) D {
-		return inset.Layout(gtx, pg.Theme.Separator().Layout)
-	}
-}
-
 func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

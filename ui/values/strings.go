@@ -702,4 +702,5 @@ const (
 	StrAskedEnterSeedWords             = "askedEnterSeedWords"
 	StrSeedHex                         = "seedHex"
 	StrWarningWatchWallet              = "warningWatchWallet"
+	StrWarningVote                     = "warningVote"
 )
