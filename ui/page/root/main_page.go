@@ -899,6 +899,16 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 									Left: values.MarginPadding10,
 								}.Layout(gtx, lbl.Layout)
 							}),
+							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return layout.Inset{
+										Left: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return walletHightlighLabel(mp.Theme, gtx, values.String(values.StrWatchOnly))
+									})
+								}
+								return D{}
+							}),
 						)
 					})
 				}),
