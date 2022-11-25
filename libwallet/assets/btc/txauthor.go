@@ -40,10 +40,6 @@ type TxAuthor struct {
 	mu sync.RWMutex
 }
 
-// fallBackFeeRate defines the default fee rate to be used if API source of the
-// current fee rates fails. Fee rate in Sat/kvB => 50,000 Sat/kvB = 50 Sat/vB.
-const fallBackFeeRate btcutil.Amount = 50 * 1000
-
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
@@ -175,6 +171,8 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	// TODO: confirm if the size on UI needs to be in vB to B.
 	// This estimation returns size in Bytes (B).
 	estimatedSize := txsizes.EstimateSerializeSize(len(unsignedTx.Tx.TxIn), unsignedTx.Tx.TxOut, true)
+	// This estimation returns size in virtualBytes (vB).
+	// estimatedSize := feeToSpend.ToBTC() / fallBackFeeRate.ToBTC()
 
 	return &sharedW.TxFeeAndSize{
 		FeeRate:             fmt.Sprintf("%d Sat/kvB", asset.GetUserFeeRate()),
@@ -360,6 +358,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
+	var setFeeRate = btcutil.Amount(asset.GetUserFeeRate().ToInt())
 	var sendMax bool
 
 	for _, destination := range asset.TxAuthoredInfo.destinations {
@@ -389,7 +388,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 			}
 
 			// confirm that the txout will not be rejected on hitting the mempool.
-			if err = txrules.CheckOutput(output, fallBackFeeRate); err != nil {
+			if err = txrules.CheckOutput(output, setFeeRate); err != nil {
 				return nil, fmt.Errorf("main txOut validation failed %v", err)
 			}
 			outputs = append(outputs, output)
@@ -417,7 +416,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	}
 
 	inputSource := asset.makeInputSource(unspents, sendMax)
-	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, fallBackFeeRate, inputSource, changeSource)
+	unsignedTx, err := txauthor.NewUnsignedTransaction(outputs, setFeeRate, inputSource, changeSource)
 	if err != nil {
 		return nil, fmt.Errorf("creating unsigned tx failed: %v", err)
 	}
@@ -429,7 +428,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	}
 
 	// Confirm that the change output is valid too.
-	if err = txrules.CheckOutput(unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex], fallBackFeeRate); err != nil {
+	if err = txrules.CheckOutput(unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex], setFeeRate); err != nil {
 		return nil, fmt.Errorf("change txOut validation failed %v", err)
 	}
 

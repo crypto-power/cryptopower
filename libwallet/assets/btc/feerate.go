@@ -9,27 +9,35 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/btcutil"
 )
 
 const (
 	MainnetAPIFeeRateURL = "https://blockstream.info/api/fee-estimates"
 	TestnetAPIFeeRateURL = "https://blockstream.info/testnet/api/fee-estimates"
+
+	// Since the introduction of segwit account, a different tx size measument was
+	// introduced (Sat/VB). When sending a transaction from the legacy account,
+	// 1B (byte) = 1vB (virtual byte). When sending a transaction from segwit
+	// (legacy segwit, bech32, taproot), then 1B = 4vB.
+
+	// 1,000 sat/kvB = 1 sat/vB
+	// 1 sat/vB = 0.25 sat/wu
+	// 0.25 sat/wu = 250 sat/kwu
+	// 20 sat/vB = 5,000 sat/kwu
+
+	// 1vB = 0.0001 kvB
+	// 1 BTC = 10 ^ 8 Sats = 100,000,000 Sats.
+
+	// FallBackFeeRatePerkvB defines the default fee rate to be used if API source of the
+	// current fee rates fails. Fee rate in Sat/kvB => 50,000 Sat/kvB = 50 Sat/vB.
+	// This feerate guarrantees relatively low fee cost and extremely fast tx
+	// confirmation.
+	FallBackFeeRatePerkvB btcutil.Amount = 50 * 1000
+
+	// MinFeeRatePerkvB defines the minimum fee rate a user can set on a tx.
+	MinFeeRatePerkvB btcutil.Amount = 1000 // Equals to 1 sat/vB.
 )
-
-// Since the introduction of segwit account, a different tx size measument was
-// introduced (Sat/VB). When sending a transaction from the legacy account,
-// 1B (byte) = 1vB (virtual byte). When sending a transaction from segwit
-// (legacy segwit, bech32, taproot), then 1B = 4vB.
-
-// 1,000 sat/kvB = 1 sat/vB
-// 1 sat/vB = 0.25 sat/wu
-// 0.25 sat/wu = 250 sat/kwu
-// 20 sat/vB = 5,000 sat/kwu
-
-// 1vB = 0.0001 kvB
-// 1 BTC = 10 ^ 8 Sats = 100,000,000 Sats.
-
-var FallBackFeeRatePerkvB sharedW.AssetAmount = BTCAmount(1000) // Equals to 1 sat/vB.
 
 // feeEstimateCache helps to cache the resolved fee rate until a new
 // block is mined
@@ -137,13 +145,13 @@ func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err erro
 }
 
 // SetUserFeeRate sets the fee rate in kvB units. Setting fee rate less than
-// FallBackFeeRatePerkvB is not allowed.
+// MinFeeRatePerkvB is not allowed.
 func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 	asset.fees.mu.Lock()
 	defer asset.fees.mu.Unlock()
 
-	if feeRatePerkvB.ToInt() < FallBackFeeRatePerkvB.ToInt() {
-		return fmt.Errorf("minimum rate is %d Sat/kvB", FallBackFeeRatePerkvB.ToInt())
+	if feeRatePerkvB.ToInt() < int64(MinFeeRatePerkvB) {
+		return fmt.Errorf("minimum rate is %d Sat/kvB", int64(MinFeeRatePerkvB))
 	}
 
 	asset.fees.SetFeeRatePerkvB = feeRatePerkvB
@@ -158,7 +166,7 @@ func (asset *BTCAsset) GetUserFeeRate() sharedW.AssetAmount {
 
 	if asset.fees.SetFeeRatePerkvB == nil {
 		// If not set, defaults to the fall back fee of 1000 sats/kvB = (1 Sat/vB)
-		return FallBackFeeRatePerkvB
+		return BTCAmount(FallBackFeeRatePerkvB)
 	}
 	return asset.fees.SetFeeRatePerkvB
 }
