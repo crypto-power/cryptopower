@@ -3,7 +3,7 @@ package wallet
 import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
-	btchdkeychain "github.com/btcsuite/btcutil/hdkeychain"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 

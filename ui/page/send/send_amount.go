@@ -13,7 +13,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 

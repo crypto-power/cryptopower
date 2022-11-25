@@ -10,7 +10,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
-	btchdkeychain "github.com/btcsuite/btcutil/hdkeychain"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"

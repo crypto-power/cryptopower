@@ -29,7 +29,8 @@ type TxAuthor struct {
 	destinations      map[string]*sharedW.TransactionDestination
 	changeAddress     string
 	inputs            []*wire.TxIn
-	txSpendAmount     btcutil.Amount
+	inputValues       []btcutil.Amount
+	txSpendAmount     btcutil.Amount // Equal to fee + send amount
 	changeDestination *sharedW.TransactionDestination
 
 	unsignedTx     *txauthor.AuthoredTx
@@ -212,6 +213,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
+//TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
 func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 	if asset.TxAuthoredInfo == nil {
 		return fmt.Errorf("TxAuthoredInfo is nil")
@@ -243,7 +245,7 @@ func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 		inputs = append(inputs, input)
 	}
 
-	asset.TxAuthoredInfo.inputs = inputs
+	// asset.TxAuthoredInfo.inputs = inputs
 	asset.TxAuthoredInfo.needsConstruct = true
 	return nil
 }
@@ -281,14 +283,17 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 	// https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
 	msgTx.LockTime = uint32(asset.GetBestBlockHeight())
 
-	sigHashes := txscript.NewTxSigHashes(msgTx)
-
 	for index, txIn := range msgTx.TxIn {
 		_, previousTXout, _, _, err := asset.Internal().BTC.FetchInputInfo(&txIn.PreviousOutPoint)
 		if err != nil {
 			log.Errorf("fetch previous outpoint txout failed: %v", err)
 			return err
 		}
+
+		prevOutScript := unsignedTx.PrevScripts[index]
+		prevOutAmount := int64(asset.TxAuthoredInfo.inputValues[index])
+		prevOutFetcher := txscript.NewCannedPrevOutputFetcher(prevOutScript, prevOutAmount)
+		sigHashes := txscript.NewTxSigHashes(msgTx, prevOutFetcher)
 
 		witness, signature, err := asset.Internal().BTC.ComputeInputScript(
 			msgTx, previousTXout, index, sigHashes, txscript.SigHashAll, nil,
@@ -305,8 +310,8 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 		// script pair.
 		flags := txscript.ScriptBip16 | txscript.ScriptVerifyDERSignatures |
 			txscript.ScriptStrictMultiSig | txscript.ScriptDiscourageUpgradableNops
-		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0,
-			flags, nil, nil, previousTXout.Value)
+		vm, err := txscript.NewEngine(previousTXout.PkScript, msgTx, 0, flags, nil, nil,
+			prevOutAmount, prevOutFetcher)
 		if err != nil {
 			log.Errorf("creating validation engine failed: %v", err)
 			return err
@@ -389,15 +394,11 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				return nil, fmt.Errorf("make tx output error: %v", err)
 			}
 
-			// confirm that the txout will not be labelled dust on hitting mempool.
-			if !txrules.IsDustOutput(output, fallBackFeeRate) {
-				outputs = append(outputs, output)
-				continue
+			// confirm that the txout will not be rejected on hitting the mempool.
+			if err = txrules.CheckOutput(output, fallBackFeeRate); err != nil {
+				return nil, fmt.Errorf("main txOut validation failed %v", err)
 			}
-
-			// txout failed the dust threshold validation.
-			minAmount := txrules.GetDustThreshold(len(output.PkScript), fallBackFeeRate)
-			return nil, fmt.Errorf("minimum amount to send should be %v", minAmount)
+			outputs = append(outputs, output)
 		}
 	}
 
@@ -430,7 +431,12 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	if unsignedTx.ChangeIndex == -1 {
 		// The change amount is zero or the Txout is likely to be considered as dust
 		// if sent to the mempool the whole tx will be rejected.
-		return nil, errors.New("adding the change Txout or sendMax tx failed")
+		return nil, errors.New("adding the change txOut or sendMax tx failed")
+	}
+
+	// Confirm that the change output is valid too.
+	if err = txrules.CheckOutput(unsignedTx.Tx.TxOut[unsignedTx.ChangeIndex], fallBackFeeRate); err != nil {
+		return nil, fmt.Errorf("change txOut validation failed %v", err)
 	}
 
 	return unsignedTx, nil
@@ -548,6 +554,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 		// All utxos are to be spent with no change amount expected.
 		if sendMax {
 			asset.TxAuthoredInfo.inputs = inputs
+			asset.TxAuthoredInfo.inputValues = inputValues
 			return totalInputValue, inputs, inputValues, pkScripts, nil
 		}
 
@@ -565,6 +572,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 			break
 		}
 		asset.TxAuthoredInfo.inputs = inputs[:index]
+		asset.TxAuthoredInfo.inputValues = inputValues[:index]
 		return totalUtxo, inputs[:index], inputValues[:index], pkScripts[:index], nil
 	}
 }
