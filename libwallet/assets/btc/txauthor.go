@@ -245,7 +245,7 @@ func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 		inputs = append(inputs, input)
 	}
 
-	// asset.TxAuthoredInfo.inputs = inputs
+	asset.TxAuthoredInfo.inputs = inputs
 	asset.TxAuthoredInfo.needsConstruct = true
 	return nil
 }

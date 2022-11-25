@@ -105,10 +105,11 @@ func (asset *BTCAsset) newUnsignedTxUTXO(nextInternalAddress nextAddressFunc) (*
 
 	var totalInputAmount int64
 	inputs := asset.TxAuthoredInfo.inputs
+	inputValues := asset.TxAuthoredInfo.inputValues
 	inputScriptSizes := make([]int, len(inputs))
 	inputScripts := make([][]byte, len(inputs))
 	for i, input := range inputs {
-		// totalInputAmount += input.ValueIn // TODO: get the ValueIn for a BTC transaction if needed
+		totalInputAmount += int64(inputValues[i])
 		inputScriptSizes[i] = txsizes.RedeemP2PKHSigScriptSize
 		inputScripts[i] = input.SignatureScript
 
@@ -154,9 +155,9 @@ func (asset *BTCAsset) newUnsignedTxUTXO(nextInternalAddress nextAddressFunc) (*
 	txMsg.LockTime = uint32(asset.GetBestBlockHeight())
 
 	return &txauthor.AuthoredTx{
-		TotalInput: btcutil.Amount(totalInputAmount),
-		// PrevInputValues: asset.TxAuthoredInfo.inputAmounts,
-		Tx: txMsg,
+		TotalInput:      btcutil.Amount(totalInputAmount),
+		PrevInputValues: inputValues,
+		Tx:              txMsg,
 	}, nil
 }
 
