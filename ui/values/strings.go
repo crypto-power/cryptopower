@@ -537,7 +537,6 @@ const (
 	StrConfirmDexReset                 = "confirmDexReset"
 	StrDexResetInfo                    = "dexResetInfo"
 	StrDexStartupErr                   = "dexStartupErr"
-	StrResetDexClient                  = "resetDexClient"
 	StrWalletLog                       = "walletLog"
 	StrBuild                           = "build"
 	StrPeersConnected                  = "peersConnected"

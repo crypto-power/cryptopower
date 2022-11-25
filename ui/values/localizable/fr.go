@@ -396,7 +396,6 @@ const FR = `
 "dexStartupErr" = "Impossible de démarrer le client DEX: %v"
 "confirmDexReset" = "Confirmer la réinitialisation du client DEX"
 "dexResetInfo" = "Vous devrez peut-être redémarrer cryptopower avant de pouvoir utiliser à nouveau le DEX. Continuer?"
-"resetDexClient" = "Réinitialiser le client DEX"
 "walletLog" = "Journal de portefeuille"
 "build" = "Construire"
 "peersConnected" = "Les pairs connectés"

@@ -47,7 +47,7 @@ type WalletSettingsPage struct {
 	pageContainer layout.List
 	accountsList  *cryptomaterial.ClickableList
 
-	changePass, rescan, resetDexData           *cryptomaterial.Clickable
+	changePass, rescan                         *cryptomaterial.Clickable
 	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
 	changeWalletName, addAccount, deleteWallet *cryptomaterial.Clickable
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
@@ -73,7 +73,6 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		changePass:          l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
 		setGapLimit:         l.Theme.NewClickable(false),
-		resetDexData:        l.Theme.NewClickable(false),
 		changeAccount:       l.Theme.NewClickable(false),
 		checklog:            l.Theme.NewClickable(false),
 		checkStats:          l.Theme.NewClickable(false),
@@ -239,7 +238,6 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 			layout.Rigid(pg.sectionContent(pg.setGapLimit, values.String(values.StrSetGapLimit))),
 			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
-			layout.Rigid(pg.sectionContent(pg.resetDexData, values.String(values.StrResetDexClient))),
 		)
 	}
 
@@ -723,10 +721,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
 	}
 
-	if pg.resetDexData.Clicked() {
-		pg.resetDexDataModal()
-	}
-
 	for pg.addAccount.Clicked() {
 		newPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 			Title(values.String(values.StrCreateNewAccount)).
@@ -797,30 +791,6 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 	textModal.Title(values.String(values.StrDiscoverAddressUsage)).
 		SetPositiveButtonText(values.String(values.StrDiscoverAddressUsage))
 	pg.ParentWindow().ShowModal(textModal)
-}
-
-func (pg *WalletSettingsPage) resetDexDataModal() {
-	// Show confirm modal before resetting dex client data.
-	confirmModal := modal.NewCustomModal(pg.Load).
-		Title(values.String(values.StrConfirmDexReset)).
-		Body(values.String(values.StrDexResetInfo)).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		NegativeButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
-		SetPositiveButtonText(values.String(values.StrResetDexClient)).
-		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
-			var info *modal.InfoModal
-			if pg.Dexc().Reset() {
-				info = modal.NewSuccessModal(pg.Load, values.String(values.StrDexDataReset), func(_ bool, _ *modal.InfoModal) bool {
-					im.Dismiss() // close the parent modal too
-					return true
-				})
-			} else {
-				info = modal.NewErrorModal(pg.Load, values.String(values.StrDexDataResetFalse), modal.DefaultClickFunc())
-			}
-			pg.ParentWindow().ShowModal(info)
-			return false
-		})
-	pg.ParentWindow().ShowModal(confirmModal)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

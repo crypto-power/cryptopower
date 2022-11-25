@@ -22,7 +22,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/page/dexclient"
 	"code.cryptopower.dev/group/cryptopower/ui/page/governance"
 	"code.cryptopower.dev/group/cryptopower/ui/page/info"
 	"code.cryptopower.dev/group/cryptopower/ui/page/privacy"
@@ -473,8 +472,6 @@ func (mp *MainPage) HandleUserInteractions() {
 				pg = staking.NewStakingPage(mp.Load)
 			case governance.GovernancePageID:
 				pg = governance.NewGovernancePage(mp.Load)
-			case dexclient.MarketPageID:
-				pg = dexclient.NewMarketPage(mp.Load)
 			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			}

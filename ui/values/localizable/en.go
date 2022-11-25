@@ -430,7 +430,6 @@ const EN = `
 "confirmDexReset" = "Confirm DEX Client Reset"
 "dexStartupErr" = "Unable to start DEX client: %v"
 "dexResetInfo" = "You may need to restart cryptopower before you can use the DEX again. Proceed?"
-"resetDexClient" = "Reset DEX Client"
 "walletLog" = "Wallet log"
 "build" = "Build"
 "peersConnected" = "Peers connected"

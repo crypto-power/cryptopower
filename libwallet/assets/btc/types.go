@@ -2,7 +2,7 @@ package btc
 
 import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/btcutil"
 )
 
 // BTCAmount implements the Asset amount interface for the BTC asset

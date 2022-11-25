@@ -40,7 +40,6 @@ type AssetsManager struct {
 	cancelFuncs  []context.CancelFunc
 	chainsParams utils.ChainsParams
 
-	dexClient       *DexClient
 	Politeia        *politeia.Politeia
 	ExternalService *ext.Service
 }
@@ -142,10 +141,6 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 	// Attempt to set the log levels if a valid db interface was found.
 	if mgr.db != nil {
 		mgr.GetLogLevels()
-	}
-
-	if err = mgr.initDexClient(); err != nil {
-		log.Errorf("DEX client set up error: %v", err)
 	}
 
 	mgr.listenForShutdown()

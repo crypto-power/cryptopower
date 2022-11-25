@@ -10,14 +10,13 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ararog/timeago v0.0.0-20160328174124-e9969cf18b8d
 	github.com/asdine/storm v0.0.0-20190216191021-fe89819f6282
-	github.com/btcsuite/btcd v0.22.1
-	github.com/btcsuite/btcd/btcutil v1.1.1
+	github.com/btcsuite/btcd v0.23.4
+	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/btcsuite/btcutil v1.0.3-0.20210527170813-e2ba6805a890 // note: hoists btcd's own require of btcutil
-	github.com/btcsuite/btcwallet v0.12.0
+	github.com/btcsuite/btcwallet v0.16.5
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
-	github.com/btcsuite/btcwallet/wtxmgr v1.3.0
+	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
 	github.com/decred/dcrd/addrmgr/v2 v2.0.0
 	github.com/decred/dcrd/blockchain/stake/v4 v4.0.0
 	github.com/decred/dcrd/blockchain/standalone/v2 v2.1.0
@@ -54,11 +53,11 @@ require (
 
 require (
 	decred.org/dcrwallet v1.7.0
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.1.0
-	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.1.0
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
+	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
-	github.com/lightninglabs/neutrino v0.13.1-0.20211214231330-53b628ce1756
+	github.com/lightninglabs/neutrino v0.14.2
 )
 
 require (
@@ -71,8 +70,8 @@ require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/benoitkugler/textlayout v0.1.1 // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.1.1 // indirect
-	github.com/btcsuite/btcutil/psbt v1.0.3-0.20201208143702-a53e38424cce // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.2.2 // indirect
+	github.com/btcsuite/btcd/btcutil/psbt v1.1.4 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -102,7 +101,6 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gioui/uax v0.2.1-0.20220325163150-e3d987515a12 // indirect
-	github.com/go-chi/chi/v5 v5.0.1 // indirect
 	github.com/go-text/typesetting v0.0.0-20220411150340-35994bc27a7b // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
@@ -118,11 +116,11 @@ require (
 	github.com/jrick/bitset v1.0.0 // indirect
 	github.com/jrick/wsrpc/v2 v2.3.5 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
-	github.com/lib/pq v1.10.3 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightningnetwork/lnd/clock v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/queue v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
+	github.com/lightningnetwork/lnd/tlv v1.0.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -132,7 +130,6 @@ require (
 	golang.org/x/net v0.0.0-20220822230855-b0a4917ee28c // indirect
 	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
-	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
