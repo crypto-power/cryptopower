@@ -75,7 +75,7 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	}
 
 	// if no data was returned, return an error.
-	if len(resp) <= 0 {
+	if len(resp) == 0 {
 		return nil, errors.New("API fee estimates not found")
 	}
 
@@ -125,7 +125,7 @@ func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err erro
 	})
 
 	if len(feerates) > 5 {
-		// persist top seven fee rates only.
+		//TODO: subject to confirmation! => persist top five fee rates only.
 		feerates = feerates[:5]
 	}
 
@@ -144,7 +144,7 @@ func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 	defer asset.fees.mu.Unlock()
 
 	if feeRatePerkvB.ToInt() < FallBackFeeRatePerkvB.ToInt() {
-		return fmt.Errorf("minimum rate is %v Sat/kvB", FallBackFeeRatePerkvB)
+		return fmt.Errorf("minimum rate is %d Sat/kvB", FallBackFeeRatePerkvB.ToInt())
 	}
 
 	asset.fees.SetFeeRatePerKvB = feeRatePerkvB

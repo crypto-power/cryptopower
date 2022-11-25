@@ -48,7 +48,7 @@ func (w *WalletMapping) SetAPIFeeRate(feerate string) error {
 	case *btc.BTCAsset:
 		rate, err := strconv.ParseInt(feerate, 10, 64)
 		if err != nil {
-			return w.invalidParameter(feerate)
+			return w.invalidParameter(feerate, "tx fee rate")
 		}
 		return asset.SetUserFeeRate(asset.ToAmount(rate))
 	default:
@@ -69,6 +69,6 @@ func (w *WalletMapping) invalidWallet() error {
 	return fmt.Errorf("(%v) wallet not supported", w.Asset.GetAssetType())
 }
 
-func (w *WalletMapping) invalidParameter(v interface{}) error {
-	return fmt.Errorf("(%v) not valid", v)
+func (w *WalletMapping) invalidParameter(v interface{}, vType string) error {
+	return fmt.Errorf("(%v) not valid %v", v, vType)
 }

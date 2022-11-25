@@ -494,9 +494,9 @@ func (mp *MainPage) HandleUserInteractions() {
 					pg = NewReceivePage(mp.Load)
 				}
 			case send.SendPageID:
-				// if mp.isSynced() {
-				pg = send.NewSendPage(mp.Load)
-				// }
+				if mp.isSynced() {
+					pg = send.NewSendPage(mp.Load)
+				}
 			case transaction.TransactionsPageID:
 				if mp.isSynced() {
 					pg = transaction.NewTransactionsPage(mp.Load)

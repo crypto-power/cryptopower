@@ -60,7 +60,8 @@ func (pg *Page) initLayoutWidgets() {
 	pg.ratesEditor.Editor.SingleLine = true
 	pg.ratesEditor.TextSize = values.TextSize14
 
-	pg.editOrDisplay = pg.txFeeRate
+	// Default value for display before fee rate is set.
+	pg.editOrDisplay = " - "
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -477,6 +478,7 @@ func (pg *Page) widgetsRow(gtx layout.Context, items ...interface{}) layout.Flex
 			}))
 		case cryptomaterial.Editor:
 			widgets = append(widgets, layout.Rigid(func(gtx C) D {
+				n.Editor.Focus()
 				gtx.Constraints.Max.X = gtx.Constraints.Max.X / 5
 				gtx.Constraints.Max.Y = int(float64(gtx.Constraints.Max.Y) / 1.5)
 				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, n.Layout)
