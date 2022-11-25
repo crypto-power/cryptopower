@@ -23,16 +23,16 @@ func (asset *BTCAsset) listenForTransactions() {
 				for _, transaction := range v.UnminedTransactions {
 					log.Infof("Incoming unmined transaction with hash (%v)", transaction.Hash)
 
-					tempTransaction := asset.decodeTransactionWithTxSummary(-1, transaction)
+					tempTransaction := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
 
 					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
 					if err != nil {
-						log.Errorf("[%d] New Tx save err: %v", asset.ID, err)
+						log.Errorf("[%s] New Tx save err: %v", asset.GetWalletName(), err)
 						return
 					}
 
 					if !overwritten {
-						log.Infof("[%d] New Transaction %s", asset.ID, tempTransaction.Hash)
+						log.Infof("[%s] New Transaction %s", asset.GetWalletName(), tempTransaction.Hash)
 
 						result, err := json.Marshal(tempTransaction)
 						if err != nil {
@@ -54,7 +54,7 @@ func (asset *BTCAsset) listenForTransactions() {
 
 						_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
 						if err != nil {
-							log.Errorf("[%d] Incoming block replace tx error :%v", asset.ID, err)
+							log.Errorf("[%s] Incoming block replace tx error :%v", asset.GetWalletName(), err)
 							return
 						}
 						asset.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Height))

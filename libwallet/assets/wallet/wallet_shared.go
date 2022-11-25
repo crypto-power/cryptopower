@@ -201,14 +201,6 @@ func (wallet *Wallet) NetType() utils.NetworkType {
 	return wallet.netType
 }
 
-// Loader returns the wallet loader. It is exported via the interface thus the
-// the need to thread safe.
-func (wallet *Wallet) Loader() loader.AssetLoader {
-	wallet.mu.RLock()
-	defer wallet.mu.RUnlock()
-	return wallet.loader
-}
-
 // GetAssetType returns the current wallet's asset type. It is exported via the
 // interface thus the the need to be thread safe.
 func (wallet *Wallet) GetAssetType() utils.AssetType {

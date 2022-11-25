@@ -10,8 +10,6 @@ import (
 	w "github.com/btcsuite/btcwallet/wallet"
 )
 
-const BlockHeightInvalid int32 = -1
-
 func (asset *BTCAsset) decodeTransactionWithTxSummary(blockheight int32, txsummary w.TransactionSummary) sharedW.Transaction {
 	txHex := fmt.Sprintf("%x", txsummary.Transaction)
 	decodedTx, _ := asset.decodeTxHex(txHex)

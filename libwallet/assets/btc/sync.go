@@ -196,8 +196,8 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	}
 }
 
-// setSyncedTo marks the address manager to be in sync with the recently-seen
-// block described by the blockstamp
+// setSyncedTo marks the wallet manager to be in sync with the recently-seen
+// block as reported by the rawBlock parameter.
 func (asset *BTCAsset) setSyncedTo(rawBlock *wtxmgr.BlockMeta) {
 	wdb := asset.Internal().BTC.Database()
 	bs := waddrmgr.BlockStamp{
@@ -481,9 +481,6 @@ func (asset *BTCAsset) startWallet() (err error) {
 		log.Infof("ForceRescan for wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
-
-	log.Info("Starting wallet...")
-	asset.Internal().BTC.Start()
 
 	g, _ := errgroup.WithContext(asset.syncCtx)
 	g.Go(asset.chainClient.Start)

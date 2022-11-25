@@ -11,9 +11,6 @@ import (
 	"github.com/btcsuite/btcwallet/wallet"
 )
 
-// UnminedTxHeight defines the block height of the txs in the mempool
-const UnminedTxHeight int32 = -1
-
 // txCache helps to cache the transactions fetched.
 type txCache struct {
 	blockHeight int32
@@ -173,7 +170,7 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 
 	unminedTxs := make([]sharedW.Transaction, 0)
 	for _, transaction := range txResult.UnminedTransactions {
-		unminedTx := asset.decodeTransactionWithTxSummary(UnminedTxHeight, transaction)
+		unminedTx := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
 		unminedTxs = append(unminedTxs, unminedTx)
 	}
 

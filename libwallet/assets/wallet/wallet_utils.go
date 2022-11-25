@@ -26,6 +26,9 @@ const (
 	//  - 6 confirmation is the standard for most transactions to be considered
 	// secure, enough for large payments between $10,000 - $1,000,000.
 	defaultBTCRequiredConfirmations = 6
+
+	// UnminedTxHeight defines the block height of the txs in the mempool
+	UnminedTxHeight int32 = -1
 )
 
 // RequiredConfirmations specifies the minimum number of confirmations
