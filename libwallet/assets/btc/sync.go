@@ -500,12 +500,6 @@ func (asset *BTCAsset) startWallet() (err error) {
 	log.Infof("Synchronizing BTC wallet (%s) with network...", asset.GetWalletName())
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
-	go func() {
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.listenForTransactions()
-		}
-	}()
-
 	return nil
 }
 
@@ -571,6 +565,7 @@ func (asset *BTCAsset) SpvSync() (err error) {
 		if err != nil {
 			log.Warn("error occured when starting BTC sync: ", err)
 		}
+		asset.listenForTransactions()
 	}()
 
 	return err
