@@ -112,7 +112,7 @@ func (asset *BTCAsset) RescanAsync() error {
 		return fmt.Errorf("couldn't start Neutrino client: %v", err)
 	}
 
-	log.Infof("Synchronizing wallet (%d) with network...", asset.GetWalletName())
+	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 	return nil
 }

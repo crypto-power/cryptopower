@@ -478,8 +478,12 @@ func (asset *BTCAsset) startWallet() (err error) {
 	}
 
 	if performRescan {
+		log.Infof("ForceRescan for wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
+
+	log.Info("Starting wallet...")
+	asset.Internal().BTC.Start()
 
 	g, _ := errgroup.WithContext(asset.syncCtx)
 	g.Go(asset.chainClient.Start)

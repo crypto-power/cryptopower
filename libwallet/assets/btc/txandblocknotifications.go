@@ -21,7 +21,7 @@ func (asset *BTCAsset) listenForTransactions() {
 				}
 
 				for _, transaction := range v.UnminedTransactions {
-					log.Debugf("Incoming unmined transaction with hash (%v)", transaction.Hash)
+					log.Infof("Incoming unmined transaction with hash (%v)", transaction.Hash)
 
 					tempTransaction := asset.decodeTransactionWithTxSummary(-1, transaction)
 
@@ -45,10 +45,10 @@ func (asset *BTCAsset) listenForTransactions() {
 
 				for _, block := range v.AttachedBlocks {
 					blockHeight := block.Height
-					log.Infof("Incoming block with height (%d), and hash (%v)", blockHeight, block.Hash)
+					log.Infof("Incoming block with height (%d) and hash (%v)", blockHeight, block.Hash)
 
 					for _, transaction := range block.Transactions {
-						log.Debugf("Incoming mined transaction with hash (%v)", transaction.Hash)
+						log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
 
 						tempTransaction := asset.decodeTransactionWithTxSummary(blockHeight, transaction)
 
