@@ -204,7 +204,7 @@ func (asset *DCRAsset) SpvSync() error {
 	}
 
 	addr := &net.TCPAddr{IP: net.ParseIP("::1"), Port: 0}
-	addrManager := addrmgr.New(asset.RootDir(), net.LookupIP) // TODO: be mindful of tor
+	addrManager := addrmgr.New(asset.DataDir(), net.LookupIP) // TODO: be mindful of tor
 	lp := p2p.NewLocalPeer(asset.chainParams, addr, addrManager)
 
 	var validPeerAddresses []string
