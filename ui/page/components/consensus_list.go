@@ -128,6 +128,12 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
 	if item.Agenda.Status == dcr.AgendaStatusFinished.String() {
 		return D{}
 	}
+
+	if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+		warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
+		warning.Color = l.Theme.Color.Danger
+		return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
+	}
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)

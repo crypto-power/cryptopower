@@ -32,8 +32,19 @@ func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 		layout.Rigid(func(gtx C) D {
 			return layoutPiKey(gtx, l, treasuryItem.Policy)
 		}),
+		layout.Rigid(func(gtx C) D {
+			if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
+				warning.Color = l.Theme.Color.Danger
+				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
+			}
+			return D{}
+		}),
 		layout.Rigid(layoutVoteChoice(l, treasuryItem)),
 		layout.Rigid(func(gtx C) D {
+			if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				return D{}
+			}
 			return layoutPolicyVoteAction(gtx, l, treasuryItem)
 		}),
 	)
@@ -75,6 +86,9 @@ func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D
 
 func layoutVoteChoice(l *load.Load, treasuryItem *TreasuryItem) layout.Widget {
 	return func(gtx C) D {
+		if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+			return D{}
+		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				lbl := l.Theme.Label(values.TextSize16, values.String(values.StrSetTreasuryPolicy))

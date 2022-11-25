@@ -384,6 +384,13 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 			if proposal.Category != libwallet.ProposalCategoryActive {
 				return D{}
 			}
+
+			if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
+				warning.Color = pg.Theme.Color.Danger
+				return warning.Layout(gtx)
+			}
+
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
 				layout.Rigid(pg.layoutProposalVoteAction),
