@@ -381,8 +381,6 @@ func (asset *BTCAsset) CancelSync() {
 		return nil
 	})
 
-	g.Go(asset.chainService.Stop)
-
 	// stop the local sync notifications
 	asset.cancelSync()
 
