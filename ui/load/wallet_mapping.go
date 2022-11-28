@@ -43,16 +43,19 @@ func (w *WalletMapping) Broadcast(passphrase string) error {
 	}
 }
 
-func (w *WalletMapping) SetAPIFeeRate(feerate string) error {
+// SetAPIFeeRate validates the string input its a number before sending it upstream.
+// It returns the string convert to int amount.
+func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
 	switch asset := w.Asset.(type) {
 	case *btc.BTCAsset:
 		rate, err := strconv.ParseInt(feerate, 10, 64)
 		if err != nil {
-			return w.invalidParameter(feerate, "tx fee rate")
+			return 0, w.invalidParameter(feerate, "tx fee rate")
 		}
-		return asset.SetUserFeeRate(asset.ToAmount(rate))
+		err = asset.SetUserFeeRate(asset.ToAmount(rate))
+		return rate, err
 	default:
-		return w.invalidWallet()
+		return 0, w.invalidWallet()
 	}
 }
 

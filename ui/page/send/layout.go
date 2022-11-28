@@ -106,8 +106,8 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		},
 	}
 
+	// Display the transaction fee rate selection only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
-		// Display the transaction fee rate selection only for btc wallets.
 		pageContent = append(pageContent,
 			func(gtx C) D { return pg.transactionFeeSection(gtx) },
 		)

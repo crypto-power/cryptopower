@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -486,12 +487,8 @@ func (pg *Page) OnNavigatedFrom() {
 	pg.ctxCancel() // causes crash if nil, when the main page is closed if send page is created but never displayed (because sync in progress)
 }
 
-func (pg *Page) addRatesUnits(rates string) string {
-	units := " Sat/kvB"
-	if strings.Contains(rates, units) {
-		return rates
-	}
-	return rates + units
+func (pg *Page) addRatesUnits(rates int64) string {
+	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }
 
 func (pg *Page) editsOrDisplayRatesHandler() {
@@ -503,19 +500,19 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 
 		if pg.editRates.Text == values.String(values.StrSave) {
 			text := pg.ratesEditor.Editor.Text()
-			if err := pg.selectedWallet.SetAPIFeeRate(text); err != nil {
+			ratesInt, err := pg.selectedWallet.SetAPIFeeRate(text)
+			if err != nil {
 				pg.feeEstimationError(err.Error())
 				text = " - "
 			} else {
-				text = pg.addRatesUnits(text)
+				text = pg.addRatesUnits(ratesInt)
 				pg.amount.amountChanged()
-				// saving is complete successfully
-				pg.fetchRates.SetEnabled(true)
 			}
 
 			pg.editOrDisplay = text
 			pg.ratesEditor.Editor.SetText("")
 			pg.editRates.Text = values.String(values.StrEdit)
+			pg.fetchRates.SetEnabled(true)
 			return
 		}
 
@@ -537,12 +534,19 @@ func (pg *Page) feeRateAPIHandler() {
 			return
 		}
 
+		blocksStr := func(b int32) string {
+			val := strconv.Itoa(int(b)) + " block"
+			if b == 1 {
+				return val
+			}
+			return val + "s"
+		}
+
 		radiogroupbtns := new(widget.Enum)
 		items := make([]layout.FlexChild, 0)
 		for index, feerate := range feeRates {
 			key := strconv.Itoa(index)
-			value := fmt.Sprintf("%d Sat/kvB - %d block(s)",
-				feerate.Feerate.ToInt(), feerate.ConfirmedBlocks)
+			value := pg.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
 			radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
 				pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
 			items = append(items, layout.Rigid(radioBtn.Layout))
@@ -564,12 +568,16 @@ func (pg *Page) feeRateAPIHandler() {
 				fields := strings.Fields(radiogroupbtns.Value)
 				index, _ := strconv.Atoi(fields[0])
 				rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-				if err := pg.selectedWallet.SetAPIFeeRate(rate); err != nil {
+				rateInt, err := pg.selectedWallet.SetAPIFeeRate(rate)
+				if err != nil {
 					pg.feeEstimationError(err.Error())
 					return false
 				}
 
-				pg.editOrDisplay = pg.addRatesUnits(rate)
+				pg.editOrDisplay = pg.addRatesUnits(rateInt)
+				blocks := feeRates[index].ConfirmedBlocks
+				timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
+				pg.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
 				im.Dismiss()
 				return true
 			})

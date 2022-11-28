@@ -175,7 +175,7 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	// estimatedSize := feeToSpend.ToBTC() / fallBackFeeRate.ToBTC()
 
 	return &sharedW.TxFeeAndSize{
-		FeeRate:             fmt.Sprintf("%d Sat/kvB", asset.GetUserFeeRate()),
+		FeeRate:             asset.GetUserFeeRate().ToInt(),
 		EstimatedSignedSize: estimatedSize,
 		Fee:                 feeAmount,
 		Change:              change,
