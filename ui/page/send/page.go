@@ -249,10 +249,10 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 func (pg *Page) validate() bool {
 	amountIsValid := pg.amount.amountIsValid()
 	addressIsValid := pg.sendDestination.validate()
+	noErrMsg := pg.amount.amountErrorText == ""
 
-	validForSending := amountIsValid && addressIsValid
-
-	return validForSending
+	// validForSending
+	return amountIsValid && addressIsValid && noErrMsg
 }
 
 func (pg *Page) constructTx() {
