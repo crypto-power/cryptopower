@@ -62,6 +62,7 @@ func (pg *Page) initLayoutWidgets() {
 
 	// Default value for display before fee rate is set.
 	pg.editOrDisplay = " - "
+	pg.priority = "Unknown"
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {

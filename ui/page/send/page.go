@@ -341,7 +341,6 @@ func (pg *Page) feeEstimationError(err string) {
 func (pg *Page) clearEstimates() {
 	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.txFeeUSD = " - "
-	pg.priority = "Unknown"
 	pg.estSignedSize = " - "
 	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "
@@ -518,6 +517,7 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 
 		pg.editOrDisplay = pg.ratesEditor
 		pg.editRates.Text = values.String(values.StrSave)
+		pg.priority = "Unknown" // Only known when fee rate is set from the API.
 	}
 }
 
@@ -550,10 +550,6 @@ func (pg *Page) feeRateAPIHandler() {
 			radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
 				pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
 			items = append(items, layout.Rigid(radioBtn.Layout))
-
-			if index == 0 { // set the first one as the default value.
-				radiogroupbtns.Value = value
-			}
 		}
 
 		info := modal.NewCustomModal(pg.Load).
