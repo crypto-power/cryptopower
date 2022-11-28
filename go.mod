@@ -1,10 +1,10 @@
 module code.cryptopower.dev/group/cryptopower
 
-go 1.17
+go 1.19
 
 require (
-	decred.org/dcrdex v0.4.3
-	decred.org/dcrwallet/v2 v2.0.3-0.20220808190744-3b3e9e04b3c2
+	decred.org/dcrdex v0.5.6
+	decred.org/dcrwallet/v2 v2.0.8
 	gioui.org v0.0.0-20220601100144-a896a467ecae
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -31,7 +31,7 @@ require (
 	github.com/decred/dcrd/txscript/v4 v4.0.0
 	github.com/decred/dcrd/wire v1.5.0
 	github.com/decred/dcrdata/v7 v7.0.0-20211216152310-365c9dc820eb
-	github.com/decred/politeia v1.3.1
+	github.com/decred/politeia v1.4.0
 	github.com/decred/slog v1.2.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
@@ -52,11 +52,11 @@ require (
 )
 
 require (
-	decred.org/dcrwallet v1.7.0
+	decred.org/dcrwallet v1.7.1
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/lightninglabs/neutrino v0.14.2
 )
 
@@ -71,7 +71,7 @@ require (
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/benoitkugler/textlayout v0.1.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2 // indirect
-	github.com/btcsuite/btcd/btcutil/psbt v1.1.4 // indirect
+	github.com/btcsuite/btcd/btcutil/psbt v1.1.5 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -105,11 +105,10 @@ require (
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/trillian v1.3.13 // indirect
-	github.com/google/uuid v1.1.5 // indirect
+	github.com/google/trillian v1.4.1 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
@@ -130,10 +129,8 @@ require (
 	golang.org/x/net v0.0.0-20220822230855-b0a4917ee28c // indirect
 	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
-	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
-	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/ini.v1 v1.55.0 // indirect
+	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
