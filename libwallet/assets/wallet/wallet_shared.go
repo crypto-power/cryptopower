@@ -30,6 +30,10 @@ type Wallet struct {
 	EncryptedSeed         []byte
 	IsRestored            bool
 	HasDiscoveredAccounts bool
+	// if allowAutomaticRescan is true,  when the wallet.birthday is earlier
+	// than the birthday stored in the btcwallet database, the transaction history
+	// will be wiped and a rescan will start.
+	allowAutomaticRescan  bool
 	PrivatePassphraseType int32
 
 	netType      utils.NetworkType
@@ -112,6 +116,7 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	wallet.walletDataDB = walletDb
+	wallet.allowAutomaticRescan = true
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -659,4 +664,10 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		err = nil
 	}
 	return err
+}
+
+func (wallet *Wallet) AllowAutomaticRescan() bool {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.allowAutomaticRescan
 }

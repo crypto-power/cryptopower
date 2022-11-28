@@ -319,7 +319,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
 	err := wallet.SpvSync()
 	if err != nil {
 		// show error dialog
-		log.Info("Error starting sync:", err)
+		log.Debug("Error starting sync:", err)
 	}
 
 }

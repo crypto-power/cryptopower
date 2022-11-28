@@ -254,7 +254,7 @@ func (asset *DCRAsset) TxMatchesFilter2(direction, blockHeight int32, txType, ti
 }
 
 func Confirmations(bestBlock int32, tx sharedW.Transaction) int32 {
-	if tx.BlockHeight == BlockHeightInvalid {
+	if tx.BlockHeight == sharedW.UnminedTxHeight {
 		return 0
 	}
 
