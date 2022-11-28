@@ -464,6 +464,9 @@ func (asset *BTCAsset) startWallet() (err error) {
 
 	oldBday := asset.Internal().BTC.Manager.Birthday()
 
+	// if the birthay of the wallet locally is out of sync with
+	// the birthday reported by the wallet manager. the wallet
+	// needs a rescan to update the data of the local wallet.
 	performRescan := asset.Birthday().Before(oldBday)
 	if performRescan && !asset.AllowAutomaticRescan() {
 		return errors.New("cannot set earlier birthday while there are active deals")
@@ -500,9 +503,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	go func() {
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.listenForTransactions()
-		}
+		asset.listenForTransactions()
 	}()
 
 	return nil
