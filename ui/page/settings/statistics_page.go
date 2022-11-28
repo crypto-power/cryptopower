@@ -105,7 +105,7 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		}
 	}
 
-	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
+	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlockHeight()
 	bestBlockTime := time.Unix(pg.WL.SelectedWallet.Wallet.GetBestBlockTimeStamp(), 0)
 	secondsSinceBestBlock := int64(time.Since(bestBlockTime).Seconds())
 
