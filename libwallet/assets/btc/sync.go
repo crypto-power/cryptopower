@@ -11,7 +11,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
@@ -448,7 +447,7 @@ func (asset *BTCAsset) CancelSync() {
 	}
 
 	// stop the local sync notifications
-	asset.cancelSync()
+	// asset.cancelSync()  //TODO: Update cancel logic
 	log.Info("SPV wallet closed")
 }
 
@@ -499,6 +498,12 @@ func (asset *BTCAsset) startWallet() (err error) {
 
 	log.Infof("Synchronizing BTC wallet (%s) with network...", asset.GetWalletName())
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+
+	go func() {
+		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
+			asset.listenForTransactions()
+		}
+	}()
 
 	return nil
 }
@@ -565,7 +570,6 @@ func (asset *BTCAsset) SpvSync() (err error) {
 		if err != nil {
 			log.Warn("error occured when starting BTC sync: ", err)
 		}
-		asset.listenForTransactions()
 	}()
 
 	return err
