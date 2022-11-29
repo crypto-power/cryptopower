@@ -27,11 +27,11 @@ const (
 
 	// start helps to synchronously execute compare-and-swap operation when
 	// initiating the notifications handler.
-	start int32 = 1
+	start uint32 = 1
 
 	// stop helps to synchronously execute compare-and-swap operation when
 	// terminating the notifications handler.
-	stop int32 = 0
+	stop uint32 = 0
 )
 
 type SyncData struct {
@@ -39,7 +39,7 @@ type SyncData struct {
 
 	startBlock    *wtxmgr.BlockMeta
 	syncStartTime time.Time
-	syncstarted   int32
+	syncstarted   uint32
 
 	syncing       bool
 	synced        bool
@@ -362,7 +362,7 @@ notificationsLoop:
 	// stop the ticker timer.
 	t.Stop()
 	// Signal that handleNotifications can be safely started next time its needed.
-	atomic.StoreInt32(&asset.syncData.syncstarted, stop)
+	atomic.StoreUint32(&asset.syncData.syncstarted, stop)
 }
 
 // prepareChain sets up the chain service and the chain source
@@ -446,6 +446,8 @@ func (asset *BTCAsset) CancelSync() {
 		asset.chainClient.WaitForShutdown()
 	}
 
+	asset.Internal().BTC.WaitForShutdown()
+
 	// stop the local sync notifications
 	// asset.cancelSync()  //TODO: Update cancel logic
 	log.Info("SPV wallet closed")
@@ -493,18 +495,14 @@ func (asset *BTCAsset) startWallet() (err error) {
 		return err
 	}
 
-	go func() {
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.handleNotifications()
-		}
-	}()
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
 
 	log.Infof("Synchronizing BTC wallet (%s) with network...", asset.GetWalletName())
 	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
-	go func() {
-		asset.listenForTransactions()
-	}()
+	go asset.listenForTransactions()
 
 	return nil
 }

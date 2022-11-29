@@ -57,12 +57,10 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		return err
 	}
 
-	go func() {
-		// Attempt to start up the notifications handler.
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.handleNotifications()
-		}
-	}()
+	// Attempt to start up the notifications handler.
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
 
 	return nil
 }
@@ -93,11 +91,13 @@ func (asset *BTCAsset) CancelRescan() {
 // continue to work without error, but methods using the btcWallet will likely
 // return incorrect results or errors.
 func (asset *BTCAsset) RescanAsync() error {
-	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
+	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, stop, start) {
 		log.Error("rescan already in progress")
 		return fmt.Errorf("rescan already in progress")
 	}
-	defer atomic.StoreUint32(&asset.rescanStarting, 0)
+
+	defer atomic.StoreUint32(&asset.rescanStarting, stop)
+
 	log.Info("Stopping wallet and chain client...")
 	asset.Internal().BTC.Stop() // stops Wallet and chainClient (not chainService)
 	asset.Internal().BTC.WaitForShutdown()
