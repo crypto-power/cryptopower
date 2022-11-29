@@ -230,7 +230,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	return &txStatus
 }
 
-// not used anywhere in the code TODO- deprecate
+// TODO- deprecate in favour of components.TimeAgo()
 func durationAgo(timestamp int64) string {
 	hrsPerYr := 8760.0  // There are 8760 hrs in a year.
 	hrsPerMnth := 730.0 // There are 730 hrs in a month.
