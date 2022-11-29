@@ -446,6 +446,8 @@ func (asset *BTCAsset) CancelSync() {
 }
 
 // stopSync initiates the full chain sync stopping protocols.
+// It does not stop the chain service which is intentionally left out since once
+// stopped it can't be restarted easily.
 func (asset *BTCAsset) stopSync() {
 	asset.Internal().BTC.Stop() // Stops the chainclient too.
 	asset.Internal().BTC.WaitForShutdown()
@@ -458,7 +460,8 @@ func (asset *BTCAsset) stopSync() {
 	}
 }
 
-// startSync initiates the full chain sync starting protocols.
+// startSync initiates the full chain sync starting protocols. It attempts to
+// restart the chain service if it hasn't been initialized.
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
 
@@ -496,7 +499,6 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-
 	oldBday := asset.Internal().BTC.Manager.Birthday()
 
 	// if the birthay of the wallet locally is out of sync with
@@ -519,7 +521,10 @@ func (asset *BTCAsset) startWallet() (err error) {
 		asset.ForceRescan()
 	}
 
-	asset.startSync()
+	// Initiate the sync protocol and return an error incase of failure.
+	if err = asset.startSync(); err != nil {
+		return err
+	}
 
 	go asset.listenForTransactions()
 

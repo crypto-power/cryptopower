@@ -98,10 +98,12 @@ func (asset *BTCAsset) RescanAsync() error {
 
 	defer atomic.StoreUint32(&asset.rescanStarting, stop)
 
+	// Stop the sync protocol
 	asset.stopSync()
 
 	asset.ForceRescan()
 
+	// Initiate the sync protocol.
 	return asset.startSync()
 }
 

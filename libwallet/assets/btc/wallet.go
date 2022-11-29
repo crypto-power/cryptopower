@@ -234,8 +234,8 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
-// SafelyCancelSync shutdown all the upstream processes. If not explicity deleting
-// a wallet use asset.CancelSync() instead.
+// SafelyCancelSync shuts down all the upstream processes. If not explicity
+// deleting a wallet use asset.CancelSync() instead.
 func (asset *BTCAsset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
 		asset.CancelSync()
@@ -243,7 +243,7 @@ func (asset *BTCAsset) SafelyCancelSync() {
 		// Neutrino performs explicit chain service start but never explicit
 		// chain service stop thus the need to have it done here when deleting
 		// a wallet.
-		// NB: Once stopped, peer handling cannot be brought back.
+		// NB: Once stopped, peer handling and other listeners can't be brought back.
 		asset.chainClient.CS.Stop()
 	}
 }
