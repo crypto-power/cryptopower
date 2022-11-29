@@ -98,23 +98,11 @@ func (asset *BTCAsset) RescanAsync() error {
 
 	defer atomic.StoreUint32(&asset.rescanStarting, stop)
 
-	log.Info("Stopping wallet and chain client...")
-	asset.Internal().BTC.Stop() // stops Wallet and chainClient (not chainService)
-	asset.Internal().BTC.WaitForShutdown()
-	asset.chainClient.WaitForShutdown()
+	asset.stopSync()
 
 	asset.ForceRescan()
 
-	log.Info("Starting wallet...")
-	asset.Internal().BTC.Start()
-
-	if err := asset.chainClient.Start(); err != nil {
-		return fmt.Errorf("couldn't start Neutrino client: %v", err)
-	}
-
-	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
-	return nil
+	return asset.startSync()
 }
 
 // ForceRescan forces a full rescan with active address discovery on wallet
