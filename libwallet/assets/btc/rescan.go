@@ -57,12 +57,10 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		return err
 	}
 
-	go func() {
-		// Attempt to start up the notifications handler.
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.handleNotifications()
-		}
-	}()
+	// Attempt to start up the notifications handler.
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
 
 	return nil
 }

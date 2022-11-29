@@ -44,6 +44,8 @@ type Wallet struct {
 	// networkCancel function set to safely shutdown sync if in progress
 	// before a task that would be affected by syncing is run i.e. Deleting
 	// a wallet.
+	// NB: Use of this method results to complete network shutdown and restarting
+	// it back is almost impossible.
 	networkCancel func()
 
 	shuttingDown chan bool
@@ -153,6 +155,11 @@ func (wallet *Wallet) Shutdown() {
 		} else {
 			log.Info("tx db closed successfully")
 		}
+	}
+
+	// Explicitly stop all network connectivity activities.
+	if wallet.networkCancel != nil {
+		wallet.networkCancel()
 	}
 }
 
@@ -421,6 +428,7 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 func (wallet *Wallet) DeleteWallet(privPass string) error {
 	// functions to safely cancel sync before proceeding
 	if wallet.networkCancel != nil {
+		// SafelyCancelSync() used to disable all sync activities.
 		wallet.networkCancel()
 	}
 

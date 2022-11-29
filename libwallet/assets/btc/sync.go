@@ -27,11 +27,11 @@ const (
 
 	// start helps to synchronously execute compare-and-swap operation when
 	// initiating the notifications handler.
-	start int32 = 1
+	start uint32 = 1
 
 	// stop helps to synchronously execute compare-and-swap operation when
 	// terminating the notifications handler.
-	stop int32 = 0
+	stop uint32 = 0
 )
 
 type SyncData struct {
@@ -39,7 +39,7 @@ type SyncData struct {
 
 	startBlock    *wtxmgr.BlockMeta
 	syncStartTime time.Time
-	syncstarted   int32
+	syncstarted   uint32
 
 	syncing       bool
 	synced        bool
@@ -362,7 +362,7 @@ notificationsLoop:
 	// stop the ticker timer.
 	t.Stop()
 	// Signal that handleNotifications can be safely started next time its needed.
-	atomic.StoreInt32(&asset.syncData.syncstarted, stop)
+	atomic.StoreUint32(&asset.syncData.syncstarted, stop)
 }
 
 // prepareChain sets up the chain service and the chain source
@@ -440,15 +440,53 @@ func (asset *BTCAsset) CancelSync() {
 	// reset the sync data first.
 	asset.resetSyncProgressData()
 
+	asset.stopSync()
+
+	log.Info("SPV wallet closed")
+}
+
+// stopSync initiates the full chain sync stopping protocols.
+// It does not stop the chain service which is intentionally left out since once
+// stopped it can't be restarted easily.
+func (asset *BTCAsset) stopSync() {
+	asset.Internal().BTC.Stop() // Stops the chainclient too.
+	asset.Internal().BTC.WaitForShutdown()
+
 	if asset.chainClient != nil {
-		log.Info("Stopping neutrino client chain interface")
-		asset.chainClient.Stop()
+		log.Info("Stopping neutrino client service interface")
+
+		asset.chainClient.Stop() // If active, attempt to shut it down.
 		asset.chainClient.WaitForShutdown()
 	}
+}
 
-	// stop the local sync notifications
-	// asset.cancelSync()  //TODO: Update cancel logic
-	log.Info("SPV wallet closed")
+// startSync initiates the full chain sync starting protocols. It attempts to
+// restart the chain service if it hasn't been initialized.
+func (asset *BTCAsset) startSync() error {
+	g, _ := errgroup.WithContext(asset.syncCtx)
+
+	// Initializes goroutine responsible for creating txs preventing double spend.
+	// Initializes goroutine responsible for managing locked/unlocked wallet state.
+	asset.Internal().BTC.Start()
+
+	// Chain client performs explicit chain service start up thus no need
+	// to reinitialize it.
+	g.Go(asset.chainClient.Start)
+
+	if err := g.Wait(); err != nil {
+		asset.CancelSync()
+		log.Errorf("couldn't start Neutrino client: %v", err)
+		return err
+	}
+
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
+
+	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
+	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+
+	return nil
 }
 
 func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
@@ -461,7 +499,6 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-
 	oldBday := asset.Internal().BTC.Manager.Birthday()
 
 	// if the birthay of the wallet locally is out of sync with
@@ -484,27 +521,12 @@ func (asset *BTCAsset) startWallet() (err error) {
 		asset.ForceRescan()
 	}
 
-	g, _ := errgroup.WithContext(asset.syncCtx)
-	g.Go(asset.chainClient.Start)
-
-	if err = g.Wait(); err != nil {
-		asset.CancelSync()
-		log.Errorf("couldn't start Neutrino client: %v", err)
+	// Initiate the sync protocol and return an error incase of failure.
+	if err = asset.startSync(); err != nil {
 		return err
 	}
 
-	go func() {
-		if atomic.CompareAndSwapInt32(&asset.syncData.syncstarted, stop, start) {
-			asset.handleNotifications()
-		}
-	}()
-
-	log.Infof("Synchronizing BTC wallet (%s) with network...", asset.GetWalletName())
-	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
-
-	go func() {
-		asset.listenForTransactions()
-	}()
+	go asset.listenForTransactions()
 
 	return nil
 }
