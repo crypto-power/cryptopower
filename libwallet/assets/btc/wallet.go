@@ -234,8 +234,14 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
+// SafelyCancelSync shutdown all the upstream processes.
 func (asset *BTCAsset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
+		asset.Internal().BTC.Stop()
+
+		if asset.chainClient != nil {
+			asset.chainClient.CS.Stop()
+		}
 		asset.CancelSync()
 	}
 }
