@@ -45,7 +45,7 @@ type Wallet struct {
 	// before a task that would be affected by syncing is run i.e. Deleting
 	// a wallet.
 	// NB: Use of this method results to complete network shutdown and restarting
-	// in it back is almost impossible.
+	// it back is almost impossible.
 	networkCancel func()
 
 	shuttingDown chan bool
