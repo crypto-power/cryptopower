@@ -449,8 +449,11 @@ func (asset *BTCAsset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *BTCAsset) stopSync() {
-	asset.Internal().BTC.Stop() // Stops the chainclient too.
-	asset.Internal().BTC.WaitForShutdown()
+	loadedAsset := asset.Internal().BTC
+	if loadedAsset != nil {
+		loadedAsset.Stop() // Stops the chainclient too.
+		loadedAsset.WaitForShutdown()
+	}
 
 	if asset.chainClient != nil {
 		log.Info("Stopping neutrino client service interface")
