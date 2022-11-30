@@ -11,6 +11,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
@@ -482,6 +483,10 @@ func (asset *BTCAsset) startSync() error {
 		return err
 	}
 
+	if err := asset.chainClient.NotifyReceived([]btcutil.Address{}); err != nil {
+		return err
+	}
+
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
 		go asset.handleNotifications()
 	}
@@ -529,7 +534,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 		return err
 	}
 
-	go asset.listenForTransactions()
+	// go asset.listenForTransactions()
 
 	return nil
 }

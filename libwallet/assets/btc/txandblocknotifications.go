@@ -2,6 +2,7 @@ package btc
 
 import (
 	"encoding/json"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -12,11 +13,16 @@ func (asset *BTCAsset) listenForTransactions() {
 	go func() {
 		log.Infof("Subscribing wallet (%s) for transaction notifications", asset.GetWalletName())
 		n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
+		t := time.NewTicker(syncIntervalGap)
 
 		for {
 			select {
 			case v := <-n.C:
 				if v == nil {
+					return
+				}
+
+				if !asset.IsSynced() {
 					return
 				}
 
@@ -44,13 +50,22 @@ func (asset *BTCAsset) listenForTransactions() {
 				}
 
 				for _, block := range v.AttachedBlocks {
-					blockHeight := block.Height
-					log.Infof("Incoming block with height (%d) and hash (%v)", blockHeight, block.Hash)
+					var isLog bool
+					select {
+					case <-t.C:
+						// Limits excessive logging especially on system start up.
+						log.Infof("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
+						isLog = true
+					default:
+						isLog = false
+					}
 
 					for _, transaction := range block.Transactions {
-						log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
+						if isLog {
+							log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
+						}
 
-						tempTransaction := asset.decodeTransactionWithTxSummary(blockHeight, transaction)
+						tempTransaction := asset.decodeTransactionWithTxSummary(block.Height, transaction)
 
 						_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
 						if err != nil {
