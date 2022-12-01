@@ -41,12 +41,12 @@ type SyncData struct {
 	startBlock    *wtxmgr.BlockMeta
 	syncStartTime time.Time
 	syncstarted   uint32
+	txlistening   uint32
 
 	syncing       bool
 	synced        bool
 	isRescan      bool
 	restartedScan bool
-	syncCanceled  chan struct{}
 
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
@@ -530,13 +530,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 	}
 
 	// Initiate the sync protocol and return an error incase of failure.
-	if err = asset.startSync(); err != nil {
-		return err
-	}
-
-	// go asset.listenForTransactions()
-
-	return nil
+	return asset.startSync()
 }
 
 // waitForSyncCompletion polls if the chain considers if itself as the current
@@ -555,6 +549,11 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 				asset.syncData.synced = true
 				asset.syncData.syncing = false
 				asset.syncData.mu.Unlock()
+
+				// Only run the listener once the chain is synced and ready to listen
+				// for newly mined block. This prevents unnecessary CPU use spikes
+				// on startup when a wallet is syncing from scratch.
+				go asset.listenForTransactions()
 				return
 			}
 		case <-asset.syncCtx.Done():

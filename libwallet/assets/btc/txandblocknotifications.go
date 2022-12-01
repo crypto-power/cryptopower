@@ -2,7 +2,7 @@ package btc
 
 import (
 	"encoding/json"
-	"time"
+	"sync/atomic"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -10,79 +10,75 @@ import (
 )
 
 func (asset *BTCAsset) listenForTransactions() {
-	go func() {
-		log.Infof("Subscribing wallet (%s) for transaction notifications", asset.GetWalletName())
-		n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
-		t := time.NewTicker(syncIntervalGap)
+	if !atomic.CompareAndSwapUint32(&asset.syncData.txlistening, stop, start) {
+		// sync listening in progress already.
+		return
+	}
 
-		for {
-			select {
-			case v := <-n.C:
-				if v == nil {
+	// when done allow listening restart.
+	defer atomic.SwapUint32(&asset.syncData.txlistening, stop)
+
+	log.Infof("Subscribing wallet (%s) for transaction notifications", asset.GetWalletName())
+	n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
+
+	for {
+		select {
+		case v := <-n.C:
+			if v == nil {
+				return
+			}
+
+			// New transactions are only detected if they are mined while the chain
+			// is running. When syncing historical data the attached blocks do not
+			// contain txs. This means thus that until the chain is synced,
+			// tx can't be handled here.
+			if !asset.IsSynced() {
+				continue
+			}
+
+			for _, transaction := range v.UnminedTransactions {
+				log.Infof("Incoming unmined transaction with hash (%v)", transaction.Hash)
+
+				tempTransaction := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
+				overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
+				if err != nil {
+					log.Errorf("[%s] New Tx save err: %v", asset.GetWalletName(), err)
 					return
 				}
 
-				if !asset.IsSynced() {
-					return
-				}
-
-				for _, transaction := range v.UnminedTransactions {
-					log.Infof("Incoming unmined transaction with hash (%v)", transaction.Hash)
-
-					tempTransaction := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
-
-					overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
+				if !overwritten {
+					log.Infof("[%s] New Transaction %s", asset.GetWalletName(), tempTransaction.Hash)
+					result, err := json.Marshal(tempTransaction)
 					if err != nil {
-						log.Errorf("[%s] New Tx save err: %v", asset.GetWalletName(), err)
+						log.Error(err)
+					} else {
+						asset.mempoolTransactionNotification(string(result))
+					}
+				}
+			}
+
+			for _, block := range v.AttachedBlocks {
+				log.Infof("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
+
+				for _, transaction := range block.Transactions {
+					log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
+
+					tempTransaction := asset.decodeTransactionWithTxSummary(block.Height, transaction)
+					_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
+					if err != nil {
+						log.Errorf("[%s] Incoming block replace tx error :%v", asset.GetWalletName(), err)
 						return
 					}
-
-					if !overwritten {
-						log.Infof("[%s] New Transaction %s", asset.GetWalletName(), tempTransaction.Hash)
-
-						result, err := json.Marshal(tempTransaction)
-						if err != nil {
-							log.Error(err)
-						} else {
-							asset.mempoolTransactionNotification(string(result))
-						}
-					}
+					asset.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Height))
 				}
-
-				for _, block := range v.AttachedBlocks {
-					var isLog bool
-					select {
-					case <-t.C:
-						// Limits excessive logging especially on system start up.
-						log.Infof("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
-						isLog = true
-					default:
-						isLog = false
-					}
-
-					for _, transaction := range block.Transactions {
-						if isLog {
-							log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
-						}
-
-						tempTransaction := asset.decodeTransactionWithTxSummary(block.Height, transaction)
-
-						_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
-						if err != nil {
-							log.Errorf("[%s] Incoming block replace tx error :%v", asset.GetWalletName(), err)
-							return
-						}
-						asset.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Height))
-					}
-
-					asset.publishBlockAttached(int32(block.Height))
-				}
-
-			case <-asset.syncData.syncCanceled:
-				n.Done()
+				asset.publishBlockAttached(int32(block.Height))
 			}
+
+		case <-asset.syncCtx.Done():
+			n.Done()
+			return
 		}
-	}()
+	}
 }
 
 // AddTxAndBlockNotificationListener registers a set of functions to be invoked
