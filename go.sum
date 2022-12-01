@@ -78,8 +78,6 @@ decred.org/cspp v0.3.0/go.mod h1:UygjYilC94dER3BEU65Zzyoqy9ngJfWCD2rdJqvUs2A=
 decred.org/cspp/v2 v2.0.0-20211207170141-a6b5f958a91f/go.mod h1:USyJS44Kqxz2wT/VaNsf9iTAONegO/qKXRdLg1nvrWI=
 decred.org/cspp/v2 v2.0.0 h1:b4fZrElRufz30rYnBZ2shhC8AjNVTN4i6TMzDi+hk44=
 decred.org/cspp/v2 v2.0.0/go.mod h1:0shJWKTWY3LxZEWGxtbER1Y45+HVjC0WZtj4bctSzCI=
-decred.org/dcrdex v0.5.6 h1:3tnf2vG+CJ5j4L/3t1Yo3oqh75/CiJCv60w7QRw9erA=
-decred.org/dcrdex v0.5.6/go.mod h1:PJz/P3v/3f1rO0gceRjVBXvEs+NWqrNC91OOuLqY6is=
 decred.org/dcrwallet v1.7.1 h1:6AGyjNgv7PQSRJOGNXYjOoua1SZHQWsBcuMMNfinEJM=
 decred.org/dcrwallet v1.7.1/go.mod h1:hNOGyvH53gWdgFB601/ubGRzCPfPtWnEVAi9Grs90y4=
 decred.org/dcrwallet/v2 v2.0.0-20211207180344-e2bce3d3b877/go.mod h1:nRvFh0CChWgRxXxxCWG2wBpzJnfOhGhdxU7meaMhSfA=
@@ -322,6 +320,7 @@ github.com/decred/dcrd/addrmgr/v2 v2.0.0 h1:ui8zpM+of+peJo19XGnFgwtrEK/boTyZpFzz
 github.com/decred/dcrd/addrmgr/v2 v2.0.0/go.mod h1:5g9jPzBSQotmSnPri4oc1n5VVgWzPLlXwbr6HGoUVrg=
 github.com/decred/dcrd/blockchain v1.0.0/go.mod h1:nNMgOz12wlasmEJDCuSuMWYSnjDdmB4l38GKuQ/Yd+8=
 github.com/decred/dcrd/blockchain v1.0.1/go.mod h1:R/4XnwNOTj5IP8jQIUzrJ8zhr/7EOk09IMODwBamZoI=
+github.com/decred/dcrd/blockchain v1.0.2 h1:+gJFfgv5LK+LcadyoiMln838/aU3rxDd0Smqogd6fkA=
 github.com/decred/dcrd/blockchain v1.0.2/go.mod h1:R/4XnwNOTj5IP8jQIUzrJ8zhr/7EOk09IMODwBamZoI=
 github.com/decred/dcrd/blockchain/stake v1.0.0/go.mod h1:opuzF8UouYyQyRJVF00Rdd7OgWb1WKyy1pyU0QYaxz0=
 github.com/decred/dcrd/blockchain/stake v1.0.1/go.mod h1:hgoGmWMIu2LLApBbcguVpzCEEfX7M2YhuMrQdpohJzc=
@@ -452,7 +451,6 @@ github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0/go.mod h1:1ILDxMKVS/qY71MylpZ
 github.com/decred/dcrd/rpcclient v1.0.1/go.mod h1:tApXK3wwrAQtz7lcXeeqBwuktUZesvrFfvhAdedYqdM=
 github.com/decred/dcrd/rpcclient/v4 v4.0.0/go.mod h1:DNGwfiL5H+K/pk3hVB0z5ypRdiDXMssR+YEqDUEXCQo=
 github.com/decred/dcrd/rpcclient/v7 v7.0.0-20211119190215-20dc378a4341/go.mod h1:fHve6G5hIaq2RklBG8Tsiz8id2S+0U3bvBACcYqZStc=
-github.com/decred/dcrd/rpcclient/v7 v7.0.0 h1:1XuGWpyjOPMscpwSDuumWTnfLl94LbIqg+5X6uCPYeY=
 github.com/decred/dcrd/rpcclient/v7 v7.0.0/go.mod h1:k4UDXFt0iwTRhKzdMGJbz/0wD/1lIKrQ5iYWyY7w8R4=
 github.com/decred/dcrd/txscript v1.0.0/go.mod h1:9byvrOaBSBVVnDG7Cm0JgN8bZytl1oi9Ba245VBeI18=
 github.com/decred/dcrd/txscript v1.0.1/go.mod h1:FqUX07Y+u3cJ1eIGPoyWbJg+Wk1NTllln/TyDpx9KnY=
@@ -1827,8 +1825,6 @@ gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMy
 gopkg.in/gcfg.v1 v1.2.3/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=
 gopkg.in/ini.v1 v1.51.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/ini.v1 v1.62.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
-gopkg.in/ini.v1 v1.66.4 h1:SsAcf+mM7mRZo2nJNGt8mZCjG8ZRaNGMURJw7BsIST4=
-gopkg.in/ini.v1 v1.66.4/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/linkedin/goavro.v1 v1.0.5/go.mod h1:Aw5GdAbizjOEl0kAMHV9iHmA8reZzW/OKuJAl4Hb9F0=
 gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
