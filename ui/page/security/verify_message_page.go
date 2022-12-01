@@ -171,7 +171,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 		var info *modal.InfoModal
 
 		valid, err := pg.WL.SelectedWallet.Wallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
-		if err != nil {
+		if err != nil || !valid {
 			verifyMessageText = values.String(values.StrInvalidAddress)
 			if !valid {
 				verifyMessageText = values.String(values.StrInvalidSignature)

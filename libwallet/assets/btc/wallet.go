@@ -12,7 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -373,8 +373,7 @@ func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte,
 	_ = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
 	_ = wire.WriteVarString(&buf, 0, message)
 	messageHash := chainhash.DoubleHashB(buf.Bytes())
-	sigbytes, err := btcec.SignCompact(btcec.S256(), privKey,
-		messageHash, true)
+	sigbytes, err := ecdsa.SignCompact(privKey, messageHash, true)
 	if err != nil {
 		return nil, err
 	}
@@ -400,8 +399,7 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 	_ = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
 	_ = wire.WriteVarString(&buf, 0, message)
 	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
-	pk, wasCompressed, err := btcec.RecoverCompact(btcec.S256(), sig,
-		expectedMessageHash)
+	pk, wasCompressed, err := ecdsa.RecoverCompact(sig, expectedMessageHash)
 	if err != nil {
 		return false, err
 	}
@@ -418,6 +416,9 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 		return bytes.Equal(btcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:]), nil
 	case *btcutil.AddressPubKey:
 		return string(serializedPubKey) == checkAddr.String(), nil
+	case *btcutil.AddressWitnessPubKeyHash:
+		byteEq := bytes.Compare(btcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:])
+		return byteEq == 0, nil
 	default:
 		return false, errors.New("address type not supported")
 	}

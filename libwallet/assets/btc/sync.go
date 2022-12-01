@@ -565,9 +565,9 @@ func (asset *BTCAsset) ResetChainService() error {
 	asset.SafelyCancelSync()
 	asset.chainClient.CS, asset.chainService = chainService, chainService
 
-	asset.syncInfo.mu.Lock()
-	asset.syncInfo.restartedScan = true
-	asset.syncInfo.mu.Unlock()
+	asset.syncData.mu.Lock()
+	asset.syncData.restartedScan = true
+	asset.syncData.mu.Unlock()
 
 	return asset.SpvSync()
 }

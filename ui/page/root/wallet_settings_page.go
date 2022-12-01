@@ -259,12 +259,6 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 			}),
 			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
-			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-					return pg.sectionDimension(gtx, pg.resetDexData, values.String(values.StrResetDexClient))
-				}
-				return D{}
-			}),
 		)
 	}
 
