@@ -604,9 +604,10 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-	case libutils.DCRWalletAsset:
+	// The encrypted seed exists by default and is cleared after wallet is backed up.
+	// Activate the modal requesting the user to backup their current wallet on
+	// every wallet open request until the encrypted seed is cleared (backup happens).
+	if mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != "" {
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
