@@ -260,9 +260,12 @@ func (asset *DCRAsset) Synced() bool {
 	return asset.synced
 }
 
+// SafelyCancelSync is used to controllably disable network activity.
 func (asset *DCRAsset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
+
+		log.Info("The full network shutdown protocols completed.")
 	}
 }
 

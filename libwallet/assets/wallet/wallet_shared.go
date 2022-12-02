@@ -426,12 +426,6 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 }
 
 func (wallet *Wallet) DeleteWallet(privPass string) error {
-	// functions to safely cancel sync before proceeding
-	if wallet.networkCancel != nil {
-		// SafelyCancelSync() used to disable all sync activities.
-		wallet.networkCancel()
-	}
-
 	err := wallet.deleteWallet(privPass)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -550,25 +544,32 @@ func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 }
 
 func (wallet *Wallet) LockWallet() {
-	// Attempt to safely shutdown network sync before proceeding.
-	wallet.networkCancel()
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
+	if !ok {
+		return
+	}
 
 	if !wallet.IsLocked() {
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
-			wallet.Internal().BTC.Lock()
+			loadedWallet.BTC.Lock()
 		case utils.DCRWalletAsset:
-			wallet.Internal().DCR.Lock()
+			loadedWallet.DCR.Lock()
 		}
 	}
 }
 
 func (wallet *Wallet) IsLocked() bool {
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
+	if !ok {
+		return false
+	}
+
 	switch wallet.Type {
 	case utils.BTCWalletAsset:
-		return wallet.Internal().BTC.Locked()
+		return loadedWallet.BTC.Locked()
 	case utils.DCRWalletAsset:
-		return wallet.Internal().DCR.Locked()
+		return loadedWallet.DCR.Locked()
 	default:
 		return false
 	}
@@ -652,7 +653,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		wallet.LockWallet()
 	}
 
-	wallet.Shutdown()
+	wallet.Shutdown() // Initiates full network shutdown here.
 
 	err := wallet.db.DeleteStruct(wallet)
 	if err != nil {
