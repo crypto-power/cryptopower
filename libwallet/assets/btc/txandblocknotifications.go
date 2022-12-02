@@ -37,7 +37,7 @@ func (asset *BTCAsset) listenForTransactions() {
 			}
 
 			for _, transaction := range v.UnminedTransactions {
-				log.Infof("Incoming unmined transaction with hash (%v)", transaction.Hash)
+				log.Debugf("Incoming unmined transaction with hash (%v)", transaction.Hash)
 
 				tempTransaction := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
 				overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
@@ -58,10 +58,10 @@ func (asset *BTCAsset) listenForTransactions() {
 			}
 
 			for _, block := range v.AttachedBlocks {
-				log.Infof("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
+				log.Debugf("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
 
 				for _, transaction := range block.Transactions {
-					log.Infof("Incoming mined transaction with hash (%v)", transaction.Hash)
+					log.Debugf("Incoming mined transaction with hash (%v)", transaction.Hash)
 
 					tempTransaction := asset.decodeTransactionWithTxSummary(block.Height, transaction)
 					_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)

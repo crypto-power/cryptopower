@@ -354,6 +354,11 @@ notificationsLoop:
 				// once initial scan is complete reset the ticket to track every
 				// new block or transaction detected.
 				t = time.NewTicker(1 * time.Second)
+
+				// Only run the listener once the chain is synced and ready to listen
+				// for newly mined block. This prevents unnecessary CPU use spikes
+				// on startup when a wallet is syncing from scratch.
+				go asset.listenForTransactions()
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
@@ -549,11 +554,6 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 				asset.syncData.synced = true
 				asset.syncData.syncing = false
 				asset.syncData.mu.Unlock()
-
-				// Only run the listener once the chain is synced and ready to listen
-				// for newly mined block. This prevents unnecessary CPU use spikes
-				// on startup when a wallet is syncing from scratch.
-				go asset.listenForTransactions()
 				return
 			}
 		case <-asset.syncCtx.Done():
