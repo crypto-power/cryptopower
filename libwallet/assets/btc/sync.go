@@ -357,7 +357,7 @@ func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, 
 	})
 	if err != nil {
 		log.Error(err)
-		return chainService, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
 	return chainService, nil

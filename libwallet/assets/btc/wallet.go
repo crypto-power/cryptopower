@@ -370,8 +370,15 @@ func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte,
 	}
 
 	var buf bytes.Buffer
-	_ = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
-	_ = wire.WriteVarString(&buf, 0, message)
+	err = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	if err != nil {
+		return nil, err
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return nil, err
+	}
+
 	messageHash := chainhash.DoubleHashB(buf.Bytes())
 	sigbytes, err := ecdsa.SignCompact(privKey, messageHash, true)
 	if err != nil {
@@ -396,8 +403,14 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 	// Validate the signature - this just shows that it was valid at all.
 	// we will compare it with the key next.
 	var buf bytes.Buffer
-	_ = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
-	_ = wire.WriteVarString(&buf, 0, message)
+	err = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	if err != nil {
+		return false, nil
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return false, nil
+	}
 	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
 	pk, wasCompressed, err := ecdsa.RecoverCompact(sig, expectedMessageHash)
 	if err != nil {
