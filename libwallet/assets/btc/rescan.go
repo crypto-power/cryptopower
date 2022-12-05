@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"sort"
 	"sync/atomic"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -117,7 +118,7 @@ func (asset *BTCAsset) RescanAsync() error {
 func (asset *BTCAsset) ForceRescan() {
 	wdb := asset.Internal().BTC.Database()
 
-	// Attempt tp drop the the tx history.
+	// Attempt to drop the the tx history.
 	// asset.dropTxHistory()
 
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
@@ -151,38 +152,40 @@ func (asset *BTCAsset) performRescan() bool {
 	// Address manager should be synced to the previous block, otherwise rescan
 	// maybe triggered. Previous block => (one block behind the current best block)
 	isAddrmngNotSynced := !(syncedTo.Height >= asset.GetBestBlockHeight()-1)
-	fmt.Printf("(%v) Synced To: %v Previous Block: %v \n", asset.GetWalletName(), syncedTo.Height, asset.GetBestBlockHeight()-1)
 
 	walletBirthday := asset.Internal().BTC.Manager.Birthday()
 	isBirthdayMismatch := !asset.GetBirthday().Equal(walletBirthday)
-	fmt.Printf("(%v) Is birthday Match: %v \n", asset.GetWalletName(), asset.GetBirthday().Equal(walletBirthday))
 
 	return isAddrmngNotSynced || isBirthdayMismatch
 }
 
-// updateAssetBirthday updates the appropriate birthday immediately after
-// initial rescan is completed. The appropriate birthday value is comparison
-// between the wallet creation date and its earliest use to send or receive a tx
-// whichever happened first.
+// updateAssetBirthday updates the appropriate birthday and birthday block
+// immediately after initial rescan is completed.
 func (asset *BTCAsset) updateAssetBirthday() {
-	txs, err := asset.Internal().BTC.ListAllTransactions()
+	txs, err := asset.getTransactionsRaw(0, 0, true)
 	if err != nil {
-		log.Debugf(" ListAllTransactions() failed %v", err)
+		log.Debugf("getTransactionsRaw failed %v", err)
+		// try on next startup if updating the birthday block works
+		return
 	}
 
 	// Only update the wallet birthday and birthdayblock from the wallets that
-	// have received tx.
+	// have received tx(s).
 	if len(txs) > 0 {
-		// Since txs returned are ordered from the newest to the oldest, Use the last tx.
-		lastTx := txs[len(txs)-1]
+		// Sort txs from the oldest to the newest then pick the first tx (oldest).
+		sort.Slice(txs, func(i, j int) bool {
+			return txs[i].BlockHeight < txs[j].BlockHeight
+		})
 
-		blockHeight := asset.GetBestBlockHeight()
-		if lastTx.BlockHeight != nil {
-			// tx selected must be is in mempool, use current best height instead.
-			blockHeight = *lastTx.BlockHeight
+		blockHeight := txs[0].BlockHeight
+		if blockHeight == sharedW.UnminedTxHeight {
+			// tx selected must be is in mempool, use current best block height instead.
+			blockHeight = asset.GetBestBlockHeight()
 		}
 
-		// select the block that is 10 blocks down the current. Thi
+		// select the block that is 10 blocks down the current. This is done
+		// to have the rescan start a few blocks before the height where
+		// relevant txs might be discovered.
 		birthdayBlockHeight := blockHeight - 10
 
 		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
@@ -204,13 +207,17 @@ func (asset *BTCAsset) updateAssetBirthday() {
 		}
 
 		currentBirthday := block.Header.Timestamp
-		log.Infof("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
+		log.Debugf("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
 			asset.GetWalletName(), birthdayBlockHeight, previousBirthdayblock)
+
+		if !currentBirthday.IsZero() {
+			return
+		}
 
 		// At the wallet level update the new birthday choosen.
 		asset.SetBirthday(currentBirthday)
 
-		// At the address manager level update the new birthday anf birthday block choosen
+		// At the address manager level update the new birthday and birthday block choosen.
 		err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
 			ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
 			err := asset.Internal().BTC.Manager.SetBirthday(ns, currentBirthday)

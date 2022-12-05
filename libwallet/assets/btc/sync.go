@@ -277,8 +277,8 @@ notificationsLoop:
 				// on startup when a wallet is syncing from scratch.
 				go asset.listenForTransactions()
 
-				// update the birthday and birthday block so that on next startup
-				// recovery if necessary takes lesser time.
+				// update the birthday and birthday block so that on next startup,
+				// the recovery if necessary takes lesser time.
 				go asset.updateAssetBirthday()
 			}
 		case <-asset.syncCtx.Done():
@@ -442,7 +442,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 			return errors.New("cannot set earlier birthday while there are active deals")
 		}
 
-		log.Infof("ForceRescan for wallet (%s)", asset.GetWalletName())
+		log.Infof("Atempting a Forced Rescan for wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
 
