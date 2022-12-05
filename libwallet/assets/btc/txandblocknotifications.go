@@ -25,12 +25,26 @@ notificationsLoop:
 				break notificationsLoop
 			}
 
+			var txToCache = make([]sharedW.Transaction, len(n.UnminedTransactions))
+
 			// handle txs hitting the mempool.
-			for _, txhash := range n.UnminedTransactionHashes {
-				log.Debugf("(%v) Incoming unmined tx with hash (%v)", txhash, asset.GetWalletName())
+			for i, tx := range n.UnminedTransactions {
+				log.Debugf("(%v) Incoming unmined tx with hash (%v)",
+					asset.GetWalletName(), tx.Hash.String())
 
 				// publish mempool tx.
-				asset.mempoolTxNotification(txhash.String())
+				asset.mempoolTxNotification(tx.Hash.String())
+
+				// decodeTxs
+				txToCache[i] = asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, tx)
+			}
+
+			if len(n.UnminedTransactions) > 0 {
+				// Since the tx cache receives a fresh update only when a new
+				// block is detected, update cache with the newly receive mempool tx.
+				asset.txs.mu.Lock()
+				asset.txs.unminedTxs = append(txToCache, asset.txs.unminedTxs...)
+				asset.txs.mu.Unlock()
 			}
 
 			// Handle Historical, Connected blocks and newly mined Txs.
