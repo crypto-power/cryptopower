@@ -9,6 +9,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
 )
@@ -27,12 +28,7 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 		return err
 	}
 
-	block, err := asset.chainService.GetBlock(*hash)
-	if err != nil {
-		return err
-	}
-
-	return asset.rescanBlocks(block.Hash(), nil)
+	return asset.rescanBlocks(hash, nil)
 }
 
 func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
@@ -117,23 +113,136 @@ func (asset *BTCAsset) RescanAsync() error {
 
 // ForceRescan forces a full rescan with active address discovery on wallet
 // restart by dropping the complete transaction history and setting the
-// "synced to" field to nil. See the btcwallet/cmd/dropwtxmgr app for more
-// information.
+// "synced to" field to nil.
 func (asset *BTCAsset) ForceRescan() {
 	wdb := asset.Internal().BTC.Database()
 
-	log.Info("Dropping transaction history to perform full rescan...")
-	err := w.DropTransactionHistory(wdb, false)
-	if err != nil {
-		log.Errorf("Failed to drop wallet transaction history: %v", err)
-		// Continue to attempt restarting the wallet anyway.
-	}
+	// Attempt tp drop the the tx history.
+	// asset.dropTxHistory()
 
-	err = walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
+	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)                  // it'll be fine
 		return asset.Internal().BTC.Manager.SetSyncedTo(ns, nil) // never synced, forcing recovery from birthday
 	})
 	if err != nil {
 		log.Errorf("Failed to reset wallet manager sync height: %v", err)
 	}
+}
+
+// dropTxHistory deletes the txs history. See the btcwallet/cmd/dropwtxmgr app
+// for more information.
+func (asset *BTCAsset) dropTxHistory() error {
+	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
+
+	err := w.DropTransactionHistory(asset.Internal().BTC.Database(), false)
+	if err != nil {
+		log.Errorf("Failed to drop wallet transaction history: %v", err)
+	}
+	return err
+}
+
+// performRescan scans if the current wallet requires a recovery. Starting a rescan
+// leads to the recovery of funds and utxos scanned from the birthday block.
+// If the the address manager is not synced to the last two new blocks detected,
+// Or birthday mismatch exists, a rescan is initiated.
+func (asset *BTCAsset) performRescan() bool {
+	// Last block synced to the address manager.
+	syncedTo := asset.Internal().BTC.Manager.SyncedTo()
+	// Address manager should be synced to the previous block, otherwise rescan
+	// maybe triggered. Previous block => (one block behind the current best block)
+	isAddrmngNotSynced := !(syncedTo.Height >= asset.GetBestBlockHeight()-1)
+	fmt.Printf("(%v) Synced To: %v Previous Block: %v \n", asset.GetWalletName(), syncedTo.Height, asset.GetBestBlockHeight()-1)
+
+	walletBirthday := asset.Internal().BTC.Manager.Birthday()
+	isBirthdayMismatch := !asset.GetBirthday().Equal(walletBirthday)
+	fmt.Printf("(%v) Is birthday Match: %v \n", asset.GetWalletName(), asset.GetBirthday().Equal(walletBirthday))
+
+	return isAddrmngNotSynced || isBirthdayMismatch
+}
+
+// updateAssetBirthday updates the appropriate birthday immediately after
+// initial rescan is completed. The appropriate birthday value is comparison
+// between the wallet creation date and its earliest use to send or receive a tx
+// whichever happened first.
+func (asset *BTCAsset) updateAssetBirthday() {
+	txs, err := asset.Internal().BTC.ListAllTransactions()
+	if err != nil {
+		log.Debugf(" ListAllTransactions() failed %v", err)
+	}
+
+	// Only update the wallet birthday and birthdayblock from the wallets that
+	// have received tx.
+	if len(txs) > 0 {
+		// Since txs returned are ordered from the newest to the oldest, Use the last tx.
+		lastTx := txs[len(txs)-1]
+
+		blockHeight := asset.GetBestBlockHeight()
+		if lastTx.BlockHeight != nil {
+			// tx selected must be is in mempool, use current best height instead.
+			blockHeight = *lastTx.BlockHeight
+		}
+
+		// select the block that is 10 blocks down the current. Thi
+		birthdayBlockHeight := blockHeight - 10
+
+		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
+		if err != nil {
+			log.Errorf("Update birthdayBlock: GetBlockHash failed %v", err)
+			return
+		}
+
+		block, err := asset.chainClient.GetBlock(hash)
+		if err != nil {
+			log.Errorf("Update birthdayBlock: GetBlock failed %v", err)
+			return
+		}
+
+		previousBirthdayblock, _, err := asset.getBirthdayBlock()
+		if err != nil {
+			log.Errorf("Update birthdayBlock: getBirthdayBlock failed %v", err)
+			// continue with new birthday block setting
+		}
+
+		currentBirthday := block.Header.Timestamp
+		log.Infof("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
+			asset.GetWalletName(), birthdayBlockHeight, previousBirthdayblock)
+
+		// At the wallet level update the new birthday choosen.
+		asset.SetBirthday(currentBirthday)
+
+		// At the address manager level update the new birthday anf birthday block choosen
+		err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
+			ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+			err := asset.Internal().BTC.Manager.SetBirthday(ns, currentBirthday)
+			if err != nil {
+				return err
+			}
+
+			birthdayBlock := waddrmgr.BlockStamp{
+				Hash:      *hash,
+				Height:    birthdayBlockHeight,
+				Timestamp: currentBirthday,
+			}
+
+			return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, false)
+		})
+
+		if err != nil {
+			log.Errorf("Updating the birthday block after initial sync failed: %v", err)
+		}
+	}
+}
+
+// getBirthdayBlock returns the currently set birthday block.
+func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
+	var birthdayblock int32
+	var isverified bool
+	err := walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
+		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+		b, ok, err := asset.Internal().BTC.Manager.BirthdayBlock(ns)
+		birthdayblock = b.Height
+		isverified = ok
+		return err
+	})
+	return birthdayblock, isverified, err
 }

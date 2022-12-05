@@ -1,7 +1,6 @@
 package btc
 
 import (
-	"encoding/json"
 	"sync/atomic"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -15,70 +14,49 @@ func (asset *BTCAsset) listenForTransactions() {
 		return
 	}
 
-	// when done allow listening restart.
-	defer atomic.SwapUint32(&asset.syncData.txlistening, stop)
-
 	log.Infof("Subscribing wallet (%s) for transaction notifications", asset.GetWalletName())
-	n := asset.Internal().BTC.NtfnServer.TransactionNotifications()
+	notify := asset.Internal().BTC.NtfnServer.TransactionNotifications()
 
+notificationsLoop:
 	for {
 		select {
-		case v := <-n.C:
-			if v == nil {
-				return
+		case n, ok := <-notify.C:
+			if !ok {
+				break notificationsLoop
 			}
 
-			// New transactions are only detected if they are mined while the chain
-			// is running. When syncing historical data the attached blocks do not
-			// contain txs. This means thus that until the chain is synced,
-			// tx can't be handled here.
-			if !asset.IsSynced() {
-				continue
+			// handle txs hitting the mempool.
+			for _, txhash := range n.UnminedTransactionHashes {
+				log.Debugf("(%v) Incoming unmined tx with hash (%v)", txhash, asset.GetWalletName())
+
+				// publish mempool tx.
+				asset.mempoolTxNotification(txhash.String())
 			}
 
-			for _, transaction := range v.UnminedTransactions {
-				log.Debugf("Incoming unmined transaction with hash (%v)", transaction.Hash)
+			// Handle Historical, Connected blocks and newly mined Txs.
+			for _, b := range n.AttachedBlocks {
+				// When syncing historical data no tx are available.
+				// Txs are reported only when chain is synced and newly mined tx
+				// we discovered in the latest block.
+				for _, tx := range b.Transactions {
+					log.Debugf("(%v) Incoming mined tx with hash=%v block=%v",
+						asset.GetWalletName(), tx.Hash, b.Height)
 
-				tempTransaction := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
-				overwritten, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
-				if err != nil {
-					log.Errorf("[%s] New Tx save err: %v", asset.GetWalletName(), err)
-					return
+					// Publish the confirmed tx notification.
+					asset.publishRelevantTx(tx.Hash.String(), b.Height)
 				}
-
-				if !overwritten {
-					log.Infof("[%s] New Transaction %s", asset.GetWalletName(), tempTransaction.Hash)
-					result, err := json.Marshal(tempTransaction)
-					if err != nil {
-						log.Error(err)
-					} else {
-						asset.mempoolTransactionNotification(string(result))
-					}
-				}
-			}
-
-			for _, block := range v.AttachedBlocks {
-				log.Debugf("Incoming block with height (%d) and hash (%v)", block.Height, block.Hash)
-
-				for _, transaction := range block.Transactions {
-					log.Debugf("Incoming mined transaction with hash (%v)", transaction.Hash)
-
-					tempTransaction := asset.decodeTransactionWithTxSummary(block.Height, transaction)
-					_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, &tempTransaction)
-					if err != nil {
-						log.Errorf("[%s] Incoming block replace tx error :%v", asset.GetWalletName(), err)
-						return
-					}
-					asset.publishTransactionConfirmed(transaction.Hash.String(), int32(block.Height))
-				}
-				asset.publishBlockAttached(int32(block.Height))
 			}
 
 		case <-asset.syncCtx.Done():
-			n.Done()
-			return
+			notify.Done()
+			break notificationsLoop
 		}
 	}
+
+	// Signal that handleNotifications can be safely started next time its needed.
+	atomic.StoreUint32(&asset.syncData.syncstarted, stop)
+	// when done allow timer reset.
+	atomic.SwapUint32(&asset.syncData.txlistening, stop)
 }
 
 // AddTxAndBlockNotificationListener registers a set of functions to be invoked
@@ -91,12 +69,12 @@ func (asset *BTCAsset) listenForTransactions() {
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener,
+	async bool, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
-	_, ok := asset.txAndBlockNotificationListeners[uniqueIdentifier]
-	if ok {
+	if _, ok := asset.txAndBlockNotificationListeners[uniqueIdentifier]; ok {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
@@ -104,10 +82,10 @@ func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.AsyncTxAndBlockNotificationListener{
 			TxAndBlockNotificationListener: txAndBlockNotificationListener,
 		}
-	} else {
-		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
+		return nil
 	}
 
+	asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
 	return nil
 }
 
@@ -118,7 +96,8 @@ func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier str
 	delete(asset.txAndBlockNotificationListeners, uniqueIdentifier)
 }
 
-func (asset *BTCAsset) mempoolTransactionNotification(transaction string) {
+// mempoolTxNotification publishes the txs that hit the mempool for the first time.
+func (asset *BTCAsset) mempoolTxNotification(transaction string) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -127,16 +106,21 @@ func (asset *BTCAsset) mempoolTransactionNotification(transaction string) {
 	}
 }
 
-func (asset *BTCAsset) publishTransactionConfirmed(transactionHash string, blockHeight int32) {
+// publishRelevantTx publishes all the relevant tx identified in a filtered
+// block. A valid list of addresses associated with the current block need to
+// be provided.
+func (asset *BTCAsset) publishRelevantTx(txHash string, blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
 	for _, txAndBlockNotifcationListener := range asset.txAndBlockNotificationListeners {
-		txAndBlockNotifcationListener.OnTransactionConfirmed(asset.ID, transactionHash, blockHeight)
+		txAndBlockNotifcationListener.OnTransactionConfirmed(asset.ID, txHash, blockHeight)
 	}
 }
 
-func (asset *BTCAsset) publishBlockAttached(blockHeight int32) {
+// publishNewBlock once the initial sync is complete all the new blocks recieved
+// are published through this method.
+func (asset *BTCAsset) publishNewBlock(blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 

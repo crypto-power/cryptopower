@@ -266,7 +266,7 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 
 	err = asset.Internal().BTC.Unlock([]byte(privatePassphrase), lock)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("unlocking the wallet failed: %v", err)
 		return errors.New(utils.ErrInvalidPassphrase)
 	}
 

@@ -266,6 +266,31 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
 }
 
+// GetBirthday returns the timestamp when the wallet was created or its keys were
+// first used. This helps to check if a wallet requires auto rescan and recovery
+// on wallet startup.
+func (wallet *Wallet) GetBirthday() time.Time {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.CreatedAt
+}
+
+// SetBirthday allows updating the birthday time to a more precise value that is
+// verified by the network.
+func (wallet *Wallet) SetBirthday(birthday time.Time) {
+	if birthday.IsZero() {
+		log.Error("updated birthday time cannot be zero")
+		return
+	}
+
+	wallet.mu.Lock()
+	wallet.CreatedAt = birthday
+	// Trigger db update with the new birthday time.
+	// TODO: Consider updating this on wallet shutdown...
+	wallet.db.Save(wallet)
+	wallet.mu.Unlock()
+}
+
 func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
