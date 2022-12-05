@@ -98,6 +98,9 @@ func (asset *BTCAsset) RescanAsync() error {
 	asset.Internal().BTC.WaitForShutdown()
 	asset.chainClient.WaitForShutdown()
 
+	// Attempt to drop the the tx history.
+	asset.dropTxHistory()
+
 	asset.ForceRescan()
 
 	log.Info("Starting wallet...")
@@ -117,13 +120,10 @@ func (asset *BTCAsset) RescanAsync() error {
 // "synced to" field to nil.
 func (asset *BTCAsset) ForceRescan() {
 	wdb := asset.Internal().BTC.Database()
-
-	// Attempt to drop the the tx history.
-	// asset.dropTxHistory()
-
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
-		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)                  // it'll be fine
-		return asset.Internal().BTC.Manager.SetSyncedTo(ns, nil) // never synced, forcing recovery from birthday
+		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+		// never synced, forcing recovery from birthday
+		return asset.Internal().BTC.Manager.SetSyncedTo(ns, nil)
 	})
 	if err != nil {
 		log.Errorf("Failed to reset wallet manager sync height: %v", err)
@@ -131,7 +131,10 @@ func (asset *BTCAsset) ForceRescan() {
 }
 
 // dropTxHistory deletes the txs history. See the btcwallet/cmd/dropwtxmgr app
-// for more information.
+// for more information. Because of how often a forces rescan will be triggered,
+// dropping the transaction history in every one of those ocassions won't make
+// much difference. Its recommended that on the manually triggered rescan that
+// is when dropping transaction history can be done.
 func (asset *BTCAsset) dropTxHistory() error {
 	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
 
@@ -165,7 +168,7 @@ func (asset *BTCAsset) updateAssetBirthday() {
 	txs, err := asset.getTransactionsRaw(0, 0, true)
 	if err != nil {
 		log.Debugf("getTransactionsRaw failed %v", err)
-		// try on next startup if updating the birthday block works
+		// try updating birthday block on next startup.
 		return
 	}
 
@@ -203,7 +206,7 @@ func (asset *BTCAsset) updateAssetBirthday() {
 		previousBirthdayblock, _, err := asset.getBirthdayBlock()
 		if err != nil {
 			log.Errorf("Update birthdayBlock: getBirthdayBlock failed %v", err)
-			// continue with new birthday block setting
+			// continue with new birthday block update
 		}
 
 		currentBirthday := block.Header.Timestamp
@@ -244,8 +247,8 @@ func (asset *BTCAsset) updateAssetBirthday() {
 func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
 	var birthdayblock int32
 	var isverified bool
-	err := walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
-		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+	err := walletdb.View(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadTx) error {
+		ns := dbtx.ReadBucket(wAddrMgrBkt)
 		b, ok, err := asset.Internal().BTC.Manager.BirthdayBlock(ns)
 		birthdayblock = b.Height
 		isverified = ok

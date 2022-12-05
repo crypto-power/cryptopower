@@ -404,11 +404,8 @@ func (asset *BTCAsset) startSync() error {
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	// SynchronizeRPC(asset.chainClient): method called does the following:
-	// 		- sets the starttime. starttime guides where to start the rescan
-	// 		  from instead of starting from block 0.
-	//      - Initializes the goroutines to handle chain notifications,
-	// 		  rescan progress and handlers.
+	// SynchronizeRPC(asset.chainClient) initializes the goroutines to handle
+	// chain notifications, rescan progress and handlers.
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	select {
@@ -442,7 +439,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 			return errors.New("cannot set earlier birthday while there are active deals")
 		}
 
-		log.Infof("Atempting a Forced Rescan for wallet (%s)", asset.GetWalletName())
+		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
 

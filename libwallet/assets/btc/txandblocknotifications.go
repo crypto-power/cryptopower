@@ -41,7 +41,7 @@ notificationsLoop:
 
 			if len(n.UnminedTransactions) > 0 {
 				// Since the tx cache receives a fresh update only when a new
-				// block is detected, update cache with the newly receive mempool tx.
+				// block is detected, update cache with the newly received mempool tx(s).
 				asset.txs.mu.Lock()
 				asset.txs.unminedTxs = append(txToCache, asset.txs.unminedTxs...)
 				asset.txs.mu.Unlock()
