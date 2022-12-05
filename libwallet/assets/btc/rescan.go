@@ -32,8 +32,12 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 }
 
 func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
-	if asset.IsRescanning() || !asset.IsSynced() {
-		return errors.E(utils.ErrInvalid)
+	if !asset.IsConnectedToBitcoinNetwork() {
+		return errors.E(utils.ErrNotConnected)
+	}
+
+	if asset.IsRescanning() {
+		return errors.E(utils.ErrSyncAlreadyInProgress)
 	}
 
 	if startHash == nil {
@@ -48,10 +52,12 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	asset.syncData.isRescan = true
 	asset.syncData.mu.Unlock()
 
-	err := asset.chainClient.NotifyReceived(addrs)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err := asset.chainClient.Rescan(startHash, addrs, nil)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 
 	// Attempt to start up the notifications handler.
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {

@@ -556,13 +556,13 @@ func (asset *BTCAsset) SpvSync() (err error) {
 }
 
 func (asset *BTCAsset) ResetChainService() error {
+	asset.chainService.Stop()
 	chainService, err := asset.loadChainService()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	asset.SafelyCancelSync()
 	asset.chainClient.CS, asset.chainService = chainService, chainService
 
 	asset.syncData.mu.Lock()
