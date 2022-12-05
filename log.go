@@ -44,12 +44,14 @@ import (
 
 // logWriter implements an io.Writer that outputs to both standard output and
 // the write-end pipe of an initialized log rotator.
-type logWriter struct{}
+type logWriter struct {
+	loggerID string
+}
 
 // Write writes the data in p to standard out and the log rotator.
 func (l logWriter) Write(p []byte) (n int, err error) {
 	os.Stdout.Write(p)
-	return logRotator.Write(p)
+	return logRotators[l.loggerID].Write(p)
 }
 
 // Loggers per subsystem.  A single backend logger is created and all subsytem
@@ -61,15 +63,17 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 // log file.  This must be performed early during application startup by calling
 // initLogRotator.
 var (
+	// DCRLOGGER, BTCLOGGER indentifies the respective loggers.
+	dcrLogger, btcLogger = "dcr.log", "btc.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
-	backendLog    = slog.NewBackend(logWriter{})
-	btcBackendLog = btclog.NewBackend(logWriter{})
+	backendLog    = slog.NewBackend(logWriter{dcrLogger})
+	btcBackendLog = btclog.NewBackend(logWriter{btcLogger})
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
-	logRotator *rotator.Rotator
+	logRotators map[string]*rotator.Rotator
 
 	log = backendLog.Logger("CRPW")
 
@@ -142,20 +146,27 @@ var subsystemBLoggers = map[string]btclog.Logger{
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
-func initLogRotator(logFile string, maxRolls int) {
-	logDir, _ := filepath.Split(logFile)
+func initLogRotator(logDir string, maxRolls int) {
+	logRotators = map[string]*rotator.Rotator{
+		btcLogger: nil,
+		dcrLogger: nil,
+	}
+
+	//logDir, _ := filepath.Split(logFile)
 	err := os.MkdirAll(logDir, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
 		os.Exit(1)
 	}
-	r, err := rotator.New(logFile, 32*1024, false, maxRolls)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(1)
-	}
 
-	logRotator = r
+	for logFile, _ := range logRotators {
+		r, err := rotator.New(filepath.Join(logDir, logFile), 32*1024, false, maxRolls)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
+			os.Exit(1)
+		}
+		logRotators[logFile] = r
+	}
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid
@@ -195,7 +206,7 @@ func setLogLevels(logLevel string) {
 	for subsystemID := range subsystemBLoggers {
 		setBTCLogLevel(subsystemID, logLevel)
 	}
-	ntrn.SetLevel(btclog.LevelError)
+	ntrn.SetLevel(btclog.LevelError) // Neutrino loglevel will always be error.
 }
 
 func isExistSystem(subsysID string) bool {
