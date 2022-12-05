@@ -397,8 +397,10 @@ func (pg *Page) HandleUserInteractions() {
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
 	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
+	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
+		pg.amount.usdAmountEditor.Editor.Focused()
 
-	if !modalShown {
+	if !modalShown && !isAmountEditorActive {
 		isFeeRateEditFocused := pg.ratesEditor.Editor.Focused()
 		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
 		isInSaveMode := pg.ratesEditor.Editor.Text() == values.String(values.StrSave)
@@ -412,10 +414,6 @@ func (pg *Page) HandleUserInteractions() {
 		// If destination address is invalid and destination editor is in focus.
 		case !pg.sendDestination.validate() && isDestinationEditorFocused:
 			pg.sendDestination.destinationAddressEditor.Editor.Focus()
-
-		// If destination address is valid and destination editor is in focus.
-		case pg.sendDestination.validate() && isDestinationEditorFocused:
-			pg.amount.amountEditor.Editor.Focus()
 
 		// If accounts switch selects the wallet option.
 		case isSendToWallet && !isFeeRateEditFocused && !isDestinationEditorFocused:
