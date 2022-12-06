@@ -34,7 +34,7 @@ const (
 	btcLogFilename = "btc.log"
 
 	// dcrLogFilename defines the dcr log file name
-	dcrLogFilename = "cryptopower.log"
+	dcrLogFilename = "dcr.log"
 )
 
 // RequiredConfirmations specifies the minimum number of confirmations

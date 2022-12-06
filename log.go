@@ -152,7 +152,6 @@ func initLogRotator(logDir string, maxRolls int) {
 		dcrLogger: nil,
 	}
 
-	//logDir, _ := filepath.Split(logFile)
 	err := os.MkdirAll(logDir, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
