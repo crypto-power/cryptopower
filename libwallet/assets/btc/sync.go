@@ -280,6 +280,12 @@ notificationsLoop:
 				// update the birthday and birthday block so that on next startup,
 				// the recovery if necessary takes lesser time.
 				go asset.updateAssetBirthday()
+
+				// Since the initial run on a restored wallet, address discovery
+				// is complete, mark discovered accounts as true.
+				if !asset.HasDiscoveredAccounts && asset.IsRestored {
+					asset.MarkWalletAsDiscoveredAccounts()
+				}
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
@@ -434,7 +440,7 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-	if asset.performRescan() {
+	if asset.isRecoveryRequired() {
 		if !asset.AllowAutomaticRescan() {
 			return errors.New("cannot set earlier birthday while there are active deals")
 		}

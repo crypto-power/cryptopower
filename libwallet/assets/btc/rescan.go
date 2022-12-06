@@ -2,7 +2,6 @@ package btc
 
 import (
 	"fmt"
-	"sort"
 	"sync/atomic"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -98,8 +97,18 @@ func (asset *BTCAsset) RescanAsync() error {
 	asset.Internal().BTC.WaitForShutdown()
 	asset.chainClient.WaitForShutdown()
 
-	// Attempt to drop the the tx history.
-	asset.dropTxHistory()
+	// Attempt to drop the the tx history. See the btcwallet/cmd/dropwtxmgr app
+	// for more information. Because of how often a forces rescan will be triggered,
+	// dropping the transaction history in every one of those ocassions won't make
+	// much difference. Its recommended that on the manually triggered rescan that
+	// is when dropping transaction history can be done.
+	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
+
+	err := w.DropTransactionHistory(asset.Internal().BTC.Database(), false)
+	if err != nil {
+		log.Errorf("Failed to drop wallet transaction history: %v", err)
+		// continue with the rescan despite the error occuring
+	}
 
 	asset.ForceRescan()
 
@@ -116,13 +125,27 @@ func (asset *BTCAsset) RescanAsync() error {
 }
 
 // ForceRescan forces a full rescan with active address discovery on wallet
-// restart by dropping the complete transaction history and setting the
-// "synced to" field to nil.
+// restart by setting the "synced to" field to nil.
 func (asset *BTCAsset) ForceRescan() {
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-		// never synced, forcing recovery from birthday
+
+		if asset.IsRestored && !asset.HasDiscoveredAccounts {
+			// Force restored wallets on initial run to restore from genesis block.
+			block := asset.Internal().BTC.ChainParams().GenesisBlock
+			bs := waddrmgr.BlockStamp{
+				Height:    0,
+				Hash:      block.BlockHash(),
+				Timestamp: block.Header.Timestamp,
+			}
+			err := asset.Internal().BTC.Manager.SetBirthdayBlock(ns, bs, false)
+			if err != nil {
+				log.Errorf("Failed to set birthblock: %v", err)
+			}
+		}
+
+		// never synced, forcing recovery from birthday block.
 		return asset.Internal().BTC.Manager.SetSyncedTo(ns, nil)
 	})
 	if err != nil {
@@ -130,26 +153,11 @@ func (asset *BTCAsset) ForceRescan() {
 	}
 }
 
-// dropTxHistory deletes the txs history. See the btcwallet/cmd/dropwtxmgr app
-// for more information. Because of how often a forces rescan will be triggered,
-// dropping the transaction history in every one of those ocassions won't make
-// much difference. Its recommended that on the manually triggered rescan that
-// is when dropping transaction history can be done.
-func (asset *BTCAsset) dropTxHistory() error {
-	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
-
-	err := w.DropTransactionHistory(asset.Internal().BTC.Database(), false)
-	if err != nil {
-		log.Errorf("Failed to drop wallet transaction history: %v", err)
-	}
-	return err
-}
-
-// performRescan scans if the current wallet requires a recovery. Starting a rescan
-// leads to the recovery of funds and utxos scanned from the birthday block.
+// isRecoveryRequired scans if the current wallet requires a recovery. Starting
+// a rescan leads to the recovery of funds and utxos scanned from the birthday block.
 // If the the address manager is not synced to the last two new blocks detected,
 // Or birthday mismatch exists, a rescan is initiated.
-func (asset *BTCAsset) performRescan() bool {
+func (asset *BTCAsset) isRecoveryRequired() bool {
 	// Last block synced to the address manager.
 	syncedTo := asset.Internal().BTC.Manager.SyncedTo()
 	// Address manager should be synced to the previous block, otherwise rescan
@@ -167,22 +175,18 @@ func (asset *BTCAsset) performRescan() bool {
 func (asset *BTCAsset) updateAssetBirthday() {
 	txs, err := asset.getTransactionsRaw(0, 0, true)
 	if err != nil {
-		log.Debugf("getTransactionsRaw failed %v", err)
+		log.Errorf("getTransactionsRaw failed %v", err)
 		// try updating birthday block on next startup.
 		return
 	}
 
-	// Only update the wallet birthday and birthdayblock from the wallets that
+	// Only update the wallet birthday and birthdayblock for the wallet that
 	// have received tx(s).
 	if len(txs) > 0 {
-		// Sort txs from the oldest to the newest then pick the first tx (oldest).
-		sort.Slice(txs, func(i, j int) bool {
-			return txs[i].BlockHeight < txs[j].BlockHeight
-		})
-
-		blockHeight := txs[0].BlockHeight
+		// txs are sorted from the newest to the oldest then pick the last tx (oldest).
+		blockHeight := txs[len(txs)-1].BlockHeight
 		if blockHeight == sharedW.UnminedTxHeight {
-			// tx selected must be is in mempool, use current best block height instead.
+			// tx selected must be in mempool, use current best block height instead.
 			blockHeight = asset.GetBestBlockHeight()
 		}
 

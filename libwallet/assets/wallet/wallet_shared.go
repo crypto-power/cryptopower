@@ -41,6 +41,11 @@ type Wallet struct {
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
+	// Birthday holds the timestamp of the birthday block from where wallet
+	// restoration begins from. CreatedAt is available for audit purposes
+	// in relation to how long the wallet has been in existence.
+	Birthday time.Time
+
 	// networkCancel function set to safely shutdown sync if in progress
 	// before a task that would be affected by syncing is run i.e. Deleting
 	// a wallet.
@@ -272,7 +277,7 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 func (wallet *Wallet) GetBirthday() time.Time {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
-	return wallet.CreatedAt
+	return wallet.Birthday
 }
 
 // SetBirthday allows updating the birthday time to a more precise value that is
@@ -284,7 +289,7 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 	}
 
 	wallet.mu.Lock()
-	wallet.CreatedAt = birthday
+	wallet.Birthday = birthday
 	// Trigger db update with the new birthday time.
 	// TODO: Consider updating this on wallet shutdown...
 	wallet.db.Save(wallet)
