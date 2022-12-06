@@ -72,5 +72,8 @@ func (sp *SyncProgressListener) OnSyncEndedWithError(err error)     {}
 func (sp *SyncProgressListener) Debug(debugInfo *sharedW.DebugInfo) {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {
-	sp.SyncStatusChan <- signal
+	select {
+	case sp.SyncStatusChan <- signal:
+	default:
+	}
 }

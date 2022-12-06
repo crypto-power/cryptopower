@@ -61,6 +61,9 @@ func (pn *ProposalNotificationListener) OnProposalVoteFinished(proposal interfac
 
 func (pn *ProposalNotificationListener) sendNotification(signal wallet.Proposal) {
 	if signal.Proposal != nil {
-		pn.ProposalNotifChan <- signal
+		select {
+		case pn.ProposalNotifChan <- signal:
+		default:
+		}
 	}
 }

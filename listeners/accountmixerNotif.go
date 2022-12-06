@@ -33,5 +33,8 @@ func (am *AccountMixerNotificationListener) OnAccountMixerEnded(walletID int) {
 }
 
 func (am *AccountMixerNotificationListener) UpdateNotification(signal wallet.AccountMixer) {
-	am.MixerChan <- signal
+	select {
+	case am.MixerChan <- signal:
+	default:
+	}
 }

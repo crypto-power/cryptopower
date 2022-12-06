@@ -43,5 +43,8 @@ func (br *BlocksRescanProgressListener) OnBlocksRescanEnded(walletID int, err er
 }
 
 func (br *BlocksRescanProgressListener) UpdateNotification(signal wallet.RescanUpdate) {
-	br.BlockRescanChan <- signal
+	select {
+	case br.BlockRescanChan <- signal:
+	default:
+	}
 }
