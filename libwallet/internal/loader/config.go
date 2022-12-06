@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"decred.org/dcrwallet/errors"
+	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
 

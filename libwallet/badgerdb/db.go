@@ -194,7 +194,7 @@ func (b *Bucket) NestedReadBucket(key []byte) walletdb.ReadBucket {
 // Errors with code Exist if the bucket already exists, and Invalid if the key
 // is empty or otherwise invalid for the driver.
 //
-//This function is part of the walletdb.Bucket interface implementation.
+// This function is part of the walletdb.Bucket interface implementation.
 func (b *Bucket) CreateBucket(key []byte) (walletdb.ReadWriteBucket, error) {
 	if b.dbTransaction.db.closed {
 		return nil, errors.E(errors.Invalid)
@@ -210,7 +210,7 @@ func (b *Bucket) CreateBucket(key []byte) (walletdb.ReadWriteBucket, error) {
 // given key if it does not already exist.  Errors with code Invalid if the key
 // is empty or otherwise invalid for the driver.
 //
-//This function is part of the walletdb.Bucket interface implementation.
+// This function is part of the walletdb.Bucket interface implementation.
 func (b *Bucket) CreateBucketIfNotExists(key []byte) (walletdb.ReadWriteBucket, error) {
 	if b.dbTransaction.db.closed {
 		return nil, errors.E(errors.Invalid)
@@ -224,7 +224,7 @@ func (b *Bucket) CreateBucketIfNotExists(key []byte) (walletdb.ReadWriteBucket, 
 
 // DeleteNestedBucket removes a nested bucket with the given key.
 //
-//This function is part of the walletdb.Bucket interface implementation.
+// This function is part of the walletdb.Bucket interface implementation.
 func (b *Bucket) DeleteNestedBucket(key []byte) error {
 	if key == nil {
 		return errors.E(errors.Invalid)

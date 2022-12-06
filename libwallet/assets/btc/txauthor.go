@@ -202,7 +202,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-//TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
+// TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
 func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 	if asset.TxAuthoredInfo == nil {
 		return fmt.Errorf("TxAuthoredInfo is nil")

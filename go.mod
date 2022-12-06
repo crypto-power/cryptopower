@@ -3,7 +3,7 @@ module code.cryptopower.dev/group/cryptopower
 go 1.19
 
 require (
-	decred.org/dcrwallet/v2 v2.0.8
+	decred.org/dcrwallet/v2 v2.0.9
 	gioui.org v0.0.0-20220601100144-a896a467ecae
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -51,7 +51,6 @@ require (
 )
 
 require (
-	decred.org/dcrwallet v1.7.1
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
@@ -61,6 +60,11 @@ require (
 
 require (
 	decred.org/cspp/v2 v2.0.0 // indirect
+	decred.org/dcrwallet v1.7.1 // indirect
+	github.com/companyzero/sntrup4591761 v0.0.0-20200131011700-2b0d299dbd22 // indirect
+)
+
+require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
@@ -74,7 +78,6 @@ require (
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/companyzero/sntrup4591761 v0.0.0-20220309191932-9e0f3af2f07a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/decred/base58 v1.0.4 // indirect

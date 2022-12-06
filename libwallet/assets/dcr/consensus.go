@@ -168,7 +168,7 @@ func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash, passphrase string
 		if err != nil {
 			// Ignore NotExist error, just means the ticket is not
 			// registered with a VSP, nothing more to do here.
-			if firstErr == nil && !errors.Is(err, errors.NotExist) {
+			if firstErr == nil && !errors.Is(errors.NotExist, err) {
 				firstErr = err
 			}
 			continue // try next tHash

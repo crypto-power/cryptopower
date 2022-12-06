@@ -252,7 +252,7 @@ func (c *Client) feePayment(ticketHash *chainhash.Hash, policy Policy, paidConfi
 	// Try to access the voting key, ignore error unless the wallet is
 	// locked.
 	fp.votingKey, err = w.DumpWIFPrivateKey(ctx, fp.votingAddr)
-	if err != nil && !errors.Is(err, errors.Locked) {
+	if err != nil && !errors.Is(errors.Locked, err) {
 		log.Errorf("no voting key for ticket %v: %v", ticketHash, err)
 		return nil
 	}
