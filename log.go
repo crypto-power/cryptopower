@@ -63,31 +63,31 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 // log file.  This must be performed early during application startup by calling
 // initLogRotator.
 var (
-	// DCRLOGGER, BTCLOGGER indentifies the respective loggers.
-	dcrLogger, btcLogger = "dcr.log", "btc.log"
+	// dcrLogger, btcLogger, mainLogger indentifies the respective loggers.
+	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", "cryptopower.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
-	backendLog    = slog.NewBackend(logWriter{dcrLogger})
+	dcrBackendLog = slog.NewBackend(logWriter{dcrLogger})
 	btcBackendLog = btclog.NewBackend(logWriter{btcLogger})
+	backendLog    = slog.NewBackend(logWriter{mainLogger})
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
 	logRotators map[string]*rotator.Rotator
 
-	log = backendLog.Logger("CRPW")
-
+	log          = backendLog.Logger("CRPW")
 	walletLog    = backendLog.Logger("WALL")
 	winLog       = backendLog.Logger("UI")
 	dlwlLog      = backendLog.Logger("DLWL")
-	dcrLog       = backendLog.Logger("DCR")
 	lstnersLog   = backendLog.Logger("LSTN")
 	extLog       = backendLog.Logger("EXT")
 	amgrLog      = backendLog.Logger("AMGR")
 	cmgrLog      = backendLog.Logger("CMGR")
-	syncLog      = backendLog.Logger("SYNC")
-	tkbyLog      = backendLog.Logger("TKBY")
-	dcrWalletLog = backendLog.Logger("WLLT")
+	dcrLog       = dcrBackendLog.Logger("DCR")
+	syncLog      = dcrBackendLog.Logger("SYNC")
+	tkbyLog      = dcrBackendLog.Logger("TKBY")
+	dcrWalletLog = dcrBackendLog.Logger("WLLT")
 	ntrn         = btcBackendLog.Logger("NTRN")
 	btcLog       = btcBackendLog.Logger("BTC")
 )
@@ -148,8 +148,9 @@ var subsystemBLoggers = map[string]btclog.Logger{
 // package-global log rotater variables are used.
 func initLogRotator(logDir string, maxRolls int) {
 	logRotators = map[string]*rotator.Rotator{
-		btcLogger: nil,
-		dcrLogger: nil,
+		btcLogger:  nil,
+		dcrLogger:  nil,
+		mainLogger: nil,
 	}
 
 	err := os.MkdirAll(logDir, 0700)
