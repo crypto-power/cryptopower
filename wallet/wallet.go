@@ -6,15 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 )
 
 const (
-	syncID    = "cryptopower"
-	DevBuild  = "dev"
-	ProdBuild = "prod"
+	syncID      = "cryptopower"
+	DevBuild    = "dev"
+	ProdBuild   = "prod"
+	logFilename = "cryptopower.log"
 )
 
 // Wallet represents the wallet back end of the app
@@ -23,13 +25,13 @@ type Wallet struct {
 	Root, Net   string
 	buildDate   time.Time
 	version     string
-	logFile     string
+	logDir      string
 	startUpTime time.Time
 }
 
 // NewWallet initializies an new Wallet instance.
 // The Wallet is not loaded until LoadWallets is called.
-func NewWallet(root, net, version, logFile string, buildDate time.Time) (*Wallet, error) {
+func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wallet, error) {
 	if root == "" || net == "" { // This should really be handled by libwallet
 		return nil, fmt.Errorf(`root directory or network cannot be ""`)
 	}
@@ -39,7 +41,7 @@ func NewWallet(root, net, version, logFile string, buildDate time.Time) (*Wallet
 		Net:         net,
 		buildDate:   buildDate,
 		version:     version,
-		logFile:     logFile,
+		logDir:      logFolder,
 		startUpTime: time.Now(),
 	}
 
@@ -55,7 +57,7 @@ func (wal *Wallet) Version() string {
 }
 
 func (wal *Wallet) LogFile() string {
-	return wal.logFile
+	return filepath.Join(wal.logDir, logFilename)
 }
 
 func (wal *Wallet) StartupTime() time.Time {
@@ -67,7 +69,7 @@ func (wal *Wallet) InitMultiWallet() error {
 	if wal.Net == string(libwallet.Testnet3) {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", wal.Net, politeiaHost)
+	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", wal.Net, politeiaHost, wal.logDir)
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 	}
 }
 
-//GetUSDExchangeValues gets the exchange rate of DCR - USDT from a specified endpoint
+// GetUSDExchangeValues gets the exchange rate of DCR - USDT from a specified endpoint
 func (wal *Wallet) GetUSDExchangeValues(target interface{}) error {
 	url := "https://api.bittrex.com/v3/markets/DCR-USDT/ticker"
 	resp, err := http.Get(url)

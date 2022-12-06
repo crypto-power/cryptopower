@@ -5,7 +5,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"path/filepath"
 	"time"
 
 	"gioui.org/app"
@@ -57,8 +56,7 @@ func main() {
 		net = cfg.Network
 	}
 
-	logFile := filepath.Join(cfg.LogDir, defaultLogFilename)
-	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logFile, buildDate)
+	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, cfg.LogDir, buildDate)
 	if err != nil {
 		log.Error(err)
 		return

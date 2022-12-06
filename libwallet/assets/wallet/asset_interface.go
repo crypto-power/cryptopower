@@ -49,6 +49,7 @@ type Asset interface {
 	TargetTimePerBlockMinutes() float64
 	RequiredConfirmations() int32
 	ShutdownContextWithCancel() (context.Context, context.CancelFunc)
+	LogFile() string
 
 	PublishUnminedTransactions() error
 	CountTransactions(txFilter int32) (int, error)

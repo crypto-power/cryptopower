@@ -26,6 +26,7 @@ type Wallet struct {
 	dbDriver  string
 	rootDir   string
 	db        *storm.DB
+	logDir    string
 
 	EncryptedSeed         []byte
 	IsRestored            bool
@@ -70,6 +71,7 @@ func (wallet *Wallet) Prepare(loader loader.AssetLoader, params *InitParams) (er
 	wallet.loader = loader
 	wallet.netType = params.NetType
 	wallet.rootDir = params.RootDir
+	wallet.logDir = params.LogDir
 	return wallet.prepare()
 }
 
@@ -709,4 +711,16 @@ func (wallet *Wallet) AllowAutomaticRescan() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	return wallet.allowAutomaticRescan
+}
+
+func (wallet *Wallet) LogFile() string {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	switch wallet.Type {
+	case utils.BTCWalletAsset:
+		return filepath.Join(wallet.logDir, btcLogFilename)
+	case utils.DCRWalletAsset:
+		return filepath.Join(wallet.logDir, dcrLogFilename)
+	}
+	return ""
 }

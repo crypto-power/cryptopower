@@ -40,6 +40,7 @@ type InitParams struct {
 	NetType  utils.NetworkType
 	DB       *storm.DB
 	DbDriver string
+	LogDir   string
 }
 
 // WalletAuthInfo defines the complete information required to either create a

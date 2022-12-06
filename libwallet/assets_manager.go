@@ -46,7 +46,7 @@ type AssetsManager struct {
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
-func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType) (*AssetsManager, error) {
+func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -63,6 +63,7 @@ func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType)
 		DbDriver: dbDriver,
 		RootDir:  rootDir,
 		NetType:  netType,
+		LogDir:   logDir,
 	}
 
 	mgr := &AssetsManager{
@@ -81,7 +82,7 @@ func initializeAssetsFields(rootDir, dbDriver string, netType utils.NetworkType)
 	return mgr, nil
 }
 
-func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, dbDriver, net, politeiaHost, logDir string) (*AssetsManager, error) {
 	errors.Separator = ":: "
 
 	netType := utils.NetworkType(net)
@@ -93,7 +94,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost string) (*AssetsManag
 	}
 
 	// validate the network type before proceeding to initialize the othe fields.
-	mgr, err := initializeAssetsFields(rootDir, dbDriver, netType)
+	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType)
 	if err != nil {
 		return nil, err
 	}
