@@ -45,13 +45,16 @@ type BTCAsset struct {
 	// been introduced.
 	fees feeEstimateCache
 
+	// TODO: Duplicate mutex variable, delete this or notificationListenersMu
 	mu sync.RWMutex
 
 	// rescanStarting is set while reloading the wallet and dropping
 	// transactions from the wallet db.
 	rescanStarting uint32 // atomic
 
-	notificationListenersMu         sync.RWMutex
+	// TODO: Duplicate mutex variable, delete this or mu
+	notificationListenersMu sync.RWMutex
+
 	syncData                        *SyncData
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
