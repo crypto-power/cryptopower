@@ -26,12 +26,9 @@ var _ sharedW.Asset = (*BTCAsset)(nil)
 type BTCAsset struct {
 	*sharedW.Wallet
 
-	chainService neutrinoService
-	chainClient  *chain.NeutrinoClient
-
+	chainClient    *chain.NeutrinoClient
+	chainParams    *chaincfg.Params
 	TxAuthoredInfo *TxAuthor
-
-	chainParams *chaincfg.Params
 
 	cancelSync context.CancelFunc
 	syncCtx    context.Context

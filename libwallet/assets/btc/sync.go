@@ -1,21 +1,16 @@
 package btc
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
-	"github.com/btcsuite/btcwallet/waddrmgr"
-	"github.com/btcsuite/btcwallet/walletdb"
-	"github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/lightninglabs/neutrino"
 	"golang.org/x/sync/errgroup"
 )
@@ -37,15 +32,15 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	startBlock    *wtxmgr.BlockMeta
+	startHeight   *int32
 	syncStartTime time.Time
 	syncstarted   uint32
+	txlistening   uint32
 
 	syncing       bool
 	synced        bool
 	isRescan      bool
 	restartedScan bool
-	syncCanceled  chan struct{}
 
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
@@ -144,40 +139,38 @@ func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
 	return
 }
 
-func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
+func (asset *BTCAsset) updateSyncProgress(rawBlockHeight int32) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
-
-	asset.setSyncedTo(rawBlock)
 
 	// Best block synced in the connected peers
 	bestBlockheight := asset.bestServerPeerBlockHeight()
 
 	// initial set up when sync begins.
-	if asset.syncData.startBlock == nil {
+	if asset.syncData.startHeight == nil {
 		asset.syncData.syncStage = utils.HeadersFetchSyncStage
 		asset.syncData.syncStartTime = time.Now()
-		asset.syncData.startBlock = rawBlock
+		asset.syncData.startHeight = &rawBlockHeight
 
-		if bestBlockheight != rawBlock.Height {
+		if bestBlockheight != rawBlockHeight {
 			// A rescan progress update must have been sent. Allow it
 			return
 		}
 	}
 
-	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlock.Height, bestBlockheight)
+	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, bestBlockheight)
 
 	timeSpentSoFar := time.Since(asset.syncData.syncStartTime).Seconds()
 	if timeSpentSoFar < 1 {
 		timeSpentSoFar = 1
 	}
 
-	headersFetchedSoFar := float64(rawBlock.Height - asset.syncData.startBlock.Height)
+	headersFetchedSoFar := float64(rawBlockHeight - *asset.syncData.startHeight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
-	remainingHeaders := float64(bestBlockheight - rawBlock.Height)
+	remainingHeaders := float64(bestBlockheight - rawBlockHeight)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
@@ -195,24 +188,6 @@ func (asset *BTCAsset) updateSyncProgress(rawBlock *wtxmgr.BlockMeta) {
 	}
 }
 
-// setSyncedTo marks the wallet manager to be in sync with the recently-seen
-// block as reported by the rawBlock parameter.
-func (asset *BTCAsset) setSyncedTo(rawBlock *wtxmgr.BlockMeta) {
-	wdb := asset.Internal().BTC.Database()
-	bs := waddrmgr.BlockStamp{
-		Height:    rawBlock.Height,
-		Hash:      rawBlock.Hash,
-		Timestamp: rawBlock.Time,
-	}
-	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
-		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-		return asset.Internal().BTC.Manager.SetSyncedTo(ns, &bs)
-	})
-	if err != nil {
-		log.Error(err)
-	}
-}
-
 func (asset *BTCAsset) publishHeadersFetchComplete() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
@@ -223,49 +198,6 @@ func (asset *BTCAsset) publishHeadersFetchComplete() {
 
 	asset.syncData.synced = true
 	asset.syncData.syncing = false
-}
-
-// publishRelevantTxs publishes all the relevant tx identified in a filtered
-// block. A valid list of addresses associated with the current block need to
-// be provided.
-func (asset *BTCAsset) publishRelevantTxs(txs []*wtxmgr.TxRecord) {
-	if txs == nil {
-		return
-	}
-
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	for _, tx := range txs {
-		//TODO: Properly decode a btc TxRecord into the sharedW.Transaction
-		// Issue referenced here: https://code.cryptopower.dev/group/cryptopower/-/issues/1160
-		tempTransaction := sharedW.Transaction{
-			WalletID:  asset.GetWalletID(),
-			Hash:      tx.Hash.String(),
-			Type:      txhelper.TxTypeRegular,
-			Direction: txhelper.TxDirectionReceived,
-		}
-		for _, listener := range asset.txAndBlockNotificationListeners {
-			result, err := json.Marshal(tempTransaction)
-			if err != nil {
-				log.Error(err)
-			}
-			listener.OnTransaction(string(result))
-		}
-	}
-}
-
-// publishNewBlock once the initial sync is complete all the new blocks recieved
-// are published through this method.
-func (asset *BTCAsset) publishNewBlock(rawBlock *wtxmgr.BlockMeta) {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	asset.setSyncedTo(rawBlock)
-
-	for _, listener := range asset.txAndBlockNotificationListeners {
-		listener.OnBlockAttached(asset.ID, rawBlock.Height)
-	}
 }
 
 func (asset *BTCAsset) handleNotifications() {
@@ -291,13 +223,12 @@ notificationsLoop:
 
 				select {
 				case <-t.C:
-					b := wtxmgr.BlockMeta(n)
 					if !asset.IsSynced() {
 						// initial sync is inprogress.
-						asset.updateSyncProgress(&b)
+						asset.updateSyncProgress(n.Block.Height)
 					} else {
 						// initial sync is complete
-						asset.publishNewBlock(&b)
+						asset.publishBlockAttached(n.Block.Height)
 					}
 				default:
 				}
@@ -305,54 +236,56 @@ notificationsLoop:
 			case chain.BlockDisconnected:
 				select {
 				case <-t.C:
-					b := wtxmgr.BlockMeta(n)
 					if !asset.IsSynced() {
 						// initial sync is inprogress.
-						asset.updateSyncProgress(&b)
+						asset.updateSyncProgress(n.Height)
 					} else {
 						// initial sync is complete
-						asset.publishNewBlock(&b)
+						asset.publishBlockAttached(n.Height)
 					}
 				default:
 				}
+
 			case chain.FilteredBlockConnected:
 				// if relevants txs were detected. Atempt to send them first
-				asset.publishRelevantTxs(n.RelevantTxs)
+				for _, tx := range n.RelevantTxs {
+					asset.publishTransactionConfirmed(tx.Hash.String(), n.Block.Height)
+				}
 
 				// Update the progress at the interval of syncIntervalGap.
 				select {
 				case <-t.C:
-					asset.updateSyncProgress(n.Block)
+					asset.updateSyncProgress(n.Block.Height)
 				default:
 				}
+
 			case *chain.RescanProgress:
-				select {
-				case <-t.C:
-					b := wtxmgr.BlockMeta{
-						Block: wtxmgr.Block{
-							Hash:   *n.Hash,
-							Height: n.Height,
-						},
-						Time: n.Time,
-					}
-					asset.updateSyncProgress(&b)
-				default:
-				}
+				// Notifications sent at interval of 10k blocks
+				asset.updateSyncProgress(n.Height)
+
 			case *chain.RescanFinished:
 				// Notification type is sent when the rescan is completed.
-				b := wtxmgr.BlockMeta{
-					Block: wtxmgr.Block{
-						Hash:   *n.Hash,
-						Height: n.Height,
-					},
-					Time: n.Time,
-				}
-				asset.updateSyncProgress(&b)
+				asset.updateSyncProgress(n.Height)
 				asset.publishHeadersFetchComplete()
 
 				// once initial scan is complete reset the ticket to track every
 				// new block or transaction detected.
 				t = time.NewTicker(1 * time.Second)
+
+				// Only run the listener once the chain is synced and ready to listen
+				// for newly mined block. This prevents unnecessary CPU use spikes
+				// on startup when a wallet is syncing from scratch.
+				go asset.listenForTransactions()
+
+				// update the birthday and birthday block so that on next startup,
+				// the recovery if necessary takes lesser time.
+				go asset.updateAssetBirthday()
+
+				// Since the initial run on a restored wallet, address discovery
+				// is complete, mark discovered accounts as true.
+				if !asset.HasDiscoveredAccounts && asset.IsRestored {
+					asset.MarkWalletAsDiscoveredAccounts()
+				}
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
@@ -414,21 +347,9 @@ func (asset *BTCAsset) prepareChain() error {
 		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
-	asset.chainService = chainService
 	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
 	return nil
-}
-
-func (asset *BTCAsset) Birthday() time.Time {
-	return asset.Wallet.CreatedAt
-}
-
-func (asset *BTCAsset) updateDBBirthday(bday time.Time) error {
-	return walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
-		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-		return asset.Internal().BTC.Manager.SetBirthday(ns, bday)
-	})
 }
 
 func (asset *BTCAsset) CancelSync() {
@@ -473,7 +394,7 @@ func (asset *BTCAsset) startSync() error {
 	asset.Internal().BTC.Start()
 
 	// Chain client performs explicit chain service start up thus no need
-	// to reinitialize it.
+	// to re-initialize it.
 	g.Go(asset.chainClient.Start)
 
 	if err := g.Wait(); err != nil {
@@ -482,12 +403,30 @@ func (asset *BTCAsset) startSync() error {
 		return err
 	}
 
-	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
-		go asset.handleNotifications()
+	// Subscribe to chainclient notifications.
+	if err := asset.chainClient.NotifyBlocks(); err != nil {
+		log.Errorf("subscribing to notifications failed: %v", err)
+		return err
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	go asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+	// Initializes the goroutines handling chain notifications, rescan progress and handlers.
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+
+	select {
+	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()
+	// can startup successfully. To be specific, btcwallet's handleChainNotifications()
+	// should have completed setting up by the time asset.handleNotifications() starts up.
+	// This 5 seconds delay is arbitrary chosen, and if found inadequate in future,
+	// it could be increased.
+	case <-time.After(time.Second * 5):
+	case <-asset.syncCtx.Done():
+	}
+
+	// Listen and handle incoming notification events.
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
 
 	return nil
 }
@@ -502,36 +441,17 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-	oldBday := asset.Internal().BTC.Manager.Birthday()
-
-	// if the birthay of the wallet locally is out of sync with
-	// the birthday reported by the wallet manager. the wallet
-	// needs a rescan to update the data of the local wallet.
-	performRescan := asset.Birthday().Before(oldBday)
-	if performRescan && !asset.AllowAutomaticRescan() {
-		return errors.New("cannot set earlier birthday while there are active deals")
-	}
-
-	if !oldBday.Equal(asset.Birthday()) {
-		if err := asset.updateDBBirthday(asset.Birthday()); err != nil {
-			log.Errorf("Failed to reset wallet manager birthday: %v", err)
-			performRescan = false
+	if asset.isRecoveryRequired() {
+		if !asset.AllowAutomaticRescan() {
+			return errors.New("cannot set earlier birthday while there are active deals")
 		}
-	}
 
-	if performRescan {
-		log.Infof("ForceRescan for wallet (%s)", asset.GetWalletName())
+		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
 
 	// Initiate the sync protocol and return an error incase of failure.
-	if err = asset.startSync(); err != nil {
-		return err
-	}
-
-	go asset.listenForTransactions()
-
-	return nil
+	return asset.startSync()
 }
 
 // waitForSyncCompletion polls if the chain considers if itself as the current

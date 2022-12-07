@@ -131,7 +131,8 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 	txCacheHeight := asset.txs.blockHeight
 	asset.txs.mu.RUnlock()
 
-	if txCacheHeight == asset.GetBestBlockHeight() {
+	// if empty results were previously cached, check for updates.
+	if txCacheHeight == asset.GetBestBlockHeight() && len(allTxs) > 0 {
 		// if the best block hasn't changed return the preset list of txs.
 		return allTxs, nil
 	}
