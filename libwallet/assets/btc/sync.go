@@ -559,11 +559,6 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 }
 
 func (asset *BTCAsset) SpvSync() (err error) {
-	if !asset.IsSynced() {
-		// instead of waiting until the next block's notification comes run this.
-		go asset.waitForSyncCompletion()
-	}
-
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
@@ -577,6 +572,10 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	asset.syncCtx = ctx
 	asset.cancelSync = cancel
 	asset.mu.Unlock()
+
+	// Set wallet synced state to true when chainclient considers itself
+	// as synced with the network.
+	go asset.waitForSyncCompletion()
 
 	var restartSyncRequested bool
 
