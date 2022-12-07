@@ -441,7 +441,11 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-	if asset.isRecoveryRequired() && asset.AllowAutomaticRescan() {
+	if asset.isRecoveryRequired() {
+		if !asset.AllowAutomaticRescan() {
+			return errors.New("cannot set earlier birthday while there are active deals")
+		}
+
 		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}
