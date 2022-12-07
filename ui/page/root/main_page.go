@@ -297,10 +297,10 @@ func (mp *MainPage) OnNavigatedTo() {
 		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
 	}
 
+	mp.listenForNotifications() // start sync notifications listening.
+
 	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 	case libutils.DCRWalletAsset:
-		mp.listenForNotifications() // sync Notifications for BTC not supported for now.
-
 		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
 			if mp.WL.MultiWallet.Politeia.IsSyncing() {
 				return

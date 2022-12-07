@@ -65,6 +65,8 @@ notificationsLoop:
 					// Publish the confirmed tx notification.
 					asset.publishTransactionConfirmed(tx.Hash.String(), block.Height)
 				}
+
+				asset.publishBlockAttached(int32(block.Height))
 			}
 
 		case <-asset.syncCtx.Done():

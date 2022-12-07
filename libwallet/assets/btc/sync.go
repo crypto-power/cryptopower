@@ -415,8 +415,10 @@ func (asset *BTCAsset) startSync() error {
 
 	select {
 	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()
-	// can setup successfully. To be specific, btcwallet's handleChainNotifications()
-	// should have completed setting up by the time asset.handleNotifications() startups.
+	// can startup successfully. To be specific, btcwallet's handleChainNotifications()
+	// should have completed setting up by the time asset.handleNotifications() starts up.
+	// This 5 seconds delay is arbitrary chosen, and if found inadequate in future,
+	// it could be increased.
 	case <-time.After(time.Second * 5):
 	case <-asset.syncCtx.Done():
 	}
