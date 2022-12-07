@@ -228,7 +228,7 @@ notificationsLoop:
 						asset.updateSyncProgress(n.Block.Height)
 					} else {
 						// initial sync is complete
-						asset.publishNewBlock(n.Block.Height)
+						asset.publishBlockAttached(n.Block.Height)
 					}
 				default:
 				}
@@ -241,7 +241,7 @@ notificationsLoop:
 						asset.updateSyncProgress(n.Height)
 					} else {
 						// initial sync is complete
-						asset.publishNewBlock(n.Height)
+						asset.publishBlockAttached(n.Height)
 					}
 				default:
 				}
@@ -249,7 +249,7 @@ notificationsLoop:
 			case chain.FilteredBlockConnected:
 				// if relevants txs were detected. Atempt to send them first
 				for _, tx := range n.RelevantTxs {
-					asset.publishRelevantTx(tx.Hash.String(), n.Block.Height)
+					asset.publishTransactionConfirmed(tx.Hash.String(), n.Block.Height)
 				}
 
 				// Update the progress at the interval of syncIntervalGap.
@@ -410,8 +410,7 @@ func (asset *BTCAsset) startSync() error {
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	// SynchronizeRPC(asset.chainClient) initializes the goroutines to handle
-	// chain notifications, rescan progress and handlers.
+	// Initializes the goroutines handling chain notifications, rescan progress and handlers.
 	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	select {
@@ -440,11 +439,7 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *BTCAsset) startWallet() (err error) {
-	if asset.isRecoveryRequired() {
-		if !asset.AllowAutomaticRescan() {
-			return errors.New("cannot set earlier birthday while there are active deals")
-		}
-
+	if asset.isRecoveryRequired() && asset.AllowAutomaticRescan() {
 		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
 		asset.ForceRescan()
 	}

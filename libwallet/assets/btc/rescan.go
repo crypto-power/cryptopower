@@ -131,7 +131,7 @@ func (asset *BTCAsset) ForceRescan() {
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
 
-		if asset.IsRestored && !asset.HasDiscoveredAccounts {
+		if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 			// Force restored wallets on initial run to restore from genesis block.
 			block := asset.Internal().BTC.ChainParams().GenesisBlock
 			bs := waddrmgr.BlockStamp{
@@ -173,15 +173,17 @@ func (asset *BTCAsset) isRecoveryRequired() bool {
 // updateAssetBirthday updates the appropriate birthday and birthday block
 // immediately after initial rescan is completed.
 func (asset *BTCAsset) updateAssetBirthday() {
+	const op errors.Op = "updateAssetBirthday"
+
 	txs, err := asset.getTransactionsRaw(0, 0, true)
 	if err != nil {
-		log.Errorf("getTransactionsRaw failed %v", err)
+		log.Error(errors.E(op, "getTransactionsRaw failed %v", err))
 		// try updating birthday block on next startup.
 		return
 	}
 
 	// Only update the wallet birthday and birthdayblock for the wallet that
-	// have received tx(s).
+	// have received or sent tx(s).
 	if len(txs) > 0 {
 		// txs are sorted from the newest to the oldest then pick the last tx (oldest).
 		blockHeight := txs[len(txs)-1].BlockHeight
@@ -192,42 +194,44 @@ func (asset *BTCAsset) updateAssetBirthday() {
 
 		// select the block that is 10 blocks down the current. This is done
 		// to have the rescan start a few blocks before the height where
-		// relevant txs might be discovered.
+		// relevant txs might be discovered. Wallet restoration starts at the block
+		// immediately after the birthday block. This implies that our birthday
+		// block can never hold any relavant txs otherwise the rescan will ignore them.
 		birthdayBlockHeight := blockHeight - 10
 
 		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
 		if err != nil {
-			log.Errorf("Update birthdayBlock: GetBlockHash failed %v", err)
+			log.Error(errors.E(op, "GetBlockHash failed %v", err))
 			return
 		}
 
 		block, err := asset.chainClient.GetBlock(hash)
 		if err != nil {
-			log.Errorf("Update birthdayBlock: GetBlock failed %v", err)
+			log.Error(errors.E(op, "GetBlock failed %v", err))
 			return
 		}
 
 		previousBirthdayblock, _, err := asset.getBirthdayBlock()
 		if err != nil {
-			log.Errorf("Update birthdayBlock: getBirthdayBlock failed %v", err)
+			log.Error(errors.E(op, "getBirthdayBlock failed %v", err))
 			// continue with new birthday block update
 		}
 
-		currentBirthday := block.Header.Timestamp
-		log.Debugf("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
-			asset.GetWalletName(), birthdayBlockHeight, previousBirthdayblock)
-
-		if !currentBirthday.IsZero() {
+		if previousBirthdayblock == birthdayBlockHeight {
+			// No need to set the same birthday again.
 			return
 		}
 
-		// At the wallet level update the new birthday choosen.
-		asset.SetBirthday(currentBirthday)
+		log.Debugf("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
+			asset.GetWalletName(), birthdayBlockHeight, previousBirthdayblock)
 
-		// At the address manager level update the new birthday and birthday block choosen.
+		// At the wallet level update the new birthday chosen.
+		asset.SetBirthday(block.Header.Timestamp)
+
+		// At the address manager level update the new birthday and birthday block chosen.
 		err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
 			ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-			err := asset.Internal().BTC.Manager.SetBirthday(ns, currentBirthday)
+			err := asset.Internal().BTC.Manager.SetBirthday(ns, block.Header.Timestamp)
 			if err != nil {
 				return err
 			}
@@ -235,14 +239,14 @@ func (asset *BTCAsset) updateAssetBirthday() {
 			birthdayBlock := waddrmgr.BlockStamp{
 				Hash:      *hash,
 				Height:    birthdayBlockHeight,
-				Timestamp: currentBirthday,
+				Timestamp: block.Header.Timestamp,
 			}
 
 			return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, false)
 		})
 
 		if err != nil {
-			log.Errorf("Updating the birthday block after initial sync failed: %v", err)
+			log.Error(errors.E(op, "Updating the birthday block after initial sync failed: %v", err))
 		}
 	}
 }

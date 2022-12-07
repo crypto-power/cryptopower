@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"encoding/json"
 	"sync/atomic"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -32,11 +33,16 @@ notificationsLoop:
 				log.Debugf("(%v) Incoming unmined tx with hash (%v)",
 					asset.GetWalletName(), tx.Hash.String())
 
-				// publish mempool tx.
-				asset.mempoolTxNotification(tx.Hash.String())
-
 				// decodeTxs
 				txToCache[i] = asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, tx)
+
+				result, err := json.Marshal(txToCache[i])
+				if err != nil {
+					log.Error(err)
+				} else {
+					// publish mempool tx.
+					asset.mempoolTransactionNotification(string(result))
+				}
 			}
 
 			if len(n.UnminedTransactions) > 0 {
@@ -48,16 +54,16 @@ notificationsLoop:
 			}
 
 			// Handle Historical, Connected blocks and newly mined Txs.
-			for _, b := range n.AttachedBlocks {
+			for _, block := range n.AttachedBlocks {
 				// When syncing historical data no tx are available.
 				// Txs are reported only when chain is synced and newly mined tx
 				// we discovered in the latest block.
-				for _, tx := range b.Transactions {
+				for _, tx := range block.Transactions {
 					log.Debugf("(%v) Incoming mined tx with hash=%v block=%v",
-						asset.GetWalletName(), tx.Hash, b.Height)
+						asset.GetWalletName(), tx.Hash, block.Height)
 
 					// Publish the confirmed tx notification.
-					asset.publishRelevantTx(tx.Hash.String(), b.Height)
+					asset.publishTransactionConfirmed(tx.Hash.String(), block.Height)
 				}
 			}
 
@@ -96,10 +102,9 @@ func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.AsyncTxAndBlockNotificationListener{
 			TxAndBlockNotificationListener: txAndBlockNotificationListener,
 		}
-		return nil
+	} else {
+		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
 	}
-
-	asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
 	return nil
 }
 
@@ -110,8 +115,8 @@ func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier str
 	delete(asset.txAndBlockNotificationListeners, uniqueIdentifier)
 }
 
-// mempoolTxNotification publishes the txs that hit the mempool for the first time.
-func (asset *BTCAsset) mempoolTxNotification(transaction string) {
+// mempoolTransactionNotification publishes the txs that hit the mempool for the first time.
+func (asset *BTCAsset) mempoolTransactionNotification(transaction string) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -120,10 +125,10 @@ func (asset *BTCAsset) mempoolTxNotification(transaction string) {
 	}
 }
 
-// publishRelevantTx publishes all the relevant tx identified in a filtered
+// publishTransactionConfirmed publishes all the relevant tx identified in a filtered
 // block. A valid list of addresses associated with the current block need to
 // be provided.
-func (asset *BTCAsset) publishRelevantTx(txHash string, blockHeight int32) {
+func (asset *BTCAsset) publishTransactionConfirmed(txHash string, blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -132,9 +137,9 @@ func (asset *BTCAsset) publishRelevantTx(txHash string, blockHeight int32) {
 	}
 }
 
-// publishNewBlock once the initial sync is complete all the new blocks recieved
+// publishBlockAttached once the initial sync is complete all the new blocks recieved
 // are published through this method.
-func (asset *BTCAsset) publishNewBlock(blockHeight int32) {
+func (asset *BTCAsset) publishBlockAttached(blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
