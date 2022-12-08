@@ -38,7 +38,7 @@ type Load struct {
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
 	CurrencySettingChanged func()
-	ToggleSync             func()
+	ToggleSync             func(func(bool))
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {
