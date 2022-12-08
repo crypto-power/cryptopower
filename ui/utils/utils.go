@@ -28,7 +28,7 @@ import (
 // the length of name should be 20 characters
 func ValidateLengthName(name string) bool {
 	trimName := strings.TrimSpace(name)
-	return len(trimName) <= 20
+	return len(trimName) > 0 && len(trimName) <= 20
 }
 
 func ValidateHost(host string) bool {
@@ -45,7 +45,7 @@ func ValidateHost(host string) bool {
 
 func EditorsNotEmpty(editors ...*widget.Editor) bool {
 	for _, e := range editors {
-		if e.Text() == "" {
+		if len(strings.TrimSpace(e.Text())) == 0 {
 			return false
 		}
 	}
