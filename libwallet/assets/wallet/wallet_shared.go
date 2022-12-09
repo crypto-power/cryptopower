@@ -30,6 +30,10 @@ type Wallet struct {
 	EncryptedSeed         []byte
 	IsRestored            bool
 	HasDiscoveredAccounts bool
+	// if allowAutomaticRescan is true,  when the wallet.birthday is earlier
+	// than the birthday stored in the btcwallet database, the transaction history
+	// will be wiped and a rescan will start.
+	allowAutomaticRescan  bool
 	PrivatePassphraseType int32
 
 	netType      utils.NetworkType
@@ -37,9 +41,16 @@ type Wallet struct {
 	loader       loader.AssetLoader
 	walletDataDB *walletdata.DB
 
+	// Birthday holds the timestamp of the birthday block from where wallet
+	// restoration begins from. CreatedAt is available for audit purposes
+	// in relation to how long the wallet has been in existence.
+	Birthday time.Time
+
 	// networkCancel function set to safely shutdown sync if in progress
 	// before a task that would be affected by syncing is run i.e. Deleting
 	// a wallet.
+	// NB: Use of this method results to complete network shutdown and restarting
+	// it back is almost impossible.
 	networkCancel func()
 
 	shuttingDown chan bool
@@ -112,6 +123,7 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	wallet.walletDataDB = walletDb
+	wallet.allowAutomaticRescan = true
 
 	// init cancelFuncs slice to hold cancel functions for long running
 	// operations and start go routine to listen for shutdown signal
@@ -148,6 +160,11 @@ func (wallet *Wallet) Shutdown() {
 		} else {
 			log.Info("tx db closed successfully")
 		}
+	}
+
+	// Explicitly stop all network connectivity activities.
+	if wallet.networkCancel != nil {
+		wallet.networkCancel()
 	}
 }
 
@@ -252,6 +269,31 @@ func (wallet *Wallet) WalletExists() (bool, error) {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	return wallet.loader.WalletExists(strconv.Itoa(wallet.ID))
+}
+
+// GetBirthday returns the timestamp when the wallet was created or its keys were
+// first used. This helps to check if a wallet requires auto rescan and recovery
+// on wallet startup.
+func (wallet *Wallet) GetBirthday() time.Time {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.Birthday
+}
+
+// SetBirthday allows updating the birthday time to a more precise value that is
+// verified by the network.
+func (wallet *Wallet) SetBirthday(birthday time.Time) {
+	if birthday.IsZero() {
+		log.Error("updated birthday time cannot be zero")
+		return
+	}
+
+	wallet.mu.Lock()
+	wallet.Birthday = birthday
+	// Trigger db update with the new birthday time.
+	// TODO: Consider updating this on wallet shutdown...
+	wallet.db.Save(wallet)
+	wallet.mu.Unlock()
 }
 
 func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
@@ -414,11 +456,6 @@ func (wallet *Wallet) RenameWallet(newName string) error {
 }
 
 func (wallet *Wallet) DeleteWallet(privPass string) error {
-	// functions to safely cancel sync before proceeding
-	if wallet.networkCancel != nil {
-		wallet.networkCancel()
-	}
-
 	err := wallet.deleteWallet(privPass)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -537,25 +574,32 @@ func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 }
 
 func (wallet *Wallet) LockWallet() {
-	// Attempt to safely shutdown network sync before proceeding.
-	wallet.networkCancel()
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
+	if !ok {
+		return
+	}
 
 	if !wallet.IsLocked() {
 		switch wallet.Type {
 		case utils.BTCWalletAsset:
-			wallet.Internal().BTC.Lock()
+			loadedWallet.BTC.Lock()
 		case utils.DCRWalletAsset:
-			wallet.Internal().DCR.Lock()
+			loadedWallet.DCR.Lock()
 		}
 	}
 }
 
 func (wallet *Wallet) IsLocked() bool {
+	loadedWallet, ok := wallet.loader.GetLoadedWallet()
+	if !ok {
+		return false
+	}
+
 	switch wallet.Type {
 	case utils.BTCWalletAsset:
-		return wallet.Internal().BTC.Locked()
+		return loadedWallet.BTC.Locked()
 	case utils.DCRWalletAsset:
-		return wallet.Internal().DCR.Locked()
+		return loadedWallet.DCR.Locked()
 	default:
 		return false
 	}
@@ -639,7 +683,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		wallet.LockWallet()
 	}
 
-	wallet.Shutdown()
+	wallet.Shutdown() // Initiates full network shutdown here.
 
 	err := wallet.db.DeleteStruct(wallet)
 	if err != nil {
@@ -659,4 +703,10 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		err = nil
 	}
 	return err
+}
+
+func (wallet *Wallet) AllowAutomaticRescan() bool {
+	wallet.mu.RLock()
+	defer wallet.mu.RUnlock()
+	return wallet.allowAutomaticRescan
 }

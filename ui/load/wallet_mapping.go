@@ -2,6 +2,7 @@ package load
 
 import (
 	"fmt"
+	"strconv"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -20,8 +21,8 @@ func NewWalletMapping(asset sharedW.Asset) *WalletMapping {
 	}
 }
 
-func (wallt *WalletMapping) MixedAccountNumber() int32 {
-	switch asset := wallt.Asset.(type) {
+func (w *WalletMapping) MixedAccountNumber() int32 {
+	switch asset := w.Asset.(type) {
 	case *dcr.DCRAsset:
 		return asset.MixedAccountNumber()
 	default:
@@ -29,8 +30,8 @@ func (wallt *WalletMapping) MixedAccountNumber() int32 {
 	}
 }
 
-func (wallt *WalletMapping) Broadcast(passphrase string) error {
-	switch asset := wallt.Asset.(type) {
+func (w *WalletMapping) Broadcast(passphrase string) error {
+	switch asset := w.Asset.(type) {
 	case *dcr.DCRAsset:
 		_, err := asset.Broadcast(passphrase)
 		return err
@@ -38,6 +39,39 @@ func (wallt *WalletMapping) Broadcast(passphrase string) error {
 		err := asset.Broadcast(passphrase, "")
 		return err
 	default:
-		return fmt.Errorf("wallet not supported")
+		return w.invalidWallet()
 	}
+}
+
+// SetAPIFeeRate validates the string input its a number before sending it upstream.
+// It returns the string convert to int amount.
+func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
+	switch asset := w.Asset.(type) {
+	case *btc.BTCAsset:
+		rate, err := strconv.ParseInt(feerate, 10, 64)
+		if err != nil {
+			return 0, w.invalidParameter(feerate, "tx fee rate")
+		}
+		err = asset.SetUserFeeRate(asset.ToAmount(rate))
+		return rate, err
+	default:
+		return 0, w.invalidWallet()
+	}
+}
+
+func (w *WalletMapping) GetAPIFeeRate() ([]btc.FeeEstimate, error) {
+	switch asset := w.Asset.(type) {
+	case *btc.BTCAsset:
+		return asset.GetAPIFeeEstimateRate()
+	default:
+		return nil, w.invalidWallet()
+	}
+}
+
+func (w *WalletMapping) invalidWallet() error {
+	return fmt.Errorf("(%v) wallet not supported", w.Asset.GetAssetType())
+}
+
+func (w *WalletMapping) invalidParameter(v interface{}, vType string) error {
+	return fmt.Errorf("(%v) not valid %v", v, vType)
 }

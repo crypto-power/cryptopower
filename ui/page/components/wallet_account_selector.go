@@ -64,7 +64,7 @@ func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
 
 	ws.selectorModal = newSelectorModal(l).
 		walletClicked(func(wallet *load.WalletMapping) {
-			if ws.selectedWallet.GetWalletID() == wallet.GetWalletID() {
+			if ws.selectedWallet.GetWalletID() != wallet.GetWalletID() {
 				ws.changed = true
 			}
 			ws.SetSelectedWallet(wallet)

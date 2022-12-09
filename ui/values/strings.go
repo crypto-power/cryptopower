@@ -702,4 +702,10 @@ const (
 	StrSeedHex                         = "seedHex"
 	StrWarningWatchWallet              = "warningWatchWallet"
 	StrWarningVote                     = "warningVote"
+	StrEdit                            = "edit"
+	StrFetchRates                      = "fetchRates"
+	StrPriority                        = "priority"
+	StrCost                            = "cost"
+	StrTxSize                          = "txSize"
+	StrFeeRates                        = "feerates"
 )

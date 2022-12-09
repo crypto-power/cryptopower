@@ -234,12 +234,12 @@ func (mgr *AssetsManager) Shutdown() {
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallet.CancelRescan()
-		wallet.CancelSync()
-		wallet.Shutdown()
+		wallet.Shutdown() // Cancels the wallet sync too.
 	}
 
 	for _, wallet := range mgr.Assets.BTC.Wallets {
-		wallet.Shutdown()
+		wallet.CancelRescan()
+		wallet.Shutdown() // Cancels the wallet sync too.
 	}
 
 	if mgr.params.DB != nil {

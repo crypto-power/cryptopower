@@ -230,7 +230,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	return &txStatus
 }
 
-// not used anywhere in the code TODO- deprecate
+// TODO- deprecate in favour of components.TimeAgo()
 func durationAgo(timestamp int64) string {
 	hrsPerYr := 8760.0  // There are 8760 hrs in a year.
 	hrsPerMnth := 730.0 // There are 730 hrs in a month.
@@ -403,7 +403,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 					layout.Rigid(status.Layout),
 					layout.Rigid(func(gtx C) D {
 						statusIcon := l.Theme.Icons.ConfirmIcon
-						if TxConfirmations(l, row.Transaction) <= 1 {
+						if TxConfirmations(l, row.Transaction) < l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
 							statusIcon = l.Theme.Icons.PendingIcon
 						}
 

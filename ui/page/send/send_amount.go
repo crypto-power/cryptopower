@@ -223,7 +223,6 @@ func (sa *sendAmount) handle() {
 				sa.SendMax = false
 				sa.validateAmount()
 				sa.amountChanged()
-
 			}
 		}
 	}
@@ -245,8 +244,13 @@ func (sa *sendAmount) handle() {
 }
 
 func (sa *sendAmount) IsMaxClicked() bool {
-	if sa.amountEditor.CustomButton.Clicked() || sa.usdAmountEditor.CustomButton.Clicked() {
-		return true
+	switch {
+	case sa.amountEditor.CustomButton.Clicked():
+		sa.amountEditor.Editor.Focus()
+	case sa.usdAmountEditor.CustomButton.Clicked():
+		sa.usdAmountEditor.Editor.Focus()
+	default:
+		return false
 	}
-	return false
+	return true
 }

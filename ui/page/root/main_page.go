@@ -297,10 +297,10 @@ func (mp *MainPage) OnNavigatedTo() {
 		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
 	}
 
+	mp.listenForNotifications() // start sync notifications listening.
+
 	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 	case libutils.DCRWalletAsset:
-		mp.listenForNotifications() // sync Notifications for BTC not supported for now.
-
 		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
 			if mp.WL.MultiWallet.Politeia.IsSyncing() {
 				return
@@ -604,9 +604,10 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-	case libutils.DCRWalletAsset:
+	// The encrypted seed exists by default and is cleared after wallet is backed up.
+	// Activate the modal requesting the user to backup their current wallet on
+	// every wallet open request until the encrypted seed is cleared (backup happens).
+	if mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != "" {
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
@@ -894,6 +895,16 @@ func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
 								return layout.Inset{
 									Left: values.MarginPadding10,
 								}.Layout(gtx, lbl.Layout)
+							}),
+							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return layout.Inset{
+										Left: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return walletHightlighLabel(mp.Theme, gtx, values.String(values.StrWatchOnly))
+									})
+								}
+								return D{}
 							}),
 						)
 					})

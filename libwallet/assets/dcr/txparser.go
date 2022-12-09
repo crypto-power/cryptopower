@@ -8,12 +8,10 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
 
-const BlockHeightInvalid int32 = -1
-
 func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
 	blockHash *chainhash.Hash) (*sharedW.Transaction, error) {
 
-	var blockHeight int32 = BlockHeightInvalid
+	var blockHeight int32 = sharedW.UnminedTxHeight
 	if blockHash != nil {
 		blockIdentifier := w.NewBlockIdentifierFromHash(blockHash)
 		ctx, _ := asset.ShutdownContextWithCancel()

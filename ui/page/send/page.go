@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
+	"time"
 
 	"gioui.org/io/key"
+	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -43,10 +47,16 @@ type Page struct {
 	infoButton    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
+	editRates     cryptomaterial.Button
+	fetchRates    cryptomaterial.Button
 
-	txFeeCollapsible *cryptomaterial.Collapsible
-	shadowBox        *cryptomaterial.Shadow
-	backdrop         *widget.Clickable
+	ratesEditor cryptomaterial.Editor
+	// editOrDisplay holds an editor or label component depending on the state of
+	// editRates(Save -> holds Editor or Edit -> holds a Label) button.
+	editOrDisplay interface{}
+
+	shadowBox *cryptomaterial.Shadow
+	backdrop  *widget.Clickable
 
 	isFetchingExchangeRate bool
 
@@ -54,7 +64,6 @@ type Page struct {
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
-	coinSelectionLabel  *cryptomaterial.Clickable
 	currencyExchange    string
 
 	*authoredTxData
@@ -67,6 +76,7 @@ type authoredTxData struct {
 	sourceAccount       *sharedW.Account
 	txFee               string
 	txFeeUSD            string
+	priority            string
 	estSignedSize       string
 	totalCost           string
 	totalCostUSD        string
@@ -179,6 +189,12 @@ func (pg *Page) OnNavigatedTo() {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
 	}
+
+	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
+		// This API call may take sometime to return. Call this before and cache
+		// results.
+		go pg.selectedWallet.GetAPIFeeRate()
+	}
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -233,10 +249,10 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 func (pg *Page) validate() bool {
 	amountIsValid := pg.amount.amountIsValid()
 	addressIsValid := pg.sendDestination.validate()
+	noErrMsg := pg.amount.amountErrorText == ""
 
-	validForSending := amountIsValid && addressIsValid
-
-	return validForSending
+	// validForSending
+	return amountIsValid && addressIsValid && noErrMsg
 }
 
 func (pg *Page) constructTx() {
@@ -283,7 +299,8 @@ func (pg *Page) constructTx() {
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
-	pg.estSignedSize = fmt.Sprintf("%d bytes", feeAndSize.EstimatedSignedSize)
+	pg.editOrDisplay = pg.addRatesUnits(feeAndSize.FeeRate)
+	pg.estSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -322,8 +339,6 @@ func (pg *Page) feeEstimationError(err string) {
 }
 
 func (pg *Page) clearEstimates() {
-
-	// pg.txAuthor = nil
 	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.txFeeUSD = " - "
 	pg.estSignedSize = " - "
@@ -347,6 +362,8 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
+	pg.feeRateAPIHandler()
+	pg.editsOrDisplayRatesHandler()
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
 	pg.amount.handle()
@@ -379,39 +396,28 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
-
 	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
-	if currencyValue == values.DefaultExchangeValue {
-		switch {
-		case !pg.sendDestination.sendToAddress:
-			if !pg.amount.amountEditor.Editor.Focused() && !modalShown {
-				pg.amount.amountEditor.Editor.Focus()
-			}
-		default:
-			if pg.sendDestination.accountSwitch.Changed() {
-				if !pg.sendDestination.validate() {
-					pg.sendDestination.destinationAddressEditor.Editor.Focus()
-				} else {
-					pg.amount.amountEditor.Editor.Focus()
-				}
+	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
+		pg.amount.usdAmountEditor.Editor.Focused()
 
-			}
-		}
-	} else {
+	if !modalShown && !isAmountEditorActive {
+		isFeeRateEditFocused := pg.ratesEditor.Editor.Focused()
+		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
+		isInSaveMode := pg.ratesEditor.Editor.Text() == values.String(values.StrSave)
+		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
+
 		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			if !modalShown {
-				pg.amount.amountEditor.Editor.Focus()
-			}
-		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-		default:
-			if pg.sendDestination.accountSwitch.Changed() {
-				if !pg.sendDestination.validate() {
-					pg.sendDestination.destinationAddressEditor.Editor.Focus()
-				} else {
-					pg.amount.amountEditor.Editor.Focus()
-				}
-			}
+		// If the hidden fee rate editor is in focus.
+		case isFeeRateEditFocused && isInSaveMode:
+			pg.ratesEditor.Editor.Focus()
+
+		// If destination address is invalid and destination editor is in focus.
+		case !pg.sendDestination.validate() && isDestinationEditorFocused:
+			pg.sendDestination.destinationAddressEditor.Editor.Focus()
+
+		// If accounts switch selects the wallet option.
+		case isSendToWallet && !isFeeRateEditFocused && !isDestinationEditorFocused:
+			pg.amount.amountEditor.Editor.Focus()
 		}
 	}
 
@@ -465,29 +471,7 @@ func (pg *Page) KeysToHandle() key.Set {
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *Page) HandleKeyPress(evt *key.Event) {
-	if pg.confirmTxModal != nil && pg.confirmTxModal.IsShown() {
-		return
-	}
-
-	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
-	if currencyValue == values.DefaultExchangeValue {
-		switch {
-		case !pg.sendDestination.sendToAddress:
-			cryptomaterial.SwitchEditors(evt, pg.amount.amountEditor.Editor)
-		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor)
-		}
-	} else {
-		switch {
-		case !pg.sendDestination.sendToAddress && !(pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-		case !pg.sendDestination.sendToAddress && (pg.amount.amountEditor.Editor.Focused() || pg.amount.usdAmountEditor.Editor.Focused()):
-			cryptomaterial.SwitchEditors(evt, pg.amount.usdAmountEditor.Editor, pg.amount.amountEditor.Editor)
-		default:
-			cryptomaterial.SwitchEditors(evt, pg.sendDestination.destinationAddressEditor.Editor, pg.amount.amountEditor.Editor, pg.amount.usdAmountEditor.Editor)
-		}
-	}
-}
+func (pg *Page) HandleKeyPress(evt *key.Event) {}
 
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable
@@ -498,4 +482,103 @@ func (pg *Page) HandleKeyPress(evt *key.Event) {
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
 	pg.ctxCancel() // causes crash if nil, when the main page is closed if send page is created but never displayed (because sync in progress)
+}
+
+func (pg *Page) addRatesUnits(rates int64) string {
+	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
+}
+
+func (pg *Page) editsOrDisplayRatesHandler() {
+	if pg.editRates.Clicked() {
+		// reset fields
+		pg.feeEstimationError("")
+		// Enable after saving is complete successfully
+		pg.fetchRates.SetEnabled(false)
+
+		if pg.editRates.Text == values.String(values.StrSave) {
+			text := pg.ratesEditor.Editor.Text()
+			ratesInt, err := pg.selectedWallet.SetAPIFeeRate(text)
+			if err != nil {
+				pg.feeEstimationError(err.Error())
+				text = " - "
+			} else {
+				text = pg.addRatesUnits(ratesInt)
+				pg.amount.amountChanged()
+			}
+
+			pg.editOrDisplay = text
+			pg.ratesEditor.Editor.SetText("")
+			pg.editRates.Text = values.String(values.StrEdit)
+			pg.fetchRates.SetEnabled(true)
+			return
+		}
+
+		pg.editOrDisplay = pg.ratesEditor
+		pg.editRates.Text = values.String(values.StrSave)
+		pg.priority = "Unknown" // Only known when fee rate is set from the API.
+	}
+}
+
+func (pg *Page) feeRateAPIHandler() {
+	if pg.fetchRates.Clicked() {
+		// reset fields
+		pg.feeEstimationError("")
+		// Enable after the fee rate selection is complete successfully.
+		pg.editRates.SetEnabled(false)
+
+		feeRates, err := pg.selectedWallet.GetAPIFeeRate()
+		if err != nil {
+			pg.feeEstimationError(err.Error())
+			return
+		}
+
+		blocksStr := func(b int32) string {
+			val := strconv.Itoa(int(b)) + " block"
+			if b == 1 {
+				return val
+			}
+			return val + "s"
+		}
+
+		radiogroupbtns := new(widget.Enum)
+		items := make([]layout.FlexChild, 0)
+		for index, feerate := range feeRates {
+			key := strconv.Itoa(index)
+			value := pg.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
+			radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
+				pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
+			items = append(items, layout.Rigid(radioBtn.Layout))
+		}
+
+		info := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrFeeRates)).
+			UseCustomWidget(func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+			}).
+			SetCancelable(true).
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			SetPositiveButtonText(values.String(values.StrSave)).
+			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				fields := strings.Fields(radiogroupbtns.Value)
+				index, _ := strconv.Atoi(fields[0])
+				rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
+				rateInt, err := pg.selectedWallet.SetAPIFeeRate(rate)
+				if err != nil {
+					pg.feeEstimationError(err.Error())
+					return false
+				}
+
+				pg.editOrDisplay = pg.addRatesUnits(rateInt)
+				blocks := feeRates[index].ConfirmedBlocks
+				timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
+				pg.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
+				im.Dismiss()
+				return true
+			})
+
+		pg.ParentWindow().ShowModal((info))
+		// fee rate selection is complete successfully.
+		pg.editRates.SetEnabled(true)
+		pg.amount.amountChanged()
+	}
 }
