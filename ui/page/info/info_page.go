@@ -157,7 +157,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 			go func() {
 				pg.ToggleSync(func(b bool) {
 					pg.syncSwitch.SetChecked(b)
-					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 				})
 			}()
 		}

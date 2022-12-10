@@ -65,7 +65,6 @@ type WalletDexServerSelector struct {
 	walletSelected         func()
 
 	// dex selector options
-	knownDexServers   *cryptomaterial.ClickableList
 	dexServerSelected func(server string)
 }
 
@@ -100,6 +99,7 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	toggleSync := func(unlock func(bool)) {
 		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			pg.WL.SelectedWallet.Wallet.CancelSync()
+			unlock(false)
 		} else {
 			pg.startSyncing(pg.WL.SelectedWallet.Wallet, unlock)
 		}
@@ -315,6 +315,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock fun
 		pg.unlockWalletForSyncing(wallet, unlock)
 		return
 	}
+	unlock(true)
 
 	err := wallet.SpvSync()
 	if err != nil {
