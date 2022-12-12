@@ -239,17 +239,18 @@ func (asset *DCRAsset) StartTicketBuyer(passphrase string) error {
 		return errors.New("Ticket buyer already running")
 	}
 
-	ctx, cancel := asset.ShutdownContextWithCancel()
-	asset.cancelAutoTicketBuyer = cancel
-	asset.cancelAutoTicketBuyerMu.Unlock()
-
 	// Validate the passphrase.
 	if len(passphrase) > 0 && asset.IsLocked() {
 		err := asset.UnlockWallet(passphrase)
 		if err != nil {
+			asset.cancelAutoTicketBuyerMu.Unlock()
 			return utils.TranslateError(err)
 		}
 	}
+
+	ctx, cancel := asset.ShutdownContextWithCancel()
+	asset.cancelAutoTicketBuyer = cancel
+	asset.cancelAutoTicketBuyerMu.Unlock()
 
 	// Check the VSP.
 	vspInfo, err := vspInfo(cfg.VspHost)
