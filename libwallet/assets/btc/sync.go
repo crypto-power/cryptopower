@@ -316,7 +316,6 @@ func (asset *BTCAsset) prepareChain() error {
 		return err
 	}
 
-	asset.chainService = chainService
 	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
 	return nil
@@ -556,14 +555,13 @@ func (asset *BTCAsset) SpvSync() (err error) {
 }
 
 func (asset *BTCAsset) ResetChainService() error {
-	asset.chainService.Stop()
 	chainService, err := asset.loadChainService()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	asset.chainClient.CS, asset.chainService = chainService, chainService
+	asset.chainClient.CS = chainService
 
 	asset.syncData.mu.Lock()
 	asset.syncData.restartedScan = true
