@@ -616,7 +616,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	for pg.rescan.Clicked() {
+	if pg.rescan.Clicked() {
 		go func() {
 			info := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrRescanBlockchain)).
@@ -631,18 +631,13 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						pg.ParentWindow().ShowModal(errorModal)
 						return false
 					}
-					msg := values.String(values.StrRescanProgressNotification)
-					infoModal := modal.NewSuccessModal(pg.Load, msg, func(_ bool, _ *modal.InfoModal) bool {
-						im.Dismiss() // close the parent modal too
-						return true
-					})
-					pg.ParentWindow().ShowModal(infoModal)
+
+					im.Dismiss()
 					return true
 				})
 
 			pg.ParentWindow().ShowModal(info)
 		}()
-		break
 	}
 
 	for pg.setGapLimit.Clicked() {
