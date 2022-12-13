@@ -15,6 +15,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
+type NeedUnlockRestore func(bool)
+
 type DCRUSDTBittrex struct {
 	LastTradeRate string
 }
@@ -38,7 +40,7 @@ type Load struct {
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
 	CurrencySettingChanged func()
-	ToggleSync             func(func(bool))
+	ToggleSync             func(NeedUnlockRestore)
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {

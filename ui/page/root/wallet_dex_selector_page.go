@@ -96,7 +96,7 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	pg.initWalletSelectorOptions()
 
 	// init shared page functions
-	toggleSync := func(unlock func(bool)) {
+	toggleSync := func(unlock load.NeedUnlockRestore) {
 		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			pg.WL.SelectedWallet.Wallet.CancelSync()
 			unlock(false)
@@ -310,7 +310,7 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock func(isUnlock bool)) {
+func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
 	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() {
 		pg.unlockWalletForSyncing(wallet, unlock)
 		return
@@ -325,7 +325,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock fun
 
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset, unlock func(isUnlock bool)) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
