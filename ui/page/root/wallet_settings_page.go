@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -48,7 +49,7 @@ type WalletSettingsPage struct {
 	pageContainer layout.List
 	accountsList  *cryptomaterial.ClickableList
 
-	changePass, rescan                         *cryptomaterial.Clickable
+	changePass, rescan, forceRescan            *cryptomaterial.Clickable
 	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
 	changeWalletName, addAccount, deleteWallet *cryptomaterial.Clickable
 	verifyMessage, validateAddr, signMessage   *cryptomaterial.Clickable
@@ -73,6 +74,7 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		wallet:              l.WL.SelectedWallet.Wallet,
 		changePass:          l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
+		forceRescan:         l.Theme.NewClickable(false),
 		setGapLimit:         l.Theme.NewClickable(false),
 		changeAccount:       l.Theme.NewClickable(false),
 		checklog:            l.Theme.NewClickable(false),
@@ -251,6 +253,12 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 	dims := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
+			layout.Rigid(func(gtx C) D {
+				if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
+					return pg.sectionDimension(gtx, pg.forceRescan, values.String(values.StrForceRescan))
+				}
+				return D{}
+			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 					return pg.sectionDimension(gtx, pg.setGapLimit, values.String(values.StrSetGapLimit))
@@ -586,6 +594,26 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	for pg.changePass.Clicked() {
 		pg.changeSpendingPasswordModal()
 		break
+	}
+
+	if pg.forceRescan.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			Title(values.String(values.StrForceRescanBlockchain)).
+			Body(values.String(values.StrForcedRescanInfo)).
+			SetNegativeButtonText(values.String(values.StrCancel)).
+			PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
+			SetPositiveButtonText(values.String(values.StrForceRescan)).
+			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				go func() {
+					BTCAsset := pg.WL.SelectedWallet.Wallet.(*btc.BTCAsset)
+					BTCAsset.ForceRescan()
+					pg.WL.SelectedWallet.Wallet.SpvSync()
+				}()
+
+				im.Dismiss()
+				return true
+			})
+		pg.ParentWindow().ShowModal(info)
 	}
 
 	for pg.rescan.Clicked() {
