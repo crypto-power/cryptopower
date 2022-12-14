@@ -133,6 +133,11 @@ func (asset *BTCAsset) RescanAsync() error {
 // ForceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
 func (asset *BTCAsset) ForceRescan() {
+	// Forcing rescan on a wallet that is not sync will lead to crash and potentially unusable wallet.
+	if !asset.IsSynced() {
+		return
+	}
+
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
