@@ -205,7 +205,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-//TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
+// TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
 func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
 	if asset.TxAuthoredInfo == nil {
 		return fmt.Errorf("TxAuthoredInfo is nil")
@@ -521,6 +521,12 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 		script, err := hex.DecodeString(output.ScriptPubKey)
 		if err != nil {
 			sourceErr = fmt.Errorf("invalid TxIn pkScript data found: %v", err)
+			break
+		}
+
+		// Determine whether this transaction output is considered dust
+		if txrules.IsDustOutput(wire.NewTxOut(int64(outputAmount), script), txrules.DefaultRelayFeePerKb) {
+			sourceErr = fmt.Errorf("transaction contains a dust output with value: %v", outputAmount.String())
 			break
 		}
 
