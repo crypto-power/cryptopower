@@ -139,7 +139,14 @@ func (asset *BTCAsset) ForceRescan() {
 				Hash:      block.BlockHash(),
 				Timestamp: block.Header.Timestamp,
 			}
-			err := asset.Internal().BTC.Manager.SetBirthdayBlock(ns, bs, false)
+			// Setting the verification to true, requests the upstream not to
+			// attempt checking for a better birthday block. This check causes
+			// a crash if the optimum value identified by the upstream doesn't
+			// match what was previously set.
+			// Once the initial sync is complete, the system automatically sets
+			// the most optimum birthday block. On premature exit if the
+			// optimum will be available by then, its also set automatically.
+			err := asset.Internal().BTC.Manager.SetBirthdayBlock(ns, bs, true)
 			if err != nil {
 				log.Errorf("Failed to set birthblock: %v", err)
 			}
@@ -242,7 +249,14 @@ func (asset *BTCAsset) updateAssetBirthday() {
 				Timestamp: block.Header.Timestamp,
 			}
 
-			return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, false)
+			// Setting the verification to true, requests the upstream not to
+			// attempt checking for a better birthday block. This check causes
+			// a crash if the optimum value identified by the upstream doesn't
+			// match what was previously set.
+			// Once the initial sync is complete, the system automatically sets
+			// the most optimum birthday block. On premature exit if the
+			// optimum will be available by then, its also set automatically.
+			return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, true)
 		})
 
 		if err != nil {

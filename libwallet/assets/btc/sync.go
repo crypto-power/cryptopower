@@ -216,6 +216,11 @@ notificationsLoop:
 				// Notification type sent is sent when the client connects or reconnects
 				// to the RPC server. It initialize the sync progress data report.
 
+				// Rescan is triggered immediately after the chain
+				asset.syncData.mu.Lock()
+				asset.syncData.isRescan = true
+				asset.syncData.mu.Unlock()
+
 			case chain.BlockConnected:
 				// Notification type is sent when a new block connects to the longest chain.
 				// Trigger the progress report only when the block to be reported
@@ -264,6 +269,10 @@ notificationsLoop:
 				asset.updateSyncProgress(n.Height)
 
 			case *chain.RescanFinished:
+				asset.syncData.mu.Lock()
+				asset.syncData.isRescan = false
+				asset.syncData.mu.Unlock()
+
 				// Notification type is sent when the rescan is completed.
 				asset.updateSyncProgress(n.Height)
 				asset.publishHeadersFetchComplete()
