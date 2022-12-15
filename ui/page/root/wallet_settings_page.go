@@ -542,7 +542,8 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		SetPositiveButtonText(values.String(values.StrConfirm)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		SetNegativeButtonCallback(func() {
-			pg.connectToPeer.SetChecked(false)
+			pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+			pg.connectToPeer.SetChecked(pg.peerAddr != "")
 		})
 	pg.ParentWindow().ShowModal(textModal)
 }
