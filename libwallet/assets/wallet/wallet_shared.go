@@ -168,6 +168,8 @@ func (wallet *Wallet) Shutdown() {
 			log.Info("tx db closed successfully")
 		}
 	}
+
+	log.Info("(%s) full network shutdown protocols completed.", wallet.Name)
 }
 
 func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {

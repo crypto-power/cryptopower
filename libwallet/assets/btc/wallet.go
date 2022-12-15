@@ -256,8 +256,6 @@ func (asset *BTCAsset) SafelyCancelSync() {
 
 		// Chain is either syncing or is synced.
 		asset.CancelSync()
-
-		log.Info("The full network shutdown protocols completed.")
 	} else {
 		loadWallet := asset.Internal().BTC
 		if loadWallet != nil {
@@ -267,7 +265,7 @@ func (asset *BTCAsset) SafelyCancelSync() {
 			loadWallet.Stop()
 			loadWallet.WaitForShutdown()
 		}
-		log.Info("Stoped wallet")
+		log.Info("wallet stopped")
 	}
 }
 

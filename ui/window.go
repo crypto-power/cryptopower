@@ -2,8 +2,12 @@ package ui
 
 import (
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 
 	giouiApp "gioui.org/app"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -144,21 +148,34 @@ func (win *Window) NewLoad() (*load.Load, error) {
 
 // HandleEvents runs main event handling and page rendering loop.
 func (win *Window) HandleEvents() {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	defer func() {
+		log.Info("...Initiating the app shutdown protocols...")
+		win.navigator.CloseAllPages()
+	}()
+
+	var e event.Event
 	for {
-		e := <-win.Events()
-		switch evt := e.(type) {
+		// Select either the os interrupt or the window event, whichever becomes
+		// ready first.
+		select {
+		case <-done:
+			return // closes open pages, exits the loop then will trigger shutdown.
+		case e = <-win.Events():
+			switch evt := e.(type) {
 
-		case system.DestroyEvent:
-			win.navigator.CloseAllPages()
-			return // exits the loop, caller will exit the program.
+			case system.DestroyEvent:
+				return // closes open pages, exits the loop then will trigger shutdown.
 
-		case system.FrameEvent:
-			ops := win.handleFrameEvent(evt)
-			evt.Frame(ops)
+			case system.FrameEvent:
+				ops := win.handleFrameEvent(evt)
+				evt.Frame(ops)
 
-		default:
-			log.Tracef("Unhandled window event %v\n", e)
+			default:
+				log.Tracef("Unhandled window event %v\n", e)
+			}
 		}
 	}
 }
