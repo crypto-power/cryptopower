@@ -53,7 +53,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	asset.syncData.mu.Unlock()
 
 	go func() {
-		err := asset.chainClient.Rescan(startHash, addrs, nil)
+		err := asset.chainClient.NotifyReceived(addrs)
 		if err != nil {
 			log.Error(err)
 		}

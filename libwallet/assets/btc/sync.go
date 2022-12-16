@@ -561,11 +561,21 @@ func (asset *BTCAsset) ResetChainService() error {
 		return err
 	}
 
+	var isConnected bool
+	if isConnected = asset.IsConnectedToNetwork(); isConnected {
+		asset.cancelSync()
+	}
+
+	asset.chainClient.CS.Stop()
 	asset.chainClient.CS = chainService
 
 	asset.syncData.mu.Lock()
 	asset.syncData.restartedScan = true
 	asset.syncData.mu.Unlock()
 
-	return asset.SpvSync()
+	asset.chainClient.Start()
+	if isConnected {
+		return asset.SpvSync()
+	}
+	return nil
 }
