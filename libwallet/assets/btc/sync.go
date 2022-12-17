@@ -372,8 +372,13 @@ func (asset *BTCAsset) CancelSync() {
 func (asset *BTCAsset) stopSync() {
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
+		if loadedAsset.ShuttingDown() {
+			return
+		}
+		loadedAsset.SetChainSynced(false)
 		loadedAsset.Stop() // Stops the chainclient too.
 		loadedAsset.WaitForShutdown()
+		loadedAsset.Start()
 	}
 
 	if asset.chainClient != nil {
@@ -388,10 +393,6 @@ func (asset *BTCAsset) stopSync() {
 // restart the chain service if it hasn't been initialized.
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
-
-	// Initializes goroutine responsible for creating txs preventing double spend.
-	// Initializes goroutine responsible for managing locked/unlocked wallet state.
-	asset.Internal().BTC.Start()
 
 	// Chain client performs explicit chain service start up thus no need
 	// to re-initialize it.

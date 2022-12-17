@@ -253,6 +253,19 @@ func (asset *BTCAsset) SafelyCancelSync() {
 		asset.chainClient = nil
 
 		log.Info("The full network shutdown protocols completed.")
+	} else {
+		loadWallet := asset.Internal().BTC
+		if loadWallet != nil {
+			if loadWallet.ShuttingDown() {
+				return
+			}
+			loadWallet.Stop()
+			loadWallet.WaitForShutdown()
+			if asset.chainClient != nil {
+				asset.chainClient.CS.Stop()
+			}
+		}
+		log.Info("Stoped wallet")
 	}
 }
 
