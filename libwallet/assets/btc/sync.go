@@ -216,7 +216,7 @@ notificationsLoop:
 				// Notification type sent is sent when the client connects or reconnects
 				// to the RPC server. It initialize the sync progress data report.
 
-				// Rescan is triggered immediately after the chain
+				// Rescan is triggered immediately after the chain sync is complete.
 				asset.syncData.mu.Lock()
 				asset.syncData.isRescan = true
 				asset.syncData.mu.Unlock()
@@ -279,7 +279,7 @@ notificationsLoop:
 
 				// once initial scan is complete reset the ticket to track every
 				// new block or transaction detected.
-				t = time.NewTicker(1 * time.Second)
+				t.Reset(1 * time.Second)
 
 				// Only run the listener once the chain is synced and ready to listen
 				// for newly mined block. This prevents unnecessary CPU use spikes
@@ -292,7 +292,7 @@ notificationsLoop:
 
 				// Since the initial run on a restored wallet, address discovery
 				// is complete, mark discovered accounts as true.
-				if !asset.HasDiscoveredAccounts && asset.IsRestored {
+				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
 			}
