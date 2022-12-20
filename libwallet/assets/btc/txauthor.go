@@ -526,8 +526,7 @@ func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax boo
 
 		// Determine whether this transaction output is considered dust
 		if txrules.IsDustOutput(wire.NewTxOut(int64(outputAmount), script), txrules.DefaultRelayFeePerKb) {
-			sourceErr = fmt.Errorf("transaction contains a dust output with value: %v", outputAmount.String())
-			break
+			log.Errorf("transaction contains a dust output with value: %v", outputAmount.String())
 		}
 
 		totalInputValue += outputAmount
