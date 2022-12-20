@@ -242,6 +242,13 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 // deleting a wallet use asset.CancelSync() instead.
 func (asset *BTCAsset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
+		// Before exiting, attempt to update the birthday block incase of a
+		// premature exit. Premature exit happens when the chain is not synced
+		// or chain rescan is running.
+		if !asset.IsSynced() || asset.IsRescanning() {
+			asset.updateAssetBirthday()
+		}
+
 		// Chain is either syncing or is synced.
 		asset.CancelSync()
 
