@@ -282,6 +282,10 @@ func (mp *MainPage) OnNavigatedTo() {
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	mp.updateBalance()
+	// updateExchangeSetting also calls updateBalance() but because of the API
+	// call it may take a while before the balance and USD conversion is updated.
+	// updateBalance() is called above first to prevent crash when balance value
+	// is required before updateExchangeSetting() returns.
 	mp.updateExchangeSetting()
 
 	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
@@ -426,6 +430,9 @@ func (mp *MainPage) HandleUserInteractions() {
 	}
 
 	displayPage := func(pg app.Page) {
+		// Load the current wallet balance on page reload.
+		mp.updateBalance()
+
 		// check if wallet is synced and clear stack
 		if mp.ID() == send.SendPageID || mp.ID() == ReceivePageID {
 			if mp.WL.SelectedWallet.Wallet.IsSynced() {
