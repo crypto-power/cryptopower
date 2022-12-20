@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
+	"github.com/decred/dcrd/dcrutil/v3"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -116,8 +117,19 @@ func (pg *AccountMixerPage) getMixerBalance() {
 			pg.unmixedBalance = acct.Balance.Total
 		}
 	}
+	pg.mixedBalance = getAmount(pg.mixedBalance)
+	pg.unmixedBalance = getAmount(pg.unmixedBalance)
 
 	pg.ArrMixerAccounts = vm
+}
+
+func getAmount(amount sharedW.AssetAmount) sharedW.AssetAmount {
+	if amount != nil {
+		return amount
+	}
+	defaultAmount := dcrutil.Amount(0)
+	dfAmount := dcr.DCRAmount(defaultAmount)
+	return dfAmount
 }
 
 func (pg *AccountMixerPage) bottomSectionLabel(clickable *cryptomaterial.Clickable, title string) layout.Widget {
