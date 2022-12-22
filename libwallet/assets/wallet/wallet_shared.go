@@ -160,6 +160,12 @@ func (wallet *Wallet) Shutdown() {
 		}
 	}
 
+	// Explicitly stop all network connectivity activities.
+	if wallet.networkCancel != nil {
+		wallet.networkCancel()
+	}
+
+	// close db connection as the last shutdown protocol.
 	if wallet.walletDataDB != nil {
 		err := wallet.walletDataDB.Close()
 		if err != nil {
