@@ -440,7 +440,7 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 func (asset *BTCAsset) RemoveSpecificPeer() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	go func() {
-		err := asset.ResetChainService()
+		err := asset.reloadChainService()
 		if err != nil {
 			log.Error(err)
 		}
@@ -450,7 +450,7 @@ func (asset *BTCAsset) RemoveSpecificPeer() {
 func (asset *BTCAsset) SetSpecificPeer(address string) {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
 	go func() {
-		err := asset.ResetChainService()
+		err := asset.reloadChainService()
 		if err != nil {
 			log.Error(err)
 		}

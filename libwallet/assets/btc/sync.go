@@ -554,27 +554,26 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	return err
 }
 
-func (asset *BTCAsset) ResetChainService() error {
-	chainService, err := asset.loadChainService()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	var isConnected bool
-	if isConnected = asset.IsConnectedToNetwork(); isConnected {
+// reloadChainService loads a new instance of chain service to be used
+// for sync. It restarts sync if the wallet was previously connected to the btc newtork
+// before the function call.
+func (asset *BTCAsset) reloadChainService() error {
+	isPrevConnected := asset.IsConnectedToNetwork()
+	if isPrevConnected {
 		asset.cancelSync()
 	}
 
 	asset.chainClient.CS.Stop()
+	chainService, err := asset.loadChainService()
+	if err != nil {
+		return err
+	}
 	asset.chainClient.CS = chainService
-
-	asset.syncData.mu.Lock()
-	asset.syncData.restartedScan = true
-	asset.syncData.mu.Unlock()
-
 	asset.chainClient.Start()
-	if isConnected {
+
+	// If the asset is previously connected to the network call SpvSync to
+	// start sync using the new instance of chain service.
+	if isPrevConnected {
 		return asset.SpvSync()
 	}
 	return nil
