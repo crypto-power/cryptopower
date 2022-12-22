@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"strings"
 	"sync"
 	"time"
 
@@ -448,7 +449,14 @@ func (asset *BTCAsset) RemoveSpecificPeer() {
 }
 
 func (asset *BTCAsset) SetSpecificPeer(address string) {
-	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
+	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+
+	// Prevent setting same address twice
+	if !strings.Contains(address, ";") && !strings.Contains(knownAddr, address) {
+		knownAddr += ";" + address
+	}
+
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)
 	go func() {
 		err := asset.reloadChainService()
 		if err != nil {
