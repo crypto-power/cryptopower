@@ -151,23 +151,20 @@ func (win *Window) HandleEvents() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	defer func() {
-		log.Info("...Initiating the app shutdown protocols...")
-		win.navigator.CloseAllPages()
-	}()
-
 	var e event.Event
+
+exitloop:
 	for {
 		// Select either the os interrupt or the window event, whichever becomes
 		// ready first.
 		select {
 		case <-done:
-			return // closes open pages, exits the loop then will trigger shutdown.
+			break exitloop
 		case e = <-win.Events():
 			switch evt := e.(type) {
 
 			case system.DestroyEvent:
-				return // closes open pages, exits the loop then will trigger shutdown.
+				break exitloop
 
 			case system.FrameEvent:
 				ops := win.handleFrameEvent(evt)
@@ -177,6 +174,12 @@ func (win *Window) HandleEvents() {
 				log.Tracef("Unhandled window event %v\n", e)
 			}
 		}
+	}
+
+	// closes open pages, exits the loop then will trigger shutdown.
+	log.Info("...Initiating the app shutdown protocols...")
+	if win.navigator != nil {
+		win.navigator.CloseAllPages()
 	}
 }
 

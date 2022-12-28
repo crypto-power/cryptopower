@@ -155,8 +155,6 @@ func (wallet *Wallet) Shutdown() {
 		err := wallet.loader.UnloadWallet()
 		if err != nil {
 			log.Errorf("Failed to close wallet: %v", err)
-		} else {
-			log.Info("Closed wallet")
 		}
 	}
 
@@ -170,12 +168,10 @@ func (wallet *Wallet) Shutdown() {
 		err := wallet.walletDataDB.Close()
 		if err != nil {
 			log.Errorf("tx db closed with error: %v", err)
-		} else {
-			log.Info("tx db closed successfully")
 		}
 	}
 
-	log.Info("(%s) full network shutdown protocols completed.", wallet.Name)
+	log.Infof("(%s) full network shutdown protocols completed.", wallet.Name)
 }
 
 func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {

@@ -25,7 +25,6 @@ type DB struct {
 	walletDataDB   *storm.DB
 	ticketMaturity int32
 	ticketExpiry   int32
-	close          func() error
 	Path           string
 }
 
@@ -52,7 +51,6 @@ func Initialize(dbPath string, txData interface{}) (*DB, error) {
 
 	return &DB{
 		walletDataDB: walletDataDB,
-		close:        walletDataDB.Close,
 		Path:         dbPath,
 	}, nil
 }

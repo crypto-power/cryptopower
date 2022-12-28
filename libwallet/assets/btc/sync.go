@@ -396,7 +396,7 @@ func (asset *BTCAsset) CancelSync() {
 
 	asset.stopSync()
 
-	log.Info("SPV wallet closed")
+	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
 }
 
 // stopSync initiates the full chain sync stopping protocols.
@@ -411,7 +411,7 @@ func (asset *BTCAsset) stopSync() {
 			return
 		}
 
-		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
+		loadedAsset.Stop()
 		loadedAsset.WaitForShutdown()
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
