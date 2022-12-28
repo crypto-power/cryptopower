@@ -117,13 +117,15 @@ func (pg *AccountMixerPage) getMixerBalance() {
 			pg.unmixedBalance = acct.Balance.Total
 		}
 	}
-	pg.mixedBalance = getAmount(pg.mixedBalance)
-	pg.unmixedBalance = getAmount(pg.unmixedBalance)
+	pg.mixedBalance = getSafeAmount(pg.mixedBalance)
+	pg.unmixedBalance = getSafeAmount(pg.unmixedBalance)
 
 	pg.ArrMixerAccounts = vm
 }
 
-func getAmount(amount sharedW.AssetAmount) sharedW.AssetAmount {
+// This function return dcr amount default is 0 if amount passed is nil
+// it help ui show the amount without problem
+func getSafeAmount(amount sharedW.AssetAmount) sharedW.AssetAmount {
 	if amount != nil {
 		return amount
 	}
