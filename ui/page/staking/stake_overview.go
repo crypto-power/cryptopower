@@ -110,7 +110,7 @@ func (pg *Page) fetchTicketPrice() {
 	ticketPrice, err := pg.dcrImpl.TicketPrice()
 	if err != nil && !pg.WL.SelectedWallet.Wallet.IsSynced() {
 		log.Error(err)
-		pg.ticketPrice = values.String(values.StrNotAvailable)
+		pg.ticketPrice = dcrutil.Amount(0).String()
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletNotSynced), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 	} else {
