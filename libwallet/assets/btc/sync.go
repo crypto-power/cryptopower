@@ -406,12 +406,15 @@ func (asset *BTCAsset) stopSync() {
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
+		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
 			asset.syncData.isSyncShuttingDown = false
 			return
 		}
 
-		loadedAsset.Stop()
+		// First shutdown the wallet.
+		loadedAsset.Stop() // Stops the chainclient too.
+
 		loadedAsset.WaitForShutdown()
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
@@ -421,17 +424,34 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.Start()
 	}
 
-	log.Info("Stopping neutrino client service interface")
+	log.Info("Stopping wallet and neutrino service interface")
 
-	asset.chainClient.Stop() // If active, attempt to shut it down.
-	asset.chainClient.WaitForShutdown()
+	if asset.chainClient != nil {
+		// Then shutdown the chain client.
+		asset.chainClient.Stop() // If active, attempt to shut it down.
+	}
 
-	// Neutrino performs explicit chain service start but never explicit
-	// chain service stop thus the need to have it done here when stopping
-	// a wallet sync.
-	asset.chainClient.CS.Stop()
-	asset.syncData.chainServiceStopped = true
+	if loadedAsset != nil {
+		// Then wait for the wallet to shutdown
+		loadedAsset.WaitForShutdown()
+		loadedAsset.SetChainSynced(false)
+	}
 
+	if asset.chainClient != nil {
+		// Then wait for the chain client to shutdown
+		asset.chainClient.WaitForShutdown()
+
+		// Neutrino performs explicit chain service start but never explicit
+		// chain service stop thus the need to have it done here when stopping
+		// a wallet sync.
+		asset.chainClient.CS.Stop()
+		asset.syncData.chainServiceStopped = true
+	}
+
+	// Declares that the sync context is done and goroutines listening to it
+	// should exit. The shutdown protocol will eventually attempt to end this
+	// context but we do it early to avoid panics that happen after db has been
+	// closed but some goroutines still interact with the db.
 	asset.cancelSync()
 	asset.syncData.isSyncShuttingDown = false
 }

@@ -33,6 +33,10 @@ func (asset *BTCAsset) GetAccounts() (string, error) {
 }
 
 func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
+	if asset.Internal().BTC == nil {
+		return nil, utils.ErrBTCNotInitialized
+	}
+
 	resp, err := asset.Internal().BTC.Accounts(asset.GetScope())
 	if err != nil {
 		return nil, err

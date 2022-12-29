@@ -178,9 +178,7 @@ exitloop:
 
 	// closes open pages, exits the loop then will trigger shutdown.
 	log.Info("...Initiating the app shutdown protocols...")
-	if win.navigator != nil {
-		win.navigator.CloseAllPages()
-	}
+	win.navigator.CloseAllPages()
 }
 
 // handleFrameEvent is called when a FrameEvent is received by the active

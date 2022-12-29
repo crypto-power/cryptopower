@@ -146,11 +146,6 @@ func (wallet *Wallet) Shutdown() {
 	// `wallet.ShutdownContext()` or `wallet.shutdownContextWithCancel()`.
 	wallet.shuttingDown <- true
 
-	// Explicitly stop all network connectivity activities.
-	if wallet.networkCancel != nil {
-		wallet.networkCancel()
-	}
-
 	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
 		err := wallet.loader.UnloadWallet()
 		if err != nil {

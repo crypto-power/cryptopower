@@ -26,6 +26,10 @@ func (asset *DCRAsset) GetAccounts() (string, error) {
 }
 
 func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
+	if asset.Internal().DCR == nil {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	resp, err := asset.Internal().DCR.Accounts(ctx)
 	if err != nil {
