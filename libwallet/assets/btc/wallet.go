@@ -261,9 +261,6 @@ func (asset *BTCAsset) SafelyCancelSync() {
 			}
 			loadWallet.Stop()
 			loadWallet.WaitForShutdown()
-			if asset.chainClient != nil {
-				asset.chainClient.CS.Stop()
-			}
 		}
 		log.Info("Stoped wallet")
 	}

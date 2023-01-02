@@ -386,6 +386,7 @@ func (asset *BTCAsset) stopSync() {
 
 		asset.chainClient.Stop() // If active, attempt to shut it down.
 		asset.chainClient.WaitForShutdown()
+		asset.chainClient.CS.Stop()
 	}
 }
 
