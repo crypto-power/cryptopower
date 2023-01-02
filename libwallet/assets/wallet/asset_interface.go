@@ -18,7 +18,7 @@ type Asset interface {
 	IsRescanning() bool
 	RescanBlocks() error
 	ConnectedPeers() int32
-	RemoveSpecificPeer()
+	RemovePeers()
 	SetSpecificPeer(address string)
 	GetExtendedPubKey(account int32) (string, error)
 	IsSyncShuttingDown() bool

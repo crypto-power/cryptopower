@@ -438,7 +438,7 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 	}
 }
 
-func (asset *BTCAsset) RemoveSpecificPeer() {
+func (asset *BTCAsset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	go func() {
 		err := asset.reloadChainService()

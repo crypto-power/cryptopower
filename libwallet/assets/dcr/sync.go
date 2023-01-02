@@ -192,7 +192,7 @@ func (asset *DCRAsset) SetSpecificPeer(address string) {
 	asset.RestartSpvSync()
 }
 
-func (asset *DCRAsset) RemoveSpecificPeer() {
+func (asset *DCRAsset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	asset.RestartSpvSync()
 }
