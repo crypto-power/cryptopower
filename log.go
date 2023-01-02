@@ -26,10 +26,11 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/staking"
 	"code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/wallet"
+
 	"decred.org/dcrwallet/v2/p2p"
 	"decred.org/dcrwallet/v2/ticketbuyer"
 	dcrw "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/wallet/udb"
+	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/chain"
 	bw "github.com/btcsuite/btcwallet/wallet"
