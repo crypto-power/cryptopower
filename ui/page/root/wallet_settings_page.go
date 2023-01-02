@@ -607,6 +607,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 					BTCAsset := pg.WL.SelectedWallet.Wallet.(*btc.BTCAsset)
 					BTCAsset.ForceRescan()
 					pg.WL.SelectedWallet.Wallet.SpvSync()
+					pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.AutoSyncConfigKey, true)
 				}()
 
 				im.Dismiss()
@@ -630,6 +631,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						pg.ParentWindow().ShowModal(errorModal)
 						return false
 					}
+					pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.AutoSyncConfigKey, true)
 
 					im.Dismiss()
 					return true
