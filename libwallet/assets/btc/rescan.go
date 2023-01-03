@@ -36,6 +36,10 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 		return errors.E(utils.ErrNotConnected)
 	}
 
+	if !asset.IsSynced() {
+		return errors.E(utils.ErrNotSynced)
+	}
+
 	if asset.IsRescanning() {
 		return errors.E(utils.ErrSyncAlreadyInProgress)
 	}
@@ -53,7 +57,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	asset.syncData.mu.Unlock()
 
 	go func() {
-		err := asset.Internal().BTC.Rescan(addrs, nil)
+		err := asset.chainClient.Rescan(startHash, addrs, nil)
 		if err != nil {
 			log.Error(err)
 		}

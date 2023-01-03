@@ -288,6 +288,10 @@ notificationsLoop:
 				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
+
+				asset.syncData.mu.Lock()
+				asset.syncData.isRescan = false
+				asset.syncData.mu.Unlock()
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
