@@ -376,8 +376,13 @@ func (asset *BTCAsset) stopSync() {
 			return
 		}
 		loadedAsset.SetChainSynced(false)
-		loadedAsset.Stop() // Stops the chainclient too.
+		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
 		loadedAsset.WaitForShutdown()
+		// Initializes goroutine responsible for creating txs preventing double spend.
+		// Initializes goroutine responsible for managing locked/unlocked wallet state.
+		//
+		// This is being called at this point reason being that even though we need to stop the wallet sync,
+		// the wallet needs to be started to handle non sync related tasks such as changing password, renaming wallet, etc.
 		loadedAsset.Start()
 	}
 
