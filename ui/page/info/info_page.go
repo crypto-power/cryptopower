@@ -154,9 +154,11 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
 			pg.WL.SelectedWallet.Wallet.CancelRescan()
 		} else {
-			pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, pg.syncSwitch.IsChecked())
 			go func() {
-				pg.ToggleSync()
+				pg.ToggleSync(func(b bool) {
+					pg.syncSwitch.SetChecked(b)
+					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
+				})
 			}()
 		}
 	}

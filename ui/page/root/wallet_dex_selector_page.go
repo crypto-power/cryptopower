@@ -65,7 +65,6 @@ type WalletDexServerSelector struct {
 	walletSelected         func()
 
 	// dex selector options
-	knownDexServers   *cryptomaterial.ClickableList
 	dexServerSelected func(server string)
 }
 
@@ -97,11 +96,12 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	pg.initWalletSelectorOptions()
 
 	// init shared page functions
-	toggleSync := func() {
+	toggleSync := func(unlock load.NeedUnlockRestore) {
 		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			pg.WL.SelectedWallet.Wallet.CancelSync()
+			unlock(false)
 		} else {
-			pg.startSyncing(pg.WL.SelectedWallet.Wallet)
+			pg.startSyncing(pg.WL.SelectedWallet.Wallet, unlock)
 		}
 	}
 	l.ToggleSync = toggleSync
@@ -124,14 +124,14 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	// Initiate the auto sync for all the DCR wallets with set autosync.
 	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet)
+			pg.startSyncing(wallet, func(isUnlock bool) {})
 		}
 	}
 
 	// Initiate the auto sync for all the BTC wallets with set autosync.
 	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet)
+			pg.startSyncing(wallet, func(isUnlock bool) {})
 		}
 	}
 }
@@ -310,11 +310,12 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 	}
 }
 
-func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
+func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
 	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() {
-		pg.unlockWalletForSyncing(wallet)
+		pg.unlockWalletForSyncing(wallet, unlock)
 		return
 	}
+	unlock(true)
 
 	err := wallet.SpvSync()
 	if err != nil {
@@ -324,13 +325,17 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset) {
 
 }
 
-func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset) {
+func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
 		PasswordHint(values.String(values.StrSpendingPassword)).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetCancelable(false).
+		SetNegativeButtonCallback(func() {
+			unlock(false)
+		}).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			err := wal.UnlockWallet(password)
 			if err != nil {
@@ -338,8 +343,9 @@ func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset) {
 				pm.SetLoading(false)
 				return false
 			}
+			unlock(true)
 			pm.Dismiss()
-			pg.startSyncing(wal)
+			pg.startSyncing(wal, unlock)
 			return true
 		})
 	pg.ParentWindow().ShowModal(spendingPasswordModal)
