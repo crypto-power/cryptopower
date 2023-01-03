@@ -420,3 +420,13 @@ type TransactionOverview struct {
 }
 
 /** end tx-related types */
+
+// ExchangeConfig defines configuration parameters for creating
+// an exchange order.
+type ExchangeConfig struct {
+	SourceWalletID      int32
+	DestinationWalletID int32
+
+	SourceAccountNumber      int32
+	DestinationAccountNumber int32
+}
