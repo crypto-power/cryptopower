@@ -23,9 +23,8 @@ const (
 
 	defaultDCRRequiredConfirmations = 2
 
-	//  - 6 confirmation is the standard for most transactions to be considered
-	// secure, enough for large payments between $10,000 - $1,000,000.
-	defaultBTCRequiredConfirmations = 6
+	// BTC asset is accepted as confirmed after 1 confirmation
+	defaultBTCRequiredConfirmations = 1
 
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
