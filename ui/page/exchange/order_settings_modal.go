@@ -144,6 +144,87 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
+
+	if osm.WL.MultiWallet.ExchangeConfigIsSet() {
+		exchangeConfig := osm.WL.MultiWallet.ExchangeConfig()
+		sourceWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.SourceWalletID))
+		destinationWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.DestinationWalletID))
+
+		if sourceWallet != nil {
+			_, err := sourceWallet.GetAccount(exchangeConfig.SourceAccountNumber)
+			if err != nil {
+				log.Error(err)
+			}
+
+			// Source wallet picker
+			osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
+				Title(values.String(values.StrFrom))
+
+			sourceW := &load.WalletMapping{
+				Asset: sourceWallet,
+			}
+			osm.sourceWalletSelector.SelectWallet(sourceW)
+
+			// Source account picker
+			osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+				Title(values.String(values.StrAccount)).
+				AccountValidator(func(account *sharedW.Account) bool {
+					accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+					return accountIsValid
+				})
+			osm.sourceAccountSelector.SelectAccount(osm.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
+
+			// osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			// 	osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+			// })
+		}
+
+		if destinationWallet != nil {
+			_, err := destinationWallet.GetAccount(exchangeConfig.DestinationAccountNumber)
+			if err != nil {
+				log.Error(err)
+			}
+
+			// Destination wallet picker
+			osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
+				Title(values.String(values.StrTo))
+
+			// Destination account picker
+			osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+				Title(values.String(values.StrAccount)).
+				AccountValidator(func(account *sharedW.Account) bool {
+					// Imported accounts and watch only accounts are imvalid
+					accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+					return accountIsValid
+				})
+			osm.destinationAccountSelector.SelectAccount(osm.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
+			address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+			if err != nil {
+				log.Error(err)
+			}
+			osm.addressEditor.Editor.SetText(address)
+
+			// osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			// 	osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+			// 	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+			// 	if err != nil {
+			// 		log.Error(err)
+			// 	}
+			// 	osm.addressEditor.Editor.SetText(address)
+			// })
+
+			// osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
+			// 	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+			// 	if err != nil {
+			// 		log.Error(err)
+			// 	}
+			// 	osm.addressEditor.Editor.SetText(address)
+			// })
+		}
+
+	}
 }
 
 func (osm *orderSettingsModal) SetLoading(loading bool) {
@@ -165,6 +246,8 @@ func (osm *orderSettingsModal) Handle() {
 			destinationAccountSelector: osm.destinationAccountSelector,
 			destinationWalletSelector:  osm.destinationWalletSelector,
 		}
+
+		osm.WL.MultiWallet.SetExchangeConfig(int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}

@@ -131,6 +131,29 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
+func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
+	if !ws.accountSelector {
+		ws.accountSelector = true
+	}
+	ws.SetSelectedWallet(wallet)
+
+	account, err := wallet.GetAccount(accountNumber)
+	if err != nil {
+		return err
+	}
+
+	if ws.accountIsValid(account) {
+		ws.SetSelectedAccount(account)
+		if ws.accountCallback != nil {
+			ws.accountCallback(account)
+		}
+		return nil
+	}
+
+	ws.ResetAccount()
+	return errors.New(values.String(values.StrNoValidAccountFound))
+}
+
 func (ws *WalletAndAccountSelector) ResetAccount() {
 	ws.selectedAccount = nil
 	ws.totalBalance = ""
@@ -174,6 +197,10 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 }
 
 func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *load.WalletMapping) {
+	ws.selectedWallet = wallet
+}
+
+func (ws *WalletAndAccountSelector) SelectWallet(wallet *load.WalletMapping) {
 	ws.selectedWallet = wallet
 }
 
