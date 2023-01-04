@@ -602,4 +602,6 @@ const EN = `
 "txSize" = "Transaction Size%v"
 "feerates" = "Fee Rates"
 "canceling" = "Cancelling..."
+"unconfirmedTx"    = "unconfirmed"
+"txStatusPending"         = "Pending (%v of %v confirmations)" 
 `

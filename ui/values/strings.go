@@ -265,6 +265,7 @@ const (
 	StrSecurity                        = "security"
 	StrUnconfirmedFunds                = "unconfirmedFunds"
 	StrConfirmed                       = "confirmed"
+	StrUnconfirmedTx                   = "unconfirmedTx"
 	StrChangeStartupPassword           = "changeStartupPassword"
 	StrConnectToSpecificPeer           = "connectToSpecificPeer"
 	StrUserAgentSummary                = "userAgentSummary"
@@ -709,4 +710,5 @@ const (
 	StrTxSize                          = "txSize"
 	StrFeeRates                        = "feerates"
 	StrCanceling                       = "canceling"
+	StrTxStatusPending                 = "txStatusPending"
 )

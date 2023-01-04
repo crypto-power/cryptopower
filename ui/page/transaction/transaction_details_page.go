@@ -10,6 +10,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -582,7 +584,7 @@ func (pg *TxDetailsPage) associatedTicket(gtx C) D {
 	)
 }
 
-//TODO: do this at startup
+// TODO: do this at startup
 func (pg *TxDetailsPage) txConfirmations() int32 {
 	transaction := pg.transaction
 	if transaction.BlockHeight != -1 {
@@ -712,29 +714,39 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, pg.txnWidgets.confirmationIcons.Layout12dp)
 					}),
 					layout.Rigid(func(gtx C) D {
+						caser := cases.Title(language.Und)
 						txt := pg.Theme.Body2("")
-						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
-							txt.Text = strings.Title(values.String(values.StrConfirmed))
+						if pg.txConfirmations() == 0 {
+							txt.Text = caser.String(values.String(values.StrUnconfirmedTx))
+							txt.Color = pg.Theme.Color.GrayText2
+						} else if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+							txt.Text = caser.String(values.String(values.StrConfirmed))
 							txt.Color = pg.Theme.Color.Success
 						} else {
-							txt.Text = strings.Title(values.String(values.StrPending))
+							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), pg.WL.SelectedWallet.Wallet.RequiredConfirmations()))
 							txt.Color = pg.Theme.Color.GrayText2
 						}
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						m := values.MarginPadding10
-						return layout.Inset{
-							Left:  m,
-							Right: m,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.dot.Layout(gtx, values.MarginPadding6)
-						})
+						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+							m := values.MarginPadding10
+							return layout.Inset{
+								Left:  m,
+								Right: m,
+							}.Layout(gtx, func(gtx C) D {
+								return pg.dot.Layout(gtx, values.MarginPadding6)
+							})
+						}
+						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
-						txt.Color = pg.Theme.Color.GrayText2
-						return txt.Layout(gtx)
+						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+							txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
+							txt.Color = pg.Theme.Color.GrayText2
+							return txt.Layout(gtx)
+						}
+						return D{}
 					}),
 				)
 			}
