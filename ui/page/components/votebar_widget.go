@@ -97,8 +97,13 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 	progressBarWidth := gtx.Constraints.Max.X
 	quorumRequirement := (v.requiredPercentage / 100) * v.eligibleVotes
 
-	yesVotes := (v.yesVotes / int(quorumRequirement)) * 100
-	noVotes := (v.noVotes / int(quorumRequirement)) * 100
+	yesVotes := 0
+	noVotes := 0
+	if quorumRequirement > 0 {
+		yesVotes = (v.yesVotes / int(quorumRequirement)) * 100
+		noVotes = (v.noVotes / int(quorumRequirement)) * 100
+	}
+
 	yesWidth := (progressBarWidth / 100) * yesVotes
 	noWidth := (progressBarWidth / 100) * noVotes
 
@@ -259,9 +264,9 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 			}),
 			layout.Rigid(func(gtx C) D {
 				count := float64(count)
-				percentage := (count / float64(v.totalVotes)) * 100
-				if percentage < 0 {
-					percentage = 0
+				percentage := 0.0
+				if v.totalVotes != 0 && count != 0 {
+					percentage = (count / float64(v.totalVotes)) * 100
 				}
 				percentageStr := strconv.FormatFloat(percentage, 'f', 1, 64) + "%"
 				countStr := strconv.FormatFloat(count, 'f', 0, 64)
