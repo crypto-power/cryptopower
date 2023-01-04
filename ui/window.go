@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	giouiApp "gioui.org/app"
@@ -149,7 +150,15 @@ func (win *Window) NewLoad() (*load.Load, error) {
 // HandleEvents runs main event handling and page rendering loop.
 func (win *Window) HandleEvents() {
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	if runtime.GOOS == "windows" {
+		// For controlled shutdown to work on windows, the channel has to be
+		// listening to all signals.
+		// https://github.com/golang/go/commit/8cfa01943a7f43493543efba81996221bb0f27f8
+		signal.Notify(done)
+	} else {
+		// Signals are primarily used on Unix-like systems.
+		signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	}
 
 	var e event.Event
 
