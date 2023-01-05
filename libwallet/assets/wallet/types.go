@@ -424,6 +424,9 @@ type TransactionOverview struct {
 // ExchangeConfig defines configuration parameters for creating
 // an exchange order.
 type ExchangeConfig struct {
+	SourceAsset      utils.AssetType
+	DestinationAsset utils.AssetType
+
 	SourceWalletID      int32
 	DestinationWalletID int32
 

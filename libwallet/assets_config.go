@@ -175,7 +175,9 @@ func (mgr *AssetsManager) SetLogLevels(logLevel string) {
 }
 
 // SetExchangeConfig sets the exchnage config for the asset
-func (mgr *AssetsManager) SetExchangeConfig(sourceWalletID, destinationWalletID, sourceAccountID, DestinationAccountID int32) {
+func (mgr *AssetsManager) SetExchangeConfig(fromCurrency utils.AssetType, sourceWalletID int32, toCurrency utils.AssetType, destinationWalletID, sourceAccountID, DestinationAccountID int32) {
+	mgr.db.SaveWalletConfigValue(sharedW.ExchangeSourceAssetTypeConfigKey, fromCurrency)
+	mgr.db.SaveWalletConfigValue(sharedW.ExchangeDestinationAssetTypeConfigKey, toCurrency)
 	mgr.db.SaveWalletConfigValue(sharedW.ExchangeSourceWalletConfigKey, sourceWalletID)
 	mgr.db.SaveWalletConfigValue(sharedW.ExchangeSourceAccountConfigKey, sourceAccountID)
 	mgr.db.SaveWalletConfigValue(sharedW.ExchangeDestinationWalletConfigKey, destinationWalletID)
@@ -185,17 +187,24 @@ func (mgr *AssetsManager) SetExchangeConfig(sourceWalletID, destinationWalletID,
 // ExchangeConfig returns the previously set ticket buyer config for
 // the asset.
 func (mgr *AssetsManager) ExchangeConfig() *sharedW.ExchangeConfig {
+	var sourceAsset utils.AssetType
+	var destinationAsset utils.AssetType
 	var sourceWalletID int32
 	var destinationWalletID int32
 	var sourceAccoutNumber int32
 	var destinationAccountNumber int32
 
 	mgr.db.ReadWalletConfigValue(sharedW.ExchangeSourceWalletConfigKey, &sourceWalletID)
+	mgr.db.ReadWalletConfigValue(sharedW.ExchangeSourceAssetTypeConfigKey, &sourceAsset)
 	mgr.db.ReadWalletConfigValue(sharedW.ExchangeSourceAccountConfigKey, &sourceAccoutNumber)
+	mgr.db.ReadWalletConfigValue(sharedW.ExchangeDestinationAssetTypeConfigKey, &destinationAsset)
 	mgr.db.ReadWalletConfigValue(sharedW.ExchangeDestinationWalletConfigKey, &destinationWalletID)
 	mgr.db.ReadWalletConfigValue(sharedW.ExchangeDestinationAccountConfigKey, &destinationAccountNumber)
 
 	return &sharedW.ExchangeConfig{
+		SourceAsset:      sourceAsset,
+		DestinationAsset: destinationAsset,
+
 		SourceWalletID:      sourceWalletID,
 		DestinationWalletID: destinationWalletID,
 
@@ -215,6 +224,8 @@ func (mgr *AssetsManager) ExchangeConfigIsSet() bool {
 
 // ClearExchangeConfig clears the wallet's exchange config.
 func (mgr *AssetsManager) ClearExchangeConfig() error {
+	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceAssetTypeConfigKey)
+	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeDestinationAssetTypeConfigKey)
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceWalletConfigKey)
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceAccountConfigKey)
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeDestinationWalletConfigKey)

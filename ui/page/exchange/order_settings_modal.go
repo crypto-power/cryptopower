@@ -74,60 +74,7 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	osm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
 	osm.addressEditor.Editor.SingleLine = true
 
-	// Source wallet picker
-	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
-		Title(values.String(values.StrFrom))
-
-	// Source account picker
-	osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-		Title(values.String(values.StrAccount)).
-		AccountValidator(func(account *sharedW.Account) bool {
-			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
-
-			return accountIsValid
-		})
-	osm.sourceAccountSelector.SelectFirstValidAccount(osm.sourceWalletSelector.SelectedWallet())
-
-	osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-	})
-
-	// Destination wallet picker
-	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
-		Title(values.String(values.StrTo))
-
-	// Destination account picker
-	osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-		Title(values.String(values.StrAccount)).
-		AccountValidator(func(account *sharedW.Account) bool {
-			// Imported accounts and watch only accounts are imvalid
-			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
-
-			return accountIsValid
-		})
-	osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
-	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-	if err != nil {
-		log.Error(err)
-	}
-	osm.addressEditor.Editor.SetText(address)
-
-	osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-		if err != nil {
-			log.Error(err)
-		}
-		osm.addressEditor.Editor.SetText(address)
-	})
-
-	osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-		if err != nil {
-			log.Error(err)
-		}
-		osm.addressEditor.Editor.SetText(address)
-	})
+	osm.initializeWalletAndAccountSelector()
 
 	return osm
 }
@@ -144,84 +91,92 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
-
+	// osm.WL.MultiWallet.ClearExchangeConfig()
 	if osm.WL.MultiWallet.ExchangeConfigIsSet() {
 		exchangeConfig := osm.WL.MultiWallet.ExchangeConfig()
 		sourceWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.SourceWalletID))
 		destinationWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.DestinationWalletID))
 
-		if sourceWallet != nil {
-			_, err := sourceWallet.GetAccount(exchangeConfig.SourceAccountNumber)
-			if err != nil {
-				log.Error(err)
-			}
+		sourceCurrency := exchangeConfig.SourceAsset
+		toCurrency := exchangeConfig.DestinationAsset
 
-			// Source wallet picker
-			osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
-				Title(values.String(values.StrFrom))
+		if sourceCurrency != osm.orderData.fromCurrency || toCurrency != osm.orderData.toCurrency {
+			// if currencies have changed, reset the exchange config
+			osm.initializeWalletAndAccountSelector()
+		} else {
+			if sourceWallet != nil {
+				_, err := sourceWallet.GetAccount(exchangeConfig.SourceAccountNumber)
+				if err != nil {
+					log.Error(err)
+				}
 
-			sourceW := &load.WalletMapping{
-				Asset: sourceWallet,
-			}
-			osm.sourceWalletSelector.SelectWallet(sourceW)
+				// Source wallet picker
+				osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
+					Title(values.String(values.StrFrom))
 
-			// Source account picker
-			osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-				Title(values.String(values.StrAccount)).
-				AccountValidator(func(account *sharedW.Account) bool {
-					accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+				sourceW := &load.WalletMapping{
+					Asset: sourceWallet,
+				}
+				osm.sourceWalletSelector.SelectWallet(sourceW)
 
-					return accountIsValid
+				// Source account picker
+				osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+					Title(values.String(values.StrAccount)).
+					AccountValidator(func(account *sharedW.Account) bool {
+						accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+						return accountIsValid
+					})
+				osm.sourceAccountSelector.SelectAccount(osm.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
+
+				osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+					osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 				})
-			osm.sourceAccountSelector.SelectAccount(osm.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
-
-			// osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			// 	osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-			// })
-		}
-
-		if destinationWallet != nil {
-			_, err := destinationWallet.GetAccount(exchangeConfig.DestinationAccountNumber)
-			if err != nil {
-				log.Error(err)
 			}
 
-			// Destination wallet picker
-			osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
-				Title(values.String(values.StrTo))
+			if destinationWallet != nil {
+				_, err := destinationWallet.GetAccount(exchangeConfig.DestinationAccountNumber)
+				if err != nil {
+					log.Error(err)
+				}
 
-			// Destination account picker
-			osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
-				Title(values.String(values.StrAccount)).
-				AccountValidator(func(account *sharedW.Account) bool {
-					// Imported accounts and watch only accounts are imvalid
-					accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+				// Destination wallet picker
+				osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
+					Title(values.String(values.StrTo))
 
-					return accountIsValid
+				// Destination account picker
+				osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+					Title(values.String(values.StrAccount)).
+					AccountValidator(func(account *sharedW.Account) bool {
+						// Imported accounts and watch only accounts are imvalid
+						accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+						return accountIsValid
+					})
+				osm.destinationAccountSelector.SelectAccount(osm.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
+				address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+				if err != nil {
+					log.Error(err)
+				}
+				osm.addressEditor.Editor.SetText(address)
+
+				osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+					osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+					address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+					if err != nil {
+						log.Error(err)
+					}
+					osm.addressEditor.Editor.SetText(address)
 				})
-			osm.destinationAccountSelector.SelectAccount(osm.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
-			address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-			if err != nil {
-				log.Error(err)
+
+				osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
+					address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+					if err != nil {
+						log.Error(err)
+					}
+					osm.addressEditor.Editor.SetText(address)
+				})
 			}
-			osm.addressEditor.Editor.SetText(address)
-
-			// osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			// 	osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-			// 	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-			// 	if err != nil {
-			// 		log.Error(err)
-			// 	}
-			// 	osm.addressEditor.Editor.SetText(address)
-			// })
-
-			// osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-			// 	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
-			// 	if err != nil {
-			// 		log.Error(err)
-			// 	}
-			// 	osm.addressEditor.Editor.SetText(address)
-			// })
 		}
 
 	}
@@ -247,7 +202,7 @@ func (osm *orderSettingsModal) Handle() {
 			destinationWalletSelector:  osm.destinationWalletSelector,
 		}
 
-		osm.WL.MultiWallet.SetExchangeConfig(int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
+		osm.WL.MultiWallet.SetExchangeConfig(osm.orderData.fromCurrency, int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), osm.orderData.toCurrency, int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}
@@ -435,4 +390,61 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
+}
+
+func (osm *orderSettingsModal) initializeWalletAndAccountSelector() {
+	// Source wallet picker
+	osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.fromCurrency).
+		Title(values.String(values.StrFrom))
+
+	// Source account picker
+	osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+			return accountIsValid
+		})
+	osm.sourceAccountSelector.SelectFirstValidAccount(osm.sourceWalletSelector.SelectedWallet())
+
+	osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+	})
+
+	// Destination wallet picker
+	osm.destinationWalletSelector = components.NewWalletAndAccountSelector(osm.Load, osm.orderData.toCurrency).
+		Title(values.String(values.StrTo))
+
+	// Destination account picker
+	osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			// Imported accounts and watch only accounts are imvalid
+			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+
+			return accountIsValid
+		})
+	osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
+	address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+	if err != nil {
+		log.Error(err)
+	}
+	osm.addressEditor.Editor.SetText(address)
+
+	osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
+		osm.addressEditor.Editor.SetText(address)
+	})
+
+	osm.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
+		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
+		if err != nil {
+			log.Error(err)
+		}
+		osm.addressEditor.Editor.SetText(address)
+	})
 }
