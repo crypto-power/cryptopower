@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"context"
 	"encoding/json"
 	"sort"
 	"sync"
@@ -164,7 +165,11 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 		}
 	}
 
-	txResult, err := loadedAsset.GetTransactions(startBlock, endBlock, "", asset.syncCtx.Done())
+	ctx := context.Background()
+	if asset.syncCtx != nil {
+		ctx = asset.syncCtx
+	}
+	txResult, err := loadedAsset.GetTransactions(startBlock, endBlock, "", ctx.Done())
 	if err != nil {
 		return nil, err
 	}
