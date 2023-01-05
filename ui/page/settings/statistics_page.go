@@ -12,8 +12,10 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -78,6 +80,20 @@ func (pg *StatPage) OnNavigatedTo() {
 	if err != nil {
 		log.Errorf("Error getting wallet accounts: %s", err.Error())
 	} else {
+		// Filter imported account.
+		accounts := make([]*sharedW.Account, 0)
+		for _, v := range acc.Accounts {
+			if pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset && v.AccountNumber != btc.ImportedAccountNumber {
+				accounts = append(accounts, v)
+			}
+
+			if pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset && v.Number != dcr.ImportedAccountNumber {
+				accounts = append(accounts, v)
+			}
+
+			fmt.Printf("Account: %+v \n", v)
+		}
+		acc.Accounts = accounts
 		pg.accounts = acc
 	}
 
