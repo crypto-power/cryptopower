@@ -27,11 +27,11 @@ type confirmOrderModal struct {
 	confirmButton                cryptomaterial.Button
 	passwordEditor               cryptomaterial.Editor
 
-	orderCreated func()
-	isCreating   bool
+	pageContainer *widget.List
+
+	isCreating bool
 
 	*orderData
-	exchangeRateSet bool
 }
 
 func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
@@ -52,6 +52,13 @@ func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	com.passwordEditor.Editor.SetText("")
 	com.passwordEditor.Editor.SingleLine = true
 	com.passwordEditor.Editor.Submit = true
+
+	com.pageContainer = &widget.List{
+		List: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+	}
 
 	return com
 }
@@ -145,182 +152,145 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 
 	w := []layout.Widget{
 		func(gtx C) D {
-			return com.Theme.Label(values.TextSize18, values.String(values.StrConfirmYourOrder)).Layout(gtx)
-		},
-		func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency.String(), values.MarginPadding30)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Left: values.MarginPadding10,
-							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.fromCurrency.String(), com.orderData.invoicedAmount)
-									}),
-									layout.Rigid(func(gtx C) D {
-										sourceWallet := com.WL.MultiWallet.WalletWithID(com.orderData.sourceWalletID)
-										sourceWalletName := sourceWallet.GetWalletName()
-										sourceAccount, _ := sourceWallet.GetAccount(com.orderData.sourceAccountNumber)
-										fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
-										return com.Theme.Label(values.TextSize16, fromText).Layout(gtx)
-									}),
-								)
-							})
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding24,
-						Bottom: values.MarginPadding24,
-					}.Layout(gtx, func(gtx C) D {
-						return com.Theme.Icons.ArrowDownIcon.LayoutSize(gtx, values.MarginPadding20)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency.String(), values.MarginPadding30)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Left: values.MarginPadding10,
-							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.toCurrency.String(), com.orderData.orderedAmount)
-									}),
-									layout.Rigid(func(gtx C) D {
-										destinationWallet := com.WL.MultiWallet.WalletWithID(com.orderData.destinationWalletID)
-										destinationWalletName := destinationWallet.GetWalletName()
-										destinationAccount, _ := destinationWallet.GetAccount(com.orderData.destinationAccountNumber)
-										toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
-										return com.Theme.Label(values.TextSize16, toText).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, com.orderData.destinationAddress).Layout(gtx)
-									}),
-								)
-							})
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, com.passwordEditor.Layout)
-				}),
-			)
-		},
-		func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency.String(), values.MarginPadding30)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Left: values.MarginPadding10,
-							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.fromCurrency.String(), com.orderData.invoicedAmount)
-									}),
-									layout.Rigid(func(gtx C) D {
-										sourceWallet := com.WL.MultiWallet.WalletWithID(com.orderData.sourceWalletID)
-										sourceWalletName := sourceWallet.GetWalletName()
-										sourceAccount, _ := sourceWallet.GetAccount(com.orderData.sourceAccountNumber)
-										fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
-										return com.Theme.Label(values.TextSize16, fromText).Layout(gtx)
-									}),
-								)
-							})
+			return layout.Stack{Alignment: layout.S}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+						layout.Expanded(func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+										txt := com.Theme.Label(values.TextSize20, values.String(values.StrConfirmYourOrder))
+										txt.Font.Weight = text.SemiBold
+										return txt.Layout(gtx)
+									})
+								}),
+								layout.Rigid(func(gtx C) D {
+									return com.Theme.List(com.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency.String(), values.MarginPadding30)
+													}),
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Left: values.MarginPadding10,
+														}.Layout(gtx, func(gtx C) D {
+															return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return com.Theme.Label(values.TextSize16, values.String(values.StrSending)).Layout(gtx)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return components.LayoutOrderAmount(com.Load, gtx, com.orderData.fromCurrency.String(), com.orderData.invoicedAmount)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	sourceWallet := com.WL.MultiWallet.WalletWithID(com.orderData.sourceWalletID)
+																	sourceWalletName := sourceWallet.GetWalletName()
+																	sourceAccount, _ := sourceWallet.GetAccount(com.orderData.sourceAccountNumber)
+																	fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
+																	return com.Theme.Label(values.TextSize16, fromText).Layout(gtx)
+																}),
+															)
+														})
+													}),
+												)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{
+													Top:    values.MarginPadding24,
+													Bottom: values.MarginPadding24,
+												}.Layout(gtx, func(gtx C) D {
+													return com.Theme.Icons.ArrowDownIcon.LayoutSize(gtx, values.MarginPadding20)
+												})
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency.String(), values.MarginPadding30)
+													}),
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Left: values.MarginPadding10,
+														}.Layout(gtx, func(gtx C) D {
+															return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return com.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return components.LayoutOrderAmount(com.Load, gtx, com.orderData.toCurrency.String(), com.orderData.orderedAmount)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	destinationWallet := com.WL.MultiWallet.WalletWithID(com.orderData.destinationWalletID)
+																	destinationWalletName := destinationWallet.GetWalletName()
+																	destinationAccount, _ := destinationWallet.GetAccount(com.orderData.destinationAccountNumber)
+																	toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
+																	return com.Theme.Label(values.TextSize16, toText).Layout(gtx)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return com.Theme.Label(values.TextSize16, com.orderData.destinationAddress).Layout(gtx)
+																}),
+															)
+														})
+													}),
+												)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, com.passwordEditor.Layout)
+											}),
+										)
+									})
+								}),
+							)
 						}),
 					)
 				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding24,
-						Bottom: values.MarginPadding24,
-					}.Layout(gtx, func(gtx C) D {
-						return com.Theme.Icons.ArrowDownIcon.LayoutSize(gtx, values.MarginPadding20)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency.String(), values.MarginPadding30)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Left: values.MarginPadding10,
-							}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, values.String(values.StrReceiving)).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutOrderAmount(com.Load, gtx, com.orderData.toCurrency.String(), com.orderData.orderedAmount)
-									}),
-									layout.Rigid(func(gtx C) D {
-										destinationWallet := com.WL.MultiWallet.WalletWithID(com.orderData.destinationWalletID)
-										destinationWalletName := destinationWallet.GetWalletName()
-										destinationAccount, _ := destinationWallet.GetAccount(com.orderData.destinationAccountNumber)
-										toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
-										return com.Theme.Label(values.TextSize16, toText).Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return com.Theme.Label(values.TextSize16, com.orderData.destinationAddress).Layout(gtx)
-									}),
-								)
-							})
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, com.passwordEditor.Layout)
-				}),
-			)
-		},
-		func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Right: values.MarginPadding8,
-							}.Layout(gtx, func(gtx C) D {
-								if com.isCreating {
-									return D{}
+				layout.Stacked(func(gtx C) D {
+					gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+
+					return layout.S.Layout(gtx, func(gtx C) D {
+						return layout.Inset{
+							Top: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							c := com.Theme.Card()
+							c.Radius = cryptomaterial.Radius(0)
+							return c.Layout(gtx, func(gtx C) D {
+								inset := layout.Inset{
+									Top: values.MarginPadding16,
 								}
-								return com.closeConfirmationModalButton.Layout(gtx)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							if com.isCreating {
-								return layout.Inset{Top: unit.Dp(7)}.Layout(gtx, func(gtx C) D {
-									return material.Loader(com.Theme.Base).Layout(gtx)
+								return inset.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Flexed(1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Right: values.MarginPadding8,
+														}.Layout(gtx, func(gtx C) D {
+															if com.isCreating {
+																return D{}
+															}
+															return com.closeConfirmationModalButton.Layout(gtx)
+														})
+													}),
+													layout.Rigid(func(gtx C) D {
+														if com.isCreating {
+															return layout.Inset{Top: unit.Dp(7)}.Layout(gtx, func(gtx C) D {
+																return material.Loader(com.Theme.Base).Layout(gtx)
+															})
+														}
+														com.confirmButton.Text = values.String(values.StrConfirmOrder)
+														return com.confirmButton.Layout(gtx)
+													}),
+												)
+											})
+										}),
+									)
 								})
-							}
-							com.confirmButton.Text = values.String(values.StrConfirmOrder)
-							return com.confirmButton.Layout(gtx)
-						}),
-					)
-				})
-			})
+							})
+						})
+					})
+				}),
+			)
 		},
 	}
 	return com.Modal.Layout(gtx, w)

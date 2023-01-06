@@ -31,6 +31,8 @@ type orderSettingsModal struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
+	pageContainer *widget.List
+
 	settingsSaved func(params *callbackParams)
 	onCancel      func()
 
@@ -47,15 +49,17 @@ type orderSettingsModal struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	addressEditor cryptomaterial.Editor
+	copyRedirect  *cryptomaterial.Clickable
 
 	*orderData
 }
 
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
 	osm := &orderSettingsModal{
-		Load:      l,
-		Modal:     l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
-		orderData: data,
+		Load:         l,
+		Modal:        l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
+		orderData:    data,
+		copyRedirect: l.Theme.NewClickable(false),
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
@@ -73,6 +77,13 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 
 	osm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
 	osm.addressEditor.Editor.SingleLine = true
+
+	osm.pageContainer = &widget.List{
+		List: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+	}
 
 	osm.initializeWalletAndAccountSelector()
 
@@ -266,127 +277,185 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 	osm.handleCopyEvent(gtx)
 	w := []layout.Widget{
 		func(gtx C) D {
-			return layout.Inset{
-				Bottom: values.MarginPadding8,
-			}.Layout(gtx, func(gtx C) D {
-				txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
-				txt.Font.Weight = text.SemiBold
-				return txt.Layout(gtx)
-			})
-		},
-		func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:     cryptomaterial.MatchParent,
-				Height:    cryptomaterial.WrapContent,
-				Direction: layout.Center,
-			}.Layout2(gtx, func(gtx C) D {
-				return cryptomaterial.LinearLayout{
-					Width:  cryptomaterial.MatchParent,
-					Height: cryptomaterial.WrapContent,
-				}.Layout2(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Bottom: values.MarginPadding16,
-							}.Layout(gtx, func(gtx C) D {
-								return cryptomaterial.LinearLayout{
-									Width:       cryptomaterial.MatchParent,
-									Height:      cryptomaterial.WrapContent,
-									Orientation: layout.Vertical,
-									Margin:      layout.Inset{Bottom: values.MarginPadding16},
-								}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
-												txt.Font.Weight = text.SemiBold
-												return txt.Layout(gtx)
-											}),
-											layout.Rigid(func(gtx C) D {
-												return layout.Inset{
-													Top:  values.MarginPadding4,
-													Left: values.MarginPadding4,
-												}.Layout(gtx, osm.sourceInfoButton.Layout)
-											}),
-										)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Bottom: values.MarginPadding16,
-										}.Layout(gtx, func(gtx C) D {
-											return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
-										})
-									}),
-									layout.Rigid(func(gtx C) D {
-										return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
-									}),
-								)
+			return layout.Stack{Alignment: layout.S}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+						layout.Expanded(func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Bottom: values.MarginPadding8,
+									}.Layout(gtx, func(gtx C) D {
+										txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
+										txt.Font.Weight = text.SemiBold
+										return txt.Layout(gtx)
+									})
+								}),
+								layout.Rigid(func(gtx C) D {
+									return osm.Theme.List(osm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+										return cryptomaterial.LinearLayout{
+											Width:     cryptomaterial.MatchParent,
+											Height:    cryptomaterial.WrapContent,
+											Direction: layout.Center,
+										}.Layout2(gtx, func(gtx C) D {
+											return cryptomaterial.LinearLayout{
+												Width:  cryptomaterial.MatchParent,
+												Height: cryptomaterial.WrapContent,
+											}.Layout2(gtx, func(gtx C) D {
+												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Bottom: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:       cryptomaterial.MatchParent,
+																Height:      cryptomaterial.WrapContent,
+																Orientation: layout.Vertical,
+																Margin:      layout.Inset{Bottom: values.MarginPadding16},
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+																		layout.Rigid(func(gtx C) D {
+																			txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
+																			txt.Font.Weight = text.SemiBold
+																			return txt.Layout(gtx)
+																		}),
+																		layout.Rigid(func(gtx C) D {
+																			return layout.Inset{
+																				Top:  values.MarginPadding4,
+																				Left: values.MarginPadding4,
+																			}.Layout(gtx, osm.sourceInfoButton.Layout)
+																		}),
+																	)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return layout.Inset{
+																		Bottom: values.MarginPadding16,
+																	}.Layout(gtx, func(gtx C) D {
+																		return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
+																	})
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
+																}),
+															)
 
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{
-								Bottom: values.MarginPadding16,
-							}.Layout(gtx, func(gtx C) D {
-								return cryptomaterial.LinearLayout{
-									Width:       cryptomaterial.MatchParent,
-									Height:      cryptomaterial.WrapContent,
-									Orientation: layout.Vertical,
-									Margin:      layout.Inset{Bottom: values.MarginPadding16},
-								}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
-												txt.Font.Weight = text.SemiBold
-												return txt.Layout(gtx)
-											}),
-											layout.Rigid(func(gtx C) D {
-												return layout.Inset{
-													Top:  values.MarginPadding4,
-													Left: values.MarginPadding4,
-												}.Layout(gtx, osm.destinationInfoButton.Layout)
-											}),
-										)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Bottom: values.MarginPadding16,
-										}.Layout(gtx, func(gtx C) D {
-											return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
-										})
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Bottom: values.MarginPadding16,
-										}.Layout(gtx, func(gtx C) D {
-											return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
-										})
-									}),
-									layout.Rigid(func(gtx C) D {
-										gtx = gtx.Disabled() // since this is disabled, the copy icon doesn't work
-										osm.addressEditor.SelectionColor = osm.Theme.Color.Gray5
-										return osm.addressEditor.Layout(gtx)
-									}),
-								)
+														})
+													}),
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Bottom: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:       cryptomaterial.MatchParent,
+																Height:      cryptomaterial.WrapContent,
+																Orientation: layout.Vertical,
+																Margin:      layout.Inset{Bottom: values.MarginPadding16},
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+																		layout.Rigid(func(gtx C) D {
+																			txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
+																			txt.Font.Weight = text.SemiBold
+																			return txt.Layout(gtx)
+																		}),
+																		layout.Rigid(func(gtx C) D {
+																			return layout.Inset{
+																				Top:  values.MarginPadding4,
+																				Left: values.MarginPadding4,
+																			}.Layout(gtx, osm.destinationInfoButton.Layout)
+																		}),
+																	)
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return layout.Inset{
+																		Bottom: values.MarginPadding16,
+																	}.Layout(gtx, func(gtx C) D {
+																		return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
+																	})
+																}),
+																layout.Rigid(func(gtx C) D {
+																	return layout.Inset{
+																		Bottom: values.MarginPadding16,
+																	}.Layout(gtx, func(gtx C) D {
+																		return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
+																	})
+																}),
+																layout.Rigid(func(gtx C) D {
+																	border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+																	wrapper := osm.Load.Theme.Card()
+																	wrapper.Color = osm.Load.Theme.Color.Gray4
+																	return layout.Inset{
+																		Bottom: values.MarginPadding16,
+																	}.Layout(gtx, func(gtx C) D {
+																		return border.Layout(gtx, func(gtx C) D {
+																			return wrapper.Layout(gtx, func(gtx C) D {
+																				return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+																					return layout.Flex{}.Layout(gtx,
+																						layout.Flexed(0.9, osm.Load.Theme.Body1(osm.addressEditor.Editor.Text()).Layout),
+																						layout.Flexed(0.1, func(gtx C) D {
+																							return layout.E.Layout(gtx, func(gtx C) D {
+																								if osm.copyRedirect.Clicked() {
+																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
+																									osm.Load.Toast.Notify(values.String(values.StrCopied))
+																								}
+																								return osm.copyRedirect.Layout(gtx, osm.Load.Theme.Icons.CopyIcon.Layout24dp)
+																							})
+																						}),
+																					)
+																				})
+																			})
+																		})
+																	})
 
-							})
+																}),
+															)
+														})
+													}),
+												)
+											})
+										})
+									})
+								}),
+							)
 						}),
 					)
-				})
-			})
-		},
-		func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
+				}),
+				layout.Stacked(func(gtx C) D {
+					gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+
+					return layout.S.Layout(gtx, func(gtx C) D {
 						return layout.Inset{
-							Right: values.MarginPadding4,
-						}.Layout(gtx, osm.cancelBtn.Layout)
-					}),
-					layout.Rigid(osm.saveBtn.Layout),
-				)
-			})
+							Top: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							c := osm.Theme.Card()
+							c.Radius = cryptomaterial.Radius(0)
+							return c.Layout(gtx, func(gtx C) D {
+								inset := layout.Inset{
+									Top: values.MarginPadding16,
+								}
+								return inset.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Flexed(1, func(gtx C) D {
+											return layout.E.Layout(gtx, func(gtx C) D {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Right: values.MarginPadding4,
+														}.Layout(gtx, osm.cancelBtn.Layout)
+													}),
+													layout.Rigid(osm.saveBtn.Layout),
+												)
+											})
+										}),
+									)
+								})
+							})
+						})
+					})
+				}),
+			)
+
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
