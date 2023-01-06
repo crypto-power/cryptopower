@@ -360,14 +360,20 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			status := l.Theme.Label(values.TextSize16, values.String(values.StrPending))
-			if TxConfirmations(l, row.Transaction) <= 1 {
+			status := l.Theme.Label(values.TextSize16, values.String(values.StrUnknown))
+			txConfirmations := TxConfirmations(l, row.Transaction)
+			reqConf := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID).RequiredConfirmations()
+			if txConfirmations < 1 {
+				status = l.Theme.Label(values.TextSize16, values.String(values.StrUnconfirmedTx))
 				status.Color = l.Theme.Color.GrayText1
-			} else {
+			} else if txConfirmations >= reqConf {
 				status.Color = l.Theme.Color.GrayText2
 				date := time.Unix(row.Transaction.Timestamp, 0).Format("Jan 2, 2006")
 				timeSplit := time.Unix(row.Transaction.Timestamp, 0).Format("03:04:05 PM")
 				status.Text = fmt.Sprintf("%v at %v", date, timeSplit)
+			} else {
+				status = l.Theme.Label(values.TextSize16, values.StringF(values.StrTxStatusPending, txConfirmations, reqConf))
+				status.Color = l.Theme.Color.GrayText1
 			}
 
 			return layout.E.Layout(gtx, func(gtx C) D {

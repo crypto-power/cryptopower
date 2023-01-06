@@ -603,5 +603,6 @@ const EN = `
 "feerates" = "Fee Rates"
 "canceling" = "Cancelling..."
 "unconfirmedTx"    = "unconfirmed"
+"unconfirmedTx"    = "Unconfirmed"
 "txStatusPending"         = "Pending (%v of %v confirmations)" 
 `
