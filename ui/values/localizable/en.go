@@ -581,6 +581,7 @@ const EN = `
 "discoverAddressUsage" = "Discover Address Usage"
 "setGapLimitInfo" = "%v In some rare circumstances, address may not be discovered with the default gap limit of 20. It's recommended to only use this functionality after trying other options. And be aware that raising the gap limit above 100 will lead to excessive loading times to complete this request. %v"
 "gapLimitInputErr" = "Invalid input: valid values (1-1000)"
+"addressDiscoveryInProgress" = "Address Discovery in Progress..."
 "addressDiscoveryStarted" = "Address discovery started successfully"
 "addressDiscoveryStartedBody"    = "See wallet information page for progress"
 "setGapLimit"             = "Set Gap Limit"

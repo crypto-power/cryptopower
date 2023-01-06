@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/layout"
 
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -18,7 +19,14 @@ func (pg *WalletInfo) initWalletStatusWidgets() {
 
 // syncStatusSection lays out content for displaying sync status.
 func (pg *WalletInfo) syncStatusSection(gtx C) D {
-	syncing, rescanning := pg.WL.SelectedWallet.Wallet.IsSyncing(), pg.WL.SelectedWallet.Wallet.IsRescanning()
+	isBtcAsset := pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset
+	syncing := pg.WL.SelectedWallet.Wallet.IsSyncing()
+
+	// btcwallet does not export implementation to track address discovery.
+	// During btc address discovery, show the normal synced info page with an
+	// extra label showing the address discovery is in progress.
+	rescanning := pg.WL.SelectedWallet.Wallet.IsRescanning() && !isBtcAsset
+
 	uniform := layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		return components.Container{Padding: layout.Inset{
@@ -117,7 +125,9 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 
 // syncContent lays out sync status content when the wallet is syncing, synced, not connected
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
-	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	isBtcAsset := pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset
+	isRescanning := pg.WL.SelectedWallet.Wallet.IsRescanning()
+	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || isRescanning
 	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -137,17 +147,28 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeaderFetched.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
+						if isRescanning && isBtcAsset {
+							return D{}
+						}
 						syncProgress := pg.Theme.Body1(values.String(values.StrSyncingProgress))
 						syncProgress.Color = pg.Theme.Color.GrayText2
 						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgress.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !isInprogress {
+						if !isInprogress || (isRescanning && isBtcAsset) {
 							return D{}
 						}
 						estTime := pg.Theme.Body1(values.String(values.StrSyncCompTime))
 						estTime.Color = pg.Theme.Color.GrayText2
 						return estTime.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !(isRescanning && isBtcAsset) {
+							return D{}
+						}
+						addrDiscovery := pg.Theme.Body1(values.String(values.StrAddressDiscoveryInProgress))
+						addrDiscovery.Color = pg.Theme.Color.GrayText2
+						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, addrDiscovery.Layout)
 					}),
 				)
 			}),
@@ -159,7 +180,7 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInprogress {
+							if !isInprogress || (isRescanning && isBtcAsset) {
 								return D{}
 							}
 							blockHeightFetchedText := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.headersToFetchOrScan)
@@ -184,7 +205,7 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgressBody.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInprogress {
+							if !isInprogress || (isRescanning && isBtcAsset) {
 								return D{}
 							}
 							_, timeLeft := pg.progressStatusDetails()
