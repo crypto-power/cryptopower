@@ -738,4 +738,6 @@ const (
 	StrFetchingOrders                  = "fetchingOrders"
 	StrNoOrders                        = "noOrders"
 	StrServer                          = "server"
+	StrExchange                        = "exchange"
+	StrExchangeIntro                   = "exchangeIntro"
 )

@@ -102,7 +102,7 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
-	// osm.WL.MultiWallet.ClearExchangeConfig()
+
 	if osm.WL.MultiWallet.ExchangeConfigIsSet() {
 		exchangeConfig := osm.WL.MultiWallet.ExchangeConfig()
 		sourceWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.SourceWalletID))

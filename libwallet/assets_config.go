@@ -184,7 +184,7 @@ func (mgr *AssetsManager) SetExchangeConfig(fromCurrency utils.AssetType, source
 	mgr.db.SaveWalletConfigValue(sharedW.ExchangeDestinationAccountConfigKey, DestinationAccountID)
 }
 
-// ExchangeConfig returns the previously set ticket buyer config for
+// ExchangeConfig returns the previously set exchange config for
 // the asset.
 func (mgr *AssetsManager) ExchangeConfig() *sharedW.ExchangeConfig {
 	var sourceAsset utils.AssetType

@@ -261,8 +261,8 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 		pg.DCRwalletListLayout,
 		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
-		pg.sectionTitle("Exchange curriencies simple, fast and secure."),
-		pg.layoutAddMoreRowSection(pg.exchangeBtn, "Exchange", pg.Theme.Icons.AddExchange.Layout16dp),
+		pg.sectionTitle(values.String(values.StrExchangeIntro)),
+		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
 	}
 
 	return cryptomaterial.LinearLayout{

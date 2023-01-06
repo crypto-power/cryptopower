@@ -632,4 +632,6 @@ const EN = `
 "fetchingOrders" = "Fetching Orders"
 "noOrders" = "Orders you create will be shown here."
 "server" = "Server"
+"exchange" = "Exchange"
+"exchangeIntro" = "Exchange curriencies simple, fast and secure."
 `
