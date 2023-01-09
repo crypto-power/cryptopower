@@ -601,14 +601,7 @@ const EN = `
 "cost" = "Cost%v"
 "txSize" = "Transaction Size%v"
 "feerates" = "Fee Rates"
-<<<<<<< HEAD
 "canceling" = "Cancelling..."
-"unconfirmedTx"    = "unconfirmed"
 "unconfirmedTx"    = "Unconfirmed"
 "txStatusPending"         = "Pending (%v of %v confirmations)" 
-=======
-"forceRescan" = "Force Rescan"
-"forceRescanBlockchain" = "Force rescan blockchain";
-"forcedRescanInfo" = "This will start a forced rescan of the blockchain."
->>>>>>> 0cb64632 (Add settings control for forced rescan of btc wallets)
 `

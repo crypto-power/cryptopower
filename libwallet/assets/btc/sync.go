@@ -32,10 +32,11 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	startHeight   *int32
-	syncStartTime time.Time
-	syncstarted   uint32
-	txlistening   uint32
+	startHeight         *int32
+	syncStartTime       time.Time
+	syncstarted         uint32
+	txlistening         uint32
+	chainServiceStopped bool
 
 	syncing            bool
 	synced             bool
@@ -369,6 +370,9 @@ func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, 
 		log.Error(err)
 		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
+	asset.syncData.mu.Lock()
+	asset.syncData.chainServiceStopped = false
+	asset.syncData.mu.Unlock()
 
 	return chainService, nil
 }
@@ -409,18 +413,17 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.Start()
 	}
 
-	if asset.chainClient != nil {
-		log.Info("Stopping neutrino client service interface")
+	log.Info("Stopping neutrino client service interface")
 
-		asset.chainClient.Stop() // If active, attempt to shut it down.
-		asset.chainClient.WaitForShutdown()
+	asset.chainClient.Stop() // If active, attempt to shut it down.
+	asset.chainClient.WaitForShutdown()
 
-		// Neutrino performs explicit chain service start but never explicit
-		// chain service stop thus the need to have it done here when stopping
-		// a wallet sync.
-		asset.chainClient.CS.Stop()
-		asset.chainClient = nil
-	}
+	// Neutrino performs explicit chain service start but never explicit
+	// chain service stop thus the need to have it done here when stopping
+	// a wallet sync.
+	asset.chainClient.CS.Stop()
+	asset.syncData.chainServiceStopped = true
+
 	asset.cancelSync()
 	asset.syncData.isSyncShuttingDown = false
 }
@@ -430,12 +433,12 @@ func (asset *BTCAsset) stopSync() {
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
 
-	if asset.chainClient == nil {
-		var err error
-		asset.chainClient, err = asset.newChainClient()
+	if asset.syncData.chainServiceStopped {
+		chainService, err := asset.loadChainService()
 		if err != nil {
 			return err
 		}
+		asset.chainClient.CS = chainService
 	}
 
 	// Chain client performs explicit chain service start up thus no need
@@ -466,6 +469,7 @@ func (asset *BTCAsset) startSync() error {
 	// it could be increased.
 	case <-time.After(time.Second * 5):
 	case <-asset.syncCtx.Done():
+		return nil
 	}
 
 	// Listen and handle incoming notification events.
@@ -572,7 +576,7 @@ func (asset *BTCAsset) SpvSync() (err error) {
 func (asset *BTCAsset) reloadChainService() error {
 	isPrevConnected := asset.IsConnectedToNetwork()
 	if isPrevConnected {
-		asset.cancelSync()
+		asset.CancelSync()
 	}
 
 	asset.chainClient.CS.Stop()
