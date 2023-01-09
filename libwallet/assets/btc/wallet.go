@@ -252,13 +252,6 @@ func (asset *BTCAsset) SafelyCancelSync() {
 		// Chain is either syncing or is synced.
 		asset.CancelSync()
 
-		// Neutrino performs explicit chain service start but never explicit
-		// chain service stop thus the need to have it done here when deleting
-		// a wallet.
-		// NB: Once stopped, peer handling and other listeners can't be brought back.
-		asset.chainClient.CS.Stop()
-		asset.chainClient = nil
-
 		log.Info("The full network shutdown protocols completed.")
 	} else {
 		loadWallet := asset.Internal().BTC

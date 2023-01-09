@@ -387,7 +387,7 @@ func (asset *BTCAsset) stopSync() {
 			asset.syncData.isSyncShuttingDown = false
 			return
 		}
-		// loadedAsset.SetChainSynced(false)
+
 		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
 		loadedAsset.WaitForShutdown()
 		// Initializes goroutine responsible for creating txs preventing double spend.
@@ -403,10 +403,11 @@ func (asset *BTCAsset) stopSync() {
 
 		asset.chainClient.Stop() // If active, attempt to shut it down.
 		asset.chainClient.WaitForShutdown()
-		asset.chainClient.CS.Stop()
 
-		// When CS of chainClient stoped blockSubscriptionManager of chain service stoped and no way to start it,
-		// so we need to create new chainClient to use
+		// Neutrino performs explicit chain service start but never explicit
+		// chain service stop thus the need to have it done here when stopping
+		// a wallet sync.
+		asset.chainClient.CS.Stop()
 		asset.chainClient = nil
 	}
 	asset.cancelSync()
