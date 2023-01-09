@@ -312,6 +312,16 @@ func (asset *BTCAsset) prepareChain() error {
 
 	log.Debug("Starting native BTC wallet sync...")
 
+	asset.chainClient, err = asset.newChainClient()
+	if err != nil {
+		log.Error(err)
+		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+	}
+
+	return nil
+}
+
+func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
 	// Depending on the network, we add some addpeers or a connect peer. On
 	// regtest, if the peers haven't been explicitly set, add the simnet harness
 	// alpha node as an additional peer so we don't have to type it in. On
@@ -346,12 +356,10 @@ func (asset *BTCAsset) prepareChain() error {
 	})
 	if err != nil {
 		log.Error(err)
-		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
-	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
-
-	return nil
+	return chain.NewNeutrinoClient(asset.chainParams, chainService), nil
 }
 
 func (asset *BTCAsset) CancelSync() {
@@ -396,7 +404,12 @@ func (asset *BTCAsset) stopSync() {
 		asset.chainClient.Stop() // If active, attempt to shut it down.
 		asset.chainClient.WaitForShutdown()
 		asset.chainClient.CS.Stop()
+
+		// When CS of chainClient stoped blockSubscriptionManager of chain service stoped and no way to start it,
+		// so we need to create new chainClient to use
+		asset.chainClient = nil
 	}
+	asset.cancelSync()
 	asset.syncData.isSyncShuttingDown = false
 }
 
@@ -404,6 +417,14 @@ func (asset *BTCAsset) stopSync() {
 // restart the chain service if it hasn't been initialized.
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
+
+	if asset.chainClient == nil {
+		var err error
+		asset.chainClient, err = asset.newChainClient()
+		if err != nil {
+			return err
+		}
+	}
 
 	// Chain client performs explicit chain service start up thus no need
 	// to re-initialize it.
