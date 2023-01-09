@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/unit"
+	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -35,9 +34,10 @@ type OrderDetailsPage struct {
 	orderInfo *instantswap.Order
 
 	backButton     cryptomaterial.IconButton
-	infoButton     cryptomaterial.IconButton
 	refreshBtn     cryptomaterial.Button
 	createOrderBtn cryptomaterial.Button
+
+	isRefreshing bool
 }
 
 func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPage {
@@ -58,10 +58,13 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateNewOrder))
 	pg.refreshBtn = pg.Theme.Button(values.String(values.StrRefresh))
 
+	pg.isRefreshing = true
 	pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
 	if err != nil {
+		pg.isRefreshing = false
 		log.Error(err)
 	}
+	pg.isRefreshing = false
 
 	return pg
 }
@@ -82,7 +85,9 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 
 func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
+		pg.isRefreshing = true
 		pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
+		pg.isRefreshing = false
 	}
 
 	if pg.createOrderBtn.Clicked() {
@@ -229,7 +234,18 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 							Top: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
 							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(pg.refreshBtn.Layout),
+								layout.Rigid(func(gtx C) D {
+									if pg.isRefreshing {
+										gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding24)
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										loader := material.Loader(pg.Theme.Base)
+										loader.Color = pg.Theme.Color.Gray1
+										return loader.Layout(gtx)
+									}
+									return layout.Inset{
+										Left: values.MarginPadding10,
+									}.Layout(gtx, pg.refreshBtn.Layout)
+								}),
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{
 										Left: values.MarginPadding10,
@@ -251,11 +267,4 @@ func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*instantswap.Order, error
 	}
 
 	return orderInfo, nil
-}
-
-func (pg *OrderDetailsPage) setWalletLogo(gtx C, currency string, size unit.Dp) D {
-	if currency == utils.DCRWalletAsset.String() {
-		return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding40)
-	}
-	return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding40)
 }

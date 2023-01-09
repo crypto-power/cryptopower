@@ -270,6 +270,10 @@ func (osm *orderSettingsModal) canSave() bool {
 		return false
 	}
 
+	if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
+		return false
+	}
+
 	return true
 }
 
@@ -281,113 +285,122 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 				layout.Expanded(func(gtx C) D {
 					return layout.Stack{Alignment: layout.NE}.Layout(gtx,
 						layout.Expanded(func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Bottom: values.MarginPadding8,
-									}.Layout(gtx, func(gtx C) D {
-										txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
-										txt.Font.Weight = text.SemiBold
-										return txt.Layout(gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return osm.Theme.List(osm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
-										return cryptomaterial.LinearLayout{
-											Width:     cryptomaterial.MatchParent,
-											Height:    cryptomaterial.WrapContent,
-											Direction: layout.Center,
-										}.Layout2(gtx, func(gtx C) D {
+							return layout.Inset{
+								Bottom: values.MarginPadding16,
+							}.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{
+											Bottom: values.MarginPadding8,
+										}.Layout(gtx, func(gtx C) D {
+											txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
+											txt.Font.Weight = text.SemiBold
+											return txt.Layout(gtx)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										return osm.Theme.List(osm.pageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 											return cryptomaterial.LinearLayout{
-												Width:  cryptomaterial.MatchParent,
-												Height: cryptomaterial.WrapContent,
+												Width:     cryptomaterial.MatchParent,
+												Height:    cryptomaterial.WrapContent,
+												Direction: layout.Center,
 											}.Layout2(gtx, func(gtx C) D {
-												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														return layout.Inset{
-															Bottom: values.MarginPadding16,
-														}.Layout(gtx, func(gtx C) D {
-															return cryptomaterial.LinearLayout{
-																Width:       cryptomaterial.MatchParent,
-																Height:      cryptomaterial.WrapContent,
-																Orientation: layout.Vertical,
-																Margin:      layout.Inset{Bottom: values.MarginPadding16},
-															}.Layout(gtx,
-																layout.Rigid(func(gtx C) D {
-																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																		layout.Rigid(func(gtx C) D {
-																			txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
+												return cryptomaterial.LinearLayout{
+													Width:  cryptomaterial.MatchParent,
+													Height: cryptomaterial.WrapContent,
+												}.Layout2(gtx, func(gtx C) D {
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return layout.Inset{
+																Bottom: values.MarginPadding16,
+															}.Layout(gtx, func(gtx C) D {
+																return cryptomaterial.LinearLayout{
+																	Width:       cryptomaterial.MatchParent,
+																	Height:      cryptomaterial.WrapContent,
+																	Orientation: layout.Vertical,
+																	Margin:      layout.Inset{Bottom: values.MarginPadding16},
+																}.Layout(gtx,
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+																			layout.Rigid(func(gtx C) D {
+																				txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
+																				txt.Font.Weight = text.SemiBold
+																				return txt.Layout(gtx)
+																			}),
+																			layout.Rigid(func(gtx C) D {
+																				return layout.Inset{
+																					Top:  values.MarginPadding4,
+																					Left: values.MarginPadding4,
+																				}.Layout(gtx, osm.sourceInfoButton.Layout)
+																			}),
+																		)
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			Bottom: values.MarginPadding16,
+																		}.Layout(gtx, func(gtx C) D {
+																			return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
+																		})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
+																			txt := osm.Theme.Label(values.TextSize14, "Source wallet is not synced")
 																			txt.Font.Weight = text.SemiBold
+																			txt.Color = osm.Theme.Color.Danger
 																			return txt.Layout(gtx)
-																		}),
-																		layout.Rigid(func(gtx C) D {
-																			return layout.Inset{
-																				Top:  values.MarginPadding4,
-																				Left: values.MarginPadding4,
-																			}.Layout(gtx, osm.sourceInfoButton.Layout)
-																		}),
-																	)
-																}),
-																layout.Rigid(func(gtx C) D {
-																	return layout.Inset{
-																		Bottom: values.MarginPadding16,
-																	}.Layout(gtx, func(gtx C) D {
-																		return osm.sourceWalletSelector.Layout(osm.ParentWindow(), gtx)
-																	})
-																}),
-																layout.Rigid(func(gtx C) D {
-																	return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
-																}),
-															)
+																		}
+																		return D{}
+																	}),
+																)
 
-														})
-													}),
-													layout.Rigid(func(gtx C) D {
-														return layout.Inset{
-															Bottom: values.MarginPadding16,
-														}.Layout(gtx, func(gtx C) D {
-															return cryptomaterial.LinearLayout{
-																Width:       cryptomaterial.MatchParent,
-																Height:      cryptomaterial.WrapContent,
-																Orientation: layout.Vertical,
-																Margin:      layout.Inset{Bottom: values.MarginPadding16},
-															}.Layout(gtx,
-																layout.Rigid(func(gtx C) D {
-																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																		layout.Rigid(func(gtx C) D {
-																			txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
-																			txt.Font.Weight = text.SemiBold
-																			return txt.Layout(gtx)
-																		}),
-																		layout.Rigid(func(gtx C) D {
-																			return layout.Inset{
-																				Top:  values.MarginPadding4,
-																				Left: values.MarginPadding4,
-																			}.Layout(gtx, osm.destinationInfoButton.Layout)
-																		}),
-																	)
-																}),
-																layout.Rigid(func(gtx C) D {
-																	return layout.Inset{
-																		Bottom: values.MarginPadding16,
-																	}.Layout(gtx, func(gtx C) D {
-																		return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
-																	})
-																}),
-																layout.Rigid(func(gtx C) D {
-																	return layout.Inset{
-																		Bottom: values.MarginPadding16,
-																	}.Layout(gtx, func(gtx C) D {
-																		return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
-																	})
-																}),
-																layout.Rigid(func(gtx C) D {
-																	border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-																	wrapper := osm.Load.Theme.Card()
-																	wrapper.Color = osm.Load.Theme.Color.Gray4
-																	return layout.Inset{
-																		Bottom: values.MarginPadding16,
-																	}.Layout(gtx, func(gtx C) D {
+															})
+														}),
+														layout.Rigid(func(gtx C) D {
+															return layout.Inset{
+																Bottom: values.MarginPadding16,
+															}.Layout(gtx, func(gtx C) D {
+																return cryptomaterial.LinearLayout{
+																	Width:       cryptomaterial.MatchParent,
+																	Height:      cryptomaterial.WrapContent,
+																	Orientation: layout.Vertical,
+																	Margin:      layout.Inset{Bottom: values.MarginPadding16},
+																}.Layout(gtx,
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+																			layout.Rigid(func(gtx C) D {
+																				txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
+																				txt.Font.Weight = text.SemiBold
+																				return txt.Layout(gtx)
+																			}),
+																			layout.Rigid(func(gtx C) D {
+																				return layout.Inset{
+																					Top:  values.MarginPadding4,
+																					Left: values.MarginPadding4,
+																				}.Layout(gtx, osm.destinationInfoButton.Layout)
+																			}),
+																		)
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			Bottom: values.MarginPadding16,
+																		}.Layout(gtx, func(gtx C) D {
+																			return osm.destinationWalletSelector.Layout(osm.ParentWindow(), gtx)
+																		})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			Bottom: values.MarginPadding16,
+																		}.Layout(gtx, func(gtx C) D {
+																			return osm.destinationAccountSelector.Layout(osm.ParentWindow(), gtx)
+																		})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+																		wrapper := osm.Load.Theme.Card()
+																		wrapper.Color = osm.Load.Theme.Color.Gray4
 																		return border.Layout(gtx, func(gtx C) D {
 																			return wrapper.Layout(gtx, func(gtx C) D {
 																				return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
@@ -406,18 +419,31 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																				})
 																			})
 																		})
-																	})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			Bottom: values.MarginPadding16,
+																		}.Layout(gtx, func(gtx C) D {
+																			if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
+																				txt := osm.Theme.Label(values.TextSize14, "Destination wallet is not synced")
+																				txt.Font.Weight = text.SemiBold
+																				txt.Color = osm.Theme.Color.Danger
+																				return txt.Layout(gtx)
+																			}
+																			return D{}
 
-																}),
-															)
-														})
-													}),
-												)
+																		})
+																	}),
+																)
+															})
+														}),
+													)
+												})
 											})
 										})
-									})
-								}),
-							)
+									}),
+								)
+							})
 						}),
 					)
 				}),
