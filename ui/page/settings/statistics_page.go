@@ -91,7 +91,6 @@ func (pg *StatPage) OnNavigatedTo() {
 				accounts = append(accounts, v)
 			}
 
-			fmt.Printf("Account: %+v \n", v)
 		}
 		acc.Accounts = accounts
 		pg.accounts = acc
