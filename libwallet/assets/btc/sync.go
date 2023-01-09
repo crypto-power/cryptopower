@@ -581,7 +581,6 @@ func (asset *BTCAsset) reloadChainService() error {
 		return err
 	}
 	asset.chainClient.CS = chainService
-	asset.chainClient.Start()
 
 	// If the asset is previously connected to the network call SpvSync to
 	// start sync using the new instance of chain service.
