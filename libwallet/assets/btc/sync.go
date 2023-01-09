@@ -214,6 +214,9 @@ notificationsLoop:
 
 			switch n := n.(type) {
 			case chain.ClientConnected:
+				// Notification type sent is sent when the client connects or reconnects
+				// to the RPC server. It initialize the sync progress data report.
+
 			case chain.BlockConnected:
 				// Notification type is sent when a new block connects to the longest chain.
 				// Trigger the progress report only when the block to be reported
@@ -263,6 +266,7 @@ notificationsLoop:
 
 			case *chain.RescanFinished:
 				asset.syncData.mu.Lock()
+				// Address recovery is complete.
 				asset.syncData.isRescan = false
 				asset.syncData.mu.Unlock()
 
@@ -503,7 +507,14 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 				asset.syncData.mu.Lock()
 				asset.syncData.synced = true
 				asset.syncData.syncing = false
+
+				// Address recovery is triggered immediately after the chain
+				// considers itself sync is complete and synced.
+				asset.syncData.isRescan = true
 				asset.syncData.mu.Unlock()
+
+				// Trigger UI update showing btc address recovery is in progress.
+				asset.publishHeadersFetchComplete()
 				return
 			}
 		case <-asset.syncCtx.Done():
