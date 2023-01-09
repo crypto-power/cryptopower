@@ -41,6 +41,8 @@ type SyncData struct {
 	synced             bool
 	isRescan           bool
 	restartedScan      bool
+	rescanStartTime    time.Time
+	rescanStartHeight  *int32
 	isSyncShuttingDown bool
 
 	// Listeners
@@ -259,7 +261,8 @@ notificationsLoop:
 
 			case *chain.RescanProgress:
 				// Notifications sent at interval of 10k blocks
-				asset.updateSyncProgress(n.Height)
+				//asset.updateSyncProgress(n.Height)
+				asset.updateRescanProgress(n)
 
 			case *chain.RescanFinished:
 				asset.syncData.mu.Lock()
@@ -292,6 +295,10 @@ notificationsLoop:
 				asset.syncData.mu.Lock()
 				asset.syncData.isRescan = false
 				asset.syncData.mu.Unlock()
+
+				if asset.blocksRescanProgressListener != nil {
+					asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
+				}
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
@@ -473,7 +480,8 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	return asset.syncData.syncing || asset.syncData.synced
+	isSyncing := asset.syncData.syncing || asset.syncData.synced
+	return isSyncing || asset.syncData.isRescan
 }
 
 // startWallet initializes the *btcwallet.Wallet and its supporting players and

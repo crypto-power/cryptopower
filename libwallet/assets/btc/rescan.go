@@ -2,13 +2,16 @@ package btc
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -54,11 +57,13 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescan = true
+	asset.syncData.rescanStartTime = time.Now()
 	asset.syncData.mu.Unlock()
 
 	go func() {
 		err := asset.chainClient.Rescan(startHash, addrs, nil)
 		if err != nil {
+			asset.CancelRescan()
 			log.Error(err)
 		}
 	}()
@@ -83,7 +88,12 @@ func (asset *BTCAsset) CancelRescan() {
 	asset.syncData.isRescan = false
 	asset.syncData.mu.Unlock()
 
-	asset.chainClient.Stop()
+	if asset.blocksRescanProgressListener != nil {
+		asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
+	}
+
+	asset.resetSyncProgressData()
+	asset.stopSync()
 }
 
 // RescanAsync initiates a full wallet recovery (used address discovery
@@ -288,4 +298,44 @@ func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
 		return err
 	})
 	return birthdayblock, isverified, err
+}
+
+func (asset *BTCAsset) updateRescanProgress(progress *chain.RescanProgress) {
+	if asset.syncData.rescanStartHeight == nil {
+		asset.syncData.rescanStartHeight = &progress.Height
+	}
+
+	headersFetchedSoFar := progress.Height - *asset.syncData.rescanStartHeight
+	if headersFetchedSoFar < 1 {
+		headersFetchedSoFar = 1
+	}
+
+	remainingHeaders := asset.GetBestBlockHeight() - progress.Height
+	if remainingHeaders < 1 {
+		remainingHeaders = 1
+	}
+
+	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+
+	rescanProgressReport := &sharedW.HeadersRescanProgressReport{
+		CurrentRescanHeight: progress.Height,
+		TotalHeadersToScan:  allHeadersToFetch,
+		WalletID:            asset.ID,
+	}
+
+	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime.Unix()
+	rescanRate := float64(headersFetchedSoFar) / float64(rescanProgressReport.TotalHeadersToScan)
+
+	rescanProgressReport.RescanProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
+	estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
+	rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
+
+	rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
+		TotalSyncProgress:         rescanProgressReport.RescanProgress,
+		TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
+	}
+
+	if asset.blocksRescanProgressListener != nil {
+		asset.blocksRescanProgressListener.OnBlocksRescanProgress(rescanProgressReport)
+	}
 }
