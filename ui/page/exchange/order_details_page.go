@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/widget/material"
@@ -64,7 +65,13 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		pg.isRefreshing = false
 		log.Error(err)
 	}
-	pg.isRefreshing = false
+
+	go func() {
+		select {
+		case <-time.After(2 * time.Second):
+			pg.isRefreshing = false
+		}
+	}()
 
 	return pg
 }
@@ -87,7 +94,12 @@ func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
 		pg.isRefreshing = true
 		pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
-		pg.isRefreshing = false
+		go func() {
+			select {
+			case <-time.After(2 * time.Second):
+				pg.isRefreshing = false
+			}
+		}()
 	}
 
 	if pg.createOrderBtn.Clicked() {
