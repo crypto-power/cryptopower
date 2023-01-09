@@ -37,10 +37,11 @@ type SyncData struct {
 	syncstarted   uint32
 	txlistening   uint32
 
-	syncing       bool
-	synced        bool
-	isRescan      bool
-	restartedScan bool
+	syncing            bool
+	synced             bool
+	isRescan           bool
+	restartedScan      bool
+	isSyncShuttingDown bool
 
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
@@ -213,14 +214,6 @@ notificationsLoop:
 
 			switch n := n.(type) {
 			case chain.ClientConnected:
-				// Notification type sent is sent when the client connects or reconnects
-				// to the RPC server. It initialize the sync progress data report.
-
-				// Rescan is triggered immediately after the chain sync is complete.
-				asset.syncData.mu.Lock()
-				asset.syncData.isRescan = true
-				asset.syncData.mu.Unlock()
-
 			case chain.BlockConnected:
 				// Notification type is sent when a new block connects to the longest chain.
 				// Trigger the progress report only when the block to be reported
@@ -379,12 +372,14 @@ func (asset *BTCAsset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *BTCAsset) stopSync() {
+	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
 		if loadedAsset.ShuttingDown() {
+			asset.syncData.isSyncShuttingDown = false
 			return
 		}
-		loadedAsset.SetChainSynced(false)
+		// loadedAsset.SetChainSynced(false)
 		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
 		loadedAsset.WaitForShutdown()
 		// Initializes goroutine responsible for creating txs preventing double spend.
@@ -402,6 +397,7 @@ func (asset *BTCAsset) stopSync() {
 		asset.chainClient.WaitForShutdown()
 		asset.chainClient.CS.Stop()
 	}
+	asset.syncData.isSyncShuttingDown = false
 }
 
 // startSync initiates the full chain sync starting protocols. It attempts to

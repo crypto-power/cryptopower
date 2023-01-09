@@ -150,6 +150,8 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 // displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
+	isSyncShutting := pg.WL.SelectedWallet.Wallet.IsSyncShuttingDown()
+	pg.syncSwitch.SetEnabled(!isSyncShutting)
 	if pg.syncSwitch.Changed() {
 		if pg.WL.SelectedWallet.Wallet.IsRescanning() {
 			pg.WL.SelectedWallet.Wallet.CancelRescan()

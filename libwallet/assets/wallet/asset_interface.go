@@ -21,6 +21,7 @@ type Asset interface {
 	RemoveSpecificPeer()
 	SetSpecificPeer(address string)
 	GetExtendedPubKey(account int32) (string, error)
+	IsSyncShuttingDown() bool
 
 	LockWallet()
 	IsLocked() bool

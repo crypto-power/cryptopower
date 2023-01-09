@@ -341,6 +341,11 @@ func (asset *DCRAsset) IsSynced() bool {
 	return asset.syncData.synced
 }
 
+func (asset *DCRAsset) IsSyncShuttingDown() bool {
+	//TODO: implement for DCR if synchronous shutdown takes a long time
+	return false
+}
+
 func (asset *DCRAsset) CurrentSyncStage() utils.SyncStage {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()

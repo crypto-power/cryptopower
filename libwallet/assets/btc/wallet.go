@@ -294,6 +294,13 @@ func (asset *BTCAsset) IsSyncing() bool {
 	return asset.syncData.syncing
 }
 
+func (asset *BTCAsset) IsSyncShuttingDown() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	return asset.syncData.isSyncShuttingDown
+}
+
 func (asset *BTCAsset) ConnectedPeers() int32 {
 	return asset.chainClient.CS.ConnectedCount()
 }
