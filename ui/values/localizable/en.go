@@ -601,4 +601,5 @@ const EN = `
 "cost" = "Cost%v"
 "txSize" = "Transaction Size%v"
 "feerates" = "Fee Rates"
+"canceling" = "Cancelling..."
 `

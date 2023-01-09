@@ -37,10 +37,11 @@ type SyncData struct {
 	syncstarted   uint32
 	txlistening   uint32
 
-	syncing       bool
-	synced        bool
-	isRescan      bool
-	restartedScan bool
+	syncing            bool
+	synced             bool
+	isRescan           bool
+	restartedScan      bool
+	isSyncShuttingDown bool
 
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
@@ -213,14 +214,6 @@ notificationsLoop:
 
 			switch n := n.(type) {
 			case chain.ClientConnected:
-				// Notification type sent is sent when the client connects or reconnects
-				// to the RPC server. It initialize the sync progress data report.
-
-				// Rescan is triggered immediately after the chain sync is complete.
-				asset.syncData.mu.Lock()
-				asset.syncData.isRescan = true
-				asset.syncData.mu.Unlock()
-
 			case chain.BlockConnected:
 				// Notification type is sent when a new block connects to the longest chain.
 				// Trigger the progress report only when the block to be reported
@@ -319,6 +312,16 @@ func (asset *BTCAsset) prepareChain() error {
 
 	log.Debug("Starting native BTC wallet sync...")
 
+	asset.chainClient, err = asset.newChainClient()
+	if err != nil {
+		log.Error(err)
+		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+	}
+
+	return nil
+}
+
+func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
 	// Depending on the network, we add some addpeers or a connect peer. On
 	// regtest, if the peers haven't been explicitly set, add the simnet harness
 	// alpha node as an additional peer so we don't have to type it in. On
@@ -353,12 +356,10 @@ func (asset *BTCAsset) prepareChain() error {
 	})
 	if err != nil {
 		log.Error(err)
-		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
 
-	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
-
-	return nil
+	return chain.NewNeutrinoClient(asset.chainParams, chainService), nil
 }
 
 func (asset *BTCAsset) CancelSync() {
@@ -379,12 +380,14 @@ func (asset *BTCAsset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *BTCAsset) stopSync() {
+	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
 		if loadedAsset.ShuttingDown() {
+			asset.syncData.isSyncShuttingDown = false
 			return
 		}
-		loadedAsset.SetChainSynced(false)
+
 		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
 		loadedAsset.WaitForShutdown()
 		// Initializes goroutine responsible for creating txs preventing double spend.
@@ -400,14 +403,29 @@ func (asset *BTCAsset) stopSync() {
 
 		asset.chainClient.Stop() // If active, attempt to shut it down.
 		asset.chainClient.WaitForShutdown()
+
+		// Neutrino performs explicit chain service start but never explicit
+		// chain service stop thus the need to have it done here when stopping
+		// a wallet sync.
 		asset.chainClient.CS.Stop()
+		asset.chainClient = nil
 	}
+	asset.cancelSync()
+	asset.syncData.isSyncShuttingDown = false
 }
 
 // startSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
+
+	if asset.chainClient == nil {
+		var err error
+		asset.chainClient, err = asset.newChainClient()
+		if err != nil {
+			return err
+		}
+	}
 
 	// Chain client performs explicit chain service start up thus no need
 	// to re-initialize it.

@@ -708,4 +708,5 @@ const (
 	StrCost                            = "cost"
 	StrTxSize                          = "txSize"
 	StrFeeRates                        = "feerates"
+	StrCanceling                       = "canceling"
 )

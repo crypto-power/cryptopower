@@ -65,26 +65,35 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrWalletStatus)).Layout),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Right: values.MarginPadding4,
-				Left:  values.MarginPadding4,
-			}.Layout(gtx, func(gtx C) D {
-				return pg.walletStatusIcon.Layout(gtx, values.MarginPadding10)
-			})
-		}),
-		layout.Rigid(statusLabel.Layout),
-		layout.Rigid(func(gtx C) D {
-			if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsSynced() {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						connectedPeers := fmt.Sprintf("%d", pg.WL.SelectedWallet.Wallet.ConnectedPeers())
-						return pg.Theme.Label(values.TextSize14, values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
-					}),
-				)
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			if pg.WL.SelectedWallet.Wallet.IsSyncShuttingDown() {
+				return layout.Inset{
+					Left: values.MarginPadding4,
+				}.Layout(gtx, pg.Theme.Label(values.TextSize14, values.String(values.StrCanceling)).Layout)
 			}
+			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Right: values.MarginPadding4,
+						Left:  values.MarginPadding4,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.walletStatusIcon.Layout(gtx, values.MarginPadding10)
+					})
+				}),
+				layout.Rigid(statusLabel.Layout),
+				layout.Rigid(func(gtx C) D {
+					if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsSynced() {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								connectedPeers := fmt.Sprintf("%d", pg.WL.SelectedWallet.Wallet.ConnectedPeers())
+								return pg.Theme.Label(values.TextSize14, values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
+							}),
+						)
+					}
 
-			return pg.Theme.Label(values.TextSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
+					return pg.Theme.Label(values.TextSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
+				}),
+			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, pg.layoutAutoSyncSection)
