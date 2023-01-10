@@ -102,10 +102,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
-			nerErr := com.WL.MultiWallet.InstantSwap.DeleteOrder(order)
-			if nerErr != nil {
-				log.Error("Error deleting order: %s", nerErr.Error())
-			}
+			_ = com.WL.MultiWallet.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -114,10 +111,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		// FOR DEVELOPMENT: Comment this block to prevent debit of account
 		err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
 		if err != nil {
-			nerErr := com.WL.MultiWallet.InstantSwap.DeleteOrder(order)
-			if nerErr != nil {
-				log.Error("Error deleting order: %s", nerErr.Error())
-			}
+			_ = com.WL.MultiWallet.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
