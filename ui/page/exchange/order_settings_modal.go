@@ -346,7 +346,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return osm.sourceAccountSelector.Layout(osm.ParentWindow(), gtx)
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
+																		if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
 																			txt := osm.Theme.Label(values.TextSize14, "Source wallet is not synced")
 																			txt.Font.Weight = text.SemiBold
 																			txt.Color = osm.Theme.Color.Danger
