@@ -229,3 +229,18 @@ func (instantSwap *InstantSwap) DeleteOrders() error {
 
 	return instantSwap.db.Init(&Order{})
 }
+
+func (instantSwap *InstantSwap) DeleteOrder(order *Order) error {
+	var oldOrder Order
+	err := instantSwap.db.One("UUID", order.UUID, &oldOrder)
+	if err != nil && err != storm.ErrNotFound {
+		return errors.Errorf("error checking if order was already indexed: %s", err.Error())
+	}
+
+	if oldOrder.UUID != "" {
+		// delete old record before saving new (if it exists)
+		instantSwap.db.DeleteStruct(oldOrder)
+	}
+
+	return nil
+}
