@@ -634,4 +634,5 @@ const EN = `
 "server" = "Server"
 "exchange" = "Exchange"
 "exchangeIntro" = "Exchange curriencies simple, fast and secure."
+"minimumAssetType" = "You need to create at least one DCR and one BTC wallet to use the exchange."
 `

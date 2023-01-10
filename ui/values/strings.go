@@ -740,4 +740,5 @@ const (
 	StrServer                          = "server"
 	StrExchange                        = "exchange"
 	StrExchangeIntro                   = "exchangeIntro"
+	StrMinimumAssetType                = "minimumAssetType"
 )

@@ -183,6 +183,12 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	}
 
 	if pg.exchangeBtn.Clicked() {
+		if len(pg.dcrWalletList) <= 0 || len(pg.btcWalletList) <= 0 {
+			text := values.String(values.StrMinimumAssetType)
+			errModal := modal.NewErrorModal(pg.Load, text, modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			return
+		}
 		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
 
 	}
