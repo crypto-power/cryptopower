@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -9,7 +10,6 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/lightninglabs/neutrino"
 	"golang.org/x/sync/errgroup"
@@ -32,15 +32,18 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	startHeight   *int32
-	syncStartTime time.Time
-	syncstarted   uint32
-	txlistening   uint32
+	startHeight         *int32
+	syncStartTime       time.Time
+	syncstarted         uint32
+	txlistening         uint32
+	chainServiceStopped bool
 
 	syncing            bool
 	synced             bool
 	isRescan           bool
 	restartedScan      bool
+	rescanStartTime    time.Time
+	rescanStartHeight  *int32
 	isSyncShuttingDown bool
 
 	// Listeners
@@ -262,7 +265,8 @@ notificationsLoop:
 
 			case *chain.RescanProgress:
 				// Notifications sent at interval of 10k blocks
-				asset.updateSyncProgress(n.Height)
+				//asset.updateSyncProgress(n.Height)
+				asset.updateRescanProgress(n)
 
 			case *chain.RescanFinished:
 				asset.syncData.mu.Lock()
@@ -292,6 +296,14 @@ notificationsLoop:
 				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
+
+				asset.syncData.mu.Lock()
+				asset.syncData.isRescan = false
+				asset.syncData.mu.Unlock()
+
+				if asset.blocksRescanProgressListener != nil {
+					asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
+				}
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
@@ -315,43 +327,43 @@ func (asset *BTCAsset) prepareChain() error {
 	}
 
 	log.Debug("Starting native BTC wallet sync...")
-
-	asset.chainClient, err = asset.newChainClient()
+	chainService, err := asset.loadChainService()
 	if err != nil {
-		log.Error(err)
-		return fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
+		return err
 	}
+
+	asset.chainClient = chain.NewNeutrinoClient(asset.chainParams, chainService)
 
 	return nil
 }
 
-func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
-	// Depending on the network, we add some addpeers or a connect peer. On
-	// regtest, if the peers haven't been explicitly set, add the simnet harness
-	// alpha node as an additional peer so we don't have to type it in. On
-	// mainet and testnet3, add a known reliable persistent peer to be used in
-	// addition to normal DNS seed-based peer discovery.
-	var addPeers []string
-	var connectPeers []string
-	switch asset.chainParams.Net {
-	case wire.MainNet:
-		//TODO: Add more servers to connect peers from.
-		addPeers = []string{"cfilters.ssgen.io"}
-	case wire.TestNet3:
-		//TODO: Add more servers to connect peers from.
-		addPeers = []string{"dex-test.ssgen.io"}
-	case wire.TestNet, wire.SimNet: // plain "wire.TestNet" is regnet!
-		connectPeers = []string{"localhost:20575"}
+func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, err error) {
+	// Read config for persistent peers, if set parse and set neutrino's ConnectedPeers
+	// persistentPeers.
+	var persistentPeers []string
+	peerAddresses := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	if peerAddresses != "" {
+		addresses := strings.Split(peerAddresses, ";")
+		for _, address := range addresses {
+			peerAddress, err := utils.NormalizeAddress(address, asset.chainParams.DefaultPort)
+			if err != nil {
+				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
+			} else {
+				persistentPeers = append(persistentPeers, peerAddress)
+			}
+		}
+
+		if len(persistentPeers) == 0 {
+			return chainService, errors.New(utils.ErrInvalidPeers)
+		}
 	}
 
-	log.Debug("Starting neutrino chain service...")
-	chainService, err := neutrino.NewChainService(neutrino.Config{
+	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb(),
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
-		AddPeers:      addPeers,
-		ConnectPeers:  connectPeers,
+		ConnectPeers:  persistentPeers,
 		// WARNING: PublishTransaction currently uses the entire duration
 		// because if an external bug, but even if the resolved, a typical
 		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
@@ -362,8 +374,11 @@ func (asset *BTCAsset) newChainClient() (*chain.NeutrinoClient, error) {
 		log.Error(err)
 		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
 	}
+	asset.syncData.mu.Lock()
+	asset.syncData.chainServiceStopped = false
+	asset.syncData.mu.Unlock()
 
-	return chain.NewNeutrinoClient(asset.chainParams, chainService), nil
+	return chainService, nil
 }
 
 func (asset *BTCAsset) CancelSync() {
@@ -402,18 +417,17 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.Start()
 	}
 
-	if asset.chainClient != nil {
-		log.Info("Stopping neutrino client service interface")
+	log.Info("Stopping neutrino client service interface")
 
-		asset.chainClient.Stop() // If active, attempt to shut it down.
-		asset.chainClient.WaitForShutdown()
+	asset.chainClient.Stop() // If active, attempt to shut it down.
+	asset.chainClient.WaitForShutdown()
 
-		// Neutrino performs explicit chain service start but never explicit
-		// chain service stop thus the need to have it done here when stopping
-		// a wallet sync.
-		asset.chainClient.CS.Stop()
-		asset.chainClient = nil
-	}
+	// Neutrino performs explicit chain service start but never explicit
+	// chain service stop thus the need to have it done here when stopping
+	// a wallet sync.
+	asset.chainClient.CS.Stop()
+	asset.syncData.chainServiceStopped = true
+
 	asset.cancelSync()
 	asset.syncData.isSyncShuttingDown = false
 }
@@ -423,12 +437,12 @@ func (asset *BTCAsset) stopSync() {
 func (asset *BTCAsset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
 
-	if asset.chainClient == nil {
-		var err error
-		asset.chainClient, err = asset.newChainClient()
+	if asset.syncData.chainServiceStopped {
+		chainService, err := asset.loadChainService()
 		if err != nil {
 			return err
 		}
+		asset.chainClient.CS = chainService
 	}
 
 	// Chain client performs explicit chain service start up thus no need
@@ -459,6 +473,7 @@ func (asset *BTCAsset) startSync() error {
 	// it could be increased.
 	case <-time.After(time.Second * 5):
 	case <-asset.syncCtx.Done():
+		return nil
 	}
 
 	// Listen and handle incoming notification events.
@@ -473,7 +488,8 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	return asset.syncData.syncing || asset.syncData.synced
+	isSyncing := asset.syncData.syncing || asset.syncData.synced
+	return isSyncing || asset.syncData.isRescan
 }
 
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
@@ -563,4 +579,28 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	}()
 
 	return err
+}
+
+// reloadChainService loads a new instance of chain service to be used
+// for sync. It restarts sync if the wallet was previously connected to the btc newtork
+// before the function call.
+func (asset *BTCAsset) reloadChainService() error {
+	isPrevConnected := asset.IsConnectedToNetwork()
+	if isPrevConnected {
+		asset.CancelSync()
+	}
+
+	asset.chainClient.CS.Stop()
+	chainService, err := asset.loadChainService()
+	if err != nil {
+		return err
+	}
+	asset.chainClient.CS = chainService
+
+	// If the asset is previously connected to the network call SpvSync to
+	// start sync using the new instance of chain service.
+	if isPrevConnected {
+		return asset.SpvSync()
+	}
+	return nil
 }

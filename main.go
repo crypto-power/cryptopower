@@ -57,8 +57,8 @@ func main() {
 		net = cfg.Network
 	}
 
-	logFile := filepath.Join(cfg.LogDir, defaultLogFilename)
-	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logFile, buildDate)
+	logDir := filepath.Join(cfg.LogDir, net)
+	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logDir, buildDate)
 	if err != nil {
 		log.Error(err)
 		return

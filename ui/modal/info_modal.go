@@ -308,6 +308,7 @@ func (in *InfoModal) Handle() {
 	if in.Modal.BackdropClicked(in.isCancelable) {
 		if !in.isLoading {
 			in.Dismiss()
+			in.negativeButtonClicked()
 		}
 	}
 

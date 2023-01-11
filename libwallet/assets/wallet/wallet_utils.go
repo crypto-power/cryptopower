@@ -29,6 +29,12 @@ const (
 
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
+
+	// btcLogFilename defines the btc log file name
+	btcLogFilename = "btc.log"
+
+	// dcrLogFilename defines the dcr log file name
+	dcrLogFilename = "dcr.log"
 )
 
 // RequiredConfirmations specifies the minimum number of confirmations

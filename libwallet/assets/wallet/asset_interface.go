@@ -18,7 +18,7 @@ type Asset interface {
 	IsRescanning() bool
 	RescanBlocks() error
 	ConnectedPeers() int32
-	RemoveSpecificPeer()
+	RemovePeers()
 	SetSpecificPeer(address string)
 	GetExtendedPubKey(account int32) (string, error)
 	IsSyncShuttingDown() bool
@@ -49,6 +49,7 @@ type Asset interface {
 	TargetTimePerBlockMinutes() float64
 	RequiredConfirmations() int32
 	ShutdownContextWithCancel() (context.Context, context.CancelFunc)
+	LogFile() string
 
 	PublishUnminedTransactions() error
 	CountTransactions(txFilter int32) (int, error)

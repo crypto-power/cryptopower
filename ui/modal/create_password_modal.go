@@ -332,7 +332,7 @@ func (cm *CreatePasswordModal) LayoutComponents(gtx C) []layout.Widget {
 		// set wallet name editor error if wallet name already exist
 		if cm.serverError == libutils.ErrExist && cm.walletNameEnabled {
 			cm.walletName.SetError(values.StringF(values.StrWalletExist, cm.walletName.Editor.Text()))
-		} else if !utils.ValidateLengthName(cm.walletName.Editor.Text()) {
+		} else if !utils.ValidateLengthName(cm.walletName.Editor.Text()) && cm.walletNameEnabled {
 			cm.walletName.SetError(values.String(values.StrWalletNameLengthError))
 		} else {
 			t := cm.Theme.Body2(cm.serverError)

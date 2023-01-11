@@ -1,7 +1,10 @@
 package btc
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,6 +12,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -295,6 +300,12 @@ func (asset *BTCAsset) IsSyncShuttingDown() bool {
 }
 
 func (asset *BTCAsset) ConnectedPeers() int32 {
+	// Calling CS.ConnectedCount() before the first sync is
+	// Performed will freeze the application, because the function never return.
+	// Return 0 when not connected to bitcoin network as work around.
+	if !asset.IsConnectedToNetwork() {
+		return -1
+	}
 	return asset.chainClient.CS.ConnectedCount()
 }
 
@@ -343,18 +354,115 @@ func (asset *BTCAsset) GetBlockHash(height int64) (*chainhash.Hash, error) {
 }
 
 func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
-	err := utils.ErrBTCMethodNotImplemented("SignMessage")
-	return nil, err
+	err := asset.UnlockWallet(passphrase)
+	if err != nil {
+		return nil, err
+	}
+	defer asset.LockWallet()
+
+	addr, err := decodeAddress(address, asset.chainParams)
+	if err != nil {
+		return nil, err
+	}
+
+	privKey, err := asset.Internal().BTC.PrivKeyForAddress(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	err = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	if err != nil {
+		return nil, err
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return nil, err
+	}
+
+	messageHash := chainhash.DoubleHashB(buf.Bytes())
+	sigbytes, err := ecdsa.SignCompact(privKey, messageHash, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return sigbytes, nil
 }
+
 func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
-	err := utils.ErrBTCMethodNotImplemented("VerifyMessage")
-	return false, err
+	addr, err := decodeAddress(address, asset.chainParams)
+	if err != nil {
+		return false, err
+	}
+
+	// decode base64 signature
+	sig, err := base64.StdEncoding.DecodeString(signatureBase64)
+	if err != nil {
+		return false, err
+	}
+
+	// Validate the signature - this just shows that it was valid at all.
+	// we will compare it with the key next.
+	var buf bytes.Buffer
+	err = wire.WriteVarString(&buf, 0, "Bitcoin Signed Message:\n")
+	if err != nil {
+		return false, nil
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return false, nil
+	}
+	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
+	pk, wasCompressed, err := ecdsa.RecoverCompact(sig, expectedMessageHash)
+	if err != nil {
+		return false, err
+	}
+
+	var serializedPubKey []byte
+	if wasCompressed {
+		serializedPubKey = pk.SerializeCompressed()
+	} else {
+		serializedPubKey = pk.SerializeUncompressed()
+	}
+	// Verify that the signed-by address matches the given address
+	switch checkAddr := addr.(type) {
+	case *btcutil.AddressPubKeyHash:
+		return bytes.Equal(btcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:]), nil
+	case *btcutil.AddressPubKey:
+		return string(serializedPubKey) == checkAddr.String(), nil
+	case *btcutil.AddressWitnessPubKeyHash:
+		byteEq := bytes.Compare(btcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:])
+		return byteEq == 0, nil
+	default:
+		return false, errors.New("address type not supported")
+	}
 }
-func (asset *BTCAsset) RemoveSpecificPeer() {
-	log.Warn(utils.ErrBTCMethodNotImplemented("RemoveSpecificPeer"))
+
+func (asset *BTCAsset) RemovePeers() {
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	go func() {
+		err := asset.reloadChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
+
 func (asset *BTCAsset) SetSpecificPeer(address string) {
-	log.Warn(utils.ErrBTCMethodNotImplemented("SetSpecificPeer"))
+	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+
+	// Prevent setting same address twice
+	if !strings.Contains(address, ";") && !strings.Contains(knownAddr, address) {
+		knownAddr += ";" + address
+	}
+
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)
+	go func() {
+		err := asset.reloadChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
 
 // GetExtendedPubkey returns the extended public key of the given account,

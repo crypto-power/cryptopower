@@ -192,7 +192,7 @@ func (asset *DCRAsset) SetSpecificPeer(address string) {
 	asset.RestartSpvSync()
 }
 
-func (asset *DCRAsset) RemoveSpecificPeer() {
+func (asset *DCRAsset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	asset.RestartSpvSync()
 }
@@ -212,7 +212,7 @@ func (asset *DCRAsset) SpvSync() error {
 	if peerAddresses != "" {
 		addresses := strings.Split(peerAddresses, ";")
 		for _, address := range addresses {
-			peerAddress, err := normalizeAddress(address, asset.chainParams.DefaultPort)
+			peerAddress, err := utils.NormalizeAddress(address, asset.chainParams.DefaultPort)
 			if err != nil {
 				log.Errorf("SPV peer address(%s) is invalid: %v", peerAddress, err)
 			} else {

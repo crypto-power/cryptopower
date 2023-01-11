@@ -249,7 +249,7 @@ func loadConfig() (*config, error) {
 		return loadConfigError(configFileError)
 	}
 
-	logRotator = nil
+	logRotators = nil
 	cfg.LogDir = cleanAndExpandPath(cfg.LogDir)
 
 	// Initialize log rotation. After log rotation has been initialized, the
@@ -257,7 +257,12 @@ func loadConfig() (*config, error) {
 	if cfg.MaxLogZips < 0 {
 		cfg.MaxLogZips = 0
 	}
-	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename), cfg.MaxLogZips)
+	net := cfg.Network
+	if net == "testnet" {
+		net = "testnet3"
+	}
+	logDir := filepath.Join(cfg.LogDir, net)
+	initLogRotator(logDir, cfg.MaxLogZips)
 
 	// Special show command to list supported subsystems and exit.
 	if cfg.DebugLevel == "show" {

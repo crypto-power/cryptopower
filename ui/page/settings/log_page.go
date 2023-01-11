@@ -76,8 +76,7 @@ func (pg *LogPage) copyLogEntries(gtx C) {
 
 func (pg *LogPage) watchLogs() {
 	go func() {
-		logPath := pg.Load.WL.Wallet.LogFile()
-
+		logPath := pg.Load.WL.SelectedWallet.Wallet.LogFile()
 		fi, err := os.Stat(logPath)
 		if err != nil {
 			pg.fullLog = fmt.Sprintf("unable to open log file: %v", err)

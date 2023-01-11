@@ -2,13 +2,16 @@ package btc
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
 	"github.com/btcsuite/btcwallet/walletdb"
@@ -32,8 +35,16 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 }
 
 func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
-	if asset.IsRescanning() || !asset.IsSynced() {
-		return errors.E(utils.ErrInvalid)
+	if !asset.IsConnectedToBitcoinNetwork() {
+		return errors.E(utils.ErrNotConnected)
+	}
+
+	if !asset.IsSynced() {
+		return errors.E(utils.ErrNotSynced)
+	}
+
+	if asset.IsRescanning() {
+		return errors.E(utils.ErrSyncAlreadyInProgress)
 	}
 
 	if startHash == nil {
@@ -46,12 +57,16 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescan = true
+	asset.syncData.rescanStartTime = time.Now()
 	asset.syncData.mu.Unlock()
 
-	err := asset.chainClient.NotifyReceived(addrs)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err := asset.chainClient.Rescan(startHash, addrs, nil)
+		if err != nil {
+			asset.CancelRescan()
+			log.Error(err)
+		}
+	}()
 
 	// Attempt to start up the notifications handler.
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
@@ -73,7 +88,12 @@ func (asset *BTCAsset) CancelRescan() {
 	asset.syncData.isRescan = false
 	asset.syncData.mu.Unlock()
 
-	asset.chainClient.Stop()
+	if asset.blocksRescanProgressListener != nil {
+		asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
+	}
+
+	asset.resetSyncProgressData()
+	asset.stopSync()
 }
 
 // RescanAsync initiates a full wallet recovery (used address discovery
@@ -127,6 +147,7 @@ func (asset *BTCAsset) RescanAsync() error {
 // ForceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
 func (asset *BTCAsset) ForceRescan() {
+
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
@@ -277,4 +298,44 @@ func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
 		return err
 	})
 	return birthdayblock, isverified, err
+}
+
+func (asset *BTCAsset) updateRescanProgress(progress *chain.RescanProgress) {
+	if asset.syncData.rescanStartHeight == nil {
+		asset.syncData.rescanStartHeight = &progress.Height
+	}
+
+	headersFetchedSoFar := progress.Height - *asset.syncData.rescanStartHeight
+	if headersFetchedSoFar < 1 {
+		headersFetchedSoFar = 1
+	}
+
+	remainingHeaders := asset.GetBestBlockHeight() - progress.Height
+	if remainingHeaders < 1 {
+		remainingHeaders = 1
+	}
+
+	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
+
+	rescanProgressReport := &sharedW.HeadersRescanProgressReport{
+		CurrentRescanHeight: progress.Height,
+		TotalHeadersToScan:  allHeadersToFetch,
+		WalletID:            asset.ID,
+	}
+
+	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime.Unix()
+	rescanRate := float64(headersFetchedSoFar) / float64(rescanProgressReport.TotalHeadersToScan)
+
+	rescanProgressReport.RescanProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
+	estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))
+	rescanProgressReport.RescanTimeRemaining = estimatedTotalRescanTime - elapsedRescanTime
+
+	rescanProgressReport.GeneralSyncProgress = &sharedW.GeneralSyncProgress{
+		TotalSyncProgress:         rescanProgressReport.RescanProgress,
+		TotalTimeRemainingSeconds: rescanProgressReport.RescanTimeRemaining,
+	}
+
+	if asset.blocksRescanProgressListener != nil {
+		asset.blocksRescanProgressListener.OnBlocksRescanProgress(rescanProgressReport)
+	}
 }
