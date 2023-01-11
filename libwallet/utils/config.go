@@ -57,7 +57,7 @@ const (
 // Stringer used in generating the directory path where the lowercase of the
 // asset type is required. The uppercase defined by default is required to
 // asset previously created using the uppercase.
-func (str AssetType) ToString() string {
+func (str AssetType) ToStringLower() string {
 	return strings.ToLower(string(str))
 }
 
@@ -71,6 +71,9 @@ func (str AssetType) ToFull() string {
 	default:
 		return "Unknown"
 	}
+}
+func (str AssetType) String() string {
+	return string(str)
 }
 
 // ExtractDateOrTime returns the date represented by the timestamp as a date string

@@ -11,7 +11,8 @@ import (
 type Icons struct {
 	ContentAdd, NavigationCheck, NavigationMore, ActionCheckCircle, ActionInfo, NavigationArrowBack,
 	NavigationArrowForward, ActionCheck, NavigationCancel, NavMoreIcon,
-	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon *widget.Icon
+	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon,
+	ActionSettings, ActionSwapHoriz, NavigationRefresh, ContentCopy *widget.Icon
 
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
@@ -24,7 +25,8 @@ type Icons struct {
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
-	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight *Image
+	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
+	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -55,6 +57,10 @@ func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ContentRemove = MustIcon(widget.NewIcon(icons.ContentRemove))
 	i.SearchIcon = MustIcon(widget.NewIcon(icons.ActionSearch))
 	i.PlayIcon = MustIcon(widget.NewIcon(icons.AVPlayArrow))
+	i.ActionSettings = MustIcon(widget.NewIcon(icons.ActionSettings))
+	i.ActionSwapHoriz = MustIcon(widget.NewIcon(icons.ActionSwapHoriz))
+	i.NavigationRefresh = MustIcon(widget.NewIcon(icons.NavigationRefresh))
+	i.ContentCopy = MustIcon(widget.NewIcon(icons.ContentContentPaste))
 
 	return i
 }
@@ -123,6 +129,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.Rebroadcast = NewImage(decredIcons["rebroadcast"])
 	i.ConcealIcon = NewImage(decredIcons["reveal"])
 	i.RevealIcon = NewImage(decredIcons["hide"])
+	i.AddExchange = NewImage(decredIcons["add_exchange"])
 
 	i.SettingsActiveIcon = NewImage(decredIcons["settings_active"])
 	i.SettingsInactiveIcon = NewImage(decredIcons["settings_inactive"])
@@ -160,6 +167,17 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.AddIcon = NewImage(decredIcons["addIcon"])
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
+
+	/* Start exchange icons */
+	i.FlypMeIcon = NewImage(decredIcons["flypme"])
+	i.ChangellyIcon = NewImage(decredIcons["changelly"])
+	i.SimpleSwapIcon = NewImage(decredIcons["simpleswap"])
+	i.SwapzoneIcon = NewImage(decredIcons["swapzone"])
+	i.ShapeShiftIcon = NewImage(decredIcons["shapeshift"])
+	i.GodexIcon = NewImage(decredIcons["godex"])
+	i.CoinSwitchIcon = NewImage(decredIcons["coinswitch"])
+	i.ChangeNowIcon = NewImage(decredIcons["changenow"])
+	/* End exchange icons */
 
 	return i
 }

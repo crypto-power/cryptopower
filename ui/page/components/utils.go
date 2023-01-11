@@ -10,11 +10,15 @@ import (
 	"time"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -124,4 +128,20 @@ func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.
 			}),
 		)
 	})
+}
+
+func SetWalletLogo(l *load.Load, gtx C, assetType string, size unit.Dp) D {
+	if assetType == utils.DCRWalletAsset.String() {
+		return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
+	}
+	return l.Theme.Icons.BTC.LayoutSize(gtx, size)
+}
+
+func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D {
+	if assetType == utils.DCRWalletAsset.String() {
+		convertedAmount, _ := dcrutil.NewAmount(amount)
+		return l.Theme.Label(values.TextSize16, convertedAmount.String()).Layout(gtx)
+	}
+	convertedAmount, _ := btcutil.NewAmount(amount)
+	return l.Theme.Label(values.TextSize16, convertedAmount.String()).Layout(gtx)
 }

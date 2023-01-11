@@ -14,6 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/exchange"
 	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
@@ -46,7 +47,7 @@ type WalletDexServerSelector struct {
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow
 	addWalClickable *cryptomaterial.Clickable
-	addDexClickable *cryptomaterial.Clickable
+	exchangeBtn     *cryptomaterial.Clickable
 	settings        *cryptomaterial.Clickable
 
 	// wallet selector options
@@ -88,8 +89,8 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	pg.addWalClickable = l.Theme.NewClickable(false)
 	pg.addWalClickable.Radius = rad
 
-	pg.addDexClickable = l.Theme.NewClickable(false)
-	pg.addDexClickable.Radius = rad
+	pg.exchangeBtn = l.Theme.NewClickable(false)
+	pg.exchangeBtn.Radius = rad
 
 	pg.settings = l.Theme.NewClickable(false)
 
@@ -181,6 +182,17 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 		pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
 	}
 
+	if pg.exchangeBtn.Clicked() {
+		if len(pg.dcrWalletList) <= 0 || len(pg.btcWalletList) <= 0 {
+			text := values.String(values.StrMinimumAssetType)
+			errModal := modal.NewErrorModal(pg.Load, text, modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(errModal)
+			return
+		}
+		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
+
+	}
+
 	if pg.settings.Clicked() {
 		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
 	}
@@ -255,8 +267,8 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 		pg.DCRwalletListLayout,
 		pg.BTCwalletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
-		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.layoutAddMoreRowSection(pg.addDexClickable, values.String(values.StrAddDexServer), pg.Theme.Icons.DexIcon.Layout16dp),
+		pg.sectionTitle(values.String(values.StrExchangeIntro)),
+		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
 	}
 
 	return cryptomaterial.LinearLayout{

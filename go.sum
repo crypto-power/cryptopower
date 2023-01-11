@@ -74,6 +74,13 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.5/go.mod h1:aXENhDJ1Y4lIg4EU
 contrib.go.opencensus.io/exporter/stackdriver v0.13.12/go.mod h1:mmxnWlrvrFdpiOHOhxBaVi1rkc0WOqhgfknj4Yg0SeQ=
 contrib.go.opencensus.io/integrations/ocsql v0.1.4/go.mod h1:8DsSdjz3F+APR+0z0WkU1aRorQCFfRxvqjUUPMbF3fE=
 contrib.go.opencensus.io/resource v0.1.1/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcigGlFvXwEGEnkRLA=
+code.cryptopower.dev/exchange/instantswap v0.0.0-20221027154342-6808150baa5b h1:cL541eItUT80x0MI2Y6YHET0WQnn1IN0ewkxnlYMNPY=
+code.cryptopower.dev/exchange/instantswap v0.0.0-20221027154342-6808150baa5b/go.mod h1:gLwrZf6i9ZSONEtmFtx8Ab9lzLSDboToeXaXdm4iI8k=
+code.cryptopower.dev/group/instantswap v0.0.0-20221115115243-0ff6727e4065 h1:iCBKFGv7jrSg+jSgn7isdrwFMysH5aHwuu0WEqTKotA=
+code.cryptopower.dev/group/instantswap v0.0.0-20221115115243-0ff6727e4065/go.mod h1:IyFMDcJOQckL+VhuKjvxv6NnQyCD3rAWWsTLc69zzBI=
+collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
+contrib.go.opencensus.io/exporter/stackdriver v0.13.4/go.mod h1:aXENhDJ1Y4lIg4EUaVTwzvYETVNZk10Pu26tevFKLUc=
+decred.org/cspp v0.3.0 h1:2AkSsWzA7HIMZImfw0gT82Gdp8OXIM4NsBn7vna22uE=
 decred.org/cspp v0.3.0/go.mod h1:UygjYilC94dER3BEU65Zzyoqy9ngJfWCD2rdJqvUs2A=
 decred.org/cspp/v2 v2.0.0-20211207170141-a6b5f958a91f/go.mod h1:USyJS44Kqxz2wT/VaNsf9iTAONegO/qKXRdLg1nvrWI=
 decred.org/cspp/v2 v2.0.0 h1:b4fZrElRufz30rYnBZ2shhC8AjNVTN4i6TMzDi+hk44=

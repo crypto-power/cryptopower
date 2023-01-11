@@ -48,6 +48,7 @@ type selectorModal struct {
 	onAccountClicked func(*sharedW.Account)
 	walletsList      layout.List
 	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
+	assetType        []utils.AssetType
 	eventQueue       event.Queue
 	isCancelable     bool
 	infoButton       cryptomaterial.IconButton
@@ -57,12 +58,12 @@ type selectorModal struct {
 
 // NewWalletAndAccountSelector creates a wallet selector component.
 // It opens a modal to select a desired wallet or a desired account.
-func NewWalletAndAccountSelector(l *load.Load) *WalletAndAccountSelector {
+func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *WalletAndAccountSelector {
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 
-	ws.selectorModal = newSelectorModal(l).
+	ws.selectorModal = newSelectorModal(l, assetType...).
 		walletClicked(func(wallet *load.WalletMapping) {
 			if ws.selectedWallet.GetWalletID() != wallet.GetWalletID() {
 				ws.changed = true
@@ -130,6 +131,29 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
+func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
+	if !ws.accountSelector {
+		ws.accountSelector = true
+	}
+	ws.SetSelectedWallet(wallet)
+
+	account, err := wallet.GetAccount(accountNumber)
+	if err != nil {
+		return err
+	}
+
+	if ws.accountIsValid(account) {
+		ws.SetSelectedAccount(account)
+		if ws.accountCallback != nil {
+			ws.accountCallback(account)
+		}
+		return nil
+	}
+
+	ws.ResetAccount()
+	return errors.New(values.String(values.StrNoValidAccountFound))
+}
+
 func (ws *WalletAndAccountSelector) ResetAccount() {
 	ws.selectedAccount = nil
 	ws.totalBalance = ""
@@ -173,6 +197,10 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 }
 
 func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *load.WalletMapping) {
+	ws.selectedWallet = wallet
+}
+
+func (ws *WalletAndAccountSelector) SelectWallet(wallet *load.WalletMapping) {
 	ws.selectedWallet = wallet
 }
 
@@ -309,13 +337,14 @@ type SelectorItem struct {
 	clickable *cryptomaterial.Clickable
 }
 
-func newSelectorModal(l *load.Load) *selectorModal {
+func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal {
 	sm := &selectorModal{
 		Load:         l,
 		Modal:        l.Theme.ModalFloatTitle("SelectorModal"),
 		walletsList:  layout.List{Axis: layout.Vertical},
 		isCancelable: true,
 		infoBackdrop: new(widget.Clickable),
+		assetType:    assetType,
 	}
 
 	sm.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -323,8 +352,19 @@ func newSelectorModal(l *load.Load) *selectorModal {
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
+	wallets := sm.WL.MultiWallet.AllWallets()
+
+	if len(assetType) > 0 { // load specific wallet type
+		switch assetType[0] {
+		case utils.BTCWalletAsset:
+			wallets = sm.WL.MultiWallet.AllBTCWallets()
+		case utils.DCRWalletAsset:
+			wallets = sm.WL.MultiWallet.AllDCRWallets()
+		}
+	}
+
 	sm.selectedWallet = &load.WalletMapping{
-		Asset: l.WL.SelectedWallet.Wallet,
+		Asset: wallets[0],
 	} // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
@@ -337,12 +377,22 @@ func (sm *selectorModal) OnResume() {
 		sm.setupAccounts(sm.selectedWallet)
 		return
 	}
-	sm.setupWallet()
+	sm.setupWallet(sm.assetType...)
 }
 
-func (sm *selectorModal) setupWallet() {
+func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
-	wallets := sm.WL.SortedWalletList()
+	wallets := sm.WL.MultiWallet.AllWallets()
+
+	if len(assetType) > 0 { // load specific wallet type
+		switch assetType[0] {
+		case utils.BTCWalletAsset:
+			wallets = sm.WL.MultiWallet.AllBTCWallets()
+		case utils.DCRWalletAsset:
+			wallets = sm.WL.MultiWallet.AllDCRWallets()
+		}
+	}
+
 	for _, wal := range wallets {
 		if !wal.IsWatchingOnlyWallet() {
 			selectorItems = append(selectorItems, &SelectorItem{
@@ -391,9 +441,10 @@ func (sm *selectorModal) Handle() {
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
-				case *load.WalletMapping:
+				case sharedW.Asset:
 					if sm.onWalletClicked != nil {
-						sm.onWalletClicked(item)
+						wl := load.NewWalletMapping(item)
+						sm.onWalletClicked(wl)
 					}
 				}
 				sm.Dismiss()
@@ -524,6 +575,20 @@ func walletBalance(wal sharedW.Asset) (totalBalance, spendableBalance int64) {
 
 func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) D {
 	accountIcon := sm.Theme.Icons.AccountIcon
+	switch n := selectorItem.item.(type) {
+	case *sharedW.Account:
+		accountIcon = sm.Theme.Icons.AccountIcon
+	case sharedW.Asset:
+		{
+			switch n.GetAssetType() {
+			case utils.BTCWalletAsset:
+				accountIcon = sm.Theme.Icons.BTC
+			case utils.DCRWalletAsset:
+				accountIcon = sm.Theme.Icons.DecredLogo
+			}
+
+		}
+	}
 
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
@@ -545,7 +610,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				totalBal = t.Balance.Total.String()
 				spendableBal = t.Balance.Spendable.String()
 				name = t.Name
-			case *load.WalletMapping:
+			case sharedW.Asset:
 				tb, sb := walletBalance(t)
 				totalBal = t.ToAmount(tb).String()
 				spendableBal = t.ToAmount(sb).String()
