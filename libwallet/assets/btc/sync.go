@@ -196,12 +196,16 @@ func (asset *BTCAsset) publishHeadersFetchComplete() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
-	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnSyncCompleted()
-	}
+	asset.handleSyncUIUpdate()
 
 	asset.syncData.synced = true
 	asset.syncData.syncing = false
+}
+
+func (asset *BTCAsset) handleSyncUIUpdate() {
+	for _, listener := range asset.syncData.syncProgressListeners {
+		listener.OnSyncCompleted()
+	}
 }
 
 func (asset *BTCAsset) handleNotifications() {
@@ -523,14 +527,10 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 				asset.syncData.mu.Lock()
 				asset.syncData.synced = true
 				asset.syncData.syncing = false
-
-				// Address recovery is triggered immediately after the chain
-				// considers itself sync is complete and synced.
-				asset.syncData.isRescan = true
 				asset.syncData.mu.Unlock()
 
 				// Trigger UI update showing btc address recovery is in progress.
-				asset.publishHeadersFetchComplete()
+				asset.handleSyncUIUpdate()
 				return
 			}
 		case <-asset.syncCtx.Done():

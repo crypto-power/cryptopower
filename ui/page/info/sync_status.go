@@ -25,7 +25,7 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 	// btcwallet does not export implementation to track address discovery.
 	// During btc address discovery, show the normal synced info page with an
 	// extra label showing the address discovery is in progress.
-	rescanning := pg.WL.SelectedWallet.Wallet.IsRescanning() && !isBtcAsset
+	rescanning := pg.WL.SelectedWallet.Wallet.IsRescanning() && !isBtcAsset && !syncing
 
 	uniform := layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
@@ -126,8 +126,10 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 // syncContent lays out sync status content when the wallet is syncing, synced, not connected
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 	isBtcAsset := pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset
-	isRescanning := pg.WL.SelectedWallet.Wallet.IsRescanning()
-	isInprogress := pg.WL.SelectedWallet.Wallet.IsSyncing() || isRescanning
+	isSyncing := pg.WL.SelectedWallet.Wallet.IsSyncing()
+	// Rescanning should happen on a synced chain.
+	isRescanning := pg.WL.SelectedWallet.Wallet.IsRescanning() && !isSyncing
+	isInprogress := isSyncing || isRescanning
 	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlock()
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

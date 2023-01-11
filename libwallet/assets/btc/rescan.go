@@ -178,7 +178,18 @@ func (asset *BTCAsset) ForceRescan() {
 	})
 	if err != nil {
 		log.Errorf("Failed to reset wallet manager sync height: %v", err)
+		return
 	}
+
+	asset.syncData.mu.Lock()
+	// Address recovery is triggered immediately after the chain
+	// considers itself sync is complete and synced.
+	asset.syncData.isRescan = true
+	asset.syncData.mu.Unlock()
+
+	// Trigger UI update showing btc address recovery is in progress.
+	// Its helps most when the wallet is synced but wallet recovery is running.
+	asset.handleSyncUIUpdate()
 }
 
 // isRecoveryRequired scans if the current wallet requires a recovery. Starting
