@@ -262,10 +262,10 @@ func (asset *BTCAsset) SafelyCancelSync() {
 			if loadWallet.ShuttingDown() {
 				return
 			}
+
 			loadWallet.Stop()
 			loadWallet.WaitForShutdown()
 		}
-		log.Info("wallet stopped")
 	}
 }
 

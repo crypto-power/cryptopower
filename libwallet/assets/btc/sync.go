@@ -424,11 +424,17 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.Start()
 	}
 
-	log.Info("Stopping wallet and neutrino service interface")
+	log.Infof("Stopping wallet (%s) and neutrino service interface", asset.GetWalletName())
 
 	if asset.chainClient != nil {
 		// Then shutdown the chain client.
 		asset.chainClient.Stop() // If active, attempt to shut it down.
+
+		// Neutrino performs explicit chain service start but never explicit
+		// chain service stop thus the need to have it done here when stopping
+		// a wallet sync.
+		asset.chainClient.CS.Stop()
+		asset.syncData.chainServiceStopped = true
 	}
 
 	if loadedAsset != nil {
@@ -440,12 +446,6 @@ func (asset *BTCAsset) stopSync() {
 	if asset.chainClient != nil {
 		// Then wait for the chain client to shutdown
 		asset.chainClient.WaitForShutdown()
-
-		// Neutrino performs explicit chain service start but never explicit
-		// chain service stop thus the need to have it done here when stopping
-		// a wallet sync.
-		asset.chainClient.CS.Stop()
-		asset.syncData.chainServiceStopped = true
 	}
 
 	// Declares that the sync context is done and goroutines listening to it

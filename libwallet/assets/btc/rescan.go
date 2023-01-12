@@ -93,7 +93,6 @@ func (asset *BTCAsset) CancelRescan() {
 	}
 
 	asset.resetSyncProgressData()
-	asset.stopSync()
 }
 
 // RescanAsync initiates a full wallet recovery (used address discovery
