@@ -151,6 +151,7 @@ func (wallet *Wallet) Shutdown() {
 		wallet.networkCancel()
 	}
 
+	// Sets the upstream wallet instance to nil.
 	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
 		err := wallet.loader.UnloadWallet()
 		if err != nil {

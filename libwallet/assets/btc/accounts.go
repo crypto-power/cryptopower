@@ -87,6 +87,10 @@ func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 }
 
 func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
+	if asset.Internal().BTC == nil {
+		return nil, utils.ErrBTCNotInitialized
+	}
+
 	balance, err := asset.Internal().BTC.CalculateAccountBalances(uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
 		return nil, err
@@ -100,6 +104,10 @@ func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 }
 
 func (asset *BTCAsset) SpendableForAccount(account int32) (int64, error) {
+	if asset.Internal().BTC == nil {
+		return -1, utils.ErrBTCNotInitialized
+	}
+
 	bals, err := asset.Internal().BTC.CalculateAccountBalances(uint32(account), asset.RequiredConfirmations())
 	if err != nil {
 		return 0, utils.TranslateError(err)
