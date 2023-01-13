@@ -19,6 +19,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/page/governance"
 	"code.cryptopower.dev/group/cryptopower/ui/page/info"
@@ -97,6 +98,7 @@ var (
 // Initialize package-global logger variables.
 func init() {
 	sharedW.UseLogger(sharedWLog)
+	page.UseLogger(winLog)
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
 	root.UseLogger(winLog)

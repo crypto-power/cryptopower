@@ -187,7 +187,8 @@ exitloop:
 
 	// closes open pages, exits the loop then will trigger shutdown.
 	log.Info("...Initiating the app shutdown protocols...")
-	win.navigator.CloseAllPages()
+	// win.navigator.CloseAllPages()
+	win.navigator.ClearStackAndDisplay(page.NewStartPage(win.load, true))
 }
 
 // handleFrameEvent is called when a FrameEvent is received by the active

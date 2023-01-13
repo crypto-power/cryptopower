@@ -550,6 +550,7 @@ const (
 	StrExit                            = "exit"
 	StrLoading                         = "loading"
 	StrOpeningWallet                   = "openingWallet"
+	StrClosingWallet                   = "closingWallet"
 	StrWelcomeNote                     = "welcomeNote"
 	StrGenerateAddress                 = "generateAddress"
 	StrReceivingAddress                = "receivingAddress"

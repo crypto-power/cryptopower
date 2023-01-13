@@ -417,10 +417,8 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.Stop() // Stops the chainclient too.
 	}
 
-	if asset.chainClient != nil {
-		// 2. shutdown the chain client.
-		asset.chainClient.Stop() // If active, attempt to shut it down.
-	}
+	// 2. shutdown the chain client.
+	asset.chainClient.Stop() // If active, attempt to shut it down.
 
 	if loadedAsset != nil {
 		// Neutrino performs explicit chain service start but never explicit
@@ -435,10 +433,8 @@ func (asset *BTCAsset) stopSync() {
 		loadedAsset.WaitForShutdown()
 	}
 
-	if asset.chainClient != nil {
-		// 5. Wait for the chain client to shutdown
-		asset.chainClient.WaitForShutdown()
-	}
+	// 5. Wait for the chain client to shutdown
+	asset.chainClient.WaitForShutdown()
 
 	// Declares that the sync context is done and goroutines listening to it
 	// should exit. The shutdown protocol will eventually attempt to end this
@@ -453,7 +449,7 @@ func (asset *BTCAsset) stopSync() {
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
 		//
-		// This is being called at this point reason being that even though we
+		// 6. This is being called at this point reason being that even though we
 		// need to stop the wallet sync, the wallet needs to be started to handle
 		// non sync related tasks such as changing password, renaming wallet, etc.
 		// when syncing is disabled.
