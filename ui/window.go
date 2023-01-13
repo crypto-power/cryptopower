@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	giouiApp "gioui.org/app"
-	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -43,6 +42,13 @@ type Window struct {
 	txAuthor dcr.TxAuthor
 
 	walletAcctMixerStatus chan *wallet.AccountMixer
+
+	// Quit channel used to trigger background process to begin implementing the
+	// shutdown protocol.
+	Quit chan struct{}
+	// IsShutdown channel is used to report that backgound processes have completed
+	// shutting down, therefore the UI processes can finally stop.
+	IsShutdown chan struct{}
 }
 
 type (
@@ -74,6 +80,8 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 		wallet:                wal,
 		walletUnspentOutputs:  new(wallet.UnspentOutputs),
 		walletAcctMixerStatus: make(chan *wallet.AccountMixer),
+		Quit:                  make(chan struct{}, 1),
+		IsShutdown:            make(chan struct{}, 1),
 	}
 
 	l, err := win.NewLoad()
@@ -160,20 +168,36 @@ func (win *Window) HandleEvents() {
 		signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	}
 
-	var e event.Event
+	var isShuttingDown bool
 
-exitloop:
+	displayShutdownPage := func() {
+		if isShuttingDown {
+			return
+		}
+		isShuttingDown = true
+
+		log.Info("...Initiating the app shutdown protocols...")
+		// clear all stack and display the shutdown page as backend processes are
+		// terminating.
+		win.navigator.ClearStackAndDisplay(page.NewStartPage(win.load, true))
+		// Trigger the backend processes shutdown.
+		win.Quit <- struct{}{}
+	}
+
 	for {
 		// Select either the os interrupt or the window event, whichever becomes
 		// ready first.
 		select {
 		case <-done:
-			break exitloop
-		case e = <-win.Events():
+			displayShutdownPage()
+		case <-win.IsShutdown:
+			// backend processes shutdown is complete, exit UI process too.
+			return
+		case e := <-win.Events():
 			switch evt := e.(type) {
 
 			case system.DestroyEvent:
-				break exitloop
+				displayShutdownPage()
 
 			case system.FrameEvent:
 				ops := win.handleFrameEvent(evt)
@@ -184,11 +208,6 @@ exitloop:
 			}
 		}
 	}
-
-	// closes open pages, exits the loop then will trigger shutdown.
-	log.Info("...Initiating the app shutdown protocols...")
-	// win.navigator.CloseAllPages()
-	win.navigator.ClearStackAndDisplay(page.NewStartPage(win.load, true))
 }
 
 // handleFrameEvent is called when a FrameEvent is received by the active
