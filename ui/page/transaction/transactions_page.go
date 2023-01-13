@@ -193,7 +193,7 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 
 	pg.loading = true
 
-	limit := 10
+	limit := 20
 
 	offset := 0
 	if loadMore {
