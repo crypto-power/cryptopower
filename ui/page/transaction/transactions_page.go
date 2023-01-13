@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"strings"
 
@@ -11,9 +10,9 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
@@ -56,6 +55,10 @@ type TransactionsPage struct {
 	transactions    []sharedW.Transaction
 
 	tabs *cryptomaterial.ClickableList
+
+	materialLoader material.LoaderStyle
+
+	loading, initialLoadingDone, loadedAll bool
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
@@ -75,6 +78,8 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 	pg.transactionList.Radius = cryptomaterial.Radius(14)
 	pg.transactionList.IsShadowEnabled = true
 
+	pg.materialLoader = material.Loader(l.Theme.Base)
+
 	return pg
 }
 
@@ -87,7 +92,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 
 	pg.refreshAvailableTxType()
 	pg.listenForTxNotifications()
-	pg.loadTransactions()
+	go pg.loadTransactions(false)
 }
 
 func (pg *TransactionsPage) sectionNavTab(gtx C) D {
@@ -145,28 +150,28 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
 	wal := pg.WL.SelectedWallet.Wallet
-	var countfn = func(fType int32) int {
-		count, _ := wal.CountTransactions(fType)
-		return count
-	}
+	// var countfn = func(fType int32) int {
+	// 	count, _ := wal.CountTransactions(fType)
+	// 	return count
+	// }
 
 	items := []cryptomaterial.DropDownItem{}
-	mapinfo, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+	_, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	for _, name := range keysinfo {
-		fieldtype := mapinfo[name]
+		// fieldtype := mapinfo[name]
 		item := cryptomaterial.DropDownItem{}
-		if pg.selectedTabIndex == 0 {
-			item.Text = fmt.Sprintf("%s (%d)", name, countfn(fieldtype))
-		} else {
-			item.Text = name
-		}
+		// if pg.selectedTabIndex == 0 {
+		// 	item.Text = fmt.Sprintf("%s (%d)", name, countfn(fieldtype))
+		// } else {
+		item.Text = name
+		// }
 		items = append(items, item)
 	}
 
 	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 }
 
-func (pg *TransactionsPage) loadTransactions() {
+func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
@@ -182,25 +187,50 @@ func (pg *TransactionsPage) loadTransactions() {
 		return
 	}
 
-	txns := make([]sharedW.Transaction, 0)
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, txFilter, true)
+	if pg.loading {
+		return
+	}
+
+	pg.loading = true
+
+	limit := 10
+
+	offset := 0
+	if loadMore {
+		offset = len(pg.transactions)
+	}
+
+	tempTxs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(int32(offset), int32(limit), txFilter, true)
 	if err != nil {
 		// log error and return an empty list.
 		log.Errorf("Error loading transactions: %v", err)
-		pg.transactions = txns
-	} else {
-		// remove revoked tickets from staking and all transactions filter
-		if txFilter == dcr.TxFilterStaking || txFilter == dcr.TxFilterAll {
-			for _, txn := range txs {
-				if txn.Type != dcr.TxTypeTicketPurchase {
-					txns = append(txns, txn)
-				}
-			}
-			pg.transactions = txns
-		} else {
-			pg.transactions = txs
-		}
+		pg.transactions = nil
+		return
 	}
+
+	pg.initialLoadingDone = true
+
+	if len(tempTxs) == 0 {
+		pg.loadedAll = true
+		pg.loading = false
+
+		if !loadMore {
+			pg.transactions = nil
+		}
+		return
+	}
+
+	if len(tempTxs) < limit {
+		pg.loadedAll = true
+	}
+
+	if loadMore {
+		pg.transactions = append(pg.transactions, tempTxs...)
+	} else {
+		pg.transactions = tempTxs
+	}
+
+	pg.loading = false
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -214,6 +244,8 @@ func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+	pg.onScrollChangeListener()
+
 	return components.UniformPadding(gtx, func(gtx C) D {
 		txlisingView := layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
@@ -226,6 +258,13 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 							return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+
+										if pg.loading {
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
+											return layout.Center.Layout(gtx, func(gtx C) D {
+												return pg.materialLoader.Layout(gtx)
+											})
+										}
 
 										// return "No transactions yet" text if there are no transactions
 										if len(wallTxs) == 0 {
@@ -360,7 +399,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
-		pg.loadTransactions()
+		go pg.loadTransactions(false)
 		break
 	}
 
@@ -372,7 +411,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if tabItemClicked, clickedTabIndex := pg.tabs.ItemClicked(); tabItemClicked {
 		pg.selectedTabIndex = clickedTabIndex
 		pg.refreshAvailableTxType()
-		pg.loadTransactions()
+		go pg.loadTransactions(false)
 	}
 }
 
@@ -392,7 +431,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			select {
 			case n := <-pg.TxAndBlockNotifChan:
 				if n.Type == listeners.NewTransaction {
-					pg.loadTransactions()
+					pg.loadTransactions(false)
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
@@ -415,4 +454,16 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
+}
+
+func (pg *TransactionsPage) onScrollChangeListener() {
+	if len(pg.transactions) < 5 || !pg.initialLoadingDone {
+		return
+	}
+
+	if pg.container.List.Position.OffsetLast >= -50 && pg.container.List.Position.OffsetLast < 0 {
+		if !pg.loadedAll {
+			pg.loadTransactions(true)
+		}
+	}
 }
