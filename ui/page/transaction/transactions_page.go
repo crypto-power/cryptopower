@@ -461,7 +461,11 @@ func (pg *TransactionsPage) onScrollChangeListener() {
 		return
 	}
 
-	if pg.container.List.Position.OffsetLast >= -50 && pg.container.List.Position.OffsetLast < 0 {
+	// The first check is for when the list is scrolled to the bottom using the scroll bar.
+	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
+	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
+	// is to check if the page is still scrollable.
+	if (pg.container.List.Position.OffsetLast >= -50 && pg.container.List.Position.BeforeEnd) || (pg.container.List.Position.OffsetLast == 0 && pg.container.List.Position.Length > 0) {
 		if !pg.loadedAll {
 			pg.loadTransactions(true)
 		}
