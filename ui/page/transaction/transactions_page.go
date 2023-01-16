@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"fmt"
 	"image"
 	"strings"
 
@@ -150,25 +151,38 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
 	wal := pg.WL.SelectedWallet.Wallet
-	// var countfn = func(fType int32) int {
-	// 	count, _ := wal.CountTransactions(fType)
-	// 	return count
-	// }
-
 	items := []cryptomaterial.DropDownItem{}
 	_, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	for _, name := range keysinfo {
-		// fieldtype := mapinfo[name]
 		item := cryptomaterial.DropDownItem{}
-		// if pg.selectedTabIndex == 0 {
-		// 	item.Text = fmt.Sprintf("%s (%d)", name, countfn(fieldtype))
-		// } else {
 		item.Text = name
-		// }
 		items = append(items, item)
 	}
 
 	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
+
+	go func() {
+		var countfn = func(fType int32) int {
+			count, _ := wal.CountTransactions(fType)
+			return count
+		}
+
+		items := []cryptomaterial.DropDownItem{}
+		mapinfo, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+		for _, name := range keysinfo {
+			fieldtype := mapinfo[name]
+			item := cryptomaterial.DropDownItem{}
+			if pg.selectedTabIndex == 0 {
+				item.Text = fmt.Sprintf("%s (%d)", name, countfn(fieldtype))
+			} else {
+				item.Text = name
+			}
+			items = append(items, item)
+		}
+		pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
+		pg.ParentWindow().Reload()
+	}()
+
 }
 
 func (pg *TransactionsPage) loadTransactions(loadMore bool) {
