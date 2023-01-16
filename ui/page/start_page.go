@@ -33,16 +33,21 @@ type startPage struct {
 
 	addWalletButton cryptomaterial.Button
 
-	loading bool
+	loading    bool
+	isQuitting bool
 }
 
-func NewStartPage(l *load.Load) app.Page {
+func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 	sp := &startPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(StartPageID),
 		loading:          true,
 
 		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
+	}
+
+	if len(isShuttingDown) > 0 {
+		sp.isQuitting = isShuttingDown[0]
 	}
 
 	return sp
@@ -54,6 +59,13 @@ func NewStartPage(l *load.Load) app.Page {
 // Part of the load.Page interface.
 func (sp *startPage) OnNavigatedTo() {
 	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
+
+	if sp.isQuitting {
+		log.Info("Displaying the shutdown wallets view page")
+
+		sp.loading = true
+		return
+	}
 
 	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
 		sp.setLanguageSetting()
@@ -99,7 +111,7 @@ func (sp *startPage) unlock() {
 func (sp *startPage) openWallets(password string) error {
 	err := sp.WL.MultiWallet.OpenWallets(password)
 	if err != nil {
-		log.Info("Error opening wallet:", err)
+		log.Errorf("Error opening wallet: %v", err)
 		// show err dialog
 		return err
 	}
@@ -202,7 +214,12 @@ func (sp *startPage) loadingSection(gtx C) D {
 					if sp.loading {
 						loadStatus := sp.Theme.Label(values.TextSize20, values.String(values.StrLoading))
 						if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
-							loadStatus.Text = values.String(values.StrOpeningWallet)
+							switch {
+							case sp.isQuitting:
+								loadStatus.Text = values.String(values.StrClosingWallet)
+							default:
+								loadStatus.Text = values.String(values.StrOpeningWallet)
+							}
 						}
 
 						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, loadStatus.Layout)

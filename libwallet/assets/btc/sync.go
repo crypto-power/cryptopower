@@ -396,7 +396,7 @@ func (asset *BTCAsset) CancelSync() {
 
 	asset.stopSync()
 
-	log.Info("SPV wallet closed")
+	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
 }
 
 // stopSync initiates the full chain sync stopping protocols.
@@ -406,34 +406,55 @@ func (asset *BTCAsset) stopSync() {
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
+		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
 			asset.syncData.isSyncShuttingDown = false
 			return
 		}
 
-		loadedAsset.Stop() // Stops the wallet to stop listion notification handler when syncing.
+		// Procedure to safely stop a wallet from syncing.
+		// 1. Shutdown the upstream wallet.
+		loadedAsset.Stop() // Stops the chainclient too.
+	}
+
+	// 2. shutdown the chain client.
+	asset.chainClient.Stop() // If active, attempt to shut it down.
+
+	if loadedAsset != nil {
+		// Neutrino performs explicit chain service start but never explicit
+		// chain service stop thus the need to have it done here when stopping
+		// a wallet sync.
+		// 3. Disabled the peers connectivity allows the handleChainNotification
+		// goroutine to return.
+		asset.chainClient.CS.Stop()
+		asset.syncData.chainServiceStopped = true
+
+		// 4. Wait for the upstream wallet to shutdown completely.
 		loadedAsset.WaitForShutdown()
+	}
+
+	// 5. Wait for the chain client to shutdown
+	asset.chainClient.WaitForShutdown()
+
+	// Declares that the sync context is done and goroutines listening to it
+	// should exit. The shutdown protocol will eventually attempt to end this
+	// context but we do it early to avoid panics that happen after db has been
+	// closed but some goroutines still interact with the db.
+	asset.cancelSync()
+	asset.syncData.isSyncShuttingDown = false
+
+	log.Infof("Stopping (%s) wallet and its neutrino interface", asset.GetWalletName())
+
+	if loadedAsset != nil {
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
 		//
-		// This is being called at this point reason being that even though we need to stop the wallet sync,
-		// the wallet needs to be started to handle non sync related tasks such as changing password, renaming wallet, etc.
+		// 6. This is being called at this point reason being that even though we
+		// need to stop the wallet sync, the wallet needs to be started to handle
+		// non sync related tasks such as changing password, renaming wallet, etc.
+		// when syncing is disabled.
 		loadedAsset.Start()
 	}
-
-	log.Info("Stopping neutrino client service interface")
-
-	asset.chainClient.Stop() // If active, attempt to shut it down.
-	asset.chainClient.WaitForShutdown()
-
-	// Neutrino performs explicit chain service start but never explicit
-	// chain service stop thus the need to have it done here when stopping
-	// a wallet sync.
-	asset.chainClient.CS.Stop()
-	asset.syncData.chainServiceStopped = true
-
-	asset.cancelSync()
-	asset.syncData.isSyncShuttingDown = false
 }
 
 // startSync initiates the full chain sync starting protocols. It attempts to

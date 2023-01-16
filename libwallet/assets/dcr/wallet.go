@@ -264,8 +264,6 @@ func (asset *DCRAsset) Synced() bool {
 func (asset *DCRAsset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
-
-		log.Info("The full network shutdown protocols completed.")
 	}
 }
 

@@ -50,6 +50,7 @@ var (
 	ErrInvalidNet        = errors.New("invalid network type found")
 	ErrAssetUnknown      = errors.New("unknown asset found")
 	ErrBTCNotInitialized = errors.New("btc asset not initialized")
+	ErrDCRNotInitialized = errors.New("dcr asset not initialized")
 )
 
 // todo, should update this method to translate more error kinds.

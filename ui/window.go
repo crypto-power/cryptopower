@@ -2,6 +2,10 @@ package ui
 
 import (
 	"errors"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
 
 	giouiApp "gioui.org/app"
 	"gioui.org/io/key"
@@ -38,6 +42,13 @@ type Window struct {
 	txAuthor dcr.TxAuthor
 
 	walletAcctMixerStatus chan *wallet.AccountMixer
+
+	// Quit channel used to trigger background process to begin implementing the
+	// shutdown protocol.
+	Quit chan struct{}
+	// IsShutdown channel is used to report that backgound processes have completed
+	// shutting down, therefore the UI processes can finally stop.
+	IsShutdown chan struct{}
 }
 
 type (
@@ -69,6 +80,8 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 		wallet:                wal,
 		walletUnspentOutputs:  new(wallet.UnspentOutputs),
 		walletAcctMixerStatus: make(chan *wallet.AccountMixer),
+		Quit:                  make(chan struct{}, 1),
+		IsShutdown:            make(chan struct{}, 1),
 	}
 
 	l, err := win.NewLoad()
@@ -144,21 +157,55 @@ func (win *Window) NewLoad() (*load.Load, error) {
 
 // HandleEvents runs main event handling and page rendering loop.
 func (win *Window) HandleEvents() {
+	done := make(chan os.Signal, 1)
+	if runtime.GOOS == "windows" {
+		// For controlled shutdown to work on windows, the channel has to be
+		// listening to all signals.
+		// https://github.com/golang/go/commit/8cfa01943a7f43493543efba81996221bb0f27f8
+		signal.Notify(done)
+	} else {
+		// Signals are primarily used on Unix-like systems.
+		signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	}
+
+	var isShuttingDown bool
+
+	displayShutdownPage := func() {
+		if isShuttingDown {
+			return
+		}
+		isShuttingDown = true
+
+		log.Info("...Initiating the app shutdown protocols...")
+		// clear all stack and display the shutdown page as backend processes are
+		// terminating.
+		win.navigator.ClearStackAndDisplay(page.NewStartPage(win.load, true))
+		// Trigger the backend processes shutdown.
+		win.Quit <- struct{}{}
+	}
 
 	for {
-		e := <-win.Events()
-		switch evt := e.(type) {
+		// Select either the os interrupt or the window event, whichever becomes
+		// ready first.
+		select {
+		case <-done:
+			displayShutdownPage()
+		case <-win.IsShutdown:
+			// backend processes shutdown is complete, exit UI process too.
+			return
+		case e := <-win.Events():
+			switch evt := e.(type) {
 
-		case system.DestroyEvent:
-			win.navigator.CloseAllPages()
-			return // exits the loop, caller will exit the program.
+			case system.DestroyEvent:
+				displayShutdownPage()
 
-		case system.FrameEvent:
-			ops := win.handleFrameEvent(evt)
-			evt.Frame(ops)
+			case system.FrameEvent:
+				ops := win.handleFrameEvent(evt)
+				evt.Frame(ops)
 
-		default:
-			log.Tracef("Unhandled window event %v\n", e)
+			default:
+				log.Tracef("Unhandled window event %v\n", e)
+			}
 		}
 	}
 }

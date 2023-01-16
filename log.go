@@ -12,12 +12,14 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/page/governance"
 	"code.cryptopower.dev/group/cryptopower/ui/page/info"
@@ -77,6 +79,7 @@ var (
 	logRotators map[string]*rotator.Rotator
 
 	log          = backendLog.Logger("CRPW")
+	sharedWLog   = backendLog.Logger("SHWL")
 	walletLog    = backendLog.Logger("WALL")
 	winLog       = backendLog.Logger("UI")
 	dlwlLog      = backendLog.Logger("DLWL")
@@ -94,6 +97,8 @@ var (
 
 // Initialize package-global logger variables.
 func init() {
+	sharedW.UseLogger(sharedWLog)
+	page.UseLogger(winLog)
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
 	root.UseLogger(winLog)
@@ -136,7 +141,8 @@ var subsystemSLoggers = map[string]slog.Logger{
 	"CMGR": cmgrLog,
 	"SYNC": syncLog,
 	"TKBY": tkbyLog,
-	"WLLT": walletLog,
+	"WLLT": dcrWalletLog,
+	"SHWL": sharedWLog,
 }
 
 var subsystemBLoggers = map[string]btclog.Logger{
@@ -178,8 +184,7 @@ func setLogLevel(subsystemID string, logLevel string) {
 	if !ok {
 		return
 	}
-	libwallet.SetLogLevels("info")
-	// Defaults to info if the log level is invalid.
+
 	level, _ := slog.LevelFromString(logLevel)
 	logger.SetLevel(level)
 }

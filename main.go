@@ -77,8 +77,18 @@ func main() {
 	}
 
 	go func() {
-		win.HandleEvents() // blocks until the app window is closed
+		// Wait until we receive the shutdown request.
+		<-win.Quit
+		// Terminate all the backend processes safely.
 		wal.Shutdown()
+		// Backend process terminated safely trigger app shutdown now.
+		win.IsShutdown <- struct{}{}
+	}()
+
+	go func() {
+		// blocks until the backend processes terminate.
+		win.HandleEvents()
+		// Exit the app.
 		os.Exit(0)
 	}()
 

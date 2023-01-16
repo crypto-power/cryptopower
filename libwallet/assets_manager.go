@@ -242,13 +242,13 @@ func (mgr *AssetsManager) Shutdown() {
 	mgr.shuttingDown <- true
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
+		wallet.Shutdown() // Cancels the DCR wallet sync too.
 		wallet.CancelRescan()
-		wallet.Shutdown() // Cancels the wallet sync too.
 	}
 
 	for _, wallet := range mgr.Assets.BTC.Wallets {
+		wallet.Shutdown() // Cancels the BTC wallet sync too.
 		wallet.CancelRescan()
-		wallet.Shutdown() // Cancels the wallet sync too.
 	}
 
 	if mgr.params.DB != nil {
@@ -290,16 +290,28 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 	}
 
 	for _, wallet := range mgr.Assets.DCR.Wallets {
-		err := wallet.OpenWallet()
-		if err != nil {
-			return err
+		select {
+		case <-mgr.shuttingDown:
+			// If shutdown protocol is detected, exit immediately.
+			return nil
+		default:
+			err := wallet.OpenWallet()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	for _, wallet := range mgr.Assets.BTC.Wallets {
-		err := wallet.OpenWallet()
-		if err != nil {
-			return err
+		select {
+		case <-mgr.shuttingDown:
+			// If shutdown protocol is detected, exit immediately.
+			return nil
+		default:
+			err := wallet.OpenWallet()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

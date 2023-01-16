@@ -256,18 +256,18 @@ func (asset *BTCAsset) SafelyCancelSync() {
 
 		// Chain is either syncing or is synced.
 		asset.CancelSync()
+	}
 
-		log.Info("The full network shutdown protocols completed.")
-	} else {
-		loadWallet := asset.Internal().BTC
-		if loadWallet != nil {
-			if loadWallet.ShuttingDown() {
-				return
-			}
-			loadWallet.Stop()
-			loadWallet.WaitForShutdown()
+	// Stop the goroutines left active to manage the wallet functionalities that
+	// don't require activation of sync i.e. wallet rename, password update etc.
+	loadWallet := asset.Internal().BTC
+	if loadWallet != nil {
+		if loadWallet.ShuttingDown() {
+			return
 		}
-		log.Info("Stoped wallet")
+
+		loadWallet.Stop()
+		loadWallet.WaitForShutdown()
 	}
 }
 

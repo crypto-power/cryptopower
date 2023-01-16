@@ -143,7 +143,7 @@ func (wallet *Wallet) prepare() (err error) {
 
 func (wallet *Wallet) Shutdown() {
 	// Trigger shuttingDown signal to cancel all contexts created with
-	// `wallet.ShutdownContext()` or `wallet.shutdownContextWithCancel()`.
+	// `wallet.shutdownContextWithCancel()`.
 	wallet.shuttingDown <- true
 
 	// Explicitly stop all network connectivity activities.
@@ -151,23 +151,23 @@ func (wallet *Wallet) Shutdown() {
 		wallet.networkCancel()
 	}
 
+	// Sets the upstream wallet instance to nil.
 	if _, loaded := wallet.loader.GetLoadedWallet(); loaded {
 		err := wallet.loader.UnloadWallet()
 		if err != nil {
 			log.Errorf("Failed to close wallet: %v", err)
-		} else {
-			log.Info("Closed wallet")
 		}
 	}
 
+	// close db connection as the last shutdown protocol.
 	if wallet.walletDataDB != nil {
 		err := wallet.walletDataDB.Close()
 		if err != nil {
 			log.Errorf("tx db closed with error: %v", err)
-		} else {
-			log.Info("tx db closed successfully")
 		}
 	}
+
+	log.Infof("(%s) full network shutdown protocols completed.", wallet.Name)
 }
 
 func (wallet *Wallet) TargetTimePerBlockMinutes() float64 {
