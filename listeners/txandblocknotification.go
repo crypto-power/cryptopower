@@ -51,5 +51,8 @@ func (txAndBlk *TxAndBlockNotificationListener) OnTransactionConfirmed(walletID 
 }
 
 func (txAndBlk *TxAndBlockNotificationListener) UpdateNotification(signal TxNotification) {
-	txAndBlk.TxAndBlockNotifChan <- signal
+	select {
+	case txAndBlk.TxAndBlockNotifChan <- signal:
+	default:
+	}
 }
