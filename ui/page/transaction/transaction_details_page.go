@@ -754,6 +754,9 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, values.String(values.StrConfStatus), stat)
 		}),
 		layout.Rigid(func(gtx C) D {
+			if pg.wallet.GetAssetType() == libutils.BTCWalletAsset && transaction.Direction == txhelper.TxDirectionReceived {
+				return D{}
+			}
 			return pg.keyValue(gtx, values.String(values.StrTxFee), pg.Theme.Label(values.TextSize14, pg.wallet.ToAmount(transaction.Fee).String()).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
