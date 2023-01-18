@@ -2,7 +2,6 @@ package btc
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -136,7 +135,6 @@ func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 // last synced block height in each one of them.
 func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
 	serverPeers := asset.chainClient.CS.Peers()
-
 	for _, p := range serverPeers {
 		if p.LastBlock() > height {
 			height = p.LastBlock()
