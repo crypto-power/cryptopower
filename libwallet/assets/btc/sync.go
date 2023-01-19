@@ -138,6 +138,9 @@ func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
 	for _, p := range serverPeers {
 		if p.LastBlock() > height {
 			height = p.LastBlock()
+			// If a dormant peer is picked, on the next iteration it will be dropped
+			// because it will be behind.
+			return
 		}
 	}
 	return

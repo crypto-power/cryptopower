@@ -288,21 +288,21 @@ type AsyncTxAndBlockNotificationListener struct {
 // starts a goroutine to actually handle the notification using the embedded
 // listener.
 func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransaction(transaction string) {
-	go asyncTxBlockListener.OnTransaction(transaction)
+	go asyncTxBlockListener.TxAndBlockNotificationListener.OnTransaction(transaction)
 }
 
 // OnBlockAttached satisfies the TxAndBlockNotificationListener interface and
 // starts a goroutine to actually handle the notification using the embedded
 // listener.
 func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnBlockAttached(walletID int, blockHeight int32) {
-	go asyncTxBlockListener.OnBlockAttached(walletID, blockHeight)
+	go asyncTxBlockListener.TxAndBlockNotificationListener.OnBlockAttached(walletID, blockHeight)
 }
 
 // OnTransactionConfirmed satisfies the TxAndBlockNotificationListener interface
 // and starts a goroutine to actually handle the notification using the embedded
 // listener.
 func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransactionConfirmed(walletID int, hash string, blockHeight int32) {
-	go asyncTxBlockListener.OnTransactionConfirmed(walletID, hash, blockHeight)
+	go asyncTxBlockListener.TxAndBlockNotificationListener.OnTransactionConfirmed(walletID, hash, blockHeight)
 }
 
 /** end sync-related types */
