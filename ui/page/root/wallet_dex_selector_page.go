@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/layout"
@@ -44,6 +45,8 @@ type WalletDexServerSelector struct {
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
+
+	startSpvSync uint32
 
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow
@@ -339,6 +342,11 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 		return
 	}
 
+	if !atomic.CompareAndSwapUint32(&pg.startSpvSync, 0, 1) {
+		// internet connection checking goroutine is already running.
+		return
+	}
+
 	// Since internet connectivity isn't available, the goroutine will keep
 	// checking for the internet connectivity. on every 5th poll it will keep
 	// increasing the wait duration by 10 seconds till the internet connectivity
@@ -349,32 +357,31 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 		duration := time.Second * 10
 		ticker := time.NewTicker(duration)
 
-		for {
-			select {
-			case <-pg.ctx.Done():
-				// on system shutdown exit the go routine
-				return
-			case <-ticker.C:
-				if libutils.IsOnline() {
-					// once network connection has been established proceed to
-					// start the wallet sync.
-					if err := wallet.SpvSync(); err != nil {
-						log.Errorf("Error starting sync: %v", err)
-					}
-					return
+		for range ticker.C {
+			if libutils.IsOnline() {
+				log.Warn("Finally the internet connection has been established")
+				// once network connection has been established proceed to
+				// start the wallet sync.
+				if err := wallet.SpvSync(); err != nil {
+					log.Errorf("Error starting sync: %v", err)
 				}
-
-				// At the 5th ticker count, increase the duration interval by 10 seconds.
-				if count%counter == 0 {
-					duration += time.Second * 10
-					// reset ticker
-					ticker.Reset(duration)
-				}
-				// Increase the counter
-				count++
-				log.Debugf("Attempting to check for internet connection in %s", duration.String())
+				ticker.Stop()
+				break
 			}
+
+			// At the 5th ticker count, increase the duration interval by 10 seconds.
+			if count%counter == 0 && count > 0 {
+				duration += time.Second * 10
+				// reset ticker
+				ticker.Reset(duration)
+			}
+			// Increase the counter
+			count++
+			log.Debugf("Attempting to check for internet connection in %s", duration.String())
 		}
+
+		// Allow another goroutine to be spun up later on if need be.
+		atomic.StoreUint32(&pg.startSpvSync, 0)
 	}()
 }
 
