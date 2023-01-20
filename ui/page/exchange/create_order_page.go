@@ -692,7 +692,24 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 	pg.refundAddress = refundAddress
 	pg.destinationAddress = destinationAddress
 
-	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData)
+	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
+		OnOrderCompleted(func(order *instantswap.Order) {
+			pg.FetchOrders()
+			successModal := modal.NewCustomModal(pg.Load).
+				Title("Order Submitted").
+				SetCancelable(true).
+				SetContentAlignment(layout.Center, layout.Center, layout.Center).
+				SetNegativeButtonText("Ok").
+				SetNegativeButtonCallback(func() {
+				}).
+				PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
+				SetPositiveButtonText("Details").
+				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+					pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, order))
+					return true
+				})
+			pg.ParentWindow().ShowModal(successModal)
+		})
 
 	pg.ParentWindow().ShowModal(confirmOrderModal)
 

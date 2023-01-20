@@ -27,6 +27,9 @@ type confirmOrderModal struct {
 	confirmButton                cryptomaterial.Button
 	passwordEditor               cryptomaterial.Editor
 
+	onOrderCompleted func(order *instantswap.Order)
+	onCancel         func()
+
 	pageContainer *widget.List
 
 	isCreating bool
@@ -65,6 +68,16 @@ func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 
 func (com *confirmOrderModal) OnResume() {
 	com.passwordEditor.Editor.Focus()
+}
+
+func (com *confirmOrderModal) OnOrderCompleted(orderCompleted func(order *instantswap.Order)) *confirmOrderModal {
+	com.onOrderCompleted = orderCompleted
+	return com
+}
+
+func (com *confirmOrderModal) OnCancel(cancel func()) *confirmOrderModal {
+	com.onCancel = cancel
+	return com
 }
 
 func (com *confirmOrderModal) SetError(err string) {
@@ -117,11 +130,8 @@ func (com *confirmOrderModal) confirmOrder() {
 			return
 		}
 
-		successModal := modal.NewSuccessModal(com.Load, values.String(values.StrOrderCeated), modal.DefaultClickFunc())
-		com.ParentWindow().ShowModal(successModal)
-
+		com.onOrderCompleted(order)
 		com.Dismiss()
-		com.ParentNavigator().Display(NewOrderDetailsPage(com.Load, order))
 
 	}()
 

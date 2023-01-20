@@ -198,7 +198,7 @@ const EN = `
 "expiredInfoDisc" = "Expired tickets will be revoked to return the original Stake price to you"
 "expiredInfoDiscSub" = "If a Stake is not revoked automatically, use the revoke button."
 "expiredOn" = "Expired on"
-"expiresIn" = "Expires in"
+"expiresIn" = "Expires in "
 "explorerURL" = "Explorer URL for %v Asset"
 "extendedInfo" = "The Extended Public Key is used to import the wallet as a watch-only wallet"
 "extendedKey" = "Extended Public Key"
@@ -671,4 +671,5 @@ const EN = `
 "yourAddress" = "Your Address"
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
+"orderSubmitted" = "Order Submitted"
 `
