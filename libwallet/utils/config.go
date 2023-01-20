@@ -160,3 +160,15 @@ func NormalizeAddress(addr string, defaultPort string) (string, error) {
 	}
 	return addr, nil
 }
+
+// IsOnline is a function to check whether an internet connection can be
+// established. If established bool true should be returned otherwise false.
+// Default url to check connection is http://google.com.
+func IsOnline() bool {
+	var isconnected bool
+	if _, _, err := HttpGet("https://google.com", &isconnected); err != nil {
+		return false
+	}
+
+	return isconnected
+}

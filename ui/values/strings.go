@@ -154,6 +154,7 @@ const (
 	StrPeers                           = "peers"
 	StrConnectedPeersCount             = "connectedPeersCount"
 	StrNoConnectedPeer                 = "noConnectedPeer"
+	StrNoInternet                      = "noInternet"
 	StrCurrentTotalBalance             = "currentTotalBalance"
 	StrTotalBalance                    = "totalBalance"
 	StrRecentTransactions              = "recentTransactions"

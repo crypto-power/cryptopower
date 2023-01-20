@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"sync"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -329,12 +330,52 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 	}
 	unlock(true)
 
-	err := wallet.SpvSync()
-	if err != nil {
-		// show error dialog
-		log.Debug("Error starting sync:", err)
+	if libutils.IsOnline() {
+		// once network connection has been established proceed to
+		// start the wallet sync.
+		if err := wallet.SpvSync(); err != nil {
+			log.Errorf("Error starting sync: %v", err)
+		}
+		return
 	}
 
+	// Since internet connectivity isn't available, the goroutine will keep
+	// checking for the internet connectivity. on every 5th poll it will keep
+	// increasing the wait duration by 10 seconds till the internet connectivity
+	// is restored or the app is shutdown.
+	go func() {
+		count := 0
+		counter := 5
+		duration := time.Second * 10
+		ticker := time.NewTicker(duration)
+
+		for {
+			select {
+			case <-pg.ctx.Done():
+				// on system shutdown exit the go routine
+				return
+			case <-ticker.C:
+				if libutils.IsOnline() {
+					// once network connection has been established proceed to
+					// start the wallet sync.
+					if err := wallet.SpvSync(); err != nil {
+						log.Errorf("Error starting sync: %v", err)
+					}
+					return
+				}
+
+				// At the 5th ticker count, increase the duration interval by 10 seconds.
+				if count%counter == 0 {
+					duration += time.Second * 10
+					// reset ticker
+					ticker.Reset(duration)
+				}
+				// Increase the counter
+				count++
+				log.Debugf("Attempting to check for internet connection in %s", duration.String())
+			}
+		}
+	}()
 }
 
 func (pg *WalletDexServerSelector) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
