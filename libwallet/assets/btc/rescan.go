@@ -11,6 +11,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
@@ -220,9 +221,12 @@ func (asset *BTCAsset) updateAssetBirthday() {
 		return
 	}
 
-	// Only update the wallet birthday and birthdayblock for the wallet that
-	// have received or sent tx(s).
+	var block *wire.MsgBlock
+	var birthdayBlockHeight int32
+
 	if len(txs) > 0 {
+		// handle wallets that have received or sent tx(s) i.e. have historical data.
+
 		// txs are sorted from the newest to the oldest then pick the last tx (oldest).
 		blockHeight := txs[len(txs)-1].BlockHeight
 		if blockHeight == sharedW.UnminedTxHeight {
@@ -235,7 +239,7 @@ func (asset *BTCAsset) updateAssetBirthday() {
 		// relevant txs might be discovered. Wallet restoration starts at the block
 		// immediately after the birthday block. This implies that our birthday
 		// block can never hold any relavant txs otherwise the rescan will ignore them.
-		birthdayBlockHeight := blockHeight - 10
+		birthdayBlockHeight = blockHeight - 10
 
 		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
 		if err != nil {
@@ -243,20 +247,20 @@ func (asset *BTCAsset) updateAssetBirthday() {
 			return
 		}
 
-		block, err := asset.chainClient.GetBlock(hash)
+		block, err = asset.chainClient.GetBlock(hash)
 		if err != nil {
 			log.Error(errors.E(op, "GetBlock failed %v", err))
 			return
 		}
 
-		previousBirthdayblock, _, err := asset.getBirthdayBlock()
+		previousBirthdayblock, isverified, err := asset.getBirthdayBlock()
 		if err != nil {
 			log.Error(errors.E(op, "getBirthdayBlock failed %v", err))
 			// continue with new birthday block update
 		}
 
-		if previousBirthdayblock == birthdayBlockHeight {
-			// No need to set the same birthday again.
+		if previousBirthdayblock == birthdayBlockHeight && isverified {
+			// No need to set the same verified birthday again.
 			return
 		}
 
@@ -266,33 +270,63 @@ func (asset *BTCAsset) updateAssetBirthday() {
 		// At the wallet level update the new birthday chosen.
 		asset.SetBirthday(block.Header.Timestamp)
 
-		// At the address manager level update the new birthday and birthday block chosen.
-		err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
-			ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-			err := asset.Internal().BTC.Manager.SetBirthday(ns, block.Header.Timestamp)
-			if err != nil {
-				return err
-			}
+	} else {
+		// handle wallets with no history here. Only verification of the auto set
+		// birthday block that is triggered here, if it hasn't been verified.
 
-			birthdayBlock := waddrmgr.BlockStamp{
-				Hash:      *hash,
-				Height:    birthdayBlockHeight,
-				Timestamp: block.Header.Timestamp,
-			}
-
-			// Setting the verification to true, requests the upstream not to
-			// attempt checking for a better birthday block. This check causes
-			// a crash if the optimum value identified by the upstream doesn't
-			// match what was previously set.
-			// Once the initial sync is complete, the system automatically sets
-			// the most optimum birthday block. On premature exit if the
-			// optimum will be available by then, its also set automatically.
-			return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, true)
-		})
-
+		// query the current birthday block set for it to be verified below if it not.
+		blockHeight, isverified, err := asset.getBirthdayBlock()
 		if err != nil {
-			log.Error(errors.E(op, "Updating the birthday block after initial sync failed: %v", err))
+			log.Error(errors.E(op, "querying birthday block failed %v", err))
+			// exit the verification on error
+			return
 		}
+
+		if isverified {
+			// Do not attempt to verify it again
+			return
+		}
+
+		birthdayBlockHeight = blockHeight
+		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
+		if err != nil {
+			log.Error(errors.E(op, "querying BlockHash failed %v", err))
+			return
+		}
+
+		block, err = asset.chainClient.GetBlock(hash)
+		if err != nil {
+			log.Error(errors.E(op, "querying Block failed %v", err))
+			return
+		}
+	}
+
+	// At the address manager level update the new birthday and birthday block chosen.
+	err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
+		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
+		err := asset.Internal().BTC.Manager.SetBirthday(ns, block.Header.Timestamp)
+		if err != nil {
+			return err
+		}
+
+		birthdayBlock := waddrmgr.BlockStamp{
+			Hash:      chainhash.Hash(block.Header.BlockHash()),
+			Height:    birthdayBlockHeight,
+			Timestamp: block.Header.Timestamp,
+		}
+
+		// Setting the verification to true, requests the upstream not to
+		// attempt checking for a better birthday block. This check causes
+		// a crash if the optimum value identified by the upstream doesn't
+		// match what was previously set.
+		// Once the initial sync is complete, the system automatically sets
+		// the most optimum birthday block. On premature exit if the
+		// optimum will be available by then, its also set automatically.
+		return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, true)
+	})
+
+	if err != nil {
+		log.Error(errors.E(op, "Updating the birthday block after initial sync failed: %v", err))
 	}
 }
 
