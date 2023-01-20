@@ -696,14 +696,14 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 		OnOrderCompleted(func(order *instantswap.Order) {
 			pg.FetchOrders()
 			successModal := modal.NewCustomModal(pg.Load).
-				Title("Order Submitted").
+				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
 				SetContentAlignment(layout.Center, layout.Center, layout.Center).
-				SetNegativeButtonText("Ok").
+				SetNegativeButtonText(values.String(values.StrOK)).
 				SetNegativeButtonCallback(func() {
 				}).
 				PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-				SetPositiveButtonText("Details").
+				SetPositiveButtonText(values.String(values.StrOrderDetails)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, order))
 					return true
