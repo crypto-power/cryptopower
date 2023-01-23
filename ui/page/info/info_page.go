@@ -10,6 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -50,6 +51,8 @@ type WalletInfo struct {
 	toBackup         cryptomaterial.Button
 	checkBox         cryptomaterial.CheckBoxStyle
 
+	isStatusConnected bool
+
 	remainingSyncTime    string
 	headersToFetchOrScan int32
 	stepFetchProgress    int32
@@ -74,6 +77,10 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 	pg.toBackup.TextSize = values.TextSize14
 
 	pg.redirectfunc = redirect
+
+	go func() {
+		pg.isStatusConnected = libutils.IsOnline()
+	}()
 
 	pg.initWalletStatusWidgets()
 
@@ -150,6 +157,13 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 // displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
+	// As long as the internet connection hasn't been established keep checking.
+	if !pg.isStatusConnected {
+		go func() {
+			pg.isStatusConnected = libutils.IsOnline()
+		}()
+	}
+
 	isSyncShutting := pg.WL.SelectedWallet.Wallet.IsSyncShuttingDown()
 	pg.syncSwitch.SetEnabled(!isSyncShutting)
 	if pg.syncSwitch.Changed() {

@@ -18,6 +18,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/assets"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -98,6 +99,9 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
 	}
+
+	// fetch status of the wallet if its online.
+	go libutils.IsOnline()
 
 	mw := win.wallet.GetMultiWallet()
 

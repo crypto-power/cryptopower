@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -54,6 +55,14 @@ const (
 	HeightFilter        = "BlockHeight"
 	TicketSpenderFilter = "TicketSpender"
 )
+
+type netConfirm struct {
+	netCheck    uint32
+	isConnected bool
+	lastUpdate  time.Time
+}
+
+var netC = netConfirm{}
 
 // Stringer used in generating the directory path where the lowercase of the
 // asset type is required. The uppercase defined by default is required to
@@ -165,7 +174,21 @@ func NormalizeAddress(addr string, defaultPort string) (string, error) {
 // established. If established bool true should be returned otherwise false.
 // Default url to check connection is http://google.com.
 func IsOnline() bool {
+	// If the online status true was updated in the last 2 minutes return it.
+	if time.Since(netC.lastUpdate) < time.Minute*2 && netC.isConnected {
+		return true
+	}
+
+	if !atomic.CompareAndSwapUint32(&netC.netCheck, 0, 1) {
+		return netC.isConnected
+	}
+
 	_, err := new(http.Client).Get("https://google.com")
 	// When err != nil, internet connection test failed.
-	return err == nil
+	netC.isConnected = err == nil
+	netC.lastUpdate = time.Now()
+
+	atomic.StoreUint32(&netC.netCheck, 0)
+
+	return netC.isConnected
 }

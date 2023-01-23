@@ -47,6 +47,7 @@ type WalletDexServerSelector struct {
 	ctxCancel context.CancelFunc
 
 	startSpvSync uint32
+	isConnected  bool
 
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow
@@ -97,6 +98,10 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	pg.exchangeBtn.Radius = rad
 
 	pg.settings = l.Theme.NewClickable(false)
+
+	go func() {
+		pg.isConnected = libutils.IsOnline()
+	}()
 
 	pg.initWalletSelectorOptions()
 
@@ -333,7 +338,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 	}
 	unlock(true)
 
-	if libutils.IsOnline() {
+	if pg.isConnected {
 		// once network connection has been established proceed to
 		// start the wallet sync.
 		if err := wallet.SpvSync(); err != nil {
@@ -358,26 +363,34 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 		ticker := time.NewTicker(duration)
 
 		for range ticker.C {
-			if libutils.IsOnline() {
+			if pg.isConnected {
 				log.Warn("Finally the internet connection has been established")
 				// once network connection has been established proceed to
 				// start the wallet sync.
 				if err := wallet.SpvSync(); err != nil {
 					log.Errorf("Error starting sync: %v", err)
 				}
+
+				// Trigger UI update
+				pg.ParentWindow().Reload()
+
 				ticker.Stop()
-				break
+				return
 			}
 
-			// At the 5th ticker count, increase the duration interval by 10 seconds.
+			// At the 5th ticker count, increase the duration interval by 5 seconds.
 			if count%counter == 0 && count > 0 {
-				duration += time.Second * 10
+				duration += time.Second * 5
 				// reset ticker
 				ticker.Reset(duration)
 			}
 			// Increase the counter
 			count++
 			log.Debugf("Attempting to check for internet connection in %s", duration.String())
+
+			go func() {
+				pg.isConnected = libutils.IsOnline()
+			}()
 		}
 
 		// Allow another goroutine to be spun up later on if need be.

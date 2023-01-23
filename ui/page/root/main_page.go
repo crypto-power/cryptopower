@@ -338,6 +338,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, market)
 	if err != nil {
 		log.Error(err)
+		mp.isFetchingExchangeRate = false
 		return
 	}
 

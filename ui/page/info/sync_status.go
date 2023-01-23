@@ -99,7 +99,7 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 						)
 					}
 
-					if !libutils.IsOnline() {
+					if !pg.isStatusConnected {
 						return pg.Theme.Label(values.TextSize14, values.String(values.StrNoInternet)).Layout(gtx)
 					}
 					return pg.Theme.Label(values.TextSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
