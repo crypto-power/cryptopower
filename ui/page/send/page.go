@@ -178,6 +178,11 @@ func (pg *Page) OnNavigatedTo() {
 	pg.RestyleWidgets()
 
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+		// Events are disabled until the page is fully synced.
+		return
+	}
+
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
 	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)

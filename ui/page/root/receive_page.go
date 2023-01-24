@@ -136,6 +136,11 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+		// Events are disabled until the page is fully synced.
+		return
+	}
+
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.

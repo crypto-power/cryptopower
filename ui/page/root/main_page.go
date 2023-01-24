@@ -379,18 +379,6 @@ func (mp *MainPage) OnCurrencyChanged() {
 	mp.updateExchangeSetting()
 }
 
-func (mp *MainPage) isSynced() bool {
-	text := values.String(values.StrPageWarningNotSync)
-	if mp.WL.SelectedWallet.Wallet.IsSynced() {
-		return true
-	} else if mp.WL.SelectedWallet.Wallet.IsSyncing() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
-		text = values.String(values.StrPageWarningSync)
-	}
-	errModal := modal.NewErrorModal(mp.Load, text, modal.DefaultClickFunc())
-	mp.ParentWindow().ShowModal(errModal)
-	return false
-}
-
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -432,21 +420,7 @@ func (mp *MainPage) HandleUserInteractions() {
 	displayPage := func(pg app.Page) {
 		// Load the current wallet balance on page reload.
 		mp.updateBalance()
-
-		// check if wallet is synced and clear stack
-		if mp.ID() == send.SendPageID || mp.ID() == ReceivePageID {
-			if mp.WL.SelectedWallet.Wallet.IsSynced() {
-				mp.Display(pg)
-			} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
-				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
-				mp.ParentWindow().ShowModal(errModal)
-			} else {
-				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
-				mp.ParentWindow().ShowModal(errModal)
-			}
-		} else {
-			mp.Display(pg)
-		}
+		mp.Display(pg)
 	}
 
 	for _, item := range mp.drawerNav.DCRDrawerNavItems {
@@ -663,7 +637,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							switch mp.CurrentPage().ID() {
 							case ReceivePageID, send.SendPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID:
-								if mp.isSynced() {
+								if !mp.WL.SelectedWallet.Wallet.IsSynced() {
 									return mp.pageDisableOnSync(gtx)
 								}
 								fallthrough

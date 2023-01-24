@@ -92,6 +92,11 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.refreshAvailableTxType()
+	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+		// Events are disabled until the page is fully synced.
+		return
+	}
+
 	pg.listenForTxNotifications()
 	go pg.loadTransactions(false)
 }
