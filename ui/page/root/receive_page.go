@@ -137,7 +137,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
-		// Events are disabled until the page is fully synced.
+		// Events are disabled until the wallet is fully synced.
 		return
 	}
 

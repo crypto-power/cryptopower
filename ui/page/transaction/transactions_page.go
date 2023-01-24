@@ -93,7 +93,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 
 	pg.refreshAvailableTxType()
 	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
-		// Events are disabled until the page is fully synced.
+		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
