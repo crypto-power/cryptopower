@@ -56,13 +56,13 @@ const (
 	TicketSpenderFilter = "TicketSpender"
 )
 
-type netConfirm struct {
-	netCheck    uint32
-	isConnected bool
-	lastUpdate  time.Time
+type monitorNetwork struct {
+	networkCheck uint32
+	isConnected  bool
+	lastUpdate   time.Time
 }
 
-var netC = netConfirm{}
+var netC = monitorNetwork{}
 
 // Stringer used in generating the directory path where the lowercase of the
 // asset type is required. The uppercase defined by default is required to
@@ -179,7 +179,7 @@ func IsOnline() bool {
 		return true
 	}
 
-	if !atomic.CompareAndSwapUint32(&netC.netCheck, 0, 1) {
+	if !atomic.CompareAndSwapUint32(&netC.networkCheck, 0, 1) {
 		return netC.isConnected
 	}
 
@@ -188,7 +188,7 @@ func IsOnline() bool {
 	netC.isConnected = err == nil
 	netC.lastUpdate = time.Now()
 
-	atomic.StoreUint32(&netC.netCheck, 0)
+	atomic.StoreUint32(&netC.networkCheck, 0)
 
 	return netC.isConnected
 }
