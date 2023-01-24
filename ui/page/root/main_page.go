@@ -454,20 +454,16 @@ func (mp *MainPage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.PageID {
 			case send.SendPageID:
-				if mp.isSynced() {
-					pg = send.NewSendPage(mp.Load)
-				}
+				pg = send.NewSendPage(mp.Load)
 			case ReceivePageID:
-				if mp.isSynced() {
-					pg = NewReceivePage(mp.Load)
-				}
+				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
 				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-				if mp.isSynced() && dcrUniqueImpl != nil {
+				if dcrUniqueImpl != nil {
 					if !dcrUniqueImpl.AccountMixerConfigIsSet() {
 						pg = privacy.NewSetupPrivacyPage(mp.Load)
 					} else {
@@ -497,17 +493,11 @@ func (mp *MainPage) HandleUserInteractions() {
 			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			case ReceivePageID:
-				if mp.isSynced() {
-					pg = NewReceivePage(mp.Load)
-				}
+				pg = NewReceivePage(mp.Load)
 			case send.SendPageID:
-				if mp.isSynced() {
-					pg = send.NewSendPage(mp.Load)
-				}
+				pg = send.NewSendPage(mp.Load)
 			case transaction.TransactionsPageID:
-				if mp.isSynced() {
-					pg = transaction.NewTransactionsPage(mp.Load)
-				}
+				pg = transaction.NewTransactionsPage(mp.Load)
 			case info.InfoID:
 				pg = info.NewInfoPage(mp.Load, redirect)
 			}
@@ -670,11 +660,47 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							if mp.CurrentPage() == nil {
 								return D{}
 							}
-							return mp.CurrentPage().Layout(gtx)
+							switch mp.CurrentPage().ID() {
+							case ReceivePageID, send.SendPageID,
+								transaction.TransactionsPageID, privacy.AccountMixerPageID:
+								if mp.isSynced() {
+									return mp.pageDisableOnSync(gtx)
+								}
+								fallthrough
+							default:
+								return mp.CurrentPage().Layout(gtx)
+							}
 						}),
 					)
 				}),
 			)
+		}),
+	)
+}
+
+func (mp *MainPage) pageDisableOnSync(gtx C) D {
+	return layout.Stack{Alignment: layout.N}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			currentPage := mp.CurrentPage()
+			if currentPage == nil {
+				return D{}
+			}
+			mgtx := gtx.Disabled()
+			return currentPage.Layout(mgtx)
+		}),
+		layout.Stacked(func(gtx C) D {
+			overlayColor := mp.Theme.Color.Gray3
+			overlayColor.A = 220
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+			cryptomaterial.Fill(gtx, overlayColor)
+
+			lbl := mp.Theme.Label(values.TextSize20, values.String(values.StrFunctionUnavailable))
+			lbl.Font.Weight = text.SemiBold
+			lbl.Color = mp.Theme.Color.PageNavText
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding200}.Layout(gtx, lbl.Layout)
+			})
 		}),
 	)
 }

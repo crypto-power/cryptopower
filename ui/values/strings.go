@@ -742,4 +742,5 @@ const (
 	StrExchange                        = "exchange"
 	StrExchangeIntro                   = "exchangeIntro"
 	StrMinimumAssetType                = "minimumAssetType"
+	StrFunctionUnavailable             = "functionUnavailable"
 )
