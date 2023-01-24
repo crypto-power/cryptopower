@@ -635,7 +635,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								return D{}
 							}
 							switch mp.CurrentPage().ID() {
-							case ReceivePageID, send.SendPageID,
+							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID:
 								if !mp.WL.SelectedWallet.Wallet.IsSynced() {
 									return mp.pageDisableOnSync(gtx)
