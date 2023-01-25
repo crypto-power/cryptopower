@@ -155,7 +155,7 @@ func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
 											clipboard.WriteOp{Text: pg.extendedKey}.Add(gtx.Ops)
 											pg.Toast.Notify(values.String(values.StrExtendedCopied))
 										}
-										lbl.Text = utils.AutoSplitSingleString(*pg.Theme, gtx, pg.extendedKey, lbl.Font, values.TextSize14)
+										lbl.Text = utils.SplitXPUB(pg.extendedKey, 70, 35)
 										lbl.Color = pg.Theme.Color.Primary
 										return pg.extendedKeyClickable.Layout(gtx, lbl.Layout)
 									}

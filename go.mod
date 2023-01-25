@@ -1,10 +1,10 @@
 module code.cryptopower.dev/group/cryptopower
 
-go 1.19
+go 1.18
 
 require (
 	decred.org/dcrwallet/v2 v2.0.9
-	gioui.org v0.0.0-20220601100144-a896a467ecae
+	gioui.org v0.0.0-20230118222818-e0cf570339bd
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ararog/timeago v0.0.0-20160328174124-e9969cf18b8d
@@ -44,19 +44,22 @@ require (
 	github.com/yeqown/go-qrcode v1.5.1
 	go.etcd.io/bbolt v1.3.7-0.20220130032806-d5db64bdbfde
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
-	golang.org/x/exp v0.0.0-20210722180016-6781d3edade3
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
+	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95 // indirect
+	golang.org/x/image v0.0.0-20220722155232-062f8c9fd539
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 	golang.org/x/text v0.3.7
 )
 
 require (
 	code.cryptopower.dev/group/instantswap v0.0.0-20221115115243-0ff6727e4065
+	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
+	github.com/decred/dcrd/dcrutil/v3 v3.0.0
 	github.com/lightninglabs/neutrino v0.14.2
+	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 )
 
 require (
@@ -73,8 +76,7 @@ require (
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
-	github.com/benoitkugler/textlayout v0.1.1 // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.2.2 // indirect
+	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.5 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
@@ -91,7 +93,6 @@ require (
 	github.com/decred/dcrd/dcrec v1.0.1-0.20200921185235-6d75c7ec1199 // indirect
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0 // indirect
-	github.com/decred/dcrd/dcrutil/v3 v3.0.0 // indirect
 	github.com/decred/dcrd/gcs/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/lru v1.1.1 // indirect
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
@@ -101,8 +102,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/gioui/uax v0.2.1-0.20220325163150-e3d987515a12 // indirect
-	github.com/go-text/typesetting v0.0.0-20220411150340-35994bc27a7b // indirect
+	github.com/go-text/typesetting v0.0.0-20221214153724-0399769901d5 // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
@@ -128,7 +128,7 @@ require (
 	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20220822230855-b0a4917ee28c // indirect
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
+	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
