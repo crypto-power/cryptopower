@@ -174,7 +174,7 @@ func NormalizeAddress(addr string, defaultPort string) (string, error) {
 // established. If established bool true should be returned otherwise false.
 // Default url to check connection is http://google.com.
 func IsOnline() bool {
-	// If the online status true was updated in the last 2 minutes return it.
+	// If the wallet was online and updated in the last 2 minutes return it.
 	if time.Since(netC.lastUpdate) < time.Minute*2 && netC.isConnected {
 		return true
 	}
