@@ -222,13 +222,15 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 								Alignment: layout.Middle,
 							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									if pg.currentAddress != "" {
+									if pg.currentAddress != "" && pg.WL.SelectedWallet.Wallet.IsSynced() {
+										// Display generated address only on a synced wallet
 										return pg.addressLayout(gtx)
 									}
 									return D{}
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.qrImage == nil {
+									if pg.qrImage == nil || !pg.WL.SelectedWallet.Wallet.IsSynced() {
+										// Display generated address only on a synced wallet
 										return D{}
 									}
 
