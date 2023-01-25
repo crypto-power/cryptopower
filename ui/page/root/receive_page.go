@@ -136,6 +136,11 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+		// Events are disabled until the wallet is fully synced.
+		return
+	}
+
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
@@ -217,13 +222,15 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 								Alignment: layout.Middle,
 							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									if pg.currentAddress != "" {
+									if pg.currentAddress != "" && pg.WL.SelectedWallet.Wallet.IsSynced() {
+										// Display generated address only on a synced wallet
 										return pg.addressLayout(gtx)
 									}
 									return D{}
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.qrImage == nil {
+									if pg.qrImage == nil || !pg.WL.SelectedWallet.Wallet.IsSynced() {
+										// Display generated address only on a synced wallet
 										return D{}
 									}
 
