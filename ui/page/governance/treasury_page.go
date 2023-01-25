@@ -234,24 +234,20 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			isSuccess := true
-			go func(isClosing bool) {
-				selectedWallet := pg.WL.SelectedWallet.Wallet
-				votingPreference := treasuryItem.OptionsRadioGroup.Value
-				err := selectedWallet.(*dcr.DCRAsset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
-				if err != nil {
-					pm.SetError(err.Error())
-					pm.SetLoading(false)
-					isClosing = false
-					return
-				}
-				go pg.FetchPolicies() // re-fetch policies when voting is done.
-				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), modal.DefaultClickFunc())
-				pg.ParentWindow().ShowModal(infoModal)
-				pm.Dismiss()
-			}(isSuccess)
+			selectedWallet := pg.WL.SelectedWallet.Wallet
+			votingPreference := treasuryItem.OptionsRadioGroup.Value
+			err := selectedWallet.(*dcr.DCRAsset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			go pg.FetchPolicies() // re-fetch policies when voting is done.
+			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(infoModal)
 
-			return isSuccess
+			pm.Dismiss()
+			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
 }
