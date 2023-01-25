@@ -354,7 +354,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 
 	// Since internet connectivity isn't available, the goroutine will keep
 	// checking for the internet connectivity. on every 5th poll it will keep
-	// increasing the wait duration by 10 seconds till the internet connectivity
+	// increasing the wait duration by 5 seconds till the internet connectivity
 	// is restored or the app is shutdown.
 	go func() {
 		count := 0
@@ -364,7 +364,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 
 		for range ticker.C {
 			if pg.isConnected {
-				log.Warn("Finally the internet connection has been established")
+				log.Info("Internet connection has been established")
 				// once network connection has been established proceed to
 				// start the wallet sync.
 				if err := wallet.SpvSync(); err != nil {
