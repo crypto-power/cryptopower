@@ -18,11 +18,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 
-	// "gioui.org/layout"
-	// "gioui.org/text"
-	// "gioui.org/unit"
 	"gioui.org/widget"
-	// "golang.org/x/image/math/fixed"
 	"golang.org/x/text/message"
 )
 

@@ -1,6 +1,6 @@
 module code.cryptopower.dev/group/cryptopower
 
-go 1.18
+go 1.19
 
 require (
 	decred.org/dcrwallet/v2 v2.0.9
