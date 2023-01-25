@@ -88,7 +88,11 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 func (pg *AccountMixerPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.listenForMixerNotifications()
+	if pg.WL.SelectedWallet.Wallet.IsSynced() {
+		// Listen for notifications only when the wallet is fully synced.
+		pg.listenForMixerNotifications()
+	}
+
 	pg.toggleMixer.SetChecked(pg.dcrImpl.IsAccountMixerActive())
 	pg.mixerProgress.Height = values.MarginPadding18
 	pg.mixerProgress.Radius = cryptomaterial.Radius(2)
