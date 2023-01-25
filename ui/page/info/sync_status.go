@@ -90,7 +90,7 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 				}),
 				layout.Rigid(statusLabel.Layout),
 				layout.Rigid(func(gtx C) D {
-					if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsSynced() {
+					if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								connectedPeers := fmt.Sprintf("%d", pg.WL.SelectedWallet.Wallet.ConnectedPeers())
@@ -99,6 +99,9 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 						)
 					}
 
+					if !pg.isStatusConnected {
+						return pg.Theme.Label(values.TextSize14, values.String(values.StrNoInternet)).Layout(gtx)
+					}
 					return pg.Theme.Label(values.TextSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
 				}),
 			)

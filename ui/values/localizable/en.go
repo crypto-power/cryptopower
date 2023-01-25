@@ -19,6 +19,7 @@ const EN = `
 "peers" = "peers";
 "connectedPeersCount" = "Connected peers count";
 "noConnectedPeer" = "no connected peers.";
+"noInternet" = "no Internet Connectivity.";
 "disconnect" = "Disconnect";
 "reconnect" = "Reconnect";
 "currentTotalBalance" = "Current Total Balance";
