@@ -6,7 +6,6 @@ package components
 import (
 	"fmt"
 	"image/color"
-	"math"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -228,68 +227,6 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	}
 
 	return &txStatus
-}
-
-// TODO- deprecate in favour of components.TimeAgo()
-func durationAgo(timestamp int64) string {
-	hrsPerYr := 8760.0  // There are 8760 hrs in a year.
-	hrsPerMnth := 730.0 // There are 730 hrs in a month.
-	hrsPerWk := 168.0   // There are 168 hrs in a Week.
-	HrsPerday := 24.0   // There are 24 hrs in a Day.
-
-	getStrDuration := func(opt1, opt2 string, d float64) string {
-		if d == 1 {
-			return values.StringF(opt1, d)
-		} else if d > 1 {
-			return values.StringF(opt2, d)
-		} else {
-			return ""
-		}
-	}
-
-	d := time.Now().UTC().Sub(time.Unix(timestamp, 0).UTC())
-	hrs := d.Hours()
-
-	switch {
-	case hrs >= hrsPerYr:
-		strDuration := getStrDuration(values.StrYearAgo, values.StrYearsAgo, math.Round(hrs/hrsPerYr))
-		if strDuration != "" {
-			return strDuration
-		}
-		fallthrough
-
-	case hrs >= hrsPerMnth:
-		strDuration := getStrDuration(values.StrMonthAgo, values.StrMonthsAgo, math.Round(hrs/hrsPerMnth))
-		if strDuration != "" {
-			return strDuration
-		}
-		fallthrough
-
-	case hrs >= hrsPerWk:
-		strDuration := getStrDuration(values.StrWeekAgo, values.StrWeeksAgo, math.Round(hrs/hrsPerWk))
-		if strDuration != "" {
-			return strDuration
-		}
-		fallthrough
-
-	case hrs >= HrsPerday:
-		strDuration := getStrDuration(values.StrDayAgo, values.StrDaysAgo, math.Round(hrs/HrsPerday))
-		if strDuration != "" {
-			return strDuration
-		}
-		fallthrough
-
-	default:
-		if strDuration := getStrDuration(values.StrHourAgo, values.StrHoursAgo, hrs); strDuration != "" {
-			return strDuration
-		}
-
-		if strDuration := getStrDuration(values.StrMinuteAgo, values.StrMinutesAgo, d.Minutes()); strDuration != "" {
-			return strDuration
-		}
-
-		return values.StringF(values.String(values.StrSeconds), d.Seconds())
-	}
 }
 
 // transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
