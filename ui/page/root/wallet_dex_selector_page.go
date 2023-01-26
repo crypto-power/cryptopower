@@ -342,7 +342,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 		// once network connection has been established proceed to
 		// start the wallet sync.
 		if err := wallet.SpvSync(); err != nil {
-			log.Errorf("Error starting sync: %v", err)
+			log.Debugf("Error starting sync: %v", err)
 		}
 		return
 	}
@@ -368,7 +368,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 				// once network connection has been established proceed to
 				// start the wallet sync.
 				if err := wallet.SpvSync(); err != nil {
-					log.Errorf("Error starting sync: %v", err)
+					log.Debugf("Error starting sync: %v", err)
 				}
 
 				// Trigger UI update

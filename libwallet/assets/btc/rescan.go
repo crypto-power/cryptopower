@@ -199,9 +199,9 @@ func (asset *BTCAsset) ForceRescan() {
 func (asset *BTCAsset) isRecoveryRequired() bool {
 	// Last block synced to the address manager.
 	syncedTo := asset.Internal().BTC.Manager.SyncedTo()
-	// Address manager should be synced to the previous block, otherwise rescan
-	// maybe triggered. Previous block => (one block behind the current best block)
-	isAddrmngNotSynced := !(syncedTo.Height >= asset.GetBestBlockHeight()-1)
+	// Address manager should be synced to one of the blocks in the last 10 blocks,
+	// from the current best block synced. Otherwise recovery will be triggered.
+	isAddrmngNotSynced := !(syncedTo.Height >= asset.GetBestBlockHeight()-10)
 
 	walletBirthday := asset.Internal().BTC.Manager.Birthday()
 	isBirthdayMismatch := !asset.GetBirthday().Equal(walletBirthday)
@@ -266,13 +266,12 @@ func (asset *BTCAsset) updateAssetBirthday() {
 
 		log.Debugf("(%v) Setting the new Birthday Block=%v previous Birthday Block=%v",
 			asset.GetWalletName(), birthdayBlockHeight, previousBirthdayblock)
-
-		// At the wallet level update the new birthday chosen.
-		asset.SetBirthday(block.Header.Timestamp)
-
 	} else {
-		// handle wallets with no history here. Only verification of the auto set
-		// birthday block that is triggered here, if it hasn't been verified.
+		// Handles wallets with no history.
+		// The last synced block is set as the verified birthday block. Since this
+		// wallet has no previous history, history before this synced block is not
+		// of any significance to us therefore it can be ignore incases of future
+		// wallet recovery.
 
 		// query the current birthday block set for it to be verified below if it not.
 		blockHeight, isverified, err := asset.getBirthdayBlock()
@@ -282,12 +281,14 @@ func (asset *BTCAsset) updateAssetBirthday() {
 			return
 		}
 
-		if isverified {
+		syncedTo := asset.Internal().BTC.Manager.SyncedTo()
+		birthdayBlockHeight = syncedTo.Height
+
+		if blockHeight == birthdayBlockHeight && isverified {
 			// Do not attempt to verify it again
 			return
 		}
 
-		birthdayBlockHeight = blockHeight
 		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
 		if err != nil {
 			log.Error(errors.E(op, "querying BlockHash failed %v", err))
@@ -300,6 +301,9 @@ func (asset *BTCAsset) updateAssetBirthday() {
 			return
 		}
 	}
+
+	// At the wallet level update the new birthday chosen.
+	asset.SetBirthday(block.Header.Timestamp)
 
 	// At the address manager level update the new birthday and birthday block chosen.
 	err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
