@@ -573,10 +573,10 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	asset.initSyncProgressData()
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
-	asset.mu.Lock()
+	asset.notificationListenersMu.Lock()
 	asset.syncCtx = ctx
 	asset.cancelSync = cancel
-	asset.mu.Unlock()
+	asset.notificationListenersMu.Unlock()
 
 	// Set wallet synced state to true when chainclient considers itself
 	// as synced with the network.
