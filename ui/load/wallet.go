@@ -22,8 +22,7 @@ type WalletLoad struct {
 	MultiWallet *libwallet.AssetsManager
 	TxAuthor    dcr.TxAuthor
 
-	UnspentOutputs *wallet.UnspentOutputs
-	Wallet         *wallet.Wallet
+	Wallet *wallet.Wallet
 
 	SelectedWallet  *WalletItem
 	SelectedAccount *int

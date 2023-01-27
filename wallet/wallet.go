@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 )
 
 const (
@@ -28,17 +27,6 @@ type Wallet struct {
 	version     string
 	logDir      string
 	startUpTime time.Time
-}
-
-type UnspentOutput struct {
-	UTXO     dcr.UnspentOutput
-	Amount   string
-	DateTime string
-}
-
-// UnspentOutputs wraps the libwallet UTXO type and adds processed data
-type UnspentOutputs struct {
-	List []*UnspentOutput
 }
 
 // NewWallet initializies an new Wallet instance.

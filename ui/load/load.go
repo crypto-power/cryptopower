@@ -12,7 +12,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/assets"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/notification"
-	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
 type NeedUnlockRestore func(bool)
@@ -34,8 +33,6 @@ type Load struct {
 	CurrentAppWidth int
 
 	Toast *notification.Toast
-
-	SelectedUTXO map[int]map[int32]map[string]*wallet.UnspentOutput
 
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
