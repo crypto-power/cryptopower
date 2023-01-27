@@ -241,6 +241,11 @@ func (mgr *AssetsManager) Shutdown() {
 	// Trigger shuttingDown signal to cancel all contexts created with `shutdownContextWithCancel`.
 	mgr.shuttingDown <- true
 
+	// Shutdown politeia if its syncing
+	if mgr.Politeia.IsSyncing() {
+		mgr.Politeia.StopSync()
+	}
+
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallet.Shutdown() // Cancels the DCR wallet sync too.
 		wallet.CancelRescan()

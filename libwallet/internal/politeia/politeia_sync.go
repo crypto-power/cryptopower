@@ -45,15 +45,16 @@ func (p *Politeia) Sync(ctx context.Context) error {
 
 	log.Info("Politeia sync: started")
 	for {
+		// Check if politeia has been shutdown and exit if true.
+		if p.ctx.Err() != nil {
+			return p.ctx.Err()
+		}
+
 		_, err := p.getClient()
 		if err != nil {
 			log.Errorf("Error fetching for politeia server policy: %v", err)
 			time.Sleep(retryInterval * time.Second)
 			continue
-		}
-
-		if p.ctx.Err() != nil {
-			return p.ctx.Err()
 		}
 
 		log.Info("Politeia sync: checking for updates")
@@ -99,6 +100,11 @@ func (p *Politeia) checkForUpdates() error {
 	p.mu.RUnlock()
 
 	for {
+		// Check if politeia has been shutdown and exit if true.
+		if p.ctx.Err() != nil {
+			return p.ctx.Err()
+		}
+
 		proposals, err := p.getProposalsRaw(ProposalCategoryAll, int32(offset), limit, true, true)
 		if err != nil && err != storm.ErrNotFound {
 			return err
@@ -261,6 +267,7 @@ func (p *Politeia) fetchAllUnfetchedProposals(tokenInventory *www.TokenInventory
 		return nil
 	}
 
+	// Check if politeia has been shutdown and exit if true.
 	if p.ctx.Err() != nil {
 		return p.ctx.Err()
 	}
@@ -282,6 +289,8 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 		}
 
 		p.mu.RLock()
+
+		// Check if politeia has been shutdown and exit if true.
 		if p.ctx.Err() != nil {
 			return p.ctx.Err()
 		}
@@ -301,6 +310,7 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 			return err
 		}
 
+		// Check if politeia has been shutdown and exit if true.
 		if p.ctx.Err() != nil {
 			return p.ctx.Err()
 		}
@@ -310,11 +320,12 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 			return err
 		}
 
-		if p.ctx.Err() != nil {
-			return p.ctx.Err()
-		}
-
 		for i := range proposals {
+			// Check if politeia has been shutdown and exit if true.
+			if p.ctx.Err() != nil {
+				return p.ctx.Err()
+			}
+
 			proposals[i].Category = category
 			if voteSummary, ok := votesSummaries[proposals[i].Token]; ok {
 				proposals[i].VoteStatus = int32(voteSummary.Status)
@@ -344,6 +355,10 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 }
 
 func (p *Politeia) FetchProposalDescription(token string) (string, error) {
+	// Check if politeia has been shutdown and exit if true.
+	if p.ctx.Err() != nil {
+		return "", p.ctx.Err()
+	}
 
 	proposal, err := p.GetProposalRaw(token)
 	if err != nil {
@@ -385,6 +400,11 @@ func (p *Politeia) FetchProposalDescription(token string) (string, error) {
 }
 
 func (p *Politeia) ProposalVoteDetailsRaw(ctx context.Context, wallet *wallet.Wallet, token string) (*ProposalVoteDetails, error) {
+	// Check if politeia has been shutdown and exit if true.
+	if p.ctx.Err() != nil {
+		return nil, p.ctx.Err()
+	}
+
 	client, err := p.getClient()
 	if err != nil {
 		return nil, err
