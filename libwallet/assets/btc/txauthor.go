@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -311,13 +309,6 @@ func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
-	//TODO: Code commented pending the evaluation if `libwallet/assets/btc/utxo.go`
-	// implementation is still necessary. It ought to be deleted with that file
-	// should we decide to pursue that route.
-	// if len(asset.TxAuthoredInfo.inputs) != 0 {
-	// 	return asset.constructCustomTransaction()
-	// }
-
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
