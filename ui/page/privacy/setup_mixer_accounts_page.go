@@ -69,7 +69,7 @@ func (pg *SetupMixerAccountsPage) Layout(gtx layout.Context) layout.Dimensions {
 	body := func(gtx C) D {
 		page := components.SubPage{
 			Load:       pg.Load,
-			Title:      "Set up needed accounts",
+			Title:      values.String(values.StrSetUpNeededAccs),
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -81,7 +81,7 @@ func (pg *SetupMixerAccountsPage) Layout(gtx layout.Context) layout.Dimensions {
 						layout.Flexed(1, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									txt := pg.Theme.Body1("Two dedicated accounts will be set up to use the mixer:")
+									txt := pg.Theme.Body1(values.String(values.StrMultipleMixerAccNeeded) + ":")
 									txt.Alignment = text.Start
 									ic := cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
 									ic.Color = pg.Theme.Color.Gray1
@@ -161,8 +161,8 @@ func (pg *SetupMixerAccountsPage) autoSetupLayout(gtx C) D {
 						return pg.autoSetupIcon.Layout(gtx, values.MarginPadding20)
 					}),
 					layout.Rigid(func(gtx C) D {
-						autoSetupText := pg.Theme.H6("Auto setup")
-						txt := pg.Theme.Body2("Create and setup the needed accounts for you.")
+						autoSetupText := pg.Theme.H6(values.String(values.StrAutoSetUp))
+						txt := pg.Theme.Body2(values.String(values.StrCreateNSetUpAccs))
 						return layout.Inset{
 							Left: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
@@ -194,8 +194,8 @@ func (pg *SetupMixerAccountsPage) manualSetupLayout(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(pg.Theme.Icons.EditIcon.Layout24dp),
 					layout.Rigid(func(gtx C) D {
-						autoSetupText := pg.Theme.H6("Manual setup")
-						txt := pg.Theme.Body2("For wallets that have enabled privacy before.")
+						autoSetupText := pg.Theme.H6(values.String(values.StrManualSetUp))
+						txt := pg.Theme.Body2(values.String(values.StrWalletsEnabledPrivacy))
 						return layout.Inset{
 							Left: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
@@ -230,7 +230,7 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
 			Load:          pg.Load,
 			window:        pg.ParentWindow(),
 			pageNavigator: pg.ParentNavigator(),
-			checkBox:      pg.Theme.CheckBox(new(widget.Bool), "Automatically move funds from default to unmixed account"),
+			checkBox:      pg.Theme.CheckBox(new(widget.Bool), values.String(values.StrMoveFundsFrmDefaultToUnmixed)),
 		})
 	}
 

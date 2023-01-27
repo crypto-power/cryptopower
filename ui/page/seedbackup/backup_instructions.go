@@ -47,7 +47,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
 		wallet:           wallet,
 
-		viewSeedBtn: l.Theme.Button("View seed phrase"),
+		viewSeedBtn: l.Theme.Button(values.String(values.String(values.StrViewSeedPhrase))),
 
 		redirectCallback: redirect,
 	}
@@ -58,11 +58,11 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 	bi.backButton.Icon = l.Theme.Icons.ContentClear
 
 	bi.checkBoxes = []cryptomaterial.CheckBoxStyle{
-		l.Theme.CheckBox(new(widget.Bool), "The 33-word seed word is EXTREMELY IMPORTANT."),
-		l.Theme.CheckBox(new(widget.Bool), "seed word is the only way to restore your wallet."),
-		l.Theme.CheckBox(new(widget.Bool), "It is recommended to store your seed word in a physical format (e.g. write down on a paper)."),
-		l.Theme.CheckBox(new(widget.Bool), "It is highly discouraged to store your seed word in any digital format (e.g. screenshot)."),
-		l.Theme.CheckBox(new(widget.Bool), "Anyone with your seed word can steal your funds. DO NOT show it to anyone."),
+		l.Theme.CheckBox(new(widget.Bool), values.String(values.StrImportantSeedPhrase)),
+		l.Theme.CheckBox(new(widget.Bool), values.String(values.StrSeedPhraseToRestore)),
+		l.Theme.CheckBox(new(widget.Bool), values.String(values.StrHowToStoreSeedPhrase)),
+		l.Theme.CheckBox(new(widget.Bool), values.String(values.StrHowNotToStoreSeedPhrase)),
+		l.Theme.CheckBox(new(widget.Bool), values.String(values.StrHideSeedPhrase)),
 	}
 
 	for i := range bi.checkBoxes {
@@ -99,8 +99,8 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 
 func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.WindowNavigator) {
 	infoModal := modal.NewCustomModal(load).
-		Title("Exit?").
-		Body("Are you sure you want to exit the seed backup process?").
+		Title(values.String(values.StrExit) + "?").
+		Body(values.String(values.StrSureToExitBackup)).
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
@@ -125,7 +125,7 @@ func (pg *BackupInstructionsPage) OnNavigatedFrom() {}
 func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 	sp := components.SubPage{
 		Load:       pg.Load,
-		Title:      "Keep in mind",
+		Title:      values.String(values.StrKeepInMind),
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())

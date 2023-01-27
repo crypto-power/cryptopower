@@ -55,7 +55,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 		wallet:           wallet,
 		seed:             seed,
 
-		actionButton: l.Theme.Button("Verify"),
+		actionButton: l.Theme.Button(values.String(values.StrVerify)),
 
 		redirectCallback: redirect,
 	}
@@ -165,7 +165,7 @@ func (pg *VerifySeedPage) verifySeed() {
 	passwordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title("Confirm to verify seed").
+		Title(values.String(values.StrConfirmToVerifySeed)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
 			seed := pg.selectedSeedPhrase()
 			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
@@ -233,8 +233,8 @@ func (pg *VerifySeedPage) Layout(gtx C) D {
 func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	sp := components.SubPage{
 		Load:       pg.Load,
-		Title:      "Verify seed word",
-		SubTitle:   "Step 2/2",
+		Title:      values.String(values.StrVerifySeed),
+		SubTitle:   values.String(values.StrStep2of2),
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -242,7 +242,7 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, "Select the correct words to verify.")
+					label := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectPhrasesToVerify))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),
@@ -271,8 +271,8 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	sp := components.SubPage{
 		Load:       pg.Load,
-		Title:      "Verify seed word",
-		SubTitle:   "Step 2/2",
+		Title:      values.String(values.StrVerifySeed),
+		SubTitle:   values.String(values.StrStep2of2),
 		BackButton: pg.backButton,
 		Back: func() {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
@@ -280,7 +280,7 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, "Select the correct words to verify.")
+					label := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectPhrasesToVerify))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),

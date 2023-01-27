@@ -70,7 +70,7 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		checkBox: l.Theme.CheckBox(new(widget.Bool), "I am aware of the risk"),
+		checkBox: l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = text.Medium

@@ -1,7 +1,6 @@
 package renderers
 
 import (
-	//"fmt"
 	"image/color"
 
 	"gioui.org/layout"

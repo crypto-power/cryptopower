@@ -253,8 +253,8 @@ func (pg *ProposalDetails) layoutProposalVoteAction(gtx C) D {
 }
 
 func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
-	stateText1 := "Waiting for author to authorize voting"
-	stateText2 := "Waiting for admin to trigger the start of voting"
+	stateText1 := values.String(values.StrAuthorToAuthorizeVoting)
+	stateText2 := values.String(values.StrAdminToTriggerVoting)
 
 	proposal := pg.proposal
 
