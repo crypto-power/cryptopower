@@ -82,10 +82,28 @@ func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirs
 	return string(jsonEncodedTransactions), nil
 }
 
+// offset and limit are parameters to get the number of transactions from offset position
+// to offset + limit position in the total transaction of a wallet,
+// it is not the start block and the end block, so we need to
+// get all transactions then return transactions match the input limit and offset
 func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
-	newestFirst bool) (transactions []sharedW.Transaction, err error) {
-	transactions, err = asset.filterTxs(offset, limit, txFilter, newestFirst)
-	return
+	newestFirst bool) ([]sharedW.Transaction, error) {
+	transactions, err := asset.filterTxs(0, 0, txFilter, newestFirst)
+	if err != nil {
+		return nil, err
+	}
+	totalTxs := int32(len(transactions))
+	start := offset
+	end := offset + limit
+	if start >= totalTxs {
+		return []sharedW.Transaction{}, nil
+	}
+
+	if end >= totalTxs {
+		end = totalTxs
+	}
+	txs := transactions[start:end]
+	return txs, nil
 }
 
 func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) int32 {
@@ -101,6 +119,8 @@ func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) int32 {
 	}
 }
 
+// the offset is the height of start block
+// limit is number of blocks will take from offset to get transactions
 func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	txType := asset.btcSupportedTxFilter(txFilter)
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
