@@ -205,43 +205,6 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-// TODO: Evaluate if should be deleted. Code only linked to unused `ui/page/send/utxo_page.go` file
-func (asset *BTCAsset) UseInputs(utxoKeys []string) error {
-	if asset.TxAuthoredInfo == nil {
-		return fmt.Errorf("TxAuthoredInfo is nil")
-	}
-	// first clear any previously set inputs
-	// so that an outdated set of inputs isn't used if an error occurs from this function
-	asset.TxAuthoredInfo.inputs = nil
-	inputs := make([]*wire.TxIn, 0, len(utxoKeys))
-	for _, utxoKey := range utxoKeys {
-		idx := strings.Index(utxoKey, ":")
-		hash := utxoKey[:idx]
-		hashIndex := utxoKey[idx+1:]
-		index, err := strconv.Atoi(hashIndex)
-		if err != nil {
-			return fmt.Errorf("no valid utxo found for '%s' in the source account at index %d", utxoKey, index)
-		}
-
-		txHash, err := chainhash.NewHashFromStr(hash)
-		if err != nil {
-			return err
-		}
-
-		op := &wire.OutPoint{
-			Hash:  *txHash,
-			Index: uint32(index),
-		}
-
-		input := wire.NewTxIn(op, nil, nil)
-		inputs = append(inputs, input)
-	}
-
-	asset.TxAuthoredInfo.inputs = inputs
-	asset.TxAuthoredInfo.needsConstruct = true
-	return nil
-}
-
 func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) error {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
