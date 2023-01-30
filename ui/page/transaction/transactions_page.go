@@ -191,6 +191,14 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 }
 
 func (pg *TransactionsPage) loadTransactions(loadMore bool) {
+	if pg.loading {
+		return
+	}
+	defer func() {
+		pg.loading = false
+	}()
+	pg.loading = true
+
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
@@ -205,12 +213,6 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)
 		return
 	}
-
-	if pg.loading {
-		return
-	}
-
-	pg.loading = true
 
 	limit := 20
 
@@ -229,17 +231,7 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 
 	pg.initialLoadingDone = true
 
-	if len(tempTxs) == 0 {
-		pg.loadedAll = true
-		pg.loading = false
-
-		if !loadMore {
-			pg.transactions = nil
-		}
-		return
-	}
-
-	if len(tempTxs) < limit {
+	if len(tempTxs) <= limit {
 		pg.loadedAll = true
 	}
 
@@ -248,8 +240,6 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 	} else {
 		pg.transactions = tempTxs
 	}
-
-	pg.loading = false
 }
 
 // Layout draws the page UI components into the provided layout context
