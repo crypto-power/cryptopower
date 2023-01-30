@@ -7,6 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
+	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -31,13 +33,17 @@ type Restore struct {
 	// WindowNavigator if this page is displayed from the StartPage, otherwise
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
-	restoreComplete func()
-	tabList         *cryptomaterial.ClickableList
-	tabIndex        int
-	backButton      cryptomaterial.IconButton
-	seedRestorePage *SeedRestore
-	walletName      string
-	walletType      utils.AssetType
+	restoreComplete   func()
+	tabList           *cryptomaterial.ClickableList
+	tabIndex          int
+	backButton        cryptomaterial.IconButton
+	seedRestorePage   *SeedRestore
+	walletName        string
+	walletType        utils.AssetType
+	toggleSeedInput   *cryptomaterial.Switch
+	seedInputEditor   cryptomaterial.Editor
+	confirmSeedButton cryptomaterial.Button
+	restoreInProgress bool
 }
 
 func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType, onRestoreComplete func()) *Restore {
@@ -50,10 +56,20 @@ func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType,
 		restoreComplete:  onRestoreComplete,
 		walletName:       walletName,
 		walletType:       walletType,
+		toggleSeedInput:  l.Theme.Switch(),
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
+
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), "Enter wallet seed")
+	pg.seedInputEditor.Editor.SingleLine = false
+	pg.seedInputEditor.Editor.SetText("")
+
+	pg.confirmSeedButton = l.Theme.Button("")
+	pg.confirmSeedButton.Font.Weight = text.Medium
+	pg.confirmSeedButton.SetEnabled(false)
+
 	return pg
 }
 
@@ -62,6 +78,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType,
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
+	pg.toggleSeedInput.SetChecked(false)
 	pg.seedRestorePage.OnNavigatedTo()
 	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
@@ -116,7 +133,17 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
+						}),
+						layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrPasteSeedWords)).Layout),
+					)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
 			}),
 		)
@@ -221,6 +248,16 @@ func (pg *Restore) HandleUserInteractions() {
 
 	if pg.tabIndex == 0 {
 		pg.seedRestorePage.HandleUserInteractions()
+	}
+
+	if len(pg.seedInputEditor.Editor.Text()) != 0 {
+		pg.confirmSeedButton.SetEnabled(true)
+	}
+
+	if pg.confirmSeedButton.Clicked() {
+		if !pg.restoreInProgress {
+			go pg.restoreFromSeedEditor()
+		}
 	}
 }
 

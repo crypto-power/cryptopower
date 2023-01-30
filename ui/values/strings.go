@@ -476,6 +476,7 @@ const (
 	StrPageWarningNotSync              = "pageWarningNotSync"
 	StrPageWarningSync                 = "pageWarningSync"
 	StrPasswordNotMatch                = "passwordNotMatch"
+	StrPasteSeedWords                  = "pasteSeedWords"
 	StrPeer                            = "peer"
 	StrPeers                           = "peers"
 	StrPeersConnected                  = "peersConnected"
