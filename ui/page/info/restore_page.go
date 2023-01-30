@@ -144,6 +144,50 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
+				if pg.toggleSeedInput.IsChecked() {
+					return layout.Inset{
+						Top: values.MarginPadding100,
+					}.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.MatchParent,
+							Orientation: layout.Vertical,
+							Margin:      layout.Inset{Bottom: values.MarginPadding16},
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx layout.Context) D {
+											return layout.Inset{
+												Left:  values.MarginPadding16,
+												Right: values.MarginPadding16,
+												Top:   values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+												return pg.seedInputEditor.Layout(gtx)
+											})
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Flex{}.Layout(gtx,
+												layout.Flexed(1, func(gtx C) D {
+													return layout.E.Layout(gtx, func(gtx C) D {
+														return layout.Inset{
+															Left:   values.MarginPadding16,
+															Right:  values.MarginPadding16,
+															Top:    values.MarginPadding16,
+															Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+															pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
+															return pg.confirmSeedButton.Layout(gtx)
+														})
+													})
+												}),
+											)
+										}),
+									)
+
+								})
+							}),
+						)
+					})
+				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
 			}),
 		)
