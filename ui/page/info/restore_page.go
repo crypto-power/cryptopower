@@ -2,6 +2,7 @@ package info
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -295,7 +296,7 @@ func (pg *Restore) HandleUserInteractions() {
 		pg.seedRestorePage.HandleUserInteractions()
 	}
 
-	if len(pg.seedInputEditor.Editor.Text()) != 0 {
+	if len(strings.TrimSpace(pg.seedInputEditor.Editor.Text())) != 0 {
 		pg.confirmSeedButton.SetEnabled(true)
 	}
 
@@ -407,7 +408,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		pg.seedInputEditor.Editor.SetText("")
 	}()
 
-	seed := pg.seedInputEditor.Editor.Text()
+	seed := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
 	if !sharedW.VerifySeed(seed) {
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
