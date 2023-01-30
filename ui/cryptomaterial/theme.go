@@ -52,7 +52,7 @@ type Theme struct {
 
 func NewTheme(fontCollection []text.FontFace, decredIcons map[string]image.Image, isDarkModeOn bool) *Theme {
 	t := &Theme{
-		Shaper:   text.NewCache(fontCollection),
+		Shaper:   *text.NewShaper(fontCollection),
 		Base:     material.NewTheme(fontCollection),
 		Color:    &values.Color{},
 		Icons:    &Icons{},
