@@ -4,17 +4,18 @@ import (
 	"path/filepath"
 
 	"code.cryptopower.dev/group/cryptopower/ui/utils"
+	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/gen2brain/beeep"
 )
 
 const (
-	icon  = "ui/assets/decredicons/qrcodeSymbol.png"
-	title = "Cryptopower"
+	icon = "ui/assets/decredicons/qrcodeSymbol.png"
 )
+
+var title = values.String(values.StrAppName)
 
 type SystemNotification struct {
 	iconPath string
-	message  string
 }
 
 func NewSystemNotification() (*SystemNotification, error) {

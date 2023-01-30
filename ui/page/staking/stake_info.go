@@ -173,7 +173,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.LayoutIconAndText(pg.Load, gtx, "Staked"+": ", totalBalance.LockedByTickets.String(), items[0].Color)
+					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrStaked)+": ", totalBalance.LockedByTickets.String(), items[0].Color)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrLabelSpendable)+": ", totalBalance.Spendable.String(), items[1].Color)

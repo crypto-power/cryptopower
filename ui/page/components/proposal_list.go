@@ -55,7 +55,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
 
-	versionLabel := l.Theme.Body2("Version " + proposal.Version)
+	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
 	versionLabel.Color = grayCol
 
 	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))

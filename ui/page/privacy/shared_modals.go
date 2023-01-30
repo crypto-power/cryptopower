@@ -1,8 +1,6 @@
 package privacy
 
 import (
-	"fmt"
-
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -54,7 +52,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 
 	accounts, _ := conf.WL.SelectedWallet.Wallet.GetAccountsRaw()
 	for _, acct := range accounts.Accounts {
-		if acct.Name == "mixed" || acct.Name == "unmixed" {
+		if acct.Name == values.String(values.StrMixed) || acct.Name == values.String(values.StrUnmixed) {
 			info := modal.NewErrorModal(conf.Load, values.String(values.StrTakenAccount), modal.DefaultClickFunc()).
 				Body(values.String(values.StrMixerAccErrorMsg)).
 				SetPositiveButtonText(values.String(values.StrBackAndRename)).
@@ -70,10 +68,10 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	passwordModal := modal.NewCreatePasswordModal(conf.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title("Confirm to create needed accounts").
+		Title(values.String(values.StrConfirmToCreateAccs)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
-			err := dcrUniqueImpl.CreateMixerAccounts("mixed", "unmixed", password)
+			err := dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -85,7 +83,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 				err := moveFundsFromDefaultToUnmixed(conf, password)
 				if err != nil {
 					log.Error(err)
-					txt := fmt.Sprintf("Error moving funds: %s.\n%s", err.Error(), "Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page.")
+					txt := values.StringF(values.StrErrorMovingFunds, err.Error())
 					showInfoModal(conf, values.String(values.StrMoveToUnmixed), txt, values.String(values.StrGotIt), true)
 					return false
 				}

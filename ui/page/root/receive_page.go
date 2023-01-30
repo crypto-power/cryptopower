@@ -305,7 +305,7 @@ func (pg *ReceivePage) layoutMobile(gtx layout.Context) layout.Dimensions {
 									return layout.Dimensions{}
 								}),
 								layout.Rigid(func(gtx C) D {
-									tapToCopy := pg.Theme.Label(values.TextSize10, "(Tap to copy)")
+									tapToCopy := pg.Theme.Label(values.TextSize10, values.String(values.StrTapToCopy))
 									tapToCopy.Color = pg.Theme.Color.Text
 									return tapToCopy.Layout(gtx)
 								}),
@@ -506,7 +506,7 @@ func (pg *ReceivePage) handleCopyEvent(gtx C) {
 
 	if pg.copyAddressButton.Clicked() {
 		clipboard.WriteOp{Text: pg.copyAddressButton.Text}.Add(gtx.Ops)
-		pg.Toast.Notify("Copied")
+		pg.Toast.Notify(values.String(values.StrCopied))
 	}
 }
 

@@ -151,7 +151,7 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 				Load:          pg.Load,
 				window:        pg.ParentWindow(),
 				pageNavigator: pg.ParentNavigator(),
-				checkBox:      pg.Theme.CheckBox(new(widget.Bool), "Automatically move funds from default to unmixed account"),
+				checkBox:      pg.Theme.CheckBox(new(widget.Bool), values.String(values.StrMoveFundsFrmDefaultToUnmixed)),
 			})
 		} else {
 			pg.ParentNavigator().Display(NewSetupMixerAccountsPage(pg.Load))

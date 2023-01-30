@@ -189,7 +189,7 @@ func (pg *SeedRestore) restoreMobile(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Bottom: values.MarginPadding10,
-							}.Layout(gtx, pg.Theme.Body1("Enter your seed phrase").Layout)
+							}.Layout(gtx, pg.Theme.Body1(values.String(values.StrEnterSeedPhrase)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

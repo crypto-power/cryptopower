@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"context"
-	"fmt"
 
 	"gioui.org/layout"
 	"github.com/decred/dcrd/dcrutil/v3"
@@ -111,7 +110,7 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	vm := make(map[string]string)
 	for _, acct := range accounts.Accounts {
 		// add data for change accounts selection
-		if acct.Name != "imported" {
+		if acct.Name != values.String(values.StrImported) {
 			vm[acct.Name] = acct.Name
 		}
 
@@ -164,7 +163,7 @@ func (pg *AccountMixerPage) mixerProgressBarLayout(gtx C) D {
 		{
 			Value: pg.mixedBalance.ToCoin(),
 			Color: pg.Theme.Color.Success,
-			Label: pg.Theme.Label(values.TextSize14, fmt.Sprintf("%v%% Mixed", int(pacentage))),
+			Label: pg.Theme.Label(values.TextSize14, values.StringF(values.StrPercentageMixed, int(pacentage))),
 		},
 		{
 			Value: pg.unmixedBalance.ToCoin(),

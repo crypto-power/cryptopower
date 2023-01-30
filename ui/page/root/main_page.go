@@ -1000,7 +1000,8 @@ func initializeBeepNotification(n string) {
 		log.Error(err.Error())
 	}
 
-	err = beeep.Notify("Cryptopower Wallet", n, filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
+	err = beeep.Notify(values.String(values.StrAppWallet), n,
+		filepath.Join(absoluteWdPath, "ui/assets/decredicons/qrcodeSymbol.png"))
 	if err != nil {
 		log.Info("could not initiate desktop notification, reason:", err.Error())
 	}

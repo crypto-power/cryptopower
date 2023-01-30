@@ -49,13 +49,13 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	pg := &ManualMixerSetupPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualMixerSetupPageID),
-		toPrivacySetup:   l.Theme.Button("Set up"),
+		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUp)),
 		dcrImpl:          impl,
 	}
 
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
-		Title("Mixed account").
+		Title(values.String(values.StrMixedAccount)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
@@ -78,7 +78,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
-		Title("Unmixed account").
+		Title(values.String(values.StrUnmixedAccount)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			wal := pg.Load.WL.MultiWallet.WalletWithID(account.WalletID)
@@ -125,7 +125,7 @@ func (pg *ManualMixerSetupPage) Layout(gtx layout.Context) layout.Dimensions {
 	body := func(gtx C) D {
 		page := components.SubPage{
 			Load:       pg.Load,
-			Title:      "Manual setup",
+			Title:      values.String(values.StrManualSetUp),
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -137,13 +137,13 @@ func (pg *ManualMixerSetupPage) Layout(gtx layout.Context) layout.Dimensions {
 						layout.Flexed(1, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									return pg.mixerAccountSections(gtx, "Mixed account", func(gtx layout.Context) layout.Dimensions {
+									return pg.mixerAccountSections(gtx, values.String(values.StrMixedAccount), func(gtx layout.Context) layout.Dimensions {
 										return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
 									})
 								}),
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{Top: values.MarginPaddingMinus15}.Layout(gtx, func(gtx C) D {
-										return pg.mixerAccountSections(gtx, "Unmixed account", func(gtx layout.Context) layout.Dimensions {
+										return pg.mixerAccountSections(gtx, values.String(values.StrUnmixedAccount), func(gtx layout.Context) layout.Dimensions {
 											return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
 										})
 									})
@@ -208,7 +208,7 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	passwordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title("Confirm to set mixer accounts").
+		Title(values.String(values.StrConfirmToSetMixer)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			errfunc := func(err error) bool {
 				pm.SetError(err.Error())
@@ -224,13 +224,13 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			// rename mixed account
-			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, "mixed")
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))
 			if err != nil {
 				return errfunc(err)
 			}
 
 			// rename unmixed account
-			err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, "unmixed")
+			err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, values.String(values.StrUnmixed))
 			if err != nil {
 				return errfunc(err)
 			}
