@@ -92,6 +92,9 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
 	if err != nil {
 		return nil, err
 	}
+	if offset == 0 && limit == 0 {
+		return transactions, nil
+	}
 	totalTxs := int32(len(transactions))
 	start := offset
 	end := offset + limit
