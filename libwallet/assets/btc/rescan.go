@@ -92,8 +92,6 @@ func (asset *BTCAsset) CancelRescan() {
 	if asset.blocksRescanProgressListener != nil {
 		asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
 	}
-
-	asset.resetSyncProgressData()
 }
 
 // RescanAsync initiates a full wallet recovery (used address discovery

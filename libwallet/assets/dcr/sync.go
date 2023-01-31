@@ -242,10 +242,7 @@ func (asset *DCRAsset) SpvSync() error {
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
 
-	var restartSyncRequested bool
-
 	asset.syncData.mu.Lock()
-	restartSyncRequested = asset.syncData.restartSyncRequested
 	asset.syncData.restartSyncRequested = false
 	asset.syncData.syncing = true
 	asset.syncData.cancelSync = cancel
@@ -254,7 +251,7 @@ func (asset *DCRAsset) SpvSync() error {
 	asset.syncData.mu.Unlock()
 
 	for _, listener := range asset.syncProgressListeners() {
-		listener.OnSyncStarted(restartSyncRequested)
+		listener.OnSyncStarted()
 	}
 
 	// syncer.Run uses a wait group to block the thread until the sync context

@@ -212,7 +212,7 @@ type PeerInfo struct {
 /** begin sync-related types */
 
 type SyncProgressListener interface {
-	OnSyncStarted(wasRestarted bool)
+	OnSyncStarted()
 	OnPeerConnectedOrDisconnected(numberOfConnectedPeers int32)
 	OnCFiltersFetchProgress(cfiltersFetchProgress *CFiltersFetchProgressReport)
 	OnHeadersFetchProgress(headersFetchProgress *HeadersFetchProgressReport)
