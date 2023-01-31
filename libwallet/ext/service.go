@@ -3,6 +3,7 @@ package ext
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,6 +73,8 @@ func NewService(chainParams *chaincfg.Params) *Service {
 			req.Header.Add("Content-Type", "application/json;charset=utf-8")
 		}
 		req.Header.Add("Accept", "application/json")
+
+		fmt.Println(" >>>>>> :reqConfig.url  ", reqConfig.url)
 
 		return
 	}

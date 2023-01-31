@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"sync"
@@ -77,7 +78,14 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 
 	var resp = make(map[string]float64, 0)
 
-	if _, _, err := utils.HttpGet(feerateURL, &resp); err != nil {
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: feerateURL,
+		// TODO: query if this API method has been user activated.
+		IsActive: true,
+	}
+
+	if err := utils.HttpGet(req, &resp); err != nil {
 		return nil, fmt.Errorf("fetching API fee estimates failed: %v", err)
 	}
 

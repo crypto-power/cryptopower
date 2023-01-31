@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -155,18 +156,25 @@ func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	vspInfoResponse := new(VspInfoResponse)
-	resp, respBytes, err := utils.HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
-	if err != nil {
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: vspHost + "/api/v3/vspinfo",
+		// TODO: query if this API method has been user activated.
+		IsActive:  true,
+		IsRetByte: true,
+	}
+
+	if err := utils.HttpGet(req, vspInfoResponse); err != nil {
 		return nil, err
 	}
 
 	// Validate server response.
-	sigStr := resp.Header.Get("VSP-Server-Signature")
+	sigStr := req.Response.Header.Get("VSP-Server-Signature")
 	sig, err := base64.StdEncoding.DecodeString(sigStr)
 	if err != nil {
 		return nil, fmt.Errorf("error validating VSP signature: %v", err)
 	}
-	if !ed25519.Verify(vspInfoResponse.PubKey, respBytes, sig) {
+	if !ed25519.Verify(vspInfoResponse.PubKey, req.Payload, sig) {
 		return nil, errors.New("bad signature from VSP")
 	}
 
@@ -176,8 +184,14 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 // defaultVSPs returns a list of known VSPs.
 func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
-	_, _, err := utils.HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
-	if err != nil {
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: "https://api.decred.org/?c=vsp",
+		// TODO: query if this API method has been user activated.
+		IsActive: true,
+	}
+
+	if err := utils.HttpGet(req, &vspInfoResponse); err != nil {
 		return nil, err
 	}
 

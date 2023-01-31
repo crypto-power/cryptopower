@@ -3,9 +3,6 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -62,7 +59,18 @@ type monitorNetwork struct {
 	lastUpdate   time.Time
 }
 
-var netC = monitorNetwork{}
+var (
+	netC       monitorNetwork
+	activeAPIs map[string]*Client
+)
+
+func init() {
+	netC = monitorNetwork{}
+
+	// activeAPIs allows a previous successful client connection to be reused
+	// shortening the time it takes to get a response.
+	activeAPIs = make(map[string]*Client)
+}
 
 // Stringer used in generating the directory path where the lowercase of the
 // asset type is required. The uppercase defined by default is required to
@@ -132,25 +140,22 @@ func ShannonEntropy(text string) (entropy float64) {
 }
 
 // HttpGet helps to convert json(Byte data) into a struct object.
-func HttpGet(url string, respObj interface{}) (*http.Response, []byte, error) {
-	rq := new(http.Client)
-	resp, err := rq.Get((url))
+func HttpGet(reqConfig *ReqConfig, respObj interface{}) error {
+	var client, ok = activeAPIs[reqConfig.HttpUrl]
+	if !ok {
+		client = NewClient()
+	}
+
+	err := client.Do(reqConfig, &respObj)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		return nil, nil, err
+	// cache a new client connection since it was successful
+	if !ok {
+		activeAPIs[reqConfig.HttpUrl] = client
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		return resp, respBytes, fmt.Errorf("%d response from server: %v", resp.StatusCode, string(respBytes))
-	}
-
-	err = json.Unmarshal(respBytes, respObj)
-	return resp, respBytes, err
+	return nil
 }
 
 func NormalizeAddress(addr string, defaultPort string) (string, error) {

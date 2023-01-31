@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 
@@ -229,8 +230,15 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	if asset.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
 	}
-	_, _, err = utils.HttpGet(host, &dcrdataAgenda)
-	if err != nil {
+
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: host,
+		// TODO: query if this API method has been user activated.
+		IsActive: true,
+	}
+
+	if err = utils.HttpGet(req, &dcrdataAgenda); err != nil {
 		return nil, err
 	}
 
