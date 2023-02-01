@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -155,7 +156,6 @@ func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 }
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
-	vspInfoResponse := new(VspInfoResponse)
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: vspHost + "/api/v3/vspinfo",
@@ -164,17 +164,24 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 		IsRetByte: true,
 	}
 
-	if err := utils.HttpGet(req, vspInfoResponse); err != nil {
+	var respBytes = []byte{}
+	resp, err := utils.HttpRequest(req, &respBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	vspInfoResponse := new(VspInfoResponse)
+	if err := json.Unmarshal(respBytes, vspInfoResponse); err != nil {
 		return nil, err
 	}
 
 	// Validate server response.
-	sigStr := req.Response.Header.Get("VSP-Server-Signature")
+	sigStr := resp.Header.Get("VSP-Server-Signature")
 	sig, err := base64.StdEncoding.DecodeString(sigStr)
 	if err != nil {
 		return nil, fmt.Errorf("error validating VSP signature: %v", err)
 	}
-	if !ed25519.Verify(vspInfoResponse.PubKey, req.Payload, sig) {
+	if !ed25519.Verify(vspInfoResponse.PubKey, respBytes, sig) {
 		return nil, errors.New("bad signature from VSP")
 	}
 
@@ -191,7 +198,7 @@ func defaultVSPs(network string) ([]string, error) {
 		IsActive: true,
 	}
 
-	if err := utils.HttpGet(req, &vspInfoResponse); err != nil {
+	if _, err := utils.HttpRequest(req, &vspInfoResponse); err != nil {
 		return nil, err
 	}
 

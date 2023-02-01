@@ -205,7 +205,7 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
 		if err != nil {
-			return nil, fmt.Errorf("inavlid hash: %w", err)
+			return nil, fmt.Errorf("invalid hash: %w", err)
 		}
 		ticketHash = hash
 	}
@@ -238,7 +238,7 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 		IsActive: true,
 	}
 
-	if err = utils.HttpGet(req, &dcrdataAgenda); err != nil {
+	if _, err = utils.HttpRequest(req, &dcrdataAgenda); err != nil {
 		return nil, err
 	}
 

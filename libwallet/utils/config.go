@@ -5,9 +5,7 @@ import (
 	"encoding/hex"
 	"math"
 	"net"
-	"net/http"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -52,25 +50,6 @@ const (
 	HeightFilter        = "BlockHeight"
 	TicketSpenderFilter = "TicketSpender"
 )
-
-type monitorNetwork struct {
-	networkCheck uint32
-	isConnected  bool
-	lastUpdate   time.Time
-}
-
-var (
-	netC       monitorNetwork
-	activeAPIs map[string]*Client
-)
-
-func init() {
-	netC = monitorNetwork{}
-
-	// activeAPIs allows a previous successful client connection to be reused
-	// shortening the time it takes to get a response.
-	activeAPIs = make(map[string]*Client)
-}
 
 // Stringer used in generating the directory path where the lowercase of the
 // asset type is required. The uppercase defined by default is required to
@@ -139,25 +118,6 @@ func ShannonEntropy(text string) (entropy float64) {
 	return entropy
 }
 
-// HttpGet helps to convert json(Byte data) into a struct object.
-func HttpGet(reqConfig *ReqConfig, respObj interface{}) error {
-	var client, ok = activeAPIs[reqConfig.HttpUrl]
-	if !ok {
-		client = NewClient()
-	}
-
-	err := client.Do(reqConfig, &respObj)
-	if err != nil {
-		return err
-	}
-
-	// cache a new client connection since it was successful
-	if !ok {
-		activeAPIs[reqConfig.HttpUrl] = client
-	}
-	return nil
-}
-
 func NormalizeAddress(addr string, defaultPort string) (string, error) {
 	// If the first SplitHostPort errors because of a missing port and not
 	// for an invalid host, add the port.  If the second SplitHostPort
@@ -173,29 +133,4 @@ func NormalizeAddress(addr string, defaultPort string) (string, error) {
 		return "", origErr
 	}
 	return addr, nil
-}
-
-// IsOnline is a function to check whether an internet connection can be
-// established. If established bool true should be returned otherwise false.
-// Default url to check connection is http://google.com.
-func IsOnline() bool {
-	// If the was wallet online, and the wallet's online status was updated in
-	// the last 2 minutes return true.
-	if time.Since(netC.lastUpdate) < time.Minute*2 && netC.isConnected {
-		return true
-	}
-
-	// If the last poll made is in progress, return the last cached status.
-	if !atomic.CompareAndSwapUint32(&netC.networkCheck, 0, 1) {
-		return netC.isConnected
-	}
-
-	_, err := new(http.Client).Get("https://google.com")
-	// When err != nil, internet connection test failed.
-	netC.isConnected = err == nil
-	netC.lastUpdate = time.Now()
-
-	atomic.StoreUint32(&netC.networkCheck, 0)
-
-	return netC.isConnected
 }

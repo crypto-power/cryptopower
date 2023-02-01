@@ -85,7 +85,7 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 		IsActive: true,
 	}
 
-	if err := utils.HttpGet(req, &resp); err != nil {
+	if _, err := utils.HttpRequest(req, &resp); err != nil {
 		return nil, fmt.Errorf("fetching API fee estimates failed: %v", err)
 	}
 
