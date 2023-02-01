@@ -17,7 +17,7 @@ func NewSyncProgress() *SyncProgressListener {
 	}
 }
 
-func (sp *SyncProgressListener) OnSyncStarted(wasRestarted bool) {
+func (sp *SyncProgressListener) OnSyncStarted() {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage: wallet.SyncStarted,
 	})

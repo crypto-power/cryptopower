@@ -41,7 +41,6 @@ type SyncData struct {
 	syncing            bool
 	synced             bool
 	isRescan           bool
-	restartedScan      bool
 	rescanStartTime    time.Time
 	rescanStartHeight  *int32
 	isSyncShuttingDown bool
@@ -109,7 +108,6 @@ func (asset *BTCAsset) resetSyncProgressData() {
 	asset.syncData.syncing = false
 	asset.syncData.synced = false
 	asset.syncData.isRescan = false
-	asset.syncData.restartedScan = false
 }
 
 func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
@@ -582,17 +580,13 @@ func (asset *BTCAsset) SpvSync() (err error) {
 	// as synced with the network.
 	go asset.waitForSyncCompletion()
 
-	var restartSyncRequested bool
-
 	asset.syncData.mu.Lock()
-	restartSyncRequested = asset.syncData.restartedScan
-	asset.syncData.restartedScan = false
 	asset.syncData.syncing = true
 	asset.syncData.synced = false
 	asset.syncData.mu.Unlock()
 
 	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnSyncStarted(restartSyncRequested)
+		listener.OnSyncStarted()
 	}
 
 	go func() {
