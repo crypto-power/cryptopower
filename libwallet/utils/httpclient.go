@@ -26,7 +26,8 @@ type (
 
 	// ReqConfig models the configuration options for requests.
 	ReqConfig struct {
-		Payload []byte
+		Payload interface{}
+		Cookies []*http.Cookie
 		Method  string
 		HttpUrl string
 		// If IsRetByte is set to true, client.Do will delegate
@@ -67,38 +68,73 @@ func newClient() (c *Client) {
 	}
 }
 
-func (c *Client) requestFilter(reqConfig *ReqConfig) (req *http.Request, err error) {
-	req, err = http.NewRequest(reqConfig.Method, reqConfig.HttpUrl, bytes.NewBuffer(reqConfig.Payload))
-	if err != nil {
-		return
+func (c *Client) getRequestBody(method string, body interface{}) ([]byte, error) {
+	if body == nil {
+		return nil, nil
 	}
-	if reqConfig.Method == http.MethodPost || reqConfig.Method == http.MethodPut {
-		req.Header.Add("Content-Type", "application/json;charset=utf-8")
+
+	if method == http.MethodPost {
+		if requestBody, ok := body.([]byte); ok {
+			return requestBody, nil
+		}
+	} else if method == http.MethodGet {
+		if requestBody, ok := body.(map[string]string); ok {
+			params := url.Values{}
+			for key, val := range requestBody {
+				params.Add(key, val)
+			}
+			return []byte(params.Encode()), nil
+		}
 	}
-	req.Header.Add("Accept", "application/json")
-	return
+
+	return nil, errors.New("invalid request body")
 }
 
 // query prepares and process HTTP request to backend resources.
 func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Response, err error) {
+	// Check if the user has authorised the API call.
 	if !reqConfig.IsActive {
 		return nil, nil, fmt.Errorf("error: API call not allowed: %v", reqConfig.HttpUrl)
 	}
 
+	// validate the API Url address
 	if _, err := url.ParseRequestURI(reqConfig.HttpUrl); err != nil {
 		return nil, nil, fmt.Errorf("error: url not properly constituted: %v", err)
 	}
 
-	var req *http.Request
-	req, err = c.requestFilter(reqConfig)
+	var requestBody []byte
+	if reqConfig.Payload != nil {
+		requestBody, err = c.getRequestBody(reqConfig.Method, reqConfig.Payload)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if reqConfig.Method == http.MethodGet && requestBody != nil {
+		reqConfig.HttpUrl += string(requestBody)
+	}
+
+	// Create http request
+	req, err := http.NewRequest(reqConfig.Method, reqConfig.HttpUrl, bytes.NewReader(requestBody))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error creating http request: %v", err)
+	}
+
+	if reqConfig.Method == http.MethodPost || reqConfig.Method == http.MethodPut {
+		req.Header.Add("Content-Type", "application/json;charset=utf-8")
+	} else {
+		req.Header.Add("Accept", "application/json")
+	}
+
+	for _, cookie := range reqConfig.Cookies {
+		req.AddCookie(cookie)
 	}
 
 	if req == nil {
 		return nil, nil, errors.New("error: nil request")
 	}
 
+	// Send request
 	resp, err = c.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err

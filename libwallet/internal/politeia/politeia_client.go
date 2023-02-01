@@ -1,25 +1,18 @@
 package politeia
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"time"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	tkv1 "github.com/decred/politeia/politeiawww/api/ticketvote/v1"
 	www "github.com/decred/politeia/politeiawww/api/www/v1"
 	"github.com/decred/politeia/politeiawww/client"
 )
 
 type politeiaClient struct {
-	host       string
-	httpClient *http.Client
-
+	host    string
 	version *www.VersionReply
 	policy  *www.PolicyReply
 	cookies []*http.Cookie
@@ -32,117 +25,38 @@ const (
 
 var apiPath = www.PoliteiaWWWAPIRoute
 
-func newPoliteiaClient(host string) *politeiaClient {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-
-	httpClient := &http.Client{
-		Transport: tr,
-		Timeout:   time.Second * 60,
-	}
-
-	return &politeiaClient{
-		host:       host,
-		httpClient: httpClient,
-	}
-}
-
-func (p *Politeia) getClient() (*politeiaClient, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	client := p.client
-	if client == nil {
-		client = newPoliteiaClient(p.host)
-		version, err := client.serverVersion()
-		if err != nil {
-			return nil, err
-		}
-		client.version = &version
-
-		err = client.loadServerPolicy()
-		if err != nil {
-			return nil, err
+func (p *Politeia) getClient() error {
+	if p.client == nil {
+		p.client = &politeiaClient{host: p.host}
+		if err := p.client.serverVersion(); err != nil {
+			return err
 		}
 
-		p.client = client
-	}
-
-	return client, nil
-}
-
-func (c *politeiaClient) getRequestBody(method string, body interface{}) ([]byte, error) {
-	if body == nil {
-		return nil, nil
-	}
-
-	if method == http.MethodPost {
-		if requestBody, ok := body.([]byte); ok {
-			return requestBody, nil
-		}
-	} else if method == http.MethodGet {
-		if requestBody, ok := body.(map[string]string); ok {
-			params := url.Values{}
-			for key, val := range requestBody {
-				params.Add(key, val)
-			}
-			return []byte(params.Encode()), nil
-		}
-	}
-
-	return nil, errors.New("invalid request body")
-}
-
-func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interface{}, dest interface{}) error {
-	var err error
-	var requestBody []byte
-
-	route := c.host + apiRoute + path
-	if body != nil {
-		requestBody, err = c.getRequestBody(method, body)
-		if err != nil {
+		if err := p.client.serverPolicy(); err != nil {
 			return err
 		}
 	}
+	return nil
+}
 
-	if method == http.MethodGet && requestBody != nil {
-		route += string(requestBody)
+func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interface{}, dest interface{}) error {
+	req := &utils.ReqConfig{
+		Payload: body,
+		Method:  method,
+		HttpUrl: c.host + apiRoute + path,
+		// TODO: query if this API method has been user activated.
+		IsActive:  true,
+		IsRetByte: true,
+		Cookies:   c.cookies,
 	}
 
-	// Create http request
-	req, err := http.NewRequest(method, route, nil)
-	if err != nil {
-		return fmt.Errorf("error creating http request: %s", err.Error())
-	}
-	if method == http.MethodPost && requestBody != nil {
-		req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
-	}
-
-	for _, cookie := range c.cookies {
-		req.AddCookie(cookie)
-	}
-
-	// Send request
-	r, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		r.Body.Close()
-	}()
-
-	responseBody, err := ioutil.ReadAll(r.Body)
+	var respBytes = []byte{}
+	_, err := utils.HttpRequest(req, &respBytes)
 	if err != nil {
 		return err
 	}
 
-	if r.StatusCode != http.StatusOK {
-		return c.handleError(r.StatusCode, responseBody)
-	}
-
-	err = json.Unmarshal(responseBody, dest)
+	err = json.Unmarshal(respBytes, dest)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling response: %s", err.Error())
 	}
@@ -150,52 +64,18 @@ func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interfa
 	return nil
 }
 
-func (c *politeiaClient) handleError(statusCode int, responseBody []byte) error {
-	switch statusCode {
-	case http.StatusNotFound:
-		return errors.New("resource not found")
-	case http.StatusInternalServerError:
-		return errors.New("internal server error")
-	case http.StatusForbidden:
-		return errors.New(string(responseBody))
-	case http.StatusUnauthorized:
-		var errResp www.ErrorReply
-		if err := json.Unmarshal(responseBody, &errResp); err != nil {
-			return err
-		}
-		return fmt.Errorf("unauthorized: %d", errResp.ErrorCode)
-	case http.StatusBadRequest:
-		var errResp www.ErrorReply
-		if err := json.Unmarshal(responseBody, &errResp); err != nil {
-			return err
-		}
-		return fmt.Errorf("bad request: %d", errResp.ErrorCode)
-	}
-
-	return errors.New("unknown error")
-}
-
-func (c *politeiaClient) loadServerPolicy() error {
-	serverPolicy, err := c.serverPolicy()
-	if err != nil {
-		return err
-	}
-
-	c.policy = &serverPolicy
-
-	return nil
-}
-
-func (c *politeiaClient) serverPolicy() (www.PolicyReply, error) {
+func (c *politeiaClient) serverPolicy() error {
 	var policyReply www.PolicyReply
 	err := c.makeRequest(http.MethodGet, apiPath, www.RoutePolicy, nil, &policyReply)
-	return policyReply, err
+	c.policy = &policyReply
+	return err
 }
 
-func (c *politeiaClient) serverVersion() (www.VersionReply, error) {
+func (c *politeiaClient) serverVersion() error {
 	var versionReply www.VersionReply
 	err := c.makeRequest(http.MethodGet, apiPath, www.RouteVersion, nil, &versionReply)
-	return versionReply, err
+	c.version = &versionReply
+	return err
 }
 
 func (c *politeiaClient) batchProposals(tokens []string) ([]Proposal, error) {

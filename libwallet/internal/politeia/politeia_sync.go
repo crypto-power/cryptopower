@@ -50,7 +50,7 @@ func (p *Politeia) Sync(ctx context.Context) error {
 			return p.ctx.Err()
 		}
 
-		_, err := p.getClient()
+		err := p.getClient()
 		if err != nil {
 			log.Errorf("Error fetching for politeia server policy: %v", err)
 			time.Sleep(retryInterval * time.Second)
@@ -365,12 +365,15 @@ func (p *Politeia) FetchProposalDescription(token string) (string, error) {
 		return "", err
 	}
 
-	client, err := p.getClient()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	err = p.getClient()
 	if err != nil {
 		return "", err
 	}
 
-	proposalDetailsReply, err := client.proposalDetails(token)
+	proposalDetailsReply, err := p.client.proposalDetails(token)
 	if err != nil {
 		return "", err
 	}
@@ -405,17 +408,20 @@ func (p *Politeia) ProposalVoteDetailsRaw(ctx context.Context, wallet *wallet.Wa
 		return nil, p.ctx.Err()
 	}
 
-	client, err := p.getClient()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	err := p.getClient()
 	if err != nil {
 		return nil, err
 	}
 
-	detailsReply, err := client.voteDetails(token)
+	detailsReply, err := p.client.voteDetails(token)
 	if err != nil {
 		return nil, err
 	}
 
-	votesResults, err := client.voteResults(token)
+	votesResults, err := p.client.voteResults(token)
 	if err != nil {
 		return nil, err
 	}
@@ -505,12 +511,15 @@ func (p *Politeia) ProposalVoteDetails(ctx context.Context, wallet *wallet.Walle
 }
 
 func (p *Politeia) CastVotes(ctx context.Context, wallet *wallet.Wallet, eligibleTickets []*ProposalVote, token, passphrase string) error {
-	client, err := p.getClient()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	err := p.getClient()
 	if err != nil {
 		return err
 	}
 
-	detailsReply, err := client.voteDetails(token)
+	detailsReply, err := p.client.voteDetails(token)
 	if err != nil {
 		return err
 	}
@@ -556,7 +565,7 @@ func (p *Politeia) CastVotes(ctx context.Context, wallet *wallet.Wallet, eligibl
 		votes = append(votes, singleVote)
 	}
 
-	return client.sendVotes(votes)
+	return p.client.sendVotes(votes)
 }
 
 func (p *Politeia) AddNotificationListener(notificationListener ProposalNotificationListener, uniqueIdentifier string) error {
