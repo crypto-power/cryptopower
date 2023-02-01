@@ -95,7 +95,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir)
+	ldr := initWalletLoader(chainParams, params.RootDir, false)
 	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -119,12 +119,16 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	return btcWallet, nil
 }
 
-func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.AssetLoader {
+func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string, isRecovery bool) loader.AssetLoader {
+	var recoverWallet uint32
+	if isRecovery {
+		recoverWallet = recoverWindow
+	}
 	conf := &btc.LoaderConf{
 		ChainParams:      chainParams,
 		DBDirPath:        dbDirPath,
 		DefaultDBTimeout: defaultDBTimeout,
-		RecoveryWin:      recoverWindow,
+		RecoveryWin:      recoverWallet,
 	}
 
 	return btc.NewLoader(conf)
@@ -144,7 +148,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir)
+	ldr := initWalletLoader(chainParams, params.RootDir, true)
 	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
 		ldr, params, utils.BTCWalletAsset)
 	if err != nil {
@@ -182,7 +186,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir)
+	ldr := initWalletLoader(chainParams, params.RootDir, true)
 	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -219,7 +223,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir)
+	ldr := initWalletLoader(chainParams, params.RootDir, false)
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
