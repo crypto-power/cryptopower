@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -15,7 +13,6 @@ import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txauthor"
 	"decred.org/dcrwallet/v2/wallet/txrules"
-	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -173,44 +170,6 @@ func (asset *DCRAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 		UnitValue: maxSendableAmount,
 		CoinValue: dcrutil.Amount(maxSendableAmount).ToCoin(),
 	}, nil
-}
-
-func (asset *DCRAsset) UseInputs(utxoKeys []string) error {
-	// first clear any previously set inputs
-	// so that an outdated set of inputs isn't used if an error occurs from this function
-	asset.TxAuthoredInfo.inputs = nil
-	inputs := make([]*wire.TxIn, 0, len(utxoKeys))
-	for _, utxoKey := range utxoKeys {
-		idx := strings.Index(utxoKey, ":")
-		hash := utxoKey[:idx]
-		hashIndex := utxoKey[idx+1:]
-		index, err := strconv.Atoi(hashIndex)
-		if err != nil {
-			return fmt.Errorf("no valid utxo found for '%s' in the source account at index %d", utxoKey, index)
-		}
-
-		txHash, err := chainhash.NewHashFromStr(hash)
-		if err != nil {
-			return err
-		}
-
-		op := &wire.OutPoint{
-			Hash:  *txHash,
-			Index: uint32(index),
-		}
-		ctx, _ := asset.ShutdownContextWithCancel()
-		outputInfo, err := asset.Internal().DCR.OutputInfo(ctx, op)
-		if err != nil {
-			return fmt.Errorf("no valid utxo found for '%s' in the source account", utxoKey)
-		}
-
-		input := wire.NewTxIn(op, int64(outputInfo.Amount), nil)
-		inputs = append(inputs, input)
-	}
-
-	asset.TxAuthoredInfo.inputs = inputs
-	asset.TxAuthoredInfo.needsConstruct = true
-	return nil
 }
 
 func (asset *DCRAsset) Broadcast(privatePassphrase string) ([]byte, error) {

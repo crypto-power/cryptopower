@@ -1,10 +1,10 @@
 package instantswap
 
 import (
-	"strings"
-
 	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type ExchangeServer string
@@ -25,7 +25,8 @@ func (es ExchangeServer) ToString() string {
 
 // CapFirstLetter capitalizes the first letter of the ExchangeServer
 func (es ExchangeServer) CapFirstLetter() string {
-	return strings.Title(string(es))
+	caser := cases.Title(language.Und)
+	return caser.String(string(es))
 }
 
 type InstantSwap struct {

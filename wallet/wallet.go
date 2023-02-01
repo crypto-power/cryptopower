@@ -64,6 +64,10 @@ func (wal *Wallet) StartupTime() time.Time {
 	return wal.startUpTime
 }
 
+func (wal *Wallet) GetMultiWallet() *libwallet.AssetsManager {
+	return wal.multi
+}
+
 func (wal *Wallet) InitMultiWallet() error {
 	politeiaHost := libwallet.PoliteiaMainnetHost
 	if wal.Net == string(libwallet.Testnet3) {

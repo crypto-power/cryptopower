@@ -3,12 +3,13 @@ package settings
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
@@ -56,7 +57,8 @@ func NewStatPage(l *load.Load) *StatPage {
 	if pg.netType == string(libwallet.Testnet3) {
 		pg.netType = "Testnet"
 	} else {
-		pg.netType = strings.Title(pg.netType)
+		caser := cases.Title(language.Und)
+		pg.netType = caser.String(pg.netType)
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)

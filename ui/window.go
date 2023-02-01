@@ -35,8 +35,7 @@ type Window struct {
 	*giouiApp.Window
 	navigator app.WindowNavigator
 
-	wallet               *wallet.Wallet
-	walletUnspentOutputs *wallet.UnspentOutputs
+	wallet *wallet.Wallet
 
 	load *load.Load
 
@@ -79,7 +78,6 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 		Window:                giouiWindow,
 		navigator:             app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
 		wallet:                wal,
-		walletUnspentOutputs:  new(wallet.UnspentOutputs),
 		walletAcctMixerStatus: make(chan *wallet.AccountMixer),
 		Quit:                  make(chan struct{}, 1),
 		IsShutdown:            make(chan struct{}, 1),
@@ -117,10 +115,9 @@ func (win *Window) NewLoad() (*load.Load, error) {
 		Theme: th,
 
 		WL: &load.WalletLoad{
-			MultiWallet:    mw,
-			Wallet:         win.wallet,
-			UnspentOutputs: win.walletUnspentOutputs,
-			TxAuthor:       win.txAuthor,
+			MultiWallet: mw,
+			Wallet:      win.wallet,
+			TxAuthor:    win.txAuthor,
 		},
 
 		// NB: Toasts implementation is maintained here for the cases where its

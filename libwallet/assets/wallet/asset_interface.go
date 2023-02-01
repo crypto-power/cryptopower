@@ -105,6 +105,5 @@ type Asset interface {
 	NewUnsignedTx(accountNumber int32) error
 	AddSendDestination(address string, unitAmount int64, sendMax bool) error
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
-	UseInputs(utxoKeys []string) error
 	IsUnsignedTxExist() bool
 }

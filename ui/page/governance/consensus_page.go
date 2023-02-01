@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"strings"
 	"time"
 
 	"gioui.org/font/gofont"
@@ -9,6 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
@@ -90,7 +91,8 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 		consensusItem := consensusItems[0]
 		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
 		for i := range consensusItem.Agenda.Choices {
-			voteChoices[i] = strings.Title(consensusItem.Agenda.Choices[i].Id)
+			caser := cases.Title(language.Und)
+			voteChoices[i] = caser.String(consensusItem.Agenda.Choices[i].Id)
 		}
 	}
 
