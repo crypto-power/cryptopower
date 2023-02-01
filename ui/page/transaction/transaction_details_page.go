@@ -268,7 +268,6 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			},
 			Body: func(gtx C) D {
 				widgets := []func(gtx C) D{
-					// pg.associatedTicket, // TODO currently not part of the v2 update
 					pg.txnTypeAndID,
 					pg.txnInputs,
 					pg.txnOutputs,
@@ -503,45 +502,6 @@ func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
 	return int(progress)
 }
 
-func (pg *TxDetailsPage) maturityProgressBar(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Margin:      layout.Inset{Top: values.MarginPadding12},
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			t := pg.Theme.Label(values.TextSize14, values.String(values.StrMaturity))
-			t.Color = pg.Theme.Color.GrayText2
-			return t.Layout(gtx)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-
-			percentageLabel := pg.Theme.Label(values.TextSize14, "25%")
-			percentageLabel.Color = pg.Theme.Color.GrayText2
-
-			progress := pg.Theme.ProgressBar(40)
-			progress.Color = pg.Theme.Color.LightBlue
-			progress.TrackColor = pg.Theme.Color.BlueProgressTint
-			progress.Height = values.MarginPadding8
-			progress.Width = values.MarginPadding80
-			progress.Radius = cryptomaterial.Radius(8)
-
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{
-					Alignment: layout.Middle,
-				}.Layout(gtx,
-					layout.Rigid(percentageLabel.Layout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Left: values.MarginPadding6, Right: values.MarginPadding6}.Layout(gtx, progress.Layout)
-					}),
-					layout.Rigid(pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d %s", 18, values.String(values.StrHours))).Layout),
-				)
-			})
-		}),
-	)
-}
-
 func (pg *TxDetailsPage) keyValue(gtx C, key string, value layout.Widget) D {
 	return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
@@ -555,33 +515,6 @@ func (pg *TxDetailsPage) keyValue(gtx C, key string, value layout.Widget) D {
 			layout.Flexed(.6, value),
 		)
 	})
-}
-
-func (pg *TxDetailsPage) associatedTicket(gtx C) D {
-	if pg.transaction.Type != txhelper.TxTypeVote && pg.transaction.Type != txhelper.TxTypeRevocation {
-		return D{}
-	}
-
-	return layout.Flex{
-		Axis: layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.associatedTicketClickable.Layout(gtx, func(gtx C) D {
-				return cryptomaterial.LinearLayout{
-					Width:       cryptomaterial.MatchParent,
-					Height:      cryptomaterial.WrapContent,
-					Orientation: layout.Horizontal,
-					Padding:     layout.Inset{Left: values.MarginPadding16, Top: values.MarginPadding12, Right: values.MarginPadding16, Bottom: values.MarginPadding12},
-				}.Layout(gtx,
-					layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrViewTicket)).Layout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, pg.Theme.Icons.Next.Layout24dp)
-					}),
-				)
-			})
-		}),
-		layout.Rigid(pg.Theme.Separator().Layout),
-	)
 }
 
 // TODO: do this at startup
