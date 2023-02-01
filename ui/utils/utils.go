@@ -1,16 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -87,24 +83,6 @@ func BreakBalance(p *message.Printer, balance string) (b1, b2 string) {
 	return
 }
 
-func GetUSDExchangeValue(target interface{}) error {
-	url := "https://api.bittrex.com/v3/markets/DCR-USDT/ticker"
-	res, err := http.Get(url)
-	// TODO: include user agent in req header
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(target)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func FormatUSDBalance(p *message.Printer, balance float64) string {
 	return p.Sprintf("$%.2f", balance)
 }
@@ -115,24 +93,6 @@ func CryptoToUSD(exchangeRate, coin float64) float64 {
 
 func USDToDCR(exchangeRate, usd float64) float64 {
 	return usd / exchangeRate
-}
-
-func goToURL(url string) {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	if err != nil {
-		log.Error(err)
-	}
 }
 
 func ComputePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
