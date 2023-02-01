@@ -545,3 +545,7 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 
 	log.Info("Clean all deleted wallets")
 }
+
+func (mgr *AssetsManager) AllAssetTypes() []utils.AssetType {
+	return []utils.AssetType{utils.DCRWalletAsset, utils.BTCWalletAsset}
+}
