@@ -16,7 +16,7 @@ import (
 
 const (
 	// Default http client timeout in secs.
-	defaultHttpClientTimeout = 10 * time.Second
+	defaultHttpClientTimeout = 30 * time.Second
 )
 
 type (
@@ -76,6 +76,14 @@ func newClient() (c *Client) {
 	}
 }
 
+// ShutdownHttpClients shutdowns any active connection by cancelling the context.
+func ShutdownHttpClients() {
+	for _, c := range activeAPIs {
+		c.cancelFunc()
+	}
+	activeAPIs = nil
+}
+
 func (c *Client) getRequestBody(method string, body interface{}) ([]byte, error) {
 	if body == nil {
 		return nil, nil
@@ -103,11 +111,6 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	// Check if the user has authorised the API call.
 	if !reqConfig.IsActive {
 		return nil, nil, fmt.Errorf("error: API call not allowed: %v", reqConfig.HttpUrl)
-	}
-
-	// validate the API Url address
-	if _, err := url.ParseRequestURI(reqConfig.HttpUrl); err != nil {
-		return nil, nil, fmt.Errorf("error: url not properly constituted: %v", err)
 	}
 
 	// package the request body for POST and PUT requests
@@ -165,7 +168,14 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 
 // HttpRequest helps to convert json(Byte data) into a struct object.
 func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, error) {
-	var client, ok = activeAPIs[reqConfig.HttpUrl]
+	// validate the API Url address
+	urlPath, err := url.ParseRequestURI(reqConfig.HttpUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error: url not properly constituted: %v", err)
+	}
+
+	// Reuse the same client for requests that share a host.
+	var client, ok = activeAPIs[urlPath.Host]
 	if !ok {
 		client = newClient()
 	}
@@ -176,9 +186,7 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 	}
 
 	// cache a new client connection since it was successful
-	if !ok {
-		activeAPIs[reqConfig.HttpUrl] = client
-	}
+	activeAPIs[urlPath.Host] = client
 
 	// if IsRetByte is option is true. Response from the resource queried
 	// is not in json format, don't unmarshal return response byte slice to

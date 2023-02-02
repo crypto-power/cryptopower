@@ -260,6 +260,9 @@ func (mgr *AssetsManager) Shutdown() {
 		wallet.CancelRescan()
 	}
 
+	// Disable all active network connections
+	utils.ShutdownHttpClients()
+
 	if mgr.params.DB != nil {
 		if err := mgr.params.DB.Close(); err != nil {
 			log.Errorf("db closed with error: %v", err)
