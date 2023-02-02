@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,8 @@ type (
 	// Client is the base for http/https calls
 	Client struct {
 		httpClient *http.Client
+		cancelFunc context.CancelFunc
+		context    context.Context
 	}
 
 	// ReqConfig models the configuration options for requests.
@@ -60,7 +63,12 @@ func init() {
 
 // newClient configures and return a new client
 func newClient() (c *Client) {
+	// Initialize context use to cancel all pending requests when shutdown request is made.
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Client{
+		context:    ctx,
+		cancelFunc: cancel,
 		httpClient: &http.Client{
 			Timeout:   defaultHttpClientTimeout,
 			Transport: http.DefaultTransport.(*http.Transport).Clone(),
@@ -102,6 +110,7 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 		return nil, nil, fmt.Errorf("error: url not properly constituted: %v", err)
 	}
 
+	// package the request body for POST and PUT requests
 	var requestBody []byte
 	if reqConfig.Payload != nil {
 		requestBody, err = c.getRequestBody(reqConfig.Method, reqConfig.Payload)
@@ -110,14 +119,19 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 		}
 	}
 
+	// package request URL for GET requests.
 	if reqConfig.Method == http.MethodGet && requestBody != nil {
 		reqConfig.HttpUrl += string(requestBody)
 	}
 
 	// Create http request
-	req, err := http.NewRequest(reqConfig.Method, reqConfig.HttpUrl, bytes.NewReader(requestBody))
+	req, err := http.NewRequestWithContext(c.context, reqConfig.Method, reqConfig.HttpUrl, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating http request: %v", err)
+	}
+
+	if req == nil {
+		return nil, nil, errors.New("error: nil request")
 	}
 
 	if reqConfig.Method == http.MethodPost || reqConfig.Method == http.MethodPut {
@@ -128,10 +142,6 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 
 	for _, cookie := range reqConfig.Cookies {
 		req.AddCookie(cookie)
-	}
-
-	if req == nil {
-		return nil, nil, errors.New("error: nil request")
 	}
 
 	// Send request
@@ -147,7 +157,7 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("error: status: %v resp: %s", resp.Status, body)
+		return nil, resp, fmt.Errorf("error: status: %v resp: %s", resp.Status, body)
 	}
 
 	return body, resp, nil
