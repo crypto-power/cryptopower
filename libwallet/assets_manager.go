@@ -144,7 +144,7 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost, logDir string) (*Ass
 	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
 
 	// clean all deleted wallet if exist
-	mgr.cleanDeleteWallets()
+	mgr.cleanDeletedWallets()
 
 	// Load existing wallets.
 	if err := mgr.prepareExistingWallets(); err != nil {
@@ -497,7 +497,7 @@ func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string
 
 // on window os after deleted the wallet, dir of wallet deleted still exist
 // this function will check all data of deleted wallet and remove them
-func (mgr *AssetsManager) cleanDeleteWallets() {
+func (mgr *AssetsManager) cleanDeletedWallets() {
 	// read all stored wallets info from the db and initialize wallets interfaces.
 	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
 	var wallets []*sharedW.Wallet
