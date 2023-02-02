@@ -32,7 +32,7 @@ type Assets struct {
 	}
 }
 
-var slicesAccessType = []string{"dcr", "btc"}
+var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower()}
 
 type AssetsManager struct {
 	params *sharedW.InitParams
@@ -536,7 +536,7 @@ func (mgr *AssetsManager) cleanDeleteWallets() {
 	}
 
 	if len(deletedWalletDirs) == 0 {
-		log.Info("The deleted wallets had clean")
+		log.Info("No wallets to clean were found")
 		return
 	}
 
