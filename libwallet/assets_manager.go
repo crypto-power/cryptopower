@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
@@ -30,6 +31,8 @@ type Assets struct {
 		BadWallets map[int]*sharedW.Wallet
 	}
 }
+
+var slicesAccessType = []string{"dcr", "btc"}
 
 type AssetsManager struct {
 	params *sharedW.InitParams
@@ -139,6 +142,9 @@ func NewAssetsManager(rootDir, dbDriver, net, politeiaHost, logDir string) (*Ass
 	// initialize the ExternalService. ExternalService provides multiwallet with
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
 	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
+
+	// clean all deleted wallet if exist
+	mgr.cleanDeleteWallets()
 
 	// Load existing wallets.
 	if err := mgr.prepareExistingWallets(); err != nil {
@@ -487,4 +493,59 @@ func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string
 	default:
 		return -1, utils.ErrAssetUnknown
 	}
+}
+
+// on window os after deleted the wallet, dir of wallet deleted still exist
+// this function will check all data of deleted wallet and remove them
+func (mgr *AssetsManager) cleanDeleteWallets() {
+	// read all stored wallets info from the db and initialize wallets interfaces.
+	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
+	var wallets []*sharedW.Wallet
+	err := query.Find(&wallets)
+	if err != nil && err != storm.ErrNotFound {
+		log.Error("Fail to get all wallet to check deleted wallets")
+		return
+	}
+
+	log.Info("Starting check and remove all dir of deleted wallets....")
+	walletTypeMap := make(map[string]map[string]bool)
+	deletedWalletDirs := make([]string, 0)
+
+	for _, wallet := range wallets {
+		if walletTypeMap[wallet.Type.ToStringLower()] == nil {
+			walletTypeMap[wallet.Type.ToStringLower()] = make(map[string]bool)
+		}
+
+		walletTypeMap[wallet.Type.ToStringLower()][strconv.Itoa(wallet.ID)] = true
+	}
+
+	for _, wType := range slicesAccessType {
+		rootDir := filepath.Join(mgr.params.RootDir, wType)
+		files, err := os.ReadDir(rootDir)
+		if err != nil {
+			log.Errorf("can't read %s root wallet type", wType)
+			return
+		}
+		for _, f := range files {
+			if f.IsDir() {
+				if !walletTypeMap[wType][f.Name()] {
+					deletedWalletDirs = append(deletedWalletDirs, filepath.Join(mgr.params.RootDir, wType, f.Name()))
+				}
+			}
+		}
+	}
+
+	if len(deletedWalletDirs) == 0 {
+		log.Info("The deleted wallets had clean")
+		return
+	}
+
+	for _, v := range deletedWalletDirs {
+		err = os.RemoveAll(v)
+		if err != nil {
+			log.Errorf("Can't remove the wallet with error: %v", err)
+		}
+	}
+
+	log.Info("Clean all deleted wallets")
 }
