@@ -53,6 +53,7 @@ type CreateWallet struct {
 	passwordEditor        cryptomaterial.Editor
 	confirmPasswordEditor cryptomaterial.Editor
 	watchOnlyCheckBox     cryptomaterial.CheckBoxStyle
+	materialLoader        material.LoaderStyle
 
 	continueBtn cryptomaterial.Button
 	restoreBtn  cryptomaterial.Button
@@ -63,6 +64,7 @@ type CreateWallet struct {
 	selectedWalletAction int
 
 	showLoader bool
+	isLoading  bool
 }
 
 func NewCreateWallet(l *load.Load) *CreateWallet {
@@ -88,18 +90,21 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
-	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit, pg.walletName.IsTitleLabel = true, true, false
+	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
+	pg.confirmPasswordEditor.Hint = values.String(values.StrWalletName)
 
 	pg.watchOnlyWalletHex = l.Theme.Editor(new(widget.Editor), values.String(values.StrExtendedPubKey))
 	pg.watchOnlyWalletHex.Editor.SingleLine, pg.watchOnlyWalletHex.Editor.Submit, pg.watchOnlyWalletHex.IsTitleLabel = false, true, false
 
 	pg.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
 	pg.passwordEditor.Editor.SingleLine, pg.passwordEditor.Editor.Submit = true, true
-	pg.passwordEditor.Hint = "Enter Spending password"
+	pg.passwordEditor.Hint = values.String(values.StrSpendingPassword)
 
 	pg.confirmPasswordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
 	pg.confirmPasswordEditor.Editor.SingleLine, pg.confirmPasswordEditor.Editor.Submit = true, true
-	pg.confirmPasswordEditor.Hint = "Confirm Spending password"
+	pg.confirmPasswordEditor.Hint = values.String(values.StrConfirmSpendingPassword)
+
+	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
@@ -116,14 +121,11 @@ func (pg *CreateWallet) OnNavigatedTo() {
 }
 
 func (pg *CreateWallet) initPageItems() {
-	leftRadius := cryptomaterial.CornerRadius{
-		TopLeft:    8,
-		BottomLeft: 8,
-	}
-
-	rightRadius := cryptomaterial.CornerRadius{
+	radius := cryptomaterial.CornerRadius{
 		TopRight:    8,
 		BottomRight: 8,
+		TopLeft:     8,
+		BottomLeft:  8,
 	}
 
 	walletActions := []*walletAction{
@@ -131,8 +133,8 @@ func (pg *CreateWallet) initPageItems() {
 			title:     values.String(values.StrNewWallet),
 			clickable: pg.Theme.NewClickable(true),
 			border: cryptomaterial.Border{
-				Radius: leftRadius,
-				Color:  pg.Theme.Color.Gray1,
+				Radius: radius,
+				Color:  pg.Theme.Color.DefaultThemeColors().White,
 				Width:  values.MarginPadding2,
 			},
 			width: values.MarginPadding110,
@@ -141,8 +143,8 @@ func (pg *CreateWallet) initPageItems() {
 			title:     values.String(values.StrRestoreExistingWallet),
 			clickable: pg.Theme.NewClickable(true),
 			border: cryptomaterial.Border{
-				Radius: rightRadius,
-				Color:  pg.Theme.Color.Gray1,
+				Radius: radius,
+				Color:  pg.Theme.Color.DefaultThemeColors().White,
 				Width:  values.MarginPadding2,
 			},
 			width: values.MarginPadding195,
@@ -165,13 +167,6 @@ func (pg *CreateWallet) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *CreateWallet) Layout(gtx C) D {
-	pageContent := []func(gtx C) D{
-		pg.walletTypeSection,
-		func(gtx C) D {
-			return pg.walletOptions(gtx)
-		},
-	}
-
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
@@ -195,16 +190,25 @@ func (pg *CreateWallet) Layout(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Left: values.MarginPadding10,
-							}.Layout(gtx, pg.Theme.H6("Create Wallet").Layout)
+							}.Layout(gtx, pg.Theme.H6(values.String(values.StrCreateWallet)).Layout)
 						}),
 					)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
+					return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 						return layout.Inset{
 							Top:   values.MarginPadding26,
-							Right: values.MarginPadding10,
-						}.Layout(gtx, pageContent[i])
+							Right: values.MarginPadding20,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return pg.walletTypeSection(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									return pg.walletOptions(gtx)
+								}),
+							)
+						})
 					})
 				}),
 			)
@@ -217,15 +221,15 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
-				layout.Rigid(pg.Theme.H6("Select asset type").Layout),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return pg.assetTypeSelector.Layout(pg.ParentWindow(), gtx)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding4, Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
 						pg.assetTypeError.Color = pg.Theme.Color.Danger
+						pg.assetTypeError.TextSize = values.TextSize14
 						return pg.assetTypeError.Layout(gtx)
 					})
 				}),
@@ -235,7 +239,7 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 }
 
 func (pg *CreateWallet) walletOptions(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
+	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceEnd}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 
 			list := layout.List{}
@@ -246,24 +250,39 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 				col := pg.Theme.Color.Surface
 				title := pg.Theme.Label(values.TextSize16, item.title)
 				title.Color = pg.Theme.Color.Gray1
+
+				radius := cryptomaterial.CornerRadius{
+					TopRight:    8,
+					BottomRight: 8,
+					TopLeft:     8,
+					BottomLeft:  8,
+				}
+				item.border = cryptomaterial.Border{
+					Radius: radius,
+					Color:  pg.Theme.Color.White,
+					Width:  values.MarginPadding2,
+				}
+
 				if pg.selectedWalletAction == i {
 					col = pg.Theme.Color.Primary
 					title.Color = pg.Theme.Color.White
-					leftRadius := cryptomaterial.CornerRadius{
-						TopLeft:    8,
-						BottomLeft: 8,
-					}
+
 					item.border = cryptomaterial.Border{
-						Radius: leftRadius,
-						Color:  pg.Theme.Color.White,
+						Radius: radius,
+						Color:  pg.Theme.Color.Primary,
 						Width:  values.MarginPadding2,
 					}
 				}
-				// border: cryptomaterial.Border{
-				// 	Radius: leftRadius,
-				// 	Color:  pg.Theme.Color.Gray1,
-				// 	Width:  values.MarginPadding2,
-				// },
+
+				if item.clickable.IsHovered() {
+					item.border = cryptomaterial.Border{
+						Radius: radius,
+						Color:  pg.Theme.Color.Gray1,
+						Width:  values.MarginPadding2,
+					}
+					title.Color = pg.Theme.Color.Gray1
+				}
+
 				return cryptomaterial.LinearLayout{
 					Width:       gtx.Dp(item.width),
 					Height:      cryptomaterial.WrapContent,
@@ -293,7 +312,6 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 
 func (pg *CreateWallet) createNewWallet(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrWhatToCallWallet)).Layout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Top:    values.MarginPadding14,
@@ -301,31 +319,30 @@ func (pg *CreateWallet) createNewWallet(gtx C) D {
 			}.Layout(gtx, pg.walletName.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
-				layout.Rigid(pg.Theme.Label(values.TextSize16, "Spending passphrase").Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding8,
-						Bottom: values.MarginPadding20,
-					}.Layout(gtx, pg.passwordEditor.Layout)
-				}),
-			)
+			return layout.Inset{
+				Top:    values.MarginPadding8,
+				Bottom: values.MarginPadding20,
+			}.Layout(gtx, pg.passwordEditor.Layout)
+
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
-				layout.Rigid(pg.Theme.Label(values.TextSize16, "Confirm spending passphrase").Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding8,
-						Bottom: values.MarginPadding20,
-					}.Layout(gtx, pg.confirmPasswordEditor.Layout)
-				}),
-			)
+			return layout.Inset{
+				Top:    values.MarginPadding8,
+				Bottom: values.MarginPadding20,
+			}.Layout(gtx, pg.confirmPasswordEditor.Layout)
+
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.continueBtn.Layout)
+					return layout.E.Layout(gtx, func(gtx C) D {
+						if pg.isLoading {
+							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return pg.materialLoader.Layout(gtx)
+						}
+						return pg.continueBtn.Layout(gtx)
+					})
 				}),
 			)
 		}),
@@ -399,64 +416,77 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.walletName.Editor, pg.watchOnlyWalletHex.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.walletName.Editor, pg.watchOnlyWalletHex.Editor, pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		pg.walletName.SetError("")
+		pg.passwordEditor.SetError("")
+		pg.confirmPasswordEditor.SetError("")
 	}
 
 	// create wallet action
 	if (pg.continueBtn.Clicked() || isSubmit) && pg.validInputs() {
-		if pg.assetTypeSelector.SelectedAssetType().Name == libutils.DCRWalletAsset.String() {
-			spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				Title(values.String(values.StrSpendingPassword)).
-				SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-					errFunc := func(err string) bool {
-						m.SetError(err)
-						m.SetLoading(false)
-						return false
+		go func() {
+
+			pg.isLoading = true
+			defer func() {
+				pg.isLoading = false
+			}()
+
+			if pg.assetTypeSelector.SelectedAssetType().Name == libutils.DCRWalletAsset.String() {
+				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				if err != nil {
+					if err.Error() == libutils.ErrExist {
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						return
 					}
-					wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
-					if err != nil {
-						if err.Error() == libutils.ErrExist {
-							return errFunc(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
+
+				dcrUniqueImpl := wal.(*dcr.DCRAsset)
+				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), pg.passwordEditor.Editor.Text())
+				if err != nil {
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
+				wal.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
+
+				pg.handlerWalletDexServerSelectorCallBacks()
+			}
+
+			if pg.assetTypeSelector.SelectedAssetType().Name == libutils.BTCWalletAsset.String() {
+				_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				if err != nil {
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
+
+				pg.handlerWalletDexServerSelectorCallBacks()
+				spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+					Title(values.String(values.StrSpendingPassword)).
+					SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
+						errFunc := func(err error) bool {
+							m.SetError(err.Error())
+							m.SetLoading(false)
+							return false
 						}
-						return errFunc(err.Error())
-					}
-					dcrUniqueImpl := wal.(*dcr.DCRAsset)
-					err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
-					if err != nil {
-						return errFunc(err.Error())
-					}
-					wal.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
-					m.Dismiss()
+						_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
+						if err != nil {
+							return errFunc(err)
+						}
+						m.Dismiss()
 
-					pg.handlerWalletDexServerSelectorCallBacks()
-					return true
-				})
-			pg.ParentWindow().ShowModal(spendingPasswordModal)
-		}
-
-		if pg.assetTypeSelector.SelectedAssetType().Name == libutils.BTCWalletAsset.String() {
-			spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				Title(values.String(values.StrSpendingPassword)).
-				SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-					errFunc := func(err error) bool {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return false
-					}
-					_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), password, sharedW.PassphraseTypePass)
-					if err != nil {
-						return errFunc(err)
-					}
-					m.Dismiss()
-
-					pg.handlerWalletDexServerSelectorCallBacks()
-					return true
-				})
-			pg.ParentWindow().ShowModal(spendingPasswordModal)
-		}
+						pg.handlerWalletDexServerSelectorCallBacks()
+						return true
+					})
+				pg.ParentWindow().ShowModal(spendingPasswordModal)
+			}
+		}()
 
 	}
 
@@ -507,6 +537,23 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 }
 
+func (pg *CreateWallet) passwordsMatch(editors ...*widget.Editor) bool {
+	if len(editors) < 2 {
+		return false
+	}
+
+	password := editors[0]
+	matching := editors[1]
+
+	if password.Text() != matching.Text() {
+		pg.confirmPasswordEditor.SetError(values.String(values.StrPasswordNotMatch))
+		return false
+	}
+
+	pg.confirmPasswordEditor.SetError("")
+	return true
+}
+
 func (pg *CreateWallet) validInputs() bool {
 	pg.walletName.SetError("")
 	pg.watchOnlyWalletHex.SetError("")
@@ -528,8 +575,14 @@ func (pg *CreateWallet) validInputs() bool {
 	}
 
 	if pg.assetTypeSelector.SelectedAssetType() == nil {
-		pg.assetTypeError = pg.Theme.Body1("Select asset type")
+		pg.assetTypeError = pg.Theme.Body1(values.String(values.StrSelectAssetType))
 		return false
+	}
+
+	validPassword := utils.EditorsNotEmpty(pg.confirmPasswordEditor.Editor)
+	if len(pg.confirmPasswordEditor.Editor.Text()) > 0 {
+		passwordsMatch := pg.passwordsMatch(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
+		return validPassword && passwordsMatch
 	}
 
 	return true

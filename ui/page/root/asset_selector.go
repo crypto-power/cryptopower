@@ -167,7 +167,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			}.Layout(gtx, ats.selectedAssetType.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := ats.Theme.Label(values.TextSize16, "Select Asset Type")
+			txt := ats.Theme.Label(values.TextSize16, values.String(values.StrSelectAssetType))
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
 				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Name)
@@ -197,7 +197,7 @@ func newAssetTypeModal(l *load.Load) *assetTypeModal {
 		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectAServer)),
 		assetTypeList: layout.List{Axis: layout.Vertical},
 		isCancelable:  true,
-		dialogTitle:   "Select an asset type",
+		dialogTitle:   values.String(values.StrSelectAssetType),
 	}
 
 	atm.Modal.ShowScrollbar(true)
