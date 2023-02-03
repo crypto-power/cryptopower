@@ -1015,19 +1015,12 @@ func (mp *MainPage) listenForNotifications() {
 	}
 
 	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-<<<<<<< HEAD
-	err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding politeia notification listener: %v", err)
-		return
-=======
 	if mp.isProposalsAPIAllowed() {
 		err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
 		if err != nil {
 			log.Errorf("Error adding politeia notification listener: %v", err)
 			return
 		}
->>>>>>> 6d5a94a5 (Disable governance pages if respective APIs are not activated)
 	}
 
 	go func() {

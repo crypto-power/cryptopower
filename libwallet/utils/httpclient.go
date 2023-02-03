@@ -25,7 +25,7 @@ const (
 	FeeRateHttpAPI
 	AgendasHttpAPI
 	TreasuryHttpAPI
-	onlineCheckHttpAPI
+	OnlineCheckHttpAPI
 	ExternalServiceHttpAPI
 )
 

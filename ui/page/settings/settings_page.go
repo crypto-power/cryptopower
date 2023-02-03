@@ -6,6 +6,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -51,6 +52,12 @@ type SettingsPage struct {
 	backButton              cryptomaterial.IconButton
 	infoButton              cryptomaterial.IconButton
 
+	onlineCheckAPI *cryptomaterial.Switch
+	proposalsAPI   *cryptomaterial.Switch
+	agendasAPI     *cryptomaterial.Switch
+	treasuryAPI    *cryptomaterial.Switch
+	feeRateAPI     *cryptomaterial.Switch
+
 	isDarkModeOn      bool
 	isStartupPassword bool
 }
@@ -66,6 +73,11 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
+		onlineCheckAPI:          l.Theme.Switch(),
+		proposalsAPI:            l.Theme.Switch(),
+		agendasAPI:              l.Theme.Switch(),
+		treasuryAPI:             l.Theme.Switch(),
+		feeRateAPI:              l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -131,6 +143,7 @@ func (pg *SettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
 func (pg *SettingsPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.general(),
+		pg.networkSettings(),
 		pg.security(),
 		pg.info(),
 	}
@@ -199,6 +212,29 @@ func (pg *SettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					languageRow := row{
+						title:     values.String(values.StrLanguage),
+						clickable: pg.language,
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
+					}
+					return pg.clickableRow(gtx, languageRow)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
+				}),
+			)
+		})
+	}
+}
+
+func (pg *SettingsPage) networkSettings() layout.Widget {
+	return func(gtx C) D {
+		return pg.wrapSection(gtx, values.String(values.StrPrivacySettings), func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrOnlineCheckAPI), pg.onlineCheckAPI)
+				}),
+				layout.Rigid(func(gtx C) D {
 					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 					l := values.ArrExchangeCurrencies[lKey]
 					exchangeRate := row{
@@ -209,15 +245,16 @@ func (pg *SettingsPage) general() layout.Widget {
 					return pg.clickableRow(gtx, exchangeRate)
 				}),
 				layout.Rigid(func(gtx C) D {
-					languageRow := row{
-						title:     values.String(values.StrLanguage),
-						clickable: pg.language,
-						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
-					}
-					return pg.clickableRow(gtx, languageRow)
+					return pg.subSectionSwitch(gtx, values.String(values.StrProposalsAPI), pg.proposalsAPI)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.StringF(values.StrTxNotification, ""), pg.transactionNotification)
+					return pg.subSectionSwitch(gtx, values.String(values.StrAgendasAPI), pg.agendasAPI)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrTreasuryAPI), pg.treasuryAPI)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrFeeRateAPI), pg.feeRateAPI)
 				}),
 			)
 		})
@@ -347,6 +384,31 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	if pg.transactionNotification.Changed() {
 		go func() {
 			pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
+		}()
+	}
+	if pg.onlineCheckAPI.Changed() {
+		go func() {
+			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
+		}()
+	}
+	if pg.proposalsAPI.Changed() {
+		go func() {
+			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI, pg.proposalsAPI.IsChecked())
+		}()
+	}
+	if pg.agendasAPI.Changed() {
+		go func() {
+			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI, pg.agendasAPI.IsChecked())
+		}()
+	}
+	if pg.treasuryAPI.Changed() {
+		go func() {
+			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.TreasuryHttpAPI, pg.treasuryAPI.IsChecked())
+		}()
+	}
+	if pg.feeRateAPI.Changed() {
+		go func() {
+			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
 		}()
 	}
 
@@ -485,11 +547,12 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	transactionNotification := pg.WL.AssetsManager.IsTransactionNotificationsOn()
-	pg.transactionNotification.SetChecked(false)
-	if transactionNotification {
-		pg.transactionNotification.SetChecked(transactionNotification)
-	}
+	pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.OnlineCheckHttpAPI))
+	pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
+	pg.setInitialSwitchStatus(pg.proposalsAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI))
+	pg.setInitialSwitchStatus(pg.agendasAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI))
+	pg.setInitialSwitchStatus(pg.treasuryAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.TreasuryHttpAPI))
+	pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.FeeRateHttpAPI))
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -500,3 +563,16 @@ func (pg *SettingsPage) updateSettingOptions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *SettingsPage) OnNavigatedFrom() {}
+
+func (pg *SettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, ischecked bool) {
+	switchComponent.SetChecked(false)
+	if ischecked {
+		switchComponent.SetChecked(ischecked)
+	}
+
+	// Always have the online wallet check set to true and disabled from making changes.
+	if pg.onlineCheckAPI == switchComponent {
+		pg.onlineCheckAPI.SetChecked(true)
+		pg.onlineCheckAPI.SetEnabled(false)
+	}
+}

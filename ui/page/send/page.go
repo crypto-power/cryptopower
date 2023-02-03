@@ -197,7 +197,7 @@ func (pg *Page) OnNavigatedTo() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
+	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
 		go pg.selectedWallet.GetAPIFeeRate()
@@ -369,7 +369,9 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	pg.feeRateAPIHandler()
+	if pg.isFeerateAPIApproved() {
+		pg.feeRateAPIHandler()
+	}
 	pg.editsOrDisplayRatesHandler()
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
