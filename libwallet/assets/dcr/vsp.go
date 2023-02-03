@@ -157,10 +157,8 @@ func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	req := &utils.ReqConfig{
-		Method:  http.MethodGet,
-		HttpUrl: vspHost + "/api/v3/vspinfo",
-		// TODO: query if this API method has been user activated.
-		IsActive:  true,
+		Method:    http.MethodGet,
+		HttpUrl:   vspHost + "/api/v3/vspinfo",
 		IsRetByte: true,
 	}
 
@@ -194,8 +192,6 @@ func defaultVSPs(network string) ([]string, error) {
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: "https://api.decred.org/?c=vsp",
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	if _, err := utils.HttpRequest(req, &vspInfoResponse); err != nil {

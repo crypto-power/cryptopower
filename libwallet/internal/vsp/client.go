@@ -50,8 +50,6 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	reqConf := &utils.ReqConfig{
 		Method:  method,
 		HttpUrl: c.url + path,
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	if method == http.MethodPost {

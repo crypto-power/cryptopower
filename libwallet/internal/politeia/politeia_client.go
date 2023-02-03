@@ -41,11 +41,9 @@ func (p *Politeia) getClient() error {
 
 func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interface{}, dest interface{}) error {
 	req := &utils.ReqConfig{
-		Payload: body,
-		Method:  method,
-		HttpUrl: c.host + apiRoute + path,
-		// TODO: query if this API method has been user activated.
-		IsActive:  true,
+		Payload:   body,
+		Method:    method,
+		HttpUrl:   c.host + apiRoute + path,
 		IsRetByte: true,
 		Cookies:   c.cookies,
 	}

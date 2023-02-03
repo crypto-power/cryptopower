@@ -46,9 +46,6 @@ type (
 		// If IsRetByte is set to true, client.Do will delegate
 		// response processing to caller.
 		IsRetByte bool
-		// IsActive should always be true, signifying that the user has authorised
-		// the specific API call to access the internet.
-		IsActive bool
 	}
 
 	monitorNetwork struct {
@@ -118,11 +115,6 @@ func (c *Client) getRequestBody(method string, body interface{}) ([]byte, error)
 
 // query prepares and process HTTP request to backend resources.
 func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Response, err error) {
-	// // Check if the user has authorised the API call.
-	// if !reqConfig.IsActive {
-	// 	return nil, nil, ErrAPIApprovalMissing
-	// }
-
 	// package the request body for POST and PUT requests
 	var requestBody []byte
 	if reqConfig.Payload != nil {

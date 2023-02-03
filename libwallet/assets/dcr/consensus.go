@@ -234,8 +234,6 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: host,
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	if _, err = utils.HttpRequest(req, &dcrdataAgenda); err != nil {

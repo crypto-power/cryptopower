@@ -86,8 +86,6 @@ func (s *Service) GetBestBlock() int32 {
 		Method:    http.MethodGet,
 		HttpUrl:   setBackend(DcrData, s.chainParams.Name, "api/block/best/height"),
 		IsRetByte: true,
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	var resp []byte
@@ -111,8 +109,6 @@ func (s *Service) GetBestBlockTimeStamp() int64 {
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/block/best?txtotals=false"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	resp := &BlockDataBasic{}
@@ -129,8 +125,6 @@ func (s *Service) GetCurrentAgendaStatus() (agenda *chainjson.GetVoteInfoResult,
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/stake/vote/info"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	agenda = &chainjson.GetVoteInfoResult{}
 	_, err = utils.HttpRequest(reqConf, agenda)
@@ -142,8 +136,6 @@ func (s *Service) GetAgendas() (agendas *[]apiTypes.AgendasInfo, err error) {
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/agendas"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	agendas = &[]apiTypes.AgendasInfo{}
 	_, err = utils.HttpRequest(reqConf, agendas)
@@ -155,8 +147,6 @@ func (s *Service) GetAgendaDetails(agendaId string) (agendaDetails *AgendaAPIRes
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/agenda/"+agendaId),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	agendaDetails = &AgendaAPIResponse{}
 	_, err = utils.HttpRequest(reqConf, agendaDetails)
@@ -178,8 +168,6 @@ func (s *Service) GetTreasuryDetails() (treasuryDetails *TreasuryDetails, err er
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/treasury/balance"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	treasuryDetails = &TreasuryDetails{}
 	_, err = utils.HttpRequest(reqConf, treasuryDetails)
@@ -193,8 +181,6 @@ func (s *Service) GetExchangeRate() (rates *ExchangeRates, err error) {
 		// Use mainnet base url for exchange rate endpoint, there is no Dcrdata
 		// support for testnet ExchangeRate.
 		HttpUrl: setBackend(DcrData, chaincfg.MainNetParams().Name, "api/exchangerate"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	rates = &ExchangeRates{}
 	_, err = utils.HttpRequest(reqConf, rates)
@@ -208,8 +194,6 @@ func (s *Service) GetExchanges() (state *ExchangeState, err error) {
 		// Use mainnet base url for exchanges endpoint, no Dcrdata support for Exchanges
 		// on testnet.
 		HttpUrl: setBackend(DcrData, chaincfg.MainNetParams().Name, "api/exchanges"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	state = &ExchangeState{}
 	_, err = utils.HttpRequest(reqConf, state)
@@ -222,8 +206,6 @@ func (s *Service) GetTicketFeeRateSummary() (ticketInfo *apiTypes.MempoolTicketF
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	ticketInfo = &apiTypes.MempoolTicketFeeInfo{}
 	_, err = utils.HttpRequest(reqConf, ticketInfo)
@@ -236,8 +218,6 @@ func (s *Service) GetTicketFeeRate() (ticketFeeRate *apiTypes.MempoolTicketFees,
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/fees"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	ticketFeeRate = &apiTypes.MempoolTicketFees{}
 	_, err = utils.HttpRequest(reqConf, ticketFeeRate)
@@ -250,8 +230,6 @@ func (s *Service) GetNHighestTicketFeeRate(nHighest int) (ticketFeeRate *apiType
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/fees/"+strconv.Itoa(nHighest)),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	ticketFeeRate = &apiTypes.MempoolTicketFees{}
 	_, err = utils.HttpRequest(reqConf, ticketFeeRate)
@@ -264,8 +242,6 @@ func (s *Service) GetTicketDetails() (ticketDetails *apiTypes.MempoolTicketDetai
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/details"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	ticketDetails = &apiTypes.MempoolTicketDetails{}
 	_, err = utils.HttpRequest(reqConf, ticketDetails)
@@ -277,8 +253,6 @@ func (s *Service) GetNHighestTicketDetails(nHighest int) (ticketDetails *apiType
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/details/"+strconv.Itoa(nHighest)),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	ticketDetails = &apiTypes.MempoolTicketDetails{}
 	_, err = utils.HttpRequest(reqConf, ticketDetails)
@@ -306,8 +280,6 @@ func (s *Service) GetAddress(address string) (addressState *AddressState, err er
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(BlockBook, s.chainParams.Name, "api/v2/address/"+address),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	addressState = &AddressState{}
 	_, err = utils.HttpRequest(reqConf, addressState)
@@ -333,8 +305,6 @@ func (s *Service) GetXpub(xPub string) (xPubBalAndTxs *XpubBalAndTxs, err error)
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(BlockBook, s.chainParams.Name, "api/v2/xpub/"+xPub),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 	xPubBalAndTxs = &XpubBalAndTxs{}
 	_, err = utils.HttpRequest(reqConf, xPubBalAndTxs)
@@ -366,8 +336,6 @@ func (s *Service) getBinanceTicker(market string) (ticker *Ticker, err error) {
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(Binance, s.chainParams.Name, "/api/v3/ticker/24hr?symbol="+strings.ToUpper(market)),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	tempTicker := &BinanceTicker{}
@@ -390,8 +358,6 @@ func (s *Service) getBittrexTicker(market string) (ticker *Ticker, err error) {
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(Bittrex, s.chainParams.Name, "/markets/"+strings.ToUpper(market)+"/ticker"),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	bTicker := &BittrexTicker{}
@@ -414,8 +380,6 @@ func (s *Service) getKucoinTicker(market string) (ticker *Ticker, err error) {
 	reqConf := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: setBackend(KuCoin, s.chainParams.Name, "/api/v1/market/orderbook/level1?symbol="+strings.ToUpper(market)),
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	kTicker := &KuCoinTicker{}

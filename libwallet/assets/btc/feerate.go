@@ -81,8 +81,6 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
 		HttpUrl: feerateURL,
-		// TODO: query if this API method has been user activated.
-		IsActive: true,
 	}
 
 	if _, err := utils.HttpRequest(req, &resp); err != nil {
