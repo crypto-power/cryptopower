@@ -70,6 +70,10 @@ func TranslateError(err error) error {
 	return err
 }
 
+func ErrAPIApprovalMissing(apiType HttpAPIType) error {
+	return fmt.Errorf("%v API functionality not user allowed", apiType.ToString())
+}
+
 func ErrBTCMethodNotImplemented(method string) error {
 	return fmt.Errorf("%v not implemented for the %v Asset", method, BTCWalletAsset)
 }

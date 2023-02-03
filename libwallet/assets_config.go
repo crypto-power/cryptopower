@@ -1,6 +1,8 @@
 package libwallet
 
 import (
+	"fmt"
+
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
@@ -161,6 +163,18 @@ func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
 	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
 }
 
+func (mgr *AssetsManager) SetHttpAPIPrivacyUserApproval(apiType utils.HttpAPIType, isActive bool) {
+	dataKey := genKey(sharedW.UserPrivacyApprovalKey, apiType)
+	mgr.db.SaveWalletConfigValue(dataKey, isActive)
+}
+
+func (mgr *AssetsManager) GetHttpAPIPrivacyUserApproval(apiType utils.HttpAPIType) bool {
+	var data bool
+	dataKey := genKey(sharedW.UserPrivacyApprovalKey, apiType)
+	mgr.db.ReadWalletConfigValue(dataKey, &data)
+	return data
+}
+
 func (mgr *AssetsManager) GetLogLevels() {
 	//TODO: loglevels should have a custom type supported on libwallet.
 	// Issue is to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
@@ -232,4 +246,8 @@ func (mgr *AssetsManager) ClearExchangeConfig() error {
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeDestinationAccountConfigKey)
 
 	return nil
+}
+
+func genKey(prefix, identifier interface{}) string {
+	return fmt.Sprintf("%v-%v", prefix, identifier)
 }

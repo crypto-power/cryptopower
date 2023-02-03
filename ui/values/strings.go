@@ -447,6 +447,7 @@ const (
 	StrNoPoliciesYet                   = "noPoliciesYet"
 	StrNoProposals                     = "noProposal"
 	StrNoReward                        = "noReward"
+	StrNotAllowed                      = "notAllowed"
 	StrNotAvailable                    = "notAvailable"
 	StrNotBackedUp                     = "notBackedUp"
 	StrNotConnected                    = "notConnected"

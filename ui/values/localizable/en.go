@@ -340,6 +340,7 @@ const EN = `
 "noPoliciesYet" = "No policies yet"
 "noProposal" = "No proposals %v"
 "noReward" = "Stakey sees no rewards"
+"notAllowed" = "%s API not allowed by current network settings."
 "notAvailable" = "Not available"
 "notBackedUp" = "Backup needed"
 "notConnected" = "Not connected to decred network"

@@ -14,10 +14,40 @@ import (
 	"time"
 )
 
+type HttpAPIType uint8
+
 const (
 	// Default http client timeout in secs.
 	defaultHttpClientTimeout = 30 * time.Second
+
+	// Below lists the Http APIs that have a privacy control implemented on them.
+	PoliteiaHttpAPI HttpAPIType = iota
+	VSPHttpAPI
+	FeeRateHttpAPI
+	AgendasHttpAPI
+	onlineCheckHttpAPI
+	ExternalServiceHttpAPI
 )
+
+// ToString casts the HttpAPIType to a string.
+func (apiType HttpAPIType) ToString() string {
+	switch apiType {
+	case VSPHttpAPI:
+		return "VSP"
+	case FeeRateHttpAPI:
+		return "FeeRate"
+	case AgendasHttpAPI:
+		return "Agendas"
+	case PoliteiaHttpAPI:
+		return "Politeia"
+	case onlineCheckHttpAPI:
+		return "OnlineCheck"
+	case ExternalServiceHttpAPI:
+		return "ExternalServices"
+	default:
+		return "unknown"
+	}
+}
 
 type (
 	// Client is the base for http/https calls
@@ -108,10 +138,10 @@ func (c *Client) getRequestBody(method string, body interface{}) ([]byte, error)
 
 // query prepares and process HTTP request to backend resources.
 func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Response, err error) {
-	// Check if the user has authorised the API call.
-	if !reqConfig.IsActive {
-		return nil, nil, fmt.Errorf("error: API call not allowed: %v", reqConfig.HttpUrl)
-	}
+	// // Check if the user has authorised the API call.
+	// if !reqConfig.IsActive {
+	// 	return nil, nil, ErrAPIApprovalMissing
+	// }
 
 	// package the request body for POST and PUT requests
 	var requestBody []byte
