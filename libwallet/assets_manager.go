@@ -15,7 +15,6 @@ import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	bolt "go.etcd.io/bbolt"
-	"golang.org/x/exp/slices"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -509,15 +508,13 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 	}
 
 	log.Info("Starting check and remove all dir of deleted wallets....")
-	walletTypeMap := make(map[string][]string)
+	validWallets := make(map[string]bool, len(wallets))
 	deletedWalletDirs := make([]string, 0)
 
 	// filter all valid wallets
 	for _, wallet := range wallets {
-		if walletTypeMap[wallet.Type.ToStringLower()] == nil {
-			walletTypeMap[wallet.Type.ToStringLower()] = make([]string, 0)
-		}
-		walletTypeMap[wallet.Type.ToStringLower()] = append(walletTypeMap[wallet.Type.ToStringLower()], strconv.Itoa(wallet.ID))
+		key := wallet.Type.ToStringLower() + strconv.Itoa(wallet.ID)
+		validWallets[key] = true
 	}
 
 	// filter all wallets to be delected.
@@ -529,10 +526,9 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 			return
 		}
 		for _, f := range files {
-			if f.IsDir() {
-				if !slices.Contains(walletTypeMap[wType], f.Name()) {
-					deletedWalletDirs = append(deletedWalletDirs, filepath.Join(mgr.params.RootDir, wType, f.Name()))
-				}
+			key := wType + f.Name()
+			if f.IsDir() && !validWallets[key] {
+				deletedWalletDirs = append(deletedWalletDirs, filepath.Join(rootDir, f.Name()))
 			}
 		}
 	}
