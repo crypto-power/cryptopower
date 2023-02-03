@@ -512,6 +512,7 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 	walletTypeMap := make(map[string][]string)
 	deletedWalletDirs := make([]string, 0)
 
+	// filter all valid wallets
 	for _, wallet := range wallets {
 		if walletTypeMap[wallet.Type.ToStringLower()] == nil {
 			walletTypeMap[wallet.Type.ToStringLower()] = make([]string, 0)
@@ -519,6 +520,7 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 		walletTypeMap[wallet.Type.ToStringLower()] = append(walletTypeMap[wallet.Type.ToStringLower()], strconv.Itoa(wallet.ID))
 	}
 
+	// filter all wallets to be delected.
 	for _, wType := range slicesAccessType {
 		rootDir := filepath.Join(mgr.params.RootDir, wType)
 		files, err := os.ReadDir(rootDir)
