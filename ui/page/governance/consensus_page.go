@@ -14,6 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -79,7 +80,14 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 }
 
 func (pg *ConsensusPage) OnNavigatedTo() {
-	pg.FetchAgendas()
+	if pg.isAgendaAPIAllowed() {
+		// Only query the agendas if the Agenda API is allowed.
+		pg.FetchAgendas()
+	}
+}
+
+func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
+	return pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
@@ -244,10 +252,24 @@ func (pg *ConsensusPage) FetchAgendas() {
 }
 
 func (pg *ConsensusPage) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-		return pg.layoutMobile(gtx)
+	// If Agendas API is not allowed display the overlay with the message.
+	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isAgendaAPIAllowed() {
+		gtx = gtx.Disabled()
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrAgendas))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+		})
 	}
-	return pg.layoutDesktop(gtx)
+
+	mainChild := layout.Expanded(func(gtx C) D {
+		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			return pg.layoutMobile(gtx)
+		}
+		return pg.layoutDesktop(gtx)
+	})
+
+	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
 func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {

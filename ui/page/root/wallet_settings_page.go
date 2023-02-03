@@ -581,6 +581,10 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
+func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
+	return pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI)
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -639,7 +643,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	if pg.fetchProposal.Changed() {
+	if pg.fetchProposal.Changed() && pg.isProposalsAPIAllowed() {
 		if pg.fetchProposal.IsChecked() {
 			if !pg.WL.AssetsManager.Politeia.IsSyncing() {
 				go pg.WL.AssetsManager.Politeia.Sync(context.Background())

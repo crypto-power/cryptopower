@@ -22,32 +22,12 @@ const (
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
 	PoliteiaHttpAPI HttpAPIType = iota
-	VSPHttpAPI
 	FeeRateHttpAPI
 	AgendasHttpAPI
+	TreasuryHttpAPI
 	onlineCheckHttpAPI
 	ExternalServiceHttpAPI
 )
-
-// ToString casts the HttpAPIType to a string.
-func (apiType HttpAPIType) ToString() string {
-	switch apiType {
-	case VSPHttpAPI:
-		return "VSP"
-	case FeeRateHttpAPI:
-		return "FeeRate"
-	case AgendasHttpAPI:
-		return "Agendas"
-	case PoliteiaHttpAPI:
-		return "Politeia"
-	case onlineCheckHttpAPI:
-		return "OnlineCheck"
-	case ExternalServiceHttpAPI:
-		return "ExternalServices"
-	default:
-		return "unknown"
-	}
-}
 
 type (
 	// Client is the base for http/https calls

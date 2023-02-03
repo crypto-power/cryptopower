@@ -496,7 +496,7 @@ func (pg *Page) addRatesUnits(rates int64) string {
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {
-	return pg.WL.MultiWallet.GetHttpAPIPrivacyUserApproval(libUtil.FeeRateHttpAPI)
+	return pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libUtil.FeeRateHttpAPI)
 }
 
 func (pg *Page) editsOrDisplayRatesHandler() {
