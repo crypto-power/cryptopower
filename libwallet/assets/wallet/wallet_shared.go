@@ -700,7 +700,7 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		// Will have to wait for Neutrino's update to provide a way to do this
 
 		// Dir of deleted wallet will clean on next time open application
-		log.Warn("Wallet deleted without removal of data dir and will clean on next time")
+		log.Warn("Wallet deleted without completely deleting the data dir. It will be deleted on next restart")
 		err = nil
 	}
 	return err
