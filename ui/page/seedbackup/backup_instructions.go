@@ -47,7 +47,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
 		wallet:           wallet,
 
-		viewSeedBtn: l.Theme.Button(values.String(values.String(values.StrViewSeedPhrase))),
+		viewSeedBtn: l.Theme.Button(values.String(values.StrViewSeedPhrase)),
 
 		redirectCallback: redirect,
 	}
