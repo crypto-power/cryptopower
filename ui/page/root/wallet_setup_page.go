@@ -277,18 +277,22 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 					title.Color = pg.Theme.Color.Gray1
 				}
 
-				return cryptomaterial.LinearLayout{
-					Width:       gtx.Dp(item.width),
-					Height:      cryptomaterial.WrapContent,
-					Orientation: layout.Vertical,
-					Alignment:   layout.Middle,
-					Direction:   layout.Center,
-					Background:  col,
-					Clickable:   item.clickable,
-					Border:      item.border,
-					Padding:     layout.UniformInset(values.MarginPadding12),
-					Margin:      layout.Inset{Bottom: values.MarginPadding15},
-				}.Layout2(gtx, title.Layout)
+				return layout.Inset{
+					Right: values.MarginPadding8,
+				}.Layout(gtx, func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:       gtx.Dp(item.width),
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Vertical,
+						Alignment:   layout.Middle,
+						Direction:   layout.Center,
+						Background:  col,
+						Clickable:   item.clickable,
+						Border:      item.border,
+						Padding:     layout.UniformInset(values.MarginPadding12),
+						Margin:      layout.Inset{Bottom: values.MarginPadding15},
+					}.Layout2(gtx, title.Layout)
+				})
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
