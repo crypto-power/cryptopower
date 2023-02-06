@@ -121,19 +121,6 @@ func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetType)) *Asse
 	return ats
 }
 
-// SetSelectedAssetTypeName sets the asset type whose Name field is
-// equals to {name} as the current selected asset type.
-// If it can find asset type whose Name field equals name it returns silently.
-func (ats *AssetTypeSelector) SetSelectedAssetTypeName(name string) {
-	at := ats.SupportedAssetTypes()
-	for _, v := range at {
-		if v.Type.String() == name {
-			ats.SetSelectedAssetType(v)
-			return
-		}
-	}
-}
-
 func (ats *AssetTypeSelector) Handle(window app.WindowNavigator) {
 	for ats.openSelectorDialog.Clicked() {
 		ats.title(ats.dialogTitle)
