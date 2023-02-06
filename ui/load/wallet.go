@@ -115,9 +115,9 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount,
 
 func (wl *WalletLoad) DCRHDPrefix() string {
 	switch wl.Wallet.Net {
-	case string(utils.Testnet):
+	case utils.Testnet:
 		return dcr.TestnetHDPath
-	case string(utils.Mainnet):
+	case utils.Mainnet:
 		return dcr.MainnetHDPath
 	default:
 		return ""
@@ -126,9 +126,9 @@ func (wl *WalletLoad) DCRHDPrefix() string {
 
 func (wl *WalletLoad) BTCHDPrefix() string {
 	switch wl.Wallet.Net {
-	case string(utils.Testnet):
+	case utils.Testnet:
 		return btc.TestnetHDPath
-	case string(utils.Mainnet):
+	case utils.Mainnet:
 		return btc.MainnetHDPath
 	default:
 		return ""

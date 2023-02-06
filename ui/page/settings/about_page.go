@@ -4,7 +4,6 @@ import (
 	"gioui.org/layout"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -59,10 +58,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	pg.versionValue.Color = col
 	pg.buildDateValue.Color = col
 
-	netType := pg.WL.Wallet.Net
-	if pg.WL.Wallet.Net == string(libwallet.Testnet3) {
-		netType = "Testnet"
-	}
+	netType := pg.WL.Wallet.Net.Display()
 	pg.networkValue = l.Theme.Body1(netType)
 	pg.networkValue.Color = col
 

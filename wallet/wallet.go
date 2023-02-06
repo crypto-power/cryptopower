@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
 const (
@@ -22,23 +23,29 @@ const (
 // Wallet represents the wallet back end of the app
 type Wallet struct {
 	multi       *libwallet.AssetsManager
-	Root, Net   string
+	Root        string
 	buildDate   time.Time
 	version     string
 	logDir      string
 	startUpTime time.Time
+	Net         libutils.NetworkType
 }
 
 // NewWallet initializies an new Wallet instance.
 // The Wallet is not loaded until LoadWallets is called.
 func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wallet, error) {
-	if root == "" || net == "" { // This should really be handled by libwallet
-		return nil, fmt.Errorf(`root directory or network cannot be ""`)
+	if root == "" {
+		return nil, fmt.Errorf("root directory cannot be empty")
+	}
+
+	resolvedNetType := libutils.ToNetworkType(net)
+	if resolvedNetType == libutils.Unknown {
+		return nil, fmt.Errorf("network type is not supportted: %s", net)
 	}
 
 	wal := &Wallet{
 		Root:        root,
-		Net:         net,
+		Net:         resolvedNetType,
 		buildDate:   buildDate,
 		version:     version,
 		logDir:      logFolder,
@@ -70,10 +77,10 @@ func (wal *Wallet) GetMultiWallet() *libwallet.AssetsManager {
 
 func (wal *Wallet) InitMultiWallet() error {
 	politeiaHost := libwallet.PoliteiaMainnetHost
-	if wal.Net == string(libwallet.Testnet3) {
+	if wal.Net == libwallet.Testnet3 {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", wal.Net, politeiaHost, wal.logDir)
+	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net)
 	if err != nil {
 		return err
 	}
@@ -93,9 +100,9 @@ func (wal *Wallet) Shutdown() {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case string(libwallet.Testnet3):
+	case libwallet.Testnet3:
 		return "https://testnet.dcrdata.org/tx/" + txnHash
-	case string(libwallet.Mainnet):
+	case libwallet.Mainnet:
 		return "https://explorer.dcrdata.org/tx/" + txnHash
 	default:
 		return ""
@@ -106,9 +113,9 @@ func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case string(libwallet.Testnet3):
+	case libwallet.Testnet3:
 		return "https://live.blockcypher.com/btc-testnet/tx/" + txnHash
-	case string(libwallet.Mainnet):
+	case libwallet.Mainnet:
 		return "https://www.blockchain.com/btc/tx/" + txnHash
 	default:
 		return ""

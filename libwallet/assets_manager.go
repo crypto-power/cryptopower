@@ -84,13 +84,11 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	return mgr, nil
 }
 
-func NewAssetsManager(rootDir, dbDriver, net, politeiaHost, logDir string) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 	errors.Separator = ":: "
 
-	netType := utils.NetworkType(net)
-
 	// Create a root dir that has the path up the network folder.
-	rootDir = filepath.Join(rootDir, net)
+	rootDir = filepath.Join(rootDir, string(netType))
 	if err := os.MkdirAll(rootDir, os.ModePerm); err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
