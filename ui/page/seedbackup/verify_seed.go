@@ -46,6 +46,9 @@ type VerifySeedPage struct {
 	list          *widget.List
 
 	redirectCallback Redirectfunc
+	toggleSeedInput  *cryptomaterial.Switch
+	seedInputEditor  cryptomaterial.Editor
+	verifySeedButton cryptomaterial.Button
 }
 
 func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
@@ -58,6 +61,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 		actionButton: l.Theme.Button(values.String(values.StrVerify)),
 
 		redirectCallback: redirect,
+		toggleSeedInput:  l.Theme.Switch(),
 	}
 	pg.list = &widget.List{
 		List: layout.List{
@@ -69,6 +73,14 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
+
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), "Enter wallet seed")
+	pg.seedInputEditor.Editor.SingleLine = false
+	pg.seedInputEditor.Editor.SetText("")
+
+	pg.verifySeedButton = l.Theme.Button("")
+	pg.verifySeedButton.Font.Weight = text.Medium
+	pg.verifySeedButton.SetEnabled(false)
 
 	return pg
 }
@@ -93,6 +105,7 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 
 	pg.multiSeedList = multiSeedList
 	pg.listGroupSeed = listGroupSeed
+	pg.toggleSeedInput.SetChecked(false)
 }
 
 func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shuffledSeedWords {
@@ -167,7 +180,10 @@ func (pg *VerifySeedPage) verifySeed() {
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmToVerifySeed)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-			seed := pg.selectedSeedPhrase()
+			seed := pg.seedInputEditor.Editor.Text()
+			if !pg.toggleSeedInput.IsChecked() {
+				seed = pg.selectedSeedPhrase()
+			}
 			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
 			if err != nil {
 				if err.Error() == utils.ErrInvalid {
@@ -209,6 +225,14 @@ func (pg *VerifySeedPage) HandleUserInteractions() {
 			pg.verifySeed()
 		}
 	}
+
+	if len(strings.TrimSpace(pg.seedInputEditor.Editor.Text())) != 0 {
+		pg.verifySeedButton.SetEnabled(true)
+	}
+
+	if pg.verifySeedButton.Clicked() {
+		pg.verifySeed()
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -242,11 +266,68 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding0, Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
+							}),
+							layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrPasteSeedWords)).Layout),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					if pg.toggleSeedInput.IsChecked() {
+						return D{}
+					}
 					label := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectPhrasesToVerify))
 					label.Color = pg.Theme.Color.GrayText1
 					return label.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
+					if pg.toggleSeedInput.IsChecked() {
+						return layout.Inset{
+							Top: values.MarginPadding16,
+						}.Layout(gtx, func(gtx C) D {
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.MatchParent,
+								Height:      cryptomaterial.MatchParent,
+								Orientation: layout.Vertical,
+								Margin:      layout.Inset{Bottom: values.MarginPadding16},
+							}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+											layout.Rigid(func(gtx layout.Context) D {
+												return layout.Inset{
+													Left:  values.MarginPadding16,
+													Right: values.MarginPadding16,
+													Top:   values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+													return pg.seedInputEditor.Layout(gtx)
+												})
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Flex{}.Layout(gtx,
+													layout.Flexed(1, func(gtx C) D {
+														return layout.E.Layout(gtx, func(gtx C) D {
+															return layout.Inset{
+																Left:   values.MarginPadding16,
+																Right:  values.MarginPadding16,
+																Top:    values.MarginPadding16,
+																Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+																pg.verifySeedButton.Text = values.String(values.StrVerify)
+																return pg.verifySeedButton.Layout(gtx)
+															})
+														})
+													}),
+												)
+											}),
+										)
+
+									})
+								}),
+							)
+						})
+					}
 					return layout.Inset{
 						Bottom: values.MarginPadding96,
 					}.Layout(gtx, func(gtx C) D {
