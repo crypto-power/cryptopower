@@ -197,6 +197,7 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 	defer func() {
 		pg.loading = false
 	}()
+	pg.loadedAll = false
 	pg.loading = true
 
 	wal := pg.WL.SelectedWallet.Wallet
@@ -231,7 +232,17 @@ func (pg *TransactionsPage) loadTransactions(loadMore bool) {
 
 	pg.initialLoadingDone = true
 
-	if len(tempTxs) <= limit {
+	if len(tempTxs) == 0 {
+		pg.loadedAll = true
+		pg.loading = false
+
+		if !loadMore {
+			pg.transactions = nil
+		}
+		return
+	}
+
+	if len(tempTxs) < limit {
 		pg.loadedAll = true
 	}
 
