@@ -234,7 +234,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-	wal := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID)
+	wal := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 
 	return cryptomaterial.LinearLayout{
@@ -299,7 +299,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 		layout.Flexed(1, func(gtx C) D {
 			status := l.Theme.Label(values.TextSize16, values.String(values.StrUnknown))
 			txConfirmations := TxConfirmations(l, row.Transaction)
-			reqConf := l.WL.MultiWallet.WalletWithID(row.Transaction.WalletID).RequiredConfirmations()
+			reqConf := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID).RequiredConfirmations()
 			if txConfirmations < 1 {
 				status = l.Theme.Label(values.TextSize16, values.String(values.StrUnconfirmedTx))
 				status.Color = l.Theme.Color.GrayText1
@@ -363,7 +363,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 func TxConfirmations(l *load.Load, transaction sharedW.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
-		return (l.WL.MultiWallet.WalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
+		return (l.WL.AssetsManager.WalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}
 
 	return 0

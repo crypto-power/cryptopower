@@ -137,7 +137,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	mgr.Politeia = politeia
 	mgr.InstantSwap = instantSwap
 
-	// initialize the ExternalService. ExternalService provides multiwallet with
+	// initialize the ExternalService. ExternalService provides assetsManager with
 	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
 	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
 

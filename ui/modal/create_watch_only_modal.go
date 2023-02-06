@@ -128,7 +128,7 @@ func (cm *CreateWatchOnlyModal) Handle() {
 
 		// Check if there are existing wallets with identical Xpub.
 		// matchedWalletID == ID of the wallet whose xpub is identical to provided xpub.
-		matchedWalletID, err := cm.WL.MultiWallet.DCRWalletWithXPub(cm.extendedPubKey.Editor.Text())
+		matchedWalletID, err := cm.WL.AssetsManager.DCRWalletWithXPub(cm.extendedPubKey.Editor.Text())
 		if err != nil {
 			log.Errorf("Error checking xpub: %v", err)
 			cm.SetError(values.StringF(values.StrXpubKeyErr, err))

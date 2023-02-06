@@ -74,7 +74,7 @@ func NewExchangeSelector(l *load.Load) *ExchangeSelector {
 // SupportedExchanges returns a slice containing all the exchanges
 // Currently supported.
 func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
-	servers := es.WL.MultiWallet.InstantSwap.ExchangeServers()
+	servers := es.WL.AssetsManager.InstantSwap.ExchangeServers()
 
 	var exchange []*Exchange
 	for _, server := range servers {

@@ -64,9 +64,9 @@ func main() {
 		return
 	}
 
-	err = wal.InitMultiWallet()
+	err = wal.InitAssetsManager()
 	if err != nil {
-		log.Errorf("init multiwallet error: %v", err)
+		log.Errorf("init assetsManager error: %v", err)
 		return
 	}
 

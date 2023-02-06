@@ -40,7 +40,7 @@ type ProposalsPage struct {
 	ctxCancel  context.CancelFunc
 	proposalMu sync.RWMutex
 
-	multiWallet    *libwallet.AssetsManager
+	assetsManager  *libwallet.AssetsManager
 	listContainer  *widget.List
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
@@ -61,7 +61,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg := &ProposalsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ProposalsPageID),
-		multiWallet:      l.WL.MultiWallet,
+		assetsManager:    l.WL.AssetsManager,
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -100,7 +100,7 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
 	go pg.fetchProposals()
-	pg.isSyncing = pg.multiWallet.Politeia.IsSyncing()
+	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -164,7 +164,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	for pg.syncButton.Clicked() {
-		go pg.multiWallet.Politeia.Sync(context.Background())
+		go pg.assetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
 		//Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
@@ -334,7 +334,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 						} else if pg.syncCompleted {
 							text = values.String(values.StrUpdated)
 						} else {
-							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.multiWallet.Politeia.GetLastSyncedTimeStamp())
+							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.assetsManager.Politeia.GetLastSyncedTimeStamp())
 						}
 
 						lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
@@ -357,7 +357,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 		return
 	}
 	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err := pg.WL.MultiWallet.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalsPageID)
+	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
@@ -374,7 +374,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.fetchProposals()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.Politeia.RemoveNotificationListener(ProposalsPageID)
+				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
 				close(pg.ProposalNotifChan)
 				pg.ProposalNotificationListener = nil
 

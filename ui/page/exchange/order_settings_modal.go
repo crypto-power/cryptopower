@@ -103,10 +103,10 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
 
-	if osm.WL.MultiWallet.ExchangeConfigIsSet() {
-		exchangeConfig := osm.WL.MultiWallet.ExchangeConfig()
-		sourceWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.SourceWalletID))
-		destinationWallet := osm.WL.MultiWallet.WalletWithID(int(exchangeConfig.DestinationWalletID))
+	if osm.WL.AssetsManager.ExchangeConfigIsSet() {
+		exchangeConfig := osm.WL.AssetsManager.ExchangeConfig()
+		sourceWallet := osm.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
+		destinationWallet := osm.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
 
 		sourceCurrency := exchangeConfig.SourceAsset
 		toCurrency := exchangeConfig.DestinationAsset
@@ -213,7 +213,7 @@ func (osm *orderSettingsModal) Handle() {
 			destinationWalletSelector:  osm.destinationWalletSelector,
 		}
 
-		osm.WL.MultiWallet.SetExchangeConfig(osm.orderData.fromCurrency, int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), osm.orderData.toCurrency, int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
+		osm.WL.AssetsManager.SetExchangeConfig(osm.orderData.fromCurrency, int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), osm.orderData.toCurrency, int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}

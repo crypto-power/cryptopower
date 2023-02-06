@@ -494,18 +494,17 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			switch pg.assetTypeSelector.SelectedAssetType().Type.String() {
 			case libutils.DCRWalletAsset.String():
 				var walletWithXPub int
-				fmt.Println("[][][]] HEX", pg.watchOnlyWalletHex.Editor.Text())
-				walletWithXPub, err = pg.WL.MultiWallet.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				walletWithXPub, err = pg.WL.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					_, err = pg.WL.AssetsManager.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
 			case libutils.BTCWalletAsset.String():
 				var walletWithXPub int
-				walletWithXPub, err = pg.WL.MultiWallet.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				walletWithXPub, err = pg.WL.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.WL.MultiWallet.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					_, err = pg.WL.AssetsManager.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}

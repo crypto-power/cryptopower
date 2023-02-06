@@ -306,10 +306,10 @@ func (mp *MainPage) OnNavigatedTo() {
 	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 	case libutils.DCRWalletAsset:
 		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
-			if mp.WL.MultiWallet.Politeia.IsSyncing() {
+			if mp.WL.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
-			go mp.WL.MultiWallet.Politeia.Sync(mp.ctx)
+			go mp.WL.AssetsManager.Politeia.Sync(mp.ctx)
 		}
 	case libutils.BTCWalletAsset:
 	}
@@ -319,7 +319,7 @@ func (mp *MainPage) OnNavigatedTo() {
 
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
-	mp.currencyExchangeValue = mp.WL.MultiWallet.GetCurrencyConversionExchange()
+	mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 	if mp.currencyExchangeValue != values.DefaultExchangeValue {
 		go mp.fetchExchangeRate()
 	}
@@ -335,7 +335,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
 		market = values.BTCUSDTMarket
 	}
-	rate, err := mp.WL.MultiWallet.ExternalService.GetTicker(mp.currencyExchangeValue, market)
+	rate, err := mp.WL.AssetsManager.ExternalService.GetTicker(mp.currencyExchangeValue, market)
 	if err != nil {
 		log.Error(err)
 		mp.isFetchingExchangeRate = false
@@ -965,8 +965,8 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 			return
 		}
 
-		if mp.WL.MultiWallet.OpenedWalletsCount() > 1 {
-			wallet := mp.WL.MultiWallet.WalletWithID(t.Transaction.WalletID)
+		if mp.WL.AssetsManager.OpenedWalletsCount() > 1 {
+			wallet := mp.WL.AssetsManager.WalletWithID(t.Transaction.WalletID)
 			if wallet == nil {
 				return
 			}
@@ -1037,7 +1037,7 @@ func (mp *MainPage) listenForNotifications() {
 	}
 
 	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err = mp.WL.MultiWallet.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
+	err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
@@ -1050,7 +1050,7 @@ func (mp *MainPage) listenForNotifications() {
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
-					if mp.WL.MultiWallet.IsTransactionNotificationsOn() {
+					if mp.WL.AssetsManager.IsTransactionNotificationsOn() {
 						update := wallet.NewTransaction{
 							Transaction: n.Transaction,
 						}
@@ -1086,7 +1086,7 @@ func (mp *MainPage) listenForNotifications() {
 			case <-mp.ctx.Done():
 				selectedWallet.RemoveSyncProgressListener(MainPageID)
 				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
-				mp.WL.MultiWallet.Politeia.RemoveNotificationListener(MainPageID)
+				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)
 				close(mp.TxAndBlockNotifChan)

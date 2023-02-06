@@ -101,8 +101,8 @@ func (pg *WalletDexServerSelector) loadBTCWallets() {
 }
 
 func (pg *WalletDexServerSelector) loadBadWallets() {
-	dcrBadWallets := pg.WL.MultiWallet.DCRBadWallets()
-	btcBadWallets := pg.WL.MultiWallet.BTCBadWallets()
+	dcrBadWallets := pg.WL.AssetsManager.DCRBadWallets()
+	btcBadWallets := pg.WL.AssetsManager.BTCBadWallets()
 	pg.dcrBadWalletsList = make([]*badWalletListItem, 0, len(dcrBadWallets))
 	pg.btcBadWalletsList = make([]*badWalletListItem, 0, len(btcBadWallets))
 
@@ -137,7 +137,7 @@ func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
 		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
-			err := pg.WL.MultiWallet.DeleteBadWallet(badWalletID)
+			err := pg.WL.AssetsManager.DeleteBadWallet(badWalletID)
 			if err != nil {
 				errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errorModal)

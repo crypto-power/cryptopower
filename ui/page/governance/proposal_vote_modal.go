@@ -76,7 +76,7 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 			vm.ParentWindow().Reload()
 
 			go func() {
-				voteDetails, err := vm.WL.MultiWallet.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal().DCR, vm.proposal.Token)
+				voteDetails, err := vm.WL.AssetsManager.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal().DCR, vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
 					vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
@@ -155,7 +155,7 @@ func (vm *voteModal) sendVotes() {
 		SetNegativeButtonCallback(func() { vm.isVoting = false }).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			w := vm.walletSelector.selectedWallet.Internal().DCR
-			err := vm.WL.MultiWallet.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
+			err := vm.WL.AssetsManager.Politeia.CastVotes(ctx, w, libwallet.ConvertVotes(votes), vm.proposal.Token, password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -164,7 +164,7 @@ func (vm *voteModal) sendVotes() {
 			pm.Dismiss()
 			infoModal := modal.NewSuccessModal(vm.Load, values.String(values.StrVoteSent), modal.DefaultClickFunc())
 			vm.ParentWindow().ShowModal(infoModal)
-			go vm.WL.MultiWallet.Politeia.Sync(ctx)
+			go vm.WL.AssetsManager.Politeia.Sync(ctx)
 			pm.Dismiss()
 
 			return true

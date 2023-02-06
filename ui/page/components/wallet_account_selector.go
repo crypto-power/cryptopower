@@ -352,14 +352,14 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
-	wallets := sm.WL.MultiWallet.AllWallets()
+	wallets := sm.WL.AssetsManager.AllWallets()
 
 	if len(assetType) > 0 { // load specific wallet type
 		switch assetType[0] {
 		case utils.BTCWalletAsset:
-			wallets = sm.WL.MultiWallet.AllBTCWallets()
+			wallets = sm.WL.AssetsManager.AllBTCWallets()
 		case utils.DCRWalletAsset:
-			wallets = sm.WL.MultiWallet.AllDCRWallets()
+			wallets = sm.WL.AssetsManager.AllDCRWallets()
 		}
 	}
 
@@ -382,14 +382,14 @@ func (sm *selectorModal) OnResume() {
 
 func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
-	wallets := sm.WL.MultiWallet.AllWallets()
+	wallets := sm.WL.AssetsManager.AllWallets()
 
 	if len(assetType) > 0 { // load specific wallet type
 		switch assetType[0] {
 		case utils.BTCWalletAsset:
-			wallets = sm.WL.MultiWallet.AllBTCWallets()
+			wallets = sm.WL.AssetsManager.AllBTCWallets()
 		case utils.DCRWalletAsset:
-			wallets = sm.WL.MultiWallet.AllDCRWallets()
+			wallets = sm.WL.AssetsManager.AllDCRWallets()
 		}
 	}
 

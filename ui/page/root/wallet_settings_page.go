@@ -436,7 +436,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 			}
 
 			walletDeleted := func() {
-				if pg.WL.MultiWallet.LoadedWalletsCount() > 0 {
+				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
 					m.Dismiss()
 					pg.ParentNavigator().CloseCurrentPage()
 					onWalSelected := func() {
@@ -454,7 +454,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
+				err := pg.WL.AssetsManager.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -472,7 +472,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.MultiWallet.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
+					err := pg.WL.AssetsManager.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -641,8 +641,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	if pg.fetchProposal.Changed() {
 		if pg.fetchProposal.IsChecked() {
-			if !pg.WL.MultiWallet.Politeia.IsSyncing() {
-				go pg.WL.MultiWallet.Politeia.Sync(context.Background())
+			if !pg.WL.AssetsManager.Politeia.IsSyncing() {
+				go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 				// set proposal notification config when proposal fetching is enabled
 				pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
 				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
@@ -660,8 +660,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 				SetPositiveButtonText(values.String(values.StrDisable)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-					if pg.WL.MultiWallet.Politeia.IsSyncing() {
-						go pg.WL.MultiWallet.Politeia.StopSync()
+					if pg.WL.AssetsManager.Politeia.IsSyncing() {
+						go pg.WL.AssetsManager.Politeia.StopSync()
 					}
 
 					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, false)

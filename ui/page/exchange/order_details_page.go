@@ -48,7 +48,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		orderInfo:        order,
 	}
 
-	exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(order.Server)
+	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(order.Server)
 	if err != nil {
 		log.Error(err)
 	}
@@ -171,7 +171,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.FromCurrency, pg.orderInfo.InvoicedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						sourceWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.SourceWalletID)
+																						sourceWallet := pg.WL.AssetsManager.WalletWithID(pg.orderInfo.SourceWalletID)
 																						sourceWalletName := sourceWallet.GetWalletName()
 																						sourceAccount, _ := sourceWallet.GetAccount(pg.orderInfo.SourceAccountNumber)
 																						fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
@@ -205,7 +205,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.ToCurrency, pg.orderInfo.OrderedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						destinationWallet := pg.WL.MultiWallet.WalletWithID(pg.orderInfo.DestinationWalletID)
+																						destinationWallet := pg.WL.AssetsManager.WalletWithID(pg.orderInfo.DestinationWalletID)
 																						destinationWalletName := destinationWallet.GetWalletName()
 																						destinationAccount, _ := destinationWallet.GetAccount(pg.orderInfo.DestinationAccountNumber)
 																						toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
@@ -273,7 +273,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 }
 
 func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*instantswap.Order, error) {
-	orderInfo, err := pg.WL.MultiWallet.InstantSwap.GetOrderInfo(pg.exchange, UUID)
+	orderInfo, err := pg.WL.AssetsManager.InstantSwap.GetOrderInfo(pg.exchange, UUID)
 	if err != nil {
 		return nil, err
 	}

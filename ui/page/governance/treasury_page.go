@@ -32,7 +32,7 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet   *libwallet.AssetsManager
+	assetsManager *libwallet.AssetsManager
 	wallets       []sharedW.Asset
 	treasuryItems []*components.TreasuryItem
 
@@ -51,7 +51,7 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg := &TreasuryPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TreasuryPageID),
-		multiWallet:      l.WL.MultiWallet,
+		assetsManager:    l.WL.AssetsManager,
 		wallets:          l.WL.SortedWalletList(),
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
@@ -103,7 +103,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.MultiWallet.NetType() == libwallet.Testnet3 {
+		if pg.WL.AssetsManager.NetType() == libwallet.Testnet3 {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
@@ -136,7 +136,7 @@ func (pg *TreasuryPage) FetchPolicies() {
 
 	// Fetch (or re-fetch) treasury policies in background as this makes
 	// a network call. Refresh the window once the call completes.
-	key := hex.EncodeToString(pg.WL.MultiWallet.PiKeys()[0])
+	key := hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
 	go func() {
 		pg.treasuryItems = components.LoadPolicies(pg.Load, selectedWallet, key)
 		pg.isPolicyFetchInProgress = true

@@ -57,7 +57,7 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (sp *startPage) OnNavigatedTo() {
-	sp.WL.MultiWallet = sp.WL.Wallet.GetMultiWallet()
+	sp.WL.AssetsManager = sp.WL.Wallet.GetAssetsManager()
 
 	if sp.isQuitting {
 		log.Info("Displaying the shutdown wallets view page")
@@ -66,11 +66,11 @@ func (sp *startPage) OnNavigatedTo() {
 		return
 	}
 
-	if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
+	if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
 		sp.setLanguageSetting()
 		// Set the log levels.
-		sp.WL.MultiWallet.GetLogLevels()
-		if sp.WL.MultiWallet.IsStartupSecuritySet() {
+		sp.WL.AssetsManager.GetLogLevels()
+		if sp.WL.AssetsManager.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
 			go sp.openWallets("")
@@ -88,7 +88,7 @@ func (sp *startPage) unlock() {
 		PasswordHint(values.String(values.StrStartupPassword)).
 		SetNegativeButtonText(values.String(values.StrExit)).
 		SetNegativeButtonCallback(func() {
-			sp.WL.MultiWallet.Shutdown()
+			sp.WL.AssetsManager.Shutdown()
 			os.Exit(0)
 		}).
 		SetCancelable(false).
@@ -108,7 +108,7 @@ func (sp *startPage) unlock() {
 }
 
 func (sp *startPage) openWallets(password string) error {
-	err := sp.WL.MultiWallet.OpenWallets(password)
+	err := sp.WL.AssetsManager.OpenWallets(password)
 	if err != nil {
 		log.Errorf("Error opening wallet: %v", err)
 		// show err dialog
@@ -207,7 +207,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					if sp.loading {
 						loadStatus := sp.Theme.Label(values.TextSize20, values.String(values.StrLoading))
-						if sp.WL.MultiWallet.LoadedWalletsCount() > 0 {
+						if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
 							switch {
 							case sp.isQuitting:
 								loadStatus.Text = values.String(values.StrClosingWallet)
@@ -253,9 +253,9 @@ func (sp *startPage) layoutMobile(gtx C) D {
 }
 
 func (sp *startPage) setLanguageSetting() {
-	langPre := sp.WL.MultiWallet.GetLanguagePreference()
+	langPre := sp.WL.AssetsManager.GetLanguagePreference()
 	if langPre == "" {
-		sp.WL.MultiWallet.SetLanguagePreference(values.DefaultLangauge)
+		sp.WL.AssetsManager.SetLanguagePreference(values.DefaultLangauge)
 	}
 	values.SetUserLanguage(langPre)
 }

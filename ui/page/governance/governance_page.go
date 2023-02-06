@@ -87,7 +87,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	for pg.enableGovernanceBtn.Clicked() {
-		go pg.WL.MultiWallet.Politeia.Sync(context.Background())
+		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
 		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
 	}

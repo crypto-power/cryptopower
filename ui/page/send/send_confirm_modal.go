@@ -181,7 +181,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 				Top: values.MarginPadding16, Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						sendWallet := scm.WL.MultiWallet.WalletWithID(scm.sourceAccount.WalletID)
+						sendWallet := scm.WL.AssetsManager.WalletWithID(scm.sourceAccount.WalletID)
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								txt := scm.Theme.Body2(values.String(values.StrFrom))
@@ -237,7 +237,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 											layout.Rigid(scm.setWalletLogo),
 											layout.Rigid(func(gtx C) D {
 												return layout.Inset{}.Layout(gtx, func(gtx C) D {
-													destinationWallet := scm.WL.MultiWallet.WalletWithID(scm.destinationAccount.WalletID)
+													destinationWallet := scm.WL.AssetsManager.WalletWithID(scm.destinationAccount.WalletID)
 													txt := scm.Theme.Label(unit.Sp(16), destinationWallet.GetWalletName())
 													txt.Color = scm.Theme.Color.Text
 													txt.Font.Weight = text.Medium
