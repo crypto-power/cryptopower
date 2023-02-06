@@ -698,9 +698,8 @@ func (wallet *Wallet) deleteWallet(privatePassphrase string) error {
 		// before deleting it in the window.
 		// Will have to wait for Neutrino's update to provide a way to do this
 
-		// TODO: Added method to scan folders on application restart to
-		// delete deleted wallet data in windows
-		log.Errorf("Wallet deleted without remove data dir: %v", err)
+		// Dir of deleted wallet will clean on next time open application
+		log.Warn("Wallet deleted without completely deleting the data dir. It will be deleted on next restart")
 		err = nil
 	}
 	return err
