@@ -424,7 +424,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// create wallet action
-	if (pg.continueBtn.Clicked() || isSubmit) && pg.validInputs() {
+	if (pg.continueBtn.Clicked() || isSubmit) && pg.validCreateWalletInputs() {
 		go func() {
 			defer func() {
 				pg.isLoading = false
@@ -478,7 +478,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// restore wallet actions
-	if pg.restoreBtn.Clicked() && pg.validInputs() {
+	if pg.restoreBtn.Clicked() && pg.validRestoreWalletInputs() {
 		afterRestore := func() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
@@ -487,7 +487,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	}
 
 	// imported wallet click action control
-	if (pg.importBtn.Clicked() || isSubmit) && pg.validInputs() {
+	if (pg.importBtn.Clicked() || isSubmit) && pg.validRestoreWalletInputs() {
 		pg.showLoader = true
 		var err error
 		go func() {
@@ -541,9 +541,8 @@ func (pg *CreateWallet) passwordsMatch(editors ...*widget.Editor) bool {
 	return true
 }
 
-func (pg *CreateWallet) validInputs() bool {
+func (pg *CreateWallet) validCreateWalletInputs() bool {
 	pg.walletName.SetError("")
-	pg.watchOnlyWalletHex.SetError("")
 	pg.assetTypeError = pg.Theme.Body1("")
 
 	if pg.assetTypeSelector.SelectedAssetType() == nil {
@@ -567,7 +566,30 @@ func (pg *CreateWallet) validInputs() bool {
 		return validPassword && passwordsMatch
 	}
 
-	if pg.importBtn.Clicked() && pg.watchOnlyCheckBox.CheckBox.Value && !utils.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
+	return true
+}
+
+func (pg *CreateWallet) validRestoreWalletInputs() bool {
+	pg.walletName.SetError("")
+	pg.watchOnlyWalletHex.SetError("")
+	pg.assetTypeError = pg.Theme.Body1("")
+
+	if pg.assetTypeSelector.SelectedAssetType() == nil {
+		pg.assetTypeError = pg.Theme.Body1(values.String(values.StrSelectAssetType))
+		return false
+	}
+
+	if !utils.StringNotEmpty(pg.walletName.Editor.Text()) {
+		pg.walletName.SetError(values.String(values.StrEnterWalletName))
+		return false
+	}
+
+	if !utils.ValidateLengthName(pg.walletName.Editor.Text()) {
+		pg.walletName.SetError(values.String(values.StrWalletNameLengthError))
+		return false
+	}
+
+	if pg.watchOnlyCheckBox.CheckBox.Value && !utils.StringNotEmpty(pg.watchOnlyWalletHex.Editor.Text()) {
 		pg.watchOnlyWalletHex.SetError(values.String(values.StrEnterExtendedPubKey))
 		return false
 	}
