@@ -20,7 +20,12 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
-const SaveSeedPageID = "save_seed"
+const (
+	seedHexFormat  = "HEX"
+	seedWordFormat = "Word"
+	seedWIFFormat  = "WIF"
+	SaveSeedPageID = "save_seed"
+)
 
 type saveSeedRow struct {
 	rowIndex int
@@ -51,6 +56,8 @@ type SaveSeedPage struct {
 	mobileRows []saveSeedRow
 
 	redirectCallback Redirectfunc
+
+	seedFormatRadioGroup *widget.Enum
 }
 
 func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) *SaveSeedPage {
@@ -66,7 +73,8 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 			List: layout.List{Axis: layout.Vertical},
 		},
 
-		redirectCallback: redirect,
+		redirectCallback:     redirect,
+		seedFormatRadioGroup: new(widget.Enum),
 	}
 
 	pg.copy.TextSize = values.TextSize12
@@ -89,7 +97,9 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) OnNavigatedTo() {
-
+	if pg.seedFormatRadioGroup.Value == "" {
+		pg.seedFormatRadioGroup.Value = seedHexFormat
+	}
 	passwordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
@@ -313,12 +323,7 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 		Margin:      layout.Inset{Top: values.MarginPadding0, Bottom: values.MarginPadding16},
 		Padding:     layout.Inset{Top: values.MarginPadding5, Right: values.MarginPadding16, Bottom: values.MarginPadding16, Left: values.MarginPadding16},
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			label := pg.Theme.Label(values.TextSize14, values.String(values.StrSeedHex))
-			label.Color = pg.Theme.Color.GrayText1
-
-			return label.Layout(gtx)
-		}),
+		layout.Rigid(pg.layoutVoteChoice()),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -328,8 +333,14 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 						return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 							seedString := pg.seed
 							if seedString != "" {
-								hexString, _ := components.SeedWordsToHex(pg.seed)
-								pg.hexLabel.Text = hexString
+								switch pg.seedFormatRadioGroup.Value {
+								case seedHexFormat:
+									hexString, _ := components.SeedWordsToHex(pg.seed)
+									pg.hexLabel.Text = hexString
+								case seedWordFormat:
+									pg.hexLabel.Text = pg.seed[:117] + "..."
+								}
+
 							}
 							return pg.hexLabel.Layout(gtx)
 
@@ -349,7 +360,11 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 
 func (pg *SaveSeedPage) handleCopyEvent(gtx layout.Context) {
 	if pg.copy.Clicked() {
-		clipboard.WriteOp{Text: pg.hexLabel.Text}.Add(gtx.Ops)
+		if pg.seedFormatRadioGroup.Value == seedWordFormat {
+			clipboard.WriteOp{Text: pg.seed}.Add(gtx.Ops)
+		} else {
+			clipboard.WriteOp{Text: pg.hexLabel.Text}.Add(gtx.Ops)
+		}
 
 		pg.copy.Text = values.String(values.StrCopied)
 		pg.copy.Color = pg.Theme.Color.Success
@@ -408,4 +423,35 @@ func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string)
 			return seedWord.Layout(gtx)
 		}),
 	)
+}
+
+func (pg *SaveSeedPage) layoutVoteChoice() layout.Widget {
+	return func(gtx C) D {
+		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrCopySeed))
+				lbl.Font.Weight = text.SemiBold
+				return lbl.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, pg.layoutItems()...)
+				})
+			}),
+		)
+	}
+}
+
+func (pg *SaveSeedPage) layoutItems() []layout.FlexChild {
+	options := make([]layout.FlexChild, 0)
+
+	hexBtn := pg.Theme.RadioButton(pg.seedFormatRadioGroup, seedHexFormat, values.String(values.StrHex), pg.Theme.Color.DeepBlue, pg.Theme.Color.Primary)
+	hexRadioItem := layout.Rigid(hexBtn.Layout)
+	options = append(options, hexRadioItem)
+
+	wrdBtn := pg.Theme.RadioButton(pg.seedFormatRadioGroup, seedWordFormat, values.String(values.StrWord), pg.Theme.Color.DeepBlue, pg.Theme.Color.Primary)
+	wrdRadioItem := layout.Rigid(wrdBtn.Layout)
+	options = append(options, wrdRadioItem)
+
+	return options
 }
