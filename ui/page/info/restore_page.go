@@ -136,7 +136,7 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
@@ -148,7 +148,7 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 			layout.Rigid(func(gtx C) D {
 				if pg.toggleSeedInput.IsChecked() {
 					return layout.Inset{
-						Top: values.MarginPadding100,
+						Top: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.MatchParent,
