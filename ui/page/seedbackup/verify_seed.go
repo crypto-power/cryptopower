@@ -74,7 +74,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
 
-	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), "Enter wallet seed")
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
 	pg.seedInputEditor.Editor.SingleLine = false
 	pg.seedInputEditor.Editor.SetText("")
 
