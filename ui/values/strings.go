@@ -779,4 +779,5 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
+	StrOrderSubmitted                  = "orderSubmitted"
 )
