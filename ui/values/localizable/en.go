@@ -678,5 +678,5 @@ const EN = `
 "yourself" = "Yourself"
 "orderSubmitted" = "Order Submitted"
 "createWallet" = "Create wallet"
-"selectAssetType" = "Select asset type"
+"selectAssetType" = "Select Asset Type"
 `

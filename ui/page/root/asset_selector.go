@@ -23,7 +23,6 @@ type AssetTypeSelector struct {
 
 // AssetType models asset types.
 type AssetType struct {
-	Name string
 	Type utils.AssetType
 	Icon *cryptomaterial.Image
 }
@@ -58,7 +57,7 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 	ats.assetTypeModal = newAssetTypeModal(l).
 		assetTypeClicked(func(assetType *AssetType) {
 			if ats.selectedAssetType != nil {
-				if ats.selectedAssetType.Name != assetType.Name {
+				if ats.selectedAssetType.Type.String() != assetType.Type.String() {
 					ats.changed = true
 				}
 			}
@@ -79,7 +78,6 @@ func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetType {
 	var assetType []*AssetType
 	for _, at := range assetTypes {
 		asset := &AssetType{
-			Name: at.String(),
 			Type: at,
 			Icon: ats.setAssetTypeIcon(at.ToStringLower()),
 		}
@@ -129,7 +127,7 @@ func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetType)) *Asse
 func (ats *AssetTypeSelector) SetSelectedAssetTypeName(name string) {
 	at := ats.SupportedAssetTypes()
 	for _, v := range at {
-		if v.Name == name {
+		if v.Type.String() == name {
 			ats.SetSelectedAssetType(v)
 			return
 		}
@@ -170,7 +168,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			txt := ats.Theme.Label(values.TextSize16, values.String(values.StrSelectAssetType))
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
-				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Name)
+				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Type.String())
 				txt.Color = ats.Theme.Color.Text
 			}
 			return txt.Layout(gtx)
@@ -283,7 +281,7 @@ func (atm *assetTypeModal) modalListItemLayout(gtx C, assetTypeItem *assetTypeIt
 			}.Layout(gtx, assetTypeItem.item.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			assetTypeName := atm.Theme.Label(values.TextSize18, assetTypeItem.item.Name)
+			assetTypeName := atm.Theme.Label(values.TextSize18, assetTypeItem.item.Type.String())
 			assetTypeName.Color = atm.Theme.Color.Text
 			assetTypeName.Font.Weight = text.Normal
 			return assetTypeName.Layout(gtx)
