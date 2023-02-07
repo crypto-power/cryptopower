@@ -163,14 +163,24 @@ func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
 	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
 }
 
-func (mgr *AssetsManager) SetHttpAPIPrivacyUserApproval(apiType utils.HttpAPIType, isActive bool) {
-	dataKey := genKey(sharedW.UserPrivacyApprovalKey, apiType)
+func (mgr *AssetsManager) SetPrivacyMode(isActive bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.PrivacyModeConfigKey, isActive)
+}
+
+func (mgr *AssetsManager) GetPrivacyMode() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.PrivacyModeConfigKey, data)
+	return data
+}
+
+func (mgr *AssetsManager) SetHttpAPIPrivacyMode(apiType utils.HttpAPIType, isActive bool) {
+	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
 	mgr.db.SaveWalletConfigValue(dataKey, isActive)
 }
 
-func (mgr *AssetsManager) GetHttpAPIPrivacyUserApproval(apiType utils.HttpAPIType) bool {
+func (mgr *AssetsManager) GetHttpAPIPrivacyMode(apiType utils.HttpAPIType) bool {
 	var data bool
-	dataKey := genKey(sharedW.UserPrivacyApprovalKey, apiType)
+	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
 	mgr.db.ReadWalletConfigValue(dataKey, &data)
 	return data
 }

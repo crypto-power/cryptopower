@@ -16,7 +16,7 @@ const (
 	walletsMetadataBucketName = "metadata"    // Wallet level bucket.
 
 	LogLevelConfigKey           = "log_level"
-	UserPrivacyApprovalKey      = "web_privacy_approval"
+	PrivacyModeConfigKey        = "privacy_mode"
 	SpendUnconfirmedConfigKey   = "spend_unconfirmed"
 	CurrencyConversionConfigKey = "currency_conversion_option"
 

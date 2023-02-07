@@ -87,7 +87,7 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
-	return pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI)
+	return pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
@@ -257,7 +257,7 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	if !pg.isAgendaAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrAgendas))
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
 		})
 	}

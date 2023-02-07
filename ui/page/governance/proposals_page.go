@@ -93,7 +93,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 }
 
 func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI)
+	return pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI)
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -219,7 +219,7 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 	if !pg.isProposalsAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrProposal))
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
 		})
 	}

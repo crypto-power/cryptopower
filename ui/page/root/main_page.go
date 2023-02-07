@@ -318,7 +318,7 @@ func (mp *MainPage) OnNavigatedTo() {
 }
 
 func (mp *MainPage) isProposalsAPIAllowed() bool {
-	return mp.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI)
+	return mp.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI)
 }
 
 func (mp *MainPage) updateExchangeSetting() {

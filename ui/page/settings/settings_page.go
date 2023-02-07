@@ -53,9 +53,7 @@ type SettingsPage struct {
 	infoButton              cryptomaterial.IconButton
 
 	onlineCheckAPI *cryptomaterial.Switch
-	proposalsAPI   *cryptomaterial.Switch
-	agendasAPI     *cryptomaterial.Switch
-	treasuryAPI    *cryptomaterial.Switch
+	governanceAPI  *cryptomaterial.Switch
 	feeRateAPI     *cryptomaterial.Switch
 
 	isDarkModeOn      bool
@@ -74,9 +72,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
 		onlineCheckAPI:          l.Theme.Switch(),
-		proposalsAPI:            l.Theme.Switch(),
-		agendasAPI:              l.Theme.Switch(),
-		treasuryAPI:             l.Theme.Switch(),
+		governanceAPI:           l.Theme.Switch(),
 		feeRateAPI:              l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
@@ -245,13 +241,7 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 					return pg.clickableRow(gtx, exchangeRate)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.String(values.StrProposalsAPI), pg.proposalsAPI)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.String(values.StrAgendasAPI), pg.agendasAPI)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.String(values.StrTreasuryAPI), pg.treasuryAPI)
+					return pg.subSectionSwitch(gtx, values.String(values.StrGovernanceAPI), pg.governanceAPI)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrFeeRateAPI), pg.feeRateAPI)
@@ -388,27 +378,17 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 	if pg.onlineCheckAPI.Changed() {
 		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
+			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
 		}()
 	}
-	if pg.proposalsAPI.Changed() {
+	if pg.governanceAPI.Changed() {
 		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI, pg.proposalsAPI.IsChecked())
-		}()
-	}
-	if pg.agendasAPI.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI, pg.agendasAPI.IsChecked())
-		}()
-	}
-	if pg.treasuryAPI.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.TreasuryHttpAPI, pg.treasuryAPI.IsChecked())
+			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
 		}()
 	}
 	if pg.feeRateAPI.Changed() {
 		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyUserApproval(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
 		}()
 	}
 
@@ -547,12 +527,10 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.OnlineCheckHttpAPI))
+	pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI))
 	pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-	pg.setInitialSwitchStatus(pg.proposalsAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.PoliteiaHttpAPI))
-	pg.setInitialSwitchStatus(pg.agendasAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.AgendasHttpAPI))
-	pg.setInitialSwitchStatus(pg.treasuryAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.TreasuryHttpAPI))
-	pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyUserApproval(libutils.FeeRateHttpAPI))
+	pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI))
+	pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI))
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

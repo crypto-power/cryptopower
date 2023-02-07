@@ -21,10 +21,8 @@ const (
 	defaultHttpClientTimeout = 30 * time.Second
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
-	PoliteiaHttpAPI HttpAPIType = iota
+	GovernanceHttpAPI HttpAPIType = iota
 	FeeRateHttpAPI
-	AgendasHttpAPI
-	TreasuryHttpAPI
 	OnlineCheckHttpAPI
 	ExternalServiceHttpAPI
 )
@@ -68,7 +66,7 @@ func init() {
 	activeAPIs = make(map[string]*Client)
 }
 
-// newClient configures and return a new client
+// newClient configures and returns a new client
 func newClient() (c *Client) {
 	// Initialize context use to cancel all pending requests when shutdown request is made.
 	ctx, cancel := context.WithCancel(context.Background())
@@ -204,7 +202,7 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 }
 
 // IsOnline is a function to check whether an internet connection can be
-// established. If established bool true should be returned otherwise false.
+// established. If established, IsOnline should return true otherwise IsOnline returns false.
 // Default url to check connection is http://google.com.
 func IsOnline() bool {
 	// If the was wallet online, and the wallet's online status was updated in
