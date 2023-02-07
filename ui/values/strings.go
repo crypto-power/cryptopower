@@ -293,6 +293,7 @@ const (
 	StrEnterValidMsg                   = "enterValidMsg"
 	StrEnterWalDetails                 = "enterWalletDetails"
 	StrEnterWalletName                 = "enterWalletName"
+	StrEnterWalletSeed                 = "enterWalletSeed"
 	StrErrorMovingFunds                = "errorMovingFunds"
 	StrErrPassEmpty                    = "errPassEmpty"
 	StrEstimatedSize                   = "estimatedSize"

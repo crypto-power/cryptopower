@@ -64,7 +64,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType,
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
 
-	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), "Enter wallet seed")
 	pg.seedInputEditor.Editor.SingleLine = false
 	pg.seedInputEditor.Editor.SetText("")
 

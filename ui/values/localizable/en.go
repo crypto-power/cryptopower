@@ -183,6 +183,7 @@ const EN = `
 "enterValidMsg" = "Please enter a valid message to sign"
 "enterWalletDetails" = "Enter wallet details"
 "enterWalletName" = "Enter wallet name"
+"enterWalletSeed" = "Enter wallet seed"
 "enterXpubKey" = "Enter a valid extended PubKey"
 "errNoMixable" = "No mixable output"
 "errorMovingFunds" = "Error moving funds: Auto funds transfer has been skipped. Move funds to unmixed account manually from the send page. \n%s"
