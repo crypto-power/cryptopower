@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/message"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/assets"
@@ -65,15 +64,8 @@ type WriteClipboard struct {
 // app.NewWindow() which does not support being called more
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
-	var netType string
-	if wal.Net == string(libwallet.Testnet3) {
-		//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
-		netType = "testnet"
-	} else {
-		netType = wal.Net
-	}
-
-	giouiWindow := giouiApp.NewWindow(giouiApp.MinSize(values.AppWidth, values.AppHeight), giouiApp.Title(values.StringF(values.StrAppTitle, netType)))
+	appTitle := giouiApp.Title(values.StringF(values.StrAppTitle, wal.Net.Display()))
+	giouiWindow := giouiApp.NewWindow(giouiApp.MinSize(values.AppWidth, values.AppHeight), appTitle)
 	win := &Window{
 		Window:                giouiWindow,
 		navigator:             app.NewSimpleWindowNavigator(giouiWindow.Invalidate),

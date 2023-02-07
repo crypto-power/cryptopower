@@ -8,11 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -52,13 +49,7 @@ func NewStatPage(l *load.Load) *StatPage {
 		scrollbarList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		netType: l.WL.Wallet.Net,
-	}
-	if pg.netType == string(libwallet.Testnet3) {
-		pg.netType = "Testnet"
-	} else {
-		caser := cases.Title(language.Und)
-		pg.netType = caser.String(pg.netType)
+		netType: l.WL.Wallet.Net.Display(),
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)

@@ -8,7 +8,6 @@ import (
 	"gioui.org/text"
 
 	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -200,12 +199,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					netType := sp.WL.Wallet.Net
-					if sp.WL.MultiWallet.NetType() == libwallet.Testnet3 {
-						//TODO: A stringer could be used to do this conversion automatically on utils.NetworkType.
-						netType = "Testnet"
-					}
-
+					netType := sp.WL.Wallet.Net.Display()
 					nType := sp.Theme.Label(values.TextSize20, netType)
 					nType.Font.Weight = text.Medium
 					return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)
