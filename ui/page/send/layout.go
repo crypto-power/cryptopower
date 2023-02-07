@@ -47,13 +47,21 @@ func (pg *Page) initLayoutWidgets() {
 	pg.retryExchange.Inset = buttonInset
 
 	pg.editRates = pg.Theme.Button(values.String(values.StrEdit))
-	pg.fetchRates = pg.Theme.Button(values.String(values.StrFetchRates))
+
+	if pg.isFeerateAPIApproved() {
+		fetchRateBtn := pg.Theme.Button(values.String(values.StrFetchRates))
+		fetchRateBtn.TextSize = values.TextSize12
+		fetchRateBtn.Inset = buttonInset
+		pg.fetchRates = fetchRateBtn
+	} else {
+		str := values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
+		fetchRateLabel := pg.Theme.Label(values.TextSize14, str)
+		fetchRateLabel.Font.Weight = text.SemiBold
+		pg.fetchRates = fetchRateLabel
+	}
 
 	pg.editRates.TextSize = values.TextSize12
-	pg.fetchRates.TextSize = values.TextSize12
-
 	pg.editRates.Inset = buttonInset
-	pg.fetchRates.Inset = buttonInset
 
 	pg.ratesEditor = pg.Theme.Editor(new(widget.Editor), "in Sat/kvB")
 	pg.ratesEditor.HasCustomButton = false
@@ -476,6 +484,11 @@ func (pg *Page) widgetsRow(gtx layout.Context, items ...interface{}) layout.Flex
 		case cryptomaterial.Button:
 			widgets = append(widgets, layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, n.Layout)
+			}))
+		case cryptomaterial.Label:
+			widgets = append(widgets, layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Center.Layout(gtx, n.Layout)
 			}))
 		case cryptomaterial.Editor:
 			widgets = append(widgets, layout.Rigid(func(gtx C) D {

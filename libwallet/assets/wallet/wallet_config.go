@@ -15,8 +15,8 @@ const (
 	userConfigBucketName      = "user_config" // Asset level bucket.
 	walletsMetadataBucketName = "metadata"    // Wallet level bucket.
 
-	LogLevelConfigKey = "log_level"
-
+	LogLevelConfigKey           = "log_level"
+	PrivacyModeConfigKey        = "privacy_mode"
 	SpendUnconfirmedConfigKey   = "spend_unconfirmed"
 	CurrencyConversionConfigKey = "currency_conversion_option"
 

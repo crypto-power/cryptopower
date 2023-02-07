@@ -305,7 +305,7 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 	case libutils.DCRWalletAsset:
-		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) {
+		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isProposalsAPIAllowed() {
 			if mp.WL.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
@@ -315,6 +315,10 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 
 	mp.CurrentPage().OnNavigatedTo()
+}
+
+func (mp *MainPage) isProposalsAPIAllowed() bool {
+	return mp.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 func (mp *MainPage) updateExchangeSetting() {
@@ -639,7 +643,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID:
 								if !mp.WL.SelectedWallet.Wallet.IsSynced() {
-									return mp.pageDisableOnSync(gtx)
+									return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
+										values.String(values.StrFunctionUnavailable))
 								}
 								fallthrough
 							default:
@@ -649,33 +654,6 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 					)
 				}),
 			)
-		}),
-	)
-}
-
-func (mp *MainPage) pageDisableOnSync(gtx C) D {
-	return layout.Stack{Alignment: layout.N}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			currentPage := mp.CurrentPage()
-			if currentPage == nil {
-				return D{}
-			}
-			mgtx := gtx.Disabled()
-			return currentPage.Layout(mgtx)
-		}),
-		layout.Stacked(func(gtx C) D {
-			overlayColor := mp.Theme.Color.Gray3
-			overlayColor.A = 220
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			cryptomaterial.Fill(gtx, overlayColor)
-
-			lbl := mp.Theme.Label(values.TextSize20, values.String(values.StrFunctionUnavailable))
-			lbl.Font.Weight = text.SemiBold
-			lbl.Color = mp.Theme.Color.PageNavText
-			return layout.Center.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding200}.Layout(gtx, lbl.Layout)
-			})
 		}),
 	)
 }
@@ -976,7 +954,8 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 
 		initializeBeepNotification(notification)
 	case wallet.Proposal:
-		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false)
+		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
+			!mp.WL.AssetsManager.IsPrivacyModeOn()
 		if !proposalNotification {
 			return
 		}
@@ -1037,10 +1016,12 @@ func (mp *MainPage) listenForNotifications() {
 	}
 
 	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding politeia notification listener: %v", err)
-		return
+	if mp.isProposalsAPIAllowed() {
+		err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
+		if err != nil {
+			log.Errorf("Error adding politeia notification listener: %v", err)
+			return
+		}
 	}
 
 	go func() {

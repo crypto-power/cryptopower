@@ -12,7 +12,6 @@ import (
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -32,13 +31,6 @@ func EditorsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-func computePasswordStrength(pb *cryptomaterial.ProgressBarStyle, th *cryptomaterial.Theme, editors ...*widget.Editor) {
-	password := editors[0]
-	strength := utils.ShannonEntropy(password.Text()) / 4.0
-	pb.Progress = float32(strength * 100)
-	pb.Color = th.Color.Success
 }
 
 func HandleSubmitEvent(editors ...*widget.Editor) bool {

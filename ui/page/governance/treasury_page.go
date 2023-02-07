@@ -12,6 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -76,13 +77,19 @@ func (pg *TreasuryPage) ID() string {
 
 func (pg *TreasuryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	pg.FetchPolicies()
+	if pg.isTreasuryAPIAllowed() {
+		pg.FetchPolicies()
+	}
 }
 
 func (pg *TreasuryPage) OnNavigatedFrom() {
 	if pg.ctxCancel != nil {
 		pg.ctxCancel()
 	}
+}
+
+func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -149,6 +156,23 @@ func (pg *TreasuryPage) FetchPolicies() {
 }
 
 func (pg *TreasuryPage) Layout(gtx C) D {
+	// If proposals API is not allowed, display the overlay with the message.
+	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isTreasuryAPIAllowed() {
+		gtx = gtx.Disabled()
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+		})
+	}
+
+	mainChild := layout.Expanded(func(gtx C) D {
+		return pg.layout(gtx)
+	})
+
+	return layout.Stack{}.Layout(gtx, mainChild, overlay)
+}
+func (pg *TreasuryPage) layout(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

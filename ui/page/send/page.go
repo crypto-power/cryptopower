@@ -48,7 +48,9 @@ type Page struct {
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
 	editRates     cryptomaterial.Button
-	fetchRates    cryptomaterial.Button
+	// fetchRates displays either a button if the Fee rate API is allowed by the
+	// current network settings and a label if otherwise.
+	fetchRates interface{}
 
 	ratesEditor cryptomaterial.Editor
 	// editOrDisplay holds an editor or label component depending on the state of
@@ -195,7 +197,7 @@ func (pg *Page) OnNavigatedTo() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
+	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
 		go pg.selectedWallet.GetAPIFeeRate()
@@ -367,7 +369,9 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	pg.feeRateAPIHandler()
+	if pg.isFeerateAPIApproved() {
+		pg.feeRateAPIHandler()
+	}
 	pg.editsOrDisplayRatesHandler()
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
@@ -493,12 +497,19 @@ func (pg *Page) addRatesUnits(rates int64) string {
 	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }
 
+func (pg *Page) isFeerateAPIApproved() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libUtil.FeeRateHttpAPI)
+}
+
 func (pg *Page) editsOrDisplayRatesHandler() {
 	if pg.editRates.Clicked() {
 		// reset fields
 		pg.feeEstimationError("")
 		// Enable after saving is complete successfully
-		pg.fetchRates.SetEnabled(false)
+		fetchRatesBtn, ok := pg.fetchRates.(cryptomaterial.Button)
+		if ok {
+			fetchRatesBtn.SetEnabled(false)
+		}
 
 		if pg.editRates.Text == values.String(values.StrSave) {
 			text := pg.ratesEditor.Editor.Text()
@@ -514,7 +525,9 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 			pg.editOrDisplay = text
 			pg.ratesEditor.Editor.SetText("")
 			pg.editRates.Text = values.String(values.StrEdit)
-			pg.fetchRates.SetEnabled(true)
+			if ok {
+				fetchRatesBtn.SetEnabled(true)
+			}
 			return
 		}
 
@@ -525,7 +538,8 @@ func (pg *Page) editsOrDisplayRatesHandler() {
 }
 
 func (pg *Page) feeRateAPIHandler() {
-	if pg.fetchRates.Clicked() {
+	fetchRatesBtn, ok := pg.fetchRates.(cryptomaterial.Button)
+	if ok && fetchRatesBtn.Clicked() {
 		// reset fields
 		pg.feeEstimationError("")
 		// Enable after the fee rate selection is complete successfully.

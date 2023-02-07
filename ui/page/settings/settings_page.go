@@ -6,6 +6,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -50,6 +51,12 @@ type SettingsPage struct {
 	transactionNotification *cryptomaterial.Switch
 	backButton              cryptomaterial.IconButton
 	infoButton              cryptomaterial.IconButton
+	networkInfoButton       cryptomaterial.IconButton
+
+	onlineCheckAPI *cryptomaterial.Switch
+	governanceAPI  *cryptomaterial.Switch
+	feeRateAPI     *cryptomaterial.Switch
+	privacyActive  *cryptomaterial.Switch
 
 	isDarkModeOn      bool
 	isStartupPassword bool
@@ -66,6 +73,10 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
+		onlineCheckAPI:          l.Theme.Switch(),
+		governanceAPI:           l.Theme.Switch(),
+		feeRateAPI:              l.Theme.Switch(),
+		privacyActive:           l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -75,6 +86,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		appearanceMode:    l.Theme.NewClickable(false),
 	}
 
+	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.isDarkModeOn = pg.WL.AssetsManager.IsDarkModeOn()
 
@@ -131,6 +143,7 @@ func (pg *SettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
 func (pg *SettingsPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.general(),
+		pg.networkSettings(),
 		pg.security(),
 		pg.info(),
 	}
@@ -162,26 +175,47 @@ func (pg *SettingsPage) wrapSection(gtx C, title string, body layout.Widget) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Body2(title)
-							txt.Color = pg.Theme.Color.GrayText2
-							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, txt.Layout)
+							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										txt := pg.Theme.Body2(title)
+										txt.Color = pg.Theme.Color.GrayText2
+										return txt.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.W.Layout(gtx, func(gtx C) D {
+											if title == values.String(values.StrPrivacySettings) {
+												pg.networkInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
+												pg.networkInfoButton.Size = values.MarginPadding20
+												return pg.networkInfoButton.Layout(gtx)
+											}
+											return D{}
+										})
+									}),
+								)
+							})
 						}),
+
 						layout.Flexed(1, func(gtx C) D {
-							if title == values.String(values.StrSecurity) {
+							switch title {
+							case values.String(values.StrSecurity):
 								pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
 								pg.infoButton.Size = values.MarginPadding20
 								return layout.E.Layout(gtx, pg.infoButton.Layout)
-							}
-							if title == values.String(values.StrGeneral) {
-								layout.E.Layout(gtx, func(gtx C) D {
+
+							case values.String(values.StrGeneral):
+								return layout.E.Layout(gtx, func(gtx C) D {
 									appearanceIcon := pg.Theme.Icons.DarkMode
 									if pg.isDarkModeOn {
 										appearanceIcon = pg.Theme.Icons.LightMode
 									}
 									return pg.appearanceMode.Layout(gtx, appearanceIcon.Layout16dp)
 								})
+							case values.String(values.StrPrivacySettings):
+								return layout.E.Layout(gtx, pg.privacyActive.Layout)
+							default:
+								return D{}
 							}
-							return D{}
 						}),
 					)
 				}),
@@ -199,6 +233,32 @@ func (pg *SettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					languageRow := row{
+						title:     values.String(values.StrLanguage),
+						clickable: pg.language,
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
+					}
+					return pg.clickableRow(gtx, languageRow)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
+				}),
+			)
+		})
+	}
+}
+
+func (pg *SettingsPage) networkSettings() layout.Widget {
+	return func(gtx C) D {
+		return pg.wrapSection(gtx, values.String(values.StrPrivacySettings), func(gtx C) D {
+			if pg.WL.AssetsManager.IsPrivacyModeOn() {
+				return D{}
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrOnlineCheckAPI), pg.onlineCheckAPI)
+				}),
+				layout.Rigid(func(gtx C) D {
 					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 					l := values.ArrExchangeCurrencies[lKey]
 					exchangeRate := row{
@@ -209,15 +269,10 @@ func (pg *SettingsPage) general() layout.Widget {
 					return pg.clickableRow(gtx, exchangeRate)
 				}),
 				layout.Rigid(func(gtx C) D {
-					languageRow := row{
-						title:     values.String(values.StrLanguage),
-						clickable: pg.language,
-						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
-					}
-					return pg.clickableRow(gtx, languageRow)
+					return pg.subSectionSwitch(gtx, values.String(values.StrGovernanceAPI), pg.governanceAPI)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.StringF(values.StrTxNotification, ""), pg.transactionNotification)
+					return pg.subSectionSwitch(gtx, values.String(values.StrFeeRateAPI), pg.feeRateAPI)
 				}),
 			)
 		})
@@ -345,15 +400,36 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.transactionNotification.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
-		}()
+		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
+	}
+	if pg.onlineCheckAPI.Changed() {
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
+	}
+	if pg.governanceAPI.Changed() {
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
+	}
+	if pg.feeRateAPI.Changed() {
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+	}
+
+	if pg.privacyActive.Changed() {
+		pg.WL.AssetsManager.SetPrivacyMode(pg.privacyActive.IsChecked())
+		pg.updatePrivacySettings()
 	}
 
 	if pg.infoButton.Button.Clicked() {
 		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
+			PositiveButtonWidth(values.MarginPadding100)
+		pg.ParentWindow().ShowModal(info)
+	}
+
+	if pg.networkInfoButton.Button.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			SetContentAlignment(layout.Center, layout.Center, layout.Center).
+			Title(values.String(values.StrPrivacyModeInfo)).
+			Body(values.String(values.StrPrivacyModeInfoDesc)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
 	}
@@ -485,10 +561,23 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	transactionNotification := pg.WL.AssetsManager.IsTransactionNotificationsOn()
-	pg.transactionNotification.SetChecked(false)
-	if transactionNotification {
-		pg.transactionNotification.SetChecked(transactionNotification)
+	pg.updatePrivacySettings()
+}
+
+func (pg *SettingsPage) updatePrivacySettings() {
+	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
+	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
+		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
+		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
+	} else {
+		if pg.WL.SelectedWallet != nil {
+			go func() {
+				// Clear all the peers saved if the privacy mode is on.
+				pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+			}()
+		}
 	}
 }
 
@@ -500,3 +589,16 @@ func (pg *SettingsPage) updateSettingOptions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *SettingsPage) OnNavigatedFrom() {}
+
+func (pg *SettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, ischecked bool) {
+	switchComponent.SetChecked(false)
+	if ischecked {
+		switchComponent.SetChecked(ischecked)
+	}
+
+	// Always have the online wallet check set to true and disabled from making changes.
+	if pg.onlineCheckAPI == switchComponent {
+		pg.onlineCheckAPI.SetChecked(true)
+		pg.onlineCheckAPI.SetEnabled(false)
+	}
+}

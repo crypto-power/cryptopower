@@ -1,7 +1,6 @@
 package vsp
 
 import (
-	"bytes"
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
@@ -10,6 +9,7 @@ import (
 	"io"
 	"net/http"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 )
 
@@ -36,47 +36,49 @@ type BadRequestError struct {
 
 func (e *BadRequestError) Error() string { return e.Message }
 
-func (c *client) post(ctx context.Context, path string, addr stdaddr.Address, resp, req interface{}) error {
-	return c.do(ctx, "POST", path, addr, resp, req)
+func (c *client) post(ctx context.Context, path string, addr stdaddr.Address, response interface{}, body []byte) error {
+	return c.do(ctx, http.MethodPost, path, addr, response, body)
 }
 
 func (c *client) get(ctx context.Context, path string, resp interface{}) error {
-	return c.do(ctx, "GET", path, nil, resp, nil)
+	return c.do(ctx, http.MethodGet, path, nil, resp, nil)
 }
 
-func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Address, resp, req interface{}) error {
-	var reqBody io.Reader
+func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Address, response interface{}, body []byte) error {
+	var err error
 	var sig []byte
-	if method == "POST" {
-		body, err := json.Marshal(req)
-		if err != nil {
-			return fmt.Errorf("marshal request: %w", err)
-		}
+	reqConf := &utils.ReqConfig{
+		Method:  method,
+		HttpUrl: c.url + path,
+	}
+
+	if method == http.MethodPost {
 		sig, err = c.sign(ctx, string(body), addr)
 		if err != nil {
 			return fmt.Errorf("sign request: %w", err)
 		}
-		reqBody = bytes.NewReader(body)
+		reqConf.Payload = body
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, method, c.url+path, reqBody)
-	if err != nil {
-		return fmt.Errorf("new request: %w", err)
-	}
+
+	// Add cookies.
 	if sig != nil {
-		httpReq.Header.Set("VSP-Client-Signature", base64.StdEncoding.EncodeToString(sig))
+		reqConf.Cookies = append(reqConf.Cookies, &http.Cookie{
+			Name:  "VSP-Client-Signature",
+			Value: base64.StdEncoding.EncodeToString(sig),
+		})
 	}
-	reply, err := c.Do(httpReq)
-	if err != nil {
-		return fmt.Errorf("%s %s: %w", method, httpReq.URL.String(), err)
+
+	reply, err := utils.HttpRequest(reqConf, &response)
+	if err != nil && reply == nil {
+		// Status code errors are handled below.
+		return err
 	}
-	defer reply.Body.Close()
 
 	status := reply.StatusCode
 	is200 := status == 200
 	is4xx := status >= 400 && status <= 499
 	if !(is200 || is4xx) {
-		return fmt.Errorf("%s %s: http %v %s", method, httpReq.URL.String(),
-			status, http.StatusText(status))
+		return err
 	}
 	sigBase64 := reply.Header.Get("VSP-Server-Signature")
 	if sigBase64 == "" {
@@ -96,10 +98,10 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	var apiError *BadRequestError
 	if is4xx {
 		apiError = new(BadRequestError)
-		resp = apiError
+		response = apiError
 	}
-	if resp != nil {
-		err = json.Unmarshal(respBody, resp)
+	if response != nil {
+		err = json.Unmarshal(respBody, response)
 		if err != nil {
 			return fmt.Errorf("unmarshal respose body: %w", err)
 		}

@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 
@@ -204,7 +205,7 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
 		if err != nil {
-			return nil, fmt.Errorf("inavlid hash: %w", err)
+			return nil, fmt.Errorf("invalid hash: %w", err)
 		}
 		ticketHash = hash
 	}
@@ -229,8 +230,13 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	if asset.chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetUrl
 	}
-	_, _, err = utils.HttpGet(host, &dcrdataAgenda)
-	if err != nil {
+
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: host,
+	}
+
+	if _, err = utils.HttpRequest(req, &dcrdataAgenda); err != nil {
 		return nil, err
 	}
 

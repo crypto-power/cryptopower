@@ -11,6 +11,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -91,6 +92,10 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	return pg
 }
 
+func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+}
+
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -98,9 +103,12 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 // Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	pg.listenForSyncNotifications()
-	go pg.fetchProposals()
-	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+	if pg.isProposalsAPIAllowed() {
+		// Only proceed if allowed make Proposals API call.
+		pg.listenForSyncNotifications()
+		go pg.fetchProposals()
+		pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+	}
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -206,10 +214,24 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-		return pg.layoutMobile(gtx)
+	// If proposals API is not allowed, display the overlay with the message.
+	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isProposalsAPIAllowed() {
+		gtx = gtx.Disabled()
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+		})
 	}
-	return pg.layoutDesktop(gtx)
+
+	mainChild := layout.Expanded(func(gtx C) D {
+		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			return pg.layoutMobile(gtx)
+		}
+		return pg.layoutDesktop(gtx)
+	})
+
+	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
 func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {

@@ -4,13 +4,19 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+)
+
+const (
+	defaultVSPsUrl = "https://api.decred.org/?c=vsp"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
@@ -154,9 +160,20 @@ func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 }
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
-	vspInfoResponse := new(VspInfoResponse)
-	resp, respBytes, err := utils.HttpGet(vspHost+"/api/v3/vspinfo", vspInfoResponse)
+	req := &utils.ReqConfig{
+		Method:    http.MethodGet,
+		HttpUrl:   vspHost + "/api/v3/vspinfo",
+		IsRetByte: true,
+	}
+
+	var respBytes = []byte{}
+	resp, err := utils.HttpRequest(req, &respBytes)
 	if err != nil {
+		return nil, err
+	}
+
+	vspInfoResponse := new(VspInfoResponse)
+	if err := json.Unmarshal(respBytes, vspInfoResponse); err != nil {
 		return nil, err
 	}
 
@@ -176,8 +193,12 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 // defaultVSPs returns a list of known VSPs.
 func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
-	_, _, err := utils.HttpGet("https://api.decred.org/?c=vsp", &vspInfoResponse)
-	if err != nil {
+	req := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: defaultVSPsUrl,
+	}
+
+	if _, err := utils.HttpRequest(req, &vspInfoResponse); err != nil {
 		return nil, err
 	}
 

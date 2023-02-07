@@ -1,6 +1,8 @@
 package libwallet
 
 import (
+	"fmt"
+
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
@@ -154,11 +156,34 @@ func (mgr *AssetsManager) SetUserAgent(data string) {
 func (mgr *AssetsManager) IsTransactionNotificationsOn() bool {
 	var data bool
 	mgr.db.ReadWalletConfigValue(sharedW.TransactionNotificationConfigKey, &data)
-	return data
+	return data && mgr.IsPrivacyModeOn()
 }
 
 func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
 	mgr.db.SaveWalletConfigValue(sharedW.TransactionNotificationConfigKey, data)
+}
+
+func (mgr *AssetsManager) SetPrivacyMode(isActive bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.PrivacyModeConfigKey, isActive)
+}
+
+// If Privacy mode is on, no API calls that can be made.
+func (mgr *AssetsManager) IsPrivacyModeOn() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.PrivacyModeConfigKey, &data)
+	return data
+}
+
+func (mgr *AssetsManager) SetHttpAPIPrivacyMode(apiType utils.HttpAPIType, isActive bool) {
+	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
+	mgr.db.SaveWalletConfigValue(dataKey, isActive)
+}
+
+func (mgr *AssetsManager) IsHttpAPIPrivacyModeOn(apiType utils.HttpAPIType) bool {
+	var data bool
+	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
+	mgr.db.ReadWalletConfigValue(dataKey, &data)
+	return data && !mgr.IsPrivacyModeOn()
 }
 
 func (mgr *AssetsManager) GetLogLevels() {
@@ -232,4 +257,8 @@ func (mgr *AssetsManager) ClearExchangeConfig() error {
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeDestinationAccountConfigKey)
 
 	return nil
+}
+
+func genKey(prefix, identifier interface{}) string {
+	return fmt.Sprintf("%v-%v", prefix, identifier)
 }

@@ -1,12 +1,13 @@
 package ext
 
 import (
-	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v3"
 	apiTypes "github.com/decred/dcrdata/v7/api/types"
@@ -16,7 +17,6 @@ type (
 	// Service provide functionality for retrieving data from
 	// 3rd party services or external resources.
 	Service struct {
-		client      *Client
 		chainParams *chaincfg.Params
 	}
 )
@@ -61,37 +61,35 @@ var (
 
 // NewService configures and return a news instance of the service type.
 func NewService(chainParams *chaincfg.Params) *Service {
-	client := NewClient()
-	client.RequestFilter = func(reqConfig *ReqConfig) (req *http.Request, err error) {
-		req, err = http.NewRequest(reqConfig.method, reqConfig.url, bytes.NewBuffer(reqConfig.payload))
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if reqConfig.method == http.MethodPost || reqConfig.method == http.MethodPut {
-			req.Header.Add("Content-Type", "application/json;charset=utf-8")
-		}
-		req.Header.Add("Accept", "application/json")
-
-		return
-	}
-
 	return &Service{
-		client:      client,
 		chainParams: chainParams,
 	}
 }
 
+// Setbackend sets the appropriate URL scheme and authority for the backend resource.
+func setBackend(backend, net, rawUrl string) string {
+	// Check if URL scheme and authority is already set.
+	if strings.HasPrefix(rawUrl, "http") {
+		return rawUrl
+	}
+
+	// Prepend URL scheme and authority to the URL.
+	if authority, ok := backendUrl[net][backend]; ok {
+		rawUrl = fmt.Sprintf("%s%s", authority, rawUrl)
+	}
+	return rawUrl
+}
+
 // GetBestBlock returns the best block height as int32.
 func (s *Service) GetBestBlock() int32 {
-	reqConf := &ReqConfig{
-		method:  http.MethodGet,
-		url:     "api/block/best/height",
-		retByte: true,
+	reqConf := &utils.ReqConfig{
+		Method:    http.MethodGet,
+		HttpUrl:   setBackend(DcrData, s.chainParams.Name, "api/block/best/height"),
+		IsRetByte: true,
 	}
 
 	var resp []byte
-	err := s.client.Do(DcrData, s.chainParams.Name, reqConf, &resp)
+	_, err := utils.HttpRequest(reqConf, &resp)
 	if err != nil {
 		log.Error(err)
 		return -1
@@ -108,13 +106,13 @@ func (s *Service) GetBestBlock() int32 {
 
 // GetBestBlockTimeStamp returns best block time, as unix timestamp.
 func (s *Service) GetBestBlockTimeStamp() int64 {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/block/best?txtotals=false",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/block/best?txtotals=false"),
 	}
 
 	resp := &BlockDataBasic{}
-	err := s.client.Do(DcrData, s.chainParams.Name, reqConf, resp)
+	_, err := utils.HttpRequest(reqConf, resp)
 	if err != nil {
 		log.Error(err)
 		return -1
@@ -124,32 +122,35 @@ func (s *Service) GetBestBlockTimeStamp() int64 {
 
 // GetCurrentAgendaStatus returns the current agenda and its status.
 func (s *Service) GetCurrentAgendaStatus() (agenda *chainjson.GetVoteInfoResult, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/stake/vote/info",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/stake/vote/info"),
 	}
 	agenda = &chainjson.GetVoteInfoResult{}
-	return agenda, s.client.Do(DcrData, s.chainParams.Name, reqConf, agenda)
+	_, err = utils.HttpRequest(reqConf, agenda)
+	return agenda, err
 }
 
 // GetAgendas returns all agendas high level details
 func (s *Service) GetAgendas() (agendas *[]apiTypes.AgendasInfo, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/agendas",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/agendas"),
 	}
 	agendas = &[]apiTypes.AgendasInfo{}
-	return agendas, s.client.Do(DcrData, s.chainParams.Name, reqConf, agendas)
+	_, err = utils.HttpRequest(reqConf, agendas)
+	return agendas, err
 }
 
 // GetAgendaDetails returns the details for agenda with agendaId
 func (s *Service) GetAgendaDetails(agendaId string) (agendaDetails *AgendaAPIResponse, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/agenda/" + agendaId,
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/agenda/"+agendaId),
 	}
 	agendaDetails = &AgendaAPIResponse{}
-	return agendaDetails, s.client.Do(DcrData, s.chainParams.Name, reqConf, agendaDetails)
+	_, err = utils.HttpRequest(reqConf, agendaDetails)
+	return agendaDetails, err
 }
 
 // GetTreasuryBalance returns the current treasury balance as int64.
@@ -164,90 +165,98 @@ func (s *Service) GetTreasuryBalance() (bal int64, err error) {
 // GetTreasuryDetails the current tresury balance, spent amount, added amount, and tx count for the
 // treasury.
 func (s *Service) GetTreasuryDetails() (treasuryDetails *TreasuryDetails, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/treasury/balance",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/treasury/balance"),
 	}
 	treasuryDetails = &TreasuryDetails{}
-	return treasuryDetails, s.client.Do(DcrData, s.chainParams.Name, reqConf, treasuryDetails)
+	_, err = utils.HttpRequest(reqConf, treasuryDetails)
+	return treasuryDetails, err
 }
 
 // GetExchangeRate fetches exchange rate data summary
 func (s *Service) GetExchangeRate() (rates *ExchangeRates, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/exchangerate",
+	reqConf := &utils.ReqConfig{
+		Method: http.MethodGet,
+		// Use mainnet base url for exchange rate endpoint, there is no Dcrdata
+		// support for testnet ExchangeRate.
+		HttpUrl: setBackend(DcrData, chaincfg.MainNetParams().Name, "api/exchangerate"),
 	}
 	rates = &ExchangeRates{}
-	// Use mainnet base url for exchange rate endpoint, there is no Dcrdata support for
-	// testnet ExchangeRate.
-	return rates, s.client.Do(DcrData, chaincfg.MainNetParams().Name, reqConf, rates)
+	_, err = utils.HttpRequest(reqConf, rates)
+	return rates, err
 }
 
 // GetExchanges fetches the current known state of all exchanges
 func (s *Service) GetExchanges() (state *ExchangeState, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/exchanges",
+	reqConf := &utils.ReqConfig{
+		Method: http.MethodGet,
+		// Use mainnet base url for exchanges endpoint, no Dcrdata support for Exchanges
+		// on testnet.
+		HttpUrl: setBackend(DcrData, chaincfg.MainNetParams().Name, "api/exchanges"),
 	}
 	state = &ExchangeState{}
-	// Use mainnet base url for exchanges endpoint, no Dcrdata support for Exchanges
-	// on testnet.
-	return state, s.client.Do(DcrData, chaincfg.MainNetParams().Name, reqConf, state)
+	_, err = utils.HttpRequest(reqConf, state)
+	return state, err
 }
 
 // GetTicketFeeRateSummary returns the current ticket fee rate summary. See dcrdata's MempoolTicketFeeInfo for the specific
 // data returned.
 func (s *Service) GetTicketFeeRateSummary() (ticketInfo *apiTypes.MempoolTicketFeeInfo, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/mempool/sstx",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx"),
 	}
 	ticketInfo = &apiTypes.MempoolTicketFeeInfo{}
-	return ticketInfo, s.client.Do(DcrData, s.chainParams.Name, reqConf, ticketInfo)
+	_, err = utils.HttpRequest(reqConf, ticketInfo)
+	return ticketInfo, err
 }
 
 // GetTicketFeeRate returns top 25 ticket fees. Note: in cases where n < 25 and n == number of all ticket fees,
 // It returns n.
 func (s *Service) GetTicketFeeRate() (ticketFeeRate *apiTypes.MempoolTicketFees, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/mempool/sstx/fees",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/fees"),
 	}
 	ticketFeeRate = &apiTypes.MempoolTicketFees{}
-	return ticketFeeRate, s.client.Do(DcrData, s.chainParams.Name, reqConf, ticketFeeRate)
+	_, err = utils.HttpRequest(reqConf, ticketFeeRate)
+	return ticketFeeRate, err
 }
 
 // GetNHighestTicketFeeRate returns the {nHighest} ticket fees. For cases where total number of ticker is less than
 // {nHighest} it returns the fee rate for the total number of tickets.
 func (s *Service) GetNHighestTicketFeeRate(nHighest int) (ticketFeeRate *apiTypes.MempoolTicketFees, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/mempool/sstx/fees/" + strconv.Itoa(nHighest),
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/fees/"+strconv.Itoa(nHighest)),
 	}
 	ticketFeeRate = &apiTypes.MempoolTicketFees{}
-	return ticketFeeRate, s.client.Do(DcrData, s.chainParams.Name, reqConf, ticketFeeRate)
+	_, err = utils.HttpRequest(reqConf, ticketFeeRate)
+	return ticketFeeRate, err
 }
 
 // GetTicketDetails returns all ticket details see drcdata's MempoolTicketDetails for the spcific information
 // returned.
 func (s *Service) GetTicketDetails() (ticketDetails *apiTypes.MempoolTicketDetails, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/mempool/sstx/details",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/details"),
 	}
 	ticketDetails = &apiTypes.MempoolTicketDetails{}
-	return ticketDetails, s.client.Do(DcrData, s.chainParams.Name, reqConf, ticketDetails)
+	_, err = utils.HttpRequest(reqConf, ticketDetails)
+	return ticketDetails, err
 }
 
 // GetNHighestTicketDetails returns the {nHighest} ticket details.
 func (s *Service) GetNHighestTicketDetails(nHighest int) (ticketDetails *apiTypes.MempoolTicketDetails, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/mempool/sstx/details/" + strconv.Itoa(nHighest),
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(DcrData, s.chainParams.Name, "api/mempool/sstx/details/"+strconv.Itoa(nHighest)),
 	}
 	ticketDetails = &apiTypes.MempoolTicketDetails{}
-	return ticketDetails, s.client.Do(DcrData, s.chainParams.Name, reqConf, ticketDetails)
+	_, err = utils.HttpRequest(reqConf, ticketDetails)
+	return ticketDetails, err
 }
 
 // GetAddress returns the balances and transactions of an address.
@@ -260,20 +269,21 @@ func (s *Service) GetAddress(address string) (addressState *AddressState, err er
 
 	// on testnet, address prefix - first byte - should match testnet identifier
 	if s.chainParams.Name == chaincfg.TestNet3Params().Name && address[:1] != testnetAddressIndetifier {
-		return nil, errors.New("Net is testnet3 and xpub is not in testnet format")
+		return nil, errors.New("net is testnet3 and xpub is not in testnet format")
 	}
 
 	// on mainnet, address prefix - first byte - should match mainnet identifier
 	if s.chainParams.Name == chaincfg.MainNetParams().Name && address[:1] != mainnetAddressIdentifier {
-		return nil, errors.New("Net is mainnet and xpub is not in mainnet format")
+		return nil, errors.New("net is mainnet and xpub is not in mainnet format")
 	}
 
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/v2/address/" + address,
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(BlockBook, s.chainParams.Name, "api/v2/address/"+address),
 	}
 	addressState = &AddressState{}
-	return addressState, s.client.Do(BlockBook, s.chainParams.Name, reqConf, addressState)
+	_, err = utils.HttpRequest(reqConf, addressState)
+	return addressState, err
 }
 
 // GetXpub Returns balances and transactions of an xpub.
@@ -284,20 +294,21 @@ func (s *Service) GetXpub(xPub string) (xPubBalAndTxs *XpubBalAndTxs, err error)
 
 	// on testnet Xpub prefix - first byte - should match testnet identifier
 	if s.chainParams.Name == chaincfg.TestNet3Params().Name && xPub[:1] != testnetXpubIdentifier {
-		return nil, errors.New("Net is testnet3 and xpub is not in testnet format")
+		return nil, errors.New("net is testnet3 and xpub is not in testnet format")
 	}
 
 	// on mainnet xpup prefix - first byte - should match mainnet identifier
 	if s.chainParams.Name == chaincfg.MainNetParams().Name && xPub[:1] != mainnetXpubIdentifier {
-		return nil, errors.New("Net is mainnet and xpub is not in mainnet format")
+		return nil, errors.New("net is mainnet and xpub is not in mainnet format")
 	}
 
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "api/v2/xpub/" + xPub,
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(BlockBook, s.chainParams.Name, "api/v2/xpub/"+xPub),
 	}
 	xPubBalAndTxs = &XpubBalAndTxs{}
-	return xPubBalAndTxs, s.client.Do(BlockBook, s.chainParams.Name, reqConf, xPubBalAndTxs)
+	_, err = utils.HttpRequest(reqConf, xPubBalAndTxs)
+	return xPubBalAndTxs, err
 }
 
 // GetTicker returns market ticker data for the supported exchanges.
@@ -308,7 +319,7 @@ func (s *Service) GetTicker(exchange string, market string) (ticker *Ticker, err
 	case Binance:
 		symbArr := strings.Split(market, "-")
 		if len(symbArr) != 2 {
-			return ticker, errors.New("Invalid symbol format")
+			return ticker, errors.New("invalid symbol format")
 		}
 		symb := strings.Join(symbArr[:], "")
 		return s.getBinanceTicker(symb)
@@ -318,16 +329,17 @@ func (s *Service) GetTicker(exchange string, market string) (ticker *Ticker, err
 		return s.getKucoinTicker(market)
 	}
 
-	return nil, errors.New("Unknown exchange")
+	return nil, errors.New("unknown exchange")
 }
 
 func (s *Service) getBinanceTicker(market string) (ticker *Ticker, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "/api/v3/ticker/24hr?symbol=" + strings.ToUpper(market),
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(Binance, s.chainParams.Name, "/api/v3/ticker/24hr?symbol="+strings.ToUpper(market)),
 	}
+
 	tempTicker := &BinanceTicker{}
-	err = s.client.Do(Binance, chaincfg.MainNetParams().Name, reqConf, tempTicker)
+	_, err = utils.HttpRequest(reqConf, tempTicker)
 	if err != nil {
 		return
 	}
@@ -343,12 +355,13 @@ func (s *Service) getBinanceTicker(market string) (ticker *Ticker, err error) {
 }
 
 func (s *Service) getBittrexTicker(market string) (ticker *Ticker, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "/markets/" + strings.ToUpper(market) + "/ticker",
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(Bittrex, s.chainParams.Name, "/markets/"+strings.ToUpper(market)+"/ticker"),
 	}
+
 	bTicker := &BittrexTicker{}
-	err = s.client.Do(Bittrex, chaincfg.MainNetParams().Name, reqConf, bTicker)
+	_, err = utils.HttpRequest(reqConf, bTicker)
 	if err != nil {
 		return
 	}
@@ -364,12 +377,13 @@ func (s *Service) getBittrexTicker(market string) (ticker *Ticker, err error) {
 }
 
 func (s *Service) getKucoinTicker(market string) (ticker *Ticker, err error) {
-	reqConf := &ReqConfig{
-		method: http.MethodGet,
-		url:    "/api/v1/market/orderbook/level1?symbol=" + strings.ToUpper(market),
+	reqConf := &utils.ReqConfig{
+		Method:  http.MethodGet,
+		HttpUrl: setBackend(KuCoin, s.chainParams.Name, "/api/v1/market/orderbook/level1?symbol="+strings.ToUpper(market)),
 	}
+
 	kTicker := &KuCoinTicker{}
-	err = s.client.Do(KuCoin, chaincfg.MainNetParams().Name, reqConf, kTicker)
+	_, err = utils.HttpRequest(reqConf, kTicker)
 	if err != nil {
 		return
 	}
@@ -378,7 +392,7 @@ func (s *Service) getKucoinTicker(market string) (ticker *Ticker, err error) {
 	// We should filter those instances using the sequence number.
 	// When sequence is 0, no ticker data was returned.
 	if kTicker.Data.Sequence == 0 {
-		return nil, errors.New("An error occurred. Most likely unsupported Kucoin market.")
+		return nil, errors.New("error occurred. Most likely unsupported Kucoin market")
 	}
 
 	ticker = &Ticker{

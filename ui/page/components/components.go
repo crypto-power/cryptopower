@@ -14,9 +14,11 @@ import (
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
@@ -624,6 +626,35 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 				label := l.Theme.Body2(values.String(values.StrWebURL))
 				label.Color = l.Theme.Color.GrayText2
 				return label.Layout(gtx)
+			})
+		}),
+	)
+}
+
+// DisablePageWithOverlay disables the provided page by highlighting a message why
+// the page is disabled and adding a background color overlay that blocks any
+// page event being triggered.
+func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string) D {
+	return layout.Stack{Alignment: layout.N}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			if currentPage == nil {
+				return D{}
+			}
+			mgtx := gtx.Disabled()
+			return currentPage.Layout(mgtx)
+		}),
+		layout.Stacked(func(gtx C) D {
+			overlayColor := l.Theme.Color.Gray3
+			overlayColor.A = 220
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+			cryptomaterial.Fill(gtx, overlayColor)
+
+			lbl := l.Theme.Label(values.TextSize20, txt)
+			lbl.Font.Weight = text.SemiBold
+			lbl.Color = l.Theme.Color.PageNavText
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding200}.Layout(gtx, lbl.Layout)
 			})
 		}),
 	)
