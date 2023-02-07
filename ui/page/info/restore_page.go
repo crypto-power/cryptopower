@@ -2,15 +2,19 @@ package info
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
+	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libUtils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -31,13 +35,17 @@ type Restore struct {
 	// WindowNavigator if this page is displayed from the StartPage, otherwise
 	// the ParentNavigator is the MainPage.
 	*app.GenericPageModal
-	restoreComplete func()
-	tabList         *cryptomaterial.ClickableList
-	tabIndex        int
-	backButton      cryptomaterial.IconButton
-	seedRestorePage *SeedRestore
-	walletName      string
-	walletType      utils.AssetType
+	restoreComplete   func()
+	tabList           *cryptomaterial.ClickableList
+	tabIndex          int
+	backButton        cryptomaterial.IconButton
+	seedRestorePage   *SeedRestore
+	walletName        string
+	walletType        utils.AssetType
+	toggleSeedInput   *cryptomaterial.Switch
+	seedInputEditor   cryptomaterial.Editor
+	confirmSeedButton cryptomaterial.Button
+	restoreInProgress bool
 }
 
 func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType, onRestoreComplete func()) *Restore {
@@ -50,10 +58,20 @@ func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType,
 		restoreComplete:  onRestoreComplete,
 		walletName:       walletName,
 		walletType:       walletType,
+		toggleSeedInput:  l.Theme.Switch(),
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
+
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
+	pg.seedInputEditor.Editor.SingleLine = false
+	pg.seedInputEditor.Editor.SetText("")
+
+	pg.confirmSeedButton = l.Theme.Button("")
+	pg.confirmSeedButton.Font.Weight = text.Medium
+	pg.confirmSeedButton.SetEnabled(false)
+
 	return pg
 }
 
@@ -62,6 +80,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType,
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
+	pg.toggleSeedInput.SetChecked(false)
 	pg.seedRestorePage.OnNavigatedTo()
 	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
@@ -116,7 +135,61 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.toggleSeedInput.Layout)
+						}),
+						layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrPasteSeedWords)).Layout),
+					)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				if pg.toggleSeedInput.IsChecked() {
+					return layout.Inset{
+						Top: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.MatchParent,
+							Orientation: layout.Vertical,
+							Margin:      layout.Inset{Bottom: values.MarginPadding16},
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx layout.Context) D {
+											return layout.Inset{
+												Left:  values.MarginPadding16,
+												Right: values.MarginPadding16,
+												Top:   values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+												return pg.seedInputEditor.Layout(gtx)
+											})
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Flex{}.Layout(gtx,
+												layout.Flexed(1, func(gtx C) D {
+													return layout.E.Layout(gtx, func(gtx C) D {
+														return layout.Inset{
+															Left:   values.MarginPadding16,
+															Right:  values.MarginPadding16,
+															Top:    values.MarginPadding16,
+															Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+															pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
+															return pg.confirmSeedButton.Layout(gtx)
+														})
+													})
+												}),
+											)
+										}),
+									)
+
+								})
+							}),
+						)
+					})
+				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
 			}),
 		)
@@ -222,6 +295,16 @@ func (pg *Restore) HandleUserInteractions() {
 	if pg.tabIndex == 0 {
 		pg.seedRestorePage.HandleUserInteractions()
 	}
+
+	if len(strings.TrimSpace(pg.seedInputEditor.Editor.Text())) != 0 {
+		pg.confirmSeedButton.SetEnabled(true)
+	}
+
+	if pg.confirmSeedButton.Clicked() {
+		if !pg.restoreInProgress {
+			go pg.restoreFromSeedEditor()
+		}
+	}
 }
 
 func (pg *Restore) showHexRestoreModal() {
@@ -316,4 +399,63 @@ func (pg *Restore) HandleKeyPress(evt *key.Event) {
 	if pg.tabIndex == 0 {
 		pg.seedRestorePage.HandleKeyPress(evt)
 	}
+}
+
+func (pg *Restore) restoreFromSeedEditor() {
+	pg.restoreInProgress = true
+	defer func() {
+		pg.restoreInProgress = false
+		pg.seedInputEditor.Editor.SetText("")
+	}()
+
+	seed := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
+	if !sharedW.VerifySeed(seed) {
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
+		return
+	}
+
+	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(pg.walletType, seed)
+	if err != nil {
+		log.Error(err)
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedValidationFailed), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
+		return
+	}
+
+	if walletWithSameSeed != -1 {
+		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
+		pg.ParentWindow().ShowModal(errModal)
+		return
+	}
+
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		Title(values.String(values.StrEnterWalDetails)).
+		EnableName(false).
+		ShowWalletInfoTip(true).
+		SetParent(pg).
+		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
+			_, err := pg.WL.MultiWallet.RestoreWallet(pg.walletType, pg.walletName, seed, password, sharedW.PassphraseTypePass)
+			if err != nil {
+				errString := err.Error()
+				if err.Error() == libUtils.ErrExist {
+					errString = values.StringF(values.StrWalletExist, pg.walletName)
+				}
+				m.SetError(errString)
+				m.SetLoading(false)
+				return false
+			}
+
+			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
+			pg.ParentWindow().ShowModal(infoModal)
+			m.Dismiss()
+			if pg.restoreComplete == nil {
+				pg.ParentNavigator().CloseCurrentPage()
+			} else {
+				pg.restoreComplete()
+			}
+			return true
+		})
+	pg.ParentWindow().ShowModal(walletPasswordModal)
+
 }
