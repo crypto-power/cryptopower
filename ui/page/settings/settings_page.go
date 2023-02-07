@@ -51,6 +51,7 @@ type SettingsPage struct {
 	transactionNotification *cryptomaterial.Switch
 	backButton              cryptomaterial.IconButton
 	infoButton              cryptomaterial.IconButton
+	networkInfoButton       cryptomaterial.IconButton
 
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
@@ -85,6 +86,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		appearanceMode:    l.Theme.NewClickable(false),
 	}
 
+	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.isDarkModeOn = pg.WL.AssetsManager.IsDarkModeOn()
 
@@ -173,10 +175,27 @@ func (pg *SettingsPage) wrapSection(gtx C, title string, body layout.Widget) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Body2(title)
-							txt.Color = pg.Theme.Color.GrayText2
-							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, txt.Layout)
+							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										txt := pg.Theme.Body2(title)
+										txt.Color = pg.Theme.Color.GrayText2
+										return txt.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.W.Layout(gtx, func(gtx C) D {
+											if title == values.String(values.StrPrivacySettings) {
+												pg.networkInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
+												pg.networkInfoButton.Size = values.MarginPadding20
+												return pg.networkInfoButton.Layout(gtx)
+											}
+											return D{}
+										})
+									}),
+								)
+							})
 						}),
+
 						layout.Flexed(1, func(gtx C) D {
 							switch title {
 							case values.String(values.StrSecurity):
@@ -402,6 +421,15 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		info := modal.NewCustomModal(pg.Load).
 			SetContentAlignment(layout.Center, layout.Center, layout.Center).
 			Body(values.String(values.StrStartupPasswordInfo)).
+			PositiveButtonWidth(values.MarginPadding100)
+		pg.ParentWindow().ShowModal(info)
+	}
+
+	if pg.networkInfoButton.Button.Clicked() {
+		info := modal.NewCustomModal(pg.Load).
+			SetContentAlignment(layout.Center, layout.Center, layout.Center).
+			Title(values.String(values.StrPrivacyModeInfo)).
+			Body(values.String(values.StrPrivacyModeInfoDesc)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
 	}

@@ -495,6 +495,8 @@ const (
 	StrPriority                        = "priority"
 	StrPrivacyModeActive               = "privacyModeActive"
 	StrPrivacyInfo                     = "privacyInfo"
+	StrPrivacyModeInfo                 = "privacyModeInfo"
+	StrPrivacyModeInfoDesc             = "privacyModeInfoDesc"
 	StrPrivacySettings                 = "privacySettings"
 	StrPropFetching                    = "propFetching"
 	StrPropNotif                       = "propNotif"
