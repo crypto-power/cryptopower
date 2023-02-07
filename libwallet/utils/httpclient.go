@@ -166,7 +166,8 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	return body, resp, nil
 }
 
-// HttpRequest helps to convert json(Byte data) into a struct object.
+// HttpRequest queries the API provided in the ReqConfig object and converts
+// the returned json(Byte data) into an respObj interface.
 func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, error) {
 	// validate the API Url address
 	urlPath, err := url.ParseRequestURI(reqConfig.HttpUrl)

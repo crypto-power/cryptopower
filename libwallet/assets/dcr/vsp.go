@@ -15,6 +15,10 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 )
 
+const (
+	defaultVSPsUrl = "https://api.decred.org/?c=vsp"
+)
+
 // VSPClient loads or creates a VSP client instance for the specified host.
 func (asset *DCRAsset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 	asset.vspClientsMu.Lock()
@@ -191,7 +195,7 @@ func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
-		HttpUrl: "https://api.decred.org/?c=vsp",
+		HttpUrl: defaultVSPsUrl,
 	}
 
 	if _, err := utils.HttpRequest(req, &vspInfoResponse); err != nil {
