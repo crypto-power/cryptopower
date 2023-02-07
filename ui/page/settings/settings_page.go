@@ -55,6 +55,7 @@ type SettingsPage struct {
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
 	feeRateAPI     *cryptomaterial.Switch
+	privacyActive  *cryptomaterial.Switch
 
 	isDarkModeOn      bool
 	isStartupPassword bool
@@ -74,6 +75,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		onlineCheckAPI:          l.Theme.Switch(),
 		governanceAPI:           l.Theme.Switch(),
 		feeRateAPI:              l.Theme.Switch(),
+		privacyActive:           l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
 		language:          l.Theme.NewClickable(false),
@@ -176,21 +178,25 @@ func (pg *SettingsPage) wrapSection(gtx C, title string, body layout.Widget) D {
 							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, txt.Layout)
 						}),
 						layout.Flexed(1, func(gtx C) D {
-							if title == values.String(values.StrSecurity) {
+							switch title {
+							case values.String(values.StrSecurity):
 								pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
 								pg.infoButton.Size = values.MarginPadding20
 								return layout.E.Layout(gtx, pg.infoButton.Layout)
-							}
-							if title == values.String(values.StrGeneral) {
-								layout.E.Layout(gtx, func(gtx C) D {
+
+							case values.String(values.StrGeneral):
+								return layout.E.Layout(gtx, func(gtx C) D {
 									appearanceIcon := pg.Theme.Icons.DarkMode
 									if pg.isDarkModeOn {
 										appearanceIcon = pg.Theme.Icons.LightMode
 									}
 									return pg.appearanceMode.Layout(gtx, appearanceIcon.Layout16dp)
 								})
+							case values.String(values.StrPrivacySettings):
+								return layout.E.Layout(gtx, pg.privacyActive.Layout)
+							default:
+								return D{}
 							}
-							return D{}
 						}),
 					)
 				}),
@@ -226,6 +232,9 @@ func (pg *SettingsPage) general() layout.Widget {
 func (pg *SettingsPage) networkSettings() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrPrivacySettings), func(gtx C) D {
+			if pg.WL.AssetsManager.IsPrivacyModeOn() {
+				return D{}
+			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrOnlineCheckAPI), pg.onlineCheckAPI)
@@ -372,24 +381,21 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.transactionNotification.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
-		}()
+		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 	}
 	if pg.onlineCheckAPI.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
-		}()
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
 	}
 	if pg.governanceAPI.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
-		}()
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
-		go func() {
-			pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
-		}()
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+	}
+
+	if pg.privacyActive.Changed() {
+		pg.WL.AssetsManager.SetPrivacyMode(pg.privacyActive.IsChecked())
+		pg.updatePrivacySettings()
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -527,10 +533,17 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI))
-	pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-	pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI))
-	pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI))
+	pg.updatePrivacySettings()
+}
+
+func (pg *SettingsPage) updatePrivacySettings() {
+	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
+	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
+		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
+		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

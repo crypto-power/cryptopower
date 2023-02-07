@@ -89,7 +89,7 @@ func (pg *TreasuryPage) OnNavigatedFrom() {
 }
 
 func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
-	return pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -161,7 +161,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 	if !pg.isTreasuryAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrTreasury))
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
 		})
 	}

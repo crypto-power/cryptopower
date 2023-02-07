@@ -86,8 +86,9 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 	}
 }
 
+// Privacy mode and governance API have to be allowed.
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
-	return pg.WL.AssetsManager.GetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
