@@ -214,7 +214,7 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
-	// If proposals API is not allowed display the overlay with the message.
+	// If proposals API is not allowed, display the overlay with the message.
 	var overlay = layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isProposalsAPIAllowed() {
 		gtx = gtx.Disabled()

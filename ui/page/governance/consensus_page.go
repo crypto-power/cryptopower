@@ -86,7 +86,6 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 	}
 }
 
-// Privacy mode and governance API have to be allowed.
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
@@ -253,7 +252,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 }
 
 func (pg *ConsensusPage) Layout(gtx C) D {
-	// If Agendas API is not allowed display the overlay with the message.
+	// If Agendas API is not allowed, display the overlay with the message.
 	var overlay = layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isAgendaAPIAllowed() {
 		gtx = gtx.Disabled()

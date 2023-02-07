@@ -156,7 +156,7 @@ func (pg *TreasuryPage) FetchPolicies() {
 }
 
 func (pg *TreasuryPage) Layout(gtx C) D {
-	// If proposals API is not allowed display the overlay with the message.
+	// If proposals API is not allowed, display the overlay with the message.
 	var overlay = layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTreasuryAPIAllowed() {
 		gtx = gtx.Disabled()
