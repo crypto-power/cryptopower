@@ -74,7 +74,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
 
-	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), "Enter wallet seed")
+	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
 	pg.seedInputEditor.Editor.SingleLine = false
 	pg.seedInputEditor.Editor.SetText("")
 
@@ -346,7 +346,10 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return container(gtx, false, *pg.Theme, layout, "", pg.actionButton)
+	if pg.toggleSeedInput.IsChecked() {
+		return container(gtx, false, *pg.Theme, layout, "", pg.actionButton, false)
+	}
+	return container(gtx, false, *pg.Theme, layout, "", pg.actionButton, true)
 }
 
 func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -382,7 +385,7 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return container(gtx, true, *pg.Theme, layout, "", pg.actionButton)
+	return container(gtx, true, *pg.Theme, layout, "", pg.actionButton, true)
 }
 
 func (pg *VerifySeedPage) seedListRow(gtx C, index int, multiSeed shuffledSeedWords) D {

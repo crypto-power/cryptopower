@@ -143,7 +143,7 @@ func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
 	isMobile := pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView)
-	return container(gtx, isMobile, *pg.Theme, layout, "", pg.viewSeedBtn)
+	return container(gtx, isMobile, *pg.Theme, layout, "", pg.viewSeedBtn, true)
 }
 
 func (pg *BackupInstructionsPage) verifyCheckBoxes() bool {
@@ -155,13 +155,16 @@ func (pg *BackupInstructionsPage) verifyCheckBoxes() bool {
 	return true
 }
 
-func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Widget, infoText string, actionBtn cryptomaterial.Button) D {
+func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Widget, infoText string, actionBtn cryptomaterial.Button, showActionBtn bool) D {
 	bodyLayout := func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
 			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 				return body(gtx)
 			}),
 			layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+				if !showActionBtn {
+					return D{}
+				}
 				gtx.Constraints.Min = gtx.Constraints.Max
 				return cryptomaterial.LinearLayout{
 					Width:       cryptomaterial.MatchParent,
@@ -186,6 +189,7 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 					layout.Rigid(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return actionBtn.Layout(gtx)
+
 					}))
 			}),
 		)
