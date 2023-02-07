@@ -2,6 +2,7 @@ package root
 
 import (
 	"errors"
+	"fmt"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -60,7 +61,6 @@ type CreateWallet struct {
 	importBtn   cryptomaterial.Button
 	backButton  cryptomaterial.IconButton
 
-	selectedWalletType   libutils.AssetType
 	selectedWalletAction int
 
 	showLoader bool
@@ -483,7 +483,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
 		}
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), pg.selectedWalletType, afterRestore))
+		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), pg.assetTypeSelector.selectedAssetType.Type, afterRestore))
 	}
 
 	// imported wallet click action control
@@ -494,6 +494,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			switch pg.assetTypeSelector.SelectedAssetType().Type.String() {
 			case libutils.DCRWalletAsset.String():
 				var walletWithXPub int
+				fmt.Println("[][][]] HEX", pg.watchOnlyWalletHex.Editor.Text())
 				walletWithXPub, err = pg.WL.MultiWallet.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
 					_, err = pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
