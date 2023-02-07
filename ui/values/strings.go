@@ -785,4 +785,6 @@ const (
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
 	StrOrderSubmitted                  = "orderSubmitted"
+	StrCreateWallet                    = "createWallet"
+	StrSelectAssetType                 = "selectAssetType"
 )

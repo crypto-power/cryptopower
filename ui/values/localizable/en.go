@@ -677,4 +677,6 @@ const EN = `
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
 "orderSubmitted" = "Order Submitted"
+"createWallet" = "Create wallet"
+"selectAssetType" = "Select Asset Type"
 `
