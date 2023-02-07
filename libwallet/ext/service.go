@@ -73,7 +73,7 @@ func setBackend(backend, net, rawUrl string) string {
 		return rawUrl
 	}
 
-	// Prepend URL sheme and authority to the URL.
+	// Prepend URL scheme and authority to the URL.
 	if authority, ok := backendUrl[net][backend]; ok {
 		rawUrl = fmt.Sprintf("%s%s", authority, rawUrl)
 	}

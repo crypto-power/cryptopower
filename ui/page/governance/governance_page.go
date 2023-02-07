@@ -11,6 +11,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -64,6 +65,10 @@ func (pg *Page) isGovernanceFeatureEnabled() bool {
 	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false)
 }
 
+func (pg *Page) isProposalsAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+}
+
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable
 // features that are irrelevant when the page is NOT displayed.
@@ -82,11 +87,11 @@ func (pg *Page) HandleUserInteractions() {
 		activeTab.HandleUserInteractions()
 	}
 
-	for pg.splashScreenInfoButton.Button.Clicked() {
+	if pg.splashScreenInfoButton.Button.Clicked() {
 		pg.showInfoModal()
 	}
 
-	for pg.enableGovernanceBtn.Clicked() {
+	if pg.enableGovernanceBtn.Clicked() && pg.isProposalsAPIAllowed() {
 		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
 		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)

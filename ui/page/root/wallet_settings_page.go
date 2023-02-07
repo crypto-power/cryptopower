@@ -106,21 +106,33 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
-	pg.fetchProposal.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false))
-	pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
-	pg.spendUnconfirmed.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnconfirmedConfigKey, false))
-	pg.spendUnmixedFunds.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false))
+	if !pg.isPrivacyModeOn() { // set state if privacy mode is off.
+		pg.fetchProposal.SetChecked(pg.readBool(sharedW.FetchProposalConfigKey))
+		pg.proposalNotif.SetChecked(pg.readBool(sharedW.ProposalNotificationConfigKey))
+	}
+	pg.spendUnconfirmed.SetChecked(pg.readBool(sharedW.SpendUnconfirmedConfigKey))
+	pg.spendUnmixedFunds.SetChecked(pg.readBool(sharedW.SpendUnmixedFundsKey))
 
 	pg.loadPeerAddress()
 
 	pg.loadWalletAccount()
 }
 
+func (pg *WalletSettingsPage) readBool(key string) bool {
+	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(key, false)
+}
+
+func (pg *WalletSettingsPage) isPrivacyModeOn() bool {
+	return pg.WL.AssetsManager.IsPrivacyModeOn()
+}
+
 func (pg *WalletSettingsPage) loadPeerAddress() {
-	pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-	pg.connectToPeer.SetChecked(false)
-	if pg.peerAddr != "" {
-		pg.connectToPeer.SetChecked(true)
+	if !pg.isPrivacyModeOn() {
+		pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+		pg.connectToPeer.SetChecked(false)
+		if pg.peerAddr != "" {
+			pg.connectToPeer.SetChecked(true)
+		}
 	}
 }
 
@@ -199,7 +211,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return D{}
 			}),
 			layout.Rigid(func(gtx C) D {
-				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+				if pg.readBool(sharedW.FetchProposalConfigKey) && !pg.isPrivacyModeOn() && pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 					return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
 				}
 				return D{}
@@ -220,7 +232,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" {
+						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
 							return D{}
 						}
 
@@ -370,6 +382,15 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.Theme.Label(values.TextSize16, title).Layout),
 			layout.Flexed(1, func(gtx C) D {
+				switch title {
+				case values.String(values.StrFetchProposals), values.String(values.StrPropNotif),
+					values.String(values.StrConnectToSpecificPeer):
+					if pg.isPrivacyModeOn() {
+						textlabel := pg.Theme.Label(values.TextSize12, values.String(values.StrPrivacyModeActive))
+						textlabel.Color = pg.Theme.Color.GrayText2
+						body = textlabel.Layout
+					}
+				}
 				return layout.E.Layout(gtx, body)
 			}),
 		)
@@ -709,7 +730,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.connectToPeer.Changed() {
+	if pg.connectToPeer.Changed() && !pg.isPrivacyModeOn() {
 		if pg.connectToPeer.IsChecked() {
 			pg.showSPVPeerDialog()
 			return
@@ -720,9 +741,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		pg.showWarningModalDialog(title, msg)
 	}
 
-	for pg.updateConnectToPeer.Clicked() {
+	if pg.updateConnectToPeer.Clicked() && !pg.isPrivacyModeOn() {
 		pg.showSPVPeerDialog()
-		break
 	}
 
 	if pg.verifyMessage.Clicked() {

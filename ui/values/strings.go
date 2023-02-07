@@ -493,6 +493,7 @@ const (
 	StrPiKey                           = "piKey"
 	StrPolicySetSuccessful             = "policySetSuccessfully"
 	StrPriority                        = "priority"
+	StrPrivacyModeActive               = "privacyModeActive"
 	StrPrivacyInfo                     = "privacyInfo"
 	StrPrivacySettings                 = "privacySettings"
 	StrPropFetching                    = "propFetching"
