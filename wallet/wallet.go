@@ -22,13 +22,13 @@ const (
 
 // Wallet represents the wallet back end of the app
 type Wallet struct {
-	assetsManager       *libwallet.AssetsManager
-	Root        string
-	buildDate   time.Time
-	version     string
-	logDir      string
-	startUpTime time.Time
-	Net         libutils.NetworkType
+	assetsManager *libwallet.AssetsManager
+	Root          string
+	buildDate     time.Time
+	version       string
+	logDir        string
+	startUpTime   time.Time
+	Net           libutils.NetworkType
 }
 
 // NewWallet initializies an new Wallet instance.
