@@ -2,7 +2,6 @@ package root
 
 import (
 	"errors"
-	"fmt"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
@@ -432,7 +431,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			pg.isLoading = true
 
 			if pg.assetTypeSelector.SelectedAssetType().Type.String() == libutils.DCRWalletAsset.String() {
-				wal, err := pg.WL.MultiWallet.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				wal, err := pg.WL.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
 						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
@@ -458,7 +457,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			}
 
 			if pg.assetTypeSelector.SelectedAssetType().Type.String() == libutils.BTCWalletAsset.String() {
-				_, err := pg.WL.MultiWallet.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				_, err := pg.WL.AssetsManager.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
 						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
@@ -494,18 +493,17 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			switch pg.assetTypeSelector.SelectedAssetType().Type.String() {
 			case libutils.DCRWalletAsset.String():
 				var walletWithXPub int
-				fmt.Println("[][][]] HEX", pg.watchOnlyWalletHex.Editor.Text())
-				walletWithXPub, err = pg.WL.MultiWallet.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				walletWithXPub, err = pg.WL.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.WL.MultiWallet.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					_, err = pg.WL.AssetsManager.CreateNewDCRWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
 			case libutils.BTCWalletAsset.String():
 				var walletWithXPub int
-				walletWithXPub, err = pg.WL.MultiWallet.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				walletWithXPub, err = pg.WL.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
-					_, err = pg.WL.MultiWallet.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+					_, err = pg.WL.AssetsManager.CreateNewBTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}

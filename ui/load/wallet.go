@@ -19,8 +19,8 @@ type WalletItem struct {
 }
 
 type WalletLoad struct {
-	MultiWallet *libwallet.AssetsManager
-	TxAuthor    dcr.TxAuthor
+	AssetsManager *libwallet.AssetsManager
+	TxAuthor      dcr.TxAuthor
 
 	Wallet *wallet.Wallet
 
@@ -78,16 +78,16 @@ func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
 
 	switch wType {
 	case utils.BTCWalletAsset:
-		return wl.MultiWallet.AllBTCWallets()
+		return wl.AssetsManager.AllBTCWallets()
 	case utils.DCRWalletAsset:
-		return wl.MultiWallet.AllDCRWallets()
+		return wl.AssetsManager.AllDCRWallets()
 	default:
 		return nil
 	}
 }
 
 func (wl *WalletLoad) TotalWalletBalance(walletID int) (sharedW.AssetAmount, error) {
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.AssetsManager.WalletWithID(walletID)
 	if wallet == nil {
 		return wl.nilAmount(), errors.New(utils.ErrNotExist)
 	}
@@ -101,7 +101,7 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (sharedW.AssetAmount, err
 }
 
 func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount, error) {
-	wallet := wl.MultiWallet.WalletWithID(walletID)
+	wallet := wl.AssetsManager.WalletWithID(walletID)
 	if wallet == nil {
 		return wl.nilAmount(), errors.New(utils.ErrNotExist)
 	}
@@ -140,7 +140,7 @@ func (wl *WalletLoad) WalletDirectory() string {
 }
 
 func (wl *WalletLoad) DataSize() string {
-	v, err := wl.MultiWallet.RootDirFileSizeInBytes()
+	v, err := wl.AssetsManager.RootDirFileSizeInBytes()
 	if err != nil {
 		return "Unknown"
 	}

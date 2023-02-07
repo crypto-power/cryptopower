@@ -41,8 +41,8 @@ type WalletInfo struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet  *libwallet.AssetsManager
-	rescanUpdate *wallet.RescanUpdate
+	assetsManager *libwallet.AssetsManager
+	rescanUpdate  *wallet.RescanUpdate
 
 	container *widget.List
 
@@ -66,7 +66,7 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
-		multiWallet:      l.WL.MultiWallet,
+		assetsManager:    l.WL.AssetsManager,
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},

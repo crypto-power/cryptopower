@@ -40,7 +40,7 @@ type ReceivePage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	multiWallet       *libwallet.AssetsManager
+	assetsManager     *libwallet.AssetsManager
 	pageContainer     layout.List
 	scrollContainer   *widget.List
 	isNewAddr, isInfo bool
@@ -63,7 +63,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg := &ReceivePage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ReceivePageID),
-		multiWallet:      l.WL.MultiWallet,
+		assetsManager:    l.WL.AssetsManager,
 		pageContainer: layout.List{
 			Axis: layout.Vertical,
 		},
@@ -474,7 +474,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 
 func (pg *ReceivePage) generateNewAddress() (string, error) {
 	selectedAccount := pg.selector.SelectedAccount()
-	selectedWallet := pg.multiWallet.WalletWithID(selectedAccount.WalletID)
+	selectedWallet := pg.assetsManager.WalletWithID(selectedAccount.WalletID)
 
 generateAddress:
 	newAddr, err := selectedWallet.NextAddress(selectedAccount.Number)

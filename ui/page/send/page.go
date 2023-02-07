@@ -189,7 +189,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	pg.currencyExchange = pg.WL.MultiWallet.GetCurrencyConversionExchange()
+	pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
 	if pg.currencyExchange != values.DefaultExchangeValue {
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
@@ -218,7 +218,7 @@ func (pg *Page) fetchExchangeRate() {
 	if pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
 		market = values.BTCUSDTMarket
 	}
-	rate, err := pg.WL.MultiWallet.ExternalService.GetTicker(pg.currencyExchange, market)
+	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
 		log.Printf("Error fetching exchange rate : %s \n", err)
 		return
@@ -401,7 +401,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
-	currencyValue := pg.WL.MultiWallet.GetCurrencyConversionExchange()
+	currencyValue := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
 		pg.amount.usdAmountEditor.Editor.Focused()
 

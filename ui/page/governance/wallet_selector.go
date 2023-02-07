@@ -19,8 +19,8 @@ import (
 
 type WalletSelector struct {
 	*load.Load
-	multiWallet *libwallet.AssetsManager
-	dialogTitle string
+	assetsManager *libwallet.AssetsManager
+	dialogTitle   string
 
 	walletIsValid func(sharedW.Asset) bool
 	callback      func(sharedW.Asset)
@@ -37,7 +37,7 @@ func NewWalletSelector(l *load.Load) *WalletSelector {
 
 	return &WalletSelector{
 		Load:               l,
-		multiWallet:        l.WL.MultiWallet,
+		assetsManager:      l.WL.AssetsManager,
 		walletIsValid:      func(sharedW.Asset) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 

@@ -227,7 +227,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.selectedExchange = es
 
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := pg.WL.MultiWallet.InstantSwap.NewExchanageServer(pg.selectedExchange.Server)
+		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(pg.selectedExchange.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -722,7 +722,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		To:     pg.toCurrencyType.String(),
 		Amount: 0,
 	}
-	res, err := pg.WL.MultiWallet.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
+	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
 		pg.exchangeRateInfo = values.String(values.StrFetchRateError)
 		pg.rateError = true

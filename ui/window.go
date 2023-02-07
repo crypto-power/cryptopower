@@ -93,7 +93,7 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	// fetch status of the wallet if its online.
 	go libutils.IsOnline()
 
-	mw := win.wallet.GetMultiWallet()
+	mw := win.wallet.GetAssetsManager()
 
 	// Set the user-configured theme colors on app load.
 	var isDarkModeOn bool
@@ -107,9 +107,9 @@ func (win *Window) NewLoad() (*load.Load, error) {
 		Theme: th,
 
 		WL: &load.WalletLoad{
-			MultiWallet: mw,
-			Wallet:      win.wallet,
-			TxAuthor:    win.txAuthor,
+			AssetsManager: mw,
+			Wallet:        win.wallet,
+			TxAuthor:      win.txAuthor,
 		},
 
 		// NB: Toasts implementation is maintained here for the cases where its

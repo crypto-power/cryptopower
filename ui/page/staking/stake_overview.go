@@ -357,7 +357,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 							txt := pg.Theme.Label(values.TextSize14, msg)
 							txt.Alignment = text.Middle
 							txt.Color = pg.Theme.Color.GrayText3
-							if pg.WL.MultiWallet.IsDarkModeOn() {
+							if pg.WL.AssetsManager.IsDarkModeOn() {
 								txt.Color = pg.Theme.Color.Gray3
 							}
 							return txt.Layout(gtx)

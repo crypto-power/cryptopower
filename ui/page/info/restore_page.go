@@ -328,7 +328,7 @@ func (pg *Restore) showHexRestoreModal() {
 					pg.switchTab(pg.tabIndex)
 				}).
 				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.MultiWallet.RestoreWallet(pg.walletType, pg.walletName, hex, password, sharedW.PassphraseTypePass)
+					_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, hex, password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -366,7 +366,7 @@ func (pg *Restore) verifyHex(hex string) bool {
 
 	// Compare with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(pg.walletType, hex)
+	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, hex)
 	if err != nil {
 		log.Error(err)
 		return false
@@ -415,7 +415,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		return
 	}
 
-	walletWithSameSeed, err := pg.WL.MultiWallet.WalletWithSeed(pg.walletType, seed)
+	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, seed)
 	if err != nil {
 		log.Error(err)
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedValidationFailed), modal.DefaultClickFunc())
@@ -435,7 +435,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.WL.MultiWallet.RestoreWallet(pg.walletType, pg.walletName, seed, password, sharedW.PassphraseTypePass)
+			_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seed, password, sharedW.PassphraseTypePass)
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libUtils.ErrExist {

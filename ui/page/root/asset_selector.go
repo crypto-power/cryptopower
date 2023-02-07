@@ -73,7 +73,7 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 // SupportedAssetTypes returns a slice containing all the asset types
 // Currently supported.
 func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetType {
-	assetTypes := ats.WL.MultiWallet.AllAssetTypes()
+	assetTypes := ats.WL.AssetsManager.AllAssetTypes()
 
 	var assetType []*AssetType
 	for _, at := range assetTypes {

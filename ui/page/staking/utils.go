@@ -44,9 +44,9 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 	}
 
 	tickets := make([]*transactionItem, 0)
-	multiWallet := l.WL.MultiWallet
+	assetsManager := l.WL.AssetsManager
 	for _, tx := range txs {
-		w := multiWallet.WalletWithID(tx.WalletID)
+		w := assetsManager.WalletWithID(tx.WalletID)
 
 		ticketSpender, err := impl.TicketSpender(tx.Hash)
 		if err != nil {

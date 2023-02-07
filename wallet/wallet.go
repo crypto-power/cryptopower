@@ -22,13 +22,13 @@ const (
 
 // Wallet represents the wallet back end of the app
 type Wallet struct {
-	multi       *libwallet.AssetsManager
-	Root        string
-	buildDate   time.Time
-	version     string
-	logDir      string
-	startUpTime time.Time
-	Net         libutils.NetworkType
+	assetsManager *libwallet.AssetsManager
+	Root          string
+	buildDate     time.Time
+	version       string
+	logDir        string
+	startUpTime   time.Time
+	Net           libutils.NetworkType
 }
 
 // NewWallet initializies an new Wallet instance.
@@ -71,28 +71,28 @@ func (wal *Wallet) StartupTime() time.Time {
 	return wal.startUpTime
 }
 
-func (wal *Wallet) GetMultiWallet() *libwallet.AssetsManager {
-	return wal.multi
+func (wal *Wallet) GetAssetsManager() *libwallet.AssetsManager {
+	return wal.assetsManager
 }
 
-func (wal *Wallet) InitMultiWallet() error {
+func (wal *Wallet) InitAssetsManager() error {
 	politeiaHost := libwallet.PoliteiaMainnetHost
 	if wal.Net == libwallet.Testnet3 {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	multiWal, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net)
+	assetsManager, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net)
 	if err != nil {
 		return err
 	}
 
-	wal.multi = multiWal
+	wal.assetsManager = assetsManager
 	return nil
 }
 
-// Shutdown shutsdown the multiwallet
+// Shutdown shutsdown the assetsManager
 func (wal *Wallet) Shutdown() {
-	if wal.multi != nil {
-		wal.multi.Shutdown()
+	if wal.assetsManager != nil {
+		wal.assetsManager.Shutdown()
 	}
 }
 

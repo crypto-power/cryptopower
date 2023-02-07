@@ -20,13 +20,13 @@ func (err InternalWalletError) Error() string {
 	return m
 }
 
-// MultiWalletError wraps errors encountered with the Multiwallet
-type MultiWalletError struct {
+// AssetsManagerError wraps errors encountered with the AssetsManager
+type AssetsManagerError struct {
 	Message string
 	Err     error
 }
 
-func (err MultiWalletError) Error() string {
+func (err AssetsManagerError) Error() string {
 	m := err.Message
 	if err.Err != nil {
 		m += " : " + err.Err.Error()
@@ -35,6 +35,6 @@ func (err MultiWalletError) Error() string {
 }
 
 // Unwrap returns the embedded error
-func (err MultiWalletError) Unwrap() error {
+func (err AssetsManagerError) Unwrap() error {
 	return err.Err
 }

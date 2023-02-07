@@ -132,7 +132,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 
 	for pg.viewInPoliteiaBtn.Clicked() {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
-		if pg.WL.MultiWallet.NetType() == libwallet.Testnet3 {
+		if pg.WL.AssetsManager.NetType() == libwallet.Testnet3 {
 			host = "https://test-proposals.decred.org/record/" + pg.proposal.Token
 		}
 
@@ -189,7 +189,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 		return
 	}
 	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err := pg.WL.MultiWallet.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalDetailsPageID)
+	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalDetailsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
@@ -200,7 +200,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 			select {
 			case notification := <-pg.ProposalNotifChan:
 				if notification.ProposalStatus == wallet.Synced {
-					proposal, err := pg.WL.MultiWallet.Politeia.GetProposalRaw(pg.proposal.Token)
+					proposal, err := pg.WL.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
 					if err == nil {
 						pg.proposal = &libwallet.Proposal{Proposal: *proposal}
 						pg.ParentWindow().Reload()
@@ -208,7 +208,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 				}
 			// is this really needed since listener has been set up on main.go
 			case <-pg.ctx.Done():
-				pg.WL.MultiWallet.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
+				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
 				close(pg.ProposalNotifChan)
 				pg.ProposalNotificationListener = nil
 
@@ -362,7 +362,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								if proposal.Category == libwallet.ProposalCategoryActive {
 									ic := pg.Theme.Icons.TimerIcon
-									if pg.WL.MultiWallet.IsDarkModeOn() {
+									if pg.WL.AssetsManager.IsDarkModeOn() {
 										ic = pg.Theme.Icons.TimerDarkMode
 									}
 									return layout.Inset{
@@ -536,7 +536,7 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				proposalDescription = proposal.IndexFile
 			} else {
 				var err error
-				proposalDescription, err = pg.WL.MultiWallet.Politeia.FetchProposalDescription(proposal.Token)
+				proposalDescription, err = pg.WL.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
 				if err != nil {
 					log.Errorf("Error loading proposal description: %v", err)
 					time.Sleep(7 * time.Second)
@@ -603,7 +603,7 @@ func (pg *ProposalDetails) layoutMobile(gtx layout.Context) layout.Dimensions {
 				proposalDescription = proposal.IndexFile
 			} else {
 				var err error
-				proposalDescription, err = pg.WL.MultiWallet.Politeia.FetchProposalDescription(proposal.Token)
+				proposalDescription, err = pg.WL.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
 				if err != nil {
 					log.Errorf("Error loading proposal description: %v", err)
 					time.Sleep(7 * time.Second)

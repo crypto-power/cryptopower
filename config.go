@@ -38,7 +38,7 @@ type config struct {
 	LogDir           string `long:"logdir" description:"Directory to log output."`
 	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
-	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the multiwallet to use transactions that have not been confirmed"`
+	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
 }
 

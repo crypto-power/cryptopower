@@ -115,7 +115,7 @@ func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
 func LoadOrders(l *load.Load, newestFirst bool) []*instantswap.Order {
 	var orders []*instantswap.Order
 
-	orders, err := l.WL.MultiWallet.InstantSwap.GetOrdersRaw(0, 0, true)
+	orders, err := l.WL.AssetsManager.InstantSwap.GetOrdersRaw(0, 0, true)
 	if err != nil {
 		log.Error(err)
 	}

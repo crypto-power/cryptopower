@@ -76,7 +76,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.isDarkModeOn = pg.WL.MultiWallet.IsDarkModeOn()
+	pg.isDarkModeOn = pg.WL.AssetsManager.IsDarkModeOn()
 
 	return pg
 }
@@ -199,7 +199,7 @@ func (pg *SettingsPage) general() layout.Widget {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					lKey := pg.WL.MultiWallet.GetCurrencyConversionExchange()
+					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 					l := values.ArrExchangeCurrencies[lKey]
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
@@ -212,7 +212,7 @@ func (pg *SettingsPage) general() layout.Widget {
 					languageRow := row{
 						title:     values.String(values.StrLanguage),
 						clickable: pg.language,
-						label:     pg.Theme.Body2(pg.WL.MultiWallet.GetLanguagePreference()),
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
 					}
 					return pg.clickableRow(gtx, languageRow)
 				}),
@@ -318,7 +318,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			sharedW.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
-				values.SetUserLanguage(pg.WL.MultiWallet.GetLanguagePreference())
+				values.SetUserLanguage(pg.WL.AssetsManager.GetLanguagePreference())
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
 		break
@@ -340,13 +340,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.appearanceMode.Clicked() {
 		pg.isDarkModeOn = !pg.isDarkModeOn
-		pg.WL.MultiWallet.IsDarkModeOn()
+		pg.WL.AssetsManager.IsDarkModeOn()
 		pg.RefreshTheme(pg.ParentWindow())
 	}
 
 	if pg.transactionNotification.Changed() {
 		go func() {
-			pg.WL.MultiWallet.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
+			pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 		}()
 	}
 
@@ -378,7 +378,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 					pm.SetLoading(false)
 					return false
 				}
-				err := pg.wal.GetMultiWallet().VerifyStartupPassphrase(password)
+				err := pg.wal.GetAssetsManager().VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -398,7 +398,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 							m.SetLoading(false)
 							return false
 						}
-						err := pg.wal.GetMultiWallet().ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
+						err := pg.wal.GetAssetsManager().ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -429,7 +429,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 						m.SetLoading(false)
 						return false
 					}
-					err := pg.wal.GetMultiWallet().SetStartupPassphrase(password, sharedW.PassphraseTypePass)
+					err := pg.wal.GetAssetsManager().SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -452,7 +452,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetMultiWallet().RemoveStartupPassphrase(password)
+					err := pg.wal.GetAssetsManager().RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -477,7 +477,7 @@ func (pg *SettingsPage) showNoticeSuccess(title string) {
 }
 
 func (pg *SettingsPage) updateSettingOptions() {
-	isPassword := pg.WL.MultiWallet.IsStartupSecuritySet()
+	isPassword := pg.WL.AssetsManager.IsStartupSecuritySet()
 	pg.startupPassword.SetChecked(false)
 	pg.isStartupPassword = false
 	if isPassword {
@@ -485,7 +485,7 @@ func (pg *SettingsPage) updateSettingOptions() {
 		pg.isStartupPassword = true
 	}
 
-	transactionNotification := pg.WL.MultiWallet.IsTransactionNotificationsOn()
+	transactionNotification := pg.WL.AssetsManager.IsTransactionNotificationsOn()
 	pg.transactionNotification.SetChecked(false)
 	if transactionNotification {
 		pg.transactionNotification.SetChecked(transactionNotification)
