@@ -544,10 +544,12 @@ func (pg *SettingsPage) updatePrivacySettings() {
 		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
 		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
 	} else {
-		go func() {
-			// Clear all the peers saved if the privacy mode is on.
-			pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-		}()
+		if pg.WL.SelectedWallet != nil {
+			go func() {
+				// Clear all the peers saved if the privacy mode is on.
+				pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+			}()
+		}
 	}
 }
 
