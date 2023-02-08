@@ -78,15 +78,15 @@ func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
 
 	var exchange []*Exchange
 	for _, server := range servers {
-		if server.ToString() == instantswap.FlypMe.ToString() { // Display flypme only
-			exchng := &Exchange{
-				Name:   server.CapFirstLetter(),
-				Server: server,
-				Icon:   es.setServerIcon(server.ToString()),
-			}
-
-			exchange = append(exchange, exchng)
+		// if server.ToString() == instantswap.FlypMe.ToString() { // Display flypme only
+		exchng := &Exchange{
+			Name:   server.CapFirstLetter(),
+			Server: server,
+			Icon:   es.setServerIcon(server.ToString()),
 		}
+
+		exchange = append(exchange, exchng)
+		// }
 	}
 
 	return exchange

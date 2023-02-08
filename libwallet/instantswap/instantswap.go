@@ -210,13 +210,13 @@ func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeObject instantswap.I
 
 func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 	return []ExchangeServer{
-		Changelly,
+		// Changelly, // Not supported
 		ChangeNow,
-		CoinSwitch,
+		// CoinSwitch, // Not supported
 		FlypMe,
 		GoDex,
-		SimpleSwap,
-		SwapZone,
+		// SimpleSwap, // Not supported
+		// SwapZone, // Not supported
 	}
 }
 
