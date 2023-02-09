@@ -153,26 +153,25 @@ func NewSendPage(l *load.Load) *Page {
 
 			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
-				fmt.Println("[][][][][][][] 1")
-
 				if pg.sendDestination.accountSwitch.SelectedIndex() == 2 {
-					fmt.Println("[][][][][][][] 2")
-
 					destinationWalletId := pg.sendDestination.destinationAccountSelector.SelectedAccount().WalletID
 					if destinationWalletId != pg.selectedWallet.GetWalletID() {
-						fmt.Println("[][][][][][][] 3")
 						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 					}
 				} else {
-					fmt.Println("[][][][][][][] 4")
-
 					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 				}
 			}
 			return accountIsValid
 
 		})
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		acc, _ := pg.selectedWallet.GetAccountsRaw()
+		for _, acc := range acc.Accounts {
+			if acc.Number == pg.selectedWallet.MixedAccountNumber() {
+				pg.sourceAccountSelector.SetSelectedAccount(acc)
+
+			}
+		}
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
