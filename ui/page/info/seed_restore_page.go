@@ -102,8 +102,8 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libUtils.Ass
 		widgetEditor.SingleLine, widgetEditor.Submit = true, true
 		pg.seedEditors.editors = append(pg.seedEditors.editors, l.Theme.RestoreEditor(widgetEditor, "", fmt.Sprintf("%d", i+1)))
 	}
-	pg.seedEditors.focusIndex = -1
-	pg.seedEditors.editors[0].Edit.Editor.Focus()
+
+	pg.setEditorFocus()
 
 	// init suggestion buttons
 	pg.initSeedMenu()
@@ -125,10 +125,17 @@ func (pg *SeedRestore) ID() string {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *SeedRestore) OnNavigatedTo() {}
+func (pg *SeedRestore) OnNavigatedTo() {
+	pg.setEditorFocus()
+}
 
 func (pg *SeedRestore) SetParentNav(window app.WindowNavigator) {
 	pg.window = window
+}
+
+func (pg *SeedRestore) setEditorFocus() {
+	pg.seedEditors.focusIndex = -1
+	pg.seedEditors.editors[0].Edit.Editor.Focus()
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -160,7 +167,8 @@ func (pg *SeedRestore) restore(gtx C) D {
 				Height:      cryptomaterial.WrapContent,
 				Background:  pg.Theme.Color.Surface,
 				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-				Padding:     layout.UniformInset(values.MarginPadding15)}.Layout(gtx,
+				Padding:     layout.UniformInset(values.MarginPadding15),
+			}.Layout(gtx,
 				layout.Rigid(pg.seedEditorViewDesktop),
 				layout.Rigid(pg.resetSeedFields.Layout),
 			)
@@ -200,7 +208,6 @@ func (pg *SeedRestore) restoreMobile(gtx C) D {
 									return pg.resetSeedFields.Layout(gtx)
 								}),
 							)
-
 						}),
 					)
 				}),
@@ -355,6 +362,7 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 				seedEvent(i, text)
 
 			case widget.SubmitEvent:
+				//  Handles Enter and Return keyboard events.
 				if i != numberOfSeeds {
 					pg.seedEditors.editors[i+1].Edit.Editor.Focus()
 					pg.selected = 0
@@ -495,14 +503,24 @@ func (pg *SeedRestore) resetSeeds() {
 	}
 }
 
-func switchSeedEditors(editors []cryptomaterial.RestoreEditor) {
+// switchSeedEditors sets focus on the next seed phrase after moving the
+// provided steps either forward or backwards. One the focus get to the last cell
+// it start for the initial cell.
+func switchSeedEditors(editors []cryptomaterial.RestoreEditor, steps int) {
 	for i := 0; i < len(editors); i++ {
 		if editors[i].Edit.Editor.Focused() {
-			if i == len(editors)-1 {
-				editors[0].Edit.Editor.Focus()
-			} else {
-				editors[i+1].Edit.Editor.Focus()
+			nextOnFocus := i + steps
+			if (nextOnFocus) < 0 {
+				nextOnFocus += len(editors) + 2
+				if nextOnFocus >= len(editors) {
+					nextOnFocus += steps
+				}
+			} else if nextOnFocus >= len(editors) {
+				nextOnFocus -= 2
 			}
+			nextOnFocus = nextOnFocus % len(editors)
+			editors[nextOnFocus].Edit.Editor.Focus()
+			return
 		}
 	}
 }
@@ -524,7 +542,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 		}
 	}
 
-	for pg.validateSeed.Clicked() {
+	if pg.validateSeed.Clicked() {
 		if !pg.verifySeeds() {
 			return
 		}
@@ -591,7 +609,7 @@ func (pg *SeedRestore) KeysToHandle() key.Set {
 	if pg.isRestoring {
 		return "" // don't capture keys while restoring, problematic?
 	}
-	// TODO: Once user starts editing any of the input boxes, the arrow up, down
+	// Once user starts editing any of the input boxes, the arrow up, down
 	// and enter key signals are no longer received.
 	keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow)
@@ -613,36 +631,25 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 			pg.seedClicked = true
 			pg.seedEditors.editors[focus].Edit.Editor.MoveCaret(len(pg.suggestions[pg.selected]), -1)
 		}
-		switchSeedEditors(pg.seedEditors.editors)
+		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
+
 	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press {
-		for i := 0; i < len(pg.seedEditors.editors); i++ {
-			if pg.seedEditors.editors[i].Edit.Editor.Focused() {
-				if i == 0 {
-					pg.seedEditors.editors[len(pg.seedEditors.editors)-1].Edit.Editor.Focus()
-				} else {
-					pg.seedEditors.editors[i-1].Edit.Editor.Focus()
-				}
-			}
-		}
+		switchSeedEditors(pg.seedEditors.editors, -1)
 	}
-	if evt.Name == key.NameUpArrow && pg.openPopupIndex != -1 && evt.State == key.Press {
-		pg.selected--
-		if pg.selected < 0 {
-			pg.selected = 0
-		}
+
+	if evt.Name == key.NameUpArrow && evt.State == key.Press {
+		switchSeedEditors(pg.seedEditors.editors, -5)
 	}
-	if evt.Name == key.NameDownArrow && pg.openPopupIndex != -1 && evt.State == key.Press {
-		pg.selected++
-		if pg.selected >= len(pg.suggestions) {
-			pg.selected = len(pg.suggestions) - 1
-		}
+
+	if evt.Name == key.NameDownArrow && evt.State == key.Press {
+		switchSeedEditors(pg.seedEditors.editors, 5)
 	}
+
 	if (evt.Name == key.NameReturn || evt.Name == key.NameEnter) && pg.openPopupIndex != -1 && evt.State == key.Press && len(pg.suggestions) != 0 {
 		if pg.seedEditors.focusIndex == -1 && len(pg.suggestions) == 1 {
 			return
 		}
-
 		pg.seedMenu[pg.selected].button.Click()
 	}
 }

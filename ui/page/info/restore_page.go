@@ -13,7 +13,6 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libUtils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -41,14 +40,14 @@ type Restore struct {
 	backButton        cryptomaterial.IconButton
 	seedRestorePage   *SeedRestore
 	walletName        string
-	walletType        utils.AssetType
+	walletType        libUtils.AssetType
 	toggleSeedInput   *cryptomaterial.Switch
 	seedInputEditor   cryptomaterial.Editor
 	confirmSeedButton cryptomaterial.Button
 	restoreInProgress bool
 }
 
-func NewRestorePage(l *load.Load, walletName string, walletType utils.AssetType, onRestoreComplete func()) *Restore {
+func NewRestorePage(l *load.Load, walletName string, walletType libUtils.AssetType, onRestoreComplete func()) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
@@ -94,6 +93,7 @@ func (pg *Restore) Layout(gtx C) D {
 	}
 	return pg.layoutDesktop(gtx)
 }
+
 func (pg *Restore) layoutDesktop(gtx C) D {
 	body := func(gtx C) D {
 		sp := components.SubPage{
@@ -163,7 +163,8 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 											return layout.Inset{
 												Left:  values.MarginPadding16,
 												Right: values.MarginPadding16,
-												Top:   values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+												Top:   values.MarginPadding30,
+											}.Layout(gtx, func(gtx C) D {
 												return pg.seedInputEditor.Layout(gtx)
 											})
 										}),
@@ -175,7 +176,8 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 															Left:   values.MarginPadding16,
 															Right:  values.MarginPadding16,
 															Top:    values.MarginPadding16,
-															Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+															Bottom: values.MarginPadding16,
+														}.Layout(gtx, func(gtx C) D {
 															pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
 															return pg.confirmSeedButton.Layout(gtx)
 														})
@@ -184,7 +186,6 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 											)
 										}),
 									)
-
 								})
 							}),
 						)
@@ -275,8 +276,6 @@ func (pg *Restore) tabLayout(gtx C) D {
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedFrom() {
 	pg.seedRestorePage.OnNavigatedFrom()
-
-	//pg.PopWindowPage()
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -290,6 +289,10 @@ func (pg *Restore) HandleUserInteractions() {
 			pg.tabIndex = selectedItem
 			pg.switchTab(pg.tabIndex)
 		}
+	}
+
+	if !pg.toggleSeedInput.IsChecked() && pg.toggleSeedInput.Changed() {
+		pg.seedRestorePage.setEditorFocus()
 	}
 
 	if pg.tabIndex == 0 {
@@ -457,5 +460,4 @@ func (pg *Restore) restoreFromSeedEditor() {
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
-
 }
