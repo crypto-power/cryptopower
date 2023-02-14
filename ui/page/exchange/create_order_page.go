@@ -189,7 +189,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrAccount)).
 		AccountValidator(func(account *sharedW.Account) bool {
-			accountIsValid := account.Number != load.MaxInt32 && !pg.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+			accountIsValid := account.Number != load.MaxInt32
 
 			return accountIsValid
 		})

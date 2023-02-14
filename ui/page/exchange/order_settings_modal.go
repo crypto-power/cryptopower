@@ -159,8 +159,8 @@ func (osm *orderSettingsModal) OnResume() {
 				osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
 					Title(values.String(values.StrAccount)).
 					AccountValidator(func(account *sharedW.Account) bool {
-						// Imported accounts and watch only accounts are imvalid
-						accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+						// Imported accounts invalid
+						accountIsValid := account.Number != load.MaxInt32
 
 						return accountIsValid
 					})
@@ -355,7 +355,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return D{}
 																	}),
 																)
-
 															})
 														}),
 														layout.Rigid(func(gtx C) D {
@@ -431,7 +430,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																				return txt.Layout(gtx)
 																			}
 																			return D{}
-
 																		})
 																	}),
 																)
@@ -481,7 +479,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 					})
 				}),
 			)
-
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
@@ -515,7 +512,7 @@ func (osm *orderSettingsModal) initializeWalletAndAccountSelector() {
 		Title(values.String(values.StrAccount)).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported accounts and watch only accounts are imvalid
-			accountIsValid := account.Number != load.MaxInt32 && !osm.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+			accountIsValid := account.Number != load.MaxInt32
 
 			return accountIsValid
 		})
