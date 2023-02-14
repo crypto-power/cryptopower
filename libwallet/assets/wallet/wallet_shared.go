@@ -371,8 +371,10 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.A
 		dbDriver: params.DbDriver,
 		rootDir:  params.RootDir,
 
-		IsRestored:            true,
-		HasDiscoveredAccounts: true,
+		IsRestored: true,
+		// Setting HasDiscoveredAccounts to false causes address recovery to be
+		// triggered on startup if the first recovery was prematurely stopped.
+		HasDiscoveredAccounts: false,
 		Type:                  assetType,
 		loader:                loader,
 		netType:               params.NetType,
