@@ -152,7 +152,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor.CustomButton.Background = l.Theme.Color.Danger
 	pg.toAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
-	pg.loadConfigOrder()
+	pg.loadOrderConfig()
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
 	pg.createOrderBtn.SetEnabled(false)
@@ -685,7 +685,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	return nil
 }
 
-func (pg *CreateOrderPage) loadConfigOrder() {
+func (pg *CreateOrderPage) loadOrderConfig() {
 	if pg.WL.AssetsManager.ExchangeConfigIsSet() {
 		exchangeConfig := pg.WL.AssetsManager.ExchangeConfig()
 		sourceWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
@@ -713,7 +713,7 @@ func (pg *CreateOrderPage) loadConfigOrder() {
 			pg.orderData.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 				Title(values.String(values.StrAccount)).
 				AccountValidator(func(account *sharedW.Account) bool {
-					accountIsValid := account.Number != load.MaxInt32 && !pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+					accountIsValid := account.Number != load.MaxInt32
 					return accountIsValid
 				})
 			pg.orderData.sourceAccountSelector.SelectAccount(pg.orderData.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
@@ -738,7 +738,7 @@ func (pg *CreateOrderPage) loadConfigOrder() {
 				Title(values.String(values.StrAccount)).
 				AccountValidator(func(account *sharedW.Account) bool {
 					// Imported accounts and watch only accounts are imvalid
-					accountIsValid := account.Number != load.MaxInt32 && !pg.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+					accountIsValid := account.Number != load.MaxInt32
 
 					return accountIsValid
 				})
@@ -757,7 +757,7 @@ func (pg *CreateOrderPage) loadConfigOrder() {
 		pg.orderData.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 			Title(values.String(values.StrAccount)).
 			AccountValidator(func(account *sharedW.Account) bool {
-				accountIsValid := account.Number != load.MaxInt32 && !pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
 			})
@@ -775,7 +775,7 @@ func (pg *CreateOrderPage) loadConfigOrder() {
 		pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 			Title(values.String(values.StrAccount)).
 			AccountValidator(func(account *sharedW.Account) bool {
-				accountIsValid := account.Number != load.MaxInt32 && !pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet()
+				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
 			})

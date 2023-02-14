@@ -130,17 +130,16 @@ func NewSendPage(l *load.Load) *Page {
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 
-	pg.sendDestination.destinationAccountSelector =
-		pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
-			// Filter the sending account.
-			sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
-			isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
-			if !accountIsValid || isSameAccount {
-				return false
-			}
-			return true
-		})
+	pg.sendDestination.destinationAccountSelector = pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
+		accountIsValid := account.Number != load.MaxInt32
+		// Filter the sending account.
+		sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
+		isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
+		if !accountIsValid || isSameAccount {
+			return false
+		}
+		return true
+	})
 
 	pg.sendDestination.destinationAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
 		pg.validateAndConstructTx()

@@ -285,7 +285,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return D{}
 																	}),
 																)
-
 															})
 														}),
 														layout.Rigid(func(gtx C) D {
@@ -361,7 +360,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																				return txt.Layout(gtx)
 																			}
 																			return D{}
-
 																		})
 																	}),
 																)
@@ -411,7 +409,6 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 					})
 				}),
 			)
-
 		},
 	}
 	return osm.Modal.Layout(gtx, w)

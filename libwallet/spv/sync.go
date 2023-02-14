@@ -256,6 +256,7 @@ func (s *Syncer) fetchHeadersFinished() {
 		s.notifications.FetchHeadersFinished()
 	}
 }
+
 func (s *Syncer) discoverAddressesStart(walletID int) {
 	if s.notifications != nil && s.notifications.DiscoverAddressesStarted != nil {
 		s.notifications.DiscoverAddressesStarted(walletID)
@@ -945,8 +946,8 @@ func (s *Syncer) receiveHeadersAnnouncements(ctx context.Context) error {
 // relevant wallet transactions keyed by block hash.  bmap is queried
 // for the block first with fallback to querying rp using getdata.
 func (s *Syncer) scanChain(ctx context.Context, rp *p2p.RemotePeer, chain []*wallet.BlockNode,
-	bmap map[chainhash.Hash]*wire.MsgBlock, walletID int) (map[chainhash.Hash][]*wire.MsgTx, error) {
-
+	bmap map[chainhash.Hash]*wire.MsgBlock, walletID int,
+) (map[chainhash.Hash][]*wire.MsgTx, error) {
 	found := make(map[chainhash.Hash][]*wire.MsgTx)
 
 	s.filterMu.Lock()
@@ -1055,8 +1056,8 @@ FilterLoop:
 // inventoried blocks, but may be nil in case the blocks were announced through
 // headers.
 func (s *Syncer) handleBlockAnnouncements(ctx context.Context, rp *p2p.RemotePeer, headers []*wire.BlockHeader,
-	bmap map[chainhash.Hash]*wire.MsgBlock) (err error) {
-
+	bmap map[chainhash.Hash]*wire.MsgBlock,
+) (err error) {
 	const opf = "spv.handleBlockAnnouncements(%v)"
 	defer func() {
 		if err != nil && ctx.Err() == nil {
@@ -1091,8 +1092,8 @@ func (s *Syncer) handleBlockAnnouncements(ctx context.Context, rp *p2p.RemotePee
 }
 
 func (s *Syncer) handleBlockAnnouncementsForWallet(ctx context.Context, walletID int, rp *p2p.RemotePeer, headers []*wire.BlockHeader,
-	bmap map[chainhash.Hash]*wire.MsgBlock) (err error) {
-
+	bmap map[chainhash.Hash]*wire.MsgBlock,
+) (err error) {
 	firstHeader := headers[0]
 	w := s.wallets[walletID]
 	newBlocks := make([]*wallet.BlockNode, 0, len(headers))

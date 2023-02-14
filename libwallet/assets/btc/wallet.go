@@ -219,7 +219,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, false)
+	// If a wallet doesn't contain discovered accounts, its previous recovery wasn't
+	// successful and therefore it should try the recovery again till it successfully
+	// completes.
+	ldr := initWalletLoader(chainParams, params.RootDir, !w.ContainsDiscoveredAccounts())
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
