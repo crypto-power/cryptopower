@@ -2,6 +2,7 @@ package listeners
 
 import (
 	"encoding/json"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
@@ -10,6 +11,12 @@ import (
 // TxAndBlockNotificationListener interface contract.
 type TxAndBlockNotificationListener struct {
 	TxAndBlockNotifChan chan TxNotification
+
+	// Because of the asynchronous use of TxAndBlockNotifChan chan, sometimes
+	// TxAndBlockNotifChan could be closed when the send goroutine is still running
+	// NotifChanClosed should help to identify when TxAndBlockNotifChan was closed
+	// thereby prevent the send via a closed channnel.
+	NotifChanClosed chan struct{}
 }
 
 func NewTxAndBlockNotificationListener() *TxAndBlockNotificationListener {
@@ -51,6 +58,17 @@ func (txAndBlk *TxAndBlockNotificationListener) OnTransactionConfirmed(walletID 
 }
 
 func (txAndBlk *TxAndBlockNotificationListener) UpdateNotification(signal TxNotification) {
+	// Since select randomly chooses which case to execute, If TxAndBlockNotifChan
+	// channel is closed further execution is stopped.
+	select {
+	case <-txAndBlk.NotifChanClosed:
+		// txAndBlk.TxAndBlockNotifChan already closed, exit the function now.
+		return
+	case <-time.After(time.Second * 2):
+		// channel not yet closed
+	}
+
+	// Second select can proceed to write to the channel if its open.
 	select {
 	case txAndBlk.TxAndBlockNotifChan <- signal:
 	default:

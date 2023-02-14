@@ -36,6 +36,7 @@ func (pg *Page) listenForTxNotifications() {
 				}
 			case <-pg.ctx.Done():
 				pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
+				close(pg.NotifChanClosed)
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

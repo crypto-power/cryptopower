@@ -266,6 +266,7 @@ func (pg *WalletInfo) listenForNotifications() {
 				selectedWallet.SetBlocksRescanProgressListener(nil)
 
 				close(pg.SyncStatusChan)
+				close(pg.NotifChanClosed)
 				close(pg.TxAndBlockNotifChan)
 				close(pg.BlockRescanChan)
 
