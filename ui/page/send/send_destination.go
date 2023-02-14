@@ -42,10 +42,12 @@ func newSendDestination(l *load.Load) *destination {
 
 	// Destination wallet picker
 	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, l.WL.SelectedWallet.Wallet.GetAssetType()).
+		DisableFilterWatchOnlyWallet().
 		Title(values.String(values.StrTo))
 
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
+		DisableFilterWatchOnlyWallet().
 		Title(values.String(values.StrAccount))
 	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 
@@ -76,10 +78,6 @@ func (dst *destination) destinationAccount() *sharedW.Account {
 	}
 
 	return dst.destinationAccountSelector.SelectedAccount()
-}
-
-func (dst *destination) isDestinationAccountExist() bool {
-	return dst.destinationAccountSelector.SelectedAccount() != nil
 }
 
 func (dst *destination) validateDestinationAddress() (bool, string) {
