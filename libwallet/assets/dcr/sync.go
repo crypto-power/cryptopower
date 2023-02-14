@@ -67,7 +67,6 @@ const (
 )
 
 func (asset *DCRAsset) initActiveSyncData() {
-
 	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
 		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
 		BeginFetchCFiltersTimeStamp: 0,
@@ -259,19 +258,20 @@ func (asset *DCRAsset) SpvSync() error {
 	// losing connection to all persistent peers.
 	go func() {
 		syncError := syncer.Run(ctx)
-		//sync has ended or errored
+		// sync has ended or errored
 		if syncError != nil {
 			if syncError == context.DeadlineExceeded {
 				asset.notifySyncError(errors.Errorf("SPV synchronization deadline exceeded: %v", syncError))
 			} else if syncError == context.Canceled {
-				close(asset.syncData.syncCanceled)
 				asset.notifySyncCanceled()
 			} else {
 				asset.notifySyncError(syncError)
 			}
 		}
 
-		//reset sync variables
+		// Close the syncer channel after the syncer.Run stops.
+		close(asset.syncData.syncCanceled)
+		// reset sync variables
 		asset.resetSyncData()
 	}()
 	return nil
@@ -308,8 +308,7 @@ func (asset *DCRAsset) CancelSync() {
 		// but when it eventually terminates, syncer.Run will return `err == context.Canceled`.
 		cancelSync()
 
-		// When sync terminates and syncer.Run returns `err == context.Canceled`,
-		// we will get notified on this channel.
+		// When sync terminates and syncer.Run returns, we will get notified on this channel.
 		<-asset.syncData.syncCanceled
 
 		log.Info("Sync fully canceled.")
@@ -339,7 +338,7 @@ func (asset *DCRAsset) IsSynced() bool {
 }
 
 func (asset *DCRAsset) IsSyncShuttingDown() bool {
-	//TODO: implement for DCR if synchronous shutdown takes a long time
+	// TODO: implement for DCR if synchronous shutdown takes a long time
 	return false
 }
 
