@@ -460,11 +460,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 						layout.Flexed(0.45, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									walletName := ""
+									walletName := "----"
 									if pg.orderData.sourceWalletSelector.SelectedWallet() != nil {
 										walletName = pg.orderData.sourceWalletSelector.SelectedWallet().GetWalletName()
 									}
-									accountName := ""
+									accountName := "----"
 									if pg.orderData.sourceAccountSelector.SelectedAccount() != nil {
 										accountName = pg.orderData.sourceAccountSelector.SelectedAccount().Name
 									}
@@ -482,11 +482,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 						layout.Flexed(0.45, func(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									walletName := ""
+									walletName := "----"
 									if pg.orderData.destinationWalletSelector.SelectedWallet() != nil {
 										walletName = pg.orderData.destinationWalletSelector.SelectedWallet().GetWalletName()
 									}
-									accountName := ""
+									accountName := "----"
 									if pg.orderData.destinationAccountSelector.SelectedAccount() != nil {
 										accountName = pg.orderData.destinationAccountSelector.SelectedAccount().Name
 									}
