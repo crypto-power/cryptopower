@@ -3,6 +3,7 @@ package components
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
@@ -36,25 +37,25 @@ type selectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedWallet          *load.WalletMapping
-	selectedAccount         *sharedW.Account
-	accountCallback         func(*sharedW.Account)
-	walletCallback          func(*load.WalletMapping)
-	accountIsValid          func(*sharedW.Account) bool
-	accountSelector         bool
-	infoActionText          string
-	dialogTitle             string
-	onWalletClicked         func(*load.WalletMapping)
-	onAccountClicked        func(*sharedW.Account)
-	walletsList             layout.List
-	selectorItems           []*SelectorItem // A SelectorItem can either be a wallet or account
-	assetType               []utils.AssetType
-	eventQueue              event.Queue
-	isCancelable            bool
-	infoButton              cryptomaterial.IconButton
-	infoModalOpen           bool
-	infoBackdrop            *widget.Clickable
-	isFilterWatchOnlyWallet bool
+	selectedWallet     *load.WalletMapping
+	selectedAccount    *sharedW.Account
+	accountCallback    func(*sharedW.Account)
+	walletCallback     func(*load.WalletMapping)
+	accountIsValid     func(*sharedW.Account) bool
+	accountSelector    bool
+	infoActionText     string
+	dialogTitle        string
+	onWalletClicked    func(*load.WalletMapping)
+	onAccountClicked   func(*sharedW.Account)
+	walletsList        layout.List
+	selectorItems      []*SelectorItem // A SelectorItem can either be a wallet or account
+	assetType          []utils.AssetType
+	eventQueue         event.Queue
+	isCancelable       bool
+	infoButton         cryptomaterial.IconButton
+	infoModalOpen      bool
+	infoBackdrop       *widget.Clickable
+	isWatchOnlyEnabled bool
 }
 
 // NewWalletAndAccountSelector creates a wallet selector component.
@@ -83,8 +84,6 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 				ws.accountCallback(account)
 			}
 		})
-
-	ws.isFilterWatchOnlyWallet = true
 	return ws
 }
 
@@ -93,8 +92,9 @@ func (ws *WalletAndAccountSelector) SelectedAccount() *sharedW.Account {
 	return ws.selectedAccount
 }
 
-func (ws *WalletAndAccountSelector) DisableFilterWatchOnlyWallet() *WalletAndAccountSelector {
-	ws.isFilterWatchOnlyWallet = false
+// EnableWatchOnlyWallets enables selection of watchOnly wallets and their accounts.
+func (ws *WalletAndAccountSelector) EnableWatchOnlyWallets() *WalletAndAccountSelector {
+	ws.isWatchOnlyEnabled = true
 	return ws
 }
 
@@ -401,21 +401,24 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	}
 
 	for _, wal := range wallets {
-		if !wal.IsWatchingOnlyWallet() || !sm.isFilterWatchOnlyWallet {
-			selectorItems = append(selectorItems, &SelectorItem{
-				item: &load.WalletMapping{
-					Asset: wal,
-				},
-				clickable: sm.Theme.NewClickable(true),
-			})
+		if wal.IsWatchingOnlyWallet() && !sm.isWatchOnlyEnabled {
+			continue
 		}
+		selectorItems = append(selectorItems, &SelectorItem{
+			item: &load.WalletMapping{
+				Asset: wal,
+			},
+			clickable: sm.Theme.NewClickable(true),
+		})
 	}
 	sm.selectorItems = selectorItems
+	fmt.Println()
 }
 
 func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 	selectorItems := make([]*SelectorItem, 0)
-	if !wal.IsWatchingOnlyWallet() || !sm.isFilterWatchOnlyWallet {
+	// if isWatchOnlyEnabled is enabled the watch account of watch only wallet will add to list accounts selector
+	if !wal.IsWatchingOnlyWallet() || sm.isWatchOnlyEnabled {
 		accountsResult, err := wal.GetAccountsRaw()
 		if err != nil {
 			log.Errorf("Error getting accounts:", err)
