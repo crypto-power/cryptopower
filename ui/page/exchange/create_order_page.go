@@ -60,6 +60,7 @@ type CreateOrderPage struct {
 
 	fromAmountEditor cryptomaterial.Editor
 	toAmountEditor   cryptomaterial.Editor
+	toAmountEditor1  components.SelectAssetEditor
 
 	backButton cryptomaterial.IconButton
 
@@ -151,6 +152,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor.CustomButton.Text = utils.BTCWalletAsset.String()
 	pg.toAmountEditor.CustomButton.Background = l.Theme.Color.Danger
 	pg.toAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
+
+	pg.toAmountEditor1 = *components.NewSelectAssetEditor(l)
 
 	pg.loadOrderConfig()
 
@@ -369,6 +372,10 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.toAmountEditor.Editor.SetText(tempFromCurrencyValue)
 	pg.toAmountEditor.CustomButton.Text = tempFromButtonText
 	pg.toAmountEditor.CustomButton.Background = tempFromButtonBackground
+
+	// update title of wallet selector
+	pg.orderData.sourceWalletSelector.Title(values.String(values.StrFrom))
+	pg.orderData.destinationWalletSelector.Title(values.String(values.StrTo))
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
@@ -468,7 +475,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									if pg.orderData.sourceAccountSelector.SelectedAccount() != nil {
 										accountName = pg.orderData.sourceAccountSelector.SelectedAccount().Name
 									}
-									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrFrom), walletName, accountName)
+									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
@@ -490,7 +497,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									if pg.orderData.destinationAccountSelector.SelectedAccount() != nil {
 										accountName = pg.orderData.destinationAccountSelector.SelectedAccount().Name
 									}
-									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrTo), walletName, accountName)
+									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
@@ -499,6 +506,9 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							)
 						}),
 					)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return pg.toAmountEditor1.Layout(pg.ParentWindow(), gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
@@ -731,7 +741,8 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 			// Destination wallet picker
 			pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
-				Title(values.String(values.StrTo))
+				Title(values.String(values.StrTo)).
+				EnableWatchOnlyWallets()
 
 			// Destination account picker
 			pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
@@ -769,7 +780,8 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 		// Destination wallet picker
 		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.BTCWalletAsset).
-			Title(values.String(values.StrTo))
+			Title(values.String(values.StrTo)).
+			EnableWatchOnlyWallets()
 
 		// Destination account picker
 		pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).

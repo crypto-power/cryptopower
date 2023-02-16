@@ -1,6 +1,8 @@
-package root
+package components
 
 import (
+	"image/color"
+
 	"gioui.org/io/event"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -19,6 +21,10 @@ type AssetTypeSelector struct {
 	openSelectorDialog *cryptomaterial.Clickable
 	*assetTypeModal
 	changed bool
+
+	hint            string
+	isDisableBorder bool
+	background      color.NRGBA
 }
 
 // AssetType models asset types.
@@ -67,6 +73,7 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 			}
 		})
 	ats.assetTypeItems = ats.buildExchangeItems()
+	ats.hint = values.String(values.StrSelectAssetType)
 	return ats
 }
 
@@ -97,6 +104,24 @@ func (ats *AssetTypeSelector) setAssetTypeIcon(assetType string) *cryptomaterial
 	default:
 		return ats.Theme.Icons.AddExchange
 	}
+}
+
+// SetBackground sets backgound
+func (ats *AssetTypeSelector) SetBackground(background color.NRGBA) *AssetType {
+	ats.background = background
+	return ats.selectedAssetType
+}
+
+// SetHint sets hint for selector
+func (ats *AssetTypeSelector) SetHint(hint string) *AssetType {
+	ats.hint = hint
+	return ats.selectedAssetType
+}
+
+// DisableBorder will disable border on layout selected Asset type.
+func (ats *AssetTypeSelector) DisableBorder() *AssetType {
+	ats.isDisableBorder = true
+	return ats.selectedAssetType
 }
 
 // SelectedAssetType returns the currently selected Asset type.
@@ -131,18 +156,21 @@ func (ats *AssetTypeSelector) Handle(window app.WindowNavigator) {
 func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 	ats.Handle(window)
 
-	return cryptomaterial.LinearLayout{
+	linearLayout := cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     cryptomaterial.WrapContent,
 		Padding:    layout.UniformInset(values.MarginPadding12),
-		Background: ats.Theme.Color.White,
-		Border: cryptomaterial.Border{
+		Background: ats.background,
+		Clickable:  ats.openSelectorDialog,
+	}
+	if !ats.isDisableBorder {
+		linearLayout.Border = cryptomaterial.Border{
 			Width:  values.MarginPadding2,
 			Color:  ats.Theme.Color.Gray2,
 			Radius: cryptomaterial.Radius(8),
-		},
-		Clickable: ats.openSelectorDialog,
-	}.Layout(gtx,
+		}
+	}
+	return linearLayout.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if ats.selectedAssetType == nil {
 				return D{}
@@ -152,7 +180,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			}.Layout(gtx, ats.selectedAssetType.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := ats.Theme.Label(values.TextSize16, values.String(values.StrSelectAssetType))
+			txt := ats.Theme.Label(values.TextSize16, ats.hint)
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
 				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Type.String())
