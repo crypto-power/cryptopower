@@ -3,7 +3,6 @@ package components
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
@@ -412,7 +411,6 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 		})
 	}
 	sm.selectorItems = selectorItems
-	fmt.Println()
 }
 
 func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {

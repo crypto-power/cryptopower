@@ -49,8 +49,8 @@ type CreateOrderPage struct {
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
-	fromCurrencyType utils.AssetType
-	toCurrencyType   utils.AssetType
+	// fromCurrencyType utils.AssetType
+	// toCurrencyType   utils.AssetType
 	exchangeRateInfo string
 	amountErrorText  string
 	fetchingRate     bool
@@ -58,9 +58,10 @@ type CreateOrderPage struct {
 
 	materialLoader material.LoaderStyle
 
-	fromAmountEditor cryptomaterial.Editor
-	toAmountEditor   cryptomaterial.Editor
-	toAmountEditor1  components.SelectAssetEditor
+	fromAmountEditor  cryptomaterial.Editor
+	toAmountEditor    cryptomaterial.Editor
+	fromAmountEditor1 components.SelectAssetEditor
+	toAmountEditor1   components.SelectAssetEditor
 
 	backButton cryptomaterial.IconButton
 
@@ -154,6 +155,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
 	pg.toAmountEditor1 = *components.NewSelectAssetEditor(l)
+	pg.fromAmountEditor1 = *components.NewSelectAssetEditor(l)
 
 	pg.loadOrderConfig()
 
@@ -234,8 +236,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.settingsButton.Button.Clicked() {
-		pg.fromCurrency = pg.fromCurrencyType
-		pg.toCurrency = pg.toCurrencyType
+		// pg.fromCurrency = pg.fromCurrencyType
+		// pg.toCurrency = pg.toCurrencyType
 		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
 			OnSettingsSaved(func(params *callbackParams) {
 				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
@@ -353,7 +355,7 @@ func (pg *CreateOrderPage) swapCurrency() {
 	// store the current value of the from currency in a temp variable
 	tempSourceWalletSelector := pg.orderData.sourceWalletSelector
 	tempSourceAccountSelector := pg.orderData.sourceAccountSelector
-	tempFromCurrencyType := pg.fromCurrencyType
+	tempFromCurrencyType := pg.fromCurrency
 	tempFromCurrencyValue := pg.fromAmountEditor.Editor.Text()
 	tempFromButtonText := pg.fromAmountEditor.CustomButton.Text
 	tempFromButtonBackground := pg.fromAmountEditor.CustomButton.Background
@@ -361,14 +363,14 @@ func (pg *CreateOrderPage) swapCurrency() {
 	// Swap values
 	pg.orderData.sourceWalletSelector = pg.orderData.destinationWalletSelector
 	pg.orderData.sourceAccountSelector = pg.orderData.destinationAccountSelector
-	pg.fromCurrencyType = pg.toCurrencyType
+	pg.fromCurrency = pg.toCurrency
 	pg.fromAmountEditor.Editor.SetText(pg.toAmountEditor.Editor.Text())
 	pg.fromAmountEditor.CustomButton.Text = pg.toAmountEditor.CustomButton.Text
 	pg.fromAmountEditor.CustomButton.Background = pg.toAmountEditor.CustomButton.Background
 
 	pg.orderData.destinationWalletSelector = tempSourceWalletSelector
 	pg.orderData.destinationAccountSelector = tempSourceAccountSelector
-	pg.toCurrencyType = tempFromCurrencyType
+	pg.fromCurrency = tempFromCurrencyType
 	pg.toAmountEditor.Editor.SetText(tempFromCurrencyValue)
 	pg.toAmountEditor.CustomButton.Text = tempFromButtonText
 	pg.toAmountEditor.CustomButton.Background = tempFromButtonBackground
@@ -480,7 +482,10 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
 								}),
-								layout.Rigid(pg.fromAmountEditor.Layout),
+								// layout.Rigid(pg.fromAmountEditor.Layout),
+								layout.Rigid(func(gtx C) D {
+									return pg.fromAmountEditor1.Layout(pg.ParentWindow(), gtx)
+								}),
 							)
 						}),
 						layout.Flexed(0.1, func(gtx C) D {
@@ -502,13 +507,13 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
 								}),
-								layout.Rigid(pg.toAmountEditor.Layout),
+								// layout.Rigid(pg.toAmountEditor.Layout),
+								layout.Rigid(func(gtx C) D {
+									return pg.toAmountEditor1.Layout(pg.ParentWindow(), gtx)
+								}),
 							)
 						}),
 					)
-				}),
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					return pg.toAmountEditor1.Layout(pg.ParentWindow(), gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
@@ -639,9 +644,6 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 	pg.invoicedAmount = invoicedAmount
 	pg.orderedAmount = orderedAmount
 
-	pg.fromCurrency = pg.fromCurrencyType
-	pg.toCurrency = pg.toCurrencyType
-
 	pg.refundAddress = refundAddress
 	pg.destinationAddress = destinationAddress
 
@@ -671,8 +673,8 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	pg.fetchingRate = true
 	params := api.ExchangeRateRequest{
-		From:   pg.fromCurrencyType.String(),
-		To:     pg.toCurrencyType.String(),
+		From:   pg.fromCurrency.String(),
+		To:     pg.toCurrency.String(),
 		Amount: 0,
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
@@ -797,6 +799,6 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 			pg.orderData.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 		})
 	}
-	pg.fromCurrencyType = pg.orderData.sourceWalletSelector.SelectedWallet().GetAssetType()
-	pg.toCurrencyType = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
+	pg.fromCurrency = pg.orderData.sourceWalletSelector.SelectedWallet().GetAssetType()
+	pg.toCurrency = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
 }
