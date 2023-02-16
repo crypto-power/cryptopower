@@ -28,14 +28,15 @@ type AssetTypeSelector struct {
 }
 
 // AssetType models asset types.
-type AssetType struct {
-	Type utils.AssetType
-	Icon *cryptomaterial.Image
-}
+// type AssetType struct {
+// 	Type utils.AssetType
+// 	Icon *cryptomaterial.Image
+// }
 
 // assetTypeItem wraps the asset type in a clickable.
-type assetTypeItem struct {
-	item      *AssetType
+type AssetTypeItem struct {
+	Type      utils.AssetType
+	Icon      *cryptomaterial.Image
 	clickable *cryptomaterial.Clickable
 }
 
@@ -43,12 +44,12 @@ type assetTypeModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedAssetType  *AssetType
-	assetTypeCallback  func(*AssetType)
+	selectedAssetType  *AssetTypeItem
+	assetTypeCallback  func(*AssetTypeItem)
 	dialogTitle        string
-	onAssetTypeClicked func(*AssetType)
+	onAssetTypeClicked func(*AssetTypeItem)
 	assetTypeList      layout.List
-	assetTypeItems     []*assetTypeItem
+	assetTypeItems     []*AssetTypeItem
 	eventQueue         event.Queue
 	isCancelable       bool
 }
@@ -61,13 +62,14 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 	}
 
 	ats.assetTypeModal = newAssetTypeModal(l).
-		assetTypeClicked(func(assetType *AssetType) {
+		assetTypeClicked(func(assetType *AssetTypeItem) {
 			if ats.selectedAssetType != nil {
 				if ats.selectedAssetType.Type.String() != assetType.Type.String() {
 					ats.changed = true
 				}
 			}
-			ats.SetSelectedAssetType(assetType)
+			// ats.SetSelectedAssetType(assetType)
+			ats.selectedAssetType = assetType
 			if ats.assetTypeCallback != nil {
 				ats.assetTypeCallback(assetType)
 			}
@@ -79,12 +81,12 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 
 // SupportedAssetTypes returns a slice containing all the asset types
 // Currently supported.
-func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetType {
+func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
 	assetTypes := ats.WL.AssetsManager.AllAssetTypes()
 
-	var assetType []*AssetType
+	var assetType []*AssetTypeItem
 	for _, at := range assetTypes {
-		asset := &AssetType{
+		asset := &AssetTypeItem{
 			Type: at,
 			Icon: ats.setAssetTypeIcon(at.ToStringLower()),
 		}
@@ -107,31 +109,36 @@ func (ats *AssetTypeSelector) setAssetTypeIcon(assetType string) *cryptomaterial
 }
 
 // SetBackground sets backgound
-func (ats *AssetTypeSelector) SetBackground(background color.NRGBA) *AssetType {
+func (ats *AssetTypeSelector) SetBackground(background color.NRGBA) *AssetTypeSelector {
 	ats.background = background
-	return ats.selectedAssetType
+	return ats
 }
 
 // SetHint sets hint for selector
-func (ats *AssetTypeSelector) SetHint(hint string) *AssetType {
+func (ats *AssetTypeSelector) SetHint(hint string) *AssetTypeSelector {
 	ats.hint = hint
-	return ats.selectedAssetType
+	return ats
 }
 
 // DisableBorder will disable border on layout selected Asset type.
-func (ats *AssetTypeSelector) DisableBorder() *AssetType {
+func (ats *AssetTypeSelector) DisableBorder() *AssetTypeSelector {
 	ats.isDisableBorder = true
-	return ats.selectedAssetType
+	return ats
 }
 
 // SelectedAssetType returns the currently selected Asset type.
-func (ats *AssetTypeSelector) SelectedAssetType() *AssetType {
-	return ats.selectedAssetType
+func (ats *AssetTypeSelector) SelectedAssetType() *utils.AssetType {
+	return &ats.selectedAssetType.Type
 }
 
 // SetSelectedAssetType sets assetType as the current selected asset type.
-func (ats *AssetTypeSelector) SetSelectedAssetType(assetType *AssetType) {
-	ats.selectedAssetType = assetType
+func (ats *AssetTypeSelector) SetSelectedAssetType(assetType *utils.AssetType) {
+	asset := &AssetTypeItem{
+		Type:      *assetType,
+		Icon:      ats.setAssetTypeIcon(assetType.ToStringLower()),
+		clickable: ats.Theme.NewClickable(true),
+	}
+	ats.selectedAssetType = asset
 }
 
 // Title Sets the title of the asset type list dialog.
@@ -141,10 +148,10 @@ func (ats *AssetTypeSelector) Title(title string) *AssetTypeSelector {
 }
 
 // AssetTypeSelected sets the callback executed when an asset type is selected.
-func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetType)) *AssetTypeSelector {
-	ats.assetTypeCallback = callback
-	return ats
-}
+// func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetType)) *AssetTypeSelector {
+// 	ats.assetTypeCallback = callback
+// 	return ats
+// }
 
 func (ats *AssetTypeSelector) Handle(window app.WindowNavigator) {
 	for ats.openSelectorDialog.Clicked() {
@@ -217,16 +224,12 @@ func newAssetTypeModal(l *load.Load) *assetTypeModal {
 	return atm
 }
 
-func (ats *AssetTypeSelector) buildExchangeItems() []*assetTypeItem {
+func (ats *AssetTypeSelector) buildExchangeItems() []*AssetTypeItem {
 	exList := ats.SupportedAssetTypes()
-	exItems := make([]*assetTypeItem, 0)
 	for _, v := range exList {
-		exItems = append(exItems, &assetTypeItem{
-			item:      v,
-			clickable: ats.Theme.NewClickable(true),
-		})
+		v.clickable = ats.Theme.NewClickable(true)
 	}
-	return exItems
+	return exList
 }
 
 func (atm *assetTypeModal) OnResume() {}
@@ -235,7 +238,7 @@ func (atm *assetTypeModal) Handle() {
 	if atm.eventQueue != nil {
 		for _, assetTypeItem := range atm.assetTypeItems {
 			for assetTypeItem.clickable.Clicked() {
-				atm.onAssetTypeClicked(assetTypeItem.item)
+				atm.onAssetTypeClicked(assetTypeItem)
 				atm.Dismiss()
 			}
 		}
@@ -251,7 +254,7 @@ func (atm *assetTypeModal) title(title string) *assetTypeModal {
 	return atm
 }
 
-func (atm *assetTypeModal) assetTypeClicked(callback func(*AssetType)) *assetTypeModal {
+func (atm *assetTypeModal) assetTypeClicked(callback func(*AssetTypeItem)) *assetTypeModal {
 	atm.onAssetTypeClicked = callback
 	return atm
 }
@@ -281,7 +284,7 @@ func (atm *assetTypeModal) Layout(gtx C) D {
 	return atm.Modal.Layout(gtx, w)
 }
 
-func (atm *assetTypeModal) modalListItemLayout(gtx C, assetTypeItem *assetTypeItem) D {
+func (atm *assetTypeModal) modalListItemLayout(gtx C, assetTypeItem *AssetTypeItem) D {
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.WrapContent,
@@ -293,10 +296,10 @@ func (atm *assetTypeModal) modalListItemLayout(gtx C, assetTypeItem *assetTypeIt
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Right: values.MarginPadding18,
-			}.Layout(gtx, assetTypeItem.item.Icon.Layout24dp)
+			}.Layout(gtx, assetTypeItem.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			assetTypeName := atm.Theme.Label(values.TextSize18, assetTypeItem.item.Type.String())
+			assetTypeName := atm.Theme.Label(values.TextSize18, assetTypeItem.Type.String())
 			assetTypeName.Color = atm.Theme.Color.Text
 			assetTypeName.Font.Weight = text.Normal
 			return assetTypeName.Layout(gtx)

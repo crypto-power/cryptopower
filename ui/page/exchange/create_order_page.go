@@ -49,8 +49,6 @@ type CreateOrderPage struct {
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
 
-	// fromCurrencyType utils.AssetType
-	// toCurrencyType   utils.AssetType
 	exchangeRateInfo string
 	amountErrorText  string
 	fetchingRate     bool
@@ -801,4 +799,6 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	}
 	pg.fromCurrency = pg.orderData.sourceWalletSelector.SelectedWallet().GetAssetType()
 	pg.toCurrency = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
+	pg.fromAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
+	pg.toAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 }
