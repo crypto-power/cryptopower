@@ -395,8 +395,8 @@ func (pg *CreateOrderPage) swapCurrency() {
 	}
 
 	// update title of wallet selector
-	pg.orderData.sourceWalletSelector.Title(values.String(values.StrFrom)).EnableWatchOnlyWallets(false)
-	pg.orderData.destinationWalletSelector.Title(values.String(values.StrTo)).EnableWatchOnlyWallets(true)
+	pg.orderData.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
+	pg.orderData.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
@@ -749,7 +749,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 			// Source wallet picker
 			pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, sourceCurrency).
-				Title(values.String(values.StrFrom))
+				Title(values.String(values.StrSource))
 
 			sourceW := &load.WalletMapping{
 				Asset: sourceWallet,
@@ -778,7 +778,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 			// Destination wallet picker
 			pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
-				Title(values.String(values.StrTo)).
+				Title(values.String(values.StrDestination)).
 				EnableWatchOnlyWallets(true)
 
 			// Destination account picker
