@@ -22,6 +22,7 @@ type TxAndBlockNotificationListener struct {
 func NewTxAndBlockNotificationListener() *TxAndBlockNotificationListener {
 	return &TxAndBlockNotificationListener{
 		TxAndBlockNotifChan: make(chan TxNotification, 4),
+		NotifChanClosed:     make(chan struct{}, 1),
 	}
 }
 

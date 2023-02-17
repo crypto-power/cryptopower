@@ -534,7 +534,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
 				pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 				close(pg.MixerChan)
-				close(pg.NotifChanClosed)
+				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(pg.TxAndBlockNotifChan)
 				pg.AccountMixerNotificationListener = nil
 				return

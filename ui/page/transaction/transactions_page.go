@@ -453,7 +453,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 				}
 			case <-pg.ctx.Done():
 				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
-				close(pg.NotifChanClosed)
+				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 
