@@ -27,12 +27,6 @@ type AssetTypeSelector struct {
 	background      color.NRGBA
 }
 
-// AssetType models asset types.
-// type AssetType struct {
-// 	Type utils.AssetType
-// 	Icon *cryptomaterial.Image
-// }
-
 // assetTypeItem wraps the asset type in a clickable.
 type AssetTypeItem struct {
 	Type      utils.AssetType
@@ -148,10 +142,10 @@ func (ats *AssetTypeSelector) Title(title string) *AssetTypeSelector {
 }
 
 // AssetTypeSelected sets the callback executed when an asset type is selected.
-// func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetType)) *AssetTypeSelector {
-// 	ats.assetTypeCallback = callback
-// 	return ats
-// }
+func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetTypeItem)) *AssetTypeSelector {
+	ats.assetTypeCallback = callback
+	return ats
+}
 
 func (ats *AssetTypeSelector) Handle(window app.WindowNavigator) {
 	for ats.openSelectorDialog.Clicked() {

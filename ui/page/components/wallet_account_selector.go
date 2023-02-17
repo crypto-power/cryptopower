@@ -137,6 +137,13 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
+func (ws *WalletAndAccountSelector) SetSelectAsset(assetType ...utils.AssetType) {
+	ws.assetType = assetType
+	ws.selectorModal.setupWallet(assetType[0])
+	ws.selectedWallet = ws.selectorItems[0].item.(*load.WalletMapping)
+	ws.accountSelector = false
+}
+
 func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
@@ -203,10 +210,6 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 }
 
 func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *load.WalletMapping) {
-	ws.selectedWallet = wallet
-}
-
-func (ws *WalletAndAccountSelector) SelectWallet(wallet *load.WalletMapping) {
 	ws.selectedWallet = wallet
 }
 
