@@ -193,7 +193,8 @@ func (pg *SeedRestore) restoreMobile(gtx C) D {
 						Height:      cryptomaterial.WrapContent,
 						Background:  pg.Theme.Color.Surface,
 						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-						Padding:     layout.UniformInset(values.MarginPadding15)}.Layout(gtx,
+						Padding:     layout.UniformInset(values.MarginPadding15),
+					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
 								Bottom: values.MarginPadding10,
@@ -311,7 +312,7 @@ func (pg *SeedRestore) onSuggestionSeedsClicked() {
 	index := pg.seedEditors.focusIndex
 	if index != -1 {
 		for i, b := range pg.seedMenu {
-			for pg.seedMenu[i].button.Clicked() {
+			if pg.seedMenu[i].button.Clicked() {
 				pg.seedEditors.editors[index].Edit.Editor.SetText(b.text)
 				pg.seedEditors.editors[index].Edit.Editor.MoveCaret(len(b.text), 0)
 				pg.seedClicked = true
@@ -612,7 +613,8 @@ func (pg *SeedRestore) KeysToHandle() key.Set {
 	// Once user starts editing any of the input boxes, the arrow up, down
 	// and enter key signals are no longer received.
 	keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
-	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow)
+	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow,
+		key.NameLeftArrow, key.NameRightArrow)
 	keySet3 := cryptomaterial.AnyKey(key.NameReturn, key.NameEnter)
 	return cryptomaterial.AnyKey(string(keySet1), string(keySet2), string(keySet3))
 }
@@ -634,16 +636,38 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
-	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press {
+	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press && pg.openPopupIndex != -1 {
 		switchSeedEditors(pg.seedEditors.editors, -1)
 	}
 
+	if evt.Name == key.NameDownArrow && evt.State == key.Press {
+		if pg.openPopupIndex != -1 {
+			pg.selected++
+			if pg.selected > len(pg.suggestions)-1 {
+				pg.selected = 0
+			}
+			return
+		}
+		switchSeedEditors(pg.seedEditors.editors, 5)
+	}
+
 	if evt.Name == key.NameUpArrow && evt.State == key.Press {
+		if pg.openPopupIndex != -1 {
+			pg.selected--
+			if pg.selected < 0 {
+				pg.selected = len(pg.suggestions) - 1
+			}
+			return
+		}
 		switchSeedEditors(pg.seedEditors.editors, -5)
 	}
 
-	if evt.Name == key.NameDownArrow && evt.State == key.Press {
-		switchSeedEditors(pg.seedEditors.editors, 5)
+	if evt.Name == key.NameLeftArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
+		switchSeedEditors(pg.seedEditors.editors, -1)
+	}
+
+	if evt.Name == key.NameRightArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
+		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
 	if (evt.Name == key.NameReturn || evt.Name == key.NameEnter) && pg.openPopupIndex != -1 && evt.State == key.Press && len(pg.suggestions) != 0 {
