@@ -42,13 +42,14 @@ type OrderDetailsPage struct {
 }
 
 func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPage {
+	fmt.Println("[][][][]][ ORDER DETAILS", order)
 	pg := &OrderDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderDetailsPageID),
 		orderInfo:        order,
 	}
 
-	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(order.Server)
+	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(order.ExchangeServer)
 	if err != nil {
 		log.Error(err)
 	}
@@ -232,7 +233,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 				}),
 				layout.Rigid(pg.Theme.Label(values.TextSize28, pg.orderInfo.Status.String()).Layout),
 				layout.Rigid(func(gtx C) D {
-					if pg.orderInfo.Status == api.OrderStatusWaitingForDeposit {
+					if pg.orderInfo.Status == api.OrderStatusWaitingForDeposit && pg.orderInfo.ExchangeServer.Server == instantswap.FlypMe {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(pg.Theme.Label(values.TextSize18, values.String(values.StrExpiresIn)).Layout),
 							layout.Rigid(pg.Theme.Label(values.TextSize18, fmt.Sprint(pg.orderInfo.ExpiryTime)).Layout),

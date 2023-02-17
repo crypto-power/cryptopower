@@ -7,24 +7,39 @@ import (
 	"golang.org/x/text/language"
 )
 
-type ExchangeServer string
+type ExchangeServer struct {
+	Server Server
+	Config ExchangeConfig
+}
+
+// ExchangeConfig
+type ExchangeConfig struct {
+	Debug     bool
+	ApiKey    string
+	ApiSecret string
+	// AffiliateId is used to earn refer coin from transaction
+	AffiliateId string
+	UserID      string
+}
+
+type Server string
 
 const (
-	Changelly  ExchangeServer = "changelly"
-	ChangeNow  ExchangeServer = "changenow"
-	CoinSwitch ExchangeServer = "coinswitch"
-	FlypMe     ExchangeServer = "flypme"
-	GoDex      ExchangeServer = "godex"
-	SimpleSwap ExchangeServer = "simpleswap"
-	SwapZone   ExchangeServer = "swapzone"
+	Changelly  Server = "changelly"
+	ChangeNow  Server = "changenow"
+	CoinSwitch Server = "coinswitch"
+	FlypMe     Server = "flypme"
+	GoDex      Server = "godex"
+	SimpleSwap Server = "simpleswap"
+	SwapZone   Server = "swapzone"
 )
 
-func (es ExchangeServer) ToString() string {
+func (es Server) ToString() string {
 	return string(es)
 }
 
-// CapFirstLetter capitalizes the first letter of the ExchangeServer
-func (es ExchangeServer) CapFirstLetter() string {
+// CapFirstLetter capitalizes the first letter of the Server
+func (es Server) CapFirstLetter() string {
 	caser := cases.Title(language.Und)
 	return caser.String(string(es))
 }
@@ -36,7 +51,7 @@ type InstantSwap struct {
 type Order struct {
 	ID                       int            `storm:"id,increment"`
 	UUID                     string         `storm:"unique" json:"uuid"`
-	Server                   ExchangeServer `json:"server"`
+	ExchangeServer           ExchangeServer `json:"exchangeServer"`
 	SourceWalletID           int            `json:"sourceWalletID"`
 	SourceAccountNumber      int32          `json:"sourceAccountNumber"`
 	DestinationWalletID      int            `json:"destinationWalletID"`
@@ -62,6 +77,8 @@ type Order struct {
 	CreatedAt     int64              `storm:"index" json:"createdAt"`
 	LastUpdate    string             `json:"lastUpdate"` // should be timestamp (api currently returns string)
 
-	ExtraID   string `json:"extraId"`   //changenow.io requirement //changelly payinExtraId value
+	ExtraID string `json:"extraId"` //changenow.io requirement //changelly payinExtraId value
+	UserID  string `json:"userId"`  //changenow.io partner requirement
+
 	Signature string `json:"signature"` //evercoin requirement
 }

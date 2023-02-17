@@ -57,10 +57,11 @@ func (instantSwap *InstantSwap) updateOrder(order *Order) error {
 func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer) (instantswap.IDExchange, error) {
 	const op errors.Op = "instantSwap.NewExchanageServer"
 
-	exchange, err := instantswap.NewExchange(exchangeServer.ToString(), instantswap.ExchangeConfig{
-		Debug:     false,
-		ApiKey:    "",
-		ApiSecret: "",
+	exchange, err := instantswap.NewExchange(exchangeServer.Server.ToString(), instantswap.ExchangeConfig{
+		Debug:       exchangeServer.Config.Debug,
+		ApiKey:      exchangeServer.Config.ApiKey,
+		ApiSecret:   exchangeServer.Config.ApiSecret,
+		AffiliateId: exchangeServer.Config.AffiliateId,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -141,7 +142,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	order := &Order{
 		UUID: res.UUID,
 
-		Server:                   params.Server,
+		ExchangeServer:           params.ExchangeServer,
 		SourceWalletID:           params.SourceWalletID,
 		SourceAccountNumber:      params.SourceAccountNumber,
 		DestinationWalletID:      params.DestinationWalletID,
@@ -210,13 +211,36 @@ func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeObject instantswap.I
 
 func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 	return []ExchangeServer{
-		// Changelly, // Not supported
-		ChangeNow,
-		// CoinSwitch, // Not supported
-		FlypMe,
-		GoDex,
-		// SimpleSwap, // Not supported
-		// SwapZone, // Not supported
+		{
+			ChangeNow,
+			ExchangeConfig{
+				Debug:       false,
+				ApiKey:      "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93",
+				ApiSecret:   "",
+				AffiliateId: "",
+				UserID:      "cryptopowerdev@proton.me",
+			},
+		},
+		{
+			FlypMe,
+			ExchangeConfig{
+				Debug:       false,
+				ApiKey:      "",
+				ApiSecret:   "",
+				AffiliateId: "",
+				UserID:      "",
+			},
+		},
+		{
+			GoDex,
+			ExchangeConfig{
+				Debug:       false,
+				ApiKey:      "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3",
+				ApiSecret:   "",
+				AffiliateId: "",
+				UserID:      "8WHB6Yp8W",
+			},
+		},
 	}
 }
 
@@ -231,16 +255,5 @@ func (instantSwap *InstantSwap) DeleteOrders() error {
 }
 
 func (instantSwap *InstantSwap) DeleteOrder(order *Order) error {
-	var oldOrder Order
-	err := instantSwap.db.One("UUID", order.UUID, &oldOrder)
-	if err != nil && err != storm.ErrNotFound {
-		return errors.Errorf("error checking if order was already indexed: %s", err.Error())
-	}
-
-	if oldOrder.UUID != "" {
-		// delete old record before saving new (if it exists)
-		instantSwap.db.DeleteStruct(oldOrder)
-	}
-
-	return nil
+	return instantSwap.db.DeleteStruct(order)
 }

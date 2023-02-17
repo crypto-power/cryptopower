@@ -75,8 +75,8 @@ type CreateOrderPage struct {
 }
 
 type orderData struct {
-	exchange api.IDExchange
-	server   instantswap.ExchangeServer
+	exchange       api.IDExchange
+	exchangeServer instantswap.ExchangeServer
 
 	sourceAccountSelector *components.WalletAndAccountSelector
 	sourceWalletSelector  *components.WalletAndAccountSelector
@@ -661,7 +661,11 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 	destinationAddress, _ := pg.orderData.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.destinationAccountSelector.SelectedAccount().Number)
 
 	pg.orderData.exchange = pg.exchange
-	pg.orderData.server = pg.selectedExchange.Server
+	pg.orderData.exchangeServer = pg.selectedExchange.Server
+	pg.orderData.sourceWalletSelector = pg.sourceWalletSelector
+	pg.orderData.sourceAccountSelector = pg.sourceAccountSelector
+	pg.orderData.destinationWalletSelector = pg.sourceWalletSelector
+	pg.orderData.destinationAccountSelector = pg.destinationAccountSelector
 
 	pg.sourceWalletID = pg.orderData.sourceWalletSelector.SelectedWallet().GetWalletID()
 	pg.sourceAccountNumber = pg.orderData.sourceAccountSelector.SelectedAccount().Number
@@ -718,7 +722,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	params := api.ExchangeRateRequest{
 		From:   pg.fromCurrency.String(),
 		To:     pg.toCurrency.String(),
-		Amount: 0,
+		Amount: 1,
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {

@@ -21,6 +21,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/exchange"
 	"code.cryptopower.dev/group/cryptopower/ui/page/governance"
 	"code.cryptopower.dev/group/cryptopower/ui/page/info"
 	"code.cryptopower.dev/group/cryptopower/ui/page/privacy"
@@ -109,6 +110,7 @@ func init() {
 	components.UseLogger(winLog)
 	transaction.UseLogger(winLog)
 	governance.UseLogger(winLog)
+	exchange.UseLogger(winLog)
 	info.UseLogger(winLog)
 	staking.UseLogger(winLog)
 	privacy.UseLogger(winLog)
