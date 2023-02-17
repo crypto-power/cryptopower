@@ -134,6 +134,20 @@ func (ats *AssetTypeSelector) SetSelectedAssetType(assetType *utils.AssetType) {
 	ats.selectedAssetType = asset
 }
 
+// SetSelectedAssetTypeWithout sets other assetType than assetType is passed in.
+func (ats *AssetTypeSelector) SetSelectedAssetTypeWithout(assetType *utils.AssetType) {
+	if ats.selectedAssetType.Type.ToStringLower() != assetType.ToStringLower() {
+		return
+	}
+	allAssetTypes := ats.SupportedAssetTypes()
+	for _, v := range allAssetTypes {
+		if v.Type.ToStringLower() != assetType.ToStringLower() {
+			ats.selectedAssetType = v
+			break
+		}
+	}
+}
+
 // Title Sets the title of the asset type list dialog.
 func (ats *AssetTypeSelector) Title(title string) *AssetTypeSelector {
 	ats.dialogTitle = title

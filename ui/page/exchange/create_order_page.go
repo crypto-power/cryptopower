@@ -135,11 +135,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.fromCurrency = ati.Type
+		pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetTypeWithout(&ati.Type)
 		pg.orderData.sourceWalletSelector.SetSelectAsset(ati.Type)
 		pg.updateExchangeRate()
 	})
 	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.toCurrency = ati.Type
+		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetTypeWithout(&ati.Type)
 		pg.orderData.destinationWalletSelector.SetSelectAsset(ati.Type)
 		pg.updateExchangeRate()
 	})
