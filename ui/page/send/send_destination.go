@@ -42,12 +42,12 @@ func newSendDestination(l *load.Load) *destination {
 
 	// Destination wallet picker
 	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, l.WL.SelectedWallet.Wallet.GetAssetType()).
-		EnableWatchOnlyWallets().
+		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrTo))
 
 	// Destination account picker
 	dst.destinationAccountSelector = components.NewWalletAndAccountSelector(dst.Load).
-		EnableWatchOnlyWallets().
+		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
 	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
 

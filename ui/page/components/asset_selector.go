@@ -62,7 +62,6 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 					ats.changed = true
 				}
 			}
-			// ats.SetSelectedAssetType(assetType)
 			ats.selectedAssetType = assetType
 			if ats.assetTypeCallback != nil {
 				ats.assetTypeCallback(assetType)

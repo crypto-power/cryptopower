@@ -56,8 +56,8 @@ type CreateOrderPage struct {
 
 	materialLoader material.LoaderStyle
 
-	fromAmountEditor1 components.SelectAssetEditor
-	toAmountEditor1   components.SelectAssetEditor
+	fromAmountEditor components.SelectAssetEditor
+	toAmountEditor   components.SelectAssetEditor
 
 	backButton cryptomaterial.IconButton
 
@@ -130,15 +130,15 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.ordersList = pg.Theme.NewClickableList(layout.Vertical)
 	pg.ordersList.IsShadowEnabled = true
 
-	pg.toAmountEditor1 = *components.NewSelectAssetEditor(l)
-	pg.fromAmountEditor1 = *components.NewSelectAssetEditor(l)
+	pg.toAmountEditor = *components.NewSelectAssetEditor(l)
+	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
-	pg.fromAmountEditor1.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.fromCurrency = ati.Type
 		pg.orderData.sourceWalletSelector.SetSelectAsset(ati.Type)
 		pg.updateExchangeRate()
 	})
-	pg.toAmountEditor1.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.toCurrency = ati.Type
 		pg.orderData.destinationWalletSelector.SetSelectAsset(ati.Type)
 		pg.updateExchangeRate()
@@ -241,18 +241,18 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(info)
 	}
 
-	for _, evt := range pg.fromAmountEditor1.Edit.Editor.Events() {
-		if pg.fromAmountEditor1.Edit.Editor.Focused() {
+	for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
+		if pg.fromAmountEditor.Edit.Editor.Focused() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
-				if pg.inputsNotEmpty(pg.fromAmountEditor1.Edit.Editor) {
-					f, err := strconv.ParseFloat(pg.fromAmountEditor1.Edit.Editor.Text(), 32)
+				if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
+					f, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 					if err != nil {
 						// empty usd input
-						pg.toAmountEditor1.Edit.Editor.SetText("")
+						pg.toAmountEditor.Edit.Editor.SetText("")
 						pg.amountErrorText = values.String(values.StrInvalidAmount)
-						pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
-						pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
 						return
 					}
 					pg.amountErrorText = ""
@@ -260,9 +260,9 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 						value := f / pg.exchangeRate
 						v := strconv.FormatFloat(value, 'f', -1, 64)
 						pg.amountErrorText = ""
-						pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor1.Edit.Editor.SetText(v) // 2 decimal places
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 					}
 				}
 
@@ -270,18 +270,18 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		}
 	}
 
-	for _, evt := range pg.toAmountEditor1.Edit.Editor.Events() {
-		if pg.toAmountEditor1.Edit.Editor.Focused() {
+	for _, evt := range pg.toAmountEditor.Edit.Editor.Events() {
+		if pg.toAmountEditor.Edit.Editor.Focused() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
-				if pg.inputsNotEmpty(pg.toAmountEditor1.Edit.Editor) {
-					f, err := strconv.ParseFloat(pg.toAmountEditor1.Edit.Editor.Text(), 32)
+				if pg.inputsNotEmpty(pg.toAmountEditor.Edit.Editor) {
+					f, err := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
 					if err != nil {
 						// empty usd input
-						pg.fromAmountEditor1.Edit.Editor.SetText("")
+						pg.fromAmountEditor.Edit.Editor.SetText("")
 						pg.amountErrorText = values.String(values.StrInvalidAmount)
-						pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
-						pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
 						return
 					}
 					pg.amountErrorText = ""
@@ -289,9 +289,9 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 						value := f * pg.exchangeRate
 						v := strconv.FormatFloat(value, 'f', -1, 64)
 						pg.amountErrorText = ""
-						pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.fromAmountEditor1.Edit.Editor.SetText(v)
+						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+						pg.fromAmountEditor.Edit.Editor.SetText(v)
 					}
 				}
 
@@ -302,18 +302,18 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 }
 
 func (pg *CreateOrderPage) updateAmount() {
-	if pg.inputsNotEmpty(pg.fromAmountEditor1.Edit.Editor) {
+	if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
 		if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
-			pg.toAmountEditor1.Edit.Editor.SetText(pg.fromAmountEditor1.Edit.Editor.Text())
+			pg.toAmountEditor.Edit.Editor.SetText(pg.fromAmountEditor.Edit.Editor.Text())
 			return
 		}
-		f, err := strconv.ParseFloat(pg.fromAmountEditor1.Edit.Editor.Text(), 32)
+		f, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 		if err != nil {
 			// empty usd input
-			pg.toAmountEditor1.Edit.Editor.SetText("")
+			pg.toAmountEditor.Edit.Editor.SetText("")
 			pg.amountErrorText = values.String(values.StrInvalidAmount)
-			pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
-			pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Danger
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
 			return
 		}
 		pg.amountErrorText = ""
@@ -321,9 +321,9 @@ func (pg *CreateOrderPage) updateAmount() {
 			value := f / pg.exchangeRate
 			v := strconv.FormatFloat(value, 'f', -1, 64)
 			pg.amountErrorText = ""
-			pg.fromAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-			pg.toAmountEditor1.Edit.LineColor = pg.Theme.Color.Gray2
-			pg.toAmountEditor1.Edit.Editor.SetText(v) // 2 decimal places
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 		}
 	}
 }
@@ -337,11 +337,11 @@ func (pg *CreateOrderPage) canCreateOrder() bool {
 		return false
 	}
 
-	if pg.fromAmountEditor1.Edit.Editor.Text() == "" {
+	if pg.fromAmountEditor.Edit.Editor.Text() == "" {
 		return false
 	}
 
-	if pg.toAmountEditor1.Edit.Editor.Text() == "" {
+	if pg.toAmountEditor.Edit.Editor.Text() == "" {
 		return false
 	}
 
@@ -372,24 +372,29 @@ func (pg *CreateOrderPage) swapCurrency() {
 	tempSourceWalletSelector := pg.orderData.sourceWalletSelector
 	tempSourceAccountSelector := pg.orderData.sourceAccountSelector
 	tempFromCurrencyType := pg.fromCurrency
-	tempFromCurrencyValue := pg.fromAmountEditor1.Edit.Editor.Text()
+	tempFromCurrencyValue := pg.fromAmountEditor.Edit.Editor.Text()
 
 	// Swap values
 	pg.orderData.sourceWalletSelector = pg.orderData.destinationWalletSelector
 	pg.orderData.sourceAccountSelector = pg.orderData.destinationAccountSelector
 	pg.fromCurrency = pg.toCurrency
-	pg.fromAmountEditor1.Edit.Editor.SetText(pg.toAmountEditor1.Edit.Editor.Text())
-	pg.fromAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
+	pg.fromAmountEditor.Edit.Editor.SetText(pg.toAmountEditor.Edit.Editor.Text())
+	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
 
 	pg.orderData.destinationWalletSelector = tempSourceWalletSelector
 	pg.orderData.destinationAccountSelector = tempSourceAccountSelector
 	pg.toCurrency = tempFromCurrencyType
-	pg.toAmountEditor1.Edit.Editor.SetText(tempFromCurrencyValue)
-	pg.toAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+	pg.toAmountEditor.Edit.Editor.SetText(tempFromCurrencyValue)
+	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+
+	// check the watch only wallet on destination
+	if pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
+		pg.orderData.sourceWalletSelector.SetSelectAsset(pg.orderData.fromCurrency)
+	}
 
 	// update title of wallet selector
-	pg.orderData.sourceWalletSelector.Title(values.String(values.StrFrom))
-	pg.orderData.destinationWalletSelector.Title(values.String(values.StrTo))
+	pg.orderData.sourceWalletSelector.Title(values.String(values.StrFrom)).EnableWatchOnlyWallets(false)
+	pg.orderData.destinationWalletSelector.Title(values.String(values.StrTo)).EnableWatchOnlyWallets(true)
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
@@ -496,7 +501,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								}),
 								// layout.Rigid(pg.fromAmountEditor.Layout),
 								layout.Rigid(func(gtx C) D {
-									return pg.fromAmountEditor1.Layout(pg.ParentWindow(), gtx)
+									return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
 								}),
 							)
 						}),
@@ -521,7 +526,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								}),
 								// layout.Rigid(pg.toAmountEditor.Layout),
 								layout.Rigid(func(gtx C) D {
-									return pg.toAmountEditor1.Layout(pg.ParentWindow(), gtx)
+									return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
 								}),
 							)
 						}),
@@ -639,8 +644,8 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 }
 
 func (pg *CreateOrderPage) showConfirmOrderModal() {
-	invoicedAmount, _ := strconv.ParseFloat(pg.fromAmountEditor1.Edit.Editor.Text(), 32)
-	orderedAmount, _ := strconv.ParseFloat(pg.toAmountEditor1.Edit.Editor.Text(), 32)
+	invoicedAmount, _ := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
+	orderedAmount, _ := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
 
 	refundAddress, _ := pg.orderData.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.sourceAccountSelector.SelectedAccount().Number)
 	destinationAddress, _ := pg.orderData.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.destinationAccountSelector.SelectedAccount().Number)
@@ -772,7 +777,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 			// Destination wallet picker
 			pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
 				Title(values.String(values.StrTo)).
-				EnableWatchOnlyWallets()
+				EnableWatchOnlyWallets(true)
 
 			// Destination account picker
 			pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
@@ -811,7 +816,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		// Destination wallet picker
 		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.BTCWalletAsset).
 			Title(values.String(values.StrTo)).
-			EnableWatchOnlyWallets()
+			EnableWatchOnlyWallets(true)
 
 		// Destination account picker
 		pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
@@ -829,6 +834,6 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	}
 	pg.fromCurrency = pg.orderData.sourceWalletSelector.SelectedWallet().GetAssetType()
 	pg.toCurrency = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
-	pg.fromAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
-	pg.toAmountEditor1.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
+	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 }

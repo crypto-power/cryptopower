@@ -92,8 +92,8 @@ func (ws *WalletAndAccountSelector) SelectedAccount() *sharedW.Account {
 }
 
 // EnableWatchOnlyWallets enables selection of watchOnly wallets and their accounts.
-func (ws *WalletAndAccountSelector) EnableWatchOnlyWallets() *WalletAndAccountSelector {
-	ws.isWatchOnlyEnabled = true
+func (ws *WalletAndAccountSelector) EnableWatchOnlyWallets(isEnable bool) *WalletAndAccountSelector {
+	ws.isWatchOnlyEnabled = isEnable
 	return ws
 }
 
