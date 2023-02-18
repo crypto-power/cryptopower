@@ -31,6 +31,8 @@ type SyncData struct {
 	cancelRescan context.CancelFunc
 	syncCanceled chan struct{}
 
+	bestBlockheight int32 // Synced peers best block height.
+
 	// Flag to notify syncCanceled callback if the sync was canceled so as to be restarted.
 	restartSyncRequested bool
 
@@ -76,10 +78,8 @@ func (asset *DCRAsset) initActiveSyncData() {
 	}
 
 	headersFetchProgress := sharedW.HeadersFetchProgressReport{
-		GeneralSyncProgress:      &sharedW.GeneralSyncProgress{},
-		BeginFetchTimeStamp:      -1,
-		HeadersFetchTimeSpent:    -1,
-		TotalFetchedHeadersCount: 0,
+		GeneralSyncProgress:   &sharedW.GeneralSyncProgress{},
+		HeadersFetchTimeSpent: -1,
 	}
 
 	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{

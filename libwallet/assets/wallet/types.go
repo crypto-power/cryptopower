@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"time"
+
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
@@ -243,13 +245,13 @@ type CFiltersFetchProgressReport struct {
 type HeadersFetchProgressReport struct {
 	*GeneralSyncProgress
 	HeadersFetchTimeSpent    int64
-	BeginFetchTimeStamp      int64
-	StartHeaderHeight        int32
-	TotalFetchedHeadersCount int32
+	BeginFetchTimeStamp      time.Time
+	StartHeaderHeight        *int32
+	// TotalFetchedHeadersCount int32
 	TotalHeadersToFetch      int32 `json:"totalHeadersToFetch"`
-	CurrentHeaderHeight      int32 `json:"currentHeaderHeight"`
-	CurrentHeaderTimestamp   int64 `json:"currentHeaderTimestamp"`
-	HeadersFetchProgress     int32 `json:"headersFetchProgress"`
+	// CurrentHeaderHeight      int32 `json:"currentHeaderHeight"`
+	// CurrentHeaderTimestamp   int64 `json:"currentHeaderTimestamp"`
+	HeadersFetchProgress int32 `json:"headersFetchProgress"`
 }
 
 type AddressDiscoveryProgressReport struct {
