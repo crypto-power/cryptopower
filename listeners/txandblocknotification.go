@@ -65,7 +65,7 @@ func (txAndBlk *TxAndBlockNotificationListener) UpdateNotification(signal TxNoti
 	case <-txAndBlk.NotifChanClosed:
 		// txAndBlk.TxAndBlockNotifChan already closed, exit the function now.
 		return
-	case <-time.After(time.Second * 2):
+	case <-time.After(time.Microsecond * 500):
 		// channel not yet closed
 	}
 
