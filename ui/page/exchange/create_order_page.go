@@ -135,14 +135,22 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.fromCurrency = ati.Type
-		pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetTypeWithout(&ati.Type)
-		pg.orderData.sourceWalletSelector.SetSelectAsset(ati.Type)
+		pg.toAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
+		oldDesWalletType := pg.orderData.destinationWalletSelector.SelectedAsset()
+		if oldDesWalletType.ToStringLower() == ati.Type.ToStringLower() {
+			pg.orderData.destinationWalletSelector.SelectFirstValidAssetType(&ati.Type)
+		}
+		pg.orderData.sourceWalletSelector.SetSelectedAsset(ati.Type)
 		pg.updateExchangeRate()
 	})
 	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
 		pg.toCurrency = ati.Type
-		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetTypeWithout(&ati.Type)
-		pg.orderData.destinationWalletSelector.SetSelectAsset(ati.Type)
+		pg.fromAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
+		oldSouWalletType := pg.orderData.sourceWalletSelector.SelectedAsset()
+		if oldSouWalletType.ToStringLower() == ati.Type.ToStringLower() {
+			pg.orderData.sourceWalletSelector.SelectFirstValidAssetType(&ati.Type)
+		}
+		pg.orderData.destinationWalletSelector.SetSelectedAsset(ati.Type)
 		pg.updateExchangeRate()
 	})
 
@@ -391,7 +399,7 @@ func (pg *CreateOrderPage) swapCurrency() {
 
 	// check the watch only wallet on destination
 	if pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
-		pg.orderData.sourceWalletSelector.SetSelectAsset(pg.orderData.fromCurrency)
+		pg.orderData.sourceWalletSelector.SetSelectedAsset(pg.orderData.fromCurrency)
 	}
 
 	// update title of wallet selector

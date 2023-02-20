@@ -101,7 +101,7 @@ func (ats *AssetTypeSelector) setAssetTypeIcon(assetType string) *cryptomaterial
 	}
 }
 
-// SetBackground sets backgound
+// SetBackground sets the asset background colour
 func (ats *AssetTypeSelector) SetBackground(background color.NRGBA) *AssetTypeSelector {
 	ats.background = background
 	return ats
@@ -134,8 +134,8 @@ func (ats *AssetTypeSelector) SetSelectedAssetType(assetType *utils.AssetType) {
 	ats.selectedAssetType = asset
 }
 
-// SetSelectedAssetTypeWithout sets other assetType than assetType is passed in.
-func (ats *AssetTypeSelector) SetSelectedAssetTypeWithout(assetType *utils.AssetType) {
+// SelectFirstValidAssetType selects the first valid asset type excluding the asset type passed in.
+func (ats *AssetTypeSelector) SelectFirstValidAssetType(assetType *utils.AssetType) {
 	if ats.selectedAssetType.Type.ToStringLower() != assetType.ToStringLower() {
 		return
 	}

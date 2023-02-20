@@ -137,11 +137,29 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (ws *WalletAndAccountSelector) SetSelectAsset(assetType ...utils.AssetType) {
+func (ws *WalletAndAccountSelector) SetSelectedAsset(assetType ...utils.AssetType) {
 	ws.assetType = assetType
 	ws.selectorModal.setupWallet(assetType[0])
 	ws.selectedWallet = ws.selectorItems[0].item.(*load.WalletMapping)
 	ws.accountSelector = false
+}
+
+func (ws *WalletAndAccountSelector) SelectedAsset(assetType ...utils.AssetType) utils.AssetType {
+	return ws.assetType[0]
+}
+
+// SelectFirstValidAssetType selects the first valid asset type excluding the asset type passed in.
+func (ws *WalletAndAccountSelector) SelectFirstValidAssetType(assetType *utils.AssetType) {
+	if ws.assetType[0].ToStringLower() != assetType.ToStringLower() {
+		return
+	}
+	allAssetTypes := ws.WL.AssetsManager.AllAssetTypes()
+	for _, v := range allAssetTypes {
+		if v.ToStringLower() != assetType.ToStringLower() {
+			ws.SetSelectedAsset(v)
+			break
+		}
+	}
 }
 
 func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
@@ -418,7 +436,7 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 
 func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 	selectorItems := make([]*SelectorItem, 0)
-	// if isWatchOnlyEnabled is enabled the watch account of watch only wallet will add to list accounts selector
+	// if isWatchOnlyEnabled is true the watch account of the watch only wallet will be added to the account selector list
 	if !wal.IsWatchingOnlyWallet() || sm.isWatchOnlyEnabled {
 		accountsResult, err := wal.GetAccountsRaw()
 		if err != nil {
