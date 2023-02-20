@@ -419,6 +419,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
 					pg.wallet.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, acctNum(val))
+					pg.getMixerBalance()
 				}
 			})
 		pg.ParentWindow().ShowModal(selectMixedAccModal)
@@ -442,6 +443,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
 					pg.wallet.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, acctNum(val))
+					pg.getMixerBalance()
 				}
 			})
 		pg.ParentWindow().ShowModal(selectChangeAccModal)
