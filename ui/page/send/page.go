@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	SendPageID = "Send"
+	SendPageID   = "Send"
+	SendToWallet = 2
 )
 
 type Page struct {
@@ -146,6 +147,30 @@ func NewSendPage(l *load.Load) *Page {
 	})
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.sourceAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
+			accountIsValid := account.Number != load.MaxInt32
+
+			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
+				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
+				if pg.sendDestination.accountSwitch.SelectedIndex() == SendToWallet {
+					destinationWalletId := pg.sendDestination.destinationAccountSelector.SelectedAccount().WalletID
+					if destinationWalletId != pg.selectedWallet.GetWalletID() {
+						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+					}
+				} else {
+					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+				}
+			}
+			return accountIsValid
+
+		})
+		acc, _ := pg.selectedWallet.GetAccountsRaw()
+		for _, acc := range acc.Accounts {
+			if acc.Number == pg.selectedWallet.MixedAccountNumber() {
+				pg.sourceAccountSelector.SetSelectedAccount(acc)
+
+			}
+		}
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
