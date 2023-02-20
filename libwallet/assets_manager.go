@@ -21,6 +21,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
+// Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
 	DCR struct {
 		Wallets    map[int]sharedW.Asset
@@ -34,6 +35,8 @@ type Assets struct {
 
 var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower()}
 
+// AssetsManager is a struct that holds all the necessary parameters
+// to manage the assets supported by the wallet.
 type AssetsManager struct {
 	params *sharedW.InitParams
 	Assets *Assets
@@ -87,6 +90,7 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	return mgr, nil
 }
 
+// NewAssetsManager creates a new AssetsManager instance.
 func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 	errors.Separator = ":: "
 
@@ -239,6 +243,7 @@ func (mgr *AssetsManager) listenForShutdown() {
 	}()
 }
 
+// Shutdown shuts down the assets manager and all its wallets.
 func (mgr *AssetsManager) Shutdown() {
 	log.Info("Shutting down libwallet")
 
@@ -278,16 +283,18 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 }
 
-// TODO: cryptopower should start using networks constants defined in the
-// utils package instead of strings
+// NetType returns the network type of the assets manager.
+// It is either mainnet or testnet.
 func (mgr *AssetsManager) NetType() utils.NetworkType {
 	return mgr.params.NetType
 }
 
+// LogDir returns the log directory of the assets manager.
 func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
 }
 
+// OpenWallets opens all wallets in the assets manager.
 func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		if wallet.IsSyncing() {
@@ -329,18 +336,22 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 	return nil
 }
 
+// DCRBadWallets returns a map of all bad DCR wallets.
 func (mgr *AssetsManager) DCRBadWallets() map[int]*sharedW.Wallet {
 	return mgr.Assets.DCR.BadWallets
 }
 
+// BTCBadWallets returns a map of all bad BTC wallets.
 func (mgr *AssetsManager) BTCBadWallets() map[int]*sharedW.Wallet {
 	return mgr.Assets.BTC.BadWallets
 }
 
+// LoadedWalletsCount returns the number of wallets loaded in the assets manager.
 func (mgr *AssetsManager) LoadedWalletsCount() int32 {
 	return int32(len(mgr.Assets.DCR.Wallets) + len(mgr.Assets.BTC.Wallets))
 }
 
+// OpenedWalletsCount returns the number of wallets opened in the assets manager.
 func (mgr *AssetsManager) OpenedWalletsCount() int32 {
 	var count int32
 	for _, wallet := range mgr.Assets.DCR.Wallets {
@@ -361,6 +372,7 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
+//AllDCRWallets returns all DCR wallets in the assets manager.
 func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallets = append(wallets, wallet)
@@ -368,6 +380,7 @@ func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
+//AllBTCWallets returns all BTC wallets in the assets manager.
 func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.BTC.Wallets {
 		wallets = append(wallets, wallet)
@@ -375,6 +388,7 @@ func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
+// AllWallets returns all wallets in the assets manager.
 func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallets = append(wallets, wallet)
@@ -386,6 +400,7 @@ func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
+// DeleteWallet deletes a wallet from the assets manager.
 func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	wallet := mgr.WalletWithID(walletID)
 	if err := wallet.DeleteWallet(privPass); err != nil {
@@ -402,6 +417,7 @@ func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	return nil
 }
 
+// WalletWithID returns a wallet with the given ID.
 func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 	if wallet, ok := mgr.Assets.BTC.Wallets[walletID]; ok {
 		return wallet
@@ -422,6 +438,7 @@ func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
 	return nil
 }
 
+// DeleteBadWallet deletes a bad wallet from the assets manager.
 func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
 	wallet := mgr.getbadWallet(walletID)
 	if wallet == nil {
@@ -463,6 +480,8 @@ func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {
 	return size, err
 }
 
+// WalletWithSeed returns the ID of the wallet with the given seed. If a wallet
+// with the given seed does not exist, it returns -1.
 func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemonic string) (int, error) {
 	switch walletType {
 	case utils.BTCWalletAsset:
@@ -474,6 +493,7 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 	}
 }
 
+// RestoreWallet restores a wallet from the given seed.
 func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	switch walletType {
 	case utils.BTCWalletAsset:
@@ -485,6 +505,8 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 	}
 }
 
+// WalletWithXPub returns the ID of the wallet with the given xpub. If a wallet
+// with the given xpub does not exist, it returns -1.
 func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string) (int, error) {
 	switch walletType {
 	case utils.DCRWalletAsset:
@@ -496,8 +518,8 @@ func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string
 	}
 }
 
-// on window os after deleted the wallet, dir of wallet deleted still exist
-// this function will check all data of deleted wallet and remove them
+// on windows os after a wallet is deleted, the dir of deleted wallet still exists,
+// cleanDeletedWallets will check the data dir of all deleted wallets and remove them.
 func (mgr *AssetsManager) cleanDeletedWallets() {
 	// read all stored wallets info from the db and initialize wallets interfaces.
 	query := mgr.params.DB.Select(q.True()).OrderBy("ID")
@@ -518,7 +540,7 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 		validWallets[key] = true
 	}
 
-	// filter all wallets to be delected.
+	// filter all wallets to be deleted.
 	for _, wType := range slicesAccessType {
 		rootDir := filepath.Join(mgr.params.RootDir, wType)
 		files, err := os.ReadDir(rootDir)
@@ -549,6 +571,7 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 	log.Info("Clean all deleted wallets")
 }
 
+// AllAssetTypes returns all asset types supported by the assets manager.
 func (mgr *AssetsManager) AllAssetTypes() []utils.AssetType {
 	return []utils.AssetType{utils.DCRWalletAsset, utils.BTCWalletAsset}
 }

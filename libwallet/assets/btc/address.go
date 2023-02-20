@@ -19,11 +19,13 @@ type AddressInfo struct {
 	AccountName   string
 }
 
+// IsAddressValid checks if the provided address is valid.
 func (asset *BTCAsset) IsAddressValid(address string) bool {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	return err == nil
 }
 
+// HaveAddress checks if the provided address belongs to the wallet.
 func (asset *BTCAsset) HaveAddress(address string) bool {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
@@ -38,6 +40,7 @@ func (asset *BTCAsset) HaveAddress(address string) bool {
 	return have
 }
 
+// AddressInfo returns information about an address.
 func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
 	const op errors.Op = "btc.AddressInfo"
 
@@ -106,6 +109,7 @@ func (asset *BTCAsset) NextAddress(account int32) (string, error) {
 	return address.String(), nil
 }
 
+// AccountOfAddress returns the account name of the provided address.
 func (asset *BTCAsset) AccountOfAddress(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
@@ -125,6 +129,7 @@ func (asset *BTCAsset) AccountOfAddress(address string) (string, error) {
 	return accountName, nil
 }
 
+// AddressPubKey returns the public key of the provided address.
 func (asset *BTCAsset) AddressPubKey(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {

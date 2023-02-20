@@ -37,6 +37,8 @@ type Page interface {
 	OnNavigatedFrom()
 }
 
+// Modal defines methods that control the appearance and functionality of
+// a modal displayed on a window.
 type Modal interface {
 	// ID is a unique string that identifies the modal and may be used
 	// to differentiate this modal from other modals.

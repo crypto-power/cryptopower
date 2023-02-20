@@ -14,7 +14,9 @@ import (
 )
 
 const (
+	// MainnetAPIFeeRateURL defines the URL to fetch the mainnet fee rate from.
 	MainnetAPIFeeRateURL = "https://blockstream.info/api/fee-estimates"
+	// TestnetAPIFeeRateURL defines the URL to fetch the testnet fee rate from.
 	TestnetAPIFeeRateURL = "https://blockstream.info/testnet/api/fee-estimates"
 
 	// Since the introduction of segwit account, a different tx size measument was
@@ -56,6 +58,7 @@ type feeEstimateCache struct {
 	mu sync.RWMutex
 }
 
+// FeeEstimate defines the fee estimate returned by the API.
 type FeeEstimate struct {
 	// Number of confrmed blocks that show the average fee rate represented below.
 	ConfirmedBlocks int32
@@ -112,6 +115,7 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	return results, nil
 }
 
+// GetAPIFeeEstimateRate returns the fee estimates from the API.
 func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) {
 	asset.fees.mu.RLock()
 	feerates = asset.fees.APIFeeRates

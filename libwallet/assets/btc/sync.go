@@ -29,6 +29,7 @@ const (
 	stop uint32 = 0
 )
 
+// SyncData holds the data required to sync the wallet.
 type SyncData struct {
 	mu sync.RWMutex
 
@@ -61,11 +62,16 @@ type activeSyncData struct {
 }
 
 const (
-	InvalidSyncStage          = utils.InvalidSyncStage
-	CFiltersFetchSyncStage    = utils.CFiltersFetchSyncStage
-	HeadersFetchSyncStage     = utils.HeadersFetchSyncStage
+	// InvalidSyncStage is the default sync stage.
+	InvalidSyncStage = utils.InvalidSyncStage
+	// CFiltersFetchSyncStage is the sync stage for fetching cfilters.
+	CFiltersFetchSyncStage = utils.CFiltersFetchSyncStage
+	// HeadersFetchSyncStage is the sync stage for fetching headers.
+	HeadersFetchSyncStage = utils.HeadersFetchSyncStage
+	// AddressDiscoverySyncStage is the sync stage for address discovery.
 	AddressDiscoverySyncStage = utils.AddressDiscoverySyncStage
-	HeadersRescanSyncStage    = utils.HeadersRescanSyncStage
+	// HeadersRescanSyncStage is the sync stage for headers rescan.
+	HeadersRescanSyncStage = utils.HeadersRescanSyncStage
 )
 
 func (asset *BTCAsset) initSyncProgressData() {
@@ -107,6 +113,7 @@ func (asset *BTCAsset) resetSyncProgressData() {
 	asset.syncData.isRescan = false
 }
 
+// AddSyncProgressListener registers a sync progress listener to the asset.
 func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
@@ -119,6 +126,7 @@ func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.Sync
 	return nil
 }
 
+// RemoveSyncProgressListener unregisters a sync progress listener from the asset.
 func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
@@ -381,6 +389,7 @@ func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, 
 	return chainService, nil
 }
 
+// CancelSync stops the sync process.
 func (asset *BTCAsset) CancelSync() {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
@@ -505,6 +514,8 @@ func (asset *BTCAsset) startSync() error {
 	return nil
 }
 
+// IsConnectedToBitcoinNetwork returns true if the wallet is connected to the
+// bitcoin network.
 func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
@@ -556,6 +567,8 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 	}
 }
 
+// SpvSync initiates the full chain sync starting protocols. It attempts to
+// restart the chain service if it hasn't been initialized.
 func (asset *BTCAsset) SpvSync() (err error) {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {

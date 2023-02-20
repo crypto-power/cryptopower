@@ -21,6 +21,8 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
 )
 
+// TxAuthor holds the information required to construct a transaction that
+// spends froma  wallet's account.
 type TxAuthor struct {
 	sourceAccountNumber uint32
 	// A map is used in place of an array because every destination address
@@ -38,6 +40,7 @@ type TxAuthor struct {
 	mu sync.RWMutex
 }
 
+// NewUnsignedTx creates a new unsigned transaction.
 func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
@@ -56,14 +59,19 @@ func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 	return nil
 }
 
+// GetUnsignedTx returns the unsigned transaction.
 func (asset *BTCAsset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
+// IsUnsignedTxExist returns true if an unsigned transaction exists.
 func (asset *BTCAsset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
+// AddSendDestination adds a destination address to the transaction.
+// The amount to be sent to the address is specified in satoshi.
+// If sendMax is true, the amount is ignored and the maximum amount is sent.
 func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
@@ -87,6 +95,7 @@ func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, s
 	return nil
 }
 
+// RemoveSendDestination removes a destination address from the transaction.
 func (asset *BTCAsset) RemoveSendDestination(address string) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
@@ -97,6 +106,7 @@ func (asset *BTCAsset) RemoveSendDestination(address string) {
 	}
 }
 
+// SendDestination returns a list of all destination addresses added to the transaction.
 func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDestination {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
@@ -104,6 +114,7 @@ func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDesti
 	return asset.TxAuthoredInfo.destinations[address]
 }
 
+// SetChangeDestination sets the change address for the transaction.
 func (asset *BTCAsset) SetChangeDestination(address string) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
@@ -114,6 +125,7 @@ func (asset *BTCAsset) SetChangeDestination(address string) {
 	asset.TxAuthoredInfo.needsConstruct = true
 }
 
+// RemoveChangeDestination removes the change address from the transaction.
 func (asset *BTCAsset) RemoveChangeDestination() {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
@@ -122,6 +134,7 @@ func (asset *BTCAsset) RemoveChangeDestination() {
 	asset.TxAuthoredInfo.needsConstruct = true
 }
 
+// TotalSendAmount returns the total amount to be sent in the transaction.
 func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
@@ -137,6 +150,7 @@ func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
 	}
 }
 
+// EstimateFeeAndSize estimates the fee and size of the transaction.
 func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	// compute the amount to be sent in the current tx.
 	var sendAmount = btcutil.Amount(asset.TotalSendAmount().UnitValue)
@@ -180,6 +194,7 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}, nil
 }
 
+// EstimateMaxSendAmount estimates the maximum amount that can be sent in the transaction.
 func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	txFeeAndSize, err := asset.EstimateFeeAndSize()
 	if err != nil {
@@ -203,6 +218,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
+// Broadcast broadcasts the transaction to the network.
 func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) error {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()

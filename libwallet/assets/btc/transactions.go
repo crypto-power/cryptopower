@@ -22,6 +22,7 @@ type txCache struct {
 	mu sync.RWMutex
 }
 
+// PublishUnminedTransactions publishes all unmined transactions to the network.
 func (asset *BTCAsset) PublishUnminedTransactions() error {
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset == nil {
@@ -49,11 +50,13 @@ func (asset *BTCAsset) PublishUnminedTransactions() error {
 	return nil
 }
 
+// CountTransactions returns the total number of transactions for the wallet.
 func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
 	transactions, err := asset.filterTxs(0, 0, txFilter, true)
 	return len(transactions), err
 }
 
+// GetTransactionRaw returns the transaction details for the given transaction hash.
 func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
 	transactions, err := asset.getTransactionsRaw(0, 0, true)
 	for _, tx := range transactions {
@@ -64,10 +67,12 @@ func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 	return nil, err
 }
 
+// TxMatchesFilter checks if the transaction matches the given filter.
 func (asset *BTCAsset) TxMatchesFilter(_ *sharedW.Transaction, txFilter int32) bool {
 	return txhelper.TxDirectionInvalid != asset.btcSupportedTxFilter(txFilter)
 }
 
+// GetTransactions returns the transactions for the wallet.
 func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
 	transactions, err := asset.filterTxs(offset, limit, txFilter, newestFirst)
 	if err != nil {
@@ -82,10 +87,12 @@ func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirs
 	return string(jsonEncodedTransactions), nil
 }
 
-// offset and limit are parameters to get the number of transactions from offset position
-// to offset + limit position in the total transaction of a wallet,
-// it is not the start block and the end block, so we need to
-// get all transactions then return transactions match the input limit and offset
+// GetTransactionsRaw returns the transactions for the wallet.
+// The offset is the height of start block and limit is number of blocks will take
+// from offset to get transactions. it is not the start block and the end block, so we need to
+// get all transactions then return transactions that match the input limit and offset.
+// If offset and limit are 0, it will return all transactions
+// If newestFirst is true, it will return transactions from newest to oldest
 func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
 	newestFirst bool) ([]sharedW.Transaction, error) {
 	transactions, err := asset.filterTxs(0, 0, txFilter, newestFirst)

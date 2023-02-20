@@ -12,7 +12,7 @@ func DisableLog() {
 	log = btclog.Disabled
 }
 
-// UseLoggers sets the subsystem logs to use the provided loggers.
+// UseLogger sets the subsystem logs to use the provided loggers.
 func UseLogger(sLogger btclog.Logger) {
 	log = sLogger
 }

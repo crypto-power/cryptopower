@@ -110,6 +110,8 @@ func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 	return nil
 }
 
+// RemoveTxAndBlockNotificationListener removes a previously registered
+// transaction and block notification listener.
 func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()

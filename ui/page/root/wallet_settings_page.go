@@ -603,7 +603,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 }
 
 func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

@@ -71,7 +71,7 @@ func initLogRotator(logFile string) error {
 	return nil
 }
 
-// UseLoggers sets the subsystem logs to use the provided loggers.
+// UseLogger sets the subsystem logs to use the provided loggers.
 func UseLogger(logger slog.Logger) {
 	log = logger
 	loader.UseLogger(logger)
@@ -95,6 +95,7 @@ func RegisterLogger(tag string) (slog.Logger, error) {
 	return logger, nil
 }
 
+// SetLogLevels sets the logging level for all subsystems to the provided level.
 func SetLogLevels(logLevel string) {
 	_, ok := slog.LevelFromString(logLevel)
 	if !ok {

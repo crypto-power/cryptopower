@@ -28,6 +28,8 @@ func (a BTCAmount) ToInt() int64 {
 	return int64(btcutil.Amount(a))
 }
 
+// ListUnspentResult is a type that represents the result of the ListUnspent
+// RPC call.
 type ListUnspentResult struct {
 	TxID          string  `json:"txid"`
 	Vout          uint32  `json:"vout"`

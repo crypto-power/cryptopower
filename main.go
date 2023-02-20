@@ -17,9 +17,12 @@ import (
 )
 
 var (
-	Version   = "1.7.0"
+	// Version is the application version. It is set using the -ldflags
+	Version = "1.7.0"
+	// BuildDate is the date the application was built. It is set using the -ldflags
 	BuildDate string
-	BuildEnv  = wallet.DevBuild
+	// BuildEnv is the build environment. It is set using the -ldflags
+	BuildEnv = wallet.DevBuild
 )
 
 func main() {

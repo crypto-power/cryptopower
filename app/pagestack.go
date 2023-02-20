@@ -13,6 +13,7 @@ type PageStack struct {
 	pages []Page
 }
 
+// NewPageStack creates a new PageStack object.
 func NewPageStack(name string) *PageStack {
 	return &PageStack{
 		name: name,

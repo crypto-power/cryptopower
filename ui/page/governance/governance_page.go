@@ -66,7 +66,7 @@ func (pg *Page) isGovernanceFeatureEnabled() bool {
 }
 
 func (pg *Page) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

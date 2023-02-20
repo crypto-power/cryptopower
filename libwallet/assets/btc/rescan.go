@@ -18,14 +18,18 @@ import (
 	"github.com/btcsuite/btcwallet/walletdb"
 )
 
+// SetBlocksRescanProgressListener sets the blocks rescan progress listener.
 func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
+// RescanBlocks rescans the blockchain for all addresses in the wallet.
 func (asset *BTCAsset) RescanBlocks() error {
 	return asset.RescanBlocksFromHeight(0)
 }
 
+// RescanBlocksFromHeight rescans the blockchain for all addresses in the wallet
+// starting from the provided block height.
 func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 	hash, err := asset.GetBlockHash(int64(startHeight))
 	if err != nil {
@@ -77,6 +81,7 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	return nil
 }
 
+// IsRescanning returns true if the wallet is currently rescanning the blockchain.
 func (asset *BTCAsset) IsRescanning() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
@@ -84,6 +89,7 @@ func (asset *BTCAsset) IsRescanning() bool {
 	return asset.syncData.isRescan
 }
 
+// CancelRescan cancels the current rescan.
 func (asset *BTCAsset) CancelRescan() {
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescan = false
