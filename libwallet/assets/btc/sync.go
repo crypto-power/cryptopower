@@ -266,7 +266,6 @@ notificationsLoop:
 
 			case *chain.RescanProgress:
 				// Notifications sent at interval of 10k blocks
-				// asset.updateSyncProgress(n.Height)
 				asset.updateRescanProgress(n)
 
 			case *chain.RescanFinished:

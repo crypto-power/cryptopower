@@ -244,14 +244,11 @@ type CFiltersFetchProgressReport struct {
 
 type HeadersFetchProgressReport struct {
 	*GeneralSyncProgress
-	HeadersFetchTimeSpent    int64
-	BeginFetchTimeStamp      time.Time
-	StartHeaderHeight        *int32
-	// TotalFetchedHeadersCount int32
-	TotalHeadersToFetch      int32 `json:"totalHeadersToFetch"`
-	// CurrentHeaderHeight      int32 `json:"currentHeaderHeight"`
-	// CurrentHeaderTimestamp   int64 `json:"currentHeaderTimestamp"`
-	HeadersFetchProgress int32 `json:"headersFetchProgress"`
+	HeadersFetchTimeSpent int64
+	BeginFetchTimeStamp   time.Time
+	StartHeaderHeight     *int32
+	TotalHeadersToFetch   int32 `json:"totalHeadersToFetch"`
+	HeadersFetchProgress  int32 `json:"headersFetchProgress"`
 }
 
 type AddressDiscoveryProgressReport struct {
