@@ -14,14 +14,15 @@ const (
 	commentPrefix   = "/"
 )
 
-var rex = regexp.MustCompile(`(?m)("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*")`) // "key"="value"
-var Languages = []string{localizable.ENGLISH, localizable.CHINESE, localizable.FRENCH, localizable.SPANISH}
-var UserLanguages = []string{DefaultLangauge} // order of preference
+var (
+	rex           = regexp.MustCompile(`(?m)("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*")`) // "key"="value"
+	Languages     = []string{localizable.ENGLISH, localizable.CHINESE, localizable.FRENCH, localizable.SPANISH}
+	UserLanguages = []string{DefaultLangauge} // order of preference
+)
 
 var languageStrings map[string]map[string]string
 
 func init() {
-
 	readIntoMap := func(m map[string]string, localizableStrings string) {
 		scanner := bufio.NewScanner(strings.NewReader(localizableStrings))
 		for scanner.Scan() {
@@ -300,6 +301,7 @@ const (
 	StrEstimatedSize                   = "estimatedSize"
 	StrEstimatedTime                   = "estimatedTime"
 	StrExchange                        = "exchange"
+	StrExchangeAPI                     = "exchangeAPI"
 	StrExchangeIntro                   = "exchangeIntro"
 	StrExchangeRate                    = "exchangeRate"
 	StrExistingWalletName              = "existingWalletName"

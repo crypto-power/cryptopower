@@ -634,7 +634,7 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 // allowed.
 func IsFetchExchangeRateAPIAllowed(wl *load.WalletLoad) bool {
 	return wl.AssetsManager.GetCurrencyConversionExchange() != values.DefaultExchangeValue &&
-		wl.AssetsManager.IsPrivacyModeOn()
+		!wl.AssetsManager.IsPrivacyModeOn()
 }
 
 // DisablePageWithOverlay disables the provided page by highlighting a message why

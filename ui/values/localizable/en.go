@@ -192,6 +192,7 @@ const EN = `
 "estimatedSize" = "Estimated size"
 "estimatedTime" = "Estimated time"
 "exchange" = "Exchange"
+"exchangeAPI" = "Exchange API"
 "exchangeIntro" = "Exchange curriencies simple, fast and secure."
 "exchangeRate" = "Fetch Exchange Rate"
 "existingWalletName" = "What is your wallet existing wallet name?"

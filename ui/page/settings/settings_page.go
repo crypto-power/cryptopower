@@ -55,6 +55,7 @@ type SettingsPage struct {
 
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
+	exchangeAPI    *cryptomaterial.Switch
 	feeRateAPI     *cryptomaterial.Switch
 	privacyActive  *cryptomaterial.Switch
 
@@ -75,6 +76,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		transactionNotification: l.Theme.Switch(),
 		onlineCheckAPI:          l.Theme.Switch(),
 		governanceAPI:           l.Theme.Switch(),
+		exchangeAPI:             l.Theme.Switch(),
 		feeRateAPI:              l.Theme.Switch(),
 		privacyActive:           l.Theme.Switch(),
 
@@ -272,6 +274,9 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 					return pg.subSectionSwitch(gtx, values.String(values.StrGovernanceAPI), pg.governanceAPI)
 				}),
 				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrExchangeAPI), pg.exchangeAPI)
+				}),
+				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrFeeRateAPI), pg.feeRateAPI)
 				}),
 			)
@@ -367,7 +372,6 @@ func (pg *SettingsPage) subSectionLabel(title string) layout.Widget {
 // displayed.
 // Part of the load.Page interface.
 func (pg *SettingsPage) HandleUserInteractions() {
-
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
@@ -407,6 +411,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 	if pg.governanceAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
+	}
+	if pg.exchangeAPI.Changed() {
+		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.ExchangeHttpAPI, pg.exchangeAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
@@ -569,8 +576,9 @@ func (pg *SettingsPage) updatePrivacySettings() {
 	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
 		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
-		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
+		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.ExchangeHttpAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
 	} else {
 		if pg.WL.SelectedWallet != nil {
 			go func() {
