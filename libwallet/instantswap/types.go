@@ -1,6 +1,9 @@
 package instantswap
 
 import (
+	"context"
+	"sync"
+
 	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
 	"golang.org/x/text/cases"
@@ -46,6 +49,17 @@ func (es Server) CapFirstLetter() string {
 
 type InstantSwap struct {
 	db *storm.DB
+
+	mu         *sync.RWMutex // Pointer required to avoid copying literal values.
+	ctx        context.Context
+	cancelSync context.CancelFunc
+
+	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
+	notificationListeners   map[string]ExchangeNotificationListener
+}
+
+type ExchangeNotificationListener interface {
+	OnExchangeOrdersSynced()
 }
 
 type Order struct {

@@ -1,7 +1,9 @@
 package instantswap
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"code.cryptopower.dev/group/instantswap"
@@ -24,6 +26,10 @@ const (
 	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93"
 	// API_KEY_GODEX is the godex API key.
 	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
+	retryInterval = 15 // 15 seconds
+
+	configDBBkt                  = "instantswap_config"
+	LastSyncedTimestampConfigKey = "instantswap_last_synced_timestamp"
 )
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
@@ -34,6 +40,11 @@ func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 
 	return &InstantSwap{
 		db: db,
+		mu: &sync.RWMutex{},
+
+		notificationListenersMu: &sync.RWMutex{},
+
+		notificationListeners: make(map[string]ExchangeNotificationListener),
 	}, nil
 }
 
@@ -249,4 +260,149 @@ func (instantSwap *InstantSwap) DeleteOrders() error {
 
 func (instantSwap *InstantSwap) DeleteOrder(order *Order) error {
 	return instantSwap.db.DeleteStruct(order)
+}
+
+// check all saved orders which status are not completed and update their status
+func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExchange) error {
+	offset := 0
+	instantSwap.mu.RLock()
+	limit := 20
+	instantSwap.mu.RUnlock()
+	i := 0
+	for {
+		i++
+		// Check if politeia has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
+		orders, err := instantSwap.GetOrdersRaw(int32(offset), int32(limit), false)
+		if err != nil {
+			return err
+		}
+
+		if len(orders) == 0 {
+			break
+		}
+
+		offset += len(orders)
+
+		_, err = instantSwap.GetOrderInfo(exchangeObject, orders[i].UUID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// orders, err := instantSwap.GetOrdersRaw(0, 0, false)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, order := range orders {
+	// 	_, err = instantSwap.GetOrderInfo(exchangeObject, order.UUID)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	return nil
+}
+
+func (instantSwap *InstantSwap) IsSyncing() bool {
+	instantSwap.mu.RLock()
+	defer instantSwap.mu.RUnlock()
+	return instantSwap.cancelSync != nil
+}
+
+func (instantSwap *InstantSwap) StopSync() {
+	instantSwap.mu.RLock()
+	if instantSwap.cancelSync != nil {
+		instantSwap.cancelSync()
+		instantSwap.cancelSync = nil
+	}
+	instantSwap.mu.RUnlock()
+	log.Info("Exchange sync: stopped")
+}
+
+func (instantSwap *InstantSwap) Sync(ctx context.Context, exchangeObject instantswap.IDExchange) error {
+	instantSwap.mu.RLock()
+	if instantSwap.cancelSync != nil {
+		instantSwap.mu.RUnlock()
+		return errors.New(ErrSyncAlreadyInProgress)
+	}
+
+	instantSwap.ctx, instantSwap.cancelSync = context.WithCancel(ctx)
+	defer func() {
+		instantSwap.cancelSync = nil
+	}()
+	instantSwap.mu.RUnlock()
+
+	log.Info("Exchange sync: started")
+	for {
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
+		log.Info("Exchange sync: checking for updates")
+
+		err := instantSwap.checkForUpdates(exchangeObject)
+		if err != nil {
+			log.Errorf("Error checking for exchange updates: %v", err)
+			time.Sleep(retryInterval * time.Second)
+			continue
+		}
+
+		log.Info("Exchange sync: update complete")
+		instantSwap.saveLastSyncedTimestamp(time.Now().Unix())
+		instantSwap.publishSynced()
+		return nil
+	}
+}
+
+func (instantSwap *InstantSwap) publishSynced() {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnExchangeOrdersSynced()
+	}
+}
+
+func (instantSwap *InstantSwap) AddNotificationListener(notificationListener ExchangeNotificationListener, uniqueIdentifier string) error {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	if _, ok := instantSwap.notificationListeners[uniqueIdentifier]; ok {
+		return errors.New(ErrListenerAlreadyExist)
+	}
+
+	instantSwap.notificationListeners[uniqueIdentifier] = notificationListener
+	return nil
+}
+
+func (instantSwap *InstantSwap) RemoveNotificationListener(uniqueIdentifier string) {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	delete(instantSwap.notificationListeners, uniqueIdentifier)
+}
+
+func (instantSwap *InstantSwap) GetLastSyncedTimeStamp() int64 {
+	return instantSwap.getLastSyncedTimestamp()
+}
+
+func (instantSwap *InstantSwap) saveLastSyncedTimestamp(lastSyncedTimestamp int64) {
+	err := instantSwap.db.Set(configDBBkt, LastSyncedTimestampConfigKey, &lastSyncedTimestamp)
+	if err != nil {
+		log.Errorf("error setting config value for key: %s, error: %v", LastSyncedTimestampConfigKey, err)
+	}
+}
+
+func (instantSwap *InstantSwap) getLastSyncedTimestamp() (lastSyncedTimestamp int64) {
+	err := instantSwap.db.Get(configDBBkt, LastSyncedTimestampConfigKey, &lastSyncedTimestamp)
+	if err != nil && err != storm.ErrNotFound {
+		log.Errorf("error reading config value for key: %s, error: %v", LastSyncedTimestampConfigKey, err)
+	}
+	return lastSyncedTimestamp
 }
