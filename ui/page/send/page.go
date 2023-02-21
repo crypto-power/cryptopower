@@ -218,8 +218,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
-	if pg.isFetchExchangeRateAPIAllowed() {
+	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
 	}
@@ -229,13 +229,6 @@ func (pg *Page) OnNavigatedTo() {
 		// results.
 		go pg.selectedWallet.GetAPIFeeRate()
 	}
-}
-
-// isFetchExchangeRateAPIAllowed returns true if the exchange rate fetch API is
-// allowed.
-func (pg *Page) isFetchExchangeRateAPIAllowed() bool {
-	return pg.currencyExchange != values.DefaultExchangeValue &&
-		!pg.WL.AssetsManager.IsPrivacyModeOn()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -466,7 +459,7 @@ func (pg *Page) HandleUserInteractions() {
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
-			if !pg.isFetchExchangeRateAPIAllowed() {
+			if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
 				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
@@ -478,7 +471,7 @@ func (pg *Page) HandleUserInteractions() {
 			}
 		}
 	} else {
-		if !pg.isFetchExchangeRateAPIAllowed() {
+		if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
 			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}

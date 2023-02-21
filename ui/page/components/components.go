@@ -268,7 +268,6 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				}),
 				layout.Rigid(func(gtx C) D {
 					if row.Transaction.Type == txhelper.TxTypeMixed {
-
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
 							Height:      cryptomaterial.WrapContent,
@@ -629,6 +628,13 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 			})
 		}),
 	)
+}
+
+// IsFetchExchangeRateAPIAllowed returns true if the exchange rate fetch API is
+// allowed.
+func IsFetchExchangeRateAPIAllowed(wl *load.WalletLoad) bool {
+	return wl.AssetsManager.GetCurrencyConversionExchange() != values.DefaultExchangeValue &&
+		wl.AssetsManager.IsPrivacyModeOn()
 }
 
 // DisablePageWithOverlay disables the provided page by highlighting a message why

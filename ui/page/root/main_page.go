@@ -321,17 +321,10 @@ func (mp *MainPage) isProposalsAPIAllowed() bool {
 	return mp.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
 }
 
-// isFetchExchangeRateAPIAllowed returns true if the exchange rate fetch API is
-// allowed.
-func (mp *MainPage) isFetchExchangeRateAPIAllowed() bool {
-	return mp.currencyExchangeValue != values.DefaultExchangeValue &&
-		!mp.WL.AssetsManager.IsPrivacyModeOn()
-}
-
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
-	mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
-	if mp.isFetchExchangeRateAPIAllowed() {
+	if components.IsFetchExchangeRateAPIAllowed(mp.WL) {
+		mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 		go mp.fetchExchangeRate()
 	}
 }
