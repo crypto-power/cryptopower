@@ -307,7 +307,6 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 							}
 							window.Reload()
 						}
-
 					}
 				case listeners.NewTransaction:
 					// refresh wallets/Accounts list when new transaction is received
@@ -323,6 +322,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 				}
 			case <-ctx.Done():
 				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
+				close(ws.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(ws.TxAndBlockNotifChan)
 				ws.TxAndBlockNotificationListener = nil
 				return
@@ -540,7 +540,6 @@ func (sm *selectorModal) Layout(gtx C) D {
 							})
 						}),
 					)
-
 				}),
 			)
 		},
@@ -586,7 +585,6 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			case utils.DCRWalletAsset:
 				accountIcon = sm.Theme.Icons.DecredLogo
 			}
-
 		}
 	}
 

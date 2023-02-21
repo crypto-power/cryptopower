@@ -167,7 +167,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 
 	go func() {
-		var countfn = func(fType int32) int {
+		countfn := func(fType int32) int {
 			count, _ := wal.CountTransactions(fType)
 			return count
 		}
@@ -187,7 +187,6 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 		pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 		pg.ParentWindow().Reload()
 	}()
-
 }
 
 func (pg *TransactionsPage) loadTransactions(loadMore bool) {
@@ -278,7 +277,6 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 							return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-
 										if pg.loading {
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
 											return layout.Center.Layout(gtx, func(gtx C) D {
@@ -298,7 +296,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 										}
 
 										return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-											var row = components.TransactionRow{
+											row := components.TransactionRow{
 												Transaction: wallTxs[index],
 												Index:       index,
 											}
@@ -359,7 +357,6 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						}.Layout(gtx, func(gtx C) D {
 							return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-
 									// return "No transactions yet" text if there are no transactions
 									if len(wallTxs) == 0 {
 										padding := values.MarginPadding16
@@ -372,7 +369,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 									}
 
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-										var row = components.TransactionRow{
+										row := components.TransactionRow{
 											Transaction: wallTxs[index],
 											Index:       index,
 										}
@@ -456,6 +453,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 				}
 			case <-pg.ctx.Done():
 				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(pg.TxAndBlockNotifChan)
 				pg.TxAndBlockNotificationListener = nil
 

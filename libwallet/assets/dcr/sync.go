@@ -303,7 +303,7 @@ func (asset *DCRAsset) CancelSync() {
 			}
 		}
 
-		// Cancel the context used for syncer.Run in spvSync().
+		// Cancels the context used for syncer.Run in spvSync().
 		// This may not immediately cause the sync process to terminate,
 		// but when it eventually terminates, syncer.Run will return `err == context.Canceled`.
 		cancelSync()

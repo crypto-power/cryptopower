@@ -1070,6 +1070,7 @@ func (mp *MainPage) listenForNotifications() {
 				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)
+				close(mp.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(mp.TxAndBlockNotifChan)
 				close(mp.ProposalNotifChan)
 
