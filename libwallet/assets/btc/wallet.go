@@ -116,15 +116,11 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 }
 
 func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string, isRecovery bool) loader.AssetLoader {
-	var recoverWallet uint32
-	if isRecovery {
-		recoverWallet = recoverWindow
-	}
 	conf := &btc.LoaderConf{
 		ChainParams:      chainParams,
 		DBDirPath:        dbDirPath,
 		DefaultDBTimeout: defaultDBTimeout,
-		RecoveryWin:      recoverWallet,
+		RecoveryWin:      recoverWindow,
 	}
 
 	return btc.NewLoader(conf)
