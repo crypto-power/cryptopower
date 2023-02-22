@@ -332,7 +332,8 @@ func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.C
 }
 
 func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
-	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() {
+	// Watchonly wallets do not have any password neithers need one.
+	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() && !wallet.IsWatchingOnlyWallet() {
 		pg.unlockWalletForSyncing(wallet, unlock)
 		return
 	}

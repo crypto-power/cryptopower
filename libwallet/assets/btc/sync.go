@@ -32,8 +32,7 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	startHeight         *int32
-	syncStartTime       time.Time
+	bestBlockheight     int32 // Synced peers best block height.
 	syncstarted         uint32
 	txlistening         uint32
 	chainServiceStopped bool
@@ -79,10 +78,8 @@ func (asset *BTCAsset) initSyncProgressData() {
 	}
 
 	headersFetchProgress := sharedW.HeadersFetchProgressReport{
-		GeneralSyncProgress:      &sharedW.GeneralSyncProgress{},
-		BeginFetchTimeStamp:      -1,
-		HeadersFetchTimeSpent:    -1,
-		TotalFetchedHeadersCount: 0,
+		GeneralSyncProgress:   &sharedW.GeneralSyncProgress{},
+		HeadersFetchTimeSpent: -1,
 	}
 
 	addressDiscoveryProgress := sharedW.AddressDiscoveryProgressReport{
@@ -130,59 +127,58 @@ func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 }
 
 // bestServerPeerBlockHeight accesses the connected peers and requests for the
-// last synced block height in each one of them.
-func (asset *BTCAsset) bestServerPeerBlockHeight() (height int32) {
+// last synced block height.
+func (asset *BTCAsset) bestServerPeerBlockHeight() {
 	serverPeers := asset.chainClient.CS.Peers()
 	for _, p := range serverPeers {
-		if p.LastBlock() > height {
-			height = p.LastBlock()
+		if p.LastBlock() > asset.syncData.bestBlockheight {
+			asset.syncData.bestBlockheight = p.LastBlock()
 			// If a dormant peer is picked, on the next iteration it will be dropped
 			// because it will be behind.
 			return
 		}
 	}
-	return
 }
 
 func (asset *BTCAsset) updateSyncProgress(rawBlockHeight int32) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
-	// Best block synced in the connected peers
-	bestBlockheight := asset.bestServerPeerBlockHeight()
+	// Update the best block synced in the connected peers if need be
+	asset.bestServerPeerBlockHeight()
 
 	// initial set up when sync begins.
-	if asset.syncData.startHeight == nil {
+	if asset.syncData.headersFetchProgress.StartHeaderHeight == nil {
 		asset.syncData.syncStage = utils.HeadersFetchSyncStage
-		asset.syncData.syncStartTime = time.Now()
-		asset.syncData.startHeight = &rawBlockHeight
+		asset.syncData.headersFetchProgress.BeginFetchTimeStamp = time.Now()
+		asset.syncData.headersFetchProgress.StartHeaderHeight = &rawBlockHeight
 
-		if bestBlockheight != rawBlockHeight {
+		if asset.syncData.bestBlockheight != rawBlockHeight {
 			// A rescan progress update must have been sent. Allow it
 			return
 		}
 	}
 
-	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, bestBlockheight)
+	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
 
-	timeSpentSoFar := time.Since(asset.syncData.syncStartTime).Seconds()
+	timeSpentSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
 	if timeSpentSoFar < 1 {
 		timeSpentSoFar = 1
 	}
 
-	headersFetchedSoFar := float64(rawBlockHeight - *asset.syncData.startHeight)
+	headersFetchedSoFar := float64(rawBlockHeight - *asset.syncData.headersFetchProgress.StartHeaderHeight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
-	remainingHeaders := float64(bestBlockheight - rawBlockHeight)
+	remainingHeaders := float64(asset.syncData.bestBlockheight - rawBlockHeight)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
 
 	allHeadersToFetch := headersFetchedSoFar + remainingHeaders
 
-	asset.syncData.headersFetchProgress.TotalHeadersToFetch = bestBlockheight
+	asset.syncData.headersFetchProgress.TotalHeadersToFetch = asset.syncData.bestBlockheight
 	asset.syncData.headersFetchProgress.HeadersFetchProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((timeSpentSoFar * remainingHeaders) / headersFetchedSoFar)
@@ -270,7 +266,6 @@ notificationsLoop:
 
 			case *chain.RescanProgress:
 				// Notifications sent at interval of 10k blocks
-				//asset.updateSyncProgress(n.Height)
 				asset.updateRescanProgress(n)
 
 			case *chain.RescanFinished:
