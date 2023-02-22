@@ -51,7 +51,7 @@ require (
 )
 
 require (
-	code.cryptopower.dev/group/instantswap v0.0.0-20221115115243-0ff6727e4065
+	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
@@ -140,5 +140,3 @@ require (
 // the android OS using gomobile. This replace can be removed once any
 // of those projects update their github.com/lib/pq dependency.
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
-
-replace code.cryptopower.dev/group/instantswap => /home/kennedy/Projects/src/gitlab.com/raedah/lightningswap
