@@ -59,7 +59,7 @@ type BTCAsset struct {
 }
 
 const (
-	recoverWindow    = 200
+	recoverWindow    = 200 // If recoveryWindow is set to 0, there will be invalid block filter error.
 	defaultDBTimeout = time.Duration(100)
 )
 
