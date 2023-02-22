@@ -36,24 +36,25 @@ type selectorModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	selectedWallet   *load.WalletMapping
-	selectedAccount  *sharedW.Account
-	accountCallback  func(*sharedW.Account)
-	walletCallback   func(*load.WalletMapping)
-	accountIsValid   func(*sharedW.Account) bool
-	accountSelector  bool
-	infoActionText   string
-	dialogTitle      string
-	onWalletClicked  func(*load.WalletMapping)
-	onAccountClicked func(*sharedW.Account)
-	walletsList      layout.List
-	selectorItems    []*SelectorItem // A SelectorItem can either be a wallet or account
-	assetType        []utils.AssetType
-	eventQueue       event.Queue
-	isCancelable     bool
-	infoButton       cryptomaterial.IconButton
-	infoModalOpen    bool
-	infoBackdrop     *widget.Clickable
+	selectedWallet     *load.WalletMapping
+	selectedAccount    *sharedW.Account
+	accountCallback    func(*sharedW.Account)
+	walletCallback     func(*load.WalletMapping)
+	accountIsValid     func(*sharedW.Account) bool
+	accountSelector    bool
+	infoActionText     string
+	dialogTitle        string
+	onWalletClicked    func(*load.WalletMapping)
+	onAccountClicked   func(*sharedW.Account)
+	walletsList        layout.List
+	selectorItems      []*SelectorItem // A SelectorItem can either be a wallet or account
+	assetType          []utils.AssetType
+	eventQueue         event.Queue
+	isCancelable       bool
+	infoButton         cryptomaterial.IconButton
+	infoModalOpen      bool
+	infoBackdrop       *widget.Clickable
+	isWatchOnlyEnabled bool
 }
 
 // NewWalletAndAccountSelector creates a wallet selector component.
@@ -82,13 +83,18 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 				ws.accountCallback(account)
 			}
 		})
-
 	return ws
 }
 
 // SelectedAccount returns the currently selected account.
 func (ws *WalletAndAccountSelector) SelectedAccount() *sharedW.Account {
 	return ws.selectedAccount
+}
+
+// EnableWatchOnlyWallets enables selection of watchOnly wallets and their accounts.
+func (ws *WalletAndAccountSelector) EnableWatchOnlyWallets(isEnable bool) *WalletAndAccountSelector {
+	ws.isWatchOnlyEnabled = isEnable
+	return ws
 }
 
 // AccountValidator validates an account according to the rules defined to determine a valid a account.
@@ -129,6 +135,31 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 
 	ws.ResetAccount()
 	return errors.New(values.String(values.StrNoValidAccountFound))
+}
+
+func (ws *WalletAndAccountSelector) SetSelectedAsset(assetType ...utils.AssetType) {
+	ws.assetType = assetType
+	ws.selectorModal.setupWallet(assetType[0])
+	ws.selectedWallet = ws.selectorItems[0].item.(*load.WalletMapping)
+	ws.accountSelector = false
+}
+
+func (ws *WalletAndAccountSelector) SelectedAsset(assetType ...utils.AssetType) utils.AssetType {
+	return ws.assetType[0]
+}
+
+// SelectFirstValidAssetType selects the first valid asset type excluding the asset type passed in.
+func (ws *WalletAndAccountSelector) SelectFirstValidAssetType(assetType *utils.AssetType) {
+	if ws.assetType[0].ToStringLower() != assetType.ToStringLower() {
+		return
+	}
+	allAssetTypes := ws.WL.AssetsManager.AllAssetTypes()
+	for _, v := range allAssetTypes {
+		if v.ToStringLower() != assetType.ToStringLower() {
+			ws.SetSelectedAsset(v)
+			break
+		}
+	}
 }
 
 func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
@@ -197,10 +228,6 @@ func (ws *WalletAndAccountSelector) Handle(window app.WindowNavigator) {
 }
 
 func (ws *WalletAndAccountSelector) SetSelectedWallet(wallet *load.WalletMapping) {
-	ws.selectedWallet = wallet
-}
-
-func (ws *WalletAndAccountSelector) SelectWallet(wallet *load.WalletMapping) {
 	ws.selectedWallet = wallet
 }
 
@@ -394,21 +421,23 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	}
 
 	for _, wal := range wallets {
-		if !wal.IsWatchingOnlyWallet() {
-			selectorItems = append(selectorItems, &SelectorItem{
-				item: &load.WalletMapping{
-					Asset: wal,
-				},
-				clickable: sm.Theme.NewClickable(true),
-			})
+		if wal.IsWatchingOnlyWallet() && !sm.isWatchOnlyEnabled {
+			continue
 		}
+		selectorItems = append(selectorItems, &SelectorItem{
+			item: &load.WalletMapping{
+				Asset: wal,
+			},
+			clickable: sm.Theme.NewClickable(true),
+		})
 	}
 	sm.selectorItems = selectorItems
 }
 
 func (sm *selectorModal) setupAccounts(wal sharedW.Asset) {
 	selectorItems := make([]*SelectorItem, 0)
-	if !wal.IsWatchingOnlyWallet() {
+	// if isWatchOnlyEnabled is true the watch account of the watch only wallet will be added to the account selector list
+	if !wal.IsWatchingOnlyWallet() || sm.isWatchOnlyEnabled {
 		accountsResult, err := wal.GetAccountsRaw()
 		if err != nil {
 			log.Errorf("Error getting accounts:", err)

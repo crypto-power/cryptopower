@@ -46,7 +46,7 @@ type CreateWallet struct {
 
 	walletActions []*walletAction
 
-	assetTypeSelector     *AssetTypeSelector
+	assetTypeSelector     *components.AssetTypeSelector
 	assetTypeError        cryptomaterial.Label
 	walletName            cryptomaterial.Editor
 	watchOnlyWalletHex    cryptomaterial.Editor
@@ -75,7 +75,7 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 				Alignment: layout.Middle,
 			},
 		},
-		assetTypeSelector: NewAssetTypeSelector(l),
+		assetTypeSelector: components.NewAssetTypeSelector(l),
 		list:              layout.List{Axis: layout.Vertical},
 
 		continueBtn:          l.Theme.Button(values.String(values.StrContinue)),
@@ -87,6 +87,8 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 
 		Load: l,
 	}
+
+	pg.assetTypeSelector.SetBackground(l.Theme.Color.White)
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
@@ -430,7 +432,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			}()
 			pg.isLoading = true
 
-			if pg.assetTypeSelector.SelectedAssetType().Type.String() == libutils.DCRWalletAsset.String() {
+			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.DCRWalletAsset.String() {
 				wal, err := pg.WL.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
@@ -456,7 +458,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				return
 			}
 
-			if pg.assetTypeSelector.SelectedAssetType().Type.String() == libutils.BTCWalletAsset.String() {
+			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.BTCWalletAsset.String() {
 				_, err := pg.WL.AssetsManager.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
@@ -482,7 +484,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			// todo setup mixer for restored accounts automatically
 			pg.handlerWalletDexServerSelectorCallBacks()
 		}
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), pg.assetTypeSelector.selectedAssetType.Type, afterRestore))
+		ast := pg.assetTypeSelector.SelectedAssetType()
+		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
 	}
 
 	// imported wallet click action control
@@ -490,7 +493,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		pg.showLoader = true
 		var err error
 		go func() {
-			switch pg.assetTypeSelector.SelectedAssetType().Type.String() {
+			switch pg.assetTypeSelector.SelectedAssetType().String() {
 			case libutils.DCRWalletAsset.String():
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
