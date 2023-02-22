@@ -91,7 +91,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, false)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	return btcWallet, nil
 }
 
-func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string, isRecovery bool) loader.AssetLoader {
+func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.AssetLoader {
 	conf := &btc.LoaderConf{
 		ChainParams:      chainParams,
 		DBDirPath:        dbDirPath,
@@ -140,7 +140,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, true)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
 		ldr, params, utils.BTCWalletAsset)
 	if err != nil {
@@ -178,7 +178,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		return nil, err
 	}
 
-	ldr := initWalletLoader(chainParams, params.RootDir, true)
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	// If a wallet doesn't contain discovered accounts, its previous recovery wasn't
 	// successful and therefore it should try the recovery again till it successfully
 	// completes.
-	ldr := initWalletLoader(chainParams, params.RootDir, !w.ContainsDiscoveredAccounts())
+	ldr := initWalletLoader(chainParams, params.RootDir)
 	btcWallet := &BTCAsset{
 		Wallet:      w,
 		chainParams: chainParams,
