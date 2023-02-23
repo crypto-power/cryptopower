@@ -636,17 +636,14 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 	if pg.isRestoring {
 		return
 	}
-	if evt.Name == key.NameTab && evt.Modifiers != key.ModShift && evt.State == key.Press {
+	if evt.Name == key.NameTab && evt.Modifiers != key.ModShift && evt.State == key.Press && pg.openPopupIndex == -1 {
 		if len(pg.suggestions) > 0 {
-			focus := pg.seedEditors.focusIndex
-			pg.seedEditors.editors[focus].Edit.Editor.SetText(pg.suggestions[pg.selected])
 			pg.seedClicked = true
-			pg.seedEditors.editors[focus].Edit.Editor.MoveCaret(len(pg.suggestions[pg.selected]), -1)
 		}
 		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
-	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press && pg.openPopupIndex != -1 {
+	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press && pg.openPopupIndex == -1 {
 		switchSeedEditors(pg.seedEditors.editors, -1)
 	}
 
@@ -657,6 +654,9 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 				pg.selected = 0
 			}
 			return
+		}
+		if len(pg.suggestions) > 0 {
+			pg.seedClicked = true
 		}
 		switchSeedEditors(pg.seedEditors.editors, 5)
 	}
@@ -673,10 +673,16 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 	}
 
 	if evt.Name == key.NameLeftArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
+		if len(pg.suggestions) > 0 {
+			pg.seedClicked = true
+		}
 		switchSeedEditors(pg.seedEditors.editors, -1)
 	}
 
 	if evt.Name == key.NameRightArrow && evt.State == key.Press && pg.openPopupIndex == -1 {
+		if len(pg.suggestions) > 0 {
+			pg.seedClicked = true
+		}
 		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
