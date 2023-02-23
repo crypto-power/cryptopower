@@ -424,10 +424,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		})
 	}
 
-	mainChild := layout.Expanded(func(gtx C) D {
-		return pg.layout(gtx)
-	})
-
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -441,7 +437,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				if !pg.isExchangeAPIAllowed() {
 					gtxCopy = gtx.Disabled()
 				}
-				return layout.Stack{}.Layout(gtxCopy, mainChild, overlay)
+				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
 			},
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)

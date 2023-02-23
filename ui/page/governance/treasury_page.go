@@ -132,7 +132,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
-		//TODO: treasury search functionality
+		// TODO: treasury search functionality
 	}
 }
 
@@ -157,7 +157,7 @@ func (pg *TreasuryPage) FetchPolicies() {
 
 func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
-	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTreasuryAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
@@ -166,12 +166,9 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 		})
 	}
 
-	mainChild := layout.Expanded(func(gtx C) D {
-		return pg.layout(gtx)
-	})
-
-	return layout.Stack{}.Layout(gtx, mainChild, overlay)
+	return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
 }
+
 func (pg *TreasuryPage) layout(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -241,7 +238,8 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 							Direction:   layout.W,
 							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
-							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
+							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
+						}.
 							Layout2(gtx, func(gtx C) D {
 								return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
 							})
