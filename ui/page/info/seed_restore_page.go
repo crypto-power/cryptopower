@@ -337,6 +337,12 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 			pg.seedEditors.focusIndex = i
 		}
 
+		// Removes any trailing or leading white space characters.
+		if text != strings.TrimSpace(text) {
+			text = strings.TrimSpace(text)
+			pg.seedEditors.editors[i].Edit.Editor.SetText(text)
+		}
+
 		if text == "" {
 			pg.isLastEditor = false
 			pg.openPopupIndex = -1
