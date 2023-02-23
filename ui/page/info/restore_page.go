@@ -13,7 +13,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	libUtils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -40,14 +40,14 @@ type Restore struct {
 	backButton        cryptomaterial.IconButton
 	seedRestorePage   *SeedRestore
 	walletName        string
-	walletType        libUtils.AssetType
+	walletType        libutils.AssetType
 	toggleSeedInput   *cryptomaterial.Switch
 	seedInputEditor   cryptomaterial.Editor
 	confirmSeedButton cryptomaterial.Button
 	restoreInProgress bool
 }
 
-func NewRestorePage(l *load.Load, walletName string, walletType libUtils.AssetType, onRestoreComplete func()) *Restore {
+func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func()) *Restore {
 	pg := &Restore{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateRestorePageID),
@@ -441,7 +441,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 			_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seed, password, sharedW.PassphraseTypePass)
 			if err != nil {
 				errString := err.Error()
-				if err.Error() == libUtils.ErrExist {
+				if err.Error() == libutils.ErrExist {
 					errString = values.StringF(values.StrWalletExist, pg.walletName)
 				}
 				m.SetError(errString)

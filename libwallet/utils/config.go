@@ -5,12 +5,15 @@ import (
 	"encoding/hex"
 	"math"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 )
 
-type AssetType string
-type SyncStage int8
+type (
+	AssetType string
+	SyncStage int8
+)
 
 const (
 	LogFileName = "libwallet.log"
@@ -69,6 +72,7 @@ func (str AssetType) ToFull() string {
 		return "Unknown"
 	}
 }
+
 func (str AssetType) String() string {
 	return string(str)
 }
@@ -133,4 +137,11 @@ func NormalizeAddress(addr string, defaultPort string) (string, error) {
 		return "", origErr
 	}
 	return addr, nil
+}
+
+// TrimNonAphanumeric removes all the characters that don't include the following:
+// `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-`
+func TrimNonAphaNumeric(text string) string {
+	reg, _ := regexp.Compile("[^a-zA-Z0-9-]+")
+	return reg.ReplaceAllString(text, "")
 }

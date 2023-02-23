@@ -14,7 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	libUtils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -74,10 +74,10 @@ type SeedRestore struct {
 	currentCaretPosition     int // current caret position
 	selectedSeedEditor       int // stores the current focus index of seed editors
 
-	walletType libUtils.AssetType
+	walletType libutils.AssetType
 }
 
-func NewSeedRestorePage(l *load.Load, walletName string, walletType libUtils.AssetType, onRestoreComplete func()) *SeedRestore {
+func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.AssetType, onRestoreComplete func()) *SeedRestore {
 	pg := &SeedRestore{
 		Load:            l,
 		restoreComplete: onRestoreComplete,
@@ -337,10 +337,11 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 			pg.seedEditors.focusIndex = i
 		}
 
-		// Removes any trailing or leading white space characters.
-		if text != strings.TrimSpace(text) {
-			text = strings.TrimSpace(text)
-			pg.seedEditors.editors[i].Edit.Editor.SetText(text)
+		// Remove all unsupported characters.
+		trimmedText := libutils.TrimNonAphaNumeric(text)
+		if text != trimmedText {
+			text = trimmedText
+			pg.seedEditors.editors[i].Edit.Editor.SetText(trimmedText)
 		}
 
 		if text == "" {
@@ -568,7 +569,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 				_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
 				if err != nil {
 					errString := err.Error()
-					if err.Error() == libUtils.ErrExist {
+					if err.Error() == libutils.ErrExist {
 						errString = values.StringF(values.StrWalletExist, pg.walletName)
 					}
 					m.SetError(errString)
