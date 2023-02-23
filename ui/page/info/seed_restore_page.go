@@ -363,6 +363,10 @@ func (pg *SeedRestore) editorSeedsEventsHandler() {
 				seedEvent(i, text)
 
 			case widget.SubmitEvent:
+				if pg.openPopupIndex != -1 {
+					pg.seedEditors.editors[i].Edit.Editor.SetText(pg.seedMenu[pg.selected].text)
+				}
+
 				//  Handles Enter and Return keyboard events.
 				if i != numberOfSeeds {
 					pg.seedEditors.editors[i+1].Edit.Editor.Focus()
