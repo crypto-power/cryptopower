@@ -35,7 +35,7 @@ func (w *WalletMapping) Broadcast(passphrase string) error {
 	case *dcr.DCRAsset:
 		_, err := asset.Broadcast(passphrase)
 		return err
-	case *btc.BTCAsset:
+	case *btc.Asset:
 		err := asset.Broadcast(passphrase, "")
 		return err
 	default:
@@ -47,7 +47,7 @@ func (w *WalletMapping) Broadcast(passphrase string) error {
 // It returns the string convert to int amount.
 func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
 	switch asset := w.Asset.(type) {
-	case *btc.BTCAsset:
+	case *btc.Asset:
 		rate, err := strconv.ParseInt(feerate, 10, 64)
 		if err != nil {
 			return 0, w.invalidParameter(feerate, "tx fee rate")
@@ -61,7 +61,7 @@ func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
 
 func (w *WalletMapping) GetAPIFeeRate() ([]btc.FeeEstimate, error) {
 	switch asset := w.Asset.(type) {
-	case *btc.BTCAsset:
+	case *btc.Asset:
 		return asset.GetAPIFeeEstimateRate()
 	default:
 		return nil, w.invalidWallet()

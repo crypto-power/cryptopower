@@ -16,23 +16,32 @@ import (
 const (
 	maxAmountSatoshi = btcutil.MaxSatoshi // MaxSatoshi is the maximum transaction amount allowed in satoshi.
 
+	// TestnetHDPath is the BIP 44 HD path used for deriving addresses on the
+	// test network.
 	TestnetHDPath = "m / 84' / 1' / "
+	// MainnetHDPath is the BIP 44 HD path used for deriving addresses on the
+	// main network.
 	MainnetHDPath = "m / 84' / 0' / "
 )
 
 var wAddrMgrBkt = []byte("waddrmgr")
 
-func (asset *BTCAsset) GetScope() waddrmgr.KeyScope {
+// GetScope returns the key scope that will be used within the waddrmgr to
+// create an HD chain for deriving all of our required keys. A different
+// scope is used for each specific coin type.
+func (asset *Asset) GetScope() waddrmgr.KeyScope {
 	// Construct the key scope that will be used within the waddrmgr to
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
 	return waddrmgr.KeyScopeBIP0084
 }
 
+// AmountBTC converts a satoshi amount to a BTC amount.
 func AmountBTC(amount int64) float64 {
 	return btcutil.Amount(amount).ToBTC()
 }
 
+// AmountSatoshi converts a BTC amount to a satoshi amount.
 func AmountSatoshi(f float64) int64 {
 	amount, err := btcutil.NewAmount(f)
 	if err != nil {
@@ -42,16 +51,17 @@ func AmountSatoshi(f float64) int64 {
 	return int64(amount)
 }
 
-// Returns a BTC amount that implements the asset amount interface.
-func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
-	return BTCAmount(btcutil.Amount(v))
+// ToAmount returns a BTC amount that implements the asset amount interface.
+func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
+	return Amount(btcutil.Amount(v))
 }
 
 func hardenedKey(key uint32) uint32 {
 	return key + hdkeychain.HardenedKeyStart
 }
 
-func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
+// DeriveAccountXpub derives the xpub for the given account.
+func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
 	seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", err

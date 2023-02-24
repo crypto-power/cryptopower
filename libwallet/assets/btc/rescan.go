@@ -18,15 +18,19 @@ import (
 	"github.com/btcsuite/btcwallet/walletdb"
 )
 
-func (asset *BTCAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
+// SetBlocksRescanProgressListener sets the blocks rescan progress listener.
+func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
-func (asset *BTCAsset) RescanBlocks() error {
+// RescanBlocks rescans the blockchain for all addresses in the wallet.
+func (asset *Asset) RescanBlocks() error {
 	return asset.RescanBlocksFromHeight(0)
 }
 
-func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
+// RescanBlocksFromHeight rescans the blockchain for all addresses in the wallet
+// starting from the provided block height.
+func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 	hash, err := asset.GetBlockHash(int64(startHeight))
 	if err != nil {
 		return err
@@ -35,7 +39,7 @@ func (asset *BTCAsset) RescanBlocksFromHeight(startHeight int32) error {
 	return asset.rescanBlocks(hash, nil)
 }
 
-func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
+func (asset *Asset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
 	if !asset.IsConnectedToBitcoinNetwork() {
 		return errors.E(utils.ErrNotConnected)
 	}
@@ -77,14 +81,16 @@ func (asset *BTCAsset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.A
 	return nil
 }
 
-func (asset *BTCAsset) IsRescanning() bool {
+// IsRescanning returns true if the wallet is currently rescanning the blockchain.
+func (asset *Asset) IsRescanning() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
 	return asset.syncData.isRescan
 }
 
-func (asset *BTCAsset) CancelRescan() {
+// CancelRescan cancels the current rescan.
+func (asset *Asset) CancelRescan() {
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescan = false
 	asset.syncData.mu.Unlock()
@@ -104,7 +110,7 @@ func (asset *BTCAsset) CancelRescan() {
 // located. The SPVService is not stopped, so most spvWallet methods will
 // continue to work without error, but methods using the btcWallet will likely
 // return incorrect results or errors.
-func (asset *BTCAsset) RescanAsync() error {
+func (asset *Asset) RescanAsync() error {
 	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
 		log.Error("rescan already in progress")
 		return fmt.Errorf("rescan already in progress")
@@ -144,7 +150,7 @@ func (asset *BTCAsset) RescanAsync() error {
 
 // ForceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
-func (asset *BTCAsset) ForceRescan() {
+func (asset *Asset) ForceRescan() {
 
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
@@ -194,7 +200,7 @@ func (asset *BTCAsset) ForceRescan() {
 // a rescan leads to the recovery of funds and utxos scanned from the birthday block.
 // If the the address manager is not synced to the last two new blocks detected,
 // Or birthday mismatch exists, a rescan is initiated.
-func (asset *BTCAsset) isRecoveryRequired() bool {
+func (asset *Asset) isRecoveryRequired() bool {
 	// Last block synced to the address manager.
 	syncedTo := asset.Internal().BTC.Manager.SyncedTo()
 	// Address manager should be synced to one of the blocks in the last 10 blocks,
@@ -209,7 +215,7 @@ func (asset *BTCAsset) isRecoveryRequired() bool {
 
 // updateAssetBirthday updates the appropriate birthday and birthday block
 // immediately after initial rescan is completed.
-func (asset *BTCAsset) updateAssetBirthday() {
+func (asset *Asset) updateAssetBirthday() {
 	const op errors.Op = "updateAssetBirthday"
 
 	txs, err := asset.getTransactionsRaw(0, 0, true)
@@ -333,7 +339,7 @@ func (asset *BTCAsset) updateAssetBirthday() {
 }
 
 // getBirthdayBlock returns the currently set birthday block.
-func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
+func (asset *Asset) getBirthdayBlock() (int32, bool, error) {
 	var birthdayblock int32
 	var isverified bool
 	err := walletdb.View(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadTx) error {
@@ -346,7 +352,7 @@ func (asset *BTCAsset) getBirthdayBlock() (int32, bool, error) {
 	return birthdayblock, isverified, err
 }
 
-func (asset *BTCAsset) updateRescanProgress(progress *chain.RescanProgress) {
+func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 	if asset.syncData.rescanStartHeight == nil {
 		asset.syncData.rescanStartHeight = &progress.Height
 	}

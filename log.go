@@ -165,7 +165,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		os.Exit(1)
 	}
 
-	for logFile, _ := range logRotators {
+	for logFile := range logRotators {
 		r, err := rotator.New(filepath.Join(logDir, logFile), 32*1024, false, maxRolls)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)

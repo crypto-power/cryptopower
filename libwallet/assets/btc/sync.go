@@ -29,6 +29,7 @@ const (
 	stop uint32 = 0
 )
 
+// SyncData holds the data required to sync the wallet.
 type SyncData struct {
 	mu sync.RWMutex
 
@@ -61,14 +62,19 @@ type activeSyncData struct {
 }
 
 const (
-	InvalidSyncStage          = utils.InvalidSyncStage
-	CFiltersFetchSyncStage    = utils.CFiltersFetchSyncStage
-	HeadersFetchSyncStage     = utils.HeadersFetchSyncStage
+	// InvalidSyncStage is the default sync stage.
+	InvalidSyncStage = utils.InvalidSyncStage
+	// CFiltersFetchSyncStage is the sync stage for fetching cfilters.
+	CFiltersFetchSyncStage = utils.CFiltersFetchSyncStage
+	// HeadersFetchSyncStage is the sync stage for fetching headers.
+	HeadersFetchSyncStage = utils.HeadersFetchSyncStage
+	// AddressDiscoverySyncStage is the sync stage for address discovery.
 	AddressDiscoverySyncStage = utils.AddressDiscoverySyncStage
-	HeadersRescanSyncStage    = utils.HeadersRescanSyncStage
+	// HeadersRescanSyncStage is the sync stage for headers rescan.
+	HeadersRescanSyncStage = utils.HeadersRescanSyncStage
 )
 
-func (asset *BTCAsset) initSyncProgressData() {
+func (asset *Asset) initSyncProgressData() {
 	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
 		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
 		BeginFetchCFiltersTimeStamp: 0,
@@ -101,13 +107,14 @@ func (asset *BTCAsset) initSyncProgressData() {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *BTCAsset) resetSyncProgressData() {
+func (asset *Asset) resetSyncProgressData() {
 	asset.syncData.syncing = false
 	asset.syncData.synced = false
 	asset.syncData.isRescan = false
 }
 
-func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
+// AddSyncProgressListener registers a sync progress listener to the asset.
+func (asset *Asset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -119,7 +126,8 @@ func (asset *BTCAsset) AddSyncProgressListener(syncProgressListener sharedW.Sync
 	return nil
 }
 
-func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
+// RemoveSyncProgressListener unregisters a sync progress listener from the asset.
+func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -128,7 +136,7 @@ func (asset *BTCAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
 
 // bestServerPeerBlockHeight accesses the connected peers and requests for the
 // last synced block height.
-func (asset *BTCAsset) bestServerPeerBlockHeight() {
+func (asset *Asset) bestServerPeerBlockHeight() {
 	serverPeers := asset.chainClient.CS.Peers()
 	for _, p := range serverPeers {
 		if p.LastBlock() > asset.syncData.bestBlockheight {
@@ -140,7 +148,7 @@ func (asset *BTCAsset) bestServerPeerBlockHeight() {
 	}
 }
 
-func (asset *BTCAsset) updateSyncProgress(rawBlockHeight int32) {
+func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -189,7 +197,7 @@ func (asset *BTCAsset) updateSyncProgress(rawBlockHeight int32) {
 	}
 }
 
-func (asset *BTCAsset) publishHeadersFetchComplete() {
+func (asset *Asset) publishHeadersFetchComplete() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -199,13 +207,13 @@ func (asset *BTCAsset) publishHeadersFetchComplete() {
 	asset.syncData.syncing = false
 }
 
-func (asset *BTCAsset) handleSyncUIUpdate() {
+func (asset *Asset) handleSyncUIUpdate() {
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listener.OnSyncCompleted()
 	}
 }
 
-func (asset *BTCAsset) handleNotifications() {
+func (asset *Asset) handleNotifications() {
 	t := time.NewTicker(syncIntervalGap)
 
 notificationsLoop:
@@ -317,7 +325,7 @@ notificationsLoop:
 }
 
 // prepareChain sets up the chain service and the chain source
-func (asset *BTCAsset) prepareChain() error {
+func (asset *Asset) prepareChain() error {
 	exists, err := asset.WalletExists()
 	if err != nil {
 		return fmt.Errorf("error verifying wallet existence: %v", err)
@@ -337,7 +345,7 @@ func (asset *BTCAsset) prepareChain() error {
 	return nil
 }
 
-func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, err error) {
+func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err error) {
 	// Read config for persistent peers, if set parse and set neutrino's ConnectedPeers
 	// persistentPeers.
 	var persistentPeers []string
@@ -381,7 +389,8 @@ func (asset *BTCAsset) loadChainService() (chainService *neutrino.ChainService, 
 	return chainService, nil
 }
 
-func (asset *BTCAsset) CancelSync() {
+// CancelSync stops the sync process.
+func (asset *Asset) CancelSync() {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -398,7 +407,7 @@ func (asset *BTCAsset) CancelSync() {
 // stopSync initiates the full chain sync stopping protocols.
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
-func (asset *BTCAsset) stopSync() {
+func (asset *Asset) stopSync() {
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
@@ -455,7 +464,7 @@ func (asset *BTCAsset) stopSync() {
 
 // startSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
-func (asset *BTCAsset) startSync() error {
+func (asset *Asset) startSync() error {
 	g, _ := errgroup.WithContext(asset.syncCtx)
 
 	if asset.syncData.chainServiceStopped {
@@ -505,7 +514,9 @@ func (asset *BTCAsset) startSync() error {
 	return nil
 }
 
-func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
+// IsConnectedToBitcoinNetwork returns true if the wallet is connected to the
+// bitcoin network.
+func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -515,7 +526,7 @@ func (asset *BTCAsset) IsConnectedToBitcoinNetwork() bool {
 
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
-func (asset *BTCAsset) startWallet() (err error) {
+func (asset *Asset) startWallet() (err error) {
 	if asset.isRecoveryRequired() {
 		if !asset.AllowAutomaticRescan() {
 			return errors.New("cannot set earlier birthday while there are active deals")
@@ -533,7 +544,7 @@ func (asset *BTCAsset) startWallet() (err error) {
 // view of the network as synced. This is most helpful for the cases where the
 // current block on the wallet is already synced but the next notification
 // showing this change in chain view might take close to 10 minutes to come.
-func (asset *BTCAsset) waitForSyncCompletion() {
+func (asset *Asset) waitForSyncCompletion() {
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 
@@ -556,7 +567,9 @@ func (asset *BTCAsset) waitForSyncCompletion() {
 	}
 }
 
-func (asset *BTCAsset) SpvSync() (err error) {
+// SpvSync initiates the full chain sync starting protocols. It attempts to
+// restart the chain service if it hasn't been initialized.
+func (asset *Asset) SpvSync() (err error) {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
@@ -597,7 +610,7 @@ func (asset *BTCAsset) SpvSync() (err error) {
 // reloadChainService loads a new instance of chain service to be used
 // for sync. It restarts sync if the wallet was previously connected to the btc newtork
 // before the function call.
-func (asset *BTCAsset) reloadChainService() error {
+func (asset *Asset) reloadChainService() error {
 	isPrevConnected := asset.IsConnectedToNetwork()
 	if isPrevConnected {
 		asset.CancelSync()

@@ -17,17 +17,27 @@ import (
 // from the type defined in politieia and thus exporting the politeia implementation that was hidden.
 
 const (
+	// PoliteiaMainnetHost is the politeia mainnet host.
 	PoliteiaMainnetHost = politeia.PoliteiaMainnetHost
+	// PoliteiaTestnetHost is the politeia testnet host.
 	PoliteiaTestnetHost = politeia.PoliteiaTestnetHost
 
+	// VoteBitYes is the string value for identifying "yes" vote bits.
 	VoteBitYes = politeia.VoteBitYes
-	VoteBitNo  = politeia.VoteBitNo
+	// VoteBitNo is the string value for identifying "no" vote bits.
+	VoteBitNo = politeia.VoteBitNo
 
-	ProposalCategoryAll       = politeia.ProposalCategoryAll
-	ProposalCategoryPre       = politeia.ProposalCategoryPre
-	ProposalCategoryActive    = politeia.ProposalCategoryActive
-	ProposalCategoryApproved  = politeia.ProposalCategoryApproved
-	ProposalCategoryRejected  = politeia.ProposalCategoryRejected
+	// ProposalCategoryAll is the int value for identifying all proposals.
+	ProposalCategoryAll = politeia.ProposalCategoryAll
+	// ProposalCategoryPre is the int value for identifying pre proposals.
+	ProposalCategoryPre = politeia.ProposalCategoryPre
+	// ProposalCategoryActive is the int value for identifying active proposals.
+	ProposalCategoryActive = politeia.ProposalCategoryActive
+	// ProposalCategoryApproved is the int value for identifying approved proposals.
+	ProposalCategoryApproved = politeia.ProposalCategoryApproved
+	// ProposalCategoryRejected is the int value for identifying rejected proposals.
+	ProposalCategoryRejected = politeia.ProposalCategoryRejected
+	// ProposalCategoryAbandoned is the int value for identifying abandoned proposals.
 	ProposalCategoryAbandoned = politeia.ProposalCategoryAbandoned
 )
 

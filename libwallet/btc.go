@@ -21,6 +21,7 @@ func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 	return chainParams, nil
 }
 
+// CreateNewBTCWallet creates a new BTC wallet and returns it.
 func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
@@ -42,6 +43,7 @@ func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase strin
 	return wallet, nil
 }
 
+// CreateNewBTCWatchOnlyWallet creates a new BTC watch only wallet and returns it.
 func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublicKey string) (sharedW.Asset, error) {
 	wallet, err := btc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mgr.params)
 	if err != nil {
@@ -58,6 +60,7 @@ func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublic
 	return wallet, nil
 }
 
+// RestoreBTCWallet restores a BTC wallet from a seed and returns it.
 func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
 	pass := &sharedW.WalletAuthInfo{
 		Name:            walletName,
@@ -92,7 +95,7 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 			return -1, err
 		}
 
-		asset, ok := wallet.(*btc.BTCAsset)
+		asset, ok := wallet.(*btc.Asset)
 		if !ok {
 			return -1, fmt.Errorf("invalid asset type")
 		}
@@ -127,7 +130,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.GetWalletID())
 		}
 
-		asset, ok := wallet.(*btc.BTCAsset)
+		asset, ok := wallet.(*btc.Asset)
 		if !ok {
 			return -1, fmt.Errorf("invalid asset type")
 		}

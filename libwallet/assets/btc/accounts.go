@@ -13,12 +13,17 @@ import (
 )
 
 const (
-	AddressGapLimit       uint32 = 20
-	ImportedAccountNumber        = waddrmgr.ImportedAddrAccount
-	DefaultAccountNum            = waddrmgr.DefaultAccountNum
+	// AddressGapLimit is the number of consecutive unused addresses that
+	// will be tracked before the wallet stops searching for new transactions.
+	AddressGapLimit uint32 = 20
+	// ImportedAccountNumber is the account number used for imported addresses.
+	ImportedAccountNumber = waddrmgr.ImportedAddrAccount
+	// DefaultAccountNum is the account number used for the default account.
+	DefaultAccountNum = waddrmgr.DefaultAccountNum
 )
 
-func (asset *BTCAsset) GetAccounts() (string, error) {
+// GetAccounts returns a list of all accounts for the wallet.
+func (asset *Asset) GetAccounts() (string, error) {
 	accountsResponse, err := asset.GetAccountsRaw()
 	if err != nil {
 		return "", err
@@ -32,7 +37,9 @@ func (asset *BTCAsset) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
+// GetAccountsRaw returns a list of all accounts for the wallet
+// without marshalling the response.
+func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	if asset.Internal().BTC == nil {
 		return nil, utils.ErrBTCNotInitialized
 	}
@@ -71,7 +78,9 @@ func (asset *BTCAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	}, nil
 }
 
-func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
+// GetAccount returns the account for the provided account number.
+// If the account does not exist, an error is returned.
+func (asset *Asset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -86,7 +95,8 @@ func (asset *BTCAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 	return nil, errors.New(utils.ErrNotExist)
 }
 
-func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
+// GetAccountBalance returns the balance for the provided account number.
+func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
 	if asset.Internal().BTC == nil {
 		return nil, utils.ErrBTCNotInitialized
 	}
@@ -97,13 +107,14 @@ func (asset *BTCAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		Total:          BTCAmount(balance.Total),
-		Spendable:      BTCAmount(balance.Spendable),
-		ImmatureReward: BTCAmount(balance.ImmatureReward),
+		Total:          Amount(balance.Total),
+		Spendable:      Amount(balance.Spendable),
+		ImmatureReward: Amount(balance.ImmatureReward),
 	}, nil
 }
 
-func (asset *BTCAsset) SpendableForAccount(account int32) (int64, error) {
+// SpendableForAccount returns the spendable balance for the provided account
+func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 	if asset.Internal().BTC == nil {
 		return -1, utils.ErrBTCNotInitialized
 	}
@@ -117,7 +128,7 @@ func (asset *BTCAsset) SpendableForAccount(account int32) (int64, error) {
 
 // UnspentOutputs returns all the unspent outputs available for the provided
 // account index.
-func (asset *BTCAsset) UnspentOutputs(account int32) ([]*ListUnspentResult, error) {
+func (asset *Asset) UnspentOutputs(account int32) ([]*ListUnspentResult, error) {
 	accountName, err := asset.AccountName(account)
 	if err != nil {
 		return nil, err
@@ -147,7 +158,8 @@ func (asset *BTCAsset) UnspentOutputs(account int32) ([]*ListUnspentResult, erro
 	return resp, nil
 }
 
-func (asset *BTCAsset) CreateNewAccount(accountName, privPass string) (int32, error) {
+// CreateNewAccount creates a new account with the provided account name.
+func (asset *Asset) CreateNewAccount(accountName, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err
@@ -158,7 +170,8 @@ func (asset *BTCAsset) CreateNewAccount(accountName, privPass string) (int32, er
 	return asset.NextAccount(accountName)
 }
 
-func (asset *BTCAsset) NextAccount(accountName string) (int32, error) {
+// NextAccount returns the next account number for the provided account name.
+func (asset *Asset) NextAccount(accountName string) (int32, error) {
 
 	if asset.IsLocked() {
 		return -1, errors.New(utils.ErrWalletLocked)
@@ -172,7 +185,8 @@ func (asset *BTCAsset) NextAccount(accountName string) (int32, error) {
 	return int32(accountNumber), nil
 }
 
-func (asset *BTCAsset) RenameAccount(accountNumber int32, newName string) error {
+// RenameAccount renames the account with the provided account number.
+func (asset *Asset) RenameAccount(accountNumber int32, newName string) error {
 	err := asset.Internal().BTC.RenameAccount(asset.GetScope(), uint32(accountNumber), newName)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -181,7 +195,8 @@ func (asset *BTCAsset) RenameAccount(accountNumber int32, newName string) error 
 	return nil
 }
 
-func (asset *BTCAsset) AccountName(accountNumber int32) (string, error) {
+// AccountName returns the account name for the provided account number.
+func (asset *Asset) AccountName(accountNumber int32) (string, error) {
 	name, err := asset.AccountNameRaw(uint32(accountNumber))
 	if err != nil {
 		return "", utils.TranslateError(err)
@@ -189,21 +204,26 @@ func (asset *BTCAsset) AccountName(accountNumber int32) (string, error) {
 	return name, nil
 }
 
-func (asset *BTCAsset) AccountNameRaw(accountNumber uint32) (string, error) {
+// AccountNameRaw returns the account name for the provided account number
+// from the internal wallet.
+func (asset *Asset) AccountNameRaw(accountNumber uint32) (string, error) {
 	return asset.Internal().BTC.AccountName(asset.GetScope(), accountNumber)
 }
 
-func (asset *BTCAsset) AccountNumber(accountName string) (int32, error) {
+// AccountNumber returns the account number for the provided account name.
+func (asset *Asset) AccountNumber(accountName string) (int32, error) {
 	accountNumber, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
-func (asset *BTCAsset) HasAccount(accountName string) bool {
+// HasAccount returns true if there is an account with the provided account name.
+func (asset *Asset) HasAccount(accountName string) bool {
 	_, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
 	return err == nil
 }
 
-func (asset *BTCAsset) HDPathForAccount(accountNumber int32) (string, error) {
+// HDPathForAccount returns the HD path for the provided account number.
+func (asset *Asset) HDPathForAccount(accountNumber int32) (string, error) {
 	var hdPath string
 	if asset.chainParams.Name == chaincfg.MainNetParams.Name {
 		hdPath = MainnetHDPath

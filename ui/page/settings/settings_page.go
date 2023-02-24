@@ -403,13 +403,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 	}
 	if pg.onlineCheckAPI.Changed() {
-		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
 	}
 	if pg.governanceAPI.Changed() {
-		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
-		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
 	}
 
 	if pg.privacyActive.Changed() {
@@ -567,10 +567,10 @@ func (pg *SettingsPage) updateSettingOptions() {
 func (pg *SettingsPage) updatePrivacySettings() {
 	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
 	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
-		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
+		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
-		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
 	} else {
 		if pg.WL.SelectedWallet != nil {
 			go func() {

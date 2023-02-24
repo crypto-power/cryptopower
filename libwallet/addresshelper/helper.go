@@ -14,6 +14,7 @@ import (
 
 const scriptVersion = 0
 
+// PkScript returns the public key payment script for the given address.
 func PkScript(address string, net dcrutil.AddressParams) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, net)
 	if err != nil {
@@ -24,6 +25,7 @@ func PkScript(address string, net dcrutil.AddressParams) ([]byte, error) {
 	return pkScript, nil
 }
 
+// BTCPkScript returns the public key payment script for the given address.
 func BTCPkScript(address string, net *btccfg.Params) ([]byte, error) {
 	// Parse the address to send the coins to into a btcutil.Address
 	// which is useful to ensure the accuracy of the address and determine
@@ -43,6 +45,7 @@ func BTCPkScript(address string, net *btccfg.Params) ([]byte, error) {
 	return pkScript, nil
 }
 
+// PkScriptAddresses returns the addresses for the given public key script.
 func PkScriptAddresses(params *chaincfg.Params, pkScript []byte) []string {
 	_, addresses := stdscript.ExtractAddrs(scriptVersion, pkScript, params)
 	encodedAddresses := make([]string, len(addresses))
