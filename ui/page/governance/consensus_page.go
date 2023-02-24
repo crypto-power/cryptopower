@@ -87,7 +87,7 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
@@ -253,7 +253,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 
 func (pg *ConsensusPage) Layout(gtx C) D {
 	// If Agendas API is not allowed, display the overlay with the message.
-	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isAgendaAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
@@ -406,7 +406,8 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 							Direction:   layout.W,
 							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
-							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
+							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
+						}.
 							Layout2(gtx, func(gtx C) D {
 								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i])
 							})

@@ -121,7 +121,7 @@ func (mgr *AssetsManager) SetDarkMode(data bool) {
 
 // GetDexServers returns the dex servers.
 func (mgr *AssetsManager) GetDexServers() (map[string][]byte, error) {
-	var servers = make(map[string][]byte, 0)
+	servers := make(map[string][]byte, 0)
 	err := mgr.db.ReadWalletConfigValue(sharedW.KnownDexServersConfigKey, &servers)
 	return servers, err
 }
@@ -201,8 +201,9 @@ func (mgr *AssetsManager) SetHTTPAPIPrivacyMode(apiType utils.HttpAPIType, isAct
 	mgr.db.SaveWalletConfigValue(dataKey, isActive)
 }
 
-// IsHTTPAPIPrivacyModeOn checks if the Http API privacy mode is set.
-func (mgr *AssetsManager) IsHTTPAPIPrivacyModeOn(apiType utils.HttpAPIType) bool {
+// IsHttpAPIPrivacyModeOff returns true if the given API type is enabled and false
+// if otherwise.
+func (mgr *AssetsManager) IsHttpAPIPrivacyModeOff(apiType utils.HttpAPIType) bool {
 	var data bool
 	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
 	mgr.db.ReadWalletConfigValue(dataKey, &data)
@@ -211,7 +212,7 @@ func (mgr *AssetsManager) IsHTTPAPIPrivacyModeOn(apiType utils.HttpAPIType) bool
 
 // GetLogLevels returns the log levels.
 func (mgr *AssetsManager) GetLogLevels() {
-	//TODO: loglevels should have a custom type supported on libwallet.
+	// TODO: loglevels should have a custom type supported on libwallet.
 	// Issue is to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
 	var logLevel string
 	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)

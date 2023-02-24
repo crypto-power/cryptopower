@@ -413,7 +413,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
 	}
 	if pg.exchangeAPI.Changed() {
-		pg.WL.AssetsManager.SetHttpAPIPrivacyMode(libutils.ExchangeHttpAPI, pg.exchangeAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHttpAPI, pg.exchangeAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
@@ -574,11 +574,11 @@ func (pg *SettingsPage) updateSettingOptions() {
 func (pg *SettingsPage) updatePrivacySettings() {
 	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
 	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
-		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.OnlineCheckHttpAPI))
+		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.OnlineCheckHttpAPI))
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.GovernanceHttpAPI))
-		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.ExchangeHttpAPI))
-		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.FeeRateHttpAPI))
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI))
+		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.FeeRateHttpAPI))
 	} else {
 		if pg.WL.SelectedWallet != nil {
 			go func() {

@@ -89,7 +89,7 @@ func (pg *TreasuryPage) OnNavigatedFrom() {
 }
 
 func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {

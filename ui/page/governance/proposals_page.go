@@ -93,7 +93,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 }
 
 func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -115,7 +115,7 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 // UI update with the new proposals list.
 func (pg *ProposalsPage) fetchProposals() {
 	var proposalFilter int32
-	var selectedType = pg.statusDropDown.Selected()
+	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
 	case values.String(values.StrApproved):
 		proposalFilter = libwallet.ProposalCategoryApproved
@@ -160,7 +160,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
-		//TODO: Proposals search functionality
+		// TODO: Proposals search functionality
 	}
 
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
@@ -175,7 +175,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		go pg.assetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
-		//Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
+		// Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -195,7 +195,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	for pg.infoButton.Button.Clicked() {
-		//TODO: proposal info modal
+		// TODO: proposal info modal
 	}
 }
 
@@ -215,7 +215,7 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
-	var overlay = layout.Stacked(func(gtx C) D { return D{} })
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isProposalsAPIAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {

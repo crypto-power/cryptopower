@@ -412,7 +412,7 @@ func (pg *CreateOrderPage) swapCurrency() {
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOn(libutils.ExchangeHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {

@@ -165,13 +165,11 @@ func NewSendPage(l *load.Load) *Page {
 				}
 			}
 			return accountIsValid
-
 		})
 		acc, _ := pg.selectedWallet.GetAccountsRaw()
 		for _, acc := range acc.Accounts {
 			if acc.Number == pg.selectedWallet.MixedAccountNumber() {
 				pg.sourceAccountSelector.SetSelectedAccount(acc)
-
 			}
 		}
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
@@ -524,7 +522,7 @@ func (pg *Page) addRatesUnits(rates int64) string {
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libUtil.FeeRateHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libUtil.FeeRateHttpAPI)
 }
 
 func (pg *Page) editsOrDisplayRatesHandler() {
