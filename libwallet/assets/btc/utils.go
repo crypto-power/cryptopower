@@ -53,7 +53,7 @@ func AmountSatoshi(f float64) int64 {
 
 // ToAmount returns a BTC amount that implements the asset amount interface.
 func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
-	return BTCAmount(btcutil.Amount(v))
+	return Amount(btcutil.Amount(v))
 }
 
 func hardenedKey(key uint32) uint32 {

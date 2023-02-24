@@ -5,26 +5,26 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 )
 
-// BTCAmount implements the Asset amount interface for the BTC asset
-type BTCAmount btcutil.Amount
+// Amount implements the Asset amount interface for the BTC asset
+type Amount btcutil.Amount
 
 // ToCoin returns the float64 version of the BTC formatted asset amount.
-func (a BTCAmount) ToCoin() float64 {
+func (a Amount) ToCoin() float64 {
 	return btcutil.Amount(a).ToBTC()
 }
 
 // String returns the string version of the BTC formatted asset amount.
-func (a BTCAmount) String() string {
+func (a Amount) String() string {
 	return btcutil.Amount(a).String()
 }
 
-// MulF64 multiplys the BTCAmount with the provided float64 value.
-func (a BTCAmount) MulF64(f float64) sharedW.AssetAmount {
-	return BTCAmount(btcutil.Amount(a).MulF64(f))
+// MulF64 multiplys the Amount with the provided float64 value.
+func (a Amount) MulF64(f float64) sharedW.AssetAmount {
+	return Amount(btcutil.Amount(a).MulF64(f))
 }
 
 // ToInt return the original unformatted amount BTCs
-func (a BTCAmount) ToInt() int64 {
+func (a Amount) ToInt() int64 {
 	return int64(btcutil.Amount(a))
 }
 

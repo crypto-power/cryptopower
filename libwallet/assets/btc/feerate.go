@@ -109,7 +109,7 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 			ConfirmedBlocks: int32(vals),
 			// Fee rate conversion from Sat/vB to Sat/kvB is at the rate of
 			// 1000 Sat/kvB == 1 Sat/vB
-			Feerate: BTCAmount(int(feerate * 1000.0)),
+			Feerate: Amount(int(feerate * 1000.0)),
 		})
 	}
 	return results, nil
@@ -176,7 +176,7 @@ func (asset *BTCAsset) GetUserFeeRate() sharedW.AssetAmount {
 
 	if asset.fees.SetFeeRatePerkvB == nil {
 		// If not set, defaults to the fall back fee of 1000 sats/kvB = (1 Sat/vB)
-		return BTCAmount(FallBackFeeRatePerkvB)
+		return Amount(FallBackFeeRatePerkvB)
 	}
 	return asset.fees.SetFeeRatePerkvB
 }
