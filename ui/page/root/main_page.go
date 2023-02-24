@@ -609,16 +609,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					var topBar D
-					switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-					case libutils.BTCWalletAsset:
-						topBar = mp.LayoutBTCTopBar(gtx)
-					case libutils.DCRWalletAsset:
-						topBar = mp.LayoutDCRTopBar(gtx)
-					}
-					return topBar
-				}),
+				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
 					return cryptomaterial.LinearLayout{
 						Width:       cryptomaterial.MatchParent,
@@ -660,7 +651,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 
 func (mp *MainPage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(mp.LayoutDCRTopBar),
+		layout.Rigid(mp.LayoutTopBar),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.N}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
@@ -713,7 +704,7 @@ func (mp *MainPage) LayoutUSDBalance(gtx C) D {
 	}
 }
 
-func (mp *MainPage) totalDCRBalance(gtx C) D {
+func (mp *MainPage) totalAssetBalance(gtx C) D {
 	if mp.isBalanceHidden {
 		hiddenBalanceText := mp.Theme.Label(values.TextSize18*0.8, "*******************")
 		return layout.Inset{Bottom: values.MarginPadding0, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
@@ -724,15 +715,12 @@ func (mp *MainPage) totalDCRBalance(gtx C) D {
 	return components.LayoutBalanceWithUnit(gtx, mp.Load, mp.totalBalance.String())
 }
 
-func (mp *MainPage) totalBTCBalance(gtx C) D {
-	return mp.Theme.Label(values.TextSize18, mp.totalBalance.String()).Layout(gtx)
-}
-
-func (mp *MainPage) LayoutDCRTopBar(gtx C) D {
+func (mp *MainPage) LayoutTopBar(gtx C) D {
+	assetType := mp.WL.SelectedWallet.Wallet.GetAssetType()
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Background:  mp.Theme.Color.Surface,
+		Background:  mp.Theme.Color.White,
 		Orientation: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -749,7 +737,7 @@ func (mp *MainPage) LayoutDCRTopBar(gtx C) D {
 					Top:    v,
 					Bottom: v,
 				},
-			}.GradientLayout(gtx,
+			}.GradientLayout(gtx, assetType,
 				layout.Rigid(func(gtx C) D {
 					return layout.W.Layout(gtx, func(gtx C) D {
 						return cryptomaterial.LinearLayout{
@@ -768,10 +756,20 @@ func (mp *MainPage) LayoutDCRTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return mp.Theme.Icons.DcrWatchOnly.Layout24dp(gtx)
+								switch assetType {
+								case libutils.DCRWalletAsset:
+									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+										return mp.Theme.Icons.DcrWatchOnly.Layout24dp(gtx)
+									}
+									return mp.Theme.Icons.DecredSymbol2.Layout24dp(gtx)
+								case libutils.BTCWalletAsset:
+									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+										return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
+									}
+									return mp.Theme.Icons.BTC.Layout24dp(gtx)
+								default:
+									return D{}
 								}
-								return mp.Theme.Icons.DecredSymbol2.Layout24dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
 								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
@@ -810,97 +808,7 @@ func (mp *MainPage) LayoutDCRTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								return mp.totalDCRBalance(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if !mp.isBalanceHidden {
-									return mp.LayoutUSDBalance(gtx)
-								}
-								return D{}
-							}),
-						)
-					})
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return mp.Theme.Separator().Layout(gtx)
-		}),
-	)
-}
-
-func (mp *MainPage) LayoutBTCTopBar(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Background:  mp.Theme.Color.Surface,
-		Orientation: layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			h := values.MarginPadding24
-			v := values.MarginPadding8
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.WrapContent,
-				Orientation: layout.Horizontal,
-				Alignment:   layout.Middle,
-				Padding: layout.Inset{
-					Right:  h,
-					Left:   values.MarginPadding10,
-					Top:    v,
-					Bottom: v,
-				},
-			}.BTCGradientLayout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.W.Layout(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Horizontal,
-							Alignment:   layout.Middle,
-							Clickable:   mp.openWalletSelector,
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Left:  values.MarginPadding12,
-									Right: values.MarginPadding24,
-								}.Layout(gtx, func(gtx C) D {
-									return mp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding12)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
-								}
-								return mp.Theme.Icons.BTC.Layout24dp(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
-								lbl.Color = mp.Theme.Color.PageNavText
-								return layout.Inset{
-									Left: values.MarginPadding10,
-								}.Layout(gtx, lbl.Layout)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return layout.Inset{
-										Left: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return walletHightlighLabel(mp.Theme, gtx, values.String(values.StrWatchOnly))
-									})
-								}
-								return D{}
-							}),
-						)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return mp.totalBTCBalance(gtx)
+								return mp.totalAssetBalance(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
 								if !mp.isBalanceHidden {
