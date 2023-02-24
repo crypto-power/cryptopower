@@ -20,13 +20,13 @@ type AddressInfo struct {
 }
 
 // IsAddressValid checks if the provided address is valid.
-func (asset *BTCAsset) IsAddressValid(address string) bool {
+func (asset *Asset) IsAddressValid(address string) bool {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	return err == nil
 }
 
 // HaveAddress checks if the provided address belongs to the wallet.
-func (asset *BTCAsset) HaveAddress(address string) bool {
+func (asset *Asset) HaveAddress(address string) bool {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return false
@@ -41,7 +41,7 @@ func (asset *BTCAsset) HaveAddress(address string) bool {
 }
 
 // AddressInfo returns information about an address.
-func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
+func (asset *Asset) AddressInfo(address string) (*AddressInfo, error) {
 	const op errors.Op = "btc.AddressInfo"
 
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
@@ -78,7 +78,7 @@ func (asset *BTCAsset) AddressInfo(address string) (*AddressInfo, error) {
 // CurrentAddress gets the most recently requested payment address from the
 // asset. If that address has already been used to receive funds, the next
 // chained address is returned.
-func (asset *BTCAsset) CurrentAddress(account int32) (string, error) {
+func (asset *Asset) CurrentAddress(account int32) (string, error) {
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
@@ -94,7 +94,7 @@ func (asset *BTCAsset) CurrentAddress(account int32) (string, error) {
 // NextAddress returns the address immediately following the last requested
 // payment address. If that address has already been used to receive funds,
 // the next chained address is returned.
-func (asset *BTCAsset) NextAddress(account int32) (string, error) {
+func (asset *Asset) NextAddress(account int32) (string, error) {
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
@@ -110,7 +110,7 @@ func (asset *BTCAsset) NextAddress(account int32) (string, error) {
 }
 
 // AccountOfAddress returns the account name of the provided address.
-func (asset *BTCAsset) AccountOfAddress(address string) (string, error) {
+func (asset *Asset) AccountOfAddress(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", utils.TranslateError(err)
@@ -130,7 +130,7 @@ func (asset *BTCAsset) AccountOfAddress(address string) (string, error) {
 }
 
 // AddressPubKey returns the public key of the provided address.
-func (asset *BTCAsset) AddressPubKey(address string) (string, error) {
+func (asset *Asset) AddressPubKey(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", err

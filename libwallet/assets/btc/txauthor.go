@@ -41,7 +41,7 @@ type TxAuthor struct {
 }
 
 // NewUnsignedTx creates a new unsigned transaction.
-func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
+func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
 	}
@@ -60,19 +60,19 @@ func (asset *BTCAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 }
 
 // GetUnsignedTx returns the unsigned transaction.
-func (asset *BTCAsset) GetUnsignedTx() *TxAuthor {
+func (asset *Asset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
 // IsUnsignedTxExist returns true if an unsigned transaction exists.
-func (asset *BTCAsset) IsUnsignedTxExist() bool {
+func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
 // AddSendDestination adds a destination address to the transaction.
 // The amount to be sent to the address is specified in satoshi.
 // If sendMax is true, the amount is ignored and the maximum amount is sent.
-func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
+func (asset *Asset) AddSendDestination(address string, satoshiAmount int64, sendMax bool) error {
 	_, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -96,7 +96,7 @@ func (asset *BTCAsset) AddSendDestination(address string, satoshiAmount int64, s
 }
 
 // RemoveSendDestination removes a destination address from the transaction.
-func (asset *BTCAsset) RemoveSendDestination(address string) {
+func (asset *Asset) RemoveSendDestination(address string) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
 
@@ -107,7 +107,7 @@ func (asset *BTCAsset) RemoveSendDestination(address string) {
 }
 
 // SendDestination returns a list of all destination addresses added to the transaction.
-func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDestination {
+func (asset *Asset) SendDestination(address string) *sharedW.TransactionDestination {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
@@ -115,7 +115,7 @@ func (asset *BTCAsset) SendDestination(address string) *sharedW.TransactionDesti
 }
 
 // SetChangeDestination sets the change address for the transaction.
-func (asset *BTCAsset) SetChangeDestination(address string) {
+func (asset *Asset) SetChangeDestination(address string) {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
 
@@ -126,7 +126,7 @@ func (asset *BTCAsset) SetChangeDestination(address string) {
 }
 
 // RemoveChangeDestination removes the change address from the transaction.
-func (asset *BTCAsset) RemoveChangeDestination() {
+func (asset *Asset) RemoveChangeDestination() {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
@@ -135,7 +135,7 @@ func (asset *BTCAsset) RemoveChangeDestination() {
 }
 
 // TotalSendAmount returns the total amount to be sent in the transaction.
-func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
+func (asset *Asset) TotalSendAmount() *sharedW.Amount {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
@@ -151,7 +151,7 @@ func (asset *BTCAsset) TotalSendAmount() *sharedW.Amount {
 }
 
 // EstimateFeeAndSize estimates the fee and size of the transaction.
-func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
+func (asset *Asset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	// compute the amount to be sent in the current tx.
 	var sendAmount = btcutil.Amount(asset.TotalSendAmount().UnitValue)
 
@@ -195,7 +195,7 @@ func (asset *BTCAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 }
 
 // EstimateMaxSendAmount estimates the maximum amount that can be sent in the transaction.
-func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
+func (asset *Asset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	txFeeAndSize, err := asset.EstimateFeeAndSize()
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (asset *BTCAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 }
 
 // Broadcast broadcasts the transaction to the network.
-func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) error {
+func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) error {
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
 
@@ -310,7 +310,7 @@ func (asset *BTCAsset) Broadcast(privatePassphrase, transactionLabel string) err
 	return utils.TranslateError(err)
 }
 
-func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
+func (asset *Asset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 	if asset.TxAuthoredInfo.needsConstruct || asset.TxAuthoredInfo.unsignedTx == nil {
 		unsignedTx, err := asset.constructTransaction()
 		if err != nil {
@@ -324,7 +324,7 @@ func (asset *BTCAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 	return asset.TxAuthoredInfo.unsignedTx, nil
 }
 
-func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
+func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var err error
 	var outputs = make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
@@ -409,7 +409,7 @@ func (asset *BTCAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 // for this unsigned tx, if a change address had not been previously derived.
 // The derived (or previously derived) address is used to prepare a
 // change source for receiving change from this tx back into the sharedW.
-func (asset *BTCAsset) changeSource() (*txauthor.ChangeSource, error) {
+func (asset *Asset) changeSource() (*txauthor.ChangeSource, error) {
 	if asset.TxAuthoredInfo.changeAddress == "" {
 		changeAccount := asset.TxAuthoredInfo.sourceAccountNumber
 		address, err := asset.Internal().BTC.NewChangeAddress(changeAccount, asset.GetScope())
@@ -429,7 +429,7 @@ func (asset *BTCAsset) changeSource() (*txauthor.ChangeSource, error) {
 }
 
 // validateSendAmount validate the amount to send to a destination address
-func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) error {
+func (asset *Asset) validateSendAmount(sendMax bool, satoshiAmount int64) error {
 	if !sendMax && (satoshiAmount <= 0 || satoshiAmount > maxAmountSatoshi) {
 		return errors.E(errors.Invalid, "invalid amount")
 	}
@@ -441,7 +441,7 @@ func (asset *BTCAsset) validateSendAmount(sendMax bool, satoshiAmount int64) err
 // transaction possible. It plans not to spend all the utxos available when servicing
 // the current transaction spending amount if possible. The sendMax shows that
 // all utxos must be spent without any balance(unspent utxo) left in the account.
-func (asset *BTCAsset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
+func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
 	var (
 		sourceErr       error
 		totalInputValue btcutil.Amount

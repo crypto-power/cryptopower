@@ -67,7 +67,7 @@ type FeeEstimate struct {
 }
 
 // fetchAPIFeeRate queries the API fee rate.
-func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
+func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	var feerateURL string
 	net := asset.NetType()
 	switch net {
@@ -116,7 +116,7 @@ func (asset *BTCAsset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 }
 
 // GetAPIFeeEstimateRate returns the fee estimates from the API.
-func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) {
+func (asset *Asset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) {
 	asset.fees.mu.RLock()
 	feerates = asset.fees.APIFeeRates
 	lastblock := asset.fees.LastBestblock
@@ -156,7 +156,7 @@ func (asset *BTCAsset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err erro
 
 // SetUserFeeRate sets the fee rate in kvB units. Setting fee rate less than
 // MinFeeRatePerkvB is not allowed.
-func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
+func (asset *Asset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 	asset.fees.mu.Lock()
 	defer asset.fees.mu.Unlock()
 
@@ -170,7 +170,7 @@ func (asset *BTCAsset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 
 // GetUserFeeRate returns the fee rate in kvB units. If not set it defaults to
 // FallBackFeeRatePerkvB.
-func (asset *BTCAsset) GetUserFeeRate() sharedW.AssetAmount {
+func (asset *Asset) GetUserFeeRate() sharedW.AssetAmount {
 	asset.fees.mu.RLock()
 	defer asset.fees.mu.RUnlock()
 

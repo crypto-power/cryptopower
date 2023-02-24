@@ -23,7 +23,7 @@ type txCache struct {
 }
 
 // PublishUnminedTransactions publishes all unmined transactions to the network.
-func (asset *BTCAsset) PublishUnminedTransactions() error {
+func (asset *Asset) PublishUnminedTransactions() error {
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset == nil {
 		return utils.ErrBTCNotInitialized
@@ -51,13 +51,13 @@ func (asset *BTCAsset) PublishUnminedTransactions() error {
 }
 
 // CountTransactions returns the total number of transactions for the wallet.
-func (asset *BTCAsset) CountTransactions(txFilter int32) (int, error) {
+func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 	transactions, err := asset.filterTxs(0, 0, txFilter, true)
 	return len(transactions), err
 }
 
 // GetTransactionRaw returns the transaction details for the given transaction hash.
-func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
+func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
 	transactions, err := asset.getTransactionsRaw(0, 0, true)
 	for _, tx := range transactions {
 		if tx.Hash == txHash {
@@ -68,12 +68,12 @@ func (asset *BTCAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 }
 
 // TxMatchesFilter checks if the transaction matches the given filter.
-func (asset *BTCAsset) TxMatchesFilter(_ *sharedW.Transaction, txFilter int32) bool {
+func (asset *Asset) TxMatchesFilter(_ *sharedW.Transaction, txFilter int32) bool {
 	return txhelper.TxDirectionInvalid != asset.btcSupportedTxFilter(txFilter)
 }
 
 // GetTransactions returns the transactions for the wallet.
-func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
+func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
 	transactions, err := asset.filterTxs(offset, limit, txFilter, newestFirst)
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func (asset *BTCAsset) GetTransactions(offset, limit, txFilter int32, newestFirs
 // get all transactions then return transactions that match the input limit and offset.
 // If offset and limit are 0, it will return all transactions
 // If newestFirst is true, it will return transactions from newest to oldest
-func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32,
 	newestFirst bool) ([]sharedW.Transaction, error) {
 	transactions, err := asset.filterTxs(0, 0, txFilter, newestFirst)
 	if err != nil {
@@ -116,7 +116,7 @@ func (asset *BTCAsset) GetTransactionsRaw(offset, limit, txFilter int32,
 	return txs, nil
 }
 
-func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) int32 {
+func (asset *Asset) btcSupportedTxFilter(txFilter int32) int32 {
 	switch txFilter {
 	case utils.TxFilterSent:
 		return txhelper.TxDirectionSent
@@ -131,7 +131,7 @@ func (asset *BTCAsset) btcSupportedTxFilter(txFilter int32) int32 {
 
 // the offset is the height of start block
 // limit is number of blocks will take from offset to get transactions
-func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+func (asset *Asset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	txType := asset.btcSupportedTxFilter(txFilter)
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
 	if err != nil {
@@ -156,7 +156,7 @@ func (asset *BTCAsset) filterTxs(offset, limit, txFilter int32, newestFirst bool
 // of the offset and the limit values.
 // If startblock is less that the endblock the list return is in ascending order
 // (starts with the oldest) otherwise its in descending (starts with the newest) order.
-func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]sharedW.Transaction, error) {
+func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	asset.txs.mu.RLock()
 	allTxs := append(asset.txs.unminedTxs, asset.txs.minedTxs...)
 	txCacheHeight := asset.txs.blockHeight
@@ -232,7 +232,7 @@ func (asset *BTCAsset) getTransactionsRaw(offset, limit int32, newestFirst bool)
 	return append(unminedTxs, minedTxs...), nil
 }
 
-func (asset *BTCAsset) extractTxs(blocks []wallet.Block) []sharedW.Transaction {
+func (asset *Asset) extractTxs(blocks []wallet.Block) []sharedW.Transaction {
 	txs := make([]sharedW.Transaction, 0)
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {

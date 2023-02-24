@@ -95,7 +95,7 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 			return -1, err
 		}
 
-		asset, ok := wallet.(*btc.BTCAsset)
+		asset, ok := wallet.(*btc.Asset)
 		if !ok {
 			return -1, fmt.Errorf("invalid asset type")
 		}
@@ -130,7 +130,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.GetWalletID())
 		}
 
-		asset, ok := wallet.(*btc.BTCAsset)
+		asset, ok := wallet.(*btc.Asset)
 		if !ok {
 			return -1, fmt.Errorf("invalid asset type")
 		}

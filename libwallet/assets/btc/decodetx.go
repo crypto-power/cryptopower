@@ -10,7 +10,7 @@ import (
 	"github.com/btcsuite/btcwallet/wallet"
 )
 
-func (asset *BTCAsset) decodeTxHex(txHex string) (*wire.MsgTx, error) {
+func (asset *Asset) decodeTxHex(txHex string) (*wire.MsgTx, error) {
 	b, err := hex.DecodeString(txHex)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (asset *BTCAsset) decodeTxHex(txHex string) (*wire.MsgTx, error) {
 	return tx, nil
 }
 
-func (asset *BTCAsset) decodeTxInputs(mtx *wire.MsgTx,
+func (asset *Asset) decodeTxInputs(mtx *wire.MsgTx,
 	walletInputs []wallet.TransactionSummaryInput) (inputs []*sharedW.TxInput, totalWalletInputs int64) {
 	inputs = make([]*sharedW.TxInput, len(mtx.TxIn))
 
@@ -54,7 +54,7 @@ func (asset *BTCAsset) decodeTxInputs(mtx *wire.MsgTx,
 	return
 }
 
-func (asset *BTCAsset) decodeTxOutputs(mtx *wire.MsgTx,
+func (asset *Asset) decodeTxOutputs(mtx *wire.MsgTx,
 	walletOutputs []wallet.TransactionSummaryOutput) (outputs []*sharedW.TxOutput, totalWalletOutput int64) {
 	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
 

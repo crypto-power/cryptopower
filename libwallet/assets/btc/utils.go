@@ -29,7 +29,7 @@ var wAddrMgrBkt = []byte("waddrmgr")
 // GetScope returns the key scope that will be used within the waddrmgr to
 // create an HD chain for deriving all of our required keys. A different
 // scope is used for each specific coin type.
-func (asset *BTCAsset) GetScope() waddrmgr.KeyScope {
+func (asset *Asset) GetScope() waddrmgr.KeyScope {
 	// Construct the key scope that will be used within the waddrmgr to
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
@@ -52,7 +52,7 @@ func AmountSatoshi(f float64) int64 {
 }
 
 // ToAmount returns a BTC amount that implements the asset amount interface.
-func (asset *BTCAsset) ToAmount(v int64) sharedW.AssetAmount {
+func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 	return Amount(btcutil.Amount(v))
 }
 
@@ -61,7 +61,7 @@ func hardenedKey(key uint32) uint32 {
 }
 
 // DeriveAccountXpub derives the xpub for the given account.
-func (asset *BTCAsset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
+func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
 	seed, err := walletseed.DecodeUserInput(seedMnemonic)
 	if err != nil {
 		return "", err

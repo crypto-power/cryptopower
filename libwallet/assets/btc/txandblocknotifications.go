@@ -9,7 +9,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 )
 
-func (asset *BTCAsset) listenForTransactions() {
+func (asset *Asset) listenForTransactions() {
 	if !atomic.CompareAndSwapUint32(&asset.syncData.txlistening, stop, start) {
 		// sync listening in progress already.
 		return
@@ -91,7 +91,7 @@ notificationsLoop:
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener,
+func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener,
 	async bool, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
@@ -112,7 +112,7 @@ func (asset *BTCAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 
 // RemoveTxAndBlockNotificationListener removes a previously registered
 // transaction and block notification listener.
-func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
+func (asset *Asset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
@@ -120,7 +120,7 @@ func (asset *BTCAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier str
 }
 
 // mempoolTransactionNotification publishes the txs that hit the mempool for the first time.
-func (asset *BTCAsset) mempoolTransactionNotification(transaction string) {
+func (asset *Asset) mempoolTransactionNotification(transaction string) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -132,7 +132,7 @@ func (asset *BTCAsset) mempoolTransactionNotification(transaction string) {
 // publishTransactionConfirmed publishes all the relevant tx identified in a filtered
 // block. A valid list of addresses associated with the current block need to
 // be provided.
-func (asset *BTCAsset) publishTransactionConfirmed(txHash string, blockHeight int32) {
+func (asset *Asset) publishTransactionConfirmed(txHash string, blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -143,7 +143,7 @@ func (asset *BTCAsset) publishTransactionConfirmed(txHash string, blockHeight in
 
 // publishBlockAttached once the initial sync is complete all the new blocks recieved
 // are published through this method.
-func (asset *BTCAsset) publishBlockAttached(blockHeight int32) {
+func (asset *Asset) publishBlockAttached(blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 

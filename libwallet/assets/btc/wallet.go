@@ -25,15 +25,15 @@ import (
 	"github.com/lightninglabs/neutrino/headerfs"
 )
 
-// BTCAsset confirm that BTC implements that shared assets interface.
-var _ sharedW.Asset = (*BTCAsset)(nil)
+// Asset confirm that BTC implements that shared assets interface.
+var _ sharedW.Asset = (*Asset)(nil)
 
-// BTCAsset is a wrapper around the btcwallet.Wallet struct.
+// Asset is a wrapper around the btcwallet.Wallet struct.
 // It implements the sharedW.Asset interface.
 // It also implements the sharedW.AssetsManagerDB interface.
-// This is done to allow the BTCAsset to be used as a db interface
+// This is done to allow the Asset to be used as a db interface
 // for the AssetsManager.
-type BTCAsset struct {
+type Asset struct {
 	*sharedW.Wallet
 
 	chainClient    *chain.NeutrinoClient
@@ -95,7 +95,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
-	btcWallet := &BTCAsset{
+	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -145,7 +145,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	btcWallet := &BTCAsset{
+	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -182,7 +182,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		return nil, err
 	}
 
-	btcWallet := &BTCAsset{
+	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -217,7 +217,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	// successful and therefore it should try the recovery again till it successfully
 	// completes.
 	ldr := initWalletLoader(chainParams, params.RootDir)
-	btcWallet := &BTCAsset{
+	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -242,7 +242,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 
 // SafelyCancelSync shuts down all the upstream processes. If not explicity
 // deleting a wallet use asset.CancelSync() instead.
-func (asset *BTCAsset) SafelyCancelSync() {
+func (asset *Asset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
 		// Before exiting, attempt to update the birthday block incase of a
 		// premature exit. Premature exit happens when the chain is not synced
@@ -269,7 +269,7 @@ func (asset *BTCAsset) SafelyCancelSync() {
 }
 
 // IsSynced returns true if the wallet is synced.
-func (asset *BTCAsset) IsSynced() bool {
+func (asset *Asset) IsSynced() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -277,13 +277,13 @@ func (asset *BTCAsset) IsSynced() bool {
 }
 
 // IsWaiting returns true if the wallet is waiting for headers.
-func (asset *BTCAsset) IsWaiting() bool {
+func (asset *Asset) IsWaiting() bool {
 	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 
 // IsSyncing returns true if the wallet is syncing.
-func (asset *BTCAsset) IsSyncing() bool {
+func (asset *Asset) IsSyncing() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -291,7 +291,7 @@ func (asset *BTCAsset) IsSyncing() bool {
 }
 
 // IsSyncShuttingDown returns true if the wallet is shutting down.
-func (asset *BTCAsset) IsSyncShuttingDown() bool {
+func (asset *Asset) IsSyncShuttingDown() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -299,7 +299,7 @@ func (asset *BTCAsset) IsSyncShuttingDown() bool {
 }
 
 // ConnectedPeers returns the number of connected peers.
-func (asset *BTCAsset) ConnectedPeers() int32 {
+func (asset *Asset) ConnectedPeers() int32 {
 	// Calling CS.ConnectedCount() before the first sync is
 	// Performed will freeze the application, because the function never return.
 	// Return 0 when not connected to bitcoin network as work around.
@@ -310,12 +310,12 @@ func (asset *BTCAsset) ConnectedPeers() int32 {
 }
 
 // IsConnectedToNetwork returns true if the wallet is connected to the network.
-func (asset *BTCAsset) IsConnectedToNetwork() bool {
+func (asset *Asset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToBitcoinNetwork()
 }
 
 // GetBestBlock returns the best block.
-func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
+func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	block, err := asset.chainClient.CS.BestBlock()
 	if err != nil {
 		log.Error("GetBestBlock hash for BTC failed, Err: ", err)
@@ -329,17 +329,17 @@ func (asset *BTCAsset) GetBestBlock() *sharedW.BlockInfo {
 }
 
 // GetBestBlockHeight returns the best block height.
-func (asset *BTCAsset) GetBestBlockHeight() int32 {
+func (asset *Asset) GetBestBlockHeight() int32 {
 	return asset.GetBestBlock().Height
 }
 
 // GetBestBlockTimeStamp returns the best block timestamp.
-func (asset *BTCAsset) GetBestBlockTimeStamp() int64 {
+func (asset *Asset) GetBestBlockTimeStamp() int64 {
 	return asset.GetBestBlock().Timestamp
 }
 
 // GetBlockHeight returns the block height for the given block hash.
-func (asset *BTCAsset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
+func (asset *Asset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
 	height, err := asset.chainClient.GetBlockHeight(&hash)
 	if err != nil {
 		log.Warn("GetBlockHeight for BTC failed, Err: %v", err)
@@ -349,7 +349,7 @@ func (asset *BTCAsset) GetBlockHeight(hash chainhash.Hash) (int32, error) {
 }
 
 // GetBlockHash returns the block hash for the given block height.
-func (asset *BTCAsset) GetBlockHash(height int64) (*chainhash.Hash, error) {
+func (asset *Asset) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	blockhash, err := asset.chainClient.GetBlockHash(height)
 	if err != nil {
 		log.Warn("GetBlockHash for BTC failed, Err: %v", err)
@@ -360,7 +360,7 @@ func (asset *BTCAsset) GetBlockHash(height int64) (*chainhash.Hash, error) {
 }
 
 // SignMessage signs a message with the private key associated with an address.
-func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
+func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {
 	err := asset.UnlockWallet(passphrase)
 	if err != nil {
 		return nil, err
@@ -397,7 +397,7 @@ func (asset *BTCAsset) SignMessage(passphrase, address, message string) ([]byte,
 }
 
 // VerifyMessage verifies a signed message.
-func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
+func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
 	addr, err := decodeAddress(address, asset.chainParams)
 	if err != nil {
 		return false, err
@@ -447,7 +447,7 @@ func (asset *BTCAsset) VerifyMessage(address, message, signatureBase64 string) (
 }
 
 // RemovePeers removes all peers from the wallet.
-func (asset *BTCAsset) RemovePeers() {
+func (asset *Asset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	go func() {
 		err := asset.reloadChainService()
@@ -458,7 +458,7 @@ func (asset *BTCAsset) RemovePeers() {
 }
 
 // SetSpecificPeer sets a specific peer to connect to.
-func (asset *BTCAsset) SetSpecificPeer(address string) {
+func (asset *Asset) SetSpecificPeer(address string) {
 	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 
 	// Prevent setting same address twice
@@ -478,7 +478,7 @@ func (asset *BTCAsset) SetSpecificPeer(address string) {
 // GetExtendedPubKey returns the extended public key of the given account,
 // to do that it calls btcwallet's AccountProperties method, using KeyScopeBIP0084
 // and the account number. On failure it returns error.
-func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
+func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset == nil {
 		return "", utils.ErrBTCNotInitialized
@@ -493,7 +493,7 @@ func (asset *BTCAsset) GetExtendedPubKey(account int32) (string, error) {
 
 // AccountXPubMatches checks if the xpub of the provided account matches the
 // provided xpub.
-func (asset *BTCAsset) AccountXPubMatches(account uint32, xPub string) (bool, error) {
+func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error) {
 	acctXPubKey, err := asset.Internal().BTC.AccountProperties(asset.GetScope(), account)
 	if err != nil {
 		return false, err
