@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"context"
-	"fmt"
 
 	"gioui.org/layout"
 	"github.com/decred/dcrd/dcrutil/v3"
@@ -420,7 +419,6 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
 					pg.wallet.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, acctNum(val))
-					fmt.Println("--set-->", pg.wallet.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1))
 					pg.getMixerBalance()
 				}
 			})
