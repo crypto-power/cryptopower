@@ -425,9 +425,7 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 			continue
 		}
 		selectorItems = append(selectorItems, &SelectorItem{
-			item: &load.WalletMapping{
-				Asset: wal,
-			},
+			item:      load.NewWalletMapping(wal),
 			clickable: sm.Theme.NewClickable(true),
 		})
 	}
@@ -470,10 +468,9 @@ func (sm *selectorModal) Handle() {
 					if sm.onAccountClicked != nil {
 						sm.onAccountClicked(item)
 					}
-				case sharedW.Asset:
+				case *load.WalletMapping:
 					if sm.onWalletClicked != nil {
-						wl := load.NewWalletMapping(item)
-						sm.onWalletClicked(wl)
+						sm.onWalletClicked(item)
 					}
 				}
 				sm.Dismiss()
