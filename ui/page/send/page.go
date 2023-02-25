@@ -136,7 +136,13 @@ func NewSendPage(l *load.Load) *Page {
 		// Filter the sending account.
 		sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
 		isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
-		if !accountIsValid || isSameAccount {
+		fmt.Println("---Name------->", account.Name, "-----", account.Number)
+		wallet := pg.sendDestination.destinationAccountSelector.SelectedWallet()
+		accountNumberMixed := wallet.MixedAccountNumber()
+
+		fmt.Println("-----AccountMixed----->", wallet.GetAssetType(), "--------", wallet.GetWalletName(), "-------", accountNumberMixed)
+		isMixedAccount := accountNumberMixed == account.Number
+		if !accountIsValid || isSameAccount || isMixedAccount {
 			return false
 		}
 		return true
