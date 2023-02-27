@@ -236,7 +236,6 @@ func (pg *CreateWallet) walletTypeSection(gtx C) D {
 func (pg *CreateWallet) walletOptions(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceEnd}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-
 			list := layout.List{}
 			return list.Layout(gtx, len(pg.walletActions), func(gtx C, i int) D {
 				item := pg.walletActions[i]
@@ -259,7 +258,7 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 				}
 
 				if pg.selectedWalletAction == i {
-					col = pg.Theme.Color.Primary
+					col = pg.Theme.Color.White
 					title.Color = pg.Theme.Color.White
 
 					item.border = cryptomaterial.Border{
@@ -322,14 +321,12 @@ func (pg *CreateWallet) createNewWallet(gtx C) D {
 				Top:    values.MarginPadding8,
 				Bottom: values.MarginPadding20,
 			}.Layout(gtx, pg.passwordEditor.Layout)
-
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Top:    values.MarginPadding8,
 				Bottom: values.MarginPadding20,
 			}.Layout(gtx, pg.confirmPasswordEditor.Layout)
-
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -475,7 +472,6 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				return
 			}
 		}()
-
 	}
 
 	// restore wallet actions
