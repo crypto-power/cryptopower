@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"net"
+	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
@@ -51,6 +53,10 @@ var (
 	ErrAssetUnknown      = errors.New("unknown asset found")
 	ErrBTCNotInitialized = errors.New("btc asset not initialized")
 	ErrDCRNotInitialized = errors.New("dcr asset not initialized")
+
+	ErrUnsupporttedIPV6Address = errors.New("IPv6 addresses unsupportted by the current network")
+	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
+	ErrPeerConnectionRejected  = errors.New("Peer connection rejected")
 )
 
 // todo, should update this method to translate more error kinds.
@@ -76,4 +82,20 @@ func ErrBTCMethodNotImplemented(method string) error {
 
 func ErrDCRMethodNotImplemented(method string) error {
 	return fmt.Errorf("%v not implemented for the %v Asset", method, DCRWalletAsset)
+}
+
+func TranslateNetworkError(host string, errMsg error) error {
+	switch {
+	case net.ParseIP(host).To4() == nil && strings.Contains(errMsg.Error(), "connect: network is unreachable"):
+		return ErrUnsupporttedIPV6Address
+
+	case strings.Contains(errMsg.Error(), "context deadline exceeded"):
+		return ErrNetConnectionTimeout
+
+	case strings.Contains(errMsg.Error(), "connect: connection refused"):
+		return ErrPeerConnectionRejected
+
+	default:
+		return errMsg
+	}
 }

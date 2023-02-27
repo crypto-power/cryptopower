@@ -6,11 +6,13 @@ package spv
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/lru"
 	"decred.org/dcrwallet/v2/p2p"
@@ -28,6 +30,11 @@ import (
 // After fetching more addresses (if needed), peers are disconnected from if
 // they do not provide each of these services.
 const reqSvcs = wire.SFNodeNetwork
+
+// warnSilencing helps to controlling the warning log intervals thereby
+// filtering all unnecessary logs due to multiple similar warning propagated
+// almost instantaneously.
+var warnSilencing = make(map[error]time.Time, 3)
 
 // Syncer implements wallet synchronization services by over the Decred wire
 // protocol using Simplified Payment Verification (SPV) with compact filters.
@@ -525,6 +532,7 @@ func (s *Syncer) connectToCandidates(ctx context.Context) error {
 	defer wg.Wait()
 
 	sem := make(chan struct{}, 8)
+
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -561,8 +569,37 @@ func (s *Syncer) connectToCandidates(ctx context.Context) error {
 				s.remotesMu.Lock()
 				delete(s.connectingRemotes, raddr)
 				s.remotesMu.Unlock()
+
+				// handle errors returned on premature context closure.
 				if ctx.Err() == nil {
-					log.Warnf("Peering attempt failed: %v", err)
+					translatedErr := utils.TranslateNetworkError(raddr, err)
+
+					if translatedErr != err {
+						err = nil
+						t, ok := warnSilencing[translatedErr]
+
+						switch translatedErr {
+						case utils.ErrUnsupporttedIPV6Address:
+							// This error is logged at intervals of 5 mins just to
+							// remind the user that their network doesn't support
+							// ipv6 addresses.
+							if !ok || time.Since(t).Minutes() > 5 {
+								err = translatedErr
+							}
+
+						case utils.ErrNetConnectionTimeout, utils.ErrPeerConnectionRejected:
+							// Errors logged at intervals of 20 seconds.
+							if !ok || time.Since(t).Seconds() > 20 {
+								err = fmt.Errorf("host:(%s) : %v", raddr, translatedErr)
+							}
+						}
+
+						warnSilencing[translatedErr] = time.Now()
+					}
+
+					if err != nil {
+						log.Warnf("Peering attempt failed: %v", err)
+					}
 				}
 				return
 			}
