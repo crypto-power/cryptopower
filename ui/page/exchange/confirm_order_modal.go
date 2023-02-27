@@ -118,7 +118,6 @@ func (com *confirmOrderModal) confirmOrder() {
 			return
 		}
 
-		fmt.Println("about constructTx Invoice Amount: ", order.InvoicedAmount)
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
 			log.Error("constructTx ", err)
@@ -317,7 +316,6 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 }
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
-	fmt.Println("[][][][] createOrder, invoiced ", com.invoicedAmount)
 	data := instantswap.Order{
 		ExchangeServer:           com.exchangeServer,
 		SourceWalletID:           com.sourceWalletID,

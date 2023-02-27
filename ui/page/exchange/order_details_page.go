@@ -42,7 +42,6 @@ type OrderDetailsPage struct {
 }
 
 func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPage {
-	fmt.Println("[][][][]][ ORDER DETAILS", order)
 	pg := &OrderDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OrderDetailsPageID),
