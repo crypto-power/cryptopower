@@ -133,10 +133,13 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.destinationAccountSelector = pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 		accountIsValid := account.Number != load.MaxInt32
+		// Filter mixed wallet
+		destinationWallet := pg.sendDestination.destinationAccountSelector.SelectedWallet()
+		isMixedAccount := destinationWallet.MixedAccountNumber() == account.Number
 		// Filter the sending account.
 		sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
 		isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
-		if !accountIsValid || isSameAccount {
+		if !accountIsValid || isSameAccount || isMixedAccount {
 			return false
 		}
 		return true
