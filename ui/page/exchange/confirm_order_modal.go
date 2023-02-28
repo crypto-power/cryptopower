@@ -114,8 +114,6 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err := com.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
 		if err != nil {
-			log.Error(err)
-
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -124,7 +122,6 @@ func (com *confirmOrderModal) confirmOrder() {
 		order, err := com.createOrder()
 		if err != nil {
 			log.Error(err)
-
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -132,8 +129,6 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
-			log.Error("constructTx ", err)
-
 			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)

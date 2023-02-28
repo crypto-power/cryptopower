@@ -176,8 +176,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 				log.Error(err)
 			}
 		}()
-
-		// pg.createOrderBtn.SetEnabled(true)
 	})
 
 	return pg
