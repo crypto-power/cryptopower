@@ -67,10 +67,17 @@ type CreateOrderPage struct {
 	refreshExchangeRateBtn cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
 	settingsButton         cryptomaterial.IconButton
+	refreshClickable       *cryptomaterial.Clickable
+	refreshIcon            *cryptomaterial.Image
+
+	syncButton cryptomaterial.IconButton
 
 	min          float64
 	max          float64
 	exchangeRate float64
+
+	// syncCompleted bool
+	// isSyncing     bool
 
 	*orderData
 }
@@ -110,6 +117,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
+		refreshClickable: l.Theme.NewClickable(true),
+		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -120,6 +129,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
+	// pg.syncButton = l.Theme.IconButton(l.Theme.Icons.a)
 	pg.infoButton.Size = values.MarginPadding18
 	buttonInset := layout.UniformInset(values.MarginPadding0)
 	pg.settingsButton.Inset, pg.infoButton.Inset,
@@ -311,6 +321,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	if pg.refreshClickable.Clicked() {
+		go func() {
+			pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
+			pg.ParentWindow().Reload()
+		}()
+	}
+
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -499,9 +517,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,
 												Left:  values.MarginPadding10,
-											}.Layout(gtx, func(gtx C) D {
-												return pg.infoButton.Layout(gtx)
-											})
+											}.Layout(gtx, pg.infoButton.Layout)
 										}),
 										layout.Rigid(pg.settingsButton.Layout),
 									)
@@ -623,9 +639,52 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
-								txt.Font.Weight = text.SemiBold
-								return txt.Layout(gtx)
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
+										txt.Font.Weight = text.SemiBold
+										return txt.Layout(gtx)
+									}),
+									layout.Flexed(1, func(gtx C) D {
+										body := func(gtx C) D {
+											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													var text string
+													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+														text = values.String(values.StrSyncingState)
+													} else {
+														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+													}
+
+													lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
+													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+													// if pg.syncCompleted {
+													// 	lastUpdatedInfo.Color = pg.Theme.Color.Success
+													// }
+
+													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+												}),
+												layout.Rigid(func(gtx C) D {
+													// return pg.settingsButton.Layout(gtx)
+													return cryptomaterial.LinearLayout{
+														Width:     cryptomaterial.WrapContent,
+														Height:    cryptomaterial.WrapContent,
+														Clickable: pg.refreshClickable,
+														Direction: layout.Center,
+														Alignment: layout.Middle,
+														Margin:    layout.Inset{Left: values.MarginPadding10},
+													}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, pg.refreshIcon.Layout16dp)
+														}),
+														// layout.Rigid(pg.rebroadcast.Layout),
+													)
+												}),
+											)
+										}
+										return layout.E.Layout(gtx, body)
+									}),
+								)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
@@ -872,3 +931,35 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 }
+
+// func (pg *CreateOrderPage) listenForSyncNotifications() {
+// 	if pg.ProposalNotificationListener != nil {
+// 		return
+// 	}
+// 	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
+// 	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, CreateOrderPageID)
+// 	if err != nil {
+// 		log.Errorf("Error adding politeia notification listener: %v", err)
+// 		return
+// 	}
+
+// 	go func() {
+// 		for {
+// 			select {
+// 			case n := <-pg.ProposalNotifChan:
+// 				if n.ProposalStatus == wallet.Synced {
+// 					pg.syncCompleted = true
+// 					pg.isSyncing = false
+
+// 					pg.fetchProposals()
+// 				}
+// 			case <-pg.ctx.Done():
+// 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
+// 				close(pg.ProposalNotifChan)
+// 				pg.ProposalNotificationListener = nil
+
+// 				return
+// 			}
+// 		}
+// 	}()
+// }
