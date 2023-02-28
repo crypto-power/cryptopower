@@ -50,11 +50,12 @@ type orderSettingsModal struct {
 	addressEditor cryptomaterial.Editor
 	copyRedirect  *cryptomaterial.Clickable
 
-	feeRateText    string
-	editRates      cryptomaterial.Button
-	fetchRates     cryptomaterial.Button
-	priority       string
-	selectedWallet *load.WalletMapping
+	feeRateText  string
+	editRates    cryptomaterial.Button
+	fetchRates   cryptomaterial.Button
+	ratesEditor  cryptomaterial.Editor
+	priority     string
+	rateEditMode bool
 
 	*orderData
 }
@@ -91,9 +92,9 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	}
 
 	osm.feeRateText = " - "
-	osm.priority = "Unknown"
-	osm.editRates = osm.Theme.Button("Edit")
-	osm.fetchRates = osm.Theme.Button("Fetch Rates")
+	osm.priority = values.String(values.StrUnknown)
+	osm.editRates = osm.Theme.Button(values.String(values.StrEdit))
+	osm.fetchRates = osm.Theme.Button(values.String(values.StrFetchRates))
 
 	bInset := layout.Inset{
 		Top:    values.MarginPadding4,
@@ -104,9 +105,10 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	osm.fetchRates.TextSize, osm.editRates.TextSize = values.TextSize12, values.TextSize12
 	osm.fetchRates.Inset, osm.editRates.Inset = bInset, bInset
 
-	osm.selectedWallet = &load.WalletMapping{
-		Asset: l.WL.SelectedWallet.Wallet,
-	}
+	osm.ratesEditor = osm.Theme.Editor(new(widget.Editor), "in Sat/kvB")
+	osm.ratesEditor.HasCustomButton = false
+	osm.ratesEditor.Editor.SingleLine = true
+	osm.ratesEditor.TextSize = values.TextSize14
 
 	return osm
 }
@@ -202,6 +204,21 @@ func (osm *orderSettingsModal) Handle() {
 
 	if osm.fetchRates.Clicked() {
 		go osm.feeRateAPIHandler()
+	}
+
+	if osm.editRates.Clicked() {
+		osm.rateEditMode = !osm.rateEditMode
+		if osm.rateEditMode {
+			osm.editRates.Text = values.String(values.StrSave)
+		} else {
+			rateStr := osm.ratesEditor.Editor.Text()
+			rateInt, err := osm.sourceWalletSelector.SelectedWallet().SetAPIFeeRate(rateStr)
+			if err != nil {
+				osm.feeRateText = " - "
+			}
+
+			osm.feeRateText = osm.addRatesUnits(rateInt)
+		}
 	}
 }
 
@@ -481,6 +498,10 @@ func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
 									return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
+												if osm.rateEditMode {
+													gtx.Constraints.Max.X = gtx.Constraints.Max.X / 3
+													return osm.ratesEditor.Layout(gtx)
+												}
 												feerateLabel := osm.Theme.Label(values.TextSize14, osm.feeRateText)
 												feerateLabel.Font.Weight = text.SemiBold
 												return feerateLabel.Layout(gtx)
@@ -518,8 +539,8 @@ func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
 	})
 }
 
-func (pg *orderSettingsModal) feeRateAPIHandler() {
-	feeRates, err := pg.selectedWallet.GetAPIFeeRate()
+func (osm *orderSettingsModal) feeRateAPIHandler() {
+	feeRates, err := osm.sourceWalletSelector.SelectedWallet().GetAPIFeeRate()
 	if err != nil {
 		return
 	}
@@ -536,13 +557,13 @@ func (pg *orderSettingsModal) feeRateAPIHandler() {
 	items := make([]layout.FlexChild, 0)
 	for index, feerate := range feeRates {
 		key := strconv.Itoa(index)
-		value := pg.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
-		radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
-			pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
+		value := osm.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
+		radioBtn := osm.Load.Theme.RadioButton(radiogroupbtns, key, value,
+			osm.Load.Theme.Color.DeepBlue, osm.Load.Theme.Color.Primary)
 		items = append(items, layout.Rigid(radioBtn.Layout))
 	}
 
-	info := modal.NewCustomModal(pg.Load).
+	info := modal.NewCustomModal(osm.Load).
 		Title(values.String(values.StrFeeRates)).
 		UseCustomWidget(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
@@ -554,24 +575,24 @@ func (pg *orderSettingsModal) feeRateAPIHandler() {
 			fields := strings.Fields(radiogroupbtns.Value)
 			index, _ := strconv.Atoi(fields[0])
 			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-			rateInt, err := pg.selectedWallet.SetAPIFeeRate(rate)
+			rateInt, err := osm.sourceWalletSelector.SelectedWallet().SetAPIFeeRate(rate)
 			if err != nil {
 				//pg.feeEstimationError(err.Error())
 				return false
 			}
 
-			pg.feeRateText = pg.addRatesUnits(rateInt)
+			osm.feeRateText = osm.addRatesUnits(rateInt)
 			blocks := feeRates[index].ConfirmedBlocks
 			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
-			pg.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
+			osm.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
 			im.Dismiss()
 			return true
 		})
 
-	pg.ParentWindow().ShowModal((info))
-	pg.editRates.SetEnabled(true)
+	osm.ParentWindow().ShowModal((info))
+	osm.editRates.SetEnabled(true)
 }
 
-func (pg *orderSettingsModal) addRatesUnits(rates int64) string {
-	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
+func (osm *orderSettingsModal) addRatesUnits(rates int64) string {
+	return osm.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }
