@@ -2,6 +2,10 @@ package exchange
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -45,6 +49,12 @@ type orderSettingsModal struct {
 	addressEditor cryptomaterial.Editor
 	copyRedirect  *cryptomaterial.Clickable
 
+	feeRateText    string
+	editRates      cryptomaterial.Button
+	fetchRates     cryptomaterial.Button
+	priority       string
+	selectedWallet *load.WalletMapping
+
 	*orderData
 }
 
@@ -77,6 +87,24 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
+	}
+
+	osm.feeRateText = " - "
+	osm.priority = "Unknown"
+	osm.editRates = osm.Theme.Button("Edit")
+	osm.fetchRates = osm.Theme.Button("Fetch Rates")
+
+	bInset := layout.Inset{
+		Top:    values.MarginPadding4,
+		Right:  values.MarginPadding8,
+		Bottom: values.MarginPadding4,
+		Left:   values.MarginPadding8,
+	}
+	osm.fetchRates.TextSize, osm.editRates.TextSize = values.TextSize12, values.TextSize12
+	osm.fetchRates.Inset, osm.editRates.Inset = bInset, bInset
+
+	osm.selectedWallet = &load.WalletMapping{
+		Asset: l.WL.SelectedWallet.Wallet,
 	}
 
 	return osm
@@ -169,6 +197,10 @@ func (osm *orderSettingsModal) Handle() {
 			Body(values.String(values.StrDestinationModalInfo)).
 			Title(values.String(values.StrDestination))
 		osm.ParentWindow().ShowModal(info)
+	}
+
+	if osm.fetchRates.Clicked() {
+		go osm.feeRateAPIHandler()
 	}
 }
 
@@ -362,6 +394,9 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																			return D{}
 																		})
 																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return osm.txFeeSection(gtx)
+																	}),
 																)
 															})
 														}),
@@ -412,4 +447,127 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
+}
+
+func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
+	return layout.Inset{
+		Bottom: values.MarginPadding16,
+	}.Layout(gtx, func(gtx C) D {
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
+			Orientation: layout.Vertical,
+			Margin:      layout.Inset{Bottom: values.MarginPadding16},
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				title := osm.Theme.Label(values.TextSize16, values.String(values.StrTxFee))
+				title.Font.Weight = text.SemiBold
+				return title.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+				wrapper := osm.Load.Theme.Card()
+				wrapper.Color = osm.Load.Theme.Color.Gray4
+				return border.Layout(gtx, func(gtx C) D {
+					return wrapper.Layout(gtx, func(gtx C) D {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X // Wrapper should fill available width
+						return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												feerateLabel := osm.Theme.Label(values.TextSize14, osm.feeRateText)
+												feerateLabel.Font.Weight = text.SemiBold
+												return feerateLabel.Layout(gtx)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.editRates.Layout)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.fetchRates.Layout)
+											}),
+										)
+									})
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											priorityLabel := osm.Theme.Label(values.TextSize14, values.StringF(values.StrPriority, " : "))
+											priorityLabel.Font.Weight = text.SemiBold
+											return priorityLabel.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											priorityVal := osm.Theme.Label(values.TextSize14, osm.priority)
+											priorityVal.Font.Style = text.Italic
+											return priorityVal.Layout(gtx)
+										}),
+									)
+								}),
+							)
+						})
+					})
+				})
+
+			}),
+		)
+	})
+}
+
+func (pg *orderSettingsModal) feeRateAPIHandler() {
+	feeRates, err := pg.selectedWallet.GetAPIFeeRate()
+	if err != nil {
+		return
+	}
+
+	blocksStr := func(b int32) string {
+		val := strconv.Itoa(int(b)) + " block"
+		if b == 1 {
+			return val
+		}
+		return val + "s"
+	}
+
+	radiogroupbtns := new(widget.Enum)
+	items := make([]layout.FlexChild, 0)
+	for index, feerate := range feeRates {
+		key := strconv.Itoa(index)
+		value := pg.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
+		radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
+			pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
+		items = append(items, layout.Rigid(radioBtn.Layout))
+	}
+
+	info := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrFeeRates)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		}).
+		SetCancelable(true).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrSave)).
+		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+			fields := strings.Fields(radiogroupbtns.Value)
+			index, _ := strconv.Atoi(fields[0])
+			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
+			rateInt, err := pg.selectedWallet.SetAPIFeeRate(rate)
+			if err != nil {
+				//pg.feeEstimationError(err.Error())
+				return false
+			}
+
+			pg.feeRateText = pg.addRatesUnits(rateInt)
+			blocks := feeRates[index].ConfirmedBlocks
+			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
+			pg.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
+			im.Dismiss()
+			return true
+		})
+
+	pg.ParentWindow().ShowModal((info))
+	pg.editRates.SetEnabled(true)
+}
+
+func (pg *orderSettingsModal) addRatesUnits(rates int64) string {
+	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }
