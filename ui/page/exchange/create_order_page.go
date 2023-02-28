@@ -175,9 +175,10 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			if err != nil {
 				log.Error(err)
 			}
+			pg.updateAmount()
 		}()
 
-		pg.createOrderBtn.SetEnabled(true)
+		// pg.createOrderBtn.SetEnabled(true)
 	})
 
 	return pg
@@ -225,6 +226,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			if err != nil {
 				log.Error(err)
 			}
+			pg.updateAmount()
 		}()
 	}
 
@@ -268,7 +270,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					pg.amountErrorText = ""
 					if pg.exchangeRate != -1 {
 						value := f / pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', -1, 64)
+						v := strconv.FormatFloat(value, 'f', 8, 64)
 						pg.amountErrorText = ""
 						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
@@ -297,7 +299,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					pg.amountErrorText = ""
 					if pg.exchangeRate != -1 {
 						value := f * pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', -1, 64)
+						v := strconv.FormatFloat(value, 'f', 8, 64)
 						pg.amountErrorText = ""
 						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
@@ -329,7 +331,7 @@ func (pg *CreateOrderPage) updateAmount() {
 		pg.amountErrorText = ""
 		if pg.exchangeRate != -1 {
 			value := f / pg.exchangeRate
-			v := strconv.FormatFloat(value, 'f', -1, 64)
+			v := strconv.FormatFloat(value, 'f', 8, 64)
 			pg.amountErrorText = ""
 			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
