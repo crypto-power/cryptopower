@@ -51,7 +51,7 @@ require (
 )
 
 require (
-	code.cryptopower.dev/group/instantswap v0.0.0-20221115115243-0ff6727e4065
+	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0

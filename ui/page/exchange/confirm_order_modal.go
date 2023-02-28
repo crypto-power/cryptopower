@@ -92,6 +92,7 @@ func (com *confirmOrderModal) SetLoading(loading bool) {
 func (com *confirmOrderModal) OnDismiss() {}
 
 func (com *confirmOrderModal) confirmOrder() {
+	com.passwordEditor.SetError("")
 	password := com.passwordEditor.Editor.Text()
 	if password == "" || com.isCreating {
 		return
@@ -99,6 +100,18 @@ func (com *confirmOrderModal) confirmOrder() {
 
 	com.SetLoading(true)
 	go func() {
+		if !com.sourceWalletSelector.SelectedWallet().IsSynced() {
+			com.SetError(values.String(values.StrSourceWalletNotSynced))
+			com.SetLoading(false)
+			return
+		}
+
+		if !com.destinationWalletSelector.SelectedWallet().IsSynced() {
+			com.SetError(values.String(values.StrDestinationWalletNotSynced))
+			com.SetLoading(false)
+			return
+		}
+
 		err := com.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
 		if err != nil {
 			com.SetError(err.Error())
@@ -108,6 +121,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		order, err := com.createOrder()
 		if err != nil {
+			log.Error(err)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -115,7 +129,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
-			_ = com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
+			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -124,7 +138,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		// FOR DEVELOPMENT: Comment this block to prevent debit of account
 		err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
 		if err != nil {
-			_ = com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
+			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -310,11 +324,11 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 
 func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 	data := instantswap.Order{
-		Server:                   com.server,
-		SourceWalletID:           com.sourceWalletSelector.SelectedWallet().GetWalletID(),
-		SourceAccountNumber:      com.sourceAccountSelector.SelectedAccount().Number,
-		DestinationWalletID:      com.destinationWalletSelector.SelectedWallet().GetWalletID(),
-		DestinationAccountNumber: com.destinationAccountSelector.SelectedAccount().Number,
+		ExchangeServer:           com.exchangeServer,
+		SourceWalletID:           com.sourceWalletID,
+		SourceAccountNumber:      com.sourceAccountNumber,
+		DestinationWalletID:      com.destinationWalletID,
+		DestinationAccountNumber: com.destinationAccountNumber,
 
 		InvoicedAmount: com.invoicedAmount,
 		FromCurrency:   com.fromCurrency.String(),

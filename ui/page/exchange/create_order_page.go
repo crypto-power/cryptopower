@@ -75,8 +75,8 @@ type CreateOrderPage struct {
 }
 
 type orderData struct {
-	exchange api.IDExchange
-	server   instantswap.ExchangeServer
+	exchange       api.IDExchange
+	exchangeServer instantswap.ExchangeServer
 
 	sourceAccountSelector *components.WalletAndAccountSelector
 	sourceWalletSelector  *components.WalletAndAccountSelector
@@ -176,8 +176,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 				log.Error(err)
 			}
 		}()
-
-		pg.createOrderBtn.SetEnabled(true)
 	})
 
 	return pg
@@ -268,12 +266,14 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					pg.amountErrorText = ""
 					if pg.exchangeRate != -1 {
 						value := f / pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', -1, 64)
+						v := strconv.FormatFloat(value, 'f', 8, 64)
 						pg.amountErrorText = ""
 						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 					}
+				} else {
+					pg.toAmountEditor.Edit.Editor.SetText("")
 				}
 
 			}
@@ -297,14 +297,15 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					pg.amountErrorText = ""
 					if pg.exchangeRate != -1 {
 						value := f * pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', -1, 64)
+						v := strconv.FormatFloat(value, 'f', 8, 64)
 						pg.amountErrorText = ""
 						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.fromAmountEditor.Edit.Editor.SetText(v)
 					}
+				} else {
+					pg.fromAmountEditor.Edit.Editor.SetText("")
 				}
-
 			}
 		}
 	}
@@ -329,12 +330,14 @@ func (pg *CreateOrderPage) updateAmount() {
 		pg.amountErrorText = ""
 		if pg.exchangeRate != -1 {
 			value := f / pg.exchangeRate
-			v := strconv.FormatFloat(value, 'f', -1, 64)
+			v := strconv.FormatFloat(value, 'f', 8, 64)
 			pg.amountErrorText = ""
 			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 			pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 		}
+	} else {
+		pg.toAmountEditor.Edit.Editor.SetText("")
 	}
 }
 
@@ -661,7 +664,11 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 	destinationAddress, _ := pg.orderData.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.destinationAccountSelector.SelectedAccount().Number)
 
 	pg.orderData.exchange = pg.exchange
-	pg.orderData.server = pg.selectedExchange.Server
+	pg.orderData.exchangeServer = pg.selectedExchange.Server
+	pg.orderData.sourceWalletSelector = pg.sourceWalletSelector
+	pg.orderData.sourceAccountSelector = pg.sourceAccountSelector
+	pg.orderData.destinationWalletSelector = pg.sourceWalletSelector
+	pg.orderData.destinationAccountSelector = pg.destinationAccountSelector
 
 	pg.sourceWalletID = pg.orderData.sourceWalletSelector.SelectedWallet().GetWalletID()
 	pg.sourceAccountNumber = pg.orderData.sourceAccountSelector.SelectedAccount().Number
@@ -694,11 +701,9 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 		})
 
 	pg.ParentWindow().ShowModal(confirmOrderModal)
-
 }
 
 func (pg *CreateOrderPage) updateExchangeRate() {
-	pg.updateAmount()
 	if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
 		return
 	}
@@ -708,7 +713,6 @@ func (pg *CreateOrderPage) updateExchangeRate() {
 			if err != nil {
 				log.Error(err)
 			}
-			pg.updateAmount()
 		}()
 	}
 }
@@ -718,7 +722,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	params := api.ExchangeRateRequest{
 		From:   pg.fromCurrency.String(),
 		To:     pg.toCurrency.String(),
-		Amount: 0,
+		Amount: 1,
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
@@ -733,6 +737,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	pg.exchangeRate = res.ExchangeRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
+	pg.updateAmount()
 
 	pg.fetchingRate = false
 	pg.rateError = false
