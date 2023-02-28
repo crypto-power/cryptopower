@@ -589,7 +589,11 @@ func (sm *selectorModal) infoBackdropLayout(gtx C) {
 }
 
 func walletBalance(wal sharedW.Asset) (totalBalance, spendableBalance int64) {
-	accountsResult, _ := wal.GetAccountsRaw()
+	accountsResult, err := wal.GetAccountsRaw()
+	if err != nil {
+		log.Errorf("Error getting accounts: %s", err)
+		return 0, 0
+	}
 	var tBal, sBal int64
 	for _, account := range accountsResult.Accounts {
 		tBal += account.Balance.Total.ToInt()
