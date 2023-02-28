@@ -703,7 +703,6 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 		})
 
 	pg.ParentWindow().ShowModal(confirmOrderModal)
-
 }
 
 func (pg *CreateOrderPage) updateExchangeRate() {

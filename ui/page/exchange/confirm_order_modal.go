@@ -100,6 +100,18 @@ func (com *confirmOrderModal) confirmOrder() {
 
 	com.SetLoading(true)
 	go func() {
+		if !com.sourceWalletSelector.SelectedWallet().IsSynced() {
+			com.SetError(values.String(values.StrSourceWalletNotSynced))
+			com.SetLoading(false)
+			return
+		}
+
+		if !com.destinationWalletSelector.SelectedWallet().IsSynced() {
+			com.SetError(values.String(values.StrDestinationWalletNotSynced))
+			com.SetLoading(false)
+			return
+		}
+
 		err := com.sourceWalletSelector.SelectedWallet().UnlockWallet(password)
 		if err != nil {
 			log.Error(err)
