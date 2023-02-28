@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -56,6 +57,7 @@ type orderSettingsModal struct {
 	ratesEditor  cryptomaterial.Editor
 	priority     string
 	rateEditMode bool
+	fetchingRate bool
 
 	*orderData
 }
@@ -216,7 +218,6 @@ func (osm *orderSettingsModal) Handle() {
 			if err != nil {
 				osm.feeRateText = " - "
 			}
-
 			osm.feeRateText = osm.addRatesUnits(rateInt)
 		}
 	}
@@ -510,6 +511,13 @@ func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
 												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.editRates.Layout)
 											}),
 											layout.Rigid(func(gtx C) D {
+												if osm.fetchingRate {
+													return layout.Inset{Left: values.MarginPadding18,
+														Right:  values.MarginPadding8,
+														Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+														return material.Loader(osm.Theme.Base).Layout(gtx)
+													})
+												}
 												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.fetchRates.Layout)
 											}),
 										)
@@ -540,6 +548,14 @@ func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
 }
 
 func (osm *orderSettingsModal) feeRateAPIHandler() {
+	if osm.fetchingRate {
+		return
+	}
+	osm.fetchingRate = true
+	defer func() {
+		osm.fetchingRate = false
+	}()
+
 	feeRates, err := osm.sourceWalletSelector.SelectedWallet().GetAPIFeeRate()
 	if err != nil {
 		return
@@ -577,11 +593,12 @@ func (osm *orderSettingsModal) feeRateAPIHandler() {
 			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
 			rateInt, err := osm.sourceWalletSelector.SelectedWallet().SetAPIFeeRate(rate)
 			if err != nil {
-				//pg.feeEstimationError(err.Error())
+				log.Error(err)
 				return false
 			}
 
 			osm.feeRateText = osm.addRatesUnits(rateInt)
+			osm.rateEditMode = false
 			blocks := feeRates[index].ConfirmedBlocks
 			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
 			osm.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
