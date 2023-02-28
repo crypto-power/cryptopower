@@ -413,7 +413,10 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			)
 		}
 
-		selectMixedAccModal := preference.NewListPreference(pg.Load, "", name, pg.ArrMixerAccounts).
+		//Filter unmixedAccount
+		arrMixers := pg.getMixerAccounts(false)
+
+		selectMixedAccModal := preference.NewListPreference(pg.Load, "", name, arrMixers).
 			UseCustomWidget(subtitle).
 			IsWallet(true).
 			UpdateValues(func(val string) {
@@ -437,7 +440,11 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				layout.Rigid(renderers.RenderHTML(text, pg.Theme).Layout),
 			)
 		}
-		selectChangeAccModal := preference.NewListPreference(pg.Load, "", name, pg.ArrMixerAccounts).
+
+		// Filter account mixed
+		arrMixers := pg.getMixerAccounts(true)
+
+		selectChangeAccModal := preference.NewListPreference(pg.Load, "", name, arrMixers).
 			UseCustomWidget(subtitle).
 			IsWallet(true).
 			UpdateValues(func(val string) {
@@ -463,6 +470,25 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 
 		pg.ParentWindow().ShowModal(textModal)
 	}
+}
+
+func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) map[string]string {
+	filterAccountNumber := pg.dcrImpl.UnmixedAccountNumber()
+	if isFilterMixed {
+		filterAccountNumber = pg.dcrImpl.MixedAccountNumber()
+	}
+
+	accountFilter, err := pg.wallet.AccountName(filterAccountNumber)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+	arrMixerAcc := make(map[string]string)
+	for k, v := range pg.ArrMixerAccounts {
+		arrMixerAcc[k] = v
+	}
+	delete(arrMixerAcc, accountFilter)
+	return arrMixerAcc
 }
 
 func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
