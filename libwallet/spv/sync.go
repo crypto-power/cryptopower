@@ -31,11 +31,6 @@ import (
 // they do not provide each of these services.
 const reqSvcs = wire.SFNodeNetwork
 
-// warnSilencing helps to controlling the warning log intervals thereby
-// filtering all unnecessary logs due to multiple similar warning propagated
-// almost instantaneously.
-var warnSilencing = make(map[error]time.Time, 3)
-
 // Syncer implements wallet synchronization services by over the Decred wire
 // protocol using Simplified Payment Verification (SPV) with compact filters.
 type Syncer struct {
@@ -83,6 +78,12 @@ type Syncer struct {
 	// Mempool for non-wallet-relevant transactions.
 	mempool     sync.Map // k=chainhash.Hash v=*wire.MsgTx
 	mempoolAdds chan *chainhash.Hash
+
+	// warnSilencing helps to controlling the warning log intervals thereby
+	// filtering all unnecessary logs due to multiple similar warning propagated
+	// almost instantaneously.
+	warnSilencing   map[error]time.Time
+	warnSilencingMu sync.RWMutex
 }
 
 // Notifications struct to contain all of the upcoming callbacks that will
@@ -143,6 +144,7 @@ func NewSyncer(wallets map[int]*wallet.Wallet, lp *p2p.LocalPeer) *Syncer {
 		sidechains:          sidechains,
 		lp:                  lp,
 		mempoolAdds:         make(chan *chainhash.Hash),
+		warnSilencing:       make(map[error]time.Time, 3),
 	}
 }
 
@@ -576,7 +578,10 @@ func (s *Syncer) connectToCandidates(ctx context.Context) error {
 
 					if translatedErr != err {
 						err = nil
-						t, ok := warnSilencing[translatedErr]
+
+						s.warnSilencingMu.RLock()
+						t, ok := s.warnSilencing[translatedErr]
+						s.warnSilencingMu.RUnlock()
 
 						switch translatedErr {
 						case utils.ErrUnsupporttedIPV6Address:
@@ -594,7 +599,9 @@ func (s *Syncer) connectToCandidates(ctx context.Context) error {
 							}
 						}
 
-						warnSilencing[translatedErr] = time.Now()
+						s.warnSilencingMu.Lock()
+						s.warnSilencing[translatedErr] = time.Now()
+						s.warnSilencingMu.Unlock()
 					}
 
 					if err != nil {
