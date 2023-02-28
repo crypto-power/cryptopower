@@ -175,7 +175,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			if err != nil {
 				log.Error(err)
 			}
-			pg.updateAmount()
 		}()
 
 		// pg.createOrderBtn.SetEnabled(true)
@@ -226,7 +225,6 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			if err != nil {
 				log.Error(err)
 			}
-			pg.updateAmount()
 		}()
 	}
 
@@ -276,6 +274,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 					}
+				} else {
+					pg.toAmountEditor.Edit.Editor.SetText("")
 				}
 
 			}
@@ -305,8 +305,9 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 						pg.fromAmountEditor.Edit.Editor.SetText(v)
 					}
+				} else {
+					pg.fromAmountEditor.Edit.Editor.SetText("")
 				}
-
 			}
 		}
 	}
@@ -337,6 +338,8 @@ func (pg *CreateOrderPage) updateAmount() {
 			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
 			pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
 		}
+	} else {
+		pg.toAmountEditor.Edit.Editor.SetText("")
 	}
 }
 
@@ -704,7 +707,6 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 }
 
 func (pg *CreateOrderPage) updateExchangeRate() {
-	pg.updateAmount()
 	if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
 		return
 	}
@@ -714,7 +716,6 @@ func (pg *CreateOrderPage) updateExchangeRate() {
 			if err != nil {
 				log.Error(err)
 			}
-			pg.updateAmount()
 		}()
 	}
 }
@@ -739,6 +740,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	pg.exchangeRate = res.ExchangeRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
+	pg.updateAmount()
 
 	pg.fetchingRate = false
 	pg.rateError = false
