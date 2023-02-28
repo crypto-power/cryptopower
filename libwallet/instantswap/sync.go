@@ -2,7 +2,6 @@ package instantswap
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"code.cryptopower.dev/group/instantswap"
@@ -33,14 +32,13 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 
 	instantSwap.mu.RUnlock()
 
+	log.Info("Exchange sync: started")
 	exchangeServers := instantSwap.ExchangeServers()
-
 	for _, exchangeServer := range exchangeServers {
 		exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
 		if err != nil {
 			log.Errorf("Error creating exchange server: %v", err)
 			continue
-			// return err
 		}
 
 		err = instantSwap.syncServer(exchangeServer, exchangeObject)
@@ -50,48 +48,34 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 		}
 	}
 
+	log.Info("Exchange sync: completed")
+	instantSwap.saveLastSyncedTimestamp(time.Now().Unix())
+	instantSwap.publishSynced()
+
 	return nil
 }
 
 func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchangeObject instantswap.IDExchange) error {
-	// exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
-	// if err != nil {
-	// 	log.Errorf("Error creating exchange server: %v", err)
-	// 	return err
-	// }
-
-	log.Info("Exchange sync: started")
-
-	// for {
-	// Check if instantswap has been shutdown and exit if true.
 	if instantSwap.ctx.Err() != nil {
 		return instantSwap.ctx.Err()
 	}
 
-	log.Info("Exchange sync: checking for updates")
+	log.Info("Exchange sync: checking for updates for", exchangeServer.Server.CapFirstLetter())
 
 	for {
 		err := instantSwap.checkForUpdates(exchangeObject, exchangeServer)
 		if err != nil {
 			log.Errorf("Error checking for exchange updates: %v", err)
 			time.Sleep(retryInterval * time.Second)
-			// return err
 			continue
 		}
 		break
 	}
 
-	log.Info("Exchange sync: update complete")
-	instantSwap.saveLastSyncedTimestamp(time.Now().Unix())
-	instantSwap.publishSynced()
+	log.Info("Exchange sync: update complete for", exchangeServer.Server.CapFirstLetter())
+
 	return nil
-	// }
-	// return nil
 }
-
-// func (instantswap *InstantSwap) handeOrderUpdate(orders []Order) {
-
-// }
 
 func (instantSwap *InstantSwap) IsSyncing() bool {
 	instantSwap.mu.RLock()
@@ -115,10 +99,7 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 	instantSwap.mu.RLock()
 	limit := 20
 	instantSwap.mu.RUnlock()
-	i := 0
 	for {
-		i++
-		fmt.Println("checkForUpdates [][][][] i is", i)
 		// Check if instantswap has been shutdown and exit if true.
 		if instantSwap.ctx.Err() != nil {
 			return instantSwap.ctx.Err()
@@ -129,19 +110,37 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 			return err
 		}
 
-		fmt.Println("checkForUpdates lenghth of orders is", len(orders))
 		if len(orders) == 0 {
 			break
 		}
 
 		offset += len(orders)
-		fmt.Println("checkForUpdates offset is", offset)
 
 		for _, order := range orders {
+			// if the order was created before the ExchangeServer field was added
+			// to the Order struct update it here. This prevents a crash when
+			// attempting to open legacy orders
+			switch order.ExchangeServer.Server {
+			case ChangeNow:
+				order.ExchangeServer.Config = ExchangeConfig{
+					ApiKey: API_KEY_CHANGENOW,
+				}
+			case GoDex:
+				order.ExchangeServer.Config = ExchangeConfig{
+					ApiKey: API_KEY_GODEX,
+				}
+			default:
+				order.ExchangeServer.Config = ExchangeConfig{}
+			}
+
+			err = instantSwap.updateOrder(order)
+			if err != nil {
+				log.Errorf("Error updating legacy order: %v", err)
+			}
+
 			if order.ExchangeServer == exchangeServer {
-				// if i%2 == 0 {
+				// delay for 5 seconds to avoid rate limit
 				time.Sleep(5 * time.Second)
-				// }
 				_, err = instantSwap.GetOrderInfo(exchangeObject, order.UUID)
 				if err != nil {
 					log.Errorf("Error getting order info: %v", err)

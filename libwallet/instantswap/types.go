@@ -65,7 +65,8 @@ type ExchangeNotificationListener interface {
 type Order struct {
 	ID                       int            `storm:"id,increment"`
 	UUID                     string         `storm:"unique" json:"uuid"`
-	ExchangeServer           ExchangeServer `json:"exchangeServer"`
+	Server                   Server         `json:"server"`         // Legacy Exchange Server field, used to update the new ExchangeServer field
+	ExchangeServer           ExchangeServer `json:"exchangeServer"` // New Exchange Server field
 	SourceWalletID           int            `json:"sourceWalletID"`
 	SourceAccountNumber      int32          `json:"sourceAccountNumber"`
 	DestinationWalletID      int            `json:"destinationWalletID"`

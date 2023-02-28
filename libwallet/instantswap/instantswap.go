@@ -62,6 +62,11 @@ func (instantSwap *InstantSwap) saveOrder(order *Order) error {
 	return instantSwap.db.Save(order)
 }
 
+// UpdateOrder updates an order in the database.
+func (instantSwap *InstantSwap) UpdateOrder(order *Order) error {
+	return instantSwap.updateOrder(order)
+}
+
 func (instantSwap *InstantSwap) updateOrder(order *Order) error {
 	return instantSwap.db.Update(order)
 }

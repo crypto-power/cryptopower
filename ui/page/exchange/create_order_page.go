@@ -76,9 +76,6 @@ type CreateOrderPage struct {
 	max          float64
 	exchangeRate float64
 
-	// syncCompleted bool
-	// isSyncing     bool
-
 	*orderData
 }
 
