@@ -19,6 +19,13 @@ import (
 	_ "code.cryptopower.dev/group/instantswap/exchange/swapzone"
 )
 
+const (
+	// API_KEY_CHANGENOW is the changenow API key.
+	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93"
+	// API_KEY_GODEX is the godex API key.
+	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
+)
+
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 	if err := db.Init(&Order{}); err != nil {
 		log.Errorf("Error initializing instantSwap database: %s", err.Error())
@@ -214,31 +221,17 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 		{
 			ChangeNow,
 			ExchangeConfig{
-				Debug:       false,
-				ApiKey:      "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93",
-				ApiSecret:   "",
-				AffiliateId: "",
-				UserID:      "cryptopowerdev@proton.me",
+				ApiKey: API_KEY_CHANGENOW,
 			},
 		},
 		{
 			FlypMe,
-			ExchangeConfig{
-				Debug:       false,
-				ApiKey:      "",
-				ApiSecret:   "",
-				AffiliateId: "",
-				UserID:      "",
-			},
+			ExchangeConfig{},
 		},
 		{
 			GoDex,
 			ExchangeConfig{
-				Debug:       false,
-				ApiKey:      "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3",
-				ApiSecret:   "",
-				AffiliateId: "",
-				UserID:      "8WHB6Yp8W",
+				ApiKey: API_KEY_GODEX,
 			},
 		},
 	}
