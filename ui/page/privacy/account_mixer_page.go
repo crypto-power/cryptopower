@@ -413,10 +413,10 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			)
 		}
 
-		//Filter unmixedAccount
-		arrMixers := pg.getMixerAccounts(false)
+		// Filter unmixed account
+		mixerAccounts := pg.getMixerAccounts(false)
 
-		selectMixedAccModal := preference.NewListPreference(pg.Load, "", name, arrMixers).
+		mixedAccountModal := preference.NewListPreference(pg.Load, "", name, mixerAccounts).
 			UseCustomWidget(subtitle).
 			IsWallet(true).
 			UpdateValues(func(val string) {
@@ -425,7 +425,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 					pg.getMixerBalance()
 				}
 			})
-		pg.ParentWindow().ShowModal(selectMixedAccModal)
+		pg.ParentWindow().ShowModal(mixedAccountModal)
 	}
 
 	for pg.unmixedAccount.Clicked() {
@@ -441,10 +441,10 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			)
 		}
 
-		// Filter account mixed
-		arrMixers := pg.getMixerAccounts(true)
+		// Filter mixed account
+		mixerAccounts := pg.getMixerAccounts(true)
 
-		selectChangeAccModal := preference.NewListPreference(pg.Load, "", name, arrMixers).
+		selectChangeAccModal := preference.NewListPreference(pg.Load, "", name, mixerAccounts).
 			UseCustomWidget(subtitle).
 			IsWallet(true).
 			UpdateValues(func(val string) {
