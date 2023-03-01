@@ -52,6 +52,14 @@ const (
 	DirectionFilter     = "Direction"
 	HeightFilter        = "BlockHeight"
 	TicketSpenderFilter = "TicketSpender"
+
+	LogLevelOff      = "off"
+	LogLevelTrace    = "trace"
+	LogLevelDebug    = "debug"
+	LogLevelInfo     = "info"
+	LogLevelWarn     = "warn"
+	LogLevelError    = "error"
+	LogLevelCritical = "critical"
 )
 
 // Stringer used in generating the directory path where the lowercase of the
