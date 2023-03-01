@@ -205,7 +205,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
 			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.isProposalsAPIAllowed() {
 					return pg.subSection(gtx, values.String(values.StrFetchProposals), pg.fetchProposal.Layout)
 				}
 				return D{}
