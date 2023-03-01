@@ -52,6 +52,7 @@ type SettingsPage struct {
 	backButton              cryptomaterial.IconButton
 	infoButton              cryptomaterial.IconButton
 	networkInfoButton       cryptomaterial.IconButton
+	logLevel                *cryptomaterial.Clickable
 
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
@@ -86,6 +87,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		help:              l.Theme.NewClickable(false),
 		about:             l.Theme.NewClickable(false),
 		appearanceMode:    l.Theme.NewClickable(false),
+		logLevel:          l.Theme.NewClickable(false),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
@@ -244,6 +246,14 @@ func (pg *SettingsPage) general() layout.Widget {
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
+				}),
+				layout.Rigid(func(gtx C) D {
+					logLevel := row{
+						title:     values.String(values.StrLogLevel),
+						clickable: pg.logLevel,
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLogLevels()),
+					}
+					return pg.clickableRow(gtx, logLevel)
 				}),
 			)
 		})
@@ -447,6 +457,15 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	if pg.about.Clicked() {
 		pg.ParentNavigator().Display(NewAboutPage(pg.Load))
+	}
+
+	for pg.logLevel.Clicked() {
+		logLevelSelector := preference.NewListPreference(pg.Load,
+			sharedW.LogLevelConfigKey, values.DefaultLogLevel, values.LogLevels).
+			Title(values.StrLogLevel).
+			UpdateValues(func(_ string) {})
+		pg.ParentWindow().ShowModal(logLevelSelector)
+		break
 	}
 
 	for pg.changeStartupPass.Clicked() {

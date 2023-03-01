@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"fmt"
 	"sort"
 
 	"gioui.org/layout"
@@ -41,7 +42,7 @@ type ListPreferenceModal struct {
 }
 
 func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items map[string]string) *ListPreferenceModal {
-
+	fmt.Printf("Log levels array: %+v \n", items)
 	// sort keys to keep order when refreshed
 	sortedKeys := make([]string, 0)
 	for k := range items {
@@ -77,6 +78,8 @@ func (lp *ListPreferenceModal) ReadPreferenceKeyedValue() string {
 		return lp.WL.AssetsManager.GetCurrencyConversionExchange()
 	case sharedW.LanguagePreferenceKey:
 		return lp.WL.AssetsManager.GetLanguagePreference()
+	case sharedW.LogLevelConfigKey:
+		return lp.WL.AssetsManager.GetLogLevels()
 	default:
 		return ""
 	}
@@ -89,6 +92,8 @@ func (lp *ListPreferenceModal) SavePreferenceKeyedValue() {
 		lp.WL.AssetsManager.SetCurrencyConversionExchange(val)
 	case sharedW.LanguagePreferenceKey:
 		lp.WL.AssetsManager.SetLanguagePreference(val)
+	case sharedW.LogLevelConfigKey:
+		lp.WL.AssetsManager.SetLogLevels(val)
 	}
 }
 

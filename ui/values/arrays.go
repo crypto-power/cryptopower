@@ -1,10 +1,14 @@
 package values
 
-import "code.cryptopower.dev/group/cryptopower/ui/values/localizable"
+import (
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/ui/values/localizable"
+)
 
 var (
 	ArrLanguages          map[string]string
 	ArrExchangeCurrencies map[string]string
+	LogLevels             map[string]string
 )
 
 const (
@@ -13,6 +17,8 @@ const (
 	BTCUSDTMarket        = "BTC-USDT"
 	BittrexExchange      = "bittrex"
 	BinanceExchange      = "binance"
+
+	DefaultLogLevel = utils.LogLevelInfo
 )
 
 func init() {
@@ -26,5 +32,15 @@ func init() {
 		BittrexExchange:      StrUsdBittrex,
 		BinanceExchange:      StrUsdBinance,
 		DefaultExchangeValue: StrNone,
+	}
+
+	LogLevels = map[string]string{
+		utils.LogLevelTrace:    StrLogLevelTrace,
+		utils.LogLevelDebug:    StrLogLevelDebug,
+		utils.LogLevelInfo:     StrLogLevelInfo,
+		utils.LogLevelWarn:     StrLogLevelWarn,
+		utils.LogLevelError:    StrLogLevelError,
+		utils.LogLevelCritical: StrLogLevelCritical,
+		utils.LogLevelOff:      StrLogLevelOff,
 	}
 }
