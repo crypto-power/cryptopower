@@ -27,14 +27,6 @@ func New(sLoggers map[string]slog.Logger, bLoggers map[string]btclog.Logger) *lo
 	return instance
 }
 
-func GetLogger() (*logger, error) {
-	if instance == nil {
-		return nil, errors.New("logger not instantiated")
-	}
-
-	return instance, nil
-}
-
 // setLogLevel sets the logging level for provided subsystem.  Invalid
 // subsystems are ignored.  Uninitialized subsystems are dynamically created as
 // needed.
