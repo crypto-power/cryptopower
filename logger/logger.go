@@ -40,26 +40,26 @@ func GetLogger() (*logger, error) {
 // needed.
 func (l *logger) setLogLevel(subsystemID string, logLevel string) {
 	// Ignore invalid subsystems.
-	logger, ok := l.subsystemSLoggers[subsystemID]
+	subsystem, ok := l.subsystemSLoggers[subsystemID]
 	if !ok {
 		return
 	}
 
 	level, _ := slog.LevelFromString(logLevel)
-	logger.SetLevel(level)
+	subsystem.SetLevel(level)
 }
 
 func (l *logger) setBTCLogLevel(subsystemID string, logLevel string) {
 	// Ignore invalid subsystems.
-	logger, ok := l.subsystemBLoggers[subsystemID]
+	subsystem, ok := l.subsystemBLoggers[subsystemID]
 	if !ok {
 		return
 	}
 	lvl, _ := btclog.LevelFromString(logLevel)
-	logger.SetLevel(lvl)
+	subsystem.SetLevel(lvl)
 }
 
-// setLogLevels sets the log level for all subsystem loggers to the passed
+// SetLogLevels sets the log level for all subsystem loggers to the passed
 // level.  It also dynamically creates the subsystem loggers as needed, so it
 // can be used to initialize the logging system.
 func SetLogLevels(logLevel string) error {
@@ -75,4 +75,24 @@ func SetLogLevels(logLevel string) error {
 		instance.setBTCLogLevel(subsystemID, logLevel)
 	}
 	return nil
+}
+
+// SetLogLevel sets the logging level for provided subsystem.  Invalid
+// subsystems are ignored.  Uninitialized subsystems are dynamically created as
+// needed.
+func SetLogLevel(subsystemID string, logLevel string) {
+	// Ignore invalid subsystems.
+	if subsystem, ok := instance.subsystemSLoggers[subsystemID]; ok {
+		// Defaults to info if the log level is invalid.
+		level, _ := slog.LevelFromString(logLevel)
+		subsystem.SetLevel(level)
+	}
+
+	// Ignore invalid subsystems.
+	if subsystem, ok := instance.subsystemBLoggers[subsystemID]; ok {
+		// Defaults to info if the log level is invalid.
+		level, _ := btclog.LevelFromString(logLevel)
+		subsystem.SetLevel(level)
+	}
+
 }

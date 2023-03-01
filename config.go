@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
+	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/version"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/politeia/politeiawww/logger"
 	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
 )
