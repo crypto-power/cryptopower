@@ -1,7 +1,6 @@
 package preference
 
 import (
-	"fmt"
 	"sort"
 
 	"gioui.org/layout"
@@ -42,7 +41,6 @@ type ListPreferenceModal struct {
 }
 
 func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items map[string]string) *ListPreferenceModal {
-	fmt.Printf("Log levels array: %+v \n", items)
 	// sort keys to keep order when refreshed
 	sortedKeys := make([]string, 0)
 	for k := range items {

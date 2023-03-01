@@ -11,6 +11,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/version"
 	"github.com/decred/dcrd/dcrutil/v4"
+	"github.com/decred/politeia/politeiawww/logger"
 	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
 )
@@ -88,7 +89,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		}
 
 		// Change the logging level for all subsystems.
-		setLogLevels(debugLevel)
+		logger.SetLogLevels(debugLevel)
 
 		return nil
 	}
@@ -118,7 +119,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)
 		}
-		setLogLevel(subsysID, logLevel)
+		logger.SetLogLevel(subsysID, logLevel)
 	}
 
 	return nil

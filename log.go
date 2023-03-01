@@ -17,6 +17,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/listeners"
+	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/ui"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -130,6 +131,9 @@ func init() {
 	dcrw.UseLogger(dcrLog)
 	spv.UseLogger(dcrLog)
 	instantswap.UseLogger(sharedWLog)
+
+	logger.New(subsystemSLoggers, subsystemBLoggers)
+	ntrn.SetLevel(btclog.LevelError) // Neutrino loglevel will always be error.
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -177,45 +181,6 @@ func initLogRotator(logDir string, maxRolls int) {
 		}
 		logRotators[logFile] = r
 	}
-}
-
-// setLogLevel sets the logging level for provided subsystem.  Invalid
-// subsystems are ignored.  Uninitialized subsystems are dynamically created as
-// needed.
-func setLogLevel(subsystemID string, logLevel string) {
-	// Ignore invalid subsystems.
-	logger, ok := subsystemSLoggers[subsystemID]
-	if !ok {
-		return
-	}
-
-	level, _ := slog.LevelFromString(logLevel)
-	logger.SetLevel(level)
-}
-
-func setBTCLogLevel(subsystemID string, logLevel string) {
-	// Ignore invalid subsystems.
-	logger, ok := subsystemBLoggers[subsystemID]
-	if !ok {
-		return
-	}
-	lvl, _ := btclog.LevelFromString(logLevel)
-	logger.SetLevel(lvl)
-}
-
-// setLogLevels sets the log level for all subsystem loggers to the passed
-// level.  It also dynamically creates the subsystem loggers as needed, so it
-// can be used to initialize the logging system.
-func setLogLevels(logLevel string) {
-	// Configure all sub-systems with the new logging level.  Dynamically
-	// create loggers as needed.
-	for subsystemID := range subsystemSLoggers {
-		setLogLevel(subsystemID, logLevel)
-	}
-	for subsystemID := range subsystemBLoggers {
-		setBTCLogLevel(subsystemID, logLevel)
-	}
-	ntrn.SetLevel(btclog.LevelError) // Neutrino loglevel will always be error.
 }
 
 func isExistSystem(subsysID string) bool {

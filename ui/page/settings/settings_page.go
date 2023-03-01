@@ -7,6 +7,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -463,7 +464,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		logLevelSelector := preference.NewListPreference(pg.Load,
 			sharedW.LogLevelConfigKey, values.DefaultLogLevel, values.LogLevels).
 			Title(values.StrLogLevel).
-			UpdateValues(func(_ string) {})
+			UpdateValues(func(val string) {
+				logger.SetLogLevels(val)
+			})
 		pg.ParentWindow().ShowModal(logLevelSelector)
 		break
 	}
