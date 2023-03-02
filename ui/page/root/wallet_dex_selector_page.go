@@ -372,6 +372,11 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 					log.Debugf("Error starting sync: %v", err)
 				}
 
+				err := pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
+				if err != nil {
+					log.Errorf("Error syncing instant swap: %v", err)
+				}
+
 				// Trigger UI update
 				pg.ParentWindow().Reload()
 

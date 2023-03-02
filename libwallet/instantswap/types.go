@@ -55,10 +55,10 @@ type InstantSwap struct {
 	cancelSync context.CancelFunc
 
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
-	notificationListeners   map[string]ExchangeNotificationListener
+	notificationListeners   map[string]OrderNotificationListener
 }
 
-type ExchangeNotificationListener interface {
+type OrderNotificationListener interface {
 	OnExchangeOrdersSynced()
 }
 

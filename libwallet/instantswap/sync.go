@@ -20,7 +20,6 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 	instantSwap.mu.RLock()
 
 	if instantSwap.cancelSync != nil {
-		instantSwap.mu.RUnlock()
 		return errors.New(ErrSyncAlreadyInProgress)
 	}
 
@@ -163,7 +162,7 @@ func (instantSwap *InstantSwap) publishSynced() {
 	}
 }
 
-func (instantSwap *InstantSwap) AddNotificationListener(notificationListener ExchangeNotificationListener, uniqueIdentifier string) error {
+func (instantSwap *InstantSwap) AddNotificationListener(notificationListener OrderNotificationListener, uniqueIdentifier string) error {
 	instantSwap.notificationListenersMu.Lock()
 	defer instantSwap.notificationListenersMu.Unlock()
 

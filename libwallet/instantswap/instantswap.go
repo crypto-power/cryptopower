@@ -39,7 +39,7 @@ func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 
 		notificationListenersMu: &sync.RWMutex{},
 
-		notificationListeners: make(map[string]ExchangeNotificationListener),
+		notificationListeners: make(map[string]OrderNotificationListener),
 	}, nil
 }
 

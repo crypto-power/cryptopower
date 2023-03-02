@@ -13,13 +13,14 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/wallet"
 
 	api "code.cryptopower.dev/group/instantswap"
 )
@@ -38,6 +39,8 @@ type CreateOrderPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+
+	*listeners.OrderNotificationListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -97,8 +100,8 @@ type orderData struct {
 	invoicedAmount float64
 	orderedAmount  float64
 
-	fromCurrency utils.AssetType
-	toCurrency   utils.AssetType
+	fromCurrency libutils.AssetType
+	toCurrency   libutils.AssetType
 
 	refundAddress      string
 	destinationAddress string
@@ -197,8 +200,10 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	if pg.isExchangeAPIAllowed() {
+		pg.listenForSyncNotifications()
 		pg.FetchOrders()
 	}
+
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -887,7 +892,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		}
 	} else {
 		// Source wallet picker
-		pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.DCRWalletAsset).
+		pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 			Title(values.String(values.StrFrom))
 
 		// Source account picker
@@ -905,7 +910,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		})
 
 		// Destination wallet picker
-		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.BTCWalletAsset).
+		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
 			Title(values.String(values.StrTo)).
 			EnableWatchOnlyWallets(true)
 
@@ -929,34 +934,32 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 }
 
-// func (pg *CreateOrderPage) listenForSyncNotifications() {
-// 	if pg.ProposalNotificationListener != nil {
-// 		return
-// 	}
-// 	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-// 	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, CreateOrderPageID)
-// 	if err != nil {
-// 		log.Errorf("Error adding politeia notification listener: %v", err)
-// 		return
-// 	}
+func (pg *CreateOrderPage) listenForSyncNotifications() {
+	if pg.OrderNotificationListener != nil {
+		return
+	}
+	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
+	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
+	if err != nil {
+		log.Errorf("Error adding instanswap notification listener: %v", err)
+		return
+	}
 
-// 	go func() {
-// 		for {
-// 			select {
-// 			case n := <-pg.ProposalNotifChan:
-// 				if n.ProposalStatus == wallet.Synced {
-// 					pg.syncCompleted = true
-// 					pg.isSyncing = false
+	go func() {
+		for {
+			select {
+			case n := <-pg.OrderNotifChan:
+				if n.OrderStatus == wallet.OrderStatusSynced {
+					pg.FetchOrders()
+					pg.ParentWindow().Reload()
+				}
+			case <-pg.ctx.Done():
+				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
+				close(pg.OrderNotifChan)
+				pg.OrderNotificationListener = nil
 
-// 					pg.fetchProposals()
-// 				}
-// 			case <-pg.ctx.Done():
-// 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
-// 				close(pg.ProposalNotifChan)
-// 				pg.ProposalNotificationListener = nil
-
-// 				return
-// 			}
-// 		}
-// 	}()
-// }
+				return
+			}
+		}
+	}()
+}
