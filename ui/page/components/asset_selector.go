@@ -121,6 +121,9 @@ func (ats *AssetTypeSelector) DisableBorder() *AssetTypeSelector {
 
 // SelectedAssetType returns the currently selected Asset type.
 func (ats *AssetTypeSelector) SelectedAssetType() *utils.AssetType {
+	if ats.selectedAssetType == nil {
+		return nil
+	}
 	return &ats.selectedAssetType.Type
 }
 
