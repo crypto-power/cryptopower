@@ -129,7 +129,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
-	// pg.syncButton = l.Theme.IconButton(l.Theme.Icons.a)
 	pg.infoButton.Size = values.MarginPadding18
 	buttonInset := layout.UniformInset(values.MarginPadding0)
 	pg.settingsButton.Inset, pg.infoButton.Inset,
@@ -660,14 +659,9 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 
 													lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
 													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-													// if pg.syncCompleted {
-													// 	lastUpdatedInfo.Color = pg.Theme.Color.Success
-													// }
-
 													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 												}),
 												layout.Rigid(func(gtx C) D {
-													// return pg.settingsButton.Layout(gtx)
 													return cryptomaterial.LinearLayout{
 														Width:     cryptomaterial.WrapContent,
 														Height:    cryptomaterial.WrapContent,
@@ -679,7 +673,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														layout.Rigid(func(gtx C) D {
 															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, pg.refreshIcon.Layout16dp)
 														}),
-														// layout.Rigid(pg.rebroadcast.Layout),
 													)
 												}),
 											)
