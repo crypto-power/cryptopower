@@ -5,6 +5,8 @@ import (
 	"embed"
 	"image"
 	"strings"
+
+	_ "image/png" // makes png images a decodable format
 )
 
 //go:embed *

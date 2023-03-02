@@ -145,7 +145,7 @@ func (t *Theme) Surface(gtx layout.Context, w layout.Widget) layout.Dimensions {
 
 func (t *Theme) ImageIcon(gtx layout.Context, icon image.Image, size int) layout.Dimensions {
 	img := image.NewRGBA(image.Rectangle{Max: image.Point{X: size, Y: size}})
-	draw.ApproxBiLinear.Scale(img, img.Bounds(), icon, icon.Bounds(), draw.Src, nil)
+	draw.CatmullRom.Scale(img, img.Bounds(), icon, icon.Bounds(), draw.Src, nil)
 
 	i := widget.Image{Src: paint.NewImageOp(img)}
 	i.Scale = float32(size) / float32(gtx.Dp(unit.Dp(float32(size))))

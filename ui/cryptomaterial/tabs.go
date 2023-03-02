@@ -32,7 +32,6 @@ type TabItem struct {
 	label  Label
 	button Button
 	Icon   image.Image
-	iconOp *paint.ImageOp
 	index  int
 }
 
@@ -82,14 +81,11 @@ func line(gtx layout.Context, width, height int, col color.NRGBA) layout.Dimensi
 
 // layoutIcon lays out the icon of a tab item
 func (t *TabItem) layoutIcon(gtx layout.Context) layout.Dimensions {
-	if t.iconOp == nil {
+	if t.Icon == nil {
 		return D{}
 	}
 
-	img := Image{
-		Image: &widget.Image{Src: *t.iconOp},
-	}
-	return img.Layout24dp(gtx)
+	return NewImage(t.Icon).Layout24dp(gtx)
 }
 
 // iconText lays out the text of a tab item and its icon if it has one. It aligns the text and the icon
@@ -122,11 +118,6 @@ func (t *TabItem) iconText(gtx layout.Context, tabPosition Position) layout.Dime
 func NewTabItem(title string, icon *image.Image) TabItem {
 	tabItem := TabItem{
 		Title: title,
-	}
-
-	if icon != nil {
-		iconOp := paint.NewImageOp(*icon)
-		tabItem.iconOp = &iconOp
 	}
 
 	return tabItem

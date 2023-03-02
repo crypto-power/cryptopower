@@ -7,22 +7,25 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"golang.org/x/image/draw"
 )
 
 type Image struct {
-	*widget.Image
+	image.Image
 }
 
 func NewImage(src image.Image) *Image {
 	return &Image{
-		Image: &widget.Image{
-			Src: paint.NewImageOp(src),
-		},
+		Image: src,
 	}
 }
 
 func (img *Image) Layout(gtx C) D {
-	return img.Image.Layout(gtx)
+	newImg := &widget.Image{
+		Src:   paint.NewImageOp(img.Image),
+		Scale: 1,
+	}
+	return newImg.Layout(gtx)
 }
 
 func (img *Image) Layout12dp(gtx C) D {
@@ -50,8 +53,16 @@ func (img *Image) Layout48dp(gtx C) D {
 }
 
 func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
-	width := img.Src.Size().X
-	scale := float32(size) / float32(width)
-	img.Scale = scale
+	imgsize := img.Bounds().Size()
+	heightWidthRatio := float32(imgsize.Y) / float32(imgsize.X)
+	height := float32(size) * heightWidthRatio
+	width := float32(size)
+
+	// Set the expected size of the final image needed:
+	dst := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+
+	// Resize to the best icon quality: https://pkg.go.dev/golang.org/x/image/draw#pkg-variables:
+	draw.CatmullRom.Scale(dst, dst.Rect, img, img.Bounds(), draw.Src, nil)
+	img.Image = dst
 	return img.Layout(gtx)
 }
