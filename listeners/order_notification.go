@@ -5,8 +5,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
-// ProposalNotificationListener satisfies dcr
-// OrderNotificationListener interface contract.
+// OrderNotificationListener satisfies libwallet OrderNotificationListener
+// interface contract.
 type OrderNotificationListener struct {
 	OrderNotifChan chan wallet.Order
 }
