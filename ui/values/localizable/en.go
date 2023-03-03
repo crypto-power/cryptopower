@@ -694,4 +694,5 @@ const EN = `
 "orderSubmitted" = "Order Submitted"
 "createWallet" = "Create wallet"
 "selectAssetType" = "Select Asset Type"
+"neverSynced" = "Never Synced"
 `

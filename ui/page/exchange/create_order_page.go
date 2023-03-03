@@ -650,9 +650,13 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														text = values.String(values.StrSyncingState)
 													} else {
 														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+
+														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+															text = values.String(values.StrNeverSynced)
+														}
 													}
 
-													lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
+													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
 													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 												}),
@@ -671,7 +675,10 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 																gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, pg.refreshIcon.Layout16dp)
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+															})
+
 														}),
 													)
 												}),
