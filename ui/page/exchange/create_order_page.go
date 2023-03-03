@@ -322,7 +322,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
+		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
 	}
 
 }
