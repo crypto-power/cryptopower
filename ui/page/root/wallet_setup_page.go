@@ -259,7 +259,7 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 
 				if pg.selectedWalletAction == i {
 					col = pg.Theme.Color.White
-					title.Color = pg.Theme.Color.White
+					title.Color = pg.Theme.Color.Primary
 
 					item.border = cryptomaterial.Border{
 						Radius: radius,
