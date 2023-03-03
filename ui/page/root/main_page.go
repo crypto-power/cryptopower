@@ -59,6 +59,7 @@ type MainPage struct {
 	*listeners.SyncProgressListener
 	*listeners.TxAndBlockNotificationListener
 	*listeners.ProposalNotificationListener
+	*listeners.OrderNotificationListener
 
 	ctx                  context.Context
 	ctxCancel            context.CancelFunc
@@ -905,6 +906,8 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	case mp.ProposalNotificationListener != nil:
 		return
+	case mp.OrderNotificationListener != nil:
+		return
 	}
 
 	selectedWallet := mp.WL.SelectedWallet.Wallet
@@ -930,6 +933,13 @@ func (mp *MainPage) listenForNotifications() {
 			log.Errorf("Error adding politeia notification listener: %v", err)
 			return
 		}
+	}
+
+	mp.OrderNotificationListener = listeners.NewOrderNotificationListener()
+	err = mp.WL.AssetsManager.InstantSwap.AddNotificationListener(mp.OrderNotificationListener, MainPageID)
+	if err != nil {
+		log.Errorf("Error adding instantswap notification listener: %v", err)
+		return
 	}
 
 	go func() {
@@ -967,6 +977,11 @@ func (mp *MainPage) listenForNotifications() {
 				if notification.ProposalStatus != wallet.Synced {
 					mp.postDesktopNotification(notification)
 				}
+			case notification := <-mp.OrderNotifChan:
+				// Post desktop notification for all events except the synced event.
+				if notification.OrderStatus != wallet.OrderStatusSynced {
+					mp.postDesktopNotification(notification)
+				}
 			case n := <-mp.SyncStatusChan:
 				if n.Stage == wallet.SyncCompleted {
 					mp.updateBalance()
@@ -976,15 +991,18 @@ func (mp *MainPage) listenForNotifications() {
 				selectedWallet.RemoveSyncProgressListener(MainPageID)
 				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
+				mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)
 				close(mp.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
 				close(mp.TxAndBlockNotifChan)
 				close(mp.ProposalNotifChan)
+				close(mp.OrderNotifChan)
 
 				mp.SyncProgressListener = nil
 				mp.TxAndBlockNotificationListener = nil
 				mp.ProposalNotificationListener = nil
+				mp.OrderNotificationListener = nil
 
 				return
 			}

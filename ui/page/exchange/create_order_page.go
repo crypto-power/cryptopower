@@ -13,13 +13,14 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/wallet"
 
 	api "code.cryptopower.dev/group/instantswap"
 )
@@ -38,6 +39,8 @@ type CreateOrderPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+
+	*listeners.OrderNotificationListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -67,6 +70,8 @@ type CreateOrderPage struct {
 	refreshExchangeRateBtn cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
 	settingsButton         cryptomaterial.IconButton
+	refreshClickable       *cryptomaterial.Clickable
+	refreshIcon            *cryptomaterial.Image
 
 	min          float64
 	max          float64
@@ -93,8 +98,8 @@ type orderData struct {
 	invoicedAmount float64
 	orderedAmount  float64
 
-	fromCurrency utils.AssetType
-	toCurrency   utils.AssetType
+	fromCurrency libutils.AssetType
+	toCurrency   libutils.AssetType
 
 	refundAddress      string
 	destinationAddress string
@@ -110,6 +115,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
+		refreshClickable: l.Theme.NewClickable(true),
+		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -190,7 +197,9 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	if pg.isExchangeAPIAllowed() {
+		pg.listenForSyncNotifications()
 		pg.FetchOrders()
+		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
 }
 
@@ -311,6 +320,11 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	if pg.refreshClickable.Clicked() {
+		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
+	}
+
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -499,9 +513,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,
 												Left:  values.MarginPadding10,
-											}.Layout(gtx, func(gtx C) D {
-												return pg.infoButton.Layout(gtx)
-											})
+											}.Layout(gtx, pg.infoButton.Layout)
 										}),
 										layout.Rigid(pg.settingsButton.Layout),
 									)
@@ -623,9 +635,58 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
-								txt.Font.Weight = text.SemiBold
-								return txt.Layout(gtx)
+								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
+										txt.Font.Weight = text.SemiBold
+										return txt.Layout(gtx)
+									}),
+									layout.Flexed(1, func(gtx C) D {
+										body := func(gtx C) D {
+											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													var text string
+													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+														text = values.String(values.StrSyncingState)
+													} else {
+														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+
+														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+															text = values.String(values.StrNeverSynced)
+														}
+													}
+
+													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+												}),
+												layout.Rigid(func(gtx C) D {
+													return cryptomaterial.LinearLayout{
+														Width:     cryptomaterial.WrapContent,
+														Height:    cryptomaterial.WrapContent,
+														Clickable: pg.refreshClickable,
+														Direction: layout.Center,
+														Alignment: layout.Middle,
+														Margin:    layout.Inset{Left: values.MarginPadding10},
+													}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+															}
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+															})
+
+														}),
+													)
+												}),
+											)
+										}
+										return layout.E.Layout(gtx, body)
+									}),
+								)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
@@ -831,7 +892,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		}
 	} else {
 		// Source wallet picker
-		pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.DCRWalletAsset).
+		pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 			Title(values.String(values.StrFrom))
 
 		// Source account picker
@@ -849,7 +910,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		})
 
 		// Destination wallet picker
-		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, utils.BTCWalletAsset).
+		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
 			Title(values.String(values.StrTo)).
 			EnableWatchOnlyWallets(true)
 
@@ -871,4 +932,34 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.toCurrency = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
 	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+}
+
+func (pg *CreateOrderPage) listenForSyncNotifications() {
+	if pg.OrderNotificationListener != nil {
+		return
+	}
+	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
+	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
+	if err != nil {
+		log.Errorf("Error adding instanswap notification listener: %v", err)
+		return
+	}
+
+	go func() {
+		for {
+			select {
+			case n := <-pg.OrderNotifChan:
+				if n.OrderStatus == wallet.OrderStatusSynced {
+					pg.FetchOrders()
+					pg.ParentWindow().Reload()
+				}
+			case <-pg.ctx.Done():
+				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
+				close(pg.OrderNotifChan)
+				pg.OrderNotificationListener = nil
+
+				return
+			}
+		}
+	}()
 }

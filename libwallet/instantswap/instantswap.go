@@ -2,6 +2,7 @@ package instantswap
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"code.cryptopower.dev/group/instantswap"
@@ -34,6 +35,11 @@ func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 
 	return &InstantSwap{
 		db: db,
+		mu: &sync.RWMutex{},
+
+		notificationListenersMu: &sync.RWMutex{},
+
+		notificationListeners: make(map[string]OrderNotificationListener),
 	}, nil
 }
 
@@ -54,6 +60,11 @@ func (instantSwap *InstantSwap) saveOrOverwriteOrder(order *Order) error {
 
 func (instantSwap *InstantSwap) saveOrder(order *Order) error {
 	return instantSwap.db.Save(order)
+}
+
+// UpdateOrder updates an order in the database.
+func (instantSwap *InstantSwap) UpdateOrder(order *Order) error {
+	return instantSwap.updateOrder(order)
 }
 
 func (instantSwap *InstantSwap) updateOrder(order *Order) error {

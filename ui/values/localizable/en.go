@@ -192,8 +192,12 @@ const EN = `
 "estimatedSize" = "Estimated size"
 "estimatedTime" = "Estimated time"
 "exchange" = "Exchange"
+<<<<<<< HEAD
 "exchangeAPI" = "Exchange API"
 "exchangeIntro" = "Exchange curriencies simple, fast and secure."
+=======
+"exchangeIntro" = "Exchange currencies simple, fast and secure."
+>>>>>>> undo autosync on navigation to the exchange page
 "exchangeRate" = "Fetch Exchange Rate"
 "existingWalletName" = "What is your wallet existing wallet name?"
 "exit" = "Exit"
@@ -690,4 +694,5 @@ const EN = `
 "orderSubmitted" = "Order Submitted"
 "createWallet" = "Create wallet"
 "selectAssetType" = "Select Asset Type"
+"neverSynced" = "Never Synced"
 `

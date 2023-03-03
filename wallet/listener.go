@@ -67,6 +67,9 @@ const (
 
 	// ProposalAdded indicates that a new proposal was added
 	ProposalAdded
+
+	// OrderSynced indicates that order has finished syncing
+	OrderSynced
 )
 
 const (
@@ -93,6 +96,7 @@ type (
 		ConfirmedTxn   TxConfirmed
 		AcctMixerInfo  AccountMixer
 		Proposal       Proposal
+		Order          Order
 	}
 
 	RescanUpdate struct {

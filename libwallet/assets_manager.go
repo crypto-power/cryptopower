@@ -255,6 +255,11 @@ func (mgr *AssetsManager) Shutdown() {
 		mgr.Politeia.StopSync()
 	}
 
+	// Shutdown instant swap if its syncing
+	if mgr.InstantSwap.IsSyncing() {
+		mgr.InstantSwap.StopSync()
+	}
+
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallet.Shutdown() // Cancels the DCR wallet sync too.
 		wallet.CancelRescan()

@@ -799,4 +799,5 @@ const (
 	StrOrderSubmitted                  = "orderSubmitted"
 	StrCreateWallet                    = "createWallet"
 	StrSelectAssetType                 = "selectAssetType"
+	StrNeverSynced                     = "neverSynced"
 )

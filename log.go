@@ -14,6 +14,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui"
@@ -110,13 +111,13 @@ func init() {
 	components.UseLogger(winLog)
 	transaction.UseLogger(winLog)
 	governance.UseLogger(winLog)
-	exchange.UseLogger(winLog)
 	info.UseLogger(winLog)
 	staking.UseLogger(winLog)
 	privacy.UseLogger(winLog)
 	modal.UseLogger(winLog)
 	btc.UseLogger(btcLog)
 	ext.UseLogger(extLog)
+	exchange.UseLogger(sharedWLog)
 	addrmgr.UseLogger(dcrLog)
 	connmgr.UseLogger(dcrLog)
 	p2p.UseLogger(syncLog)
@@ -128,6 +129,7 @@ func init() {
 	bw.UseLogger(btcLog)
 	dcrw.UseLogger(dcrLog)
 	spv.UseLogger(dcrLog)
+	instantswap.UseLogger(sharedWLog)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
