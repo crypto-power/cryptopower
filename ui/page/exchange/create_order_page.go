@@ -73,8 +73,6 @@ type CreateOrderPage struct {
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 
-	syncButton cryptomaterial.IconButton
-
 	min          float64
 	max          float64
 	exchangeRate float64
@@ -201,8 +199,8 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	if pg.isExchangeAPIAllowed() {
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
+		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
-
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -324,10 +322,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go func() {
-			pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
-			pg.ParentWindow().Reload()
-		}()
+		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
 
 }
@@ -671,6 +666,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														Margin:    layout.Inset{Left: values.MarginPadding10},
 													}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
+															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+															}
 															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, pg.refreshIcon.Layout16dp)
 														}),
 													)

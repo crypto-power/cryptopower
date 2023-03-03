@@ -10,12 +10,17 @@ import (
 )
 
 const (
-	retryInterval = 15 // 15 seconds
+	retryInterval  = 15 // 15 seconds
+	maxSyncRetries = 3
 
 	configDBBkt                  = "instantswap_config"
 	LastSyncedTimestampConfigKey = "instantswap_last_synced_timestamp"
 )
 
+// Sync synchronizes the exchange orders, by looping through each
+// exchange server and querying the order info and updating
+// the order saved in the databse with the order returned
+// from the order info query.
 func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 	instantSwap.mu.RLock()
 
@@ -33,11 +38,13 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 
 	log.Info("Exchange sync: started")
 	exchangeServers := instantSwap.ExchangeServers()
+	// Loop through each exchange server and sync the selected server.
 	for _, exchangeServer := range exchangeServers {
+		// Initialize the exchange server.
 		exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
 		if err != nil {
-			log.Errorf("Error creating exchange server: %v", err)
-			continue
+			log.Errorf("Error instantiating exchange server: %v", err)
+			continue // skip server if there was an error instantiating the server
 		}
 
 		err = instantSwap.syncServer(exchangeServer, exchangeObject)
@@ -59,13 +66,18 @@ func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchan
 		return instantSwap.ctx.Err()
 	}
 
-	log.Info("Exchange sync: checking for updates for", exchangeServer.Server.CapFirstLetter())
+	log.Info("Exchange sync: checking for updates on", exchangeServer.Server.CapFirstLetter())
 
+	attempts := 0
 	for {
+		attempts++
+		if attempts > maxSyncRetries {
+			return errors.Errorf("failed to sync exchange server %v after 3 attempts", exchangeServer)
+		}
 		err := instantSwap.checkForUpdates(exchangeObject, exchangeServer)
 		if err != nil {
 			log.Errorf("Error checking for exchange updates: %v", err)
-			time.Sleep(retryInterval * time.Second)
+			time.Sleep(retryInterval * time.Second) // delay for 15 seconds before retrying
 			continue
 		}
 		break
@@ -95,9 +107,7 @@ func (instantSwap *InstantSwap) StopSync() {
 // check all saved orders which status are not completed and update their status
 func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExchange, exchangeServer ExchangeServer) error {
 	offset := 0
-	instantSwap.mu.RLock()
 	limit := 20
-	instantSwap.mu.RUnlock()
 	for {
 		// Check if instantswap has been shutdown and exit if true.
 		if instantSwap.ctx.Err() != nil {
@@ -110,7 +120,7 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 		}
 
 		if len(orders) == 0 {
-			break
+			break // exit the loop if there are no more orders to check
 		}
 
 		offset += len(orders)
@@ -119,26 +129,32 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 			// if the order was created before the ExchangeServer field was added
 			// to the Order struct update it here. This prevents a crash when
 			// attempting to open legacy orders
-			switch order.ExchangeServer.Server {
-			case ChangeNow:
-				order.ExchangeServer.Config = ExchangeConfig{
-					ApiKey: API_KEY_CHANGENOW,
+			nilExchangeServer := ExchangeServer{}
+			if order.ExchangeServer == nilExchangeServer {
+				switch order.Server {
+				case ChangeNow:
+					order.ExchangeServer.Server = order.Server
+					order.ExchangeServer.Config = ExchangeConfig{
+						ApiKey: API_KEY_CHANGENOW,
+					}
+				case GoDex:
+					order.ExchangeServer.Server = order.Server
+					order.ExchangeServer.Config = ExchangeConfig{
+						ApiKey: API_KEY_GODEX,
+					}
+				default:
+					order.ExchangeServer.Server = order.Server
+					order.ExchangeServer.Config = ExchangeConfig{}
 				}
-			case GoDex:
-				order.ExchangeServer.Config = ExchangeConfig{
-					ApiKey: API_KEY_GODEX,
-				}
-			default:
-				order.ExchangeServer.Config = ExchangeConfig{}
-			}
 
-			err = instantSwap.updateOrder(order)
-			if err != nil {
-				log.Errorf("Error updating legacy order: %v", err)
+				err = instantSwap.updateOrder(order)
+				if err != nil {
+					log.Errorf("Error updating legacy order: %v", err)
+				}
 			}
 
 			if order.ExchangeServer == exchangeServer {
-				// delay for 5 seconds to avoid rate limit
+				// delay for 5 seconds to avoid hitting the rate limit
 				time.Sleep(5 * time.Second)
 				_, err = instantSwap.GetOrderInfo(exchangeObject, order.UUID)
 				if err != nil {

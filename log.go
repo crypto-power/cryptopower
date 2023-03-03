@@ -111,7 +111,6 @@ func init() {
 	components.UseLogger(winLog)
 	transaction.UseLogger(winLog)
 	governance.UseLogger(winLog)
-	exchange.UseLogger(winLog)
 	info.UseLogger(winLog)
 	staking.UseLogger(winLog)
 	privacy.UseLogger(winLog)

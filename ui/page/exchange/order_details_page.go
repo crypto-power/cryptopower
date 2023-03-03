@@ -51,22 +51,28 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	// if the order was created before the ExchangeServer field was added
 	// to the Order struct update it here. This prevents a crash when
 	// attempting to open legacy orders
-	switch order.ExchangeServer.Server {
-	case instantswap.ChangeNow:
-		order.ExchangeServer.Config = instantswap.ExchangeConfig{
-			ApiKey: instantswap.API_KEY_CHANGENOW,
+	nilExchangeServer := instantswap.ExchangeServer{}
+	if order.ExchangeServer == nilExchangeServer {
+		switch order.Server {
+		case instantswap.ChangeNow:
+			order.ExchangeServer.Server = order.Server
+			order.ExchangeServer.Config = instantswap.ExchangeConfig{
+				ApiKey: instantswap.API_KEY_CHANGENOW,
+			}
+		case instantswap.GoDex:
+			order.ExchangeServer.Server = order.Server
+			order.ExchangeServer.Config = instantswap.ExchangeConfig{
+				ApiKey: instantswap.API_KEY_GODEX,
+			}
+		default:
+			order.ExchangeServer.Server = order.Server
+			order.ExchangeServer.Config = instantswap.ExchangeConfig{}
 		}
-	case instantswap.GoDex:
-		order.ExchangeServer.Config = instantswap.ExchangeConfig{
-			ApiKey: instantswap.API_KEY_GODEX,
-		}
-	default:
-		order.ExchangeServer.Config = instantswap.ExchangeConfig{}
-	}
 
-	err := pg.WL.AssetsManager.InstantSwap.UpdateOrder(order)
-	if err != nil {
-		log.Errorf("Error updating legacy order: %v", err)
+		err := pg.WL.AssetsManager.InstantSwap.UpdateOrder(order)
+		if err != nil {
+			log.Errorf("Error updating legacy order: %v", err)
+		}
 	}
 
 	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(order.ExchangeServer)
