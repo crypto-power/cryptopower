@@ -205,7 +205,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
 			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.isProposalsAPIAllowed() {
 					return pg.subSection(gtx, values.String(values.StrFetchProposals), pg.fetchProposal.Layout)
 				}
 				return D{}
@@ -506,7 +506,6 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 				})
 			pg.ParentWindow().ShowModal(walletPasswordModal)
 			return true
-
 		})
 	textModal.Title(values.String(values.StrRemoveWallet)).
 		SetPositiveButtonText(values.String(values.StrRemove))
@@ -603,7 +602,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 }
 
 func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -706,7 +705,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		if pg.spendUnconfirmed.IsChecked() {
 			textModal := modal.NewTextInputModal(pg.Load).
 				SetTextWithTemplate(modal.AllowUnmixedSpendingTemplate).
-				//Hint(""). Code not deleted because a proper hint is required.
+				// Hint(""). Code not deleted because a proper hint is required.
 				PositiveButtonStyle(pg.Load.Theme.Color.Danger, pg.Load.Theme.Color.InvText).
 				SetPositiveButtonCallback(func(textInput string, tim *modal.TextInputModal) bool {
 					if textInput != values.String(values.StrAwareOfRisk) {

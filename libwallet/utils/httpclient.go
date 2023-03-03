@@ -24,7 +24,7 @@ const (
 	GovernanceHttpAPI HttpAPIType = iota
 	FeeRateHttpAPI
 	OnlineCheckHttpAPI
-	ExternalServiceHttpAPI
+	ExchangeHttpAPI
 )
 
 type (
@@ -176,7 +176,7 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 	}
 
 	// Reuse the same client for requests that share a host.
-	var client, ok = activeAPIs[urlPath.Host]
+	client, ok := activeAPIs[urlPath.Host]
 	if !ok {
 		client = newClient()
 	}

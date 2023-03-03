@@ -318,13 +318,13 @@ func (mp *MainPage) OnNavigatedTo() {
 }
 
 func (mp *MainPage) isProposalsAPIAllowed() bool {
-	return mp.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return mp.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
-	mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
-	if mp.currencyExchangeValue != values.DefaultExchangeValue {
+	if components.IsFetchExchangeRateAPIAllowed(mp.WL) {
+		mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 		go mp.fetchExchangeRate()
 	}
 }

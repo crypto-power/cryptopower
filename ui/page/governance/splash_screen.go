@@ -16,7 +16,21 @@ func (pg *Page) initSplashScreenWidgets() {
 	pg.enableGovernanceBtn = pg.Theme.Button(values.String(values.StrFetchProposals))
 }
 
-func (pg *Page) splashScreenLayout(gtx layout.Context) layout.Dimensions {
+func (pg *Page) splashScreenLayout(gtx C) D {
+	// If Proposals API is not allowed, display the overlay with the message.
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isProposalsAPIAllowed() {
+		gtx = gtx.Disabled()
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+		})
+	}
+
+	return layout.Stack{}.Layout(gtx, layout.Expanded(pg.splashScreen), overlay)
+}
+
+func (pg *Page) splashScreen(gtx layout.Context) layout.Dimensions {
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Vertical,
 		Width:       cryptomaterial.MatchParent,
@@ -25,7 +39,8 @@ func (pg *Page) splashScreenLayout(gtx layout.Context) layout.Dimensions {
 		Direction:   layout.Center,
 		Alignment:   layout.Middle,
 		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-		Padding:     layout.UniformInset(values.MarginPadding24)}.Layout(gtx,
+		Padding:     layout.UniformInset(values.MarginPadding24),
+	}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {

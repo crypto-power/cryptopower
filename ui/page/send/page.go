@@ -165,13 +165,11 @@ func NewSendPage(l *load.Load) *Page {
 				}
 			}
 			return accountIsValid
-
 		})
 		acc, _ := pg.selectedWallet.GetAccountsRaw()
 		for _, acc := range acc.Accounts {
 			if acc.Number == pg.selectedWallet.MixedAccountNumber() {
 				pg.sourceAccountSelector.SetSelectedAccount(acc)
-
 			}
 		}
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
@@ -218,8 +216,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
-	if pg.currencyExchange != values.DefaultExchangeValue {
+	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
 	}
@@ -432,7 +430,6 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
-	currencyValue := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
 		pg.amount.usdAmountEditor.Editor.Focused()
 
@@ -460,7 +457,7 @@ func (pg *Page) HandleUserInteractions() {
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
-			if currencyValue == values.DefaultExchangeValue {
+			if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
 				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
@@ -472,7 +469,7 @@ func (pg *Page) HandleUserInteractions() {
 			}
 		}
 	} else {
-		if currencyValue == values.DefaultExchangeValue {
+		if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
 			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
@@ -525,7 +522,7 @@ func (pg *Page) addRatesUnits(rates int64) string {
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libUtil.FeeRateHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libUtil.FeeRateHttpAPI)
 }
 
 func (pg *Page) editsOrDisplayRatesHandler() {

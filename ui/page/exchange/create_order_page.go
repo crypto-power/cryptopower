@@ -14,6 +14,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -188,7 +189,9 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.FetchOrders()
+	if pg.isExchangeAPIAllowed() {
+		pg.FetchOrders()
+	}
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -275,7 +278,6 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 				} else {
 					pg.toAmountEditor.Edit.Editor.SetText("")
 				}
-
 			}
 		}
 	}
@@ -309,7 +311,6 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			}
 		}
 	}
-
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -410,7 +411,19 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.orderData.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
 }
 
+func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+}
+
 func (pg *CreateOrderPage) Layout(gtx C) D {
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isExchangeAPIAllowed() {
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), str)
+		})
+	}
+
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -419,7 +432,13 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
-			Body: pg.layout,
+			Body: func(gtx C) D {
+				gtxCopy := gtx
+				if !pg.isExchangeAPIAllowed() {
+					gtxCopy = gtx.Disabled()
+				}
+				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
+			},
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
@@ -645,7 +664,8 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 							Direction:   layout.W,
 							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
-							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}}.
+							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
+						}.
 							Layout2(gtx, func(gtx C) D {
 								return components.OrderItemWidget(gtx, pg.Load, pg.orderItems[i])
 							})

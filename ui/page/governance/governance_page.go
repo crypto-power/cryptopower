@@ -66,7 +66,7 @@ func (pg *Page) isGovernanceFeatureEnabled() bool {
 }
 
 func (pg *Page) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOn(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -233,8 +233,8 @@ func (pg *Page) layoutPageTopNav(gtx C) D {
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return D{}
-				//TODO: governance syncing functionality.
-				//TODO: Split wallet sync from governance
+				// TODO: governance syncing functionality.
+				// TODO: Split wallet sync from governance
 			})
 		}),
 	)
