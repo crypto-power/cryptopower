@@ -144,7 +144,7 @@ func (ws *WalletAndAccountSelector) SetSelectedAsset(assetType ...utils.AssetTyp
 	ws.accountSelector = false
 }
 
-func (ws *WalletAndAccountSelector) SelectedAsset(assetType ...utils.AssetType) utils.AssetType {
+func (ws *WalletAndAccountSelector) SelectedAsset() utils.AssetType {
 	return ws.assetType[0]
 }
 

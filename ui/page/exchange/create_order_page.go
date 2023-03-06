@@ -142,24 +142,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		pg.fromCurrency = ati.Type
+		// update destination input amount
 		pg.toAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		oldDesWalletType := pg.orderData.destinationWalletSelector.SelectedAsset()
-		if oldDesWalletType.ToStringLower() == ati.Type.ToStringLower() {
-			pg.orderData.destinationWalletSelector.SelectFirstValidAssetType(&ati.Type)
-		}
-		pg.orderData.sourceWalletSelector.SetSelectedAsset(ati.Type)
-		pg.updateExchangeRate()
+		pg.updateWalletAndAccountSelector(ati.Type)
 	})
 	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		pg.toCurrency = ati.Type
+		// update source input amount
 		pg.fromAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		oldSouWalletType := pg.orderData.sourceWalletSelector.SelectedAsset()
-		if oldSouWalletType.ToStringLower() == ati.Type.ToStringLower() {
-			pg.orderData.sourceWalletSelector.SelectFirstValidAssetType(&ati.Type)
-		}
-		pg.orderData.destinationWalletSelector.SetSelectedAsset(ati.Type)
-		pg.updateExchangeRate()
+		pg.updateWalletAndAccountSelector(ati.Type)
 	})
 
 	pg.loadOrderConfig()
@@ -187,6 +177,24 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	})
 
 	return pg
+}
+
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(assetType libutils.AssetType) {
+	// update source wallet selector
+	pg.sourceWalletSelector.SetSelectedAsset(*pg.fromAmountEditor.AssetTypeSelector.SelectedAssetType())
+
+	// update destination wallet selector
+	pg.destinationWalletSelector.SetSelectedAsset(*pg.toAmountEditor.AssetTypeSelector.SelectedAssetType())
+
+	// update destination account selector
+	pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
+
+	// update source account selector
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+
+	pg.fromCurrency = pg.sourceWalletSelector.SelectedAsset()
+	pg.toCurrency = pg.destinationWalletSelector.SelectedAsset()
+	pg.updateExchangeRate()
 }
 
 func (pg *CreateOrderPage) ID() string {

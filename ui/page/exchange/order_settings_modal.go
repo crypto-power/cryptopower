@@ -143,7 +143,14 @@ func (osm *orderSettingsModal) Handle() {
 			destinationWalletSelector:  osm.destinationWalletSelector,
 		}
 
-		osm.WL.AssetsManager.SetExchangeConfig(osm.orderData.fromCurrency, int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()), osm.orderData.toCurrency, int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()), params.sourceAccountSelector.SelectedAccount().Number, params.destinationAccountSelector.SelectedAccount().Number)
+		fromCurrency := osm.orderData.fromCurrency
+		toCurrency := osm.orderData.toCurrency
+		sourceWalletId := int32(params.sourceWalletSelector.SelectedWallet().GetWalletID())
+		destinationWalletId := int32(params.destinationWalletSelector.SelectedWallet().GetWalletID())
+		sourceAccountId := params.sourceAccountSelector.SelectedAccount().Number
+		destinationAccountId := params.destinationAccountSelector.SelectedAccount().Number
+
+		osm.WL.AssetsManager.SetExchangeConfig(fromCurrency, sourceWalletId, toCurrency, destinationWalletId, sourceAccountId, destinationAccountId)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}
