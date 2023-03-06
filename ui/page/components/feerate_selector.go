@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"image/color"
 	"strconv"
 	"strings"
 	"time"
@@ -18,29 +17,43 @@ import (
 	"gioui.org/widget/material"
 )
 
+// FeerateSelector represent a tx fee selector UI component.
 type FeerateSelector struct {
 	*load.Load
 
-	feeRateText     string
-	EditRates       cryptomaterial.Button
-	FetchRates      cryptomaterial.Button
-	ratesEditor     cryptomaterial.Editor
-	priority        string
-	rateEditMode    bool
-	fetchingRate    bool
-	EstSignedSize   string
-	TxCost          string
-	TxFee           string
+	feeRateText string
+	// EditRates is a material button to trigger edit/save tx fee rate.
+	EditRates cryptomaterial.Button
+	// FetchRates button initiates call to rates HTTP API.
+	FetchRates   cryptomaterial.Button
+	ratesEditor  cryptomaterial.Editor
+	priority     string
+	rateEditMode bool
+	fetchingRate bool
+	// EstSignedSize holds the estimated size of signed tx.
+	EstSignedSize string
+	// TxFee stores the estimated transaction fee for a tx.
+	TxFee string
+	// TxFeeUSD stores the estimated tx fee in USD.
 	TxFeeUSD        string
 	showSizeAndCost bool
 
-	ContainerInset    layout.Inset
-	WrapperInset      layout.Inset
-	TitleInset        layout.Inset
-	TitleFontWeight   text.Weight
-	OuterWrapperColor color.NRGBA
+	// ContainerInset should be used to set the inset for
+	// FeerateSelector component container.
+	ContainerInset layout.Inset
+	// WrapperInset should be used to set the inset for
+	// for the wrapper container.
+	WrapperInset layout.Inset
+	// TitleInset sets the inset for the title label.
+	TitleInset layout.Inset
+	// TitleFontWeight sets the font weight for the title label.
+	TitleFontWeight text.Weight
+	// when UsdExRateSet is set to true, this component will in addition
+	// to the TxFee show the USD rate of fee.
+	UsdExRateSet bool
 }
 
+// NewFeerateSelector create and return an instance of FeerateSelector.
 func NewFeerateSelector(l *load.Load) *FeerateSelector {
 	fs := &FeerateSelector{
 		Load: l,
@@ -48,7 +61,6 @@ func NewFeerateSelector(l *load.Load) *FeerateSelector {
 
 	fs.feeRateText = " - "
 	fs.EstSignedSize = "-"
-	fs.TxCost = "-"
 	fs.TxFee = " - "
 	fs.TxFeeUSD = " - "
 	fs.priority = values.String(values.StrUnknown)
@@ -71,15 +83,19 @@ func NewFeerateSelector(l *load.Load) *FeerateSelector {
 	fs.ContainerInset = layout.Inset{Bottom: values.MarginPadding15}
 	fs.WrapperInset = layout.Inset{Bottom: values.MarginPadding15}
 	fs.TitleInset = layout.Inset{Bottom: values.MarginPadding0}
-	fs.OuterWrapperColor = l.Theme.Color.Primary
 
 	return fs
 }
 
-func (fs *FeerateSelector) ShowSizeAndCost() {
+// ShowSizeAndCost turns the showSizeAndCost Field to true
+// the component will show the estimated size and Fee when
+// showSizeAndCost is true.
+func (fs *FeerateSelector) ShowSizeAndCost() *FeerateSelector {
 	fs.showSizeAndCost = true
+	return fs
 }
 
+// Layout draws the UI components.
 func (fs *FeerateSelector) Layout(gtx C) D {
 	return fs.ContainerInset.Layout(gtx, func(gtx C) D {
 		border := widget.Border{CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
@@ -151,32 +167,45 @@ func (fs *FeerateSelector) Layout(gtx C) D {
 											)
 										}),
 										layout.Rigid(func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : "))
-													sizeLabel.Font.Weight = text.SemiBold
-													return sizeLabel.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													txSize := fs.Theme.Label(values.TextSize14, fs.EstSignedSize)
-													txSize.Font.Style = text.Italic
-													return txSize.Layout(gtx)
-												}),
-											)
+											if fs.showSizeAndCost {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : "))
+														sizeLabel.Font.Weight = text.SemiBold
+														return sizeLabel.Layout(gtx)
+													}),
+													layout.Rigid(func(gtx C) D {
+														txSize := fs.Theme.Label(values.TextSize14, fs.EstSignedSize)
+														txSize.Font.Style = text.Italic
+														return txSize.Layout(gtx)
+													}),
+												)
+											}
+											return D{}
 										}),
 										layout.Rigid(func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrCost, " : "))
-													sizeLabel.Font.Weight = text.SemiBold
-													return sizeLabel.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													txSize := fs.Theme.Label(values.TextSize14, fs.TxFee)
-													txSize.Font.Style = text.Italic
-													return txSize.Layout(gtx)
-												}),
-											)
+											if fs.showSizeAndCost {
+												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrCost, " : "))
+														sizeLabel.Font.Weight = text.SemiBold
+														return sizeLabel.Layout(gtx)
+													}),
+													layout.Rigid(func(gtx C) D {
+														feeText := fs.TxFee
+														if fs.UsdExRateSet {
+															feeText = fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD)
+														}
+
+														txSize := fs.Theme.Label(values.TextSize14, feeText)
+														txSize.Font.Style = text.Italic
+														return txSize.Layout(gtx)
+													}),
+												)
+											}
+
+											return D{}
+
 										}),
 									)
 								})
@@ -190,6 +219,7 @@ func (fs *FeerateSelector) Layout(gtx C) D {
 	})
 }
 
+// FetchFeeRate will fetch the fee rate from the HTTP API.
 func (fs *FeerateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet *load.WalletMapping) {
 	if fs.fetchingRate {
 		return
@@ -253,6 +283,7 @@ func (fs *FeerateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 	fs.EditRates.SetEnabled(true)
 }
 
+// OnEditRateCliked is called when the edit feerate button is clicked.
 func (fs *FeerateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) {
 	fs.rateEditMode = !fs.rateEditMode
 	if fs.rateEditMode {
