@@ -2,16 +2,11 @@ package exchange
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -48,16 +43,9 @@ type orderSettingsModal struct {
 	sourceInfoButton      cryptomaterial.IconButton
 	destinationInfoButton cryptomaterial.IconButton
 
-	addressEditor cryptomaterial.Editor
-	copyRedirect  *cryptomaterial.Clickable
-
-	feeRateText  string
-	editRates    cryptomaterial.Button
-	fetchRates   cryptomaterial.Button
-	ratesEditor  cryptomaterial.Editor
-	priority     string
-	rateEditMode bool
-	fetchingRate bool
+	addressEditor   cryptomaterial.Editor
+	copyRedirect    *cryptomaterial.Clickable
+	feerateSelector *components.FeerateSelector
 
 	*orderData
 }
@@ -93,24 +81,8 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 		},
 	}
 
-	osm.feeRateText = " - "
-	osm.priority = values.String(values.StrUnknown)
-	osm.editRates = osm.Theme.Button(values.String(values.StrEdit))
-	osm.fetchRates = osm.Theme.Button(values.String(values.StrFetchRates))
-
-	bInset := layout.Inset{
-		Top:    values.MarginPadding4,
-		Right:  values.MarginPadding8,
-		Bottom: values.MarginPadding4,
-		Left:   values.MarginPadding8,
-	}
-	osm.fetchRates.TextSize, osm.editRates.TextSize = values.TextSize12, values.TextSize12
-	osm.fetchRates.Inset, osm.editRates.Inset = bInset, bInset
-
-	osm.ratesEditor = osm.Theme.Editor(new(widget.Editor), "in Sat/kvB")
-	osm.ratesEditor.HasCustomButton = false
-	osm.ratesEditor.Editor.SingleLine = true
-	osm.ratesEditor.TextSize = values.TextSize14
+	osm.feerateSelector = components.NewFeerateSelector(l)
+	osm.feerateSelector.TitleFontWeight = text.SemiBold
 
 	return osm
 }
@@ -204,22 +176,12 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.fetchRates.Clicked() {
-		go osm.feeRateAPIHandler()
+	if osm.feerateSelector.FetchRates.Clicked() {
+		go osm.feerateSelector.FetchFeeRate(osm.ParentWindow(), osm.sourceWalletSelector.SelectedWallet())
 	}
 
-	if osm.editRates.Clicked() {
-		osm.rateEditMode = !osm.rateEditMode
-		if osm.rateEditMode {
-			osm.editRates.Text = values.String(values.StrSave)
-		} else {
-			rateStr := osm.ratesEditor.Editor.Text()
-			rateInt, err := osm.sourceWalletSelector.SelectedWallet().SetAPIFeeRate(rateStr)
-			if err != nil {
-				osm.feeRateText = " - "
-			}
-			osm.feeRateText = osm.addRatesUnits(rateInt)
-		}
+	if osm.feerateSelector.EditRates.Clicked() {
+		osm.feerateSelector.OnEditRateCliked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
 
@@ -417,7 +379,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		if osm.sourceWalletSelector.SelectedWallet().GetAssetType() != utils.BTCWalletAsset {
 																			return D{}
 																		}
-																		return osm.txFeeSection(gtx)
+																		return osm.feerateSelector.Layout(gtx)
 																	}),
 																)
 															})
@@ -469,147 +431,4 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
-}
-
-func (osm *orderSettingsModal) txFeeSection(gtx layout.Context) D {
-	return layout.Inset{
-		Bottom: values.MarginPadding16,
-	}.Layout(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:       cryptomaterial.MatchParent,
-			Height:      cryptomaterial.WrapContent,
-			Orientation: layout.Vertical,
-			Margin:      layout.Inset{Bottom: values.MarginPadding16},
-		}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				title := osm.Theme.Label(values.TextSize16, values.String(values.StrTxFee))
-				title.Font.Weight = text.SemiBold
-				return title.Layout(gtx)
-			}),
-			layout.Rigid(func(gtx C) D {
-				border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-				wrapper := osm.Load.Theme.Card()
-				wrapper.Color = osm.Load.Theme.Color.Gray4
-				return border.Layout(gtx, func(gtx C) D {
-					return wrapper.Layout(gtx, func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X // Wrapper should fill available width
-						return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												if osm.rateEditMode {
-													gtx.Constraints.Max.X = gtx.Constraints.Max.X / 3
-													return osm.ratesEditor.Layout(gtx)
-												}
-												feerateLabel := osm.Theme.Label(values.TextSize14, osm.feeRateText)
-												feerateLabel.Font.Weight = text.SemiBold
-												return feerateLabel.Layout(gtx)
-											}),
-											layout.Rigid(func(gtx C) D {
-												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.editRates.Layout)
-											}),
-											layout.Rigid(func(gtx C) D {
-												if osm.fetchingRate {
-													return layout.Inset{Left: values.MarginPadding18,
-														Right:  values.MarginPadding8,
-														Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-														return material.Loader(osm.Theme.Base).Layout(gtx)
-													})
-												}
-												return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, osm.fetchRates.Layout)
-											}),
-										)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											priorityLabel := osm.Theme.Label(values.TextSize14, values.StringF(values.StrPriority, " : "))
-											priorityLabel.Font.Weight = text.SemiBold
-											return priorityLabel.Layout(gtx)
-										}),
-										layout.Rigid(func(gtx C) D {
-											priorityVal := osm.Theme.Label(values.TextSize14, osm.priority)
-											priorityVal.Font.Style = text.Italic
-											return priorityVal.Layout(gtx)
-										}),
-									)
-								}),
-							)
-						})
-					})
-				})
-
-			}),
-		)
-	})
-}
-
-func (osm *orderSettingsModal) feeRateAPIHandler() {
-	if osm.fetchingRate {
-		return
-	}
-	osm.fetchingRate = true
-	defer func() {
-		osm.fetchingRate = false
-	}()
-
-	feeRates, err := osm.sourceWalletSelector.SelectedWallet().GetAPIFeeRate()
-	if err != nil {
-		return
-	}
-
-	blocksStr := func(b int32) string {
-		val := strconv.Itoa(int(b)) + " block"
-		if b == 1 {
-			return val
-		}
-		return val + "s"
-	}
-
-	radiogroupbtns := new(widget.Enum)
-	items := make([]layout.FlexChild, 0)
-	for index, feerate := range feeRates {
-		key := strconv.Itoa(index)
-		value := osm.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
-		radioBtn := osm.Load.Theme.RadioButton(radiogroupbtns, key, value,
-			osm.Load.Theme.Color.DeepBlue, osm.Load.Theme.Color.Primary)
-		items = append(items, layout.Rigid(radioBtn.Layout))
-	}
-
-	info := modal.NewCustomModal(osm.Load).
-		Title(values.String(values.StrFeeRates)).
-		UseCustomWidget(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		}).
-		SetCancelable(true).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetPositiveButtonText(values.String(values.StrSave)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-			fields := strings.Fields(radiogroupbtns.Value)
-			index, _ := strconv.Atoi(fields[0])
-			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-			rateInt, err := osm.sourceWalletSelector.SelectedWallet().SetAPIFeeRate(rate)
-			if err != nil {
-				log.Error(err)
-				return false
-			}
-
-			osm.feeRateText = osm.addRatesUnits(rateInt)
-			osm.rateEditMode = false
-			blocks := feeRates[index].ConfirmedBlocks
-			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
-			osm.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
-			im.Dismiss()
-			return true
-		})
-
-	osm.ParentWindow().ShowModal((info))
-	osm.editRates.SetEnabled(true)
-}
-
-func (osm *orderSettingsModal) addRatesUnits(rates int64) string {
-	return osm.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }

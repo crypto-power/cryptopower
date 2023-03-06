@@ -70,7 +70,8 @@ type Page struct {
 	currencyExchange    string
 
 	*authoredTxData
-	selectedWallet *load.WalletMapping
+	selectedWallet  *load.WalletMapping
+	feerateSelector *components.FeerateSelector
 }
 
 type authoredTxData struct {
@@ -184,6 +185,11 @@ func NewSendPage(l *load.Load) *Page {
 	pg.amount.amountChanged = func() {
 		pg.validateAndConstructTxAmountOnly()
 	}
+
+	pg.feerateSelector = components.NewFeerateSelector(l)
+	pg.feerateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
+	pg.feerateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
+	pg.feerateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
 	pg.initLayoutWidgets()
 
@@ -333,6 +339,8 @@ func (pg *Page) constructTx() {
 	pg.txFee = wal.ToAmount(feeAtom).String()
 	pg.editOrDisplay = pg.addRatesUnits(feeAndSize.FeeRate)
 	pg.estSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
+	pg.feerateSelector.EstSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
+	pg.feerateSelector.TxFee = wal.ToAmount(feeAtom).String()
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -348,6 +356,7 @@ func (pg *Page) constructTx() {
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
 		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
+		pg.feerateSelector.TxFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
 		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
@@ -396,6 +405,9 @@ func (pg *Page) resetFields() {
 func (pg *Page) HandleUserInteractions() {
 	if pg.isFeerateAPIApproved() {
 		pg.feeRateAPIHandler()
+	}
+	if pg.feerateSelector.FetchRates.Clicked() {
+		go pg.feerateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
 	}
 	pg.editsOrDisplayRatesHandler()
 	pg.nextButton.SetEnabled(pg.validate())
@@ -526,6 +538,7 @@ func (pg *Page) isFeerateAPIApproved() bool {
 }
 
 func (pg *Page) editsOrDisplayRatesHandler() {
+
 	if pg.editRates.Clicked() {
 		// reset fields
 		pg.feeEstimationError("")
