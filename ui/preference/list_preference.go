@@ -1,8 +1,6 @@
 package preference
 
 import (
-	"sort"
-
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
@@ -28,27 +26,25 @@ type ListPreferenceModal struct {
 	btnCancel    cryptomaterial.Button
 	customWidget layout.Widget
 
-	items           map[string]string //[key]str-key
-	itemKeys        []string
 	title           string
 	preferenceKey   string
 	defaultValue    string // str-key
 	initialValue    string
 	currentValue    string
 	isWalletAccount bool
+	preferenceItems []PreferenceItem
 
 	updateButtonClicked func(string)
 }
 
-func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items map[string]string) *ListPreferenceModal {
-	// sort keys to keep order when refreshed
-	sortedKeys := make([]string, 0)
-	for k := range items {
-		sortedKeys = append(sortedKeys, k)
-	}
+// PreferenceItem models the options shown by the list
+// preference modal.
+type PreferenceItem struct {
+	Key   string // option's key
+	Value string // option's value
+}
 
-	sort.Slice(sortedKeys, func(i int, j int) bool { return sortedKeys[i] < sortedKeys[j] })
-
+func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items []PreferenceItem) *ListPreferenceModal {
 	lp := ListPreferenceModal{
 		Load:          l,
 		preferenceKey: preferenceKey,
@@ -57,9 +53,7 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items m
 		btnSave:   l.Theme.Button(values.String(values.StrSave)),
 		btnCancel: l.Theme.OutlineButton(values.String(values.StrCancel)),
 
-		items:    items,
-		itemKeys: sortedKeys,
-
+		preferenceItems:   items,
 		optionsRadioGroup: new(widget.Enum),
 		Modal:             l.Theme.ModalFloatTitle("list_preference"),
 	}
@@ -188,13 +182,13 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 
 	items := make([]layout.FlexChild, 0)
-	for _, k := range lp.itemKeys {
-		text := values.String(lp.items[k])
+	for _, v := range lp.preferenceItems {
+		text := values.String(v.Value)
 		if lp.isWalletAccount {
-			text = lp.items[k]
+			text = v.Value
 		}
 
-		radioItem := layout.Rigid(lp.Theme.RadioButton(lp.optionsRadioGroup, k, text, lp.Theme.Color.DeepBlue, lp.Theme.Color.Primary).Layout)
+		radioItem := layout.Rigid(lp.Theme.RadioButton(lp.optionsRadioGroup, v.Key, text, lp.Theme.Color.DeepBlue, lp.Theme.Color.Primary).Layout)
 		items = append(items, radioItem)
 	}
 

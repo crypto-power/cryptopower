@@ -15,6 +15,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/preference"
 	"code.cryptopower.dev/group/cryptopower/ui/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/ui/values/localizable"
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
@@ -384,8 +385,13 @@ func (pg *SettingsPage) subSectionLabel(title string) layout.Widget {
 // Part of the load.Page interface.
 func (pg *SettingsPage) HandleUserInteractions() {
 	for pg.language.Clicked() {
+		items := []preference.PreferenceItem{
+			{Key: localizable.ENGLISH, Value: values.StrEnglish},
+			{Key: localizable.FRENCH, Value: values.StrFrench},
+			{Key: localizable.SPANISH, Value: values.StrSpanish},
+		}
 		langSelectorModal := preference.NewListPreference(pg.Load,
-			sharedW.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
+			sharedW.LanguagePreferenceKey, values.DefaultLangauge, items).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
 				values.SetUserLanguage(pg.WL.AssetsManager.GetLanguagePreference())
@@ -399,9 +405,15 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.currency.Clicked() {
+		items := []preference.PreferenceItem{
+			{Key: values.BinanceExchange, Value: values.StrUsdBinance},
+			{Key: values.BittrexExchange, Value: values.StrUsdBittrex},
+			{Key: values.DefaultExchangeValue, Value: values.StrNone},
+		}
+
 		currencySelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.CurrencyConversionConfigKey, values.DefaultExchangeValue,
-			values.ArrExchangeCurrencies).
+			items).
 			Title(values.StrExchangeRate).
 			UpdateValues(func(_ string) {})
 		pg.ParentWindow().ShowModal(currencySelectorModal)
@@ -461,8 +473,18 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	for pg.logLevel.Clicked() {
+		items := []preference.PreferenceItem{
+			{Key: libutils.LogLevelTrace, Value: values.StrLogLevelTrace},
+			{Key: libutils.LogLevelDebug, Value: values.StrLogLevelDebug},
+			{Key: libutils.LogLevelInfo, Value: values.StrLogLevelInfo},
+			{Key: libutils.LogLevelWarn, Value: values.StrLogLevelWarn},
+			{Key: libutils.LogLevelError, Value: values.StrLogLevelError},
+			{Key: libutils.LogLevelCritical, Value: values.StrLogLevelCritical},
+			{Key: libutils.LogLevelOff, Value: values.StrLogLevelOff},
+		}
+
 		logLevelSelector := preference.NewListPreference(pg.Load,
-			sharedW.LogLevelConfigKey, values.DefaultLogLevel, values.LogLevels).
+			sharedW.LogLevelConfigKey, values.DefaultLogLevel, items).
 			Title(values.StrLogLevel).
 			UpdateValues(func(val string) {
 				logger.SetLogLevels(val)
