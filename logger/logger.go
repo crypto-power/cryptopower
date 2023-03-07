@@ -56,7 +56,7 @@ func (l *logger) setBTCLogLevel(subsystemID string, logLevel string) {
 // can be used to initialize the logging system.
 func SetLogLevels(logLevel string) error {
 	if instance == nil {
-		return errors.New("cannot set log level on nil logger")
+		return errors.New("can not set log level on nil logger")
 	}
 	// Configure all sub-systems with the new logging level.  Dynamically
 	// create loggers as needed.
