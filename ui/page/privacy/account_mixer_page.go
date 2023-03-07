@@ -472,7 +472,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) map[string]string {
+func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.PreferenceItem {
 	filterAccountNumber := pg.dcrImpl.UnmixedAccountNumber()
 	if isFilterMixed {
 		filterAccountNumber = pg.dcrImpl.MixedAccountNumber()
@@ -483,12 +483,13 @@ func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) map[string]stri
 		log.Error(err.Error())
 	}
 
-	arrMixerAcc := make(map[string]string)
-	for k, v := range pg.ArrMixerAccounts {
-		arrMixerAcc[k] = v
+	mixerAcc := []preference.PreferenceItem{}
+	for _, item := range pg.MixerAccounts {
+		if item.Key != accountFilter {
+			mixerAcc = append(mixerAcc, item)
+		}
 	}
-	delete(arrMixerAcc, accountFilter)
-	return arrMixerAcc
+	return mixerAcc
 }
 
 func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
