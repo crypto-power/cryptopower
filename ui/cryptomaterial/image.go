@@ -16,11 +16,12 @@ type Image struct {
 
 func NewImage(src image.Image) *Image {
 	return &Image{
-		Image: src,
+		// Modify a copy of the original image.
+		Image: cloneToNRGBA(src),
 	}
 }
 
-func (img *Image) Layout(gtx C) D {
+func (img *Image) layout(gtx C) D {
 	newImg := &widget.Image{
 		Src:   paint.NewImageOp(img.Image),
 		Scale: 1,
@@ -52,6 +53,13 @@ func (img *Image) Layout48dp(gtx C) D {
 	return img.LayoutSize(gtx, values.MarginPadding48)
 }
 
+func cloneToNRGBA(src image.Image) draw.Image {
+	b := src.Bounds()
+	dst := image.NewNRGBA(b)
+	draw.Draw(dst, b, src, b.Min, draw.Src)
+	return dst
+}
+
 func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
 	imgsize := img.Bounds().Size()
 	heightWidthRatio := float32(imgsize.Y) / float32(imgsize.X)
@@ -59,10 +67,11 @@ func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
 	width := float32(size)
 
 	// Set the expected size of the final image needed:
-	dst := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+	dst := image.NewNRGBA(image.Rect(0, 0, int(width), int(height)))
 
-	// Resize to the best icon quality: https://pkg.go.dev/golang.org/x/image/draw#pkg-variables:
-	draw.CatmullRom.Scale(dst, dst.Rect, img, img.Bounds(), draw.Src, nil)
+	// Resize to the icon: https://pkg.go.dev/golang.org/x/image/draw#pkg-variables:
+	draw.CatmullRom.Scale(dst, dst.Rect, img, img.Bounds(), draw.Over, nil)
+
 	img.Image = dst
-	return img.Layout(gtx)
+	return img.layout(gtx)
 }

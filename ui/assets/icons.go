@@ -47,7 +47,7 @@ func Icons() (map[string]image.Image, error) {
 		}
 
 		split := strings.Split(entry.Name(), ".")
-		decredIcons[split[0]] = img
+		decredIcons[split[0]] = img.(*image.NRGBA)
 	}
 
 	return decredIcons, nil
