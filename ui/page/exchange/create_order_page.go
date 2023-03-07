@@ -47,7 +47,6 @@ type CreateOrderPage struct {
 
 	listContainer *widget.List
 
-	exchange         api.IDExchange
 	orderItems       []*instantswap.Order
 	ordersList       *cryptomaterial.ClickableList
 	exchangeSelector *ExchangeSelector
@@ -142,24 +141,20 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		pg.fromCurrency = ati.Type
-		pg.toAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		oldDesWalletType := pg.orderData.destinationWalletSelector.SelectedAsset()
-		if oldDesWalletType.ToStringLower() == ati.Type.ToStringLower() {
-			pg.orderData.destinationWalletSelector.SelectFirstValidAssetType(&ati.Type)
+		if pg.fromCurrency.ToStringLower() == ati.Type.ToStringLower() {
+			return
 		}
-		pg.orderData.sourceWalletSelector.SetSelectedAsset(ati.Type)
-		pg.updateExchangeRate()
+		// update destination input amount
+		pg.toAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
+		pg.updateWalletAndAccountSelector(ati.Type)
 	})
 	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		pg.toCurrency = ati.Type
-		pg.fromAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		oldSouWalletType := pg.orderData.sourceWalletSelector.SelectedAsset()
-		if oldSouWalletType.ToStringLower() == ati.Type.ToStringLower() {
-			pg.orderData.sourceWalletSelector.SelectFirstValidAssetType(&ati.Type)
+		if pg.toCurrency.ToStringLower() == ati.Type.ToStringLower() {
+			return
 		}
-		pg.orderData.destinationWalletSelector.SetSelectedAsset(ati.Type)
-		pg.updateExchangeRate()
+		// update source input amount
+		pg.fromAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
+		pg.updateWalletAndAccountSelector(ati.Type)
 	})
 
 	pg.loadOrderConfig()
@@ -187,6 +182,24 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	})
 
 	return pg
+}
+
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(assetType libutils.AssetType) {
+	// update source wallet selector
+	pg.sourceWalletSelector.SetSelectedAsset(*pg.fromAmountEditor.AssetTypeSelector.SelectedAssetType())
+
+	// update destination wallet selector
+	pg.destinationWalletSelector.SetSelectedAsset(*pg.toAmountEditor.AssetTypeSelector.SelectedAssetType())
+
+	// update destination account selector
+	pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
+
+	// update source account selector
+	pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+
+	pg.fromCurrency = pg.sourceWalletSelector.SelectedAsset()
+	pg.toCurrency = pg.destinationWalletSelector.SelectedAsset()
+	pg.updateExchangeRate()
 }
 
 func (pg *CreateOrderPage) ID() string {
@@ -397,32 +410,32 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 // swapCurrency swaps the values of the from and to currency fields.
 func (pg *CreateOrderPage) swapCurrency() {
 	// store the current value of the from currency in a temp variable
-	tempSourceWalletSelector := pg.orderData.sourceWalletSelector
-	tempSourceAccountSelector := pg.orderData.sourceAccountSelector
+	tempSourceWalletSelector := pg.sourceWalletSelector
+	tempSourceAccountSelector := pg.sourceAccountSelector
 	tempFromCurrencyType := pg.fromCurrency
 	tempFromCurrencyValue := pg.fromAmountEditor.Edit.Editor.Text()
 
 	// Swap values
-	pg.orderData.sourceWalletSelector = pg.orderData.destinationWalletSelector
-	pg.orderData.sourceAccountSelector = pg.orderData.destinationAccountSelector
+	pg.sourceWalletSelector = pg.destinationWalletSelector
+	pg.sourceAccountSelector = pg.destinationAccountSelector
 	pg.fromCurrency = pg.toCurrency
 	pg.fromAmountEditor.Edit.Editor.SetText(pg.toAmountEditor.Edit.Editor.Text())
 	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
 
-	pg.orderData.destinationWalletSelector = tempSourceWalletSelector
-	pg.orderData.destinationAccountSelector = tempSourceAccountSelector
+	pg.destinationWalletSelector = tempSourceWalletSelector
+	pg.destinationAccountSelector = tempSourceAccountSelector
 	pg.toCurrency = tempFromCurrencyType
 	pg.toAmountEditor.Edit.Editor.SetText(tempFromCurrencyValue)
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 
 	// check the watch only wallet on destination
-	if pg.orderData.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
-		pg.orderData.sourceWalletSelector.SetSelectedAsset(pg.orderData.fromCurrency)
+	if pg.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
+		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
 	}
 
 	// update title of wallet selector
-	pg.orderData.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
-	pg.orderData.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
+	pg.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
+	pg.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
@@ -531,12 +544,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									walletName := "----"
-									if pg.orderData.sourceWalletSelector.SelectedWallet() != nil {
-										walletName = pg.orderData.sourceWalletSelector.SelectedWallet().GetWalletName()
+									if pg.sourceWalletSelector.SelectedWallet() != nil {
+										walletName = pg.sourceWalletSelector.SelectedWallet().GetWalletName()
 									}
 									accountName := "----"
-									if pg.orderData.sourceAccountSelector.SelectedAccount() != nil {
-										accountName = pg.orderData.sourceAccountSelector.SelectedAccount().Name
+									if pg.sourceAccountSelector.SelectedAccount() != nil {
+										accountName = pg.sourceAccountSelector.SelectedAccount().Name
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
@@ -556,12 +569,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									walletName := "----"
-									if pg.orderData.destinationWalletSelector.SelectedWallet() != nil {
-										walletName = pg.orderData.destinationWalletSelector.SelectedWallet().GetWalletName()
+									if pg.destinationWalletSelector.SelectedWallet() != nil {
+										walletName = pg.destinationWalletSelector.SelectedWallet().GetWalletName()
 									}
 									accountName := "----"
-									if pg.orderData.destinationAccountSelector.SelectedAccount() != nil {
-										accountName = pg.orderData.destinationAccountSelector.SelectedAccount().Name
+									if pg.destinationAccountSelector.SelectedAccount() != nil {
+										accountName = pg.destinationAccountSelector.SelectedAccount().Name
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
@@ -740,21 +753,13 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 func (pg *CreateOrderPage) showConfirmOrderModal() {
 	invoicedAmount, _ := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 	orderedAmount, _ := strconv.ParseFloat(pg.toAmountEditor.Edit.Editor.Text(), 32)
-
-	refundAddress, _ := pg.orderData.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.sourceAccountSelector.SelectedAccount().Number)
-	destinationAddress, _ := pg.orderData.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.orderData.destinationAccountSelector.SelectedAccount().Number)
-
-	pg.orderData.exchange = pg.exchange
-	pg.orderData.exchangeServer = pg.selectedExchange.Server
-	pg.orderData.sourceWalletSelector = pg.sourceWalletSelector
-	pg.orderData.sourceAccountSelector = pg.sourceAccountSelector
-	pg.orderData.destinationWalletSelector = pg.sourceWalletSelector
-	pg.orderData.destinationAccountSelector = pg.destinationAccountSelector
-
-	pg.sourceWalletID = pg.orderData.sourceWalletSelector.SelectedWallet().GetWalletID()
-	pg.sourceAccountNumber = pg.orderData.sourceAccountSelector.SelectedAccount().Number
-	pg.destinationWalletID = pg.orderData.destinationWalletSelector.SelectedWallet().GetWalletID()
-	pg.destinationAccountNumber = pg.orderData.destinationAccountSelector.SelectedAccount().Number
+	refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
+	destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+	pg.exchangeServer = pg.selectedExchange.Server
+	pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
+	pg.sourceAccountNumber = pg.sourceAccountSelector.SelectedAccount().Number
+	pg.destinationWalletID = pg.destinationWalletSelector.SelectedWallet().GetWalletID()
+	pg.destinationAccountNumber = pg.destinationAccountSelector.SelectedAccount().Number
 
 	pg.invoicedAmount = invoicedAmount
 	pg.orderedAmount = orderedAmount
@@ -842,25 +847,25 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 			}
 
 			// Source wallet picker
-			pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, sourceCurrency).
+			pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, sourceCurrency).
 				Title(values.String(values.StrSource))
 
 			sourceW := &load.WalletMapping{
 				Asset: sourceWallet,
 			}
-			pg.orderData.sourceWalletSelector.SetSelectedWallet(sourceW)
+			pg.sourceWalletSelector.SetSelectedWallet(sourceW)
 
 			// Source account picker
-			pg.orderData.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+			pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 				Title(values.String(values.StrAccount)).
 				AccountValidator(func(account *sharedW.Account) bool {
 					accountIsValid := account.Number != load.MaxInt32
 					return accountIsValid
 				})
-			pg.orderData.sourceAccountSelector.SelectAccount(pg.orderData.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
+			pg.sourceAccountSelector.SelectAccount(pg.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
 
-			pg.orderData.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-				pg.orderData.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+			pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+				pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 			})
 		}
 
@@ -871,12 +876,12 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 			}
 
 			// Destination wallet picker
-			pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
+			pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
 				Title(values.String(values.StrDestination)).
 				EnableWatchOnlyWallets(true)
 
 			// Destination account picker
-			pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+			pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 				Title(values.String(values.StrAccount)).
 				AccountValidator(func(account *sharedW.Account) bool {
 					// Imported accounts and watch only accounts are imvalid
@@ -884,52 +889,52 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 					return accountIsValid
 				})
-			pg.orderData.destinationAccountSelector.SelectAccount(pg.orderData.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
+			pg.destinationAccountSelector.SelectAccount(pg.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
 
-			pg.orderData.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-				pg.orderData.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+			pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+				pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 			})
 		}
 	} else {
 		// Source wallet picker
-		pg.orderData.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+		pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 			Title(values.String(values.StrFrom))
 
 		// Source account picker
-		pg.orderData.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+		pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 			Title(values.String(values.StrAccount)).
 			AccountValidator(func(account *sharedW.Account) bool {
 				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
 			})
-		pg.orderData.sourceAccountSelector.SelectFirstValidAccount(pg.orderData.sourceWalletSelector.SelectedWallet())
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
 
-		pg.orderData.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			pg.orderData.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+		pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 		})
 
 		// Destination wallet picker
-		pg.orderData.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
+		pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
 			Title(values.String(values.StrTo)).
 			EnableWatchOnlyWallets(true)
 
 		// Destination account picker
-		pg.orderData.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+		pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 			Title(values.String(values.StrAccount)).
 			AccountValidator(func(account *sharedW.Account) bool {
 				accountIsValid := account.Number != load.MaxInt32
 
 				return accountIsValid
 			})
-		pg.orderData.destinationAccountSelector.SelectFirstValidAccount(pg.orderData.destinationWalletSelector.SelectedWallet())
+		pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
 
-		pg.orderData.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			pg.orderData.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 		})
 	}
-	pg.fromCurrency = pg.orderData.sourceWalletSelector.SelectedWallet().GetAssetType()
-	pg.toCurrency = pg.orderData.destinationWalletSelector.SelectedWallet().GetAssetType()
+	pg.fromCurrency = pg.sourceWalletSelector.SelectedWallet().GetAssetType()
+	pg.toCurrency = pg.destinationWalletSelector.SelectedWallet().GetAssetType()
 	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
 }
