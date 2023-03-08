@@ -728,6 +728,7 @@ const (
 	StrVerifySeed                      = "verifySeed"
 	StrVerifySeedInfo                  = "verifySeedInfo"
 	StrVersion                         = "version"
+	StrViewAppLog                      = "viewAppLog"
 	StrViewDetails                     = "viewDetails"
 	StrViewOnExplorer                  = "viewOnExplorer"
 	StrViewOnPoliteia                  = "viewOnPoliteia"

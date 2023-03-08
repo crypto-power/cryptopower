@@ -623,6 +623,7 @@ const EN = `
 "verifySeed" = "Verify Seed Phrase"
 "verifySeedInfo" = "Verify your seed phrase backup so you can recover your funds when needed."
 "version" = "Version"
+"viewAppLog" = "View Application Log"
 "viewDetails" = "View details"
 "viewOnExplorer" = "View on block explorer"
 "viewOnPoliteia" = "View on Politeia"

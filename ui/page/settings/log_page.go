@@ -38,9 +38,10 @@ type LogPage struct {
 
 	logList *widget.List
 	fullLog string
+	logPath string
 }
 
-func NewLogPage(l *load.Load) *LogPage {
+func NewLogPage(l *load.Load, logPath string) *LogPage {
 	pg := &LogPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(LogPageID),
@@ -54,6 +55,7 @@ func NewLogPage(l *load.Load) *LogPage {
 	}
 
 	pg.copyIcon = pg.Theme.Icons.CopyIcon
+	pg.logPath = logPath
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.watchLogs()
@@ -76,8 +78,7 @@ func (pg *LogPage) copyLogEntries(gtx C) {
 
 func (pg *LogPage) watchLogs() {
 	go func() {
-		logPath := pg.Load.WL.SelectedWallet.Wallet.LogFile()
-		fi, err := os.Stat(logPath)
+		fi, err := os.Stat(pg.logPath)
 		if err != nil {
 			pg.fullLog = fmt.Sprintf("unable to open log file: %v", err)
 			return
@@ -91,7 +92,7 @@ func (pg *LogPage) watchLogs() {
 		}
 
 		pollLogs := runtime.GOOS == "windows"
-		t, err := tail.TailFile(logPath, tail.Config{Follow: true, Poll: pollLogs, Location: &tail.SeekInfo{Offset: offset}})
+		t, err := tail.TailFile(pg.logPath, tail.Config{Follow: true, Poll: pollLogs, Location: &tail.SeekInfo{Offset: offset}})
 		if err != nil {
 			pg.fullLog = fmt.Sprintf("unable to tail log file: %v", err)
 			return

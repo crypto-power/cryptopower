@@ -55,6 +55,7 @@ type SettingsPage struct {
 	infoButton              cryptomaterial.IconButton
 	networkInfoButton       cryptomaterial.IconButton
 	logLevel                *cryptomaterial.Clickable
+	viewLog                 *cryptomaterial.Clickable
 
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
@@ -90,6 +91,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		about:             l.Theme.NewClickable(false),
 		appearanceMode:    l.Theme.NewClickable(false),
 		logLevel:          l.Theme.NewClickable(false),
+		viewLog:           l.Theme.NewClickable(false),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
@@ -151,6 +153,7 @@ func (pg *SettingsPage) pageContentLayout(gtx C) D {
 		pg.general(),
 		pg.networkSettings(),
 		pg.security(),
+		pg.debug(),
 		pg.info(),
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -249,14 +252,6 @@ func (pg *SettingsPage) general() layout.Widget {
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrTxNotification), pg.transactionNotification)
 				}),
-				layout.Rigid(func(gtx C) D {
-					logLevel := row{
-						title:     values.String(values.StrLogLevel),
-						clickable: pg.logLevel,
-						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLogLevels()),
-					}
-					return pg.clickableRow(gtx, logLevel)
-				}),
 			)
 		})
 	}
@@ -338,6 +333,31 @@ func (pg *SettingsPage) info() layout.Widget {
 						label:     pg.Theme.Body2(""),
 					}
 					return pg.clickableRow(gtx, aboutRow)
+				}),
+			)
+		})
+	}
+}
+
+func (pg *SettingsPage) debug() layout.Widget {
+	return func(gtx C) D {
+		return pg.wrapSection(gtx, values.String(values.StrDebug), func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					logLevel := row{
+						title:     values.String(values.StrLogLevel),
+						clickable: pg.logLevel,
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLogLevels()),
+					}
+					return pg.clickableRow(gtx, logLevel)
+				}),
+				layout.Rigid(func(gtx C) D {
+					viewLogRow := row{
+						title:     values.String(values.StrViewAppLog),
+						clickable: pg.viewLog,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, viewLogRow)
 				}),
 			)
 		})
@@ -491,6 +511,10 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			})
 		pg.ParentWindow().ShowModal(logLevelSelector)
 		break
+	}
+
+	if pg.viewLog.Clicked() {
+		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.Wallet.LogFile()))
 	}
 
 	for pg.changeStartupPass.Clicked() {
