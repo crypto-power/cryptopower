@@ -513,7 +513,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.viewLog.Clicked() {
-		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.Wallet.LogFile()))
+		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.Wallet.LogFile(), values.String(values.StrAppLog)))
 	}
 
 	for pg.changeStartupPass.Clicked() {

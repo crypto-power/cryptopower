@@ -757,7 +757,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.checklog.Clicked() {
-		pg.ParentNavigator().Display(s.NewLogPage(pg.Load, pg.wallet.LogFile()))
+		pg.ParentNavigator().Display(s.NewLogPage(pg.Load, pg.wallet.LogFile(), values.String(values.StrWalletLog)))
 	}
 
 	if pg.checkStats.Clicked() {

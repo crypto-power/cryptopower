@@ -39,9 +39,10 @@ type LogPage struct {
 	logList *widget.List
 	fullLog string
 	logPath string
+	title   string
 }
 
-func NewLogPage(l *load.Load, logPath string) *LogPage {
+func NewLogPage(l *load.Load, logPath string, pageTitle string) *LogPage {
 	pg := &LogPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(LogPageID),
@@ -56,6 +57,7 @@ func NewLogPage(l *load.Load, logPath string) *LogPage {
 
 	pg.copyIcon = pg.Theme.Icons.CopyIcon
 	pg.logPath = logPath
+	pg.title = pageTitle
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.watchLogs()
@@ -124,7 +126,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      values.String(values.StrWalletLog),
+			Title:      pg.title,
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -165,7 +167,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      values.String(values.StrWalletLog),
+			Title:      pg.title,
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
