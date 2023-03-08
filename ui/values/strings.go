@@ -145,6 +145,7 @@ const (
 	StrAllowUnspendUnmixedAcct         = "allowUnspendUnmixedAcct"
 	StrAllTickets                      = "allTickets"
 	StrAmount                          = "amount"
+	StrAppLog                          = "appLog"
 	StrAppName                         = "appName"
 	StrApproved                        = "approved"
 	StrAppTitle                        = "appTitle"

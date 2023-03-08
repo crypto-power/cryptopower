@@ -73,9 +73,7 @@ func (pg *LogPage) OnNavigatedTo() {
 }
 
 func (pg *LogPage) copyLogEntries(gtx C) {
-	go func() {
-		clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
-	}()
+	clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
 }
 
 func (pg *LogPage) watchLogs() {

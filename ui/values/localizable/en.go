@@ -36,6 +36,7 @@ const EN = `
 "allowUnspendUnmixedAcct" = "%v Spendings from unmixed accounts could potentially be traced back to you %v Please type %v I understand the risks %v to allow spending from unmixed accounts.%v"
 "allTickets" = "All tickets"
 "amount" = "Amount"
+"appLog" = "Application log"
 "appName" = "Cryptopower"
 "approved" = "Approved"
 "appTitle" = "Cryptopower (%s)"
