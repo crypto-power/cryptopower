@@ -295,6 +295,7 @@ func (fs *FeerateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) 
 			fs.feeRateText = " - "
 		}
 		fs.feeRateText = fs.addRatesUnits(rateInt)
+		fs.EditRates.Text = values.String(values.StrEdit)
 	}
 }
 
