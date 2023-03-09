@@ -212,7 +212,6 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	if pg.isExchangeAPIAllowed() {
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
-		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
 }
 
