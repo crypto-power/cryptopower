@@ -3,6 +3,7 @@ package instantswap
 import (
 	"context"
 	"sync"
+	"time"
 
 	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
@@ -96,4 +97,12 @@ type Order struct {
 	UserID  string `json:"userId"`  //changenow.io partner requirement
 
 	Signature string `json:"signature"` //evercoin requirement
+}
+
+type SchedulerParams struct {
+	Order Order
+
+	Frequency           time.Duration // in hours
+	BalanceToMaintain   float64
+	MinimumExchangeRate float64
 }

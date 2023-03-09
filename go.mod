@@ -51,6 +51,7 @@ require (
 )
 
 require (
+	code.cryptopower.dev/group/blockexplorer v0.0.0-20230308103838-3d7631182576
 	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
@@ -133,6 +134,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // Older versions of github.com/lib/pq are required by politeia (v1.9.0)

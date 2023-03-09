@@ -248,6 +248,17 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 	}
 }
 
+// GetExchangeServer by ServerName
+func (instantSwap *InstantSwap) GetExchangeServer(server Server) (ExchangeServer, error) {
+	for _, exchangeServer := range instantSwap.ExchangeServers() {
+		if exchangeServer.Server == server {
+			return exchangeServer, nil
+		}
+	}
+
+	return ExchangeServer{}, errors.New("Exchange server not found")
+}
+
 // DeleteOrders deletes all orders saved to the DB.
 func (instantSwap *InstantSwap) DeleteOrders() error {
 	err := instantSwap.db.Drop(&Order{})
