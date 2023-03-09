@@ -10,7 +10,9 @@ import (
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -355,7 +357,13 @@ func (com *confirmOrderModal) constructTx(depositAddress string, unitAmount floa
 		return err
 	}
 
-	amount := btc.AmountSatoshi(unitAmount)
+	var amount int64
+	switch com.sourceWalletSelector.SelectedWallet().GetAssetType().ToStringLower() {
+	case utils.BTCWalletAsset.ToStringLower():
+		amount = btc.AmountSatoshi(unitAmount)
+	case utils.DCRWalletAsset.ToStringLower():
+		amount = dcr.AmountAtom(unitAmount)
+	}
 	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
 	if err != nil {
 		return err

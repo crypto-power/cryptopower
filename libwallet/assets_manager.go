@@ -377,7 +377,7 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
-//AllDCRWallets returns all DCR wallets in the assets manager.
+// AllDCRWallets returns all DCR wallets in the assets manager.
 func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.DCR.Wallets {
 		wallets = append(wallets, wallet)
@@ -385,7 +385,7 @@ func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
 	return wallets
 }
 
-//AllBTCWallets returns all BTC wallets in the assets manager.
+// AllBTCWallets returns all BTC wallets in the assets manager.
 func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
 	for _, wallet := range mgr.Assets.BTC.Wallets {
 		wallets = append(wallets, wallet)
