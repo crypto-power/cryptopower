@@ -133,7 +133,8 @@ func init() {
 	instantswap.UseLogger(sharedWLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
-	ntrn.SetLevel(btclog.LevelError) // Neutrino loglevel will always be error.
+	// Neutrino loglevel will always be set to error to control excessive logging.
+	ntrn.SetLevel(btclog.LevelError)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

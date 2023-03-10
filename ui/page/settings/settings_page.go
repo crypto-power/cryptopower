@@ -267,7 +267,7 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 				}),
 				layout.Rigid(func(gtx C) D {
 					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
-					l := values.ArrExchangeCurrencies[lKey]
+					l := preference.GetKeyValue(lKey, preference.ExchOptions)
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
@@ -481,7 +481,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.logLevel.Clicked() {
 		logLevelSelector := preference.NewListPreference(pg.Load,
-			sharedW.LogLevelConfigKey, values.DefaultLogLevel, preference.LogOptions).
+			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
 			Title(values.StrLogLevel).
 			UpdateValues(func(val string) {
 				logger.SetLogLevels(val)

@@ -222,3 +222,16 @@ func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 
 	return items
 }
+
+// GetKeyValue return the value for a key withing a set of prefence options.
+// The key is case sensitive, `Key` != `key`.
+// Returns the empty string if the key is not found.
+func GetKeyValue(key string, options []PreferenceItem) string {
+	for _, option := range options {
+		if option.Key == key {
+			return option.Value
+		}
+	}
+
+	return ""
+}

@@ -214,6 +214,10 @@ func (mgr *AssetsManager) IsHttpAPIPrivacyModeOff(apiType utils.HttpAPIType) boo
 func (mgr *AssetsManager) GetLogLevels() string {
 	var logLevel string
 	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
+	if logLevel == "" {
+		// return default debug level if no option is stored.
+		return utils.DefaultLogLevel
+	}
 	return logLevel
 }
 
