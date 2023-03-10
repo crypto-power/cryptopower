@@ -135,7 +135,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 	}
 
 	// send fund
-	_, err = dcrUniqueImpl.Broadcast(password)
+	_, err = dcrUniqueImpl.Broadcast(password, "")
 	if err != nil {
 		return err
 	}

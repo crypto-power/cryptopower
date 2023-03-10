@@ -104,6 +104,7 @@ type Asset interface {
 
 	NewUnsignedTx(accountNumber int32) error
 	AddSendDestination(address string, unitAmount int64, sendMax bool) error
+	Broadcast(passphrase, label string) ([]byte, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool
 }

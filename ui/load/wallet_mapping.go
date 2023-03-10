@@ -30,16 +30,16 @@ func (w *WalletMapping) MixedAccountNumber() int32 {
 	}
 }
 
-func (w *WalletMapping) Broadcast(passphrase string) error {
+func (w *WalletMapping) Broadcast(passphrase, label string) ([]byte, error) {
 	switch asset := w.Asset.(type) {
 	case *dcr.DCRAsset:
-		_, err := asset.Broadcast(passphrase)
-		return err
+		_, err := asset.Broadcast(passphrase, "")
+		return nil, err
 	case *btc.Asset:
-		err := asset.Broadcast(passphrase, "")
-		return err
+		_, err := asset.Broadcast(passphrase, "")
+		return nil, err
 	default:
-		return w.invalidWallet()
+		return nil, w.invalidWallet()
 	}
 }
 

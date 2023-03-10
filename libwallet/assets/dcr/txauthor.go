@@ -172,7 +172,7 @@ func (asset *DCRAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-func (asset *DCRAsset) Broadcast(privatePassphrase string) ([]byte, error) {
+func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
 	n, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
