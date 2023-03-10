@@ -151,8 +151,8 @@ func (pg *SettingsPage) pageContentLayout(gtx C) D {
 		pg.general(),
 		pg.networkSettings(),
 		pg.security(),
-		pg.debug(),
 		pg.info(),
+		pg.debug(),
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Center.Layout(gtx, func(gtx C) D {
