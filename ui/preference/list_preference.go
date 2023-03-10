@@ -6,14 +6,42 @@ import (
 	"gioui.org/widget"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"code.cryptopower.dev/group/cryptopower/ui/values/localizable"
 )
 
 type (
 	C = layout.Context
 	D = layout.Dimensions
+)
+
+var (
+	// ExchOptions holds the configurable options for exchange servers.
+	ExchOptions = []PreferenceItem{
+		{Key: values.BinanceExchange, Value: values.StrUsdBinance},
+		{Key: values.BittrexExchange, Value: values.StrUsdBittrex},
+		{Key: values.DefaultExchangeValue, Value: values.StrNone},
+	}
+
+	// LangOptions stores the configurable language options.
+	LangOptions = []PreferenceItem{
+		{Key: localizable.ENGLISH, Value: values.StrEnglish},
+		{Key: localizable.FRENCH, Value: values.StrFrench},
+		{Key: localizable.SPANISH, Value: values.StrSpanish},
+	}
+
+	// LogOptions are the selectable debug levels.
+	LogOptions = []PreferenceItem{
+		{Key: libutils.LogLevelTrace, Value: values.StrLogLevelTrace},
+		{Key: libutils.LogLevelDebug, Value: values.StrLogLevelDebug},
+		{Key: libutils.LogLevelInfo, Value: values.StrLogLevelInfo},
+		{Key: libutils.LogLevelWarn, Value: values.StrLogLevelWarn},
+		{Key: libutils.LogLevelError, Value: values.StrLogLevelError},
+		{Key: libutils.LogLevelCritical, Value: values.StrLogLevelCritical},
+	}
 )
 
 type ListPreferenceModal struct {
