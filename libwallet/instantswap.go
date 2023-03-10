@@ -4,8 +4,10 @@ import (
 	"time"
 
 	api "code.cryptopower.dev/group/instantswap"
-
+	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/blockexplorer"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
@@ -16,6 +18,23 @@ const (
 )
 
 func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) error {
+
+	// instantSwap.mu.RLock()
+
+	// if instantSwap.cancelSync != nil {
+	// 	instantSwap.mu.RUnlock()
+	// 	return errors.New(ErrSyncAlreadyInProgress)
+	// }
+
+	// instantSwap.ctx, instantSwap.cancelSync = context.WithCancel(ctx)
+
+	// defer func() {
+	// 	instantSwap.cancelSync = nil
+	// }()
+
+	// instantSwap.mu.RUnlock()
+
+	log.Info("Exchange sync: started")
 
 	// Initialize the exchange server.
 	exchangeObject, err := mgr.InstantSwap.NewExchanageServer(params.Order.ExchangeServer)
@@ -70,6 +89,32 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			break
 		}
 
+		// construct the transaction to send the invoiced amount to the exchange server
+		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+
+		var amount int64
+		switch sourceWallet.GetAssetType().ToStringLower() {
+		case utils.BTCWalletAsset.ToStringLower():
+			amount = btc.AmountSatoshi(params.Order.InvoicedAmount)
+		case utils.DCRWalletAsset.ToStringLower():
+			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
+		}
+		err = sourceWallet.AddSendDestination(params.Order.DestinationAddress, amount, false)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+
+		// _, err = sourceWallet.Broadcast("", "")
+		// if err != nil {
+		// 	log.Error(err)
+		// 	break
+		// }
+
 		// wait for the order to be completed before scheduling the next order
 		for {
 			// depending on the block time for the asset, the order may take a while to complete
@@ -118,6 +163,9 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 					}
 				}
 
+			} else if orderInfo.Status == api.OrderStatusRefunded {
+				log.Error("order was refunded")
+				break
 			}
 
 			continue // order is not completed, continue waiting
@@ -131,5 +179,35 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 }
 
 func (mgr *AssetsManager) StopScheduler() {
-
+	// instantSwap.mu.RLock()
+	// if instantSwap.cancelSync != nil {
+	// 	instantSwap.cancelSync()
+	// 	instantSwap.cancelSync = nil
+	// }
+	// instantSwap.mu.RUnlock()
+	// log.Info("Exchange sync: stopped")
 }
+
+// func (mgr *AssetsManager) constructTx(depositAddress string, unitAmount float64, sourceWallet sharedW.Asset) error {
+// 	destinationAddress := depositAddress
+
+// 	sourceAccount := com.sourceAccountSelector.SelectedAccount()
+// 	err := com.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	var amount int64
+// 	switch com.sourceWalletSelector.SelectedWallet().GetAssetType().ToStringLower() {
+// 	case utils.BTCWalletAsset.ToStringLower():
+// 		amount = btc.AmountSatoshi(unitAmount)
+// 	case utils.DCRWalletAsset.ToStringLower():
+// 		amount = dcr.AmountAtom(unitAmount)
+// 	}
+// 	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
