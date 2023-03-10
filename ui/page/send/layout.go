@@ -86,15 +86,12 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 			})
 		},
-		pg.toSection, pg.coinSelectionSection,
+		pg.toSection, pg.coinSelectionSection, pg.txLabelSection,
 	}
 
 	// Display the transaction fee rate selection and txLabel section only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
-		pageContent = append(pageContent,
-			[]func(gtx C) D{
-				pg.feeRateSelector.Layout,
-			}...)
+		pageContent = append(pageContent, pg.feeRateSelector.Layout)
 	}
 
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
@@ -330,6 +327,40 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 					)
 				})
 			})
+		})
+	})
+}
+
+func (pg *Page) txLabelSection(gtx layout.Context) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		topContainer := layout.UniformInset(values.MarginPadding15)
+		return topContainer.Layout(gtx, func(gtx C) D {
+			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
+			count := len(pg.txLabelInputEditor.Editor.Text())
+			txt := fmt.Sprintf("(%d/%d)", count, pg.txLabelInputEditor.Editor.MaxLen)
+			wordsCount := pg.Theme.Label(values.TextSize14, txt)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(textLabel.Layout),
+						layout.Flexed(1,
+							func(gtx C) D {
+								return layout.Inset{
+									Top:  values.MarginPadding2,
+									Left: values.MarginPadding5,
+								}.Layout(gtx, wordsCount.Layout)
+							}),
+					)
+				}),
+
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Top: values.MarginPadding10,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.txLabelInputEditor.Layout(gtx)
+					})
+				}),
+			)
 		})
 	})
 }
