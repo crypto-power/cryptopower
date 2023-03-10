@@ -88,11 +88,11 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 			})
 		},
 		pg.toSection,
-		// pg.coinSelectionSection,
+		// pg.coinSelectionSection, TODO; Disable till otherwise set.
 		pg.txLabelSection,
 	}
 
-	// Display the transaction fee rate selection and txLabel section only for btc wallets.
+	// Display the transaction fee rate selection only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
 		pageContent = append(pageContent, pg.feeRateSelector.Layout)
 	}

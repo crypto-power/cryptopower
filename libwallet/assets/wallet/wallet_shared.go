@@ -99,7 +99,7 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	// open database for indexing transactions for faster loading
-	var dbName = walletdata.DCRDbName
+	dbName := walletdata.DCRDbName
 	if wallet.Type == utils.BTCWalletAsset {
 		dbName = walletdata.BTCDBName
 	}
@@ -249,6 +249,7 @@ func (wallet *Wallet) GetWalletName() string {
 	defer wallet.mu.RUnlock()
 	return wallet.Name
 }
+
 func (wallet *Wallet) ContainsDiscoveredAccounts() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
@@ -298,7 +299,8 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 }
 
 func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
 	if err != nil {
 		return nil, err
@@ -364,7 +366,8 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 }
 
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:     walletName,
 		db:       params.DB,
@@ -408,7 +411,8 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 }
 
 func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:                  pass.Name,
 		PrivatePassphraseType: pass.PrivatePassType,
