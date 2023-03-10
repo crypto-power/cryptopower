@@ -138,7 +138,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		}
 
 		// FOR DEVELOPMENT: Comment this block to prevent debit of account
-		err = com.sourceWalletSelector.SelectedWallet().Broadcast(password)
+		_, err = com.sourceWalletSelector.SelectedWallet().Broadcast(password, "")
 		if err != nil {
 			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())

@@ -82,7 +82,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		err := scm.asset.Broadcast(password)
+		_, err := scm.asset.Broadcast(password, "")
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)
