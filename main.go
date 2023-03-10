@@ -85,11 +85,6 @@ func main() {
 		wal.GetAssetsManager().SetLogLevels(cfg.DebugLevel)
 	}
 
-	// fallback to debug level info if no option is stored.
-	if wal.GetAssetsManager().GetLogLevels() == "" {
-		wal.GetAssetsManager().SetLogLevels(utils.LogLevelInfo)
-	}
-
 	// now that assets manager is up, set stored debuglevel
 	logger.SetLogLevels(wal.GetAssetsManager().GetLogLevels())
 
