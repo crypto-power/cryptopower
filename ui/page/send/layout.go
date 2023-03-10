@@ -49,6 +49,7 @@ func (pg *Page) initLayoutWidgets() {
 	pg.txLabelInputEditor = pg.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
 	pg.txLabelInputEditor.Editor.SingleLine = false
 	pg.txLabelInputEditor.Editor.SetText("")
+	// Set the maximum characters the editor can accept.
 	pg.txLabelInputEditor.Editor.MaxLen = wtxmgr.TxLabelLimit
 }
 
@@ -86,13 +87,23 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 			})
 		},
-		pg.toSection, pg.coinSelectionSection, pg.txLabelSection,
+		pg.toSection,
+		// pg.coinSelectionSection,
+		pg.txLabelSection,
 	}
 
 	// Display the transaction fee rate selection and txLabel section only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
 		pageContent = append(pageContent, pg.feeRateSelector.Layout)
 	}
+
+	// Add the bottom spacing section as the last.
+	inset := layout.Inset{
+		Bottom: values.MarginPadding100,
+	}
+	pageContent = append(pageContent, func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D { return D{} })
+	})
 
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
@@ -298,6 +309,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 	})
 }
 
+// TODO: coinSelectionSection is disabled until its approved for removal or activation.
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	m := values.MarginPadding20
 	inset := layout.Inset{}
