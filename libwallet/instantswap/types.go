@@ -105,4 +105,6 @@ type SchedulerParams struct {
 	Frequency           time.Duration // in hours
 	BalanceToMaintain   float64
 	MinimumExchangeRate float64
+
+	SpendingPassphrase string
 }

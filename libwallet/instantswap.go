@@ -33,7 +33,7 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 	// }()
 
 	// instantSwap.mu.RUnlock()
-
+	// startTime := time.Now()
 	log.Info("Exchange sync: started")
 
 	// Initialize the exchange server.
@@ -49,6 +49,13 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 		if err != nil {
 			log.Error(err)
 			break
+		}
+
+		defer sourceWallet.LockWallet()
+		err = sourceWallet.UnlockWallet(params.SpendingPassphrase)
+		if err != nil {
+			log.Error(err)
+			return err
 		}
 
 		if sourceAccountBalance.Spendable.ToCoin() <= params.BalanceToMaintain {
@@ -109,13 +116,14 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			break
 		}
 
-		// _, err = sourceWallet.Broadcast("", "")
-		// if err != nil {
-		// 	log.Error(err)
-		// 	break
-		// }
+		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
+		if err != nil {
+			log.Error(err)
+			break
+		}
 
 		// wait for the order to be completed before scheduling the next order
+		var isRefunded bool
 		for {
 			// depending on the block time for the asset, the order may take a while to complete
 			// so we wait for the estimated block time before checking the order status
@@ -132,40 +140,83 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 				break
 			}
 
-			if orderInfo.Status == api.OrderStatusCompleted {
-				// break // order is completed, break out of the loop
+			if orderInfo.Status == api.OrderStatusRefunded {
+				log.Error("order was refunded. veirfy that the order was refunded successfully from the blockchain explorer ")
+				tmpFromCurrency := params.Order.FromCurrency
+				tmpToCurrency := params.Order.ToCurrency
 
-				// Verify that the order was completed successfully from the blockchain explorer.
-				explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
-				if err != nil {
-					log.Error(err)
-					break
-				}
+				// swap ToCurrency and FromCurrency
+				params.Order.ToCurrency = tmpFromCurrency
+				params.Order.FromCurrency = tmpToCurrency
 
-				verificationInfo := blockexplorer.TxVerifyRequest{
-					TxId:      orderInfo.TxID,
-					Amount:    orderInfo.ReceiveAmount,
-					CreatedAt: orderInfo.CreatedAt,
-					Address:   orderInfo.DestinationAddress,
-					Confirms:  1, //TODO:STATIC until deciding for another config param??
-				}
+				orderInfo.ReceiveAmount = params.Order.InvoicedAmount
 
-				verification, err := explorer.VerifyTransaction(verificationInfo)
-				if err != nil {
-					log.Error(err)
-					break
-				}
+				isRefunded = true
+			}
 
-				if verification.Verified {
-					if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
-						log.Error("received amount does not match the expected amount")
-						break
-					}
-				}
+			// if orderInfo.Status == api.OrderStatusCompleted {
+			// Verify that the order was completed successfully from the blockchain explorer.
+			// explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
+			// if err != nil {
+			// 	log.Error(err)
+			// 	break
+			// }
 
-			} else if orderInfo.Status == api.OrderStatusRefunded {
-				log.Error("order was refunded")
+			// verificationInfo := blockexplorer.TxVerifyRequest{
+			// 	TxId:      orderInfo.TxID,
+			// 	Amount:    orderInfo.ReceiveAmount,
+			// 	CreatedAt: orderInfo.CreatedAt,
+			// 	Address:   orderInfo.DestinationAddress,
+			// 	Confirms:  1, //TODO:STATIC until deciding for another config param??
+			// }
+
+			// verification, err := explorer.VerifyTransaction(verificationInfo)
+			// if err != nil {
+			// 	log.Error(err)
+			// 	break
+			// }
+
+			// if verification.Verified {
+			// 	if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
+			// 		log.Error("received amount does not match the expected amount")
+			// 		break
+			// 	}
+			// }
+
+			// }
+
+			// verify that the order was completed successfully from the blockchain explorer
+			explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
+			if err != nil {
+				log.Error(err)
 				break
+			}
+
+			verificationInfo := blockexplorer.TxVerifyRequest{
+				TxId:      orderInfo.TxID,
+				Amount:    orderInfo.ReceiveAmount,
+				CreatedAt: orderInfo.CreatedAt,
+				Address:   orderInfo.DestinationAddress,
+				Confirms:  1, //TODO:STATIC until deciding for another config param??
+			}
+
+			verification, err := explorer.VerifyTransaction(verificationInfo)
+			if err != nil {
+				log.Error(err)
+				break
+			}
+
+			if verification.Verified {
+				if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
+					log.Error("received amount does not match the expected amount")
+					break
+				}
+
+				if isRefunded {
+					log.Info("order was refunded successfully")
+				} else {
+					log.Info("order was completed successfully")
+				}
 			}
 
 			continue // order is not completed, continue waiting
