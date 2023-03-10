@@ -57,6 +57,8 @@ type Page struct {
 	confirmTxModal      *sendConfirmModal
 	currencyExchange    string
 
+	txLabelInputEditor cryptomaterial.Editor
+
 	*authoredTxData
 	selectedWallet  *load.WalletMapping
 	feeRateSelector *components.FeeRateSelector
@@ -417,6 +419,7 @@ func (pg *Page) HandleUserInteractions() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
+			pg.confirmTxModal.txLabel = pg.txLabelInputEditor.Editor.Text()
 
 			pg.confirmTxModal.txSent = func() {
 				pg.resetFields()
@@ -432,17 +435,21 @@ func (pg *Page) HandleUserInteractions() {
 		pg.amount.usdAmountEditor.Editor.Focused()
 
 	if !modalShown && !isAmountEditorActive {
+		isTxLabelInputFocused := pg.txLabelInputEditor.Editor.Focused()
 		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
 		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
 
 		switch {
-		// If destination address is invalid and destination editor is in focus.
-		case !pg.sendDestination.validate() && isDestinationEditorFocused:
-			pg.sendDestination.destinationAddressEditor.Editor.Focus()
+		case isTxLabelInputFocused:
+
+		// // If destination address is invalid and destination editor is in focus.
+		case !pg.sendDestination.validate() && isDestinationEditorFocused && !isTxLabelInputFocused:
 
 		// If accounts switch selects the wallet option.
 		case isSendToWallet && !isDestinationEditorFocused:
 			pg.amount.amountEditor.Editor.Focus()
+
+		default:
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"github.com/btcsuite/btcwallet/wtxmgr"
 
 	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
@@ -44,6 +45,11 @@ func (pg *Page) initLayoutWidgets() {
 	pg.retryExchange.Color = pg.Theme.Color.Surface
 	pg.retryExchange.TextSize = values.TextSize12
 	pg.retryExchange.Inset = buttonInset
+
+	pg.txLabelInputEditor = pg.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
+	pg.txLabelInputEditor.Editor.SingleLine = false
+	pg.txLabelInputEditor.Editor.SetText("")
+	pg.txLabelInputEditor.Editor.MaxLen = wtxmgr.TxLabelLimit
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -80,22 +86,15 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 			})
 		},
-		func(gtx C) D {
-			return pg.toSection(gtx)
-		},
-		func(gtx C) D {
-			return pg.coinSelectionSection(gtx)
-		},
+		pg.toSection, pg.coinSelectionSection,
 	}
 
-	// Display the transaction fee rate selection only for btc wallets.
+	// Display the transaction fee rate selection and txLabel section only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
 		pageContent = append(pageContent,
-			func(gtx C) D {
-				//return pg.transactionFeeSection(gtx)
-				return pg.feeRateSelector.Layout(gtx)
-			},
-		)
+			[]func(gtx C) D{
+				pg.feeRateSelector.Layout,
+			}...)
 	}
 
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
@@ -354,7 +353,6 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 					return inset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-
 								totalCostText := pg.totalCost
 								if pg.exchangeRate != -1 && pg.usdExchangeSet {
 									totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)

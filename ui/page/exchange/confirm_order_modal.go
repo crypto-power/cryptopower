@@ -148,9 +148,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		com.onOrderCompleted(order)
 		com.Dismiss()
-
 	}()
-
 }
 
 func (com *confirmOrderModal) Handle() {
@@ -177,7 +175,6 @@ func (com *confirmOrderModal) Handle() {
 }
 
 func (com *confirmOrderModal) Layout(gtx layout.Context) D {
-
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
