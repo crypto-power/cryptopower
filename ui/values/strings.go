@@ -465,6 +465,7 @@ const (
 	StrNoProposals                     = "noProposal"
 	StrNoReward                        = "noReward"
 	StrNotAllowed                      = "notAllowed"
+	StrNotApplicable                   = "notApplicable"
 	StrNotAvailable                    = "notAvailable"
 	StrNotBackedUp                     = "notBackedUp"
 	StrNotConnected                    = "notConnected"
