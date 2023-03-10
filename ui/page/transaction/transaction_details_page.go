@@ -271,9 +271,9 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			Body: func(gtx C) D {
 				widgets := []func(gtx C) D{
 					pg.txnTypeAndID,
+					pg.txnLabel,
 					pg.txnInputs,
 					pg.txnOutputs,
-					pg.txnLabel,
 				}
 
 				return pg.Theme.Card().Layout(gtx, func(gtx C) D {

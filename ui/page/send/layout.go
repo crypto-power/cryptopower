@@ -88,7 +88,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 			})
 		},
 		pg.toSection,
-		// pg.coinSelectionSection, TODO; Disable till otherwise set.
+		pg.coinSelectionSection,
 		pg.txLabelSection,
 	}
 
@@ -309,7 +309,6 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-// TODO: coinSelectionSection is disabled until its approved for removal or activation.
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	m := values.MarginPadding20
 	inset := layout.Inset{}
