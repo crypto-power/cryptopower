@@ -499,7 +499,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 			{Key: libutils.LogLevelWarn, Value: values.StrLogLevelWarn},
 			{Key: libutils.LogLevelError, Value: values.StrLogLevelError},
 			{Key: libutils.LogLevelCritical, Value: values.StrLogLevelCritical},
-			{Key: libutils.LogLevelOff, Value: values.StrLogLevelOff},
 		}
 
 		logLevelSelector := preference.NewListPreference(pg.Load,
