@@ -433,3 +433,16 @@ type ExchangeConfig struct {
 	SourceAccountNumber      int32
 	DestinationAccountNumber int32
 }
+
+// UnspentOutput defines the unspent output parameters for coin selection.
+type UnspentOutput struct {
+	TxID          string
+	Vout          uint32
+	Address       string
+	ScriptPubKey  string
+	RedeemScript  string
+	Amount        AssetAmount
+	Confirmations int32
+	Spendable     bool
+	ReceiveTime   time.Time
+}
