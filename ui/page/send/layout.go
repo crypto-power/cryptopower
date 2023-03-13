@@ -311,32 +311,29 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	m := values.MarginPadding20
-	inset := layout.Inset{}
-	return inset.Layout(gtx, func(gtx C) D {
-		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			inset := layout.Inset{
-				Top:    values.MarginPadding15,
-				Right:  values.MarginPadding15,
-				Bottom: values.MarginPadding15,
-				Left:   values.MarginPadding15,
-			}
-			return inset.Layout(gtx, func(gtx C) D {
-				textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
-				return layout.Inset{}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(textLabel.Layout),
-						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-									}),
-								)
-							})
-						}),
-					)
-				})
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			Top:    values.MarginPadding15,
+			Right:  values.MarginPadding15,
+			Bottom: values.MarginPadding15,
+			Left:   values.MarginPadding15,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
+			return layout.Inset{}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(textLabel.Layout),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+								}),
+							)
+						})
+					}),
+				)
 			})
 		})
 	})
@@ -348,30 +345,31 @@ func (pg *Page) txLabelSection(gtx layout.Context) D {
 		return topContainer.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
 			count := len(pg.txLabelInputEditor.Editor.Text())
-			txt := fmt.Sprintf("(%d/%d)", count, pg.txLabelInputEditor.Editor.MaxLen)
-			wordsCount := pg.Theme.Label(values.TextSize14, txt)
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(textLabel.Layout),
-						layout.Flexed(1,
-							func(gtx C) D {
-								return layout.Inset{
-									Top:  values.MarginPadding2,
-									Left: values.MarginPadding5,
-								}.Layout(gtx, wordsCount.Layout)
-							}),
-					)
-				}),
+			wordsCount := pg.Theme.Label(values.TextSize14, fmt.Sprintf("(%d/%d)", count, wtxmgr.TxLabelLimit))
+			return layout.Inset{}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(textLabel.Layout),
+							layout.Flexed(1,
+								func(gtx C) D {
+									return layout.Inset{
+										Top:  values.MarginPadding2,
+										Left: values.MarginPadding5,
+									}.Layout(gtx, wordsCount.Layout)
+								}),
+						)
+					}),
 
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top: values.MarginPadding10,
-					}.Layout(gtx, func(gtx C) D {
-						return pg.txLabelInputEditor.Layout(gtx)
-					})
-				}),
-			)
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Top: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							return pg.txLabelInputEditor.Layout(gtx)
+						})
+					}),
+				)
+			})
 		})
 	})
 }

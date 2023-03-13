@@ -250,8 +250,7 @@ func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]
 		return nil, utils.TranslateError(err)
 	}
 
-	err = asset.updateTxLabel(txHash, transactionLabel)
-	return txHash[:], err
+	return txHash[:], asset.updateTxLabel(txHash, transactionLabel)
 }
 
 // updateTxLabel saves the tx label in the local instance.
