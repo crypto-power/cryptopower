@@ -28,6 +28,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/page/info"
 	"code.cryptopower.dev/group/cryptopower/ui/page/privacy"
 	"code.cryptopower.dev/group/cryptopower/ui/page/root"
+	"code.cryptopower.dev/group/cryptopower/ui/page/send"
 	"code.cryptopower.dev/group/cryptopower/ui/page/staking"
 	"code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/wallet"
@@ -104,6 +105,7 @@ func init() {
 	page.UseLogger(winLog)
 	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
+	send.UseLogger(winLog)
 	root.UseLogger(winLog)
 	libwallet.UseLogger(dlwlLog)
 	dcr.UseLogger(dcrLog)
@@ -168,7 +170,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		mainLogger: nil,
 	}
 
-	err := os.MkdirAll(logDir, 0700)
+	err := os.MkdirAll(logDir, 700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
 		os.Exit(1)

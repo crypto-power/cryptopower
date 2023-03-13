@@ -3,7 +3,6 @@ package send
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -245,7 +244,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
-		log.Printf("Error fetching exchange rate : %s \n", err)
+		log.Errorf("Error fetching exchange rate : %s \n", err)
 		return
 	}
 

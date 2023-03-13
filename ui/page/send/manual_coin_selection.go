@@ -1,8 +1,12 @@
 package send
 
 import (
+	"context"
+	"fmt"
+
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -26,6 +30,9 @@ type ManualCoinSelectionPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+
+	ctx       context.Context // page context
+	ctxCancel context.CancelFunc
 
 	actionButton cryptomaterial.Button
 	clearButton  cryptomaterial.Button
@@ -72,7 +79,39 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *ManualCoinSelectionPage) OnNavigatedTo() {}
+func (pg *ManualCoinSelectionPage) OnNavigatedTo() {
+	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+
+	go func() {
+		if err := pg.fetchAccountsInfo(); err != nil {
+			log.Error(err)
+		} else {
+			// refresh the display to update the latest changes.
+			pg.ParentWindow().Reload()
+		}
+	}()
+}
+
+func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
+	accounts, err := pg.WL.SelectedWallet.Wallet.GetAccountsRaw()
+	if err != nil {
+		return fmt.Errorf("querying the accounts names failed: %v", err)
+	}
+
+	pg.accountsUTXOs = make([]*AccountsUTXOInfo, 0, len(accounts.Accounts))
+	for _, account := range accounts.Accounts {
+		info, err := pg.WL.SelectedWallet.Wallet.UnspentOutputs(account.Number)
+		if err != nil {
+			return fmt.Errorf("querying the account (%v) info failed: %v", account.Number, err)
+		}
+
+		pg.accountsUTXOs = append(pg.accountsUTXOs, &AccountsUTXOInfo{
+			AccountName: account.AccountName,
+			Details:     info,
+		})
+	}
+	return nil
+}
 
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
@@ -91,7 +130,9 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {}
+func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
+	pg.ctxCancel()
+}
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
@@ -111,22 +152,8 @@ func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
 					Alignment:   layout.Middle,
 					Direction:   layout.Center,
 				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						successIcon := cryptomaterial.NewIcon(pg.Theme.Icons.ActionCheckCircle)
-						return successIcon.Layout(gtx, values.MarginPadding64)
-					}),
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.Label(values.TextSize24, values.String(values.StrSeedPhraseVerified))
-						label.Color = pg.Theme.Color.DeepBlue
-
-						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, label.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.Label(values.TextSize16, values.String(values.StrSureToSafeStoreSeed))
-						label.Color = pg.Theme.Color.GrayText1
-
-						return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, label.Layout)
-					}),
+					layout.Rigid(pg.summarySection),
+					layout.Rigid(pg.accountListSection),
 				)
 			}),
 			layout.Rigid(func(gtx C) D {
@@ -225,28 +252,45 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 }
 
 func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*sharedW.UnspentOutput) D {
+	genLabel := func(txt interface{}) cryptomaterial.Label {
+		txtStr := ""
+		switch n := txt.(type) {
+		case string:
+			txtStr = n
+		case float64:
+			// format to two decimal places
+			txtStr = fmt.Sprintf("%.2f", n)
+		case int32, int, int64:
+			txtStr = fmt.Sprintf("%d", n)
+		}
+		return pg.Theme.Label(values.TextSize16, txtStr)
+	}
+
 	return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				amountLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrAmount))
-				addresslabel := pg.Theme.Label(values.TextSize16, values.String(values.StrAddress))
-				confirmationsLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrConfirmations))
-				dateLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDateCreated))
+				amountLabel := genLabel(values.String(values.StrAmount))
+				addresslabel := genLabel(values.String(values.StrAddress))
+				confirmationsLabel := genLabel(values.String(values.StrConfirmations))
+				dateLabel := genLabel(values.String(values.StrDateCreated))
+
+				return pg.rowItemsSection(gtx, amountLabel, addresslabel, confirmationsLabel, dateLabel)
 			}),
 			layout.Rigid(func(gtx C) D {
 				return pg.UTXOList.Layout(gtx, len(utxos), func(gtx C, index int) D {
-					row := components.TransactionRow{
-						Transaction: utxos[index],
-						Index:       index,
-					}
-
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return components.LayoutTransactionRow(gtx, pg.Load, row)
+							v := utxos[index]
+							amountLabel := genLabel(v.Amount.ToCoin())
+							addresslabel := genLabel(v.Address)
+							confirmationsLabel := genLabel(v.Confirmations)
+							dateLabel := genLabel(libutils.ExtractDateOrTime(v.ReceiveTime.Unix()))
+
+							return pg.rowItemsSection(gtx, amountLabel, addresslabel, confirmationsLabel, dateLabel)
 						}),
 						layout.Rigid(func(gtx C) D {
 							// No divider for last row
-							if row.Index == len(utxos)-1 {
+							if index == len(utxos)-1 {
 								return layout.Dimensions{}
 							}
 
@@ -264,7 +308,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*share
 	})
 }
 
-func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, component1, component2, component3, component4 layout.Widget) D {
+func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, component1, component2, component3, component4 cryptomaterial.Label) D {
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
 		Width:       cryptomaterial.MatchParent,

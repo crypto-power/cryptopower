@@ -70,6 +70,7 @@ type Asset interface {
 	AccountNumber(accountName string) (int32, error)
 	AccountNameRaw(accountNumber uint32) (string, error)
 	GetAccountBalance(accountNumber int32) (*Balance, error)
+	UnspentOutputs(account int32) ([]*UnspentOutput, error)
 
 	AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error
 	RemoveSyncProgressListener(uniqueIdentifier string)
