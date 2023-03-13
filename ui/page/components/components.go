@@ -302,8 +302,12 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				if row.Transaction.Label == "" {
 					return D{}
 				}
-				// Show only 10 characters of the tx label
-				txtlabel := l.Theme.Label(values.TextSize14, row.Transaction.Label[:10]+"...")
+				// Show only a max of 10 characters of the tx label
+				txt := row.Transaction.Label
+				if len(txt) > 10 {
+					txt = txt[:10] + "..."
+				}
+				txtlabel := l.Theme.Label(values.TextSize14, txt)
 				txtlabel.Color = l.Theme.Color.GrayText1
 				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, txtlabel.Layout)
 			})
