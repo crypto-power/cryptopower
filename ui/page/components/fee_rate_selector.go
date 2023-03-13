@@ -17,8 +17,8 @@ import (
 	"gioui.org/widget/material"
 )
 
-// FeerateSelector represent a tx fee selector UI component.
-type FeerateSelector struct {
+// FeeRateSelector represent a tx fee selector UI component.
+type FeeRateSelector struct {
 	*load.Load
 
 	feeRateText string
@@ -39,7 +39,7 @@ type FeerateSelector struct {
 	showSizeAndCost bool
 
 	// ContainerInset should be used to set the inset for
-	// FeerateSelector component container.
+	// FeeRateSelector component container.
 	ContainerInset layout.Inset
 	// WrapperInset should be used to set the inset for
 	// for the wrapper container.
@@ -48,14 +48,14 @@ type FeerateSelector struct {
 	TitleInset layout.Inset
 	// TitleFontWeight sets the font weight for the title label.
 	TitleFontWeight text.Weight
-	// when UsdExRateSet is set to true, this component will in addition
+	// USDExchangeSet determines if this component will in addition
 	// to the TxFee show the USD rate of fee.
-	UsdExRateSet bool
+	USDExchangeSet bool
 }
 
-// NewFeerateSelector create and return an instance of FeerateSelector.
-func NewFeerateSelector(l *load.Load) *FeerateSelector {
-	fs := &FeerateSelector{
+// NewFeeRateSelector create and return an instance of FeeRateSelector.
+func NewFeeRateSelector(l *load.Load) *FeeRateSelector {
+	fs := &FeeRateSelector{
 		Load: l,
 	}
 
@@ -67,14 +67,14 @@ func NewFeerateSelector(l *load.Load) *FeerateSelector {
 	fs.EditRates = fs.Theme.Button(values.String(values.StrEdit))
 	fs.FetchRates = fs.Theme.Button(values.String(values.StrFetchRates))
 
-	bInset := layout.Inset{
+	buttonInset := layout.Inset{
 		Top:    values.MarginPadding4,
 		Right:  values.MarginPadding8,
 		Bottom: values.MarginPadding4,
 		Left:   values.MarginPadding8,
 	}
 	fs.FetchRates.TextSize, fs.EditRates.TextSize = values.TextSize12, values.TextSize12
-	fs.FetchRates.Inset, fs.EditRates.Inset = bInset, bInset
+	fs.FetchRates.Inset, fs.EditRates.Inset = buttonInset, buttonInset
 
 	fs.ratesEditor = fs.Theme.Editor(new(widget.Editor), "in Sat/kvB")
 	fs.ratesEditor.HasCustomButton = false
@@ -90,13 +90,13 @@ func NewFeerateSelector(l *load.Load) *FeerateSelector {
 // ShowSizeAndCost turns the showSizeAndCost Field to true
 // the component will show the estimated size and Fee when
 // showSizeAndCost is true.
-func (fs *FeerateSelector) ShowSizeAndCost() *FeerateSelector {
+func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 	fs.showSizeAndCost = true
 	return fs
 }
 
 // Layout draws the UI components.
-func (fs *FeerateSelector) Layout(gtx C) D {
+func (fs *FeeRateSelector) Layout(gtx C) D {
 	return fs.ContainerInset.Layout(gtx, func(gtx C) D {
 		border := widget.Border{CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
 		wrapper := fs.Load.Theme.Card()
@@ -193,7 +193,7 @@ func (fs *FeerateSelector) Layout(gtx C) D {
 													}),
 													layout.Rigid(func(gtx C) D {
 														feeText := fs.TxFee
-														if fs.UsdExRateSet {
+														if fs.USDExchangeSet {
 															feeText = fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD)
 														}
 
@@ -220,7 +220,7 @@ func (fs *FeerateSelector) Layout(gtx C) D {
 }
 
 // FetchFeeRate will fetch the fee rate from the HTTP API.
-func (fs *FeerateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet *load.WalletMapping) {
+func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet *load.WalletMapping) {
 	if fs.fetchingRate {
 		return
 	}
@@ -284,7 +284,7 @@ func (fs *FeerateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
-func (fs *FeerateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) {
+func (fs *FeeRateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) {
 	fs.rateEditMode = !fs.rateEditMode
 	if fs.rateEditMode {
 		fs.EditRates.Text = values.String(values.StrSave)
@@ -299,6 +299,6 @@ func (fs *FeerateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) 
 	}
 }
 
-func (fs *FeerateSelector) addRatesUnits(rates int64) string {
+func (fs *FeeRateSelector) addRatesUnits(rates int64) string {
 	return fs.Load.Printer.Sprintf("%d Sat/kvB", rates)
 }

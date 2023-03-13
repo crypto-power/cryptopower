@@ -93,7 +93,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		pageContent = append(pageContent,
 			func(gtx C) D {
 				//return pg.transactionFeeSection(gtx)
-				return pg.feerateSelector.Layout(gtx)
+				return pg.feeRateSelector.Layout(gtx)
 			},
 		)
 	}

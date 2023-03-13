@@ -45,7 +45,7 @@ type orderSettingsModal struct {
 
 	addressEditor   cryptomaterial.Editor
 	copyRedirect    *cryptomaterial.Clickable
-	feerateSelector *components.FeerateSelector
+	feeRateSelector *components.FeeRateSelector
 
 	*orderData
 }
@@ -81,8 +81,8 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 		},
 	}
 
-	osm.feerateSelector = components.NewFeerateSelector(l)
-	osm.feerateSelector.TitleFontWeight = text.SemiBold
+	osm.feeRateSelector = components.NewFeeRateSelector(l)
+	osm.feeRateSelector.TitleFontWeight = text.SemiBold
 
 	return osm
 }
@@ -176,12 +176,12 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.feerateSelector.FetchRates.Clicked() {
-		go osm.feerateSelector.FetchFeeRate(osm.ParentWindow(), osm.sourceWalletSelector.SelectedWallet())
+	if osm.feeRateSelector.FetchRates.Clicked() {
+		go osm.feeRateSelector.FetchFeeRate(osm.ParentWindow(), osm.sourceWalletSelector.SelectedWallet())
 	}
 
-	if osm.feerateSelector.EditRates.Clicked() {
-		osm.feerateSelector.OnEditRateCliked(osm.sourceWalletSelector.SelectedWallet())
+	if osm.feeRateSelector.EditRates.Clicked() {
+		osm.feeRateSelector.OnEditRateCliked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
 
@@ -379,7 +379,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		if osm.sourceWalletSelector.SelectedWallet().GetAssetType() != utils.BTCWalletAsset {
 																			return D{}
 																		}
-																		return osm.feerateSelector.Layout(gtx)
+																		return osm.feeRateSelector.Layout(gtx)
 																	}),
 																)
 															})

@@ -59,7 +59,7 @@ type Page struct {
 
 	*authoredTxData
 	selectedWallet  *load.WalletMapping
-	feerateSelector *components.FeerateSelector
+	feeRateSelector *components.FeeRateSelector
 }
 
 type authoredTxData struct {
@@ -93,10 +93,10 @@ func NewSendPage(l *load.Load) *Page {
 		Asset: l.WL.SelectedWallet.Wallet,
 	}
 
-	pg.feerateSelector = components.NewFeerateSelector(l).ShowSizeAndCost()
-	pg.feerateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
-	pg.feerateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
-	pg.feerateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
+	pg.feeRateSelector = components.NewFeeRateSelector(l).ShowSizeAndCost()
+	pg.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
+	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
+	pg.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
@@ -324,8 +324,8 @@ func (pg *Page) constructTx() {
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
 
-	pg.feerateSelector.EstSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
-	pg.feerateSelector.TxFee = pg.txFee
+	pg.feeRateSelector.EstSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
+	pg.feeRateSelector.TxFee = pg.txFee
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -340,9 +340,9 @@ func (pg *Page) constructTx() {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
-		pg.feerateSelector.UsdExRateSet = true
+		pg.feeRateSelector.USDExchangeSet = true
 		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
-		pg.feerateSelector.TxFeeUSD = pg.txFeeUSD
+		pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
 		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
@@ -367,9 +367,9 @@ func (pg *Page) feeEstimationError(err string) {
 
 func (pg *Page) clearEstimates() {
 	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
-	pg.feerateSelector.TxFee = pg.txFee
+	pg.feeRateSelector.TxFee = pg.txFee
 	pg.txFeeUSD = " - "
-	pg.feerateSelector.TxFeeUSD = pg.txFeeUSD
+	pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
 	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "
 	pg.balanceAfterSend = " - " + string(pg.selectedWallet.GetAssetType())
@@ -390,11 +390,11 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	if pg.feerateSelector.FetchRates.Clicked() {
-		go pg.feerateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
+	if pg.feeRateSelector.FetchRates.Clicked() {
+		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
 	}
-	if pg.feerateSelector.EditRates.Clicked() {
-		pg.feerateSelector.OnEditRateCliked(pg.selectedWallet)
+	if pg.feeRateSelector.EditRates.Clicked() {
+		pg.feeRateSelector.OnEditRateCliked(pg.selectedWallet)
 	}
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
