@@ -1,11 +1,17 @@
 package libwallet
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	api "code.cryptopower.dev/group/instantswap"
+	"decred.org/dcrwallet/v2/errors"
+
 	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/blockexplorer"
+	_ "code.cryptopower.dev/group/blockexplorer/btcexplorer"
+	_ "code.cryptopower.dev/group/blockexplorer/dcrexplorer"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
@@ -13,30 +19,31 @@ import (
 )
 
 const (
-	BTCBlockTime = 60 * time.Minute
-	DCRBlockTime = 20 * time.Minute
+	BTCBlockTime = 1 * time.Minute
+	DCRBlockTime = 1 * time.Minute
 )
 
-func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) error {
+func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap.SchedulerParams) error {
+	fmt.Println("[][][]][] params: ", params)
+	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 
-	// instantSwap.mu.RLock()
+	if mgr.InstantSwap.CancelOrderScheduler != nil {
+		mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
+		return errors.New("scheduler already running")
+	}
 
-	// if instantSwap.cancelSync != nil {
-	// 	instantSwap.mu.RUnlock()
-	// 	return errors.New(ErrSyncAlreadyInProgress)
-	// }
+	_, mgr.InstantSwap.CancelOrderScheduler = context.WithCancel(ctx)
 
-	// instantSwap.ctx, instantSwap.cancelSync = context.WithCancel(ctx)
+	defer func() {
+		mgr.InstantSwap.CancelOrderScheduler = nil
+	}()
 
-	// defer func() {
-	// 	instantSwap.cancelSync = nil
-	// }()
-
-	// instantSwap.mu.RUnlock()
+	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
 	// startTime := time.Now()
 	log.Info("Order Scheduler: started")
 
 	// Initialize the exchange server.
+	log.Info("Order Scheduler: initializing exchange server")
 	exchangeObject, err := mgr.InstantSwap.NewExchanageServer(params.Order.ExchangeServer)
 	if err != nil {
 		log.Errorf("Error instantiating exchange server: %v", err)
@@ -44,7 +51,10 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 	}
 
 	for {
+		log.Info("Order Scheduler: finding source wallet")
+
 		sourceWallet := mgr.WalletWithID(params.Order.SourceWalletID)
+		fmt.Println("sourceWallet: ", sourceWallet)
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
 			log.Error(err)
@@ -68,6 +78,8 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			To:     params.Order.ToCurrency,
 			Amount: 1,
 		}
+		log.Info("Order Scheduler: getting exchange rate info")
+
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
 		if err != nil {
 			log.Error(err)
@@ -83,23 +95,29 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			invoicedAmount = sourceAccountBalance.Spendable.ToCoin() - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
 		}
 
+		log.Info("Order Scheduler: check balance after exchange")
+
 		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
 		if estimatedBalanceAfterExchange < params.BalanceToMaintain {
 			log.Error("source wallet balance after the exchange would be less than the set balance to maintain")
 			break // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
 		}
 
+		log.Info("Order Scheduler: creating order")
+
 		params.Order.InvoicedAmount = invoicedAmount
 		order, err := mgr.InstantSwap.CreateOrder(exchangeObject, params.Order)
 		if err != nil {
-			log.Error(err)
+			log.Error("CreateOrder", err)
 			break
 		}
+
+		log.Info("Order Scheduler: creating unsigned transaction")
 
 		// construct the transaction to send the invoiced amount to the exchange server
 		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber)
 		if err != nil {
-			log.Error(err)
+			log.Error("NewUnsignedTx", err)
 			break
 		}
 
@@ -110,17 +128,21 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 		case utils.DCRWalletAsset.ToStringLower():
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
-		err = sourceWallet.AddSendDestination(params.Order.DestinationAddress, amount, false)
+		log.Info("Order Scheduler: adding send destination")
+
+		err = sourceWallet.AddSendDestination(order.DepositAddress, amount, false)
 		if err != nil {
-			log.Error(err)
+			log.Error("AddSendDestination", err)
 			break
 		}
 
-		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
-		if err != nil {
-			log.Error(err)
-			break
-		}
+		log.Info("Order Scheduler: broadcasting")
+
+		// _, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
+		// if err != nil {
+		// 	log.Error(err)
+		// 	break
+		// }
 
 		// wait for the order to be completed before scheduling the next order
 		var isRefunded bool
@@ -129,10 +151,16 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			// so we wait for the estimated block time before checking the order status
 			switch params.Order.FromCurrency {
 			case utils.BTCWalletAsset.String():
+				log.Info("Order Scheduler: sleeping btc block time (10 minutes)")
+
 				time.Sleep(BTCBlockTime)
 			case utils.DCRWalletAsset.String():
+				log.Info("Order Scheduler: sleeping dcr block time (5 minutes)")
+
 				time.Sleep(DCRBlockTime)
 			}
+
+			log.Info("Order Scheduler: get newley created order info")
 
 			orderInfo, err := mgr.InstantSwap.GetOrderInfo(exchangeObject, order.UUID)
 			if err != nil {
@@ -141,7 +169,7 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 			}
 
 			if orderInfo.Status == api.OrderStatusRefunded {
-				log.Error("order was refunded. veirfy that the order was refunded successfully from the blockchain explorer ")
+				log.Error("order was refunded. verify that the order was refunded successfully from the blockchain explorer ")
 				tmpFromCurrency := params.Order.FromCurrency
 				tmpToCurrency := params.Order.ToCurrency
 
@@ -185,6 +213,8 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 
 			// }
 
+			log.Info("Order Scheduler: instantiate block explorer")
+
 			// verify that the order was completed successfully from the blockchain explorer
 			explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
 			if err != nil {
@@ -199,6 +229,8 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 				Address:   orderInfo.DestinationAddress,
 				Confirms:  1, //TODO:STATIC until deciding for another config param??
 			}
+
+			log.Info("Order Scheduler: verify transaction")
 
 			verification, err := explorer.VerifyTransaction(verificationInfo)
 			if err != nil {
@@ -221,6 +253,7 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 
 			continue // order is not completed, continue waiting
 		}
+		log.Info("Order Scheduler: try again using frequency set")
 
 		// run at the specified frequency
 		time.Sleep(params.Frequency * time.Hour)
@@ -230,13 +263,19 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 }
 
 func (mgr *AssetsManager) StopScheduler() {
-	// instantSwap.mu.RLock()
-	// if instantSwap.cancelSync != nil {
-	// 	instantSwap.cancelSync()
-	// 	instantSwap.cancelSync = nil
-	// }
-	// instantSwap.mu.RUnlock()
-	// log.Info("Exchange sync: stopped")
+	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
+	if mgr.InstantSwap.CancelOrderScheduler != nil {
+		mgr.InstantSwap.CancelOrderScheduler()
+		mgr.InstantSwap.CancelOrderScheduler = nil
+	}
+	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
+	log.Info("Order scheduler: stopped")
+}
+
+func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
+	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
+	defer mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
+	return mgr.InstantSwap.CancelOrderScheduler != nil
 }
 
 // func (mgr *AssetsManager) constructTx(depositAddress string, unitAmount float64, sourceWallet sharedW.Asset) error {

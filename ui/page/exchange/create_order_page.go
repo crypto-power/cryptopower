@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -215,6 +216,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	if pg.isExchangeAPIAllowed() {
+		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
 	}
@@ -343,25 +345,41 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.scheduler.Changed() {
-		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
-			OnSettingsSaved(func(params *callbackParams) {
+		if pg.scheduler.IsChecked() {
 
-				orderSchedulerModal := newOrderSchedulerModalModal(pg.Load).
-					OnSettingsSaved(func(params *callbackParams) {
-						infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
-						pg.ParentWindow().ShowModal(infoModal)
-					}).
-					OnCancel(func() { // needed to satisfy the modal instance
-						pg.scheduler.SetChecked(false)
-					})
-				pg.ParentWindow().ShowModal(orderSchedulerModal)
-			}).
-			OnCancel(func() { // needed to satisfy the modal instance
-				pg.scheduler.SetChecked(false)
-			})
-		pg.ParentWindow().ShowModal(orderSettingsModal)
+			orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+				OnSettingsSaved(func(params *callbackParams) {
+					refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
+					destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+					pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
+					pg.sourceAccountNumber = pg.sourceAccountSelector.SelectedAccount().Number
+					pg.destinationWalletID = pg.destinationWalletSelector.SelectedWallet().GetWalletID()
+					pg.destinationAccountNumber = pg.destinationAccountSelector.SelectedAccount().Number
+
+					pg.refundAddress = refundAddress
+					pg.destinationAddress = destinationAddress
+
+					orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
+						OnSettingsSaved(func(params *callbackParams) {
+							pg.scheduler.SetChecked(true)
+							infoModal := modal.NewSuccessModal(pg.Load, "Order Scheduler is running", modal.DefaultClickFunc())
+							pg.ParentWindow().ShowModal(infoModal)
+							// pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+							// pg.ParentWindow().Reload()
+						}).
+						OnCancel(func() { // needed to satisfy the modal instance
+							pg.scheduler.SetChecked(false)
+						})
+					pg.ParentWindow().ShowModal(orderSchedulerModal)
+				}).
+				OnCancel(func() { // needed to satisfy the modal instance
+					pg.scheduler.SetChecked(false)
+				})
+			pg.ParentWindow().ShowModal(orderSettingsModal)
+		} else {
+			pg.WL.AssetsManager.InstantSwap.StopScheduler()
+		}
 	}
-
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -558,40 +576,57 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											}.Layout(gtx, pg.scheduler.Layout)
 										}),
 										layout.Rigid(func(gtx C) D {
-											return cryptomaterial.LinearLayout{
-												Width:     cryptomaterial.WrapContent,
-												Height:    cryptomaterial.WrapContent,
-												Clickable: pg.iconClickable,
-												Direction: layout.Center,
-												Alignment: layout.Middle,
-											}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-
-													if pg.iconClickable.Clicked() {
-														orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
-															OnSettingsSaved(func(params *callbackParams) {
-
-																orderSchedulerModal := newOrderSchedulerModalModal(pg.Load).
-																	OnSettingsSaved(func(params *callbackParams) {
-																		infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
-																		pg.ParentWindow().ShowModal(infoModal)
-																	}).
-																	OnCancel(func() { // needed to satisfy the modal instance
-																		pg.scheduler.SetChecked(false)
-																	})
-																pg.ParentWindow().ShowModal(orderSchedulerModal)
-															}).
-															OnCancel(func() { // needed to satisfy the modal instance
-																pg.scheduler.SetChecked(false)
-															})
-														pg.ParentWindow().ShowModal(orderSettingsModal)
-													}
-													return layout.Inset{
-														Left: values.MarginPadding10,
-													}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
-												}),
-											)
+											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+												return layout.Inset{Left: values.MarginPadding2, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
+													// return material.Loader(pg.Theme.Base).Layout(gtx)
+													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+													gtx.Constraints.Min.X = gtx.Constraints.Max.X
+													loader := material.Loader(pg.Theme.Base)
+													loader.Color = pg.Theme.Color.Gray1
+													return loader.Layout(gtx)
+												})
+											}
+											return D{}
+											// return layout.Inset{
+											// 	// Right: values.MarginPadding40,
+											// 	// Left: values.MarginPadding4,
+											// }.Layout(gtx, pg.scheduler.Layout)
 										}),
+										// layout.Rigid(func(gtx C) D {
+										// 	return cryptomaterial.LinearLayout{
+										// 		Width:     cryptomaterial.WrapContent,
+										// 		Height:    cryptomaterial.WrapContent,
+										// 		Clickable: pg.iconClickable,
+										// 		Direction: layout.Center,
+										// 		Alignment: layout.Middle,
+										// 	}.Layout(gtx,
+										// 		layout.Rigid(func(gtx C) D {
+
+										// 			if pg.iconClickable.Clicked() {
+										// 				orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+										// 					OnSettingsSaved(func(params *callbackParams) {
+
+										// 						orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
+										// 							OnSettingsSaved(func(params *callbackParams) {
+										// 								infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
+										// 								pg.ParentWindow().ShowModal(infoModal)
+										// 							}).
+										// 							OnCancel(func() { // needed to satisfy the modal instance
+										// 								pg.scheduler.SetChecked(false)
+										// 							})
+										// 						pg.ParentWindow().ShowModal(orderSchedulerModal)
+										// 					}).
+										// 					OnCancel(func() { // needed to satisfy the modal instance
+										// 						pg.scheduler.SetChecked(false)
+										// 					})
+										// 				pg.ParentWindow().ShowModal(orderSettingsModal)
+										// 			}
+										// 			return layout.Inset{
+										// 				Left: values.MarginPadding10,
+										// 			}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
+										// 		}),
+										// 	)
+										// }),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,

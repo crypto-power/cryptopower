@@ -55,6 +55,9 @@ type InstantSwap struct {
 	ctx        context.Context
 	cancelSync context.CancelFunc
 
+	CancelOrderScheduler   context.CancelFunc `json:"-"`
+	CancelOrderSchedulerMu sync.RWMutex
+
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
 	notificationListeners   map[string]OrderNotificationListener
 }
@@ -101,6 +104,17 @@ type Order struct {
 
 type SchedulerParams struct {
 	Order Order
+
+	// ExchangeServer ExchangeServer
+
+	// SourceWalletID      int
+	// SourceAccountNumber int32
+
+	// FromCurrency string
+	// ToCurrency   string
+	// InvoicedAmount float64
+	// DestinationAddress string
+	// RefundAddress      string
 
 	Frequency           time.Duration // in hours
 	BalanceToMaintain   float64

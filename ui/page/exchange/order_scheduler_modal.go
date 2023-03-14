@@ -2,13 +2,18 @@ package exchange
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -28,41 +33,48 @@ type orderSchedulerModal struct {
 	onCancel      func()
 
 	cancelBtn cryptomaterial.Button
-	saveBtn   cryptomaterial.Button
+	startBtn  cryptomaterial.Button
 
 	sourceInfoButton      cryptomaterial.IconButton
 	destinationInfoButton cryptomaterial.IconButton
 
 	addressEditor     cryptomaterial.Editor
 	balanceToMaintain cryptomaterial.Editor
-	maxRateDeviation  cryptomaterial.Editor
+	passwordEditor    cryptomaterial.Editor
 	copyRedirect      *cryptomaterial.Clickable
 
 	exchangeSelector  *ExchangeSelector
 	frequencySelector *FrequencySelector
+
+	isStarting bool
+
+	*orderData
 }
 
-func newOrderSchedulerModalModal(l *load.Load) *orderSchedulerModal {
+func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
 	osm := &orderSchedulerModal{
 		Load:              l,
 		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		exchangeSelector:  NewExchangeSelector(l),
 		frequencySelector: NewFrequencySelector(l),
+		orderData:         data,
 		copyRedirect:      l.Theme.NewClickable(false),
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
 	osm.cancelBtn.Font.Weight = text.Medium
 
-	osm.saveBtn = l.Theme.Button("Start")
-	osm.saveBtn.Font.Weight = text.Medium
-	osm.saveBtn.SetEnabled(false)
+	osm.startBtn = l.Theme.Button("Start")
+	osm.startBtn.Font.Weight = text.Medium
+	osm.startBtn.SetEnabled(false)
 
 	osm.balanceToMaintain = l.Theme.Editor(new(widget.Editor), "Balance to maintain")
 	osm.balanceToMaintain.Editor.SingleLine, osm.balanceToMaintain.Editor.Submit = true, true
 
-	osm.maxRateDeviation = l.Theme.Editor(new(widget.Editor), "Max rate deviation")
-	osm.maxRateDeviation.Editor.SingleLine, osm.maxRateDeviation.Editor.Submit = true, true
+	osm.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
+	osm.passwordEditor.Editor.SetText("")
+	osm.passwordEditor.Editor.SingleLine = true
+	osm.passwordEditor.Editor.Submit = true
 
 	osm.sourceInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	osm.destinationInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -98,6 +110,7 @@ func (osm *orderSchedulerModal) OnResume() {
 }
 
 func (osm *orderSchedulerModal) SetLoading(loading bool) {
+	osm.isStarting = loading
 	osm.Modal.SetDisabled(loading)
 }
 
@@ -105,11 +118,15 @@ func (osm *orderSchedulerModal) OnDismiss() {
 	osm.ctxCancel()
 }
 
+func (osm *orderSchedulerModal) SetError(err string) {
+	osm.passwordEditor.SetError(values.TranslateErr(err))
+}
+
 func (osm *orderSchedulerModal) Handle() {
-	osm.saveBtn.SetEnabled(osm.canSave())
+	osm.startBtn.SetEnabled(osm.canStart())
 
-	for osm.saveBtn.Clicked() {
-
+	for osm.startBtn.Clicked() {
+		osm.startOrderScheduler()
 	}
 
 	if osm.cancelBtn.Clicked() || osm.Modal.BackdropClicked(true) {
@@ -143,7 +160,19 @@ func (osm *orderSchedulerModal) handleCopyEvent(gtx C) {
 	}
 }
 
-func (osm *orderSchedulerModal) canSave() bool {
+func (osm *orderSchedulerModal) canStart() bool {
+	if osm.exchangeSelector.selectedExchange == nil {
+		return false
+	}
+
+	if osm.frequencySelector.selectedFrequency == nil {
+		return false
+	}
+
+	if osm.balanceToMaintain.Editor.Text() == "" {
+		return false
+	}
+
 	return true
 }
 
@@ -313,66 +342,66 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 															})
 														}),
 
-														// layout.Rigid(func(gtx C) D {
-														// 	return layout.Inset{
-														// 		// Bottom: values.MarginPadding16,
-														// 	}.Layout(gtx, func(gtx C) D {
-														// 		return cryptomaterial.LinearLayout{
-														// 			Width:       cryptomaterial.MatchParent,
-														// 			Height:      cryptomaterial.WrapContent,
-														// 			Orientation: layout.Vertical,
-														// 			Margin:      layout.Inset{Bottom: values.MarginPadding4},
-														// 		}.Layout(gtx,
-														// 			layout.Rigid(func(gtx C) D {
-														// 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-														// 					layout.Rigid(func(gtx C) D {
-														// 						txt := osm.Theme.Label(values.TextSize16, "Maximum rate deviation")
-														// 						txt.Font.Weight = text.SemiBold
-														// 						return txt.Layout(gtx)
-														// 					}),
-														// 					layout.Rigid(func(gtx C) D {
-														// 						return layout.Inset{
-														// 							Top:  values.MarginPadding4,
-														// 							Left: values.MarginPadding4,
-														// 						}.Layout(gtx, osm.sourceInfoButton.Layout)
-														// 					}),
-														// 				)
-														// 			}),
-														// 			layout.Rigid(func(gtx C) D {
-														// 				return layout.Inset{
-														// 					// Right: values.MarginPadding10,
-														// 				}.Layout(gtx, func(gtx C) D {
-														// 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-														// 						// layout.Rigid(func(gtx C) D {
-														// 						// 	txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
-														// 						// 	return txt.Layout(gtx)
-														// 						// }),
-														// 						layout.Rigid(func(gtx C) D {
-														// 							return layout.Inset{
-														// 								Bottom: values.MarginPadding16,
-														// 							}.Layout(gtx, func(gtx C) D {
-														// 								return osm.maxRateDeviation.Layout(gtx)
-														// 							})
-														// 						}),
-														// 					)
-														// 				})
-														// 			}),
-														// 			layout.Rigid(func(gtx C) D {
-														// 				return layout.Inset{
-														// 					Bottom: values.MarginPadding16,
-														// 				}.Layout(gtx, func(gtx C) D {
-														// 					// if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
-														// 					// txt := osm.Theme.Label(values.TextSize14, values.String(values.StrDestinationWalletNotSynced))
-														// 					// txt.Font.Weight = text.SemiBold
-														// 					// txt.Color = osm.Theme.Color.Danger
-														// 					// return txt.Layout(gtx)
-														// 					// }
-														// 					return D{}
-														// 				})
-														// 			}),
-														// 		)
-														// 	})
-														// }),
+														layout.Rigid(func(gtx C) D {
+															return layout.Inset{
+																// Bottom: values.MarginPadding16,
+															}.Layout(gtx, func(gtx C) D {
+																return cryptomaterial.LinearLayout{
+																	Width:       cryptomaterial.MatchParent,
+																	Height:      cryptomaterial.WrapContent,
+																	Orientation: layout.Vertical,
+																	Margin:      layout.Inset{Bottom: values.MarginPadding4},
+																}.Layout(gtx,
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+																			layout.Rigid(func(gtx C) D {
+																				txt := osm.Theme.Label(values.TextSize16, "Spending passphrase")
+																				txt.Font.Weight = text.SemiBold
+																				return txt.Layout(gtx)
+																			}),
+																			layout.Rigid(func(gtx C) D {
+																				return layout.Inset{
+																					Top:  values.MarginPadding4,
+																					Left: values.MarginPadding4,
+																				}.Layout(gtx, osm.sourceInfoButton.Layout)
+																			}),
+																		)
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			// Right: values.MarginPadding10,
+																		}.Layout(gtx, func(gtx C) D {
+																			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+																				// layout.Rigid(func(gtx C) D {
+																				// 	txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
+																				// 	return txt.Layout(gtx)
+																				// }),
+																				layout.Rigid(func(gtx C) D {
+																					return layout.Inset{
+																						Bottom: values.MarginPadding16,
+																					}.Layout(gtx, func(gtx C) D {
+																						return osm.passwordEditor.Layout(gtx)
+																					})
+																				}),
+																			)
+																		})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		return layout.Inset{
+																			Bottom: values.MarginPadding16,
+																		}.Layout(gtx, func(gtx C) D {
+																			// if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
+																			// txt := osm.Theme.Label(values.TextSize14, values.String(values.StrDestinationWalletNotSynced))
+																			// txt.Font.Weight = text.SemiBold
+																			// txt.Color = osm.Theme.Color.Danger
+																			// return txt.Layout(gtx)
+																			// }
+																			return D{}
+																		})
+																	}),
+																)
+															})
+														}),
 													)
 												})
 											})
@@ -406,7 +435,14 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 															Right: values.MarginPadding4,
 														}.Layout(gtx, osm.cancelBtn.Layout)
 													}),
-													layout.Rigid(osm.saveBtn.Layout),
+													layout.Rigid(func(gtx C) D {
+														if osm.isStarting {
+															return layout.Inset{Top: unit.Dp(7)}.Layout(gtx, func(gtx C) D {
+																return material.Loader(osm.Theme.Base).Layout(gtx)
+															})
+														}
+														return osm.startBtn.Layout(gtx)
+													}),
 												)
 											})
 										}),
@@ -420,4 +456,47 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
+}
+
+func (osm *orderSchedulerModal) startOrderScheduler() {
+	osm.SetLoading(true)
+	// go func() {
+	balanceToMaintain, _ := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
+	params := instantswap.SchedulerParams{
+		Order: instantswap.Order{
+			ExchangeServer:           osm.exchangeSelector.selectedExchange.Server,
+			SourceWalletID:           osm.orderData.sourceWalletID,
+			SourceAccountNumber:      osm.orderData.sourceAccountNumber,
+			DestinationWalletID:      osm.orderData.destinationWalletID,
+			DestinationAccountNumber: osm.orderData.destinationAccountNumber,
+
+			FromCurrency: osm.orderData.fromCurrency.String(),
+			ToCurrency:   osm.orderData.toCurrency.String(),
+
+			DestinationAddress: osm.orderData.destinationAddress,
+			RefundAddress:      osm.orderData.refundAddress,
+		},
+
+		Frequency:           osm.frequencySelector.selectedFrequency.item,
+		BalanceToMaintain:   balanceToMaintain,
+		MinimumExchangeRate: 5, // deault value
+		SpendingPassphrase:  osm.passwordEditor.Editor.Text(),
+	}
+
+	fmt.Println("to currency", params.Order.ToCurrency)
+
+	go osm.WL.AssetsManager.StartScheduler(osm.ctx, params)
+	// if err != nil {
+	// 	log.Error(err)
+	// 	osm.SetError(err.Error())
+	// 	osm.SetLoading(false)
+	// 	return
+	// }
+
+	params1 := &callbackParams{}
+	osm.Dismiss()
+	osm.settingsSaved(params1)
+
+	// }()
+
 }
