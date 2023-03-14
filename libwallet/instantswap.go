@@ -34,7 +34,7 @@ func (mgr *AssetsManager) StartScheduler(params instantswap.SchedulerParams) err
 
 	// instantSwap.mu.RUnlock()
 	// startTime := time.Now()
-	log.Info("Exchange sync: started")
+	log.Info("Order Scheduler: started")
 
 	// Initialize the exchange server.
 	exchangeObject, err := mgr.InstantSwap.NewExchanageServer(params.Order.ExchangeServer)

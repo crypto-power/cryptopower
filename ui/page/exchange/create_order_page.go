@@ -69,6 +69,7 @@ type CreateOrderPage struct {
 	refreshExchangeRateBtn cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
 	settingsButton         cryptomaterial.IconButton
+	iconClickable          *cryptomaterial.Clickable
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 
@@ -102,6 +103,8 @@ type orderData struct {
 
 	refundAddress      string
 	destinationAddress string
+
+	scheduler *cryptomaterial.Switch
 }
 
 func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
@@ -115,11 +118,13 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		orderData:        &orderData{},
 		exchangeRate:     -1,
 		refreshClickable: l.Theme.NewClickable(true),
+		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
+	pg.scheduler = pg.Theme.Switch()
 	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
 	pg.refreshExchangeRateBtn = l.Theme.IconButton(l.Theme.Icons.NavigationRefresh)
 	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
@@ -337,6 +342,26 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
 	}
 
+	if pg.scheduler.Changed() {
+		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+			OnSettingsSaved(func(params *callbackParams) {
+
+				orderSchedulerModal := newOrderSchedulerModalModal(pg.Load).
+					OnSettingsSaved(func(params *callbackParams) {
+						infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
+						pg.ParentWindow().ShowModal(infoModal)
+					}).
+					OnCancel(func() { // needed to satisfy the modal instance
+						pg.scheduler.SetChecked(false)
+					})
+				pg.ParentWindow().ShowModal(orderSchedulerModal)
+			}).
+			OnCancel(func() { // needed to satisfy the modal instance
+				pg.scheduler.SetChecked(false)
+			})
+		pg.ParentWindow().ShowModal(orderSettingsModal)
+	}
+
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -521,6 +546,52 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										Axis:      layout.Horizontal,
 										Alignment: layout.Middle,
 									}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											title := pg.Theme.Label(values.TextSize16, "Scheduler")
+											title.Color = pg.Theme.Color.GrayText2
+											return title.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{
+												// Right: values.MarginPadding40,
+												Left: values.MarginPadding4,
+											}.Layout(gtx, pg.scheduler.Layout)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return cryptomaterial.LinearLayout{
+												Width:     cryptomaterial.WrapContent,
+												Height:    cryptomaterial.WrapContent,
+												Clickable: pg.iconClickable,
+												Direction: layout.Center,
+												Alignment: layout.Middle,
+											}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+
+													if pg.iconClickable.Clicked() {
+														orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+															OnSettingsSaved(func(params *callbackParams) {
+
+																orderSchedulerModal := newOrderSchedulerModalModal(pg.Load).
+																	OnSettingsSaved(func(params *callbackParams) {
+																		infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
+																		pg.ParentWindow().ShowModal(infoModal)
+																	}).
+																	OnCancel(func() { // needed to satisfy the modal instance
+																		pg.scheduler.SetChecked(false)
+																	})
+																pg.ParentWindow().ShowModal(orderSchedulerModal)
+															}).
+															OnCancel(func() { // needed to satisfy the modal instance
+																pg.scheduler.SetChecked(false)
+															})
+														pg.ParentWindow().ShowModal(orderSettingsModal)
+													}
+													return layout.Inset{
+														Left: values.MarginPadding10,
+													}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
+												}),
+											)
+										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,
