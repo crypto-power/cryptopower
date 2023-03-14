@@ -7,6 +7,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -52,6 +53,8 @@ type SettingsPage struct {
 	backButton              cryptomaterial.IconButton
 	infoButton              cryptomaterial.IconButton
 	networkInfoButton       cryptomaterial.IconButton
+	logLevel                *cryptomaterial.Clickable
+	viewLog                 *cryptomaterial.Clickable
 
 	onlineCheckAPI *cryptomaterial.Switch
 	governanceAPI  *cryptomaterial.Switch
@@ -86,6 +89,8 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		help:              l.Theme.NewClickable(false),
 		about:             l.Theme.NewClickable(false),
 		appearanceMode:    l.Theme.NewClickable(false),
+		logLevel:          l.Theme.NewClickable(false),
+		viewLog:           l.Theme.NewClickable(false),
 	}
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
@@ -132,7 +137,6 @@ func (pg *SettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
 							Right: values.MarginPadding16,
-							Top:   values.MarginPaddingMinus2,
 						}.Layout(gtx, pg.backButton.Layout)
 					}),
 					layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrSettings)).Layout),
@@ -148,6 +152,7 @@ func (pg *SettingsPage) pageContentLayout(gtx C) D {
 		pg.networkSettings(),
 		pg.security(),
 		pg.info(),
+		pg.debug(),
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Center.Layout(gtx, func(gtx C) D {
@@ -262,7 +267,7 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 				}),
 				layout.Rigid(func(gtx C) D {
 					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
-					l := values.ArrExchangeCurrencies[lKey]
+					l := preference.GetKeyValue(lKey, preference.ExchOptions)
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
 						clickable: pg.currency,
@@ -332,6 +337,31 @@ func (pg *SettingsPage) info() layout.Widget {
 	}
 }
 
+func (pg *SettingsPage) debug() layout.Widget {
+	return func(gtx C) D {
+		return pg.wrapSection(gtx, values.String(values.StrDebug), func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					logLevel := row{
+						title:     values.String(values.StrLogLevel),
+						clickable: pg.logLevel,
+						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLogLevels()),
+					}
+					return pg.clickableRow(gtx, logLevel)
+				}),
+				layout.Rigid(func(gtx C) D {
+					viewLogRow := row{
+						title:     values.String(values.StrViewAppLog),
+						clickable: pg.viewLog,
+						label:     pg.Theme.Body2(""),
+					}
+					return pg.clickableRow(gtx, viewLogRow)
+				}),
+			)
+		})
+	}
+}
+
 func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
@@ -374,7 +404,7 @@ func (pg *SettingsPage) subSectionLabel(title string) layout.Widget {
 func (pg *SettingsPage) HandleUserInteractions() {
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
-			sharedW.LanguagePreferenceKey, values.DefaultLangauge, values.ArrLanguages).
+			sharedW.LanguagePreferenceKey, values.DefaultLangauge, preference.LangOptions).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
 				values.SetUserLanguage(pg.WL.AssetsManager.GetLanguagePreference())
@@ -390,7 +420,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	for pg.currency.Clicked() {
 		currencySelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.CurrencyConversionConfigKey, values.DefaultExchangeValue,
-			values.ArrExchangeCurrencies).
+			preference.ExchOptions).
 			Title(values.StrExchangeRate).
 			UpdateValues(func(_ string) {})
 		pg.ParentWindow().ShowModal(currencySelectorModal)
@@ -447,6 +477,21 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	if pg.about.Clicked() {
 		pg.ParentNavigator().Display(NewAboutPage(pg.Load))
+	}
+
+	for pg.logLevel.Clicked() {
+		logLevelSelector := preference.NewListPreference(pg.Load,
+			sharedW.LogLevelConfigKey, libutils.DefaultLogLevel, preference.LogOptions).
+			Title(values.StrLogLevel).
+			UpdateValues(func(val string) {
+				logger.SetLogLevels(val)
+			})
+		pg.ParentWindow().ShowModal(logLevelSelector)
+		break
+	}
+
+	if pg.viewLog.Clicked() {
+		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.Wallet.LogFile(), values.String(values.StrAppLog)))
 	}
 
 	for pg.changeStartupPass.Clicked() {

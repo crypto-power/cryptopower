@@ -49,7 +49,7 @@ type AccountMixerPage struct {
 	unmixedBalance     sharedW.AssetAmount
 	totalWalletBalance sharedW.AssetAmount
 
-	ArrMixerAccounts map[string]string
+	MixerAccounts []preference.PreferenceItem
 
 	mixerCompleted bool
 	dcrImpl        *dcr.DCRAsset
@@ -107,11 +107,11 @@ func (pg *AccountMixerPage) getMixerBalance() {
 		log.Error("could not load mixer account information. Please try again.")
 	}
 
-	vm := make(map[string]string)
+	vm := []preference.PreferenceItem{}
 	for _, acct := range accounts.Accounts {
 		// add data for change accounts selection
 		if acct.Name != values.String(values.StrImported) {
-			vm[acct.Name] = acct.Name
+			vm = append(vm, preference.PreferenceItem{Key: acct.Name, Value: acct.Name})
 		}
 
 		if acct.Number == pg.dcrImpl.MixedAccountNumber() {
@@ -123,7 +123,7 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	pg.mixedBalance = getSafeAmount(pg.mixedBalance)
 	pg.unmixedBalance = getSafeAmount(pg.unmixedBalance)
 
-	pg.ArrMixerAccounts = vm
+	pg.MixerAccounts = vm
 }
 
 // This function return dcr amount default is 0 if amount passed is nil
@@ -472,7 +472,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) map[string]string {
+func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.PreferenceItem {
 	filterAccountNumber := pg.dcrImpl.UnmixedAccountNumber()
 	if isFilterMixed {
 		filterAccountNumber = pg.dcrImpl.MixedAccountNumber()
@@ -483,12 +483,13 @@ func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) map[string]stri
 		log.Error(err.Error())
 	}
 
-	arrMixerAcc := make(map[string]string)
-	for k, v := range pg.ArrMixerAccounts {
-		arrMixerAcc[k] = v
+	mixerAcc := []preference.PreferenceItem{}
+	for _, item := range pg.MixerAccounts {
+		if item.Key != accountFilter {
+			mixerAcc = append(mixerAcc, item)
+		}
 	}
-	delete(arrMixerAcc, accountFilter)
-	return arrMixerAcc
+	return mixerAcc
 }
 
 func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {

@@ -10,7 +10,8 @@ import (
 
 	"gioui.org/app"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/ui"
 	_ "code.cryptopower.dev/group/cryptopower/ui/assets"
 	"code.cryptopower.dev/group/cryptopower/wallet"
@@ -32,14 +33,20 @@ func main() {
 		return
 	}
 
+	// before the asset manager is initialized use command line debuglevel option if passed or
+	// default to log level info for startup logs.
+	if cfg.DebugLevel == "" {
+		logger.SetLogLevels(utils.LogLevelInfo)
+	} else {
+		logger.SetLogLevels(cfg.DebugLevel)
+	}
+
 	if cfg.Profile > 0 {
 		go func() {
 			log.Info(fmt.Sprintf("Starting profiling server on port %d", cfg.Profile))
 			log.Error(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", cfg.Profile), nil))
 		}()
 	}
-
-	libwallet.SetLogLevels(cfg.DebugLevel)
 
 	var buildDate time.Time
 	if BuildEnv == wallet.ProdBuild {
@@ -72,6 +79,14 @@ func main() {
 		log.Errorf("init assetsManager error: %v", err)
 		return
 	}
+
+	// if debuglevel is passed at commandLine persist the option.
+	if cfg.DebugLevel != "" {
+		wal.GetAssetsManager().SetLogLevels(cfg.DebugLevel)
+	}
+
+	// now that assets manager is up, set stored debuglevel
+	logger.SetLogLevels(wal.GetAssetsManager().GetLogLevels())
 
 	win, err := ui.CreateWindow(wal)
 	if err != nil {

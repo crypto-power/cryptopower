@@ -19,7 +19,6 @@ const (
 	defaultNetwork        = "mainnet"
 	defaultConfigFileName = "cryptopower.conf"
 	defaultLogFilename    = "cryptopower.log"
-	defaultLogLevel       = "info" // info by default.
 	defaultLogDirname     = "logs"
 )
 
@@ -36,7 +35,7 @@ type config struct {
 	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
 	MaxLogZips       int    `long:"max-log-zips" description:"The number of zipped log files created by the log rotator to be retained. Setting to 0 will keep all."`
 	LogDir           string `long:"logdir" description:"Directory to log output."`
-	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
+	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}"`
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
@@ -47,7 +46,6 @@ var defaultConfig = config{
 	HomeDir:    defaultHomeDir,
 	ConfigFile: defaultConfigFilename,
 	LogDir:     defaultLogDir,
-	DebugLevel: defaultLogLevel,
 }
 
 // validLogLevel returns whether or not logLevel is a valid debug log level.
@@ -80,47 +78,16 @@ func supportedSubsystems() []string {
 func parseAndSetDebugLevels(debugLevel string) error {
 	// When the specified string doesn't have any delimiters, treat it as
 	// the log level for all subsystems.
-	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
+	debugLeveSet := debugLevel != ""
+	if debugLeveSet && !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
 		// Validate debug log level.
 		if !validLogLevel(debugLevel) {
 			str := "the specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
 		}
 
-		// Change the logging level for all subsystems.
-		setLogLevels(debugLevel)
-
 		return nil
 	}
-
-	// Split the specified string into subsystem/level pairs while detecting
-	// issues and update the log levels accordingly.
-	for _, logLevelPair := range strings.Split(debugLevel, ",") {
-		if !strings.Contains(logLevelPair, "=") {
-			str := "the specified debug level contains an invalid " +
-				"subsystem/level pair [%v]"
-			return fmt.Errorf(str, logLevelPair)
-		}
-
-		// Extract the specified subsystem and log level.
-		fields := strings.Split(logLevelPair, "=")
-		subsysID, logLevel := fields[0], fields[1]
-
-		// Validate subsystem.
-		if !isExistSystem(subsysID) {
-			str := "the specified subsystem [%v] is invalid -- " +
-				"supported subsystems %v"
-			return fmt.Errorf(str, subsysID, supportedSubsystems())
-		}
-
-		// Validate log level.
-		if !validLogLevel(logLevel) {
-			str := "the specified debug level [%v] is invalid"
-			return fmt.Errorf(str, logLevel)
-		}
-		setLogLevel(subsysID, logLevel)
-	}
-
 	return nil
 }
 

@@ -38,9 +38,11 @@ type LogPage struct {
 
 	logList *widget.List
 	fullLog string
+	logPath string
+	title   string
 }
 
-func NewLogPage(l *load.Load) *LogPage {
+func NewLogPage(l *load.Load, logPath string, pageTitle string) *LogPage {
 	pg := &LogPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(LogPageID),
@@ -54,6 +56,8 @@ func NewLogPage(l *load.Load) *LogPage {
 	}
 
 	pg.copyIcon = pg.Theme.Icons.CopyIcon
+	pg.logPath = logPath
+	pg.title = pageTitle
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.watchLogs()
@@ -69,15 +73,12 @@ func (pg *LogPage) OnNavigatedTo() {
 }
 
 func (pg *LogPage) copyLogEntries(gtx C) {
-	go func() {
-		clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
-	}()
+	clipboard.WriteOp{Text: pg.fullLog}.Add(gtx.Ops)
 }
 
 func (pg *LogPage) watchLogs() {
 	go func() {
-		logPath := pg.Load.WL.SelectedWallet.Wallet.LogFile()
-		fi, err := os.Stat(logPath)
+		fi, err := os.Stat(pg.logPath)
 		if err != nil {
 			pg.fullLog = fmt.Sprintf("unable to open log file: %v", err)
 			return
@@ -91,7 +92,7 @@ func (pg *LogPage) watchLogs() {
 		}
 
 		pollLogs := runtime.GOOS == "windows"
-		t, err := tail.TailFile(logPath, tail.Config{Follow: true, Poll: pollLogs, Location: &tail.SeekInfo{Offset: offset}})
+		t, err := tail.TailFile(pg.logPath, tail.Config{Follow: true, Poll: pollLogs, Location: &tail.SeekInfo{Offset: offset}})
 		if err != nil {
 			pg.fullLog = fmt.Sprintf("unable to tail log file: %v", err)
 			return
@@ -123,7 +124,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      values.String(values.StrWalletLog),
+			Title:      pg.title,
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -164,7 +165,7 @@ func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      values.String(values.StrWalletLog),
+			Title:      pg.title,
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()

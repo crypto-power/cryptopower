@@ -211,12 +211,14 @@ func (mgr *AssetsManager) IsHttpAPIPrivacyModeOff(apiType utils.HttpAPIType) boo
 }
 
 // GetLogLevels returns the log levels.
-func (mgr *AssetsManager) GetLogLevels() {
-	// TODO: loglevels should have a custom type supported on libwallet.
-	// Issue is to be addressed in here: https://code.cryptopower.dev/group/cryptopower/-/issues/965
+func (mgr *AssetsManager) GetLogLevels() string {
 	var logLevel string
 	mgr.db.ReadWalletConfigValue(sharedW.LogLevelConfigKey, &logLevel)
-	SetLogLevels(logLevel)
+	if logLevel == "" {
+		// return default debug level if no option is stored.
+		return utils.DefaultLogLevel
+	}
+	return logLevel
 }
 
 // SetLogLevels sets the log levels.
