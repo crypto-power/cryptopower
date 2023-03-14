@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
-	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -48,15 +45,6 @@ type Page struct {
 	infoButton    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
-	editRates     cryptomaterial.Button
-	// fetchRates displays either a button if the Fee rate API is allowed by the
-	// current network settings and a label if otherwise.
-	fetchRates interface{}
-
-	ratesEditor cryptomaterial.Editor
-	// editOrDisplay holds an editor or label component depending on the state of
-	// editRates(Save -> holds Editor or Edit -> holds a Label) button.
-	editOrDisplay interface{}
 
 	shadowBox *cryptomaterial.Shadow
 	backdrop  *widget.Clickable
@@ -70,7 +58,8 @@ type Page struct {
 	currencyExchange    string
 
 	*authoredTxData
-	selectedWallet *load.WalletMapping
+	selectedWallet  *load.WalletMapping
+	feeRateSelector *components.FeeRateSelector
 }
 
 type authoredTxData struct {
@@ -79,8 +68,6 @@ type authoredTxData struct {
 	sourceAccount       *sharedW.Account
 	txFee               string
 	txFeeUSD            string
-	priority            string
-	estSignedSize       string
 	totalCost           string
 	totalCostUSD        string
 	balanceAfterSend    string
@@ -105,6 +92,11 @@ func NewSendPage(l *load.Load) *Page {
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
 	}
+
+	pg.feeRateSelector = components.NewFeeRateSelector(l).ShowSizeAndCost()
+	pg.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
+	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
+	pg.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
 	// Source account picker
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
@@ -331,8 +323,9 @@ func (pg *Page) constructTx() {
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
-	pg.editOrDisplay = pg.addRatesUnits(feeAndSize.FeeRate)
-	pg.estSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
+
+	pg.feeRateSelector.EstSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
+	pg.feeRateSelector.TxFee = pg.txFee
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -347,7 +340,9 @@ func (pg *Page) constructTx() {
 	}
 
 	if pg.exchangeRate != -1 && pg.usdExchangeSet {
+		pg.feeRateSelector.USDExchangeSet = true
 		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
+		pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
 		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
@@ -372,8 +367,9 @@ func (pg *Page) feeEstimationError(err string) {
 
 func (pg *Page) clearEstimates() {
 	pg.txFee = " - " + string(pg.selectedWallet.GetAssetType())
+	pg.feeRateSelector.TxFee = pg.txFee
 	pg.txFeeUSD = " - "
-	pg.estSignedSize = " - "
+	pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
 	pg.totalCost = " - " + string(pg.selectedWallet.GetAssetType())
 	pg.totalCostUSD = " - "
 	pg.balanceAfterSend = " - " + string(pg.selectedWallet.GetAssetType())
@@ -394,10 +390,12 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	if pg.isFeerateAPIApproved() {
-		pg.feeRateAPIHandler()
+	if pg.feeRateSelector.FetchRates.Clicked() {
+		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
 	}
-	pg.editsOrDisplayRatesHandler()
+	if pg.feeRateSelector.EditRates.Clicked() {
+		pg.feeRateSelector.OnEditRateCliked(pg.selectedWallet)
+	}
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
 	pg.amount.handle()
@@ -434,22 +432,16 @@ func (pg *Page) HandleUserInteractions() {
 		pg.amount.usdAmountEditor.Editor.Focused()
 
 	if !modalShown && !isAmountEditorActive {
-		isFeeRateEditFocused := pg.ratesEditor.Editor.Focused()
 		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
-		isInSaveMode := pg.ratesEditor.Editor.Text() == values.String(values.StrSave)
 		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
 
 		switch {
-		// If the hidden fee rate editor is in focus.
-		case isFeeRateEditFocused && isInSaveMode:
-			pg.ratesEditor.Editor.Focus()
-
 		// If destination address is invalid and destination editor is in focus.
 		case !pg.sendDestination.validate() && isDestinationEditorFocused:
 			pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 		// If accounts switch selects the wallet option.
-		case isSendToWallet && !isFeeRateEditFocused && !isDestinationEditorFocused:
+		case isSendToWallet && !isDestinationEditorFocused:
 			pg.amount.amountEditor.Editor.Focus()
 		}
 	}
@@ -517,111 +509,6 @@ func (pg *Page) OnNavigatedFrom() {
 	pg.ctxCancel() // causes crash if nil, when the main page is closed if send page is created but never displayed (because sync in progress)
 }
 
-func (pg *Page) addRatesUnits(rates int64) string {
-	return pg.Load.Printer.Sprintf("%d Sat/kvB", rates)
-}
-
 func (pg *Page) isFeerateAPIApproved() bool {
 	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libUtil.FeeRateHttpAPI)
-}
-
-func (pg *Page) editsOrDisplayRatesHandler() {
-	if pg.editRates.Clicked() {
-		// reset fields
-		pg.feeEstimationError("")
-		// Enable after saving is complete successfully
-		fetchRatesBtn, ok := pg.fetchRates.(cryptomaterial.Button)
-		if ok {
-			fetchRatesBtn.SetEnabled(false)
-		}
-
-		if pg.editRates.Text == values.String(values.StrSave) {
-			text := pg.ratesEditor.Editor.Text()
-			ratesInt, err := pg.selectedWallet.SetAPIFeeRate(text)
-			if err != nil {
-				pg.feeEstimationError(err.Error())
-				text = " - "
-			} else {
-				text = pg.addRatesUnits(ratesInt)
-				pg.amount.amountChanged()
-			}
-
-			pg.editOrDisplay = text
-			pg.ratesEditor.Editor.SetText("")
-			pg.editRates.Text = values.String(values.StrEdit)
-			if ok {
-				fetchRatesBtn.SetEnabled(true)
-			}
-			return
-		}
-
-		pg.editOrDisplay = pg.ratesEditor
-		pg.editRates.Text = values.String(values.StrSave)
-		pg.priority = "Unknown" // Only known when fee rate is set from the API.
-	}
-}
-
-func (pg *Page) feeRateAPIHandler() {
-	fetchRatesBtn, ok := pg.fetchRates.(cryptomaterial.Button)
-	if ok && fetchRatesBtn.Clicked() {
-		// reset fields
-		pg.feeEstimationError("")
-		// Enable after the fee rate selection is complete successfully.
-		pg.editRates.SetEnabled(false)
-
-		feeRates, err := pg.selectedWallet.GetAPIFeeRate()
-		if err != nil {
-			pg.feeEstimationError(err.Error())
-			return
-		}
-
-		blocksStr := func(b int32) string {
-			val := strconv.Itoa(int(b)) + " block"
-			if b == 1 {
-				return val
-			}
-			return val + "s"
-		}
-
-		radiogroupbtns := new(widget.Enum)
-		items := make([]layout.FlexChild, 0)
-		for index, feerate := range feeRates {
-			key := strconv.Itoa(index)
-			value := pg.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
-			radioBtn := pg.Load.Theme.RadioButton(radiogroupbtns, key, value,
-				pg.Load.Theme.Color.DeepBlue, pg.Load.Theme.Color.Primary)
-			items = append(items, layout.Rigid(radioBtn.Layout))
-		}
-
-		info := modal.NewCustomModal(pg.Load).
-			Title(values.String(values.StrFeeRates)).
-			UseCustomWidget(func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-			}).
-			SetCancelable(true).
-			SetNegativeButtonText(values.String(values.StrCancel)).
-			SetPositiveButtonText(values.String(values.StrSave)).
-			SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-				fields := strings.Fields(radiogroupbtns.Value)
-				index, _ := strconv.Atoi(fields[0])
-				rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-				rateInt, err := pg.selectedWallet.SetAPIFeeRate(rate)
-				if err != nil {
-					pg.feeEstimationError(err.Error())
-					return false
-				}
-
-				pg.editOrDisplay = pg.addRatesUnits(rateInt)
-				blocks := feeRates[index].ConfirmedBlocks
-				timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
-				pg.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), components.TimeAgo(timeBefore.Unix()))
-				im.Dismiss()
-				return true
-			})
-
-		pg.ParentWindow().ShowModal((info))
-		// fee rate selection is complete successfully.
-		pg.editRates.SetEnabled(true)
-		pg.amount.amountChanged()
-	}
 }

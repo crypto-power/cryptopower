@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -45,32 +44,6 @@ func (pg *Page) initLayoutWidgets() {
 	pg.retryExchange.Color = pg.Theme.Color.Surface
 	pg.retryExchange.TextSize = values.TextSize12
 	pg.retryExchange.Inset = buttonInset
-
-	pg.editRates = pg.Theme.Button(values.String(values.StrEdit))
-
-	if pg.isFeerateAPIApproved() {
-		fetchRateBtn := pg.Theme.Button(values.String(values.StrFetchRates))
-		fetchRateBtn.TextSize = values.TextSize12
-		fetchRateBtn.Inset = buttonInset
-		pg.fetchRates = fetchRateBtn
-	} else {
-		str := values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
-		fetchRateLabel := pg.Theme.Label(values.TextSize14, str)
-		fetchRateLabel.Font.Weight = text.SemiBold
-		pg.fetchRates = fetchRateLabel
-	}
-
-	pg.editRates.TextSize = values.TextSize12
-	pg.editRates.Inset = buttonInset
-
-	pg.ratesEditor = pg.Theme.Editor(new(widget.Editor), "in Sat/kvB")
-	pg.ratesEditor.HasCustomButton = false
-	pg.ratesEditor.Editor.SingleLine = true
-	pg.ratesEditor.TextSize = values.TextSize14
-
-	// Default value for display before fee rate is set.
-	pg.editOrDisplay = " - "
-	pg.priority = "Unknown"
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -118,7 +91,10 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	// Display the transaction fee rate selection only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
 		pageContent = append(pageContent,
-			func(gtx C) D { return pg.transactionFeeSection(gtx) },
+			func(gtx C) D {
+				//return pg.transactionFeeSection(gtx)
+				return pg.feeRateSelector.Layout(gtx)
+			},
 		)
 	}
 
@@ -359,51 +335,6 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	})
 }
 
-// transactionFeeSection only supports btc fee rate setting.
-func (pg *Page) transactionFeeSection(gtx layout.Context) D {
-	inset := layout.Inset{
-		Bottom: values.MarginPadding100,
-	}
-
-	return inset.Layout(gtx, func(gtx C) D {
-		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			topContainer := layout.UniformInset(values.MarginPadding15)
-			return topContainer.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X // use maximum width
-
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrTxFee))
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, textLabel.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						card := pg.Theme.Card()
-						card.Color = pg.Theme.Color.Background
-
-						return card.Layout(gtx, func(gtx C) D {
-							return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X // use maximum width
-
-								feeText := pg.txFee
-								if pg.exchangeRate != -1 && pg.usdExchangeSet {
-									feeText = fmt.Sprintf("%s (%s)", pg.txFee, pg.txFeeUSD)
-								}
-
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									pg.widgetsRow(gtx, pg.editOrDisplay, pg.editRates, pg.fetchRates),
-									pg.widgetsRow(gtx, values.StringF(values.StrPriority, " : "), pg.priority),
-									pg.widgetsRow(gtx, values.StringF(values.StrTxSize, " : "), pg.estSignedSize),
-									pg.widgetsRow(gtx, values.StringF(values.StrCost, " : "), feeText),
-								)
-							})
-						})
-					}),
-				)
-			})
-		})
-	})
-}
-
 func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 	c := pg.Theme.Card()
 	c.Radius = cryptomaterial.Radius(0)
@@ -467,44 +398,4 @@ func (pg *Page) contentRow(gtx layout.Context, leftValue, rightValue string) lay
 			})
 		}),
 	)
-}
-
-func (pg *Page) widgetsRow(gtx layout.Context, items ...interface{}) layout.FlexChild {
-	widgets := make([]layout.FlexChild, 0, len(items))
-	for _, item := range items {
-		switch n := item.(type) {
-		case string:
-			w := pg.Theme.Label(values.TextSize14, n)
-			if len(widgets) == 0 {
-				w.Font.Weight = text.SemiBold
-			} else {
-				w.Font.Style = text.Italic
-			}
-			widgets = append(widgets, layout.Rigid(w.Layout))
-		case cryptomaterial.Button:
-			widgets = append(widgets, layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, n.Layout)
-			}))
-		case cryptomaterial.Label:
-			widgets = append(widgets, layout.Rigid(func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Center.Layout(gtx, n.Layout)
-			}))
-		case cryptomaterial.Editor:
-			widgets = append(widgets, layout.Rigid(func(gtx C) D {
-				n.Editor.Focus()
-				// Resize the height to fit 1/5 of the original height.
-				gtx.Constraints.Max.X = gtx.Constraints.Max.X / 5
-				return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, n.Layout)
-			}))
-		default:
-			continue
-		}
-	}
-
-	return layout.Rigid(func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, widgets...)
-		})
-	})
 }

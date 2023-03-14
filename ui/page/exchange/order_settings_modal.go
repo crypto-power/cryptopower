@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -42,8 +43,9 @@ type orderSettingsModal struct {
 	sourceInfoButton      cryptomaterial.IconButton
 	destinationInfoButton cryptomaterial.IconButton
 
-	addressEditor cryptomaterial.Editor
-	copyRedirect  *cryptomaterial.Clickable
+	addressEditor   cryptomaterial.Editor
+	copyRedirect    *cryptomaterial.Clickable
+	feeRateSelector *components.FeeRateSelector
 
 	*orderData
 }
@@ -78,6 +80,9 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 			Alignment: layout.Middle,
 		},
 	}
+
+	osm.feeRateSelector = components.NewFeeRateSelector(l)
+	osm.feeRateSelector.TitleFontWeight = text.SemiBold
 
 	return osm
 }
@@ -176,6 +181,14 @@ func (osm *orderSettingsModal) Handle() {
 			Body(values.String(values.StrDestinationModalInfo)).
 			Title(values.String(values.StrDestination))
 		osm.ParentWindow().ShowModal(info)
+	}
+
+	if osm.feeRateSelector.FetchRates.Clicked() {
+		go osm.feeRateSelector.FetchFeeRate(osm.ParentWindow(), osm.sourceWalletSelector.SelectedWallet())
+	}
+
+	if osm.feeRateSelector.EditRates.Clicked() {
+		osm.feeRateSelector.OnEditRateCliked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
 
@@ -368,6 +381,12 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																			}
 																			return D{}
 																		})
+																	}),
+																	layout.Rigid(func(gtx C) D {
+																		if osm.sourceWalletSelector.SelectedWallet().GetAssetType() != utils.BTCWalletAsset {
+																			return D{}
+																		}
+																		return osm.feeRateSelector.Layout(gtx)
 																	}),
 																)
 															})
