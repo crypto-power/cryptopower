@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"github.com/btcsuite/btcwallet/wtxmgr"
 
 	libUtil "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
@@ -50,7 +49,7 @@ func (pg *Page) initLayoutWidgets() {
 	pg.txLabelInputEditor.Editor.SingleLine = false
 	pg.txLabelInputEditor.Editor.SetText("")
 	// Set the maximum characters the editor can accept.
-	pg.txLabelInputEditor.Editor.MaxLen = wtxmgr.TxLabelLimit
+	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -345,7 +344,8 @@ func (pg *Page) txLabelSection(gtx layout.Context) D {
 		return topContainer.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
 			count := len(pg.txLabelInputEditor.Editor.Text())
-			wordsCount := pg.Theme.Label(values.TextSize14, fmt.Sprintf("(%d/%d)", count, wtxmgr.TxLabelLimit))
+			txt := fmt.Sprintf("(%d/%d)", count, pg.txLabelInputEditor.Editor.MaxLen)
+			wordsCount := pg.Theme.Label(values.TextSize14, txt)
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

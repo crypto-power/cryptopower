@@ -271,7 +271,6 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 			Body: func(gtx C) D {
 				widgets := []func(gtx C) D{
 					pg.txnTypeAndID,
-					pg.txnLabel,
 					pg.txnInputs,
 					pg.txnOutputs,
 				}
@@ -723,6 +722,13 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			}
 			return pg.keyValue(gtx, values.String(values.StrTransactionID), dim)
 		}),
+		layout.Rigid(func(gtx C) D {
+			if len(pg.transaction.Label) != 0 {
+				txlabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
+				return pg.keyValue(gtx, values.String(values.StrDescriptionNote), txlabel.Layout)
+			}
+			return D{}
+		}),
 	)
 }
 
@@ -765,37 +771,6 @@ func (pg *TxDetailsPage) txnOutputs(gtx C) D {
 	}
 	return pg.pageSections(gtx, func(gtx C) D {
 		return pg.outputsCollapsible.Layout(gtx, collapsibleHeader, collapsibleBody)
-	})
-}
-
-func (pg *TxDetailsPage) txnLabel(gtx C) D {
-	if len(pg.transaction.Label) == 0 {
-		return D{}
-	}
-
-	collapsibleHeader := func(gtx C) D {
-		t := pg.Theme.Label(values.TextSize14, values.String(values.StrDescriptionNote))
-		t.Color = pg.Theme.Color.GrayText2
-		return t.Layout(gtx)
-	}
-
-	collapsibleBody := func(gtx C) D {
-		txlabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
-		txlabel.Color = pg.Theme.Color.GrayText2
-		return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-			card := pg.Theme.Card()
-			card.Color = pg.Theme.Color.Gray4
-			return card.Layout(gtx, func(gtx C) D {
-				return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return txlabel.Layout(gtx)
-				})
-			})
-		})
-	}
-
-	return pg.pageSections(gtx, func(gtx C) D {
-		return pg.txLabelCollapsible.Layout(gtx, collapsibleHeader, collapsibleBody)
 	})
 }
 

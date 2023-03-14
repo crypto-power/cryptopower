@@ -23,6 +23,10 @@ import (
 const (
 	SendPageID   = "Send"
 	SendToWallet = 2
+
+	// MaxTxLabelSize defines the maximum number of characters to be allowed on
+	// txLabelInputEditor component.
+	MaxTxLabelSize = 100
 )
 
 type Page struct {
@@ -435,21 +439,13 @@ func (pg *Page) HandleUserInteractions() {
 		pg.amount.usdAmountEditor.Editor.Focused()
 
 	if !modalShown && !isAmountEditorActive {
-		isTxLabelInputFocused := pg.txLabelInputEditor.Editor.Focused()
 		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
 		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
 
 		switch {
-		case isTxLabelInputFocused:
-
-		// // If destination address is invalid and destination editor is in focus.
-		case !pg.sendDestination.validate() && isDestinationEditorFocused && !isTxLabelInputFocused:
-
 		// If accounts switch selects the wallet option.
 		case isSendToWallet && !isDestinationEditorFocused:
 			pg.amount.amountEditor.Editor.Focus()
-
-		default:
 		}
 	}
 
