@@ -769,6 +769,10 @@ func (pg *TxDetailsPage) txnOutputs(gtx C) D {
 }
 
 func (pg *TxDetailsPage) txnLabel(gtx C) D {
+	if len(pg.transaction.Label) == 0 {
+		return D{}
+	}
+
 	collapsibleHeader := func(gtx C) D {
 		t := pg.Theme.Label(values.TextSize14, values.String(values.StrDescriptionNote))
 		t.Color = pg.Theme.Color.GrayText2
@@ -777,9 +781,6 @@ func (pg *TxDetailsPage) txnLabel(gtx C) D {
 
 	collapsibleBody := func(gtx C) D {
 		txlabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
-		if len(pg.transaction.Label) == 0 {
-			txlabel.Text = values.String(values.StrNotApplicable)
-		}
 		txlabel.Color = pg.Theme.Color.GrayText2
 		return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 			card := pg.Theme.Card()

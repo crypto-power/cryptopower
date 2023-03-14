@@ -346,30 +346,28 @@ func (pg *Page) txLabelSection(gtx layout.Context) D {
 			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
 			count := len(pg.txLabelInputEditor.Editor.Text())
 			wordsCount := pg.Theme.Label(values.TextSize14, fmt.Sprintf("(%d/%d)", count, wtxmgr.TxLabelLimit))
-			return layout.Inset{}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Rigid(textLabel.Layout),
-							layout.Flexed(1,
-								func(gtx C) D {
-									return layout.Inset{
-										Top:  values.MarginPadding2,
-										Left: values.MarginPadding5,
-									}.Layout(gtx, wordsCount.Layout)
-								}),
-						)
-					}),
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(textLabel.Layout),
+						layout.Flexed(1,
+							func(gtx C) D {
+								return layout.Inset{
+									Top:  values.MarginPadding2,
+									Left: values.MarginPadding5,
+								}.Layout(gtx, wordsCount.Layout)
+							}),
+					)
+				}),
 
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.txLabelInputEditor.Layout(gtx)
-						})
-					}),
-				)
-			})
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Top: values.MarginPadding10,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.txLabelInputEditor.Layout(gtx)
+					})
+				}),
+			)
 		})
 	})
 }

@@ -297,22 +297,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				}),
 			)
 		}),
-		layout.Flexed(0.3, func(gtx C) D {
-			return layout.Center.Layout(gtx, func(gtx C) D {
-				if row.Transaction.Label == "" {
-					return D{}
-				}
-				// Show only a max of 10 characters of the tx label
-				txt := row.Transaction.Label
-				if len(txt) > 10 {
-					txt = txt[:10] + "..."
-				}
-				txtlabel := l.Theme.Label(values.TextSize14, txt)
-				txtlabel.Color = l.Theme.Color.GrayText1
-				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, txtlabel.Layout)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
+		layout.Flexed(1, func(gtx C) D {
 			status := l.Theme.Label(values.TextSize16, values.String(values.StrUnknown))
 			txConfirmations := TxConfirmations(l, row.Transaction)
 			reqConf := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID).RequiredConfirmations()
