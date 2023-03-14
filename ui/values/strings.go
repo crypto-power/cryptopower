@@ -417,6 +417,7 @@ const (
 	StrLogLevelTrace                   = "logLevelTrace"
 	StrLogLevelOff                     = "logLevelOff"
 	StrLogLevelWarn                    = "logLevelWarn"
+	StrManual                          = "manual"
 	StrManualSetUp                     = "manualSetUp"
 	StrMaturity                        = "maturity"
 	StrMax                             = "max"

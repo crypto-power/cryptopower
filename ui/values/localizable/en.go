@@ -311,6 +311,7 @@ const EN = `
 "logLevelTrace"  = "Trace"
 "logLevelOff"    = "Off"
 "logLevelWarn"   = "Warn"
+"manual" = "Manual"
 "manualSetUp" = "Manual Setup"
 "maturity" = "Maturity"
 "max" = "MAX"

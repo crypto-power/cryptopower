@@ -28,6 +28,11 @@ const (
 	MaxTxLabelSize = 100
 )
 
+var (
+	defaultCoinSelection = values.String(values.StrAutomatic)
+	option1CoinSelection = values.String(values.StrManual)
+)
+
 type Page struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -65,6 +70,10 @@ type Page struct {
 	*authoredTxData
 	selectedWallet  *load.WalletMapping
 	feeRateSelector *components.FeeRateSelector
+
+	coinSelectionCollapsible *cryptomaterial.Collapsible
+	coinSelectionButton      cryptomaterial.Button
+	selectedOption           string
 }
 
 type authoredTxData struct {
@@ -93,6 +102,10 @@ func NewSendPage(l *load.Load) *Page {
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
+
+		coinSelectionCollapsible: l.Theme.Collapsible(),
+		coinSelectionButton:      l.Theme.OutlineButton(defaultCoinSelection),
+		selectedOption:           defaultCoinSelection, // holds the default option until changed.
 	}
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
@@ -244,7 +257,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
-		log.Errorf("Error fetching exchange rate : %s \n", err)
+		log.Errorf("Error fetching exchange rate : %v", err)
 		return
 	}
 
@@ -417,6 +430,16 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.retryExchange.Clicked() {
 		go pg.fetchExchangeRate()
+	}
+
+	if pg.coinSelectionButton.Clicked() {
+		pg.selectedOption = pg.coinSelectionButton.Text
+
+		// if manual has been selected, navigate to the manual utxo selection page.
+		if pg.selectedOption == option1CoinSelection {
+			pg.ParentWindow().Display(NewManualCoinSelectionPage(pg.Load,
+				pg.feeRateSelector.EstSignedSize, pg.totalCost))
+		}
 	}
 
 	if pg.nextButton.Clicked() {

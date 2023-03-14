@@ -50,6 +50,8 @@ func (pg *Page) initLayoutWidgets() {
 	pg.txLabelInputEditor.Editor.SetText("")
 	// Set the maximum characters the editor can accept.
 	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
+
+	pg.coinSelectionCollapsible.IconStyle = cryptomaterial.Caret
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -309,28 +311,44 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
-	m := values.MarginPadding20
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		inset := layout.Inset{
-			Top:    values.MarginPadding15,
-			Right:  values.MarginPadding15,
-			Bottom: values.MarginPadding15,
-			Left:   values.MarginPadding15,
-		}
+		inset := layout.UniformInset(values.MarginPadding15)
 		return inset.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
 			return layout.Inset{}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(textLabel.Layout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-								}),
-							)
-						})
+					layout.Flexed(0.4, func(gtx C) D {
+						pg.coinSelectionCollapsible.IconPosition = cryptomaterial.After
+						return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceEvenly}.Layout(gtx,
+							layout.Flexed(0.1, func(gtx C) D {
+								return layout.E.Layout(gtx, func(gtx C) D {
+									collapsibleHeader := func(gtx C) D {
+										lb := pg.Theme.Label(values.TextSize16, pg.selectedOption)
+										// gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return lb.Layout(gtx)
+									}
+
+									collapsibleBody := func(gtx C) D {
+										txt := defaultCoinSelection
+										if pg.selectedOption == txt {
+											txt = option1CoinSelection
+										}
+										pg.coinSelectionButton.Text = txt
+										// gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return pg.coinSelectionButton.Layout(gtx)
+									}
+
+									return layout.Inset{
+										Left:   values.MarginPadding70,
+										Right:  values.MarginPadding24,
+										Bottom: values.MarginPadding30,
+									}.Layout(gtx, func(gtx C) D {
+										return pg.coinSelectionCollapsible.Layout(gtx, collapsibleHeader, collapsibleBody)
+									})
+								})
+							}),
+						)
 					}),
 				)
 			})

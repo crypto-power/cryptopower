@@ -47,7 +47,7 @@ type ManualCoinSelectionPage struct {
 	listContainer *widget.List
 }
 
-func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
+func NewManualCoinSelectionPage(l *load.Load, txSize, totalAmount string) *ManualCoinSelectionPage {
 	pg := &ManualCoinSelectionPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualCoinSelectionPageID),
@@ -64,9 +64,9 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 	pg.clearButton.Font.Weight = text.Medium
 	pg.clearButton.Color = l.Theme.Color.Danger
 
-	pg.selectedUTXOs = pg.Theme.Label(values.TextSize16, "4")
-	pg.txSize = pg.Theme.Label(values.TextSize16, "1200 bytes")
-	pg.totalAmount = pg.Theme.Label(values.TextSize16, "3 BTC")
+	pg.selectedUTXOs = pg.Theme.Label(values.TextSize16, "--")
+	pg.txSize = pg.Theme.Label(values.TextSize16, txSize)
+	pg.totalAmount = pg.Theme.Label(values.TextSize16, totalAmount)
 
 	pg.selectedUTXOs.Font.Weight = text.SemiBold
 	pg.txSize.Font.Weight = text.SemiBold
@@ -98,6 +98,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 		return fmt.Errorf("querying the accounts names failed: %v", err)
 	}
 
+	utxoCount := 0
 	pg.accountsUTXOs = make([]*AccountsUTXOInfo, 0, len(accounts.Accounts))
 	for _, account := range accounts.Accounts {
 		info, err := pg.WL.SelectedWallet.Wallet.UnspentOutputs(account.Number)
@@ -109,7 +110,11 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 			AccountName: account.AccountName,
 			Details:     info,
 		})
+
+		utxoCount += len(info)
 	}
+
+	pg.selectedUTXOs.Text = fmt.Sprintf("%d", utxoCount)
 	return nil
 }
 
@@ -120,6 +125,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
+		pg.ParentWindow().Display(NewSendPage(pg.Load))
 	}
 }
 
