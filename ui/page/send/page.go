@@ -386,6 +386,7 @@ func (pg *Page) clearEstimates() {
 
 func (pg *Page) resetFields() {
 	pg.sendDestination.clearAddressInput()
+	pg.txLabelInputEditor.Editor.SetText("")
 
 	pg.amount.resetFields()
 }
