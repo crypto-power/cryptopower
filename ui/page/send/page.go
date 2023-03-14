@@ -23,6 +23,10 @@ import (
 const (
 	SendPageID   = "Send"
 	SendToWallet = 2
+
+	// MaxTxLabelSize defines the maximum number of characters to be allowed on
+	// txLabelInputEditor component.
+	MaxTxLabelSize = 100
 )
 
 type Page struct {
@@ -56,6 +60,8 @@ type Page struct {
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
 	currencyExchange    string
+
+	txLabelInputEditor cryptomaterial.Editor
 
 	*authoredTxData
 	selectedWallet  *load.WalletMapping
@@ -380,6 +386,7 @@ func (pg *Page) clearEstimates() {
 
 func (pg *Page) resetFields() {
 	pg.sendDestination.clearAddressInput()
+	pg.txLabelInputEditor.Editor.SetText("")
 
 	pg.amount.resetFields()
 }
@@ -417,6 +424,7 @@ func (pg *Page) HandleUserInteractions() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
+			pg.confirmTxModal.txLabel = pg.txLabelInputEditor.Editor.Text()
 
 			pg.confirmTxModal.txSent = func() {
 				pg.resetFields()
@@ -436,10 +444,6 @@ func (pg *Page) HandleUserInteractions() {
 		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
 
 		switch {
-		// If destination address is invalid and destination editor is in focus.
-		case !pg.sendDestination.validate() && isDestinationEditorFocused:
-			pg.sendDestination.destinationAddressEditor.Editor.Focus()
-
 		// If accounts switch selects the wallet option.
 		case isSendToWallet && !isDestinationEditorFocused:
 			pg.amount.amountEditor.Editor.Focus()

@@ -44,6 +44,12 @@ func (pg *Page) initLayoutWidgets() {
 	pg.retryExchange.Color = pg.Theme.Color.Surface
 	pg.retryExchange.TextSize = values.TextSize12
 	pg.retryExchange.Inset = buttonInset
+
+	pg.txLabelInputEditor = pg.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
+	pg.txLabelInputEditor.Editor.SingleLine = false
+	pg.txLabelInputEditor.Editor.SetText("")
+	// Set the maximum characters the editor can accept.
+	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -80,23 +86,23 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 			})
 		},
-		func(gtx C) D {
-			return pg.toSection(gtx)
-		},
-		func(gtx C) D {
-			return pg.coinSelectionSection(gtx)
-		},
+		pg.toSection,
+		pg.coinSelectionSection,
+		pg.txLabelSection,
 	}
 
 	// Display the transaction fee rate selection only for btc wallets.
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset {
-		pageContent = append(pageContent,
-			func(gtx C) D {
-				//return pg.transactionFeeSection(gtx)
-				return pg.feeRateSelector.Layout(gtx)
-			},
-		)
+		pageContent = append(pageContent, pg.feeRateSelector.Layout)
 	}
+
+	// Add the bottom spacing section as the last.
+	inset := layout.Inset{
+		Bottom: values.MarginPadding100,
+	}
+	pageContent = append(pageContent, func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D { return D{} })
+	})
 
 	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
@@ -304,33 +310,64 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	m := values.MarginPadding20
-	inset := layout.Inset{}
-	return inset.Layout(gtx, func(gtx C) D {
-		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			inset := layout.Inset{
-				Top:    values.MarginPadding15,
-				Right:  values.MarginPadding15,
-				Bottom: values.MarginPadding15,
-				Left:   values.MarginPadding15,
-			}
-			return inset.Layout(gtx, func(gtx C) D {
-				textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
-				return layout.Inset{}.Layout(gtx, func(gtx C) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			Top:    values.MarginPadding15,
+			Right:  values.MarginPadding15,
+			Bottom: values.MarginPadding15,
+			Left:   values.MarginPadding15,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
+			return layout.Inset{}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(textLabel.Layout),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+								}),
+							)
+						})
+					}),
+				)
+			})
+		})
+	})
+}
+
+func (pg *Page) txLabelSection(gtx layout.Context) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		topContainer := layout.UniformInset(values.MarginPadding15)
+		return topContainer.Layout(gtx, func(gtx C) D {
+			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
+			count := len(pg.txLabelInputEditor.Editor.Text())
+			txt := fmt.Sprintf("(%d/%d)", count, pg.txLabelInputEditor.Editor.MaxLen)
+			wordsCount := pg.Theme.Label(values.TextSize14, txt)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
-						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-									}),
-								)
-							})
-						}),
+						layout.Flexed(1,
+							func(gtx C) D {
+								return layout.Inset{
+									Top:  values.MarginPadding2,
+									Left: values.MarginPadding5,
+								}.Layout(gtx, wordsCount.Layout)
+							}),
 					)
-				})
-			})
+				}),
+
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Top: values.MarginPadding10,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.txLabelInputEditor.Layout(gtx)
+					})
+				}),
+			)
 		})
 	})
 }
@@ -354,7 +391,6 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 					return inset.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-
 								totalCostText := pg.totalCost
 								if pg.exchangeRate != -1 && pg.usdExchangeSet {
 									totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)

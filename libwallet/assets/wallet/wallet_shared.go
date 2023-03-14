@@ -99,7 +99,7 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	// open database for indexing transactions for faster loading
-	var dbName = walletdata.DCRDbName
+	dbName := walletdata.DCRDbName
 	if wallet.Type == utils.BTCWalletAsset {
 		dbName = walletdata.BTCDBName
 	}
@@ -249,6 +249,7 @@ func (wallet *Wallet) GetWalletName() string {
 	defer wallet.mu.RUnlock()
 	return wallet.Name
 }
+
 func (wallet *Wallet) ContainsDiscoveredAccounts() bool {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()

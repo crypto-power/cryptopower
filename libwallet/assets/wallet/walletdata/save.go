@@ -23,10 +23,19 @@ func (db *DB) SaveOrUpdate(emptyTxPointer, record interface{}) (overwritten bool
 
 	v2 := reflect.ValueOf(emptyTxPointer)
 	timestamp := reflect.Indirect(v2).FieldByName("Timestamp").Int()
+	txlabel := reflect.Indirect(v2).FieldByName("Label").String()
+
 	if timestamp > 0 {
 		overwritten = true
 		// delete old record before saving new (if it exists)
 		db.walletDataDB.DeleteStruct(emptyTxPointer)
+	}
+
+	if txlabel != "" {
+		// Must be a transaction we are dealing with so update the Label field value.
+		// Persist the tx labels here since they are not sent via the network.
+		// Tx labels are only local to the specific wallet that uses them.
+		v.Elem().FieldByName("Label").SetString(txlabel)
 	}
 
 	err = db.walletDataDB.Save(record)

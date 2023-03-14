@@ -338,7 +338,7 @@ type Transaction struct {
 	Fee      int64  `json:"fee"`
 	FeeRate  int64  `json:"fee_rate"`
 	Size     int    `json:"size"`
-	Label    string `json:"label,omitempty"` // (BTC Field)
+	Label    string `json:"label"`
 
 	Direction int32       `storm:"index" json:"direction"`
 	Amount    int64       `json:"amount"`

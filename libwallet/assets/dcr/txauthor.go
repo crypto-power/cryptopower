@@ -13,6 +13,7 @@ import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txauthor"
 	"decred.org/dcrwallet/v2/wallet/txrules"
+	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -200,7 +201,7 @@ func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]
 	err = msgTx.Deserialize(bytes.NewReader(txBuf.Bytes()))
 	if err != nil {
 		log.Error(err)
-		//Bytes do not represent a valid raw transaction
+		// Bytes do not represent a valid raw transaction
 		return nil, err
 	}
 
@@ -239,7 +240,7 @@ func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]
 
 	err = msgTx.Deserialize(bytes.NewReader(serializedTransaction.Bytes()))
 	if err != nil {
-		//Invalid tx
+		// Invalid tx
 		log.Error(err)
 		return nil, err
 	}
@@ -248,7 +249,18 @@ func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]
 	if err != nil {
 		return nil, utils.TranslateError(err)
 	}
-	return txHash[:], nil
+
+	return txHash[:], asset.updateTxLabel(txHash, transactionLabel)
+}
+
+// updateTxLabel saves the tx label in the local instance.
+func (asset *DCRAsset) updateTxLabel(hash *chainhash.Hash, txLabel string) error {
+	tx := &sharedW.Transaction{
+		Hash:  hash.String(),
+		Label: txLabel,
+	}
+	_, err := asset.GetWalletDataDb().SaveOrUpdate(&sharedW.Transaction{}, tx)
+	return err
 }
 
 func (asset *DCRAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
@@ -271,7 +283,7 @@ func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	}
 
 	var err error
-	var outputs = make([]*wire.TxOut, 0)
+	outputs := make([]*wire.TxOut, 0)
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
 	var changeSource txauthor.ChangeSource
 

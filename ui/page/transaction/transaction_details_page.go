@@ -64,6 +64,7 @@ type TxDetailsPage struct {
 	moreOption                *cryptomaterial.Clickable
 	outputsCollapsible        *cryptomaterial.Collapsible
 	inputsCollapsible         *cryptomaterial.Collapsible
+	txLabelCollapsible        *cryptomaterial.Collapsible
 	dot                       *cryptomaterial.Icon
 	rebroadcastIcon           *cryptomaterial.Image
 	shadowBox                 *cryptomaterial.Shadow
@@ -107,6 +108,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, i
 
 		outputsCollapsible: l.Theme.Collapsible(),
 		inputsCollapsible:  l.Theme.Collapsible(),
+		txLabelCollapsible: l.Theme.Collapsible(),
 
 		associatedTicketClickable: l.Theme.NewClickable(true),
 		hashClickable:             l.Theme.NewClickable(true),
@@ -503,7 +505,7 @@ func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
 }
 
 func (pg *TxDetailsPage) keyValue(gtx C, key string, value layout.Widget) D {
-	return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Flexed(.4, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding35}.Layout(gtx, func(gtx C) D {
@@ -534,10 +536,9 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Padding: layout.Inset{
-			Top:    values.MarginPadding30,
-			Left:   values.MarginPadding70,
-			Right:  values.MarginPadding24,
-			Bottom: values.MarginPadding18,
+			Top:   values.MarginPadding30,
+			Left:  values.MarginPadding70,
+			Right: values.MarginPadding24,
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -721,6 +722,13 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			}
 			return pg.keyValue(gtx, values.String(values.StrTransactionID), dim)
 		}),
+		layout.Rigid(func(gtx C) D {
+			if len(pg.transaction.Label) != 0 {
+				txlabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
+				return pg.keyValue(gtx, values.String(values.StrDescriptionNote), txlabel.Layout)
+			}
+			return D{}
+		}),
 	)
 }
 
@@ -852,7 +860,6 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 						layout.Rigid(func(gtx C) D {
 							return pg.moreItems[i].button.Layout(gtx, func(gtx C) D {
 								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-
 									if pg.moreItems[i].button.Clicked() {
 										switch pg.moreItems[i].id {
 										case viewBlockID: // redirect to browser
@@ -879,7 +886,7 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{
 		Left:   values.MarginPadding70,
 		Right:  values.MarginPadding24,
-		Bottom: values.MarginPadding30,
+		Bottom: values.MarginPadding10,
 	}.Layout(gtx, body)
 }
 
@@ -889,11 +896,11 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions() {
-	for pg.moreOption.Clicked() {
+	if pg.moreOption.Clicked() {
 		pg.moreOptionIsOpen = !pg.moreOptionIsOpen
 	}
 
-	for pg.associatedTicketClickable.Clicked() {
+	if pg.associatedTicketClickable.Clicked() {
 		if pg.ticketSpent != nil {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
@@ -943,7 +950,6 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
 
 func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionWdg {
-
 	var txn transactionWdg
 	wal := l.WL.SelectedWallet.Wallet
 

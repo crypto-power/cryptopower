@@ -30,19 +30,6 @@ func (w *WalletMapping) MixedAccountNumber() int32 {
 	}
 }
 
-func (w *WalletMapping) Broadcast(passphrase, label string) ([]byte, error) {
-	switch asset := w.Asset.(type) {
-	case *dcr.DCRAsset:
-		_, err := asset.Broadcast(passphrase, "")
-		return nil, err
-	case *btc.Asset:
-		_, err := asset.Broadcast(passphrase, "")
-		return nil, err
-	default:
-		return nil, w.invalidWallet()
-	}
-}
-
 // SetAPIFeeRate validates the string input its a number before sending it upstream.
 // It returns the string convert to int amount.
 func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {

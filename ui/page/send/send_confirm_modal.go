@@ -34,6 +34,7 @@ type sendConfirmModal struct {
 	*authoredTxData
 	asset           load.WalletMapping
 	exchangeRateSet bool
+	txLabel         string
 }
 
 func newSendConfirmModal(l *load.Load, data *authoredTxData, asset load.WalletMapping) *sendConfirmModal {
@@ -82,7 +83,7 @@ func (scm *sendConfirmModal) broadcastTransaction() {
 
 	scm.SetLoading(true)
 	go func() {
-		_, err := scm.asset.Broadcast(password, "")
+		_, err := scm.asset.Broadcast(password, scm.txLabel)
 		if err != nil {
 			scm.SetError(err.Error())
 			scm.SetLoading(false)
@@ -120,7 +121,6 @@ func (scm *sendConfirmModal) Handle() {
 }
 
 func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
-
 	w := []layout.Widget{
 		func(gtx C) D {
 			scm.SetPadding(unit.Dp(0))
@@ -177,8 +177,10 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 			)
 		},
 		func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding16,
-				Top: values.MarginPadding16, Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{
+				Left: values.MarginPadding16,
+				Top:  values.MarginPadding16, Right: values.MarginPadding16,
+			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						sendWallet := scm.WL.AssetsManager.WalletWithID(scm.sourceAccount.WalletID)
@@ -195,11 +197,9 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 									txt.Color = scm.Theme.Color.Text
 									txt.Font.Weight = text.Medium
 									return txt.Layout(gtx)
-
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-
 								card := scm.Theme.Card()
 								card.Radius = cryptomaterial.Radius(0)
 								card.Color = scm.Theme.Color.Gray4
@@ -242,7 +242,6 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 													txt.Color = scm.Theme.Color.Text
 													txt.Font.Weight = text.Medium
 													return txt.Layout(gtx)
-
 												})
 											}),
 											layout.Rigid(func(gtx C) D {
@@ -271,7 +270,6 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 								}
 								return inset.Layout(gtx, func(gtx C) D {
 									return layout.UniformInset(values.MarginPadding2).Layout(gtx, scm.Theme.Body2(scm.destinationAddress).Layout)
-
 								})
 							}),
 						)
