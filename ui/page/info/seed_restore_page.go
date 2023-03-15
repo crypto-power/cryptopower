@@ -644,6 +644,15 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
+	// If seed suggestion list is opened and tab key is pressed select
+	// the highlighted option and move the cusor to the next next seed editor.
+	if evt.Name == key.NameTab && evt.State == key.Press && pg.openPopupIndex != -1 && len(pg.suggestions) != 0 {
+		if pg.seedEditors.focusIndex == -1 && len(pg.suggestions) == 1 {
+			return
+		}
+		pg.seedMenu[pg.selected].button.Click()
+	}
+
 	if evt.Name == key.NameTab && evt.Modifiers == key.ModShift && evt.State == key.Press && pg.openPopupIndex == -1 {
 		switchSeedEditors(pg.seedEditors.editors, -1)
 	}
