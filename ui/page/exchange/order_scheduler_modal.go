@@ -77,6 +77,25 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		},
 	}
 
+	// osm.exchangeSelector.ExchangeSelected(func(es *Exchange) {
+	// 	osm.selectedExchange = es
+
+	// 	// Initialize a new exchange using the selected exchange server
+	// 	exchange, err := osm.WL.AssetsManager.InstantSwap.NewExchanageServer(osm.selectedExchange.Server)
+	// 	if err != nil {
+	// 		log.Error(err)
+	// 		return
+	// 	}
+	// 	osm.exchange = exchange
+
+	// 	go func() {
+	// 		err := osm.getExchangeRateInfo()
+	// 		if err != nil {
+	// 			log.Error(err)
+	// 		}
+	// 	}()
+	// })
+
 	return osm
 }
 
@@ -340,10 +359,9 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 				RefundAddress:      osm.orderData.refundAddress,
 			},
 
-			Frequency:           osm.frequencySelector.selectedFrequency.item,
-			BalanceToMaintain:   balanceToMaintain,
-			MinimumExchangeRate: 5, // deault value
-			SpendingPassphrase:  osm.passwordEditor.Editor.Text(),
+			Frequency:          osm.frequencySelector.selectedFrequency.item,
+			BalanceToMaintain:  balanceToMaintain,
+			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
 		go osm.WL.AssetsManager.StartScheduler(context.Background(), params)
@@ -352,5 +370,4 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 		osm.orderSchedulerStarted()
 
 	}()
-
 }

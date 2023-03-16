@@ -3,6 +3,7 @@ package libwallet
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	api "code.cryptopower.dev/group/instantswap"
@@ -14,6 +15,7 @@ import (
 	_ "code.cryptopower.dev/group/blockexplorer/dcrexplorer"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
@@ -24,7 +26,6 @@ const (
 )
 
 func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap.SchedulerParams) error {
-	fmt.Println("[][][]][] params: ", params)
 	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 
 	if mgr.InstantSwap.CancelOrderScheduler != nil {
@@ -82,11 +83,38 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			Amount: 1,
 		}
 		log.Info("Order Scheduler: getting exchange rate info")
-
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
 		if err != nil {
 			log.Error(err)
 			break
+		}
+		fmt.Println("res: ", res)
+
+		if params.MinimumExchangeRate <= 0 {
+			params.MinimumExchangeRate = 5 // default 5%
+		}
+
+		market := params.Order.FromCurrency + "-" + params.Order.ToCurrency
+		fmt.Println("market: ", market)
+		fmt.Println("market UPPER: ", strings.ToUpper(market))
+		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, market)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+		log.Info(params.Order.ExchangeServer.Server+" rate: ", res.ExchangeRate)
+		log.Info(ext.Binance+" rate: ", ticker.LastTradePrice)
+
+		// check if the server rate deviates from the market rate by more than 5%
+		// exit
+		if res.ExchangeRate < ticker.LastTradePrice*(1-params.MinimumExchangeRate/100) || res.ExchangeRate > ticker.LastTradePrice*(1+params.MinimumExchangeRate/100) {
+			log.Error("exchange rate deviates from the market rate by more than 5%")
+			return err
+		}
+
+		if (res.ExchangeRate/ticker.LastTradePrice)*100 > params.MinimumExchangeRate {
+			log.Error("exchange rate deviates from the market rate by more than 5%")
+			return err
 		}
 
 		// set the max send amount to the max limit set by the server
@@ -154,18 +182,6 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			if mgr.InstantSwap.SchedulerCtx.Err() != nil {
 				log.Error("InstantSwap.SchedulerCtx.Err()", mgr.InstantSwap.SchedulerCtx.Err())
 				return mgr.InstantSwap.SchedulerCtx.Err()
-			}
-			// depending on the block time for the asset, the order may take a while to complete
-			// so we wait for the estimated block time before checking the order status
-			switch params.Order.FromCurrency {
-			case utils.BTCWalletAsset.String():
-				log.Info("Order Scheduler: sleeping btc block time (10 minutes)")
-
-				time.Sleep(BTCBlockTime)
-			case utils.DCRWalletAsset.String():
-				log.Info("Order Scheduler: sleeping dcr block time (5 minutes)")
-
-				time.Sleep(DCRBlockTime)
 			}
 
 			log.Info("Order Scheduler: get newly created order info")
@@ -257,6 +273,19 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				} else {
 					log.Info("order was completed successfully")
 				}
+			}
+
+			// depending on the block time for the asset, the order may take a while to complete
+			// so we wait for the estimated block time before checking the order status
+			switch params.Order.FromCurrency {
+			case utils.BTCWalletAsset.String():
+				log.Info("Order Scheduler: sleeping btc block time (10 minutes)")
+
+				time.Sleep(BTCBlockTime)
+			case utils.DCRWalletAsset.String():
+				log.Info("Order Scheduler: sleeping dcr block time (5 minutes)")
+
+				time.Sleep(DCRBlockTime)
 			}
 
 			continue // order is not completed, continue waiting

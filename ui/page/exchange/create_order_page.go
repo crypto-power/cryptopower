@@ -14,6 +14,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
@@ -75,9 +76,9 @@ type CreateOrderPage struct {
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 
-	min          float64
-	max          float64
-	exchangeRate float64
+	min                       float64
+	max                       float64
+	exchangeRate, binanceRate float64
 
 	*orderData
 }
@@ -119,6 +120,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
+		binanceRate:      -1,
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
@@ -663,7 +665,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							Axis:      layout.Horizontal,
 							Alignment: layout.Middle,
 						}.Layout(gtx,
-							layout.Flexed(0.45, func(gtx C) D {
+							layout.Flexed(0.55, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										if pg.amountErrorText != "" {
@@ -697,6 +699,34 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										)
 									}),
 								)
+							}),
+							layout.Flexed(0.45, func(gtx C) D {
+								if pg.fetchingRate {
+									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.materialLoader.Layout(gtx)
+								}
+
+								if pg.exchangeRate != -1 {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											exchangeRate := fmt.Sprintf(pg.exchangeSelector.SelectedExchange().Name+" rate: %f", pg.exchangeRate)
+											txt := pg.Theme.Label(values.TextSize14, exchangeRate)
+											txt.Font.Weight = text.SemiBold
+											txt.Color = pg.Theme.Color.Gray1
+											return txt.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											binanceRate := fmt.Sprintf("Binance rate: %f", pg.binanceRate)
+
+											txt := pg.Theme.Label(values.TextSize14, binanceRate)
+											txt.Font.Weight = text.SemiBold
+											txt.Color = pg.Theme.Color.Gray1
+											return txt.Layout(gtx)
+										}),
+									)
+								}
+								return D{}
 							}),
 						)
 					})
@@ -884,9 +914,22 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
+	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, "dcr-btc")
+	if err != nil {
+		log.Error(err)
+	}
+
+	var binanceRate float64
+	if pg.fromCurrency.String() == "DCR" {
+		binanceRate = ticker.LastTradePrice
+	}
+	if pg.fromCurrency.String() == "BTC" {
+		binanceRate = 1 / ticker.LastTradePrice
+	}
 	pg.min = res.Min
 	pg.max = res.Max
-	pg.exchangeRate = res.ExchangeRate
+	pg.exchangeRate = 1 / res.ExchangeRate
+	pg.binanceRate = binanceRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.updateAmount()
