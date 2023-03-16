@@ -48,7 +48,7 @@ type orderSchedulerModal struct {
 func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
 	osm := &orderSchedulerModal{
 		Load:              l,
-		Modal:             l.Theme.ModalFloatTitle("Order scheduler"),
+		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler)),
 		exchangeSelector:  NewExchangeSelector(l),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
@@ -58,11 +58,11 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
 	osm.cancelBtn.Font.Weight = text.Medium
 
-	osm.startBtn = l.Theme.Button("Start")
+	osm.startBtn = l.Theme.Button(values.String(values.StrStart))
 	osm.startBtn.Font.Weight = text.Medium
 	osm.startBtn.SetEnabled(false)
 
-	osm.balanceToMaintain = l.Theme.Editor(new(widget.Editor), "Balance to maintain")
+	osm.balanceToMaintain = l.Theme.Editor(new(widget.Editor), values.String(values.StrBalToMaintain))
 	osm.balanceToMaintain.Editor.SingleLine, osm.balanceToMaintain.Editor.Submit = true, true
 
 	osm.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
@@ -179,7 +179,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 										return layout.Inset{
 											Bottom: values.MarginPadding16,
 										}.Layout(gtx, func(gtx C) D {
-											txt := osm.Theme.Label(values.TextSize20, "Order scheduler")
+											txt := osm.Theme.Label(values.TextSize20, values.String(values.StrOrderScheduler))
 											txt.Font.Weight = text.SemiBold
 											return txt.Layout(gtx)
 										})

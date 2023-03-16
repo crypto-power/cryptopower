@@ -825,4 +825,6 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
+	StrOrderScheduler                  = "orderScheduler"
+	StrStart                           = "start"
 )

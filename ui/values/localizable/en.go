@@ -715,4 +715,6 @@ const EN = `
 "yourAddress" = "Your Address"
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
+"orderScheduler" = "Order Scheduler"
+"start" = "Start"
 `
