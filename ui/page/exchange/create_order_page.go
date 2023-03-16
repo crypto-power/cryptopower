@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -341,7 +342,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
+		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
 
 	if pg.scheduler.Changed() {
@@ -360,12 +361,12 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					pg.destinationAddress = destinationAddress
 
 					orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
-						OnSettingsSaved(func(params *callbackParams) {
-							pg.scheduler.SetChecked(true)
+						OnOrderSchedulerStarted(func() {
 							infoModal := modal.NewSuccessModal(pg.Load, "Order Scheduler is running", modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(infoModal)
-							// pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
-							// pg.ParentWindow().Reload()
+
+							time.Sleep(1 * time.Second)
+							pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 						}).
 						OnCancel(func() { // needed to satisfy the modal instance
 							pg.scheduler.SetChecked(false)
@@ -377,7 +378,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 				})
 			pg.ParentWindow().ShowModal(orderSettingsModal)
 		} else {
-			pg.WL.AssetsManager.InstantSwap.StopScheduler()
+			fmt.Println("Stopping Scheduler")
+			pg.WL.AssetsManager.StopScheduler()
 		}
 	}
 }
@@ -571,14 +573,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
-												// Right: values.MarginPadding40,
 												Left: values.MarginPadding4,
 											}.Layout(gtx, pg.scheduler.Layout)
 										}),
 										layout.Rigid(func(gtx C) D {
 											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
-												return layout.Inset{Left: values.MarginPadding2, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
-													// return material.Loader(pg.Theme.Base).Layout(gtx)
+												return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
 													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
 													gtx.Constraints.Min.X = gtx.Constraints.Max.X
 													loader := material.Loader(pg.Theme.Base)
@@ -587,46 +587,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 												})
 											}
 											return D{}
-											// return layout.Inset{
-											// 	// Right: values.MarginPadding40,
-											// 	// Left: values.MarginPadding4,
-											// }.Layout(gtx, pg.scheduler.Layout)
 										}),
-										// layout.Rigid(func(gtx C) D {
-										// 	return cryptomaterial.LinearLayout{
-										// 		Width:     cryptomaterial.WrapContent,
-										// 		Height:    cryptomaterial.WrapContent,
-										// 		Clickable: pg.iconClickable,
-										// 		Direction: layout.Center,
-										// 		Alignment: layout.Middle,
-										// 	}.Layout(gtx,
-										// 		layout.Rigid(func(gtx C) D {
-
-										// 			if pg.iconClickable.Clicked() {
-										// 				orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
-										// 					OnSettingsSaved(func(params *callbackParams) {
-
-										// 						orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
-										// 							OnSettingsSaved(func(params *callbackParams) {
-										// 								infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
-										// 								pg.ParentWindow().ShowModal(infoModal)
-										// 							}).
-										// 							OnCancel(func() { // needed to satisfy the modal instance
-										// 								pg.scheduler.SetChecked(false)
-										// 							})
-										// 						pg.ParentWindow().ShowModal(orderSchedulerModal)
-										// 					}).
-										// 					OnCancel(func() { // needed to satisfy the modal instance
-										// 						pg.scheduler.SetChecked(false)
-										// 					})
-										// 				pg.ParentWindow().ShowModal(orderSettingsModal)
-										// 			}
-										// 			return layout.Inset{
-										// 				Left: values.MarginPadding10,
-										// 			}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
-										// 		}),
-										// 	)
-										// }),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,

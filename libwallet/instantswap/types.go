@@ -55,7 +55,8 @@ type InstantSwap struct {
 	ctx        context.Context
 	cancelSync context.CancelFunc
 
-	CancelOrderScheduler   context.CancelFunc `json:"-"`
+	SchedulerCtx           context.Context
+	CancelOrderScheduler   context.CancelFunc
 	CancelOrderSchedulerMu sync.RWMutex
 
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.

@@ -32,12 +32,10 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		return errors.New("scheduler already running")
 	}
 
-	_, mgr.InstantSwap.CancelOrderScheduler = context.WithCancel(ctx)
-
+	mgr.InstantSwap.SchedulerCtx, mgr.InstantSwap.CancelOrderScheduler = context.WithCancel(ctx)
 	defer func() {
 		mgr.InstantSwap.CancelOrderScheduler = nil
 	}()
-
 	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
 	// startTime := time.Now()
 	log.Info("Order Scheduler: started")
@@ -51,8 +49,13 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 	}
 
 	for {
-		log.Info("Order Scheduler: finding source wallet")
+		// Check if scheduler has been shutdown and exit if true.
+		if mgr.InstantSwap.SchedulerCtx.Err() != nil {
+			log.Info("InstantSwap.SchedulerCtx.Err()", mgr.InstantSwap.SchedulerCtx.Err())
+			return mgr.InstantSwap.SchedulerCtx.Err()
+		}
 
+		log.Info("Order Scheduler: finding source wallet")
 		sourceWallet := mgr.WalletWithID(params.Order.SourceWalletID)
 		fmt.Println("sourceWallet: ", sourceWallet)
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
@@ -147,6 +150,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		// wait for the order to be completed before scheduling the next order
 		var isRefunded bool
 		for {
+			// Check if scheduler has been shutdown and exit if true.
+			if mgr.InstantSwap.SchedulerCtx.Err() != nil {
+				log.Error("InstantSwap.SchedulerCtx.Err()", mgr.InstantSwap.SchedulerCtx.Err())
+				return mgr.InstantSwap.SchedulerCtx.Err()
+			}
 			// depending on the block time for the asset, the order may take a while to complete
 			// so we wait for the estimated block time before checking the order status
 			switch params.Order.FromCurrency {
@@ -160,7 +168,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				time.Sleep(DCRBlockTime)
 			}
 
-			log.Info("Order Scheduler: get newley created order info")
+			log.Info("Order Scheduler: get newly created order info")
 
 			orderInfo, err := mgr.InstantSwap.GetOrderInfo(exchangeObject, order.UUID)
 			if err != nil {

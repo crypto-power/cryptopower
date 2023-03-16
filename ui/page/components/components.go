@@ -719,3 +719,13 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 		}),
 	)
 }
+
+// InputsNotEmpty checks if all the provided editors have non-empty text.
+func InputsNotEmpty(editors ...*widget.Editor) bool {
+	for _, e := range editors {
+		if e.Text() == "" {
+			return false
+		}
+	}
+	return true
+}

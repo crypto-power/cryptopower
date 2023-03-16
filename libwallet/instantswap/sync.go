@@ -41,6 +41,11 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 	exchangeServers := instantSwap.ExchangeServers()
 	// Loop through each exchange server and sync the selected server.
 	for _, exchangeServer := range exchangeServers {
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
 		// Initialize the exchange server.
 		exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
 		if err != nil {
@@ -71,6 +76,15 @@ func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchan
 
 	attempts := 0
 	for {
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
 		attempts++
 		if attempts > maxSyncRetries {
 			return errors.Errorf("failed to sync exchange server [%v] after 3 attempts", exchangeServer)

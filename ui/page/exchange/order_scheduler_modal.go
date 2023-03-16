@@ -2,21 +2,18 @@ package exchange
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
-	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -29,19 +26,16 @@ type orderSchedulerModal struct {
 
 	pageContainer *widget.List
 
-	settingsSaved func(params *callbackParams)
-	onCancel      func()
+	orderSchedulerStarted func()
+	onCancel              func()
 
 	cancelBtn cryptomaterial.Button
 	startBtn  cryptomaterial.Button
 
-	sourceInfoButton      cryptomaterial.IconButton
-	destinationInfoButton cryptomaterial.IconButton
-
-	addressEditor     cryptomaterial.Editor
-	balanceToMaintain cryptomaterial.Editor
-	passwordEditor    cryptomaterial.Editor
-	copyRedirect      *cryptomaterial.Clickable
+	balanceToMaintain          cryptomaterial.Editor
+	balanceToMaintainErrorText string
+	passwordEditor             cryptomaterial.Editor
+	copyRedirect               *cryptomaterial.Clickable
 
 	exchangeSelector  *ExchangeSelector
 	frequencySelector *FrequencySelector
@@ -54,7 +48,7 @@ type orderSchedulerModal struct {
 func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
 	osm := &orderSchedulerModal{
 		Load:              l,
-		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
+		Modal:             l.Theme.ModalFloatTitle("Order scheduler"),
 		exchangeSelector:  NewExchangeSelector(l),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
@@ -76,15 +70,6 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	osm.passwordEditor.Editor.SingleLine = true
 	osm.passwordEditor.Editor.Submit = true
 
-	osm.sourceInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
-	osm.destinationInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
-	osm.sourceInfoButton.Size, osm.destinationInfoButton.Size = values.MarginPadding14, values.MarginPadding14
-	buttonInset := layout.UniformInset(values.MarginPadding0)
-	osm.sourceInfoButton.Inset, osm.destinationInfoButton.Inset = buttonInset, buttonInset
-
-	osm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
-	osm.addressEditor.Editor.SingleLine = true
-
 	osm.pageContainer = &widget.List{
 		List: layout.List{
 			Axis:      layout.Vertical,
@@ -95,8 +80,8 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	return osm
 }
 
-func (osm *orderSchedulerModal) OnSettingsSaved(settingsSaved func(params *callbackParams)) *orderSchedulerModal {
-	osm.settingsSaved = settingsSaved
+func (osm *orderSchedulerModal) OnOrderSchedulerStarted(orderSchedulerStarted func()) *orderSchedulerModal {
+	osm.orderSchedulerStarted = orderSchedulerStarted
 	return osm
 }
 
@@ -134,29 +119,28 @@ func (osm *orderSchedulerModal) Handle() {
 		osm.Dismiss()
 	}
 
-	if osm.sourceInfoButton.Button.Clicked() {
-		info := modal.NewCustomModal(osm.Load).
-			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
-			SetContentAlignment(layout.W, layout.W, layout.Center).
-			SetupWithTemplate(modal.SourceModalInfoTemplate).
-			Title(values.String(values.StrSource))
-		osm.ParentWindow().ShowModal(info)
-	}
+	for _, evt := range osm.balanceToMaintain.Editor.Events() {
+		if osm.balanceToMaintain.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				if components.InputsNotEmpty(osm.balanceToMaintain.Editor) {
+					f, err := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
+					if err != nil {
+						osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
+						osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
+						return
+					}
 
-	if osm.destinationInfoButton.Button.Clicked() {
-		info := modal.NewCustomModal(osm.Load).
-			PositiveButtonStyle(osm.Theme.Color.Primary, osm.Theme.Color.Surface).
-			SetContentAlignment(layout.W, layout.W, layout.Center).
-			Body(values.String(values.StrDestinationModalInfo)).
-			Title(values.String(values.StrDestination))
-		osm.ParentWindow().ShowModal(info)
-	}
-}
+					if f >= osm.sourceAccountSelector.SelectedAccount().Balance.Spendable.ToCoin() || f < 0 {
+						osm.balanceToMaintainErrorText = values.String(values.StrInvalidAmount)
+						osm.balanceToMaintain.LineColor = osm.Theme.Color.Danger
+						return
+					}
+					osm.balanceToMaintainErrorText = ""
 
-func (osm *orderSchedulerModal) handleCopyEvent(gtx C) {
-	osm.addressEditor.EditorIconButtonEvent = func() {
-		clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
-		osm.Toast.Notify(values.String(values.StrCopied))
+				}
+			}
+		}
 	}
 }
 
@@ -173,11 +157,14 @@ func (osm *orderSchedulerModal) canStart() bool {
 		return false
 	}
 
+	if osm.balanceToMaintainErrorText != "" {
+		return false
+	}
+
 	return true
 }
 
 func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
-	osm.handleCopyEvent(gtx)
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
@@ -190,9 +177,9 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{
-											Bottom: values.MarginPadding8,
+											Bottom: values.MarginPadding16,
 										}.Layout(gtx, func(gtx C) D {
-											txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
+											txt := osm.Theme.Label(values.TextSize20, "Order scheduler")
 											txt.Font.Weight = text.SemiBold
 											return txt.Layout(gtx)
 										})
@@ -211,7 +198,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
 															return layout.Inset{
-																Bottom: values.MarginPadding8,
+																Bottom: values.MarginPadding16,
 															}.Layout(gtx, func(gtx C) D {
 																return cryptomaterial.LinearLayout{
 																	Width:       cryptomaterial.MatchParent,
@@ -220,42 +207,14 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																	Margin:      layout.Inset{Bottom: values.MarginPadding4},
 																}.Layout(gtx,
 																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				txt := osm.Theme.Label(values.TextSize16, "Select server")
-																				txt.Font.Weight = text.SemiBold
-																				return txt.Layout(gtx)
-																			}),
-																			layout.Rigid(func(gtx C) D {
-																				return layout.Inset{
-																					Top:  values.MarginPadding4,
-																					Left: values.MarginPadding4,
-																				}.Layout(gtx, osm.sourceInfoButton.Layout)
-																			}),
-																		)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				return osm.exchangeSelector.Layout(osm.ParentWindow(), gtx)
-																			}),
-																		)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		// if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
-																		// txt := osm.Theme.Label(values.TextSize14, "select a server")
-																		// txt.Font.Weight = text.SemiBold
-																		// txt.Color = osm.Theme.Color.Danger
-																		// return txt.Layout(gtx)
-																		// }
-																		return D{}
+																		return osm.exchangeSelector.Layout(osm.ParentWindow(), gtx)
 																	}),
 																)
 															})
 														}),
 														layout.Rigid(func(gtx C) D {
 															return layout.Inset{
-																// Bottom: values.MarginPadding16,
+																Bottom: values.MarginPadding16,
 															}.Layout(gtx, func(gtx C) D {
 																return cryptomaterial.LinearLayout{
 																	Width:       cryptomaterial.MatchParent,
@@ -264,42 +223,14 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																	Margin:      layout.Inset{Bottom: values.MarginPadding4},
 																}.Layout(gtx,
 																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				txt := osm.Theme.Label(values.TextSize16, "Select frequency")
-																				txt.Font.Weight = text.SemiBold
-																				return txt.Layout(gtx)
-																			}),
-																			layout.Rigid(func(gtx C) D {
-																				return layout.Inset{
-																					Top:  values.MarginPadding4,
-																					Left: values.MarginPadding4,
-																				}.Layout(gtx, osm.destinationInfoButton.Layout)
-																			}),
-																		)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Inset{
-																			Bottom: values.MarginPadding16,
-																		}.Layout(gtx, func(gtx C) D {
-																			return osm.frequencySelector.Layout(osm.ParentWindow(), gtx)
-																		})
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		// if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
-																		// txt := osm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
-																		// txt.Font.Weight = text.SemiBold
-																		// txt.Color = osm.Theme.Color.Danger
-																		// return txt.Layout(gtx)
-																		// }
-																		return D{}
+																		return osm.frequencySelector.Layout(osm.ParentWindow(), gtx)
 																	}),
 																)
 															})
 														}),
 														layout.Rigid(func(gtx C) D {
 															return layout.Inset{
-																// Bottom: values.MarginPadding16,
+																Bottom: values.MarginPadding16,
 															}.Layout(gtx, func(gtx C) D {
 																return cryptomaterial.LinearLayout{
 																	Width:       cryptomaterial.MatchParent,
@@ -308,34 +239,15 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																	Margin:      layout.Inset{Bottom: values.MarginPadding4},
 																}.Layout(gtx,
 																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				txt := osm.Theme.Label(values.TextSize16, "Balance to maintain")
-																				txt.Font.Weight = text.SemiBold
-																				return txt.Layout(gtx)
-																			}),
-																			layout.Rigid(func(gtx C) D {
-																				return layout.Inset{
-																					Top:  values.MarginPadding4,
-																					Left: values.MarginPadding4,
-																				}.Layout(gtx, osm.destinationInfoButton.Layout)
-																			}),
-																		)
+																		return osm.balanceToMaintain.Layout(gtx)
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		return layout.Inset{
-																			Bottom: values.MarginPadding16,
-																		}.Layout(gtx, func(gtx C) D {
-																			return osm.balanceToMaintain.Layout(gtx)
-																		})
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		// if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
-																		// txt := osm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
-																		// txt.Font.Weight = text.SemiBold
-																		// txt.Color = osm.Theme.Color.Danger
-																		// return txt.Layout(gtx)
-																		// }
+																		if osm.balanceToMaintainErrorText != "" {
+																			txt := osm.Theme.Label(values.TextSize14, osm.balanceToMaintainErrorText)
+																			txt.Font.Weight = text.SemiBold
+																			txt.Color = osm.Theme.Color.Danger
+																			return txt.Layout(gtx)
+																		}
 																		return D{}
 																	}),
 																)
@@ -343,64 +255,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 														}),
 
 														layout.Rigid(func(gtx C) D {
-															return layout.Inset{
-																// Bottom: values.MarginPadding16,
-															}.Layout(gtx, func(gtx C) D {
-																return cryptomaterial.LinearLayout{
-																	Width:       cryptomaterial.MatchParent,
-																	Height:      cryptomaterial.WrapContent,
-																	Orientation: layout.Vertical,
-																	Margin:      layout.Inset{Bottom: values.MarginPadding4},
-																}.Layout(gtx,
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-																			layout.Rigid(func(gtx C) D {
-																				txt := osm.Theme.Label(values.TextSize16, "Spending passphrase")
-																				txt.Font.Weight = text.SemiBold
-																				return txt.Layout(gtx)
-																			}),
-																			layout.Rigid(func(gtx C) D {
-																				return layout.Inset{
-																					Top:  values.MarginPadding4,
-																					Left: values.MarginPadding4,
-																				}.Layout(gtx, osm.sourceInfoButton.Layout)
-																			}),
-																		)
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Inset{
-																			// Right: values.MarginPadding10,
-																		}.Layout(gtx, func(gtx C) D {
-																			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-																				// layout.Rigid(func(gtx C) D {
-																				// 	txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
-																				// 	return txt.Layout(gtx)
-																				// }),
-																				layout.Rigid(func(gtx C) D {
-																					return layout.Inset{
-																						Bottom: values.MarginPadding16,
-																					}.Layout(gtx, func(gtx C) D {
-																						return osm.passwordEditor.Layout(gtx)
-																					})
-																				}),
-																			)
-																		})
-																	}),
-																	layout.Rigid(func(gtx C) D {
-																		return layout.Inset{
-																			Bottom: values.MarginPadding16,
-																		}.Layout(gtx, func(gtx C) D {
-																			// if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
-																			// txt := osm.Theme.Label(values.TextSize14, values.String(values.StrDestinationWalletNotSynced))
-																			// txt.Font.Weight = text.SemiBold
-																			// txt.Color = osm.Theme.Color.Danger
-																			// return txt.Layout(gtx)
-																			// }
-																			return D{}
-																		})
-																	}),
-																)
-															})
+															return osm.passwordEditor.Layout(gtx)
 														}),
 													)
 												})
@@ -460,43 +315,42 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 
 func (osm *orderSchedulerModal) startOrderScheduler() {
 	osm.SetLoading(true)
-	// go func() {
-	balanceToMaintain, _ := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
-	params := instantswap.SchedulerParams{
-		Order: instantswap.Order{
-			ExchangeServer:           osm.exchangeSelector.selectedExchange.Server,
-			SourceWalletID:           osm.orderData.sourceWalletID,
-			SourceAccountNumber:      osm.orderData.sourceAccountNumber,
-			DestinationWalletID:      osm.orderData.destinationWalletID,
-			DestinationAccountNumber: osm.orderData.destinationAccountNumber,
 
-			FromCurrency: osm.orderData.fromCurrency.String(),
-			ToCurrency:   osm.orderData.toCurrency.String(),
+	go func() {
+		err := osm.sourceWalletSelector.SelectedWallet().UnlockWallet(osm.passwordEditor.Editor.Text())
+		if err != nil {
+			osm.SetError(err.Error())
+			osm.SetLoading(false)
+			return
+		}
 
-			DestinationAddress: osm.orderData.destinationAddress,
-			RefundAddress:      osm.orderData.refundAddress,
-		},
+		balanceToMaintain, _ := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
+		params := instantswap.SchedulerParams{
+			Order: instantswap.Order{
+				ExchangeServer:           osm.exchangeSelector.selectedExchange.Server,
+				SourceWalletID:           osm.orderData.sourceWalletID,
+				SourceAccountNumber:      osm.orderData.sourceAccountNumber,
+				DestinationWalletID:      osm.orderData.destinationWalletID,
+				DestinationAccountNumber: osm.orderData.destinationAccountNumber,
 
-		Frequency:           osm.frequencySelector.selectedFrequency.item,
-		BalanceToMaintain:   balanceToMaintain,
-		MinimumExchangeRate: 5, // deault value
-		SpendingPassphrase:  osm.passwordEditor.Editor.Text(),
-	}
+				FromCurrency: osm.orderData.fromCurrency.String(),
+				ToCurrency:   osm.orderData.toCurrency.String(),
 
-	fmt.Println("to currency", params.Order.ToCurrency)
+				DestinationAddress: osm.orderData.destinationAddress,
+				RefundAddress:      osm.orderData.refundAddress,
+			},
 
-	go osm.WL.AssetsManager.StartScheduler(osm.ctx, params)
-	// if err != nil {
-	// 	log.Error(err)
-	// 	osm.SetError(err.Error())
-	// 	osm.SetLoading(false)
-	// 	return
-	// }
+			Frequency:           osm.frequencySelector.selectedFrequency.item,
+			BalanceToMaintain:   balanceToMaintain,
+			MinimumExchangeRate: 5, // deault value
+			SpendingPassphrase:  osm.passwordEditor.Editor.Text(),
+		}
 
-	params1 := &callbackParams{}
-	osm.Dismiss()
-	osm.settingsSaved(params1)
+		go osm.WL.AssetsManager.StartScheduler(context.Background(), params)
 
-	// }()
+		osm.Dismiss()
+		osm.orderSchedulerStarted()
+
+	}()
 
 }
