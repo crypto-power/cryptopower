@@ -71,9 +71,8 @@ type Page struct {
 	selectedWallet  *load.WalletMapping
 	feeRateSelector *components.FeeRateSelector
 
-	coinSelectionCollapsible *cryptomaterial.Collapsible
-	coinSelectionButton      cryptomaterial.Button
-	selectedOption           string
+	toCoinSelection *cryptomaterial.Clickable
+	selectedOption  string
 }
 
 type authoredTxData struct {
@@ -102,10 +101,6 @@ func NewSendPage(l *load.Load) *Page {
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
-
-		coinSelectionCollapsible: l.Theme.Collapsible(),
-		coinSelectionButton:      l.Theme.OutlineButton(defaultCoinSelection),
-		selectedOption:           defaultCoinSelection, // holds the default option until changed.
 	}
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
@@ -432,14 +427,8 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.coinSelectionButton.Clicked() {
-		pg.selectedOption = pg.coinSelectionButton.Text
-
-		// if manual has been selected, navigate to the manual utxo selection page.
-		if pg.selectedOption == option1CoinSelection {
-			pg.ParentWindow().Display(NewManualCoinSelectionPage(pg.Load,
-				pg.feeRateSelector.EstSignedSize, pg.totalCost))
-		}
+	if pg.toCoinSelection.Clicked() && pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+		pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load))
 	}
 
 	if pg.nextButton.Clicked() {

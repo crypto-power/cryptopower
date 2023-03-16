@@ -26,6 +26,8 @@ const (
 	dateOnlyFormat = "2006-01-02"
 	timeOnlyformat = "15:04:05"
 
+	shortTimeformat = "2006-01-02 15:04"
+
 	InvalidSyncStage          SyncStage = -1
 	CFiltersFetchSyncStage    SyncStage = 0
 	HeadersFetchSyncStage     SyncStage = 1
@@ -99,6 +101,10 @@ func ExtractDateOrTime(timestamp int64) string {
 
 func FormatUTCTime(timestamp int64) string {
 	return time.Unix(timestamp, 0).UTC().Format(fullDateformat)
+}
+
+func FormatUTCShortTime(timestamp int64) string {
+	return time.Unix(timestamp, 0).UTC().Format(shortTimeformat)
 }
 
 func EncodeHex(hexBytes []byte) string {

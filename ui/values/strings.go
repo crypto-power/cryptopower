@@ -821,4 +821,6 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
+	StrSelectUTXO                      = "selectUTXO"
+	StrNoUTXOs                         = "noUTXOs"
 )
