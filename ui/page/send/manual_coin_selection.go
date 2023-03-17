@@ -187,7 +187,7 @@ func (pg *ManualCoinSelectionPage) initializeFields() {
 	pg.selectedAmount = 0
 
 	pg.selectedUTXOs.Text = "0"
-	pg.txSize.Text = "--"
+	pg.txSize.Text = pg.computeUTXOsSize()
 	pg.totalAmount.Text = "0 " + pg.strAssetType
 }
 

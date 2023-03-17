@@ -71,26 +71,26 @@ func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
+// ComputeUTXOsSize computes the estimated size of the final raw transaction.
+// A placeholder address is selected so as to generate a single tx output.
 func (asset *Asset) ComputeUTXOsSize(utxos []*sharedW.UnspentOutput) (int, error) {
-	if asset.TxAuthoredInfo == nil {
-		asset.TxAuthoredInfo = &TxAuthor{
-			destinations: make(map[string]*sharedW.TransactionDestination, 0),
-		}
-	}
-
-	asset.TxAuthoredInfo.needsConstruct = true
-	asset.TxAuthoredInfo.selectedUXTOs = utxos
-
 	if len(utxos) == 0 {
 		return 0, nil
 	}
 
-	data, err := asset.EstimateFeeAndSize()
-	if err != nil {
-		return 0, fmt.Errorf("tx size estimation failed: %v", err)
+	var sendAmount int64
+	for _, c := range utxos {
+		sendAmount += c.Amount.ToInt()
 	}
 
-	return data.EstimatedSignedSize, nil
+	placeholderAddress := utxos[0].Address
+	output, err := txhelper.MakeBTCTxOutput(placeholderAddress, sendAmount, asset.chainParams)
+	if err != nil {
+		return -1, fmt.Errorf("computing utxo failed: %v", err)
+	}
+
+	estimatedSize := txsizes.EstimateSerializeSize(len(utxos), []*wire.TxOut{output}, true)
+	return estimatedSize, nil
 }
 
 // AddSendDestination adds a destination address to the transaction.
