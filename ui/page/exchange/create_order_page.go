@@ -363,11 +363,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 					orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
 						OnOrderSchedulerStarted(func() {
-							infoModal := modal.NewSuccessModal(pg.Load, "Order Scheduler is running", modal.DefaultClickFunc())
+							infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrSchedulerRunning), modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(infoModal)
-
-							// time.Sleep(1 * time.Second)
-							// pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 						}).
 						OnCancel(func() { // needed to satisfy the modal instance
 							pg.scheduler.SetChecked(false)
@@ -579,7 +576,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 													if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
 														return layout.Flex{
 															Axis: layout.Horizontal,
-															// Alignment: layout.,
 														}.Layout(gtx,
 															layout.Rigid(func(gtx C) D {
 																return layout.Inset{

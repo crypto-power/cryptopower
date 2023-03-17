@@ -110,17 +110,6 @@ type Order struct {
 type SchedulerParams struct {
 	Order Order
 
-	// ExchangeServer ExchangeServer
-
-	// SourceWalletID      int
-	// SourceAccountNumber int32
-
-	// FromCurrency string
-	// ToCurrency   string
-	// InvoicedAmount float64
-	// DestinationAddress string
-	// RefundAddress      string
-
 	Frequency           time.Duration // in hours
 	BalanceToMaintain   float64
 	MinimumExchangeRate float64

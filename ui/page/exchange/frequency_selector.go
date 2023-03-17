@@ -22,7 +22,7 @@ type FrequencySelector struct {
 	changed bool
 }
 
-// exchangeItem wraps the exchangeserver in a clickable.
+// frequencyItem wraps the frequency in a clickable.
 type frequencyItem struct {
 	name      string
 	item      time.Duration
@@ -43,8 +43,8 @@ type frequencyModal struct {
 	isCancelable       bool
 }
 
-// NewExchangeSelector creates an exchange selector component.
-// It opens a modal to select a desired exchange.
+// NewFrequencySelector creates an frequency selector component.
+// It opens a modal to select a desired frequency.
 func NewFrequencySelector(l *load.Load) *FrequencySelector {
 	fs := &FrequencySelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
@@ -66,31 +66,32 @@ func NewFrequencySelector(l *load.Load) *FrequencySelector {
 	return fs
 }
 
-// SelectedExchange returns the currently selected Exchange.
+// SelectedFrequency returns the currently selected frequency.
 func (fs *FrequencySelector) SelectedFrequency() *frequencyItem {
 	return fs.selectedFrequency
 }
 
-// SetSelectedExchange sets exch as the current selected exchange.
+// SetSelectedFrequency sets fi as the current selected frequency.
 func (fs *FrequencySelector) SetSelectedFrequency(fi *frequencyItem) {
 	fs.selectedFrequency = fi
 }
 
-// Title Sets the title of the exchange list dialog.
+// Title Sets the title of the frequency list dialog.
 func (fs *FrequencySelector) Title(title string) *FrequencySelector {
 	fs.dialogTitle = title
 	return fs
 }
 
-// ExchangeSelected sets the callback executed when an exchange is selected.
+// FrequencySelected sets the callback executed when a frequency is selected.
 func (fs *FrequencySelector) FrequencySelected(callback func(*frequencyItem)) *FrequencySelector {
 	fs.frequencyCallback = callback
 	return fs
 }
 
-// SetSelectedExchangeName sets the exchange whose Name field is
-// equals to {name} as the current selected exchange.
-// If it can find exchange whose Name field equals name it returns silently.
+// SetSelectedFrequencyName sets the frequency whose Name field is
+// equals to {name} as the current selected frequency.
+// If it can't find the frequency whose Name field equals
+// {{name}} it returns silently.
 func (fs *FrequencySelector) SetSelectedFrequencyName(name string) {
 	ex := fs.buildFrequencyItems()
 	for _, v := range ex {
@@ -123,16 +124,8 @@ func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
 		},
 		Clickable: fs.openSelectorDialog,
 	}.Layout(gtx,
-		// layout.Rigid(func(gtx C) D {
-		// 	if fs.selectedFrequency == nil {
-		// 		return D{}
-		// 	}
-		// 	return layout.Inset{
-		// 		Right: values.MarginPadding8,
-		// 	}.Layout(gtx, fs.selectedFrequency.Icon.Layout24dp)
-		// }),
 		layout.Rigid(func(gtx C) D {
-			txt := fs.Theme.Label(values.TextSize16, "Frequency")
+			txt := fs.Theme.Label(values.TextSize16, values.String(values.StrFrequency))
 			txt.Color = fs.Theme.Color.Gray7
 			if fs.selectedFrequency != nil {
 				txt = fs.Theme.Label(values.TextSize16, fs.selectedFrequency.name)
@@ -155,14 +148,14 @@ func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
 	)
 }
 
-// newExchangeModal return a modal used for drawing the exchange list.
+// newFrequencyModal return a modal used for drawing the frequency list.
 func newFrequencyModal(l *load.Load) *frequencyModal {
 	fm := &frequencyModal{
 		Load:          l,
-		Modal:         l.Theme.ModalFloatTitle("Select frequency"),
+		Modal:         l.Theme.ModalFloatTitle(values.String(values.StrSelectFrequency)),
 		frequencyList: layout.List{Axis: layout.Vertical},
 		isCancelable:  true,
-		dialogTitle:   "Select frequency",
+		dialogTitle:   values.String(values.StrSelectFrequency),
 	}
 
 	fm.Modal.ShowScrollbar(true)
@@ -260,11 +253,6 @@ func (fm *frequencyModal) modalListItemLayout(gtx C, frequencyItem *frequencyIte
 		Clickable: frequencyItem.clickable,
 		Alignment: layout.Middle,
 	}.Layout(gtx,
-		// layout.Rigid(func(gtx C) D {
-		// 	return layout.Inset{
-		// 		Right: values.MarginPadding18,
-		// 	}.Layout(gtx, frequencyItem.item.Icon.Layout24dp)
-		// }),
 		layout.Rigid(func(gtx C) D {
 			exchName := fm.Theme.Label(values.TextSize18, frequencyItem.name)
 			exchName.Color = fm.Theme.Color.Text

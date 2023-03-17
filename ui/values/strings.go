@@ -830,4 +830,7 @@ const (
 	StrBalanceToMaintain               = "balanceToMaintain"
 	StrOrderSchedulerInfo              = "orderSchedulerInfo"
 	StrScheduler                       = "scheduler"
+	StrSchedulerRunning                = "schedulerRunning"
+	StrFrequency                       = "frequency"
+	StrSelectFrequency                 = "selectFrequency"
 )

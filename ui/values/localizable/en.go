@@ -720,4 +720,7 @@ const EN = `
 "balanceToMaintain" = "Balance to maintain (%s)"
 "orderSchedulerInfo" = "Cryptopower must remain running, for orders to be automatically executed"
 "scheduler" = "Scheduler"
+"schedulerRunning" = "Order Scheduler is running"
+"frequency" = "Frequency"
+"selectFrequency" = "Select frequency"
 `

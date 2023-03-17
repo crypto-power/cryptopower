@@ -81,10 +81,6 @@ func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchan
 			return instantSwap.ctx.Err()
 		}
 
-		// Check if instantswap has been shutdown and exit if true.
-		if instantSwap.ctx.Err() != nil {
-			return instantSwap.ctx.Err()
-		}
 		attempts++
 		if attempts > maxSyncRetries {
 			return errors.Errorf("failed to sync exchange server [%v] after 3 attempts", exchangeServer)

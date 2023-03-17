@@ -435,12 +435,12 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 	osm.SetLoading(true)
 
 	go func() {
-		// err := osm.sourceWalletSelector.SelectedWallet().UnlockWallet(osm.passwordEditor.Editor.Text())
-		// if err != nil {
-		// 	osm.SetError(err.Error())
-		// 	osm.SetLoading(false)
-		// 	return
-		// }
+		err := osm.sourceWalletSelector.SelectedWallet().UnlockWallet(osm.passwordEditor.Editor.Text())
+		if err != nil {
+			osm.SetError(err.Error())
+			osm.SetLoading(false)
+			return
+		}
 
 		balanceToMaintain, _ := strconv.ParseFloat(osm.balanceToMaintain.Editor.Text(), 32)
 		params := instantswap.SchedulerParams{
@@ -503,8 +503,6 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 
 	osm.exchangeRate = 1 / res.ExchangeRate
 	osm.binanceRate = binanceRate
-
-	// osm.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), osm.min, osm.max)
 
 	osm.fetchingRate = false
 	osm.rateError = false
