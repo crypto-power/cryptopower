@@ -8,6 +8,9 @@ type OrderStatus int
 
 const (
 	OrderStatusSynced OrderStatus = iota
+	OrderCreated
+	OrderSchedulerStarted
+	OrderSchedulerEnded
 )
 
 type Order struct {

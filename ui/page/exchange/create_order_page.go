@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -367,8 +366,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 							infoModal := modal.NewSuccessModal(pg.Load, "Order Scheduler is running", modal.DefaultClickFunc())
 							pg.ParentWindow().ShowModal(infoModal)
 
-							time.Sleep(1 * time.Second)
-							pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+							// time.Sleep(1 * time.Second)
+							// pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 						}).
 						OnCancel(func() { // needed to satisfy the modal instance
 							pg.scheduler.SetChecked(false)
@@ -380,7 +379,6 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 				})
 			pg.ParentWindow().ShowModal(orderSettingsModal)
 		} else {
-			fmt.Println("Stopping Scheduler")
 			pg.WL.AssetsManager.StopScheduler()
 		}
 	}
@@ -569,9 +567,39 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										Alignment: layout.Middle,
 									}.Layout(gtx,
 										layout.Rigid(func(gtx C) D {
-											title := pg.Theme.Label(values.TextSize16, "Scheduler")
-											title.Color = pg.Theme.Color.GrayText2
-											return title.Layout(gtx)
+											return layout.Flex{
+												Axis: layout.Vertical,
+											}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													title := pg.Theme.Label(values.TextSize16, values.String(values.StrScheduler))
+													title.Color = pg.Theme.Color.GrayText2
+													return title.Layout(gtx)
+												}),
+												layout.Rigid(func(gtx C) D {
+													if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+														return layout.Flex{
+															Axis: layout.Horizontal,
+															// Alignment: layout.,
+														}.Layout(gtx,
+															layout.Rigid(func(gtx C) D {
+																return layout.Inset{
+																	Top:   values.MarginPadding5,
+																	Right: values.MarginPadding2,
+																}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
+															}),
+															layout.Rigid(func(gtx C) D {
+																title := pg.Theme.Label(values.TextSize16, pg.WL.AssetsManager.GetShedulerRuntime())
+																title.Color = pg.Theme.Color.GrayText2
+																return title.Layout(gtx)
+															}),
+														)
+
+													}
+
+													return D{}
+												}),
+											)
+
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
@@ -1063,9 +1091,17 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 		for {
 			select {
 			case n := <-pg.OrderNotifChan:
-				if n.OrderStatus == wallet.OrderStatusSynced {
+				switch n.OrderStatus {
+				case wallet.OrderStatusSynced:
 					pg.FetchOrders()
 					pg.ParentWindow().Reload()
+				case wallet.OrderCreated:
+					pg.FetchOrders()
+					pg.ParentWindow().Reload()
+				case wallet.OrderSchedulerStarted:
+					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+				case wallet.OrderSchedulerEnded:
+					pg.scheduler.SetChecked(false)
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)

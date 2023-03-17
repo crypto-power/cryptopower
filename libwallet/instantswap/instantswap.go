@@ -184,6 +184,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	}
 
 	instantSwap.saveOrder(order)
+	instantSwap.publishOrderCreated(order)
 
 	return order, nil
 }

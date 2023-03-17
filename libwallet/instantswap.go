@@ -3,13 +3,13 @@ package libwallet
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	api "code.cryptopower.dev/group/instantswap"
 	"decred.org/dcrwallet/v2/errors"
 
-	// sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/blockexplorer"
 	_ "code.cryptopower.dev/group/blockexplorer/btcexplorer"
 	_ "code.cryptopower.dev/group/blockexplorer/dcrexplorer"
@@ -33,13 +33,16 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		return errors.New("scheduler already running")
 	}
 
+	log.Info("Order Scheduler: started")
+	mgr.InstantSwap.SchedulerStartTime = time.Now()
 	mgr.InstantSwap.SchedulerCtx, mgr.InstantSwap.CancelOrderScheduler = context.WithCancel(ctx)
+	mgr.InstantSwap.PublishOrderSchedulerStarted()
 	defer func() {
 		mgr.InstantSwap.CancelOrderScheduler = nil
+		mgr.InstantSwap.SchedulerStartTime = time.Time{}
+		mgr.InstantSwap.PublishOrderSchedulerEnded()
 	}()
 	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
-	// startTime := time.Now()
-	log.Info("Order Scheduler: started")
 
 	// Initialize the exchange server.
 	log.Info("Order Scheduler: initializing exchange server")
@@ -102,17 +105,16 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			log.Error(err)
 			break
 		}
-		log.Info(params.Order.ExchangeServer.Server+" rate: ", res.ExchangeRate)
-		log.Info(ext.Binance+" rate: ", ticker.LastTradePrice)
+
+		exchangeServerRate := 1 / res.ExchangeRate
+		binanceRate := ticker.LastTradePrice
+		log.Info(params.Order.ExchangeServer.Server+" rate: ", exchangeServerRate)
+		log.Info(ext.Binance+" rate: ", binanceRate)
 
 		// check if the server rate deviates from the market rate by more than 5%
 		// exit
-		if res.ExchangeRate < ticker.LastTradePrice*(1-params.MinimumExchangeRate/100) || res.ExchangeRate > ticker.LastTradePrice*(1+params.MinimumExchangeRate/100) {
-			log.Error("exchange rate deviates from the market rate by more than 5%")
-			return err
-		}
-
-		if (res.ExchangeRate/ticker.LastTradePrice)*100 > params.MinimumExchangeRate {
+		percentageDiff := math.Abs((exchangeServerRate-binanceRate)/((exchangeServerRate+binanceRate)/2)) * 100
+		if percentageDiff > params.MinimumExchangeRate {
 			log.Error("exchange rate deviates from the market rate by more than 5%")
 			return err
 		}
@@ -139,8 +141,8 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		params.Order.InvoicedAmount = invoicedAmount
 		order, err := mgr.InstantSwap.CreateOrder(exchangeObject, params.Order)
 		if err != nil {
-			log.Error("CreateOrder", err)
-			break
+			// log.Error("CreateOrder", err)
+			return err
 		}
 
 		log.Info("Order Scheduler: creating unsigned transaction")
@@ -306,7 +308,7 @@ func (mgr *AssetsManager) StopScheduler() {
 		mgr.InstantSwap.CancelOrderScheduler = nil
 	}
 	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
-	log.Info("Order scheduler: stopped")
+	log.Info("Order Scheduler: stopped")
 }
 
 func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
@@ -315,26 +317,6 @@ func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
 	return mgr.InstantSwap.CancelOrderScheduler != nil
 }
 
-// func (mgr *AssetsManager) constructTx(depositAddress string, unitAmount float64, sourceWallet sharedW.Asset) error {
-// 	destinationAddress := depositAddress
-
-// 	sourceAccount := com.sourceAccountSelector.SelectedAccount()
-// 	err := com.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	var amount int64
-// 	switch com.sourceWalletSelector.SelectedWallet().GetAssetType().ToStringLower() {
-// 	case utils.BTCWalletAsset.ToStringLower():
-// 		amount = btc.AmountSatoshi(unitAmount)
-// 	case utils.DCRWalletAsset.ToStringLower():
-// 		amount = dcr.AmountAtom(unitAmount)
-// 	}
-// 	err = com.sourceWalletSelector.SelectedWallet().AddSendDestination(destinationAddress, amount, false)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
+func (mgr *AssetsManager) GetShedulerRuntime() string {
+	return time.Since(mgr.InstantSwap.SchedulerStartTime).Round(time.Second).String()
+}

@@ -58,6 +58,7 @@ type InstantSwap struct {
 	SchedulerCtx           context.Context
 	CancelOrderScheduler   context.CancelFunc
 	CancelOrderSchedulerMu sync.RWMutex
+	SchedulerStartTime     time.Time
 
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
 	notificationListeners   map[string]OrderNotificationListener
@@ -65,6 +66,9 @@ type InstantSwap struct {
 
 type OrderNotificationListener interface {
 	OnExchangeOrdersSynced()
+	OnOrderCreated(order *Order)
+	OnOrderSchedulerStarted()
+	OnOrderSchedulerEnded()
 }
 
 type Order struct {

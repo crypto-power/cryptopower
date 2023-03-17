@@ -717,4 +717,7 @@ const EN = `
 "yourself" = "Yourself"
 "orderScheduler" = "Order Scheduler"
 "start" = "Start"
+"balanceToMaintain" = "Balance to maintain (%s)"
+"orderSchedulerInfo" = "Cryptopower must remain running, for orders to be automatically executed"
+"scheduler" = "Scheduler"
 `

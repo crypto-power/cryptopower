@@ -827,4 +827,7 @@ const (
 	StrYourself                        = "yourself"
 	StrOrderScheduler                  = "orderScheduler"
 	StrStart                           = "start"
+	StrBalanceToMaintain               = "balanceToMaintain"
+	StrOrderSchedulerInfo              = "orderSchedulerInfo"
+	StrScheduler                       = "scheduler"
 )

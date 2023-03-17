@@ -193,6 +193,33 @@ func (instantSwap *InstantSwap) publishSynced() {
 	}
 }
 
+func (instantSwap *InstantSwap) publishOrderCreated(order *Order) {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderCreated(order)
+	}
+}
+
+func (instantSwap *InstantSwap) PublishOrderSchedulerStarted() {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderSchedulerStarted()
+	}
+}
+
+func (instantSwap *InstantSwap) PublishOrderSchedulerEnded() {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderSchedulerEnded()
+	}
+}
+
 func (instantSwap *InstantSwap) AddNotificationListener(notificationListener OrderNotificationListener, uniqueIdentifier string) error {
 	instantSwap.notificationListenersMu.Lock()
 	defer instantSwap.notificationListenersMu.Unlock()
