@@ -37,6 +37,8 @@ type TxAuthor struct {
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 
+	selectedUXTOs []*sharedW.UnspentOutput
+
 	mu sync.RWMutex
 }
 
@@ -67,6 +69,28 @@ func (asset *Asset) GetUnsignedTx() *TxAuthor {
 // IsUnsignedTxExist returns true if an unsigned transaction exists.
 func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
+}
+
+func (asset *Asset) ComputeUTXOsSize(utxos []*sharedW.UnspentOutput) (int, error) {
+	if asset.TxAuthoredInfo == nil {
+		asset.TxAuthoredInfo = &TxAuthor{
+			destinations: make(map[string]*sharedW.TransactionDestination, 0),
+		}
+	}
+
+	asset.TxAuthoredInfo.needsConstruct = true
+	asset.TxAuthoredInfo.selectedUXTOs = utxos
+
+	if len(utxos) == 0 {
+		return 0, nil
+	}
+
+	data, err := asset.EstimateFeeAndSize()
+	if err != nil {
+		return 0, fmt.Errorf("tx size estimation failed: %v", err)
+	}
+
+	return data.EstimatedSignedSize, nil
 }
 
 // AddSendDestination adds a destination address to the transaction.
@@ -380,9 +404,16 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	unspents, err := asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
-	if err != nil {
-		return nil, err
+	unspents := asset.TxAuthoredInfo.selectedUXTOs
+	if len(unspents) == 0 {
+		// if preset list of UTXOs exists, use them instead.
+		unspents, err = asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
+		if err != nil {
+			return nil, err
+		}
+
+		// Send max must be activated.
+		sendMax = true
 	}
 
 	inputSource := asset.makeInputSource(unspents, sendMax)

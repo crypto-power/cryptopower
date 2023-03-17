@@ -129,6 +129,10 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
+func (asset *DCRAsset) ComputeUTXOsSize(utxos []*sharedW.UnspentOutput) (int, error) {
+	return -1, nil
+}
+
 func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(account),

@@ -12,6 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
@@ -30,7 +31,8 @@ const (
 // happens.
 type UTXOInfo struct {
 	*sharedW.UnspentOutput
-	checkbox cryptomaterial.CheckBoxStyle
+	checkbox    cryptomaterial.CheckBoxStyle
+	addressCopy *cryptomaterial.Clickable
 }
 
 type AccountsUTXOInfo struct {
@@ -56,6 +58,9 @@ type ManualCoinSelectionPage struct {
 	txSize        cryptomaterial.Label
 	totalAmount   cryptomaterial.Label
 
+	selectedUTXOrows []*sharedW.UnspentOutput
+	selectedAmount   float64
+
 	amountLabel        labelCell
 	addressLabel       labelCell
 	confirmationsLabel labelCell
@@ -78,9 +83,11 @@ type ManualCoinSelectionPage struct {
 
 	lastSortEvent Lastclicked
 	clickables    []*cryptomaterial.Clickable
+	addressCopy   []*cryptomaterial.Clickable
 	properties    []componentProperties
 
 	sortingInProgress bool
+	strAssetType      string
 }
 
 type componentProperties struct {
@@ -114,24 +121,27 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 		utxosRow: &widget.List{
 			List: layout.List{Axis: layout.Horizontal},
 		},
-		UTXOList: l.Theme.NewClickableList(layout.Vertical),
+		UTXOList:    l.Theme.NewClickableList(layout.Vertical),
+		addressCopy: make([]*cryptomaterial.Clickable, 0),
 	}
+
 	pg.actionButton.Font.Weight = text.SemiBold
 	pg.clearButton.Font.Weight = text.SemiBold
 	pg.clearButton.Color = l.Theme.Color.Danger
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding3)
+
 	c := l.Theme.Color.Danger
 	// Background is 8% of the Danger color.
 	alphaChan := (127 * 0.8)
 	pg.clearButton.Background = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
 
-	pg.selectedUTXOs = pg.Theme.Label(values.TextSize16, "--")
-	pg.txSize = pg.Theme.Label(values.TextSize16, "--")
-	pg.totalAmount = pg.Theme.Label(values.TextSize16, "--")
+	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
+	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
+	pg.selectedUTXOs = pg.Theme.Label(values.TextSize14, "--")
 
-	pg.selectedUTXOs.Font.Weight = text.SemiBold
 	pg.txSize.Font.Weight = text.SemiBold
 	pg.totalAmount.Font.Weight = text.SemiBold
+	pg.selectedUTXOs.Font.Weight = text.SemiBold
 
 	pg.fromCoinSelection = pg.Theme.NewClickable(false)
 
@@ -140,8 +150,8 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 	pg.confirmationsClickable = pg.Theme.NewClickable(true)
 	pg.dateClickable = pg.Theme.NewClickable(false)
 
-	name := fmt.Sprintf("%v(%v)", values.String(values.StrAmount),
-		pg.WL.SelectedWallet.Wallet.GetAssetType().String())
+	pg.strAssetType = pg.WL.SelectedWallet.Wallet.GetAssetType().String()
+	name := fmt.Sprintf("%v(%v)", values.String(values.StrAmount), pg.strAssetType)
 
 	// UTXO table view titles.
 	pg.amountLabel = pg.generateLabel(name, pg.amountClickable)                                                 // Component 2
@@ -166,9 +176,19 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 		pg.dateClickable,          // Component 5
 	}
 
-	pg.lastSortEvent = Lastclicked{clicked: -1}
+	pg.initializeFields()
 
 	return pg
+}
+
+func (pg *ManualCoinSelectionPage) initializeFields() {
+	pg.lastSortEvent = Lastclicked{clicked: -1}
+	pg.selectedUTXOrows = make([]*sharedW.UnspentOutput, 0)
+	pg.selectedAmount = 0
+
+	pg.selectedUTXOs.Text = "0"
+	pg.txSize.Text = "--"
+	pg.totalAmount.Text = "0 " + pg.strAssetType
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -208,6 +228,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 			rowInfo[i] = &UTXOInfo{
 				UnspentOutput: row,
 				checkbox:      pg.Theme.CheckBox(new(widget.Bool), ""),
+				addressCopy:   pg.Theme.NewClickable(false),
 			}
 		}
 
@@ -237,6 +258,15 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 
 	if pg.fromCoinSelection.Clicked() {
 		pg.ParentNavigator().Display(NewSendPage(pg.Load))
+	}
+
+	if pg.clearButton.Clicked() {
+		for k := range pg.collapsibleList {
+			for i := 0; i < len(pg.accountsUTXOs[k].Details); i++ {
+				pg.accountsUTXOs[k].Details[i].checkbox.CheckBox = &widget.Bool{Value: false}
+			}
+		}
+		pg.initializeFields()
 	}
 
 sortingLoop:
@@ -269,6 +299,45 @@ sortingLoop:
 				break sortingLoop
 			}
 		}
+	}
+
+	// Update Summary information as the last section when handling events.
+	for k := range pg.collapsibleList {
+		for i := 0; i < len(pg.accountsUTXOs[k].Details); i++ {
+			record := pg.accountsUTXOs[k].Details[i]
+			if record.checkbox.CheckBox.Changed() {
+				if record.checkbox.CheckBox.Value {
+					pg.selectedUTXOrows = append(pg.selectedUTXOrows, record.UnspentOutput)
+					pg.selectedAmount += record.Amount.ToCoin()
+				} else {
+					pg.selectedUTXOrows = pg.selectedUTXOrows[:len(pg.selectedUTXOrows)-1]
+					pg.selectedAmount -= record.Amount.ToCoin()
+				}
+
+				pg.txSize.Text = pg.computeUTXOsSize()
+				pg.selectedUTXOs.Text = fmt.Sprintf("%d", len(pg.selectedUTXOrows))
+				pg.totalAmount.Text = fmt.Sprintf("%f %s", pg.selectedAmount, pg.strAssetType)
+			}
+		}
+	}
+}
+
+func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
+	wallet := pg.WL.SelectedWallet.Wallet
+
+	switch wallet.GetAssetType() {
+	case libutils.BTCWalletAsset:
+		feeNSize, err := wallet.ComputeUTXOsSize(pg.selectedUTXOrows)
+		if err != nil {
+			log.Error(err)
+		}
+		return fmt.Sprintf("%d bytes", feeNSize)
+
+	case libutils.DCRWalletAsset:
+		return "--"
+
+	default:
+		return "--"
 	}
 }
 
@@ -355,25 +424,25 @@ func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Flexed(0.3, func(gtx C) D {
+							layout.Flexed(0.22, func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrSelectedUTXO)+": ").Layout),
+									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrSelectedUTXO)+": ").Layout),
 									layout.Flexed(1, func(gtx C) D {
 										return layout.W.Layout(gtx, pg.selectedUTXOs.Layout)
 									}),
 								)
 							}),
-							layout.Flexed(0.3, func(gtx C) D {
+							layout.Flexed(0.38, func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.StringF(values.StrTxSize, " : ")).Layout),
+									layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : ")).Layout),
 									layout.Flexed(1, func(gtx C) D {
 										return layout.W.Layout(gtx, pg.txSize.Layout)
 									}),
 								)
 							}),
-							layout.Flexed(0.3, func(gtx C) D {
+							layout.Flexed(0.4, func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrTotalAmount)+": ").Layout),
+									layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrTotalAmount)+": ").Layout),
 									layout.Flexed(1, func(gtx C) D {
 										return layout.W.Layout(gtx, pg.totalAmount.Layout)
 									}),
@@ -486,7 +555,16 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 								confirmationsLabel := pg.generateLabel(v.Confirmations, nil)                          // Component 4
 								dateLabel := pg.generateLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), nil) // Component 5
 
-								return pg.rowItemsSection(gtx, checkButton, amountLabel, addresslabel, confirmationsLabel, dateLabel)
+								// copy destination Address
+								if v.addressCopy.Clicked() {
+									clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
+									pg.Toast.Notify(values.String(values.StrTxHashCopied))
+								}
+
+								addressComponent := func(gtx C) D {
+									return v.addressCopy.Layout(gtx, addresslabel.label.Layout)
+								}
+								return pg.rowItemsSection(gtx, checkButton, amountLabel, addressComponent, confirmationsLabel, dateLabel)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -511,6 +589,8 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		switch n := c.(type) {
 		case *cryptomaterial.CheckBoxStyle:
 			widget = n.Layout
+		case func(gtx C) D:
+			widget = n
 		case labelCell:
 			pg.lastSortEvent.current = index - 1
 			if n.clickable != nil {
