@@ -491,7 +491,7 @@ func (asset *Asset) startSync() error {
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
 	// Initializes the goroutines handling chain notifications, rescan progress and handlers.
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+	asset.synchronizeRPC(asset.chainClient)
 
 	select {
 	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()
@@ -510,6 +510,29 @@ func (asset *Asset) startSync() error {
 	}
 
 	return nil
+}
+
+// synchronizeRPC calls the asset upstream upstream SynchronizeRPC,
+// to sync the wallet with the lastes changes to blockchain.
+// this function is able to recover if the chain client/service panics.
+func (asset *Asset) synchronizeRPC(chainClient chain.Interface) {
+	go func() {
+		defer func() {
+			// attempt recovery if exit status is non-zero.
+			if r := recover(); r != nil {
+				// write panic log.
+				log.Debugf("(%v) panicked during sync, attempting recovery", asset.GetWalletName())
+				// At this point, is it best to check the status and or restart upstream wallet? or is it best disable the
+				// to disable access to the wallet?
+			}
+		}()
+		// Call upstream SynchronizeRPC func to sync the wallet
+		asset.Internal().BTC.SynchronizeRPC(chainClient)
+		// Block until sync is done.
+		<-asset.syncCtx.Done()
+
+	}()
+
 }
 
 // IsConnectedToBitcoinNetwork returns true if the wallet is connected to the

@@ -157,7 +157,7 @@ func (asset *Asset) RescanAsync() error {
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
+	asset.synchronizeRPC(asset.chainClient)
 	return nil
 }
 
