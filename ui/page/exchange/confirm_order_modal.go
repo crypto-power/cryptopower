@@ -349,7 +349,7 @@ func (com *confirmOrderModal) constructTx(depositAddress string, unitAmount floa
 	destinationAddress := depositAddress
 
 	sourceAccount := com.sourceAccountSelector.SelectedAccount()
-	err := com.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number)
+	err := com.sourceWalletSelector.SelectedWallet().NewUnsignedTx(sourceAccount.Number, nil)
 	if err != nil {
 		return err
 	}

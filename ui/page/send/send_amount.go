@@ -27,6 +27,7 @@ type sendAmount struct {
 	sendMaxChangeEvent    bool
 	usdSendMaxChangeEvent bool
 	amountChanged         func()
+	resetUTXOs            func()
 
 	amountErrorText string
 
@@ -34,7 +35,6 @@ type sendAmount struct {
 }
 
 func newSendAmount(l *load.Load) *sendAmount {
-
 	sa := &sendAmount{
 		Load:         l,
 		exchangeRate: -1,
@@ -59,9 +59,16 @@ func newSendAmount(l *load.Load) *sendAmount {
 	sa.usdAmountEditor.CustomButton.Text = values.String(values.StrMax)
 	sa.usdAmountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
+	// Set the default reset callback function.
+	sa.resetUTXOs = func() {}
+
 	sa.styleWidgets()
 
 	return sa
+}
+
+func (sa *sendAmount) restUTXOsCallback(callback func()) {
+	sa.resetUTXOs = callback
 }
 
 // styleWidgets sets the appropriate colors for the amount widgets.
@@ -144,7 +151,6 @@ func (sa *sendAmount) validateAmount() {
 
 // validateUSDAmount is called when usd text changes
 func (sa *sendAmount) validateUSDAmount() bool {
-
 	sa.amountErrorText = ""
 	if sa.inputsNotEmpty(sa.usdAmountEditor.Editor) {
 		usdAmount, err := strconv.ParseFloat(sa.usdAmountEditor.Editor.Text(), 64)
@@ -185,6 +191,7 @@ func (sa *sendAmount) resetFields() {
 	sa.SendMax = false
 
 	sa.clearAmount()
+	sa.resetUTXOs()
 }
 
 func (sa *sendAmount) clearAmount() {
@@ -223,6 +230,7 @@ func (sa *sendAmount) handle() {
 				sa.SendMax = false
 				sa.validateAmount()
 				sa.amountChanged()
+				sa.resetUTXOs()
 			}
 		}
 	}
@@ -238,6 +246,7 @@ func (sa *sendAmount) handle() {
 				sa.SendMax = false
 				sa.validateUSDAmount()
 				sa.amountChanged()
+				sa.resetUTXOs()
 			}
 		}
 	}

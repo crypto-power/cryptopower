@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	defaultCoinSelection = values.String(values.StrAutomatic)
-	option1CoinSelection = values.String(values.StrManual)
+	automaticCoinSelection = values.String(values.StrAutomatic)
+	manualCoinSelection    = values.String(values.StrManual)
 )
 
 type Page struct {
@@ -72,7 +72,9 @@ type Page struct {
 	feeRateSelector *components.FeeRateSelector
 
 	toCoinSelection *cryptomaterial.Clickable
-	selectedOption  string
+	selectedUTXOs   []*sharedW.UnspentOutput
+
+	selectedUTXOsAmount int64
 }
 
 type authoredTxData struct {
@@ -105,6 +107,14 @@ func NewSendPage(l *load.Load) *Page {
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
 	}
+
+	// Incase the user edits the amounts fields, manual coin selection is disabled.
+	resetSelectedUTXOs := func() {
+		if len(pg.selectedUTXOs) > 0 {
+			pg.selectedUTXOs = pg.selectedUTXOs[:0]
+		}
+	}
+	pg.amount.restUTXOsCallback(resetSelectedUTXOs)
 
 	pg.feeRateSelector = components.NewFeeRateSelector(l).ShowSizeAndCost()
 	pg.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
@@ -202,6 +212,10 @@ func (pg *Page) RestyleWidgets() {
 	pg.sendDestination.styleWidgets()
 }
 
+func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
+	pg.selectedUTXOs = utxos
+}
+
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -231,6 +245,19 @@ func (pg *Page) OnNavigatedTo() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
 		go pg.selectedWallet.GetAPIFeeRate()
+	}
+
+	if len(pg.selectedUTXOs) > 0 {
+		var sendAmount float64
+		for _, elem := range pg.selectedUTXOs {
+			pg.selectedUTXOsAmount += elem.Amount.ToInt()
+			sendAmount += elem.Amount.ToCoin()
+		}
+
+		pg.amount.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", sendAmount))
+		pg.amount.validateAmount()
+		// when selectedUTXOs exists no change outputs are expected.
+		pg.amount.SendMax = true
 	}
 }
 
@@ -265,6 +292,9 @@ func (pg *Page) fetchExchangeRate() {
 }
 
 func (pg *Page) validateAndConstructTx() {
+	// delete all the previous errors set earlier.
+	pg.feeEstimationError("")
+
 	if pg.validate() {
 		pg.constructTx()
 	} else {
@@ -307,7 +337,7 @@ func (pg *Page) constructTx() {
 	}
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number)
+	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, pg.selectedUTXOs)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -326,13 +356,18 @@ func (pg *Page) constructTx() {
 	}
 
 	feeAtom := feeAndSize.Fee.UnitValue
+	spendableAmount := sourceAccount.Balance.Spendable.ToInt()
+	if len(pg.selectedUTXOs) > 0 {
+		spendableAmount = pg.selectedUTXOsAmount
+	}
+
 	if SendMax {
-		amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
+		amountAtom = spendableAmount - feeAtom
 	}
 
 	wal := pg.WL.SelectedWallet.Wallet
 	totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
-	balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
+	balanceAfterSend := wal.ToAmount(spendableAmount - totalSendingAmount.ToInt())
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()

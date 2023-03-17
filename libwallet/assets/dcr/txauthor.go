@@ -31,7 +31,7 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32) error {
+func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
 	_, err := asset.GetAccount(sourceAccountNumber)
 	if err != nil {
 		return err

@@ -253,11 +253,15 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
-		pg.ParentWindow().Display(NewSendPage(pg.Load))
+		sendPage := NewSendPage(pg.Load)
+		sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
+		pg.ParentNavigator().Display(sendPage)
 	}
 
 	if pg.fromCoinSelection.Clicked() {
-		pg.ParentNavigator().Display(NewSendPage(pg.Load))
+		sendPage := NewSendPage(pg.Load)
+		sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
+		pg.ParentNavigator().Display(sendPage)
 	}
 
 	if pg.clearButton.Clicked() {

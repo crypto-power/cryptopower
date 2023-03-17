@@ -51,7 +51,6 @@ func (pg *Page) initLayoutWidgets() {
 	// Set the maximum characters the editor can accept.
 	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
 
-	pg.selectedOption = defaultCoinSelection // holds the default option until changed.
 	pg.toCoinSelection = pg.Theme.NewClickable(false)
 }
 
@@ -312,6 +311,11 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
+	selectedOption := automaticCoinSelection
+	if len(pg.selectedUTXOs) > 0 {
+		selectedOption = manualCoinSelection
+	}
+
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		inset := layout.UniformInset(values.MarginPadding15)
 		return inset.Layout(gtx, func(gtx C) D {
@@ -327,7 +331,7 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 							Alignment:   layout.Middle,
 							Clickable:   pg.toCoinSelection,
 						}.Layout(gtx,
-							layout.Rigid(pg.Theme.Label(values.TextSize16, pg.selectedOption).Layout),
+							layout.Rigid(pg.Theme.Label(values.TextSize16, selectedOption).Layout),
 							layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
 						)
 					})

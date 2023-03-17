@@ -43,20 +43,24 @@ type TxAuthor struct {
 }
 
 // NewUnsignedTx creates a new unsigned transaction.
-func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32) error {
+func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
 	}
 
-	_, err := asset.GetAccount(sourceAccountNumber)
-	if err != nil {
-		return err
+	if len(utxos) == 0 {
+		// Ignore this account validation if some selectedUTXOs were passed.
+		_, err := asset.GetAccount(sourceAccountNumber)
+		if err != nil {
+			return err
+		}
 	}
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
 		destinations:        make(map[string]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
+		selectedUXTOs:       utxos,
 	}
 	return nil
 }
@@ -360,19 +364,23 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 			return nil, err
 		}
 
+		// SendMax is activated if all funds in the account are to be sent or
+		// manual coin selection happened where a user set the specific UTXOs to
+		// send.
+		sendMax = destination.SendMax || len(asset.TxAuthoredInfo.selectedUXTOs) > 0
+
 		// check if multiple destinations are set to receive max amount
-		if destination.SendMax && changeSource != nil {
+		if sendMax && changeSource != nil {
 			return nil, fmt.Errorf("cannot send max amount to multiple recipients")
 		}
 
-		if destination.SendMax {
+		if sendMax {
 			// Use this destination address to make a changeSource rather than a tx output.
 			changeSource, err = txhelper.MakeBTCTxChangeSource(destination.Address, asset.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
-			sendMax = true
 
 		} else {
 			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
@@ -406,14 +414,11 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 
 	unspents := asset.TxAuthoredInfo.selectedUXTOs
 	if len(unspents) == 0 {
-		// if preset list of UTXOs exists, use them instead.
+		// if preset with a selected list of UTXOs exists, use them instead.
 		unspents, err = asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
 		if err != nil {
 			return nil, err
 		}
-
-		// Send max must be activated.
-		sendMax = true
 	}
 
 	inputSource := asset.makeInputSource(unspents, sendMax)
