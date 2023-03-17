@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"sort"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -24,10 +25,17 @@ const (
 	MaxAddressLen = 16
 )
 
+// UTXOInfo defines a utxo record associated with a specific checkbox.
+// The record should always retain that checkbox including when rows re-ording
+// happens.
+type UTXOInfo struct {
+	*sharedW.UnspentOutput
+	checkbox cryptomaterial.CheckBoxStyle
+}
+
 type AccountsUTXOInfo struct {
-	Account    string
-	Details    []*sharedW.UnspentOutput
-	checkboxes []cryptomaterial.CheckBoxStyle
+	Account string
+	Details []*UTXOInfo
 }
 
 type ManualCoinSelectionPage struct {
@@ -48,6 +56,18 @@ type ManualCoinSelectionPage struct {
 	txSize        cryptomaterial.Label
 	totalAmount   cryptomaterial.Label
 
+	amountLabel        labelCell
+	addressLabel       labelCell
+	confirmationsLabel labelCell
+	dateLabel          labelCell
+
+	// UTXO table sorting buttons. Clickable used because button doesn't support
+	// cryptomaterial.Image Icons.
+	amountClickable        *cryptomaterial.Clickable
+	addressClickable       *cryptomaterial.Clickable
+	confirmationsClickable *cryptomaterial.Clickable
+	dateClickable          *cryptomaterial.Clickable
+
 	accountsUTXOs     []*AccountsUTXOInfo
 	UTXOList          *cryptomaterial.ClickableList
 	fromCoinSelection *cryptomaterial.Clickable
@@ -55,12 +75,29 @@ type ManualCoinSelectionPage struct {
 
 	listContainer *widget.List
 	utxosRow      *widget.List
+
+	lastSortEvent Lastclicked
+	clickables    []*cryptomaterial.Clickable
+	properties    []componentProperties
+
+	sortingInProgress bool
 }
 
 type componentProperties struct {
 	direction layout.Direction
 	spacing   layout.Spacing
 	weight    float32
+}
+
+type Lastclicked struct {
+	clicked int
+	count   int
+	current int
+}
+
+type labelCell struct {
+	clickable *cryptomaterial.Clickable
+	label     cryptomaterial.Label
 }
 
 func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
@@ -98,6 +135,39 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 
 	pg.fromCoinSelection = pg.Theme.NewClickable(false)
 
+	pg.amountClickable = pg.Theme.NewClickable(true)
+	pg.addressClickable = pg.Theme.NewClickable(true)
+	pg.confirmationsClickable = pg.Theme.NewClickable(true)
+	pg.dateClickable = pg.Theme.NewClickable(false)
+
+	name := fmt.Sprintf("%v(%v)", values.String(values.StrAmount),
+		pg.WL.SelectedWallet.Wallet.GetAssetType().String())
+
+	// UTXO table view titles.
+	pg.amountLabel = pg.generateLabel(name, pg.amountClickable)                                                 // Component 2
+	pg.addressLabel = pg.generateLabel(values.String(values.StrAddress), pg.addressClickable)                   // Component 3
+	pg.confirmationsLabel = pg.generateLabel(values.String(values.StrConfirmations), pg.confirmationsClickable) // component 4
+	pg.dateLabel = pg.generateLabel(values.String(values.StrDateCreated), pg.dateClickable)                     // component 5
+
+	// properties describes the spacing constants set for the display of UTXOs.
+	pg.properties = []componentProperties{
+		{direction: layout.Center, weight: 0.10}, // Component 1
+		{direction: layout.W, weight: 0.20},      // Component 2
+		{direction: layout.Center, weight: 0.25}, // Component 3
+		{direction: layout.Center, weight: 0.20}, // Component 4
+		{direction: layout.Center, weight: 0.25}, // Component 5
+	}
+
+	// clickables defines the event handlers mapped to individual title components.
+	pg.clickables = []*cryptomaterial.Clickable{
+		pg.amountClickable,        // Component 2
+		pg.addressClickable,       // Component 3
+		pg.confirmationsClickable, // Component 4
+		pg.dateClickable,          // Component 5
+	}
+
+	pg.lastSortEvent = Lastclicked{clicked: -1}
+
 	return pg
 }
 
@@ -132,16 +202,18 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 			return fmt.Errorf("querying the account (%v) info failed: %v", account.Number, err)
 		}
 
-		checkboxes := make([]cryptomaterial.CheckBoxStyle, len(info))
-		// create checkboxes for all the utxo available.
-		for i := range info {
-			checkboxes[i] = pg.Theme.CheckBox(new(widget.Bool), "")
+		rowInfo := make([]*UTXOInfo, len(info))
+		// create checkboxes for all the utxo available per accounts UTXOs.
+		for i, row := range info {
+			rowInfo[i] = &UTXOInfo{
+				UnspentOutput: row,
+				checkbox:      pg.Theme.CheckBox(new(widget.Bool), ""),
+			}
 		}
 
 		pg.accountsUTXOs = append(pg.accountsUTXOs, &AccountsUTXOInfo{
-			Details:    info,
-			Account:    account.Name,
-			checkboxes: checkboxes,
+			Details: rowInfo,
+			Account: account.Name,
 		})
 
 		collapsible := pg.Theme.Collapsible()
@@ -165,6 +237,38 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 
 	if pg.fromCoinSelection.Clicked() {
 		pg.ParentNavigator().Display(NewSendPage(pg.Load))
+	}
+
+sortingLoop:
+	for k, account := range pg.collapsibleList {
+		if account.IsExpanded() {
+		listLoop:
+			for pos, component := range pg.clickables {
+				if component == nil || !component.Clicked() {
+					continue listLoop
+				}
+
+				if pg.sortingInProgress {
+					break sortingLoop
+				}
+
+				pg.sortingInProgress = true
+
+				if pos != pg.lastSortEvent.clicked {
+					pg.lastSortEvent.clicked = pos
+					pg.lastSortEvent.count = 0
+				}
+				pg.lastSortEvent.count++
+
+				isAscendingOrder := pg.lastSortEvent.count%2 == 0
+				sort.SliceStable(pg.accountsUTXOs[k].Details, func(i, j int) bool {
+					return sortUTXOrows(i, j, pos, isAscendingOrder, pg.accountsUTXOs[k].Details)
+				})
+
+				pg.sortingInProgress = false
+				break sortingLoop
+			}
+		}
 	}
 }
 
@@ -320,9 +424,8 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 												pg.Theme.Label(values.TextSize14, values.String(values.StrNoUTXOs)).Layout,
 											)
 										}
-										return pg.accountListItemsSection(gtx, pg.accountsUTXOs[i].Details, pg.accountsUTXOs[i].checkboxes)
+										return pg.accountListItemsSection(gtx, pg.accountsUTXOs[i].Details)
 									}
-
 									return pg.collapsibleList[i].Layout(gtx, collapsibleHeader, collapsibleBody)
 								}),
 							)
@@ -334,7 +437,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 	})
 }
 
-func (pg *ManualCoinSelectionPage) genLabel(txt interface{}, isTitle bool) cryptomaterial.Label {
+func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cryptomaterial.Clickable) labelCell {
 	txtStr := ""
 	switch n := txt.(type) {
 	case string:
@@ -345,36 +448,29 @@ func (pg *ManualCoinSelectionPage) genLabel(txt interface{}, isTitle bool) crypt
 		txtStr = fmt.Sprintf("%d", n)
 	}
 
+	lb := pg.Theme.Label(values.TextSize14, txtStr)
 	if len(txtStr) > MaxAddressLen {
-		txtStr = txtStr[:MaxAddressLen] + "..."
+		// Only addresses have texts longer than 16 characters.
+		lb.Text = txtStr[:MaxAddressLen] + "..."
+		lb.Color = pg.Theme.Color.Primary
 	}
 
-	lb := pg.Theme.Label(values.TextSize14, txtStr)
-	if isTitle {
+	if clickable != nil {
 		lb.Font.Weight = text.Bold
 		lb.Color = pg.Theme.Color.Gray3
 	}
 
-	return lb
+	return labelCell{
+		label:     lb,
+		clickable: clickable,
+	}
 }
 
-func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*sharedW.UnspentOutput, cb []cryptomaterial.CheckBoxStyle) D {
-	properties := []componentProperties{
-		{direction: layout.Center, weight: 0.10}, // Component 1
-		{direction: layout.W, weight: 0.20},      // Component 2
-		{direction: layout.Center, weight: 0.25}, // Component 3
-		{direction: layout.Center, weight: 0.20}, // Component 4
-		{direction: layout.Center, weight: 0.25}, // Component 5
-	}
+func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOInfo) D {
 	return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				amountLabel := pg.genLabel(values.String(values.StrAmount), true)               // Component 2
-				addresslabel := pg.genLabel(values.String(values.StrAddress), true)             // Component 3
-				confirmationsLabel := pg.genLabel(values.String(values.StrConfirmations), true) // component 4
-				dateLabel := pg.genLabel(values.String(values.StrDateCreated), true)            // component 5
-
-				return pg.rowItemsSection(gtx, properties, nil, amountLabel, addresslabel, confirmationsLabel, dateLabel)
+				return pg.rowItemsSection(gtx, nil, pg.amountLabel, pg.addressLabel, pg.confirmationsLabel, pg.dateLabel)
 			}),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -384,21 +480,19 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*share
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 								v := utxos[index]
-								checkButton := &cb[index]                                                          // Component 1
-								amountLabel := pg.genLabel(v.Amount.ToCoin(), false)                               // component 2
-								addresslabel := pg.genLabel(v.Address, false)                                      // Component 3
-								confirmationsLabel := pg.genLabel(v.Confirmations, false)                          // Component 4
-								dateLabel := pg.genLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), false) // Component 5
+								checkButton := &v.checkbox                                                            // Component 1
+								amountLabel := pg.generateLabel(v.Amount.ToCoin(), nil)                               // component 2
+								addresslabel := pg.generateLabel(v.Address, nil)                                      // Component 3
+								confirmationsLabel := pg.generateLabel(v.Confirmations, nil)                          // Component 4
+								dateLabel := pg.generateLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), nil) // Component 5
 
-								addresslabel.Color = pg.Theme.Color.Primary
-
-								return pg.rowItemsSection(gtx, properties, checkButton, amountLabel, addresslabel, confirmationsLabel, dateLabel)
+								return pg.rowItemsSection(gtx, checkButton, amountLabel, addresslabel, confirmationsLabel, dateLabel)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
 							// No divider for last row
 							if index == len(utxos)-1 {
-								D{}
+								return D{}
 							}
 							return pg.Theme.Separator().Layout(gtx)
 						}),
@@ -409,34 +503,90 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*share
 	})
 }
 
-func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, properties []componentProperties, components ...interface{}) D {
-	max := float32(gtx.Constraints.Max.X)
-	rowItems := make([]layout.Widget, len(components))
-
-	for i, c := range components {
+func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interface{}) D {
+	getRowItem := func(gtx C, index int) D {
 		var widget layout.Widget
+		c := components[index]
+
 		switch n := c.(type) {
 		case *cryptomaterial.CheckBoxStyle:
 			widget = n.Layout
-		case cryptomaterial.Label:
-			widget = n.Layout
+		case labelCell:
+			pg.lastSortEvent.current = index - 1
+			if n.clickable != nil {
+				widget = func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Alignment:   layout.Middle,
+						Clickable:   n.clickable,
+					}.Layout(gtx,
+						layout.Rigid(n.label.Layout),
+						layout.Rigid(func(gtx C) D {
+							count := pg.lastSortEvent.count
+							if pg.lastSortEvent.clicked == pg.lastSortEvent.current && count >= 0 {
+								m := values.MarginPadding4
+								inset := layout.Inset{Left: m}
+
+								if count%2 == 0 { // add ascending icon
+									inset.Bottom = m
+									return inset.Layout(gtx, pg.Theme.Icons.CaretUp.Layout12dp)
+								} // else add descending icon
+								inset.Top = m
+								return inset.Layout(gtx, pg.Theme.Icons.CaretDown.Layout12dp)
+							}
+							return D{}
+						}),
+					)
+				}
+			} else {
+				widget = n.label.Layout
+			}
 		default:
-			// create a default placeholder widget.
-			widget = pg.Theme.Label(values.TextSize10, "").Layout
+			// create an empty default placeholder for unsupported widgets.
+			widget = func(gtx C) D { return D{} }
 		}
-		// Altering this variable makes flex to overwrite on the same variable
-		// causing duplicaton of the last variable.
-		w := layout.Rigid(widget)
-		rowItems[i] = func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, w)
-		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(widget))
 	}
 
+	max := float32(gtx.Constraints.Max.X)
 	return pg.Theme.List(pg.utxosRow).Layout(gtx, len(components), func(gtx C, index int) D {
-		c := properties[index]
+		c := pg.properties[index]
 		gtx.Constraints.Min.X = int(max * c.weight)
 		return c.direction.Layout(gtx, func(gtx C) D {
-			return rowItems[index](gtx)
+			return getRowItem(gtx, index)
 		})
 	})
+}
+
+func sortUTXOrows(i, j, pos int, ascendingOrder bool, elems []*UTXOInfo) bool {
+	switch pos {
+	case 0: // component 2 (Amount Component)
+		if ascendingOrder {
+			return elems[i].Amount.ToInt() > elems[j].Amount.ToInt()
+		}
+		return elems[i].Amount.ToInt() < elems[j].Amount.ToInt()
+	case 1: // component 3 (Address Component)
+		addresses := []string{elems[i].Address, elems[j].Address}
+		if ascendingOrder {
+			sort.Strings(addresses)
+			return elems[i].Address == addresses[0]
+		}
+		sort.Sort(sort.Reverse(sort.StringSlice(addresses)))
+		return elems[i].Address == addresses[0]
+	case 2: // component 4 (Confirmations Component)
+		if ascendingOrder {
+			return elems[i].Confirmations > elems[j].Confirmations
+		}
+		return elems[i].Confirmations < elems[j].Confirmations
+	case 3: // component 5 (Date Component)
+		if ascendingOrder {
+			return elems[i].ReceiveTime.Unix() > elems[j].ReceiveTime.Unix()
+		}
+		return elems[i].ReceiveTime.Unix() < elems[j].ReceiveTime.Unix()
+
+	default:
+		return false
+	}
 }
