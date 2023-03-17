@@ -2,9 +2,7 @@ package libwallet
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"strings"
 	"time"
 
 	api "code.cryptopower.dev/group/instantswap"
@@ -21,11 +19,15 @@ import (
 )
 
 const (
-	BTCBlockTime = 1 * time.Minute
-	DCRBlockTime = 1 * time.Minute
+	BTCBlockTime = 10 * time.Minute
+	DCRBlockTime = 5 * time.Minute
+
+	DefaultMarketDeviation = 5 // 5%
+	DefaultConfirmations   = 1
 )
 
 func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap.SchedulerParams) error {
+	const op errors.Op = "mgr.StartScheduler"
 	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 
 	if mgr.InstantSwap.CancelOrderScheduler != nil {
@@ -48,24 +50,20 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 	log.Info("Order Scheduler: initializing exchange server")
 	exchangeObject, err := mgr.InstantSwap.NewExchanageServer(params.Order.ExchangeServer)
 	if err != nil {
-		log.Errorf("Error instantiating exchange server: %v", err)
-		return err
+		return errors.E(op, err)
 	}
 
 	for {
 		// Check if scheduler has been shutdown and exit if true.
 		if mgr.InstantSwap.SchedulerCtx.Err() != nil {
-			log.Info("InstantSwap.SchedulerCtx.Err()", mgr.InstantSwap.SchedulerCtx.Err())
 			return mgr.InstantSwap.SchedulerCtx.Err()
 		}
 
 		log.Info("Order Scheduler: finding source wallet")
 		sourceWallet := mgr.WalletWithID(params.Order.SourceWalletID)
-		fmt.Println("sourceWallet: ", sourceWallet)
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
-			log.Error(err)
-			break
+			return err
 		}
 
 		defer sourceWallet.LockWallet()
@@ -77,7 +75,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		if sourceAccountBalance.Spendable.ToCoin() <= params.BalanceToMaintain {
 			log.Error("source wallet balance is less than or equals the set balance to maintain")
-			break // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
+			return errors.E(op, err) // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
 		}
 
 		rateRequestParams := api.ExchangeRateRequest{
@@ -88,22 +86,17 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		log.Info("Order Scheduler: getting exchange rate info")
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
 		if err != nil {
-			log.Error(err)
-			break
+			return errors.E(op, err)
 		}
-		fmt.Println("res: ", res)
 
 		if params.MinimumExchangeRate <= 0 {
-			params.MinimumExchangeRate = 5 // default 5%
+			params.MinimumExchangeRate = DefaultMarketDeviation // default 5%
 		}
 
 		market := params.Order.FromCurrency + "-" + params.Order.ToCurrency
-		fmt.Println("market: ", market)
-		fmt.Println("market UPPER: ", strings.ToUpper(market))
 		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, market)
 		if err != nil {
-			log.Error(err)
-			break
+			return errors.E(op, err)
 		}
 
 		exchangeServerRate := 1 / res.ExchangeRate
@@ -116,7 +109,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		percentageDiff := math.Abs((exchangeServerRate-binanceRate)/((exchangeServerRate+binanceRate)/2)) * 100
 		if percentageDiff > params.MinimumExchangeRate {
 			log.Error("exchange rate deviates from the market rate by more than 5%")
-			return err
+			return errors.E(op, err)
 		}
 
 		// set the max send amount to the max limit set by the server
@@ -129,29 +122,24 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		log.Info("Order Scheduler: check balance after exchange")
-
 		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
 		if estimatedBalanceAfterExchange < params.BalanceToMaintain {
 			log.Error("source wallet balance after the exchange would be less than the set balance to maintain")
-			break // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
+			return errors.E(op, err) // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
 		}
 
 		log.Info("Order Scheduler: creating order")
-
 		params.Order.InvoicedAmount = invoicedAmount
 		order, err := mgr.InstantSwap.CreateOrder(exchangeObject, params.Order)
 		if err != nil {
-			// log.Error("CreateOrder", err)
 			return err
 		}
 
 		log.Info("Order Scheduler: creating unsigned transaction")
-
 		// construct the transaction to send the invoiced amount to the exchange server
 		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber)
 		if err != nil {
-			log.Error("NewUnsignedTx", err)
-			break
+			return errors.E(op, err)
 		}
 
 		var amount int64
@@ -161,41 +149,46 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		case utils.DCRWalletAsset.ToStringLower():
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
-		log.Info("Order Scheduler: adding send destination")
 
+		log.Info("Order Scheduler: adding send destination")
 		err = sourceWallet.AddSendDestination(order.DepositAddress, amount, false)
 		if err != nil {
-			log.Error("AddSendDestination", err)
-			break
+			return errors.E(op, err)
 		}
 
-		log.Info("Order Scheduler: broadcasting")
-
-		// _, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
-		// if err != nil {
-		// 	log.Error(err)
-		// 	break
-		// }
+		log.Info("Order Scheduler: broadcasting tx")
+		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
+		if err != nil {
+			return errors.E(op, err)
+		}
 
 		// wait for the order to be completed before scheduling the next order
 		var isRefunded bool
 		for {
 			// Check if scheduler has been shutdown and exit if true.
 			if mgr.InstantSwap.SchedulerCtx.Err() != nil {
-				log.Error("InstantSwap.SchedulerCtx.Err()", mgr.InstantSwap.SchedulerCtx.Err())
 				return mgr.InstantSwap.SchedulerCtx.Err()
 			}
 
-			log.Info("Order Scheduler: get newly created order info")
+			// depending on the block time for the asset, the order may take a while to complete
+			// so we wait for the estimated block time before checking the order status
+			switch params.Order.FromCurrency {
+			case utils.BTCWalletAsset.String():
+				log.Info("Order Scheduler: waiting for btc block time (10 minutes)")
+				time.Sleep(BTCBlockTime)
+			case utils.DCRWalletAsset.String():
+				log.Info("Order Scheduler: waiting for dcr block time (5 minutes)")
+				time.Sleep(DCRBlockTime)
+			}
 
+			log.Info("Order Scheduler: get newly created order info")
 			orderInfo, err := mgr.InstantSwap.GetOrderInfo(exchangeObject, order.UUID)
 			if err != nil {
-				log.Error(err)
-				break
+				return errors.E(op, err)
 			}
 
 			if orderInfo.Status == api.OrderStatusRefunded {
-				log.Error("order was refunded. verify that the order was refunded successfully from the blockchain explorer ")
+				log.Error("order was refunded. verifing that the order was refunded successfully from the blockchain explorer")
 				tmpFromCurrency := params.Order.FromCurrency
 				tmpToCurrency := params.Order.ToCurrency
 
@@ -208,44 +201,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				isRefunded = true
 			}
 
-			// if orderInfo.Status == api.OrderStatusCompleted {
-			// Verify that the order was completed successfully from the blockchain explorer.
-			// explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
-			// if err != nil {
-			// 	log.Error(err)
-			// 	break
-			// }
-
-			// verificationInfo := blockexplorer.TxVerifyRequest{
-			// 	TxId:      orderInfo.TxID,
-			// 	Amount:    orderInfo.ReceiveAmount,
-			// 	CreatedAt: orderInfo.CreatedAt,
-			// 	Address:   orderInfo.DestinationAddress,
-			// 	Confirms:  1, //TODO:STATIC until deciding for another config param??
-			// }
-
-			// verification, err := explorer.VerifyTransaction(verificationInfo)
-			// if err != nil {
-			// 	log.Error(err)
-			// 	break
-			// }
-
-			// if verification.Verified {
-			// 	if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
-			// 		log.Error("received amount does not match the expected amount")
-			// 		break
-			// 	}
-			// }
-
-			// }
-
 			log.Info("Order Scheduler: instantiate block explorer")
-
 			// verify that the order was completed successfully from the blockchain explorer
 			explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
 			if err != nil {
-				log.Error(err)
-				break
+				return errors.E(op, err)
 			}
 
 			verificationInfo := blockexplorer.TxVerifyRequest{
@@ -253,21 +213,19 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				Amount:    orderInfo.ReceiveAmount,
 				CreatedAt: orderInfo.CreatedAt,
 				Address:   orderInfo.DestinationAddress,
-				Confirms:  1, //TODO:STATIC until deciding for another config param??
+				Confirms:  DefaultConfirmations,
 			}
 
 			log.Info("Order Scheduler: verify transaction")
-
 			verification, err := explorer.VerifyTransaction(verificationInfo)
 			if err != nil {
-				log.Error(err)
-				break
+				return errors.E(op, err)
 			}
 
 			if verification.Verified {
 				if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
 					log.Error("received amount does not match the expected amount")
-					break
+					return errors.E(op, err)
 				}
 
 				if isRefunded {
@@ -275,30 +233,19 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				} else {
 					log.Info("order was completed successfully")
 				}
+
+				break // order is completed, break out of the loop
 			}
 
-			// depending on the block time for the asset, the order may take a while to complete
-			// so we wait for the estimated block time before checking the order status
-			switch params.Order.FromCurrency {
-			case utils.BTCWalletAsset.String():
-				log.Info("Order Scheduler: sleeping btc block time (10 minutes)")
-
-				time.Sleep(BTCBlockTime)
-			case utils.DCRWalletAsset.String():
-				log.Info("Order Scheduler: sleeping dcr block time (5 minutes)")
-
-				time.Sleep(DCRBlockTime)
-			}
-
-			continue // order is not completed, continue waiting
+			continue // order is not completed, check again
 		}
-		log.Info("Order Scheduler: try again using frequency set")
 
+		log.Info("Order Scheduler: creating next order based on selected frequency")
 		// run at the specified frequency
 		time.Sleep(params.Frequency * time.Hour)
-	}
 
-	return nil
+		continue
+	}
 }
 
 func (mgr *AssetsManager) StopScheduler() {
