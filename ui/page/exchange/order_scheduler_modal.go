@@ -59,7 +59,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	osm := &orderSchedulerModal{
 		Load:              l,
 		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler)),
-		exchangeSelector:  NewExchangeSelector(l),
+		exchangeSelector:  NewExchangeSelector(l, instantswap.FlypMe),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
 		copyRedirect:      l.Theme.NewClickable(false),

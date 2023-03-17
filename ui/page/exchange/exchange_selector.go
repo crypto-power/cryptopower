@@ -50,7 +50,7 @@ type exchangeModal struct {
 
 // NewExchangeSelector creates an exchange selector component.
 // It opens a modal to select a desired exchange.
-func NewExchangeSelector(l *load.Load) *ExchangeSelector {
+func NewExchangeSelector(l *load.Load, server ...instantswap.Server) *ExchangeSelector {
 	es := &ExchangeSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
@@ -67,13 +67,26 @@ func NewExchangeSelector(l *load.Load) *ExchangeSelector {
 				es.exchangeCallback(exch)
 			}
 		})
-	es.exchangeItems = es.buildExchangeItems()
+	es.exchangeItems = es.buildExchangeItems(server...)
 	return es
 }
 
 // SupportedExchanges returns a slice containing all the exchanges
 // Currently supported.
-func (es *ExchangeSelector) SupportedExchanges() []*Exchange {
+func (es *ExchangeSelector) SupportedExchanges(server ...instantswap.Server) []*Exchange {
+	// check if server is not nil
+	if len(server) > 0 {
+		exchng := &Exchange{
+			Name: server[0].CapFirstLetter(),
+			Server: instantswap.ExchangeServer{
+				Server: server[0],
+			},
+			Icon: es.setServerIcon(server[0].ToString()),
+		}
+
+		return []*Exchange{exchng}
+	}
+
 	exchangeServers := es.WL.AssetsManager.InstantSwap.ExchangeServers()
 
 	var exchange []*Exchange
@@ -214,8 +227,8 @@ func newExchangeModal(l *load.Load) *exchangeModal {
 	return em
 }
 
-func (es *ExchangeSelector) buildExchangeItems() []*exchangeItem {
-	exList := es.SupportedExchanges()
+func (es *ExchangeSelector) buildExchangeItems(server ...instantswap.Server) []*exchangeItem {
+	exList := es.SupportedExchanges(server...)
 	exItems := make([]*exchangeItem, 0)
 	for _, v := range exList {
 		exItems = append(exItems, &exchangeItem{
