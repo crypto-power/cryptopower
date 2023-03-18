@@ -412,9 +412,9 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
+	// if preset with a selected list of UTXOs exists, use them instead.
 	unspents := asset.TxAuthoredInfo.selectedUXTOs
 	if len(unspents) == 0 {
-		// if preset with a selected list of UTXOs exists, use them instead.
 		unspents, err = asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
 		if err != nil {
 			return nil, err

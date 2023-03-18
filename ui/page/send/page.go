@@ -316,10 +316,11 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 func (pg *Page) validate() bool {
 	amountIsValid := pg.amount.amountIsValid()
 	addressIsValid := pg.sendDestination.validate()
-	noErrMsg := pg.amount.amountErrorText == ""
 
+	// No need for checking the err message since it is as result of amount and
+	// address validation.
 	// validForSending
-	return amountIsValid && addressIsValid && noErrMsg
+	return amountIsValid && addressIsValid
 }
 
 func (pg *Page) constructTx() {
@@ -442,9 +443,11 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.feeRateSelector.FetchRates.Clicked() {
 		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
 	}
+
 	if pg.feeRateSelector.EditRates.Clicked() {
 		pg.feeRateSelector.OnEditRateCliked(pg.selectedWallet)
 	}
+
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
 	pg.amount.handle()
@@ -481,21 +484,6 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 
-	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
-	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
-		pg.amount.usdAmountEditor.Editor.Focused()
-
-	if !modalShown && !isAmountEditorActive {
-		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
-		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
-
-		switch {
-		// If accounts switch selects the wallet option.
-		case isSendToWallet && !isDestinationEditorFocused:
-			pg.amount.amountEditor.Editor.Focus()
-		}
-	}
-
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
@@ -525,7 +513,10 @@ func (pg *Page) HandleUserInteractions() {
 
 	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
 		pg.amount.validateAmount()
-		pg.validateAndConstructTxAmountOnly()
+		if pg.amount.amountErrorText == "" {
+			// proceed with validation only when the amount is valid.
+			pg.validateAndConstructTxAmountOnly()
+		}
 	}
 
 	if pg.amount.IsMaxClicked() {

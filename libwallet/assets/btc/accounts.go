@@ -146,8 +146,8 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, err
 	resp := make([]*sharedW.UnspentOutput, 0, len(unspents))
 
 	for _, utxo := range unspents {
-		// error is ignore because this is data from the API that doesn't require an
-		// extra layer of validation.
+		// error returned is ignored because the amount value is from upstream
+		// and doesn't require an extra layer of validation.
 		amount, _ := btcutil.NewAmount(utxo.Amount)
 
 		txInfo, err := asset.GetTransactionRaw(utxo.TxID)

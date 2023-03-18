@@ -19,16 +19,14 @@ import (
 )
 
 const (
-	ManualCoinSelectionPageID = "backup_success"
+	ManualCoinSelectionPageID = "manual_coin_selection"
 
 	// MaxAddressLen defines the maximum length of address characters displayed
 	// on the UI.
 	MaxAddressLen = 16
 )
 
-// UTXOInfo defines a utxo record associated with a specific checkbox.
-// The record should always retain that checkbox including when rows re-ording
-// happens.
+// UTXOInfo defines a utxo record associated with a specific row in the table view.
 type UTXOInfo struct {
 	*sharedW.UnspentOutput
 	checkbox    cryptomaterial.CheckBoxStyle
@@ -99,7 +97,6 @@ type componentProperties struct {
 type Lastclicked struct {
 	clicked int
 	count   int
-	current int
 }
 
 type labelCell struct {
@@ -168,7 +165,7 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 		{direction: layout.Center, weight: 0.25}, // Component 5
 	}
 
-	// clickables defines the event handlers mapped to individual title components.
+	// clickables defines the event handlers mapped to an individual title field.
 	pg.clickables = []*cryptomaterial.Clickable{
 		pg.amountClickable,        // Component 2
 		pg.addressClickable,       // Component 3
@@ -223,7 +220,8 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 		}
 
 		rowInfo := make([]*UTXOInfo, len(info))
-		// create checkboxes for all the utxo available per accounts UTXOs.
+		// create checkboxes and address copy components for all the utxos
+		// available per accounts UTXOs.
 		for i, row := range info {
 			rowInfo[i] = &UTXOInfo{
 				UnspentOutput: row,
@@ -596,7 +594,6 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		case func(gtx C) D:
 			widget = n
 		case labelCell:
-			pg.lastSortEvent.current = index - 1
 			if n.clickable != nil {
 				widget = func(gtx C) D {
 					return cryptomaterial.LinearLayout{
@@ -609,7 +606,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 						layout.Rigid(n.label.Layout),
 						layout.Rigid(func(gtx C) D {
 							count := pg.lastSortEvent.count
-							if pg.lastSortEvent.clicked == pg.lastSortEvent.current && count >= 0 {
+							if pg.lastSortEvent.clicked == index-1 && count >= 0 {
 								m := values.MarginPadding4
 								inset := layout.Inset{Left: m}
 

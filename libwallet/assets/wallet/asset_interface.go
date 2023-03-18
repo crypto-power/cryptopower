@@ -103,7 +103,7 @@ type Asset interface {
 	ReadLongConfigValueForKey(key string, defaultValue int64) int64
 	ReadStringConfigValueForKey(key string, defaultValue string) string
 
-	NewUnsignedTx(sourceAccountNumber int32, utxos []*UnspentOutput) error
+	NewUnsignedTx(accountNumber int32, utxos []*UnspentOutput) error
 	AddSendDestination(address string, unitAmount int64, sendMax bool) error
 	ComputeUTXOsSize(utxos []*UnspentOutput) (int, error)
 	Broadcast(passphrase, label string) ([]byte, error)
