@@ -20,8 +20,10 @@ type HttpAPIType uint8
 const (
 	// Default http client timeout in secs.
 	defaultHttpClientTimeout = 30 * time.Second
-	// DNS server to determine internet connectivity status
-	conCheckDNSAddress = "8.8.8.8:53"
+	// DNS server to determine internet connectivity status, 84.200.69.80
+	// is DNSWatch primary dns server address, it is used because of it's privacy
+	// offerings, can be replaced if found inadequate.
+	conCheckDNSAddress = "84.200.69.80:53"
 	// Address to look up during DNS connectivity check.
 	conCheckaddressToLookUp = "www.google.com"
 
