@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -19,6 +20,10 @@ type HttpAPIType uint8
 const (
 	// Default http client timeout in secs.
 	defaultHttpClientTimeout = 30 * time.Second
+	// DNS server to determine internet connectivity status
+	conCheckDNSAddress = "8.8.8.8:53"
+	// Address to look up during DNS connectivity check.
+	conCheckaddressToLookUp = "www.google.com"
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
 	GovernanceHttpAPI HttpAPIType = iota
@@ -206,7 +211,7 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 // established. If established, IsOnline should return true otherwise IsOnline returns false.
 // Default url to check connection is http://google.com.
 func IsOnline() bool {
-	// If the was wallet online, and the wallet's online status was updated in
+	// If the wallet was online, and the wallet's online status was updated in
 	// the last 2 minutes return true.
 	if time.Since(netC.lastUpdate) < time.Minute*2 && netC.isConnected {
 		return true
@@ -217,8 +222,21 @@ func IsOnline() bool {
 		return netC.isConnected
 	}
 
-	_, err := new(http.Client).Get("https://google.com")
-	// When err != nil, internet connection test failed.
+	// Use DNS resolver to determine internet connectivity status.
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: defaultHttpClientTimeout,
+			}
+			return d.DialContext(ctx, network, conCheckDNSAddress)
+		},
+	}
+
+	// DNS look up failed if err != nil.
+	_, err := resolver.LookupHost(context.Background(), conCheckaddressToLookUp)
+
+	// if err == nil, the internet link is up.
 	netC.isConnected = err == nil
 	netC.lastUpdate = time.Now()
 
