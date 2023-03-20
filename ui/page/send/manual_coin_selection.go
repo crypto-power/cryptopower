@@ -33,7 +33,7 @@ type UTXOInfo struct {
 	addressCopy *cryptomaterial.Clickable
 }
 
-type AccountsUTXOInfo struct {
+type AccountUTXOInfo struct {
 	Account string
 	Details []*UTXOInfo
 }
@@ -71,10 +71,10 @@ type ManualCoinSelectionPage struct {
 	confirmationsClickable *cryptomaterial.Clickable
 	dateClickable          *cryptomaterial.Clickable
 
-	accountsUTXOs     []*AccountsUTXOInfo
-	UTXOList          *cryptomaterial.ClickableList
-	fromCoinSelection *cryptomaterial.Clickable
-	collapsibleList   []*cryptomaterial.Collapsible
+	accountUTXOs       *AccountUTXOInfo
+	UTXOList           *cryptomaterial.ClickableList
+	fromCoinSelection  *cryptomaterial.Clickable
+	accountCollapsible *cryptomaterial.Collapsible
 
 	listContainer *widget.List
 	utxosRow      *widget.List
@@ -86,6 +86,8 @@ type ManualCoinSelectionPage struct {
 
 	sortingInProgress bool
 	strAssetType      string
+
+	sendPage *Page
 }
 
 type componentProperties struct {
@@ -104,7 +106,7 @@ type labelCell struct {
 	label     cryptomaterial.Label
 }
 
-func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
+func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelectionPage {
 	pg := &ManualCoinSelectionPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualCoinSelectionPageID),
@@ -120,6 +122,7 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 		},
 		UTXOList:    l.Theme.NewClickableList(layout.Vertical),
 		addressCopy: make([]*cryptomaterial.Clickable, 0),
+		sendPage:    sendPage,
 	}
 
 	pg.actionButton.Font.Weight = text.SemiBold
@@ -129,7 +132,7 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 
 	c := l.Theme.Color.Danger
 	// Background is 8% of the Danger color.
-	alphaChan := (127 * 0.8)
+	alphaChan := 127 - (127 * 0.8)
 	pg.clearButton.Background = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
 
 	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
@@ -155,6 +158,10 @@ func NewManualCoinSelectionPage(l *load.Load) *ManualCoinSelectionPage {
 	pg.addressLabel = pg.generateLabel(values.String(values.StrAddress), pg.addressClickable)                   // Component 3
 	pg.confirmationsLabel = pg.generateLabel(values.String(values.StrConfirmations), pg.confirmationsClickable) // component 4
 	pg.dateLabel = pg.generateLabel(values.String(values.StrDateCreated), pg.dateClickable)                     // component 5
+
+	pg.accountCollapsible = pg.Theme.Collapsible()
+	pg.accountCollapsible.IconPosition = cryptomaterial.Before
+	pg.accountCollapsible.IconStyle = cryptomaterial.Caret
 
 	// properties describes the spacing constants set for the display of UTXOs.
 	pg.properties = []componentProperties{
@@ -206,39 +213,25 @@ func (pg *ManualCoinSelectionPage) OnNavigatedTo() {
 }
 
 func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
-	accounts, err := pg.WL.SelectedWallet.Wallet.GetAccountsRaw()
+	account := pg.sendPage.sourceAccountSelector.SelectedAccount()
+	info, err := pg.WL.SelectedWallet.Wallet.UnspentOutputs(int32(account.AccountNumber))
 	if err != nil {
-		return fmt.Errorf("querying the accounts names failed: %v", err)
+		return fmt.Errorf("querying the account (%v) info failed: %v", account.AccountNumber, err)
 	}
 
-	pg.collapsibleList = make([]*cryptomaterial.Collapsible, 0, len(accounts.Accounts))
-	pg.accountsUTXOs = make([]*AccountsUTXOInfo, 0, len(accounts.Accounts))
-	for _, account := range accounts.Accounts {
-		info, err := pg.WL.SelectedWallet.Wallet.UnspentOutputs(account.Number)
-		if err != nil {
-			return fmt.Errorf("querying the account (%v) info failed: %v", account.Number, err)
+	rowInfo := make([]*UTXOInfo, len(info))
+	// create checkboxes and address copy components for all the utxos available.
+	for i, row := range info {
+		rowInfo[i] = &UTXOInfo{
+			UnspentOutput: row,
+			checkbox:      pg.Theme.CheckBox(new(widget.Bool), ""),
+			addressCopy:   pg.Theme.NewClickable(false),
 		}
+	}
 
-		rowInfo := make([]*UTXOInfo, len(info))
-		// create checkboxes and address copy components for all the utxos
-		// available per accounts UTXOs.
-		for i, row := range info {
-			rowInfo[i] = &UTXOInfo{
-				UnspentOutput: row,
-				checkbox:      pg.Theme.CheckBox(new(widget.Bool), ""),
-				addressCopy:   pg.Theme.NewClickable(false),
-			}
-		}
-
-		pg.accountsUTXOs = append(pg.accountsUTXOs, &AccountsUTXOInfo{
-			Details: rowInfo,
-			Account: account.Name,
-		})
-
-		collapsible := pg.Theme.Collapsible()
-		collapsible.IconPosition = cryptomaterial.Before
-		collapsible.IconStyle = cryptomaterial.Caret
-		pg.collapsibleList = append(pg.collapsibleList, collapsible)
+	pg.accountUTXOs = &AccountUTXOInfo{
+		Details: rowInfo,
+		Account: account.Name,
 	}
 
 	return nil
@@ -251,77 +244,68 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
-		sendPage := NewSendPage(pg.Load)
-		sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
-		pg.ParentNavigator().Display(sendPage)
+		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
+		pg.ParentNavigator().Display(pg.sendPage)
 	}
 
 	if pg.fromCoinSelection.Clicked() {
-		sendPage := NewSendPage(pg.Load)
-		sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
-		pg.ParentNavigator().Display(sendPage)
+		pg.ParentNavigator().Display(pg.sendPage)
 	}
 
 	if pg.clearButton.Clicked() {
-		for k := range pg.collapsibleList {
-			for i := 0; i < len(pg.accountsUTXOs[k].Details); i++ {
-				pg.accountsUTXOs[k].Details[i].checkbox.CheckBox = &widget.Bool{Value: false}
-			}
+		for i := 0; i < len(pg.accountUTXOs.Details); i++ {
+			pg.accountUTXOs.Details[i].checkbox.CheckBox = &widget.Bool{Value: false}
 		}
 		pg.initializeFields()
 	}
 
-sortingLoop:
-	for k, account := range pg.collapsibleList {
-		if account.IsExpanded() {
-		listLoop:
-			for pos, component := range pg.clickables {
-				if component == nil || !component.Clicked() {
-					continue listLoop
-				}
-
-				if pg.sortingInProgress {
-					break sortingLoop
-				}
-
-				pg.sortingInProgress = true
-
-				if pos != pg.lastSortEvent.clicked {
-					pg.lastSortEvent.clicked = pos
-					pg.lastSortEvent.count = 0
-				}
-				pg.lastSortEvent.count++
-
-				isAscendingOrder := pg.lastSortEvent.count%2 == 0
-				sort.SliceStable(pg.accountsUTXOs[k].Details, func(i, j int) bool {
-					return sortUTXOrows(i, j, pos, isAscendingOrder, pg.accountsUTXOs[k].Details)
-				})
-
-				pg.sortingInProgress = false
-				break sortingLoop
+	if pg.accountCollapsible.IsExpanded() {
+		for pos, component := range pg.clickables {
+			if component == nil || !component.Clicked() {
+				continue
 			}
+
+			if pg.sortingInProgress {
+				break
+			}
+
+			pg.sortingInProgress = true
+
+			if pos != pg.lastSortEvent.clicked {
+				pg.lastSortEvent.clicked = pos
+				pg.lastSortEvent.count = 0
+			}
+			pg.lastSortEvent.count++
+
+			isAscendingOrder := pg.lastSortEvent.count%2 == 0
+			sort.SliceStable(pg.accountUTXOs.Details, func(i, j int) bool {
+				return sortUTXOrows(i, j, pos, isAscendingOrder, pg.accountUTXOs.Details)
+			})
+
+			pg.sortingInProgress = false
+			break
 		}
 	}
 
 	// Update Summary information as the last section when handling events.
-	for k := range pg.collapsibleList {
-		for i := 0; i < len(pg.accountsUTXOs[k].Details); i++ {
-			record := pg.accountsUTXOs[k].Details[i]
-			if record.checkbox.CheckBox.Changed() {
-				if record.checkbox.CheckBox.Value {
-					pg.selectedUTXOrows = append(pg.selectedUTXOrows, record.UnspentOutput)
-					pg.selectedAmount += record.Amount.ToCoin()
-				} else {
-					pg.selectedUTXOrows = pg.selectedUTXOrows[:len(pg.selectedUTXOrows)-1]
-					pg.selectedAmount -= record.Amount.ToCoin()
-				}
-
-				pg.txSize.Text = pg.computeUTXOsSize()
-				pg.selectedUTXOs.Text = fmt.Sprintf("%d", len(pg.selectedUTXOrows))
-				pg.totalAmount.Text = fmt.Sprintf("%f %s", pg.selectedAmount, pg.strAssetType)
+	for i := 0; i < len(pg.accountUTXOs.Details); i++ {
+		record := pg.accountUTXOs.Details[i]
+		if record.checkbox.CheckBox.Changed() {
+			if record.checkbox.CheckBox.Value {
+				pg.selectedUTXOrows = append(pg.selectedUTXOrows, record.UnspentOutput)
+				pg.selectedAmount += record.Amount.ToCoin()
+			} else {
+				pg.selectedUTXOrows = pg.selectedUTXOrows[:len(pg.selectedUTXOrows)-1]
+				pg.selectedAmount -= record.Amount.ToCoin()
 			}
+
+			pg.txSize.Text = pg.computeUTXOsSize()
+			pg.selectedUTXOs.Text = fmt.Sprintf("%d", len(pg.selectedUTXOrows))
+			pg.totalAmount.Text = fmt.Sprintf("%f %s", pg.selectedAmount, pg.strAssetType)
 		}
 	}
+
+	pg.actionButton.SetEnabled(len(pg.selectedUTXOrows) > 0)
 }
 
 func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
@@ -405,7 +389,7 @@ func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
 						return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding8)
 					})
 				}),
-				layout.Rigid(pg.Theme.H6(values.String(values.StrSelectUTXO)).Layout),
+				layout.Rigid(pg.Theme.H6(values.String(values.StrCoinSelection)).Layout),
 			)
 		})
 	})
@@ -475,33 +459,22 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 					)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.Theme.List(pg.listContainer).Layout(gtx, len(pg.accountsUTXOs), func(gtx C, i int) D {
-						return layout.Inset{
-							Left:   values.MarginPadding5,
-							Bottom: values.MarginPadding15,
-						}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									collapsibleHeader := func(gtx C) D {
-										t := pg.Theme.Label(values.TextSize16, pg.accountsUTXOs[i].Account)
-										t.Font.Weight = text.SemiBold
-										return t.Layout(gtx)
-									}
+					collapsibleHeader := func(gtx C) D {
+						t := pg.Theme.Label(values.TextSize16, pg.accountUTXOs.Account)
+						t.Font.Weight = text.SemiBold
+						return t.Layout(gtx)
+					}
 
-									collapsibleBody := func(gtx C) D {
-										if len(pg.accountsUTXOs[i].Details) == 0 {
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return layout.Center.Layout(gtx,
-												pg.Theme.Label(values.TextSize14, values.String(values.StrNoUTXOs)).Layout,
-											)
-										}
-										return pg.accountListItemsSection(gtx, pg.accountsUTXOs[i].Details)
-									}
-									return pg.collapsibleList[i].Layout(gtx, collapsibleHeader, collapsibleBody)
-								}),
+					collapsibleBody := func(gtx C) D {
+						if len(pg.accountUTXOs.Details) == 0 {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return layout.Center.Layout(gtx,
+								pg.Theme.Label(values.TextSize14, values.String(values.StrNoUTXOs)).Layout,
 							)
-						})
-					})
+						}
+						return pg.accountListItemsSection(gtx, pg.accountUTXOs.Details)
+					}
+					return pg.accountCollapsible.Layout(gtx, collapsibleHeader, collapsibleBody)
 				}),
 			)
 		})

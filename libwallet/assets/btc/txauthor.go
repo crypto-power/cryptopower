@@ -364,23 +364,19 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 			return nil, err
 		}
 
-		// SendMax is activated if all funds in the account are to be sent or
-		// manual coin selection happened where a user set the specific UTXOs to
-		// send.
-		sendMax = destination.SendMax || len(asset.TxAuthoredInfo.selectedUXTOs) > 0
-
 		// check if multiple destinations are set to receive max amount
-		if sendMax && changeSource != nil {
+		if destination.SendMax && changeSource != nil {
 			return nil, fmt.Errorf("cannot send max amount to multiple recipients")
 		}
 
-		if sendMax {
+		if destination.SendMax {
 			// Use this destination address to make a changeSource rather than a tx output.
 			changeSource, err = txhelper.MakeBTCTxChangeSource(destination.Address, asset.chainParams)
 			if err != nil {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
+			sendMax = true
 
 		} else {
 			output, err := txhelper.MakeBTCTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)

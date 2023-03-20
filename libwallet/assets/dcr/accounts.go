@@ -130,7 +130,7 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 }
 
 func (asset *DCRAsset) ComputeUTXOsSize(utxos []*sharedW.UnspentOutput) (int, error) {
-	return -1, nil
+	return -1, errors.New("ComputeUTXOsSize Not implemented")
 }
 
 func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {

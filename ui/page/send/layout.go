@@ -209,6 +209,7 @@ func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch
 									inset := layout.Inset{
 										Top: values.MarginPaddingMinus5,
 									}
+									pg.sendDestination.accountSwitch.SetSelectedIndex(pg.sendDestination.selectedIndex)
 									return inset.Layout(gtx, pg.sendDestination.accountSwitch.Layout)
 								})
 							}

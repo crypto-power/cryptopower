@@ -24,6 +24,8 @@ type destination struct {
 
 	sendToAddress bool
 	accountSwitch *cryptomaterial.SwitchButtonText
+
+	selectedIndex int
 }
 
 func newSendDestination(l *load.Load) *destination {
@@ -81,7 +83,6 @@ func (dst *destination) destinationAccount() *sharedW.Account {
 }
 
 func (dst *destination) validateDestinationAddress() (bool, string) {
-
 	address := dst.destinationAddressEditor.Editor.Text()
 	address = strings.TrimSpace(address)
 
@@ -114,6 +115,11 @@ func (dst *destination) clearAddressInput() {
 }
 
 func (dst *destination) handle() {
+	dst.selectedIndex = dst.accountSwitch.SelectedIndex()
+	if dst.selectedIndex == 0 {
+		dst.selectedIndex = 1 // default value is 1
+	}
+
 	sendToAddress := dst.accountSwitch.SelectedIndex() == 1
 	if sendToAddress != dst.sendToAddress { // switch changed
 		dst.sendToAddress = sendToAddress

@@ -466,7 +466,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.toCoinSelection.Clicked() && pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
-		pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load))
+		pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
 	}
 
 	if pg.nextButton.Clicked() {
