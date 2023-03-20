@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -159,7 +159,7 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -209,7 +209,6 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 
 // IsOnline is a function to check whether an internet connection can be
 // established. If established, IsOnline should return true otherwise IsOnline returns false.
-// Default url to check connection is http://google.com.
 func IsOnline() bool {
 	// If the wallet was online, and the wallet's online status was updated in
 	// the last 2 minutes return true.
