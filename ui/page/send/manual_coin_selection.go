@@ -71,7 +71,7 @@ type ManualCoinSelectionPage struct {
 	confirmationsClickable *cryptomaterial.Clickable
 	dateClickable          *cryptomaterial.Clickable
 
-	accountUTXOs       *AccountUTXOInfo
+	accountUTXOs       AccountUTXOInfo
 	UTXOList           *cryptomaterial.ClickableList
 	fromCoinSelection  *cryptomaterial.Clickable
 	accountCollapsible *cryptomaterial.Collapsible
@@ -229,7 +229,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 		}
 	}
 
-	pg.accountUTXOs = &AccountUTXOInfo{
+	pg.accountUTXOs = AccountUTXOInfo{
 		Details: rowInfo,
 		Account: account.Name,
 	}
