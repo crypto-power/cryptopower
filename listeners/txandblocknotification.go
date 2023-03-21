@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"encoding/json"
-	"time"
+	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
@@ -10,19 +10,24 @@ import (
 // TxAndBlockNotificationListener satisfies libwallet
 // TxAndBlockNotificationListener interface contract.
 type TxAndBlockNotificationListener struct {
-	TxAndBlockNotifChan chan TxNotification
+	txAndBlockNotifChan chan TxNotification
 
-	// Because of the asynchronous use of TxAndBlockNotifChan chan, sometimes
-	// TxAndBlockNotifChan could be closed when the send goroutine is still running
-	// NotifChanClosed should help to identify when TxAndBlockNotifChan was closed
-	// thereby prevent the send via a closed channnel.
-	NotifChanClosed chan struct{}
+	// Because of the asynchronous use of txAndBlockNotifChan chan, sometimes
+	// txAndBlockNotifChan could be closed when the send goroutine is still running
+	// notifChanClosed should help to identify when txAndBlockNotifChan was closed
+	// thereby preventing the send via a closed channnel.
+	notifChanClosed chan struct{}
+	// Waitgroup keeps track of all the write operations
+	wg sync.WaitGroup
+	// Mutex prevent calling Wait() and add() methods simultaneuosly that could
+	// result into a race condition.
+	wgMu sync.Mutex
 }
 
 func NewTxAndBlockNotificationListener() *TxAndBlockNotificationListener {
 	return &TxAndBlockNotificationListener{
-		TxAndBlockNotifChan: make(chan TxNotification, 4),
-		NotifChanClosed:     make(chan struct{}, 1),
+		txAndBlockNotifChan: make(chan TxNotification, 4),
+		notifChanClosed:     make(chan struct{}, 1),
 	}
 }
 
@@ -58,20 +63,51 @@ func (txAndBlk *TxAndBlockNotificationListener) OnTransactionConfirmed(walletID 
 	})
 }
 
+// TxAndBlockNotifChan returns a read-only channel.
+func (txAndBlk *TxAndBlockNotificationListener) TxAndBlockNotifChan() <-chan TxNotification {
+	return txAndBlk.txAndBlockNotifChan
+}
+
 func (txAndBlk *TxAndBlockNotificationListener) UpdateNotification(signal TxNotification) {
+	txAndBlk.wgMu.Lock()
+	txAndBlk.wg.Add(1)
+	txAndBlk.wgMu.Unlock()
+
+	defer txAndBlk.wg.Done()
+
 	// Since select randomly chooses which case to execute, If TxAndBlockNotifChan
 	// channel is closed further execution is stopped.
 	select {
-	case <-txAndBlk.NotifChanClosed:
-		// txAndBlk.TxAndBlockNotifChan already closed, exit the function now.
+	case <-txAndBlk.notifChanClosed:
+		// txAndBlk.txAndBlockNotifChan already closed, exit the function now.
 		return
-	case <-time.After(time.Microsecond * 500):
+	default:
+		// default is choosen after the pseudo random case selected from all available
+		// cases fails to proceed with execution.
 		// channel not yet closed
 	}
 
 	// Second select can proceed to write to the channel if its open.
 	select {
-	case txAndBlk.TxAndBlockNotifChan <- signal:
+	case txAndBlk.txAndBlockNotifChan <- signal:
 	default:
 	}
+}
+
+func (txAndBlk *TxAndBlockNotificationListener) CloseTxAndBlockChan() {
+	close(txAndBlk.notifChanClosed)
+
+	// Drain all unread channel's contents.
+	go func() {
+		for range txAndBlk.txAndBlockNotifChan {
+		}
+	}()
+
+	// Wait until all pending writes succeed.
+	txAndBlk.wgMu.Lock()
+	txAndBlk.wg.Wait()
+	txAndBlk.wgMu.Unlock()
+
+	// now close the main notifications channel.
+	close(txAndBlk.txAndBlockNotifChan)
 }

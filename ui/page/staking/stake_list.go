@@ -29,15 +29,14 @@ func (pg *Page) listenForTxNotifications() {
 	go func() {
 		for {
 			select {
-			case n := <-pg.TxAndBlockNotifChan:
+			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.BlockAttached || n.Type == listeners.NewTransaction {
 					pg.fetchTickets()
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
 				pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
-				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(pg.TxAndBlockNotifChan)
+				pg.CloseTxAndBlockChan()
 				pg.TxAndBlockNotificationListener = nil
 
 				return
@@ -96,7 +95,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 						}
 
 						return pg.ticketsList.Layout(gtx, len(tickets), func(gtx C, index int) D {
-							var ticket = tickets[index]
+							ticket := tickets[index]
 
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								// gray separator line
