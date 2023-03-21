@@ -23,9 +23,9 @@ const (
 	// DNS server to determine internet connectivity status, 84.200.69.80
 	// is DNSWatch primary dns server address, it is used because of it's privacy
 	// offerings, can be replaced if found inadequate.
-	conCheckDNSAddress = "84.200.69.80:53"
+	checkDNSAddress = "84.200.69.80:53"
 	// Address to look up during DNS connectivity check.
-	conCheckaddressToLookUp = "www.google.com"
+	addressToLookUp = "www.google.com"
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
 	GovernanceHttpAPI HttpAPIType = iota
@@ -229,12 +229,12 @@ func IsOnline() bool {
 			d := net.Dialer{
 				Timeout: defaultHttpClientTimeout,
 			}
-			return d.DialContext(ctx, network, conCheckDNSAddress)
+			return d.DialContext(ctx, network, checkDNSAddress)
 		},
 	}
 
 	// DNS look up failed if err != nil.
-	_, err := resolver.LookupHost(context.Background(), conCheckaddressToLookUp)
+	_, err := resolver.LookupHost(context.Background(), addressToLookUp)
 
 	// if err == nil, the internet link is up.
 	netC.isConnected = err == nil
