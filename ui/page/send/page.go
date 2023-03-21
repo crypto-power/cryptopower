@@ -72,9 +72,8 @@ type Page struct {
 	feeRateSelector *components.FeeRateSelector
 
 	toCoinSelection *cryptomaterial.Clickable
-	selectedUTXOs   []*sharedW.UnspentOutput
 
-	selectedUTXOsAmount int64
+	selectedUTXOs *selectedUTXOsInfo
 }
 
 type authoredTxData struct {
@@ -91,6 +90,12 @@ type authoredTxData struct {
 	sendAmountUSD       string
 }
 
+type selectedUTXOsInfo struct {
+	sourceAccount    *sharedW.Account
+	selectedUTXOs    []*sharedW.UnspentOutput
+	totalUTXOsAmount int64
+}
+
 func NewSendPage(l *load.Load) *Page {
 	pg := &Page{
 		Load:             l,
@@ -103,6 +108,7 @@ func NewSendPage(l *load.Load) *Page {
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
+		selectedUTXOs:  &selectedUTXOsInfo{},
 	}
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
@@ -136,7 +142,11 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+
+	// if a source account exists, don't overwrite it.
+	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+	}
 
 	pg.sendDestination.destinationAccountSelector = pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 		accountIsValid := account.Number != load.MaxInt32
@@ -183,8 +193,6 @@ func NewSendPage(l *load.Load) *Page {
 	})
 
 	pg.sendDestination.addressChanged = func() {
-		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -205,7 +213,14 @@ func (pg *Page) RestyleWidgets() {
 }
 
 func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
-	pg.selectedUTXOs = utxos
+	pg.selectedUTXOs.selectedUTXOs = utxos
+	pg.selectedUTXOs.sourceAccount = pg.sourceAccountSelector.SelectedAccount()
+
+	if len(utxos) > 0 {
+		for _, elem := range utxos {
+			pg.selectedUTXOs.totalUTXOsAmount += elem.Amount.ToInt()
+		}
+	}
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -223,7 +238,6 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
@@ -237,12 +251,6 @@ func (pg *Page) OnNavigatedTo() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
 		go pg.selectedWallet.GetAPIFeeRate()
-	}
-
-	if len(pg.selectedUTXOs) > 0 {
-		for _, elem := range pg.selectedUTXOs {
-			pg.selectedUTXOsAmount += elem.Amount.ToInt()
-		}
 	}
 }
 
@@ -323,7 +331,12 @@ func (pg *Page) constructTx() {
 	}
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, pg.selectedUTXOs)
+	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
+	if sourceAccount == pg.selectedUTXOs.sourceAccount {
+		selectedUTXOs = pg.selectedUTXOs.selectedUTXOs
+	}
+
+	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, selectedUTXOs)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -343,8 +356,8 @@ func (pg *Page) constructTx() {
 
 	feeAtom := feeAndSize.Fee.UnitValue
 	spendableAmount := sourceAccount.Balance.Spendable.ToInt()
-	if len(pg.selectedUTXOs) > 0 {
-		spendableAmount = pg.selectedUTXOsAmount
+	if len(selectedUTXOs) > 0 {
+		spendableAmount = pg.selectedUTXOs.totalUTXOsAmount
 	}
 
 	if SendMax {

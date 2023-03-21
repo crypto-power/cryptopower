@@ -148,6 +148,10 @@ func (c *Collapsible) IsExpanded() bool {
 	return c.isExpanded
 }
 
+func (c *Collapsible) SetExpanded(isExpand bool) {
+	c.isExpanded = isExpand
+}
+
 var rememberExpand map[int]bool
 
 func (c *CollapsibleWithOption) Layout(gtx C, header, body func(C) D, more func(C), rowID int) D {

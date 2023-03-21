@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"sort"
+	"time"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -128,12 +129,12 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.actionButton.Font.Weight = text.SemiBold
 	pg.clearButton.Font.Weight = text.SemiBold
 	pg.clearButton.Color = l.Theme.Color.Danger
-	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding3)
+	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	c := l.Theme.Color.Danger
 	// Background is 8% of the Danger color.
 	alphaChan := 127 - (127 * 0.8)
-	pg.clearButton.Background = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
+	pg.clearButton.HighlightColor = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
 
 	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
 	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
@@ -219,20 +220,39 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 		return fmt.Errorf("querying the account (%v) info failed: %v", account.AccountNumber, err)
 	}
 
+	previousUTXOs := make(map[time.Time]*sharedW.UnspentOutput, 0)
+	// Use the previous Selection of UTXO if same acccount source has been used.
+	if account == pg.sendPage.selectedUTXOs.sourceAccount {
+		for _, utxo := range pg.sendPage.selectedUTXOs.selectedUTXOs {
+			previousUTXOs[utxo.ReceiveTime] = utxo
+			pg.selectedAmount += utxo.Amount.ToCoin()
+		}
+		pg.selectedUTXOrows = pg.sendPage.selectedUTXOs.selectedUTXOs
+	}
+
 	rowInfo := make([]*UTXOInfo, len(info))
 	// create checkboxes and address copy components for all the utxos available.
 	for i, row := range info {
-		rowInfo[i] = &UTXOInfo{
+		info := &UTXOInfo{
 			UnspentOutput: row,
 			checkbox:      pg.Theme.CheckBox(new(widget.Bool), ""),
 			addressCopy:   pg.Theme.NewClickable(false),
 		}
+
+		if _, ok := previousUTXOs[info.ReceiveTime]; ok {
+			info.checkbox.CheckBox.Value = true
+		}
+
+		rowInfo[i] = info
 	}
 
 	pg.accountUTXOs = AccountUTXOInfo{
 		Details: rowInfo,
 		Account: account.Name,
 	}
+
+	pg.accountCollapsible.SetExpanded(len(pg.selectedUTXOrows) > 0)
+	pg.updateSummaryInfo()
 
 	return nil
 }
@@ -299,13 +319,15 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 				pg.selectedAmount -= record.Amount.ToCoin()
 			}
 
-			pg.txSize.Text = pg.computeUTXOsSize()
-			pg.selectedUTXOs.Text = fmt.Sprintf("%d", len(pg.selectedUTXOrows))
-			pg.totalAmount.Text = fmt.Sprintf("%f %s", pg.selectedAmount, pg.strAssetType)
+			pg.updateSummaryInfo()
 		}
 	}
+}
 
-	pg.actionButton.SetEnabled(len(pg.selectedUTXOrows) > 0)
+func (pg *ManualCoinSelectionPage) updateSummaryInfo() {
+	pg.txSize.Text = pg.computeUTXOsSize()
+	pg.selectedUTXOs.Text = fmt.Sprintf("%d", len(pg.selectedUTXOrows))
+	pg.totalAmount.Text = fmt.Sprintf("%f %s", pg.selectedAmount, pg.strAssetType)
 }
 
 func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
@@ -487,7 +509,7 @@ func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cry
 	case string:
 		txtStr = n
 	case float64:
-		txtStr = fmt.Sprintf("%0.4f", n) // to 4 decimal places
+		txtStr = fmt.Sprintf("%0.8f", n) // to 8 decimal places
 	case int32, int, int64:
 		txtStr = fmt.Sprintf("%d", n)
 	}
@@ -533,7 +555,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 								// copy destination Address
 								if v.addressCopy.Clicked() {
 									clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
-									pg.Toast.Notify(values.String(values.StrTxHashCopied))
+									pg.Toast.Notify(values.String(values.StrAddressCopied))
 								}
 
 								addressComponent := func(gtx C) D {

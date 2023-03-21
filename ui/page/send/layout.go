@@ -313,7 +313,8 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	selectedOption := automaticCoinSelection
-	if len(pg.selectedUTXOs) > 0 {
+	sourceAcc := pg.sourceAccountSelector.SelectedAccount()
+	if len(pg.selectedUTXOs.selectedUTXOs) > 0 && pg.selectedUTXOs.sourceAccount == sourceAcc {
 		selectedOption = manualCoinSelection
 	}
 
