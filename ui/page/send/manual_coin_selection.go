@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"image/color"
 	"sort"
-	"time"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
@@ -132,7 +132,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	c := l.Theme.Color.Danger
-	// Background is 8% of the Danger color.
+	// Highlight Color is 8% of the Danger color.
 	alphaChan := 127 - (127 * 0.8)
 	pg.clearButton.HighlightColor = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
 
@@ -168,8 +168,8 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.properties = []componentProperties{
 		{direction: layout.Center, weight: 0.10}, // Component 1
 		{direction: layout.W, weight: 0.20},      // Component 2
-		{direction: layout.Center, weight: 0.25}, // Component 3
-		{direction: layout.Center, weight: 0.20}, // Component 4
+		{direction: layout.W, weight: 0.23},      // Component 3
+		{direction: layout.E, weight: 0.22},      // Component 4
 		{direction: layout.Center, weight: 0.25}, // Component 5
 	}
 
@@ -220,11 +220,11 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 		return fmt.Errorf("querying the account (%v) info failed: %v", account.AccountNumber, err)
 	}
 
-	previousUTXOs := make(map[time.Time]*sharedW.UnspentOutput, 0)
+	previousUTXOs := make(map[string]struct{}, 0)
 	// Use the previous Selection of UTXO if same acccount source has been used.
 	if account == pg.sendPage.selectedUTXOs.sourceAccount {
 		for _, utxo := range pg.sendPage.selectedUTXOs.selectedUTXOs {
-			previousUTXOs[utxo.ReceiveTime] = utxo
+			previousUTXOs[utxo.TxID] = struct{}{}
 			pg.selectedAmount += utxo.Amount.ToCoin()
 		}
 		pg.selectedUTXOrows = pg.sendPage.selectedUTXOs.selectedUTXOs
@@ -239,9 +239,8 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 			addressCopy:   pg.Theme.NewClickable(false),
 		}
 
-		if _, ok := previousUTXOs[info.ReceiveTime]; ok {
-			info.checkbox.CheckBox.Value = true
-		}
+		// Check if TxID match. If true, set checked to true.
+		_, info.checkbox.CheckBox.Value = previousUTXOs[info.TxID]
 
 		rowInfo[i] = info
 	}
@@ -364,33 +363,39 @@ func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
-	return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:       cryptomaterial.MatchParent,
-			Height:      cryptomaterial.MatchParent,
-			Orientation: layout.Vertical,
-		}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D {
-				return cryptomaterial.LinearLayout{
-					Width:       cryptomaterial.MatchParent,
-					Height:      cryptomaterial.MatchParent,
-					Orientation: layout.Vertical,
-				}.Layout(gtx,
-					layout.Rigid(pg.topSection),
-					layout.Rigid(pg.summarySection),
-					layout.Rigid(pg.accountListSection),
-				)
-			}),
-			layout.Rigid(func(gtx C) D {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Inset{
-					Top: values.MarginPadding5,
-				}.Layout(gtx, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.actionButton.Layout)
-				})
-			}),
-		)
-	})
+	return layout.Stack{Alignment: layout.S}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return components.UniformPadding(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+						}.Layout(gtx,
+							layout.Flexed(1, func(gtx C) D {
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.WrapContent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Vertical,
+								}.Layout(gtx,
+									layout.Rigid(pg.topSection),
+									layout.Rigid(pg.summarySection),
+									layout.Rigid(pg.accountListSection),
+								)
+							}),
+							layout.Rigid(func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+									return layout.E.Layout(gtx, pg.actionButton.Layout)
+								})
+							}),
+						)
+					})
+				}),
+			)
+		}),
+	)
 }
 
 func (pg *ManualCoinSelectionPage) topSection(gtx C) D {
@@ -541,7 +546,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-				return pg.UTXOList.Layout(gtx, len(utxos), func(gtx C, index int) D {
+				return pg.Theme.List(pg.listContainer).Layout(gtx, len(utxos), func(gtx C, index int) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
@@ -591,30 +596,32 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		case labelCell:
 			if n.clickable != nil {
 				widget = func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.WrapContent,
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Horizontal,
-						Alignment:   layout.Middle,
-						Clickable:   n.clickable,
-					}.Layout(gtx,
-						layout.Rigid(n.label.Layout),
-						layout.Rigid(func(gtx C) D {
-							count := pg.lastSortEvent.count
-							if pg.lastSortEvent.clicked == index-1 && count >= 0 {
-								m := values.MarginPadding4
-								inset := layout.Inset{Left: m}
+					return layout.UniformInset(values.MarginPadding6).Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   n.clickable,
+						}.Layout(gtx,
+							layout.Rigid(n.label.Layout),
+							layout.Rigid(func(gtx C) D {
+								count := pg.lastSortEvent.count
+								if pg.lastSortEvent.clicked == index-1 && count >= 0 {
+									m := values.MarginPadding4
+									inset := layout.Inset{Left: m}
 
-								if count%2 == 0 { // add ascending icon
-									inset.Bottom = m
-									return inset.Layout(gtx, pg.Theme.Icons.CaretUp.Layout12dp)
-								} // else add descending icon
-								inset.Top = m
-								return inset.Layout(gtx, pg.Theme.Icons.CaretDown.Layout12dp)
-							}
-							return D{}
-						}),
-					)
+									if count%2 == 0 { // add ascending icon
+										inset.Bottom = m
+										return inset.Layout(gtx, pg.Theme.Icons.CaretUp.Layout12dp)
+									} // else add descending icon
+									inset.Top = m
+									return inset.Layout(gtx, pg.Theme.Icons.CaretDown.Layout12dp)
+								}
+								return D{}
+							}),
+						)
+					})
 				}
 			} else {
 				widget = n.label.Layout
