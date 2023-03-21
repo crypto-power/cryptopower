@@ -19,15 +19,31 @@ import (
 )
 
 const (
+	// BTCBlockTime is the average time it takes to mine a block on the BTC network.
 	BTCBlockTime = 10 * time.Minute
+	// DCRBlockTime is the average time it takes to mine a block on the DCR network.
 	DCRBlockTime = 5 * time.Minute
 
+	// DefaultMarketDeviation is the maximum deviation the server rate
+	// can deviate from the market rate.
 	DefaultMarketDeviation = 5 // 5%
-	DefaultConfirmations   = 1
+	// DefaultConfirmations is the number of confirmations required
+	DefaultConfirmations = 1
+	// DefaultRateRequestAmount is the amount used to performt he rate request query.
+	DefaultRateRequestAmount = 1
 )
 
+// StartScheduler starts the automatic order scheduler.
 func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap.SchedulerParams) error {
 	const op errors.Op = "mgr.StartScheduler"
+	log.Info("Order Scheduler: started")
+
+	log.Info("Order Scheduler: verifying source wallet")
+	sourceWallet := mgr.WalletWithID(params.Order.SourceWalletID)
+	if sourceWallet == nil {
+		return errors.E(op, errors.Errorf("wallet with id:%d not found", params.Order.SourceWalletID))
+	}
+
 	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 
 	if mgr.InstantSwap.CancelOrderScheduler != nil {
@@ -35,7 +51,6 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		return errors.New("scheduler already running")
 	}
 
-	log.Info("Order Scheduler: started")
 	mgr.InstantSwap.SchedulerStartTime = time.Now()
 	mgr.InstantSwap.SchedulerCtx, mgr.InstantSwap.CancelOrderScheduler = context.WithCancel(ctx)
 	mgr.InstantSwap.PublishOrderSchedulerStarted()
@@ -43,6 +58,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		mgr.InstantSwap.CancelOrderScheduler = nil
 		mgr.InstantSwap.SchedulerStartTime = time.Time{}
 		mgr.InstantSwap.PublishOrderSchedulerEnded()
+		log.Info("Order Scheduler: exited")
 	}()
 	mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
 
@@ -59,43 +75,37 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			return mgr.InstantSwap.SchedulerCtx.Err()
 		}
 
-		log.Info("Order Scheduler: finding source wallet")
-		sourceWallet := mgr.WalletWithID(params.Order.SourceWalletID)
 		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
-			return err
-		}
-
-		defer sourceWallet.LockWallet()
-		err = sourceWallet.UnlockWallet(params.SpendingPassphrase)
-		if err != nil {
-			log.Error(err)
-			return err
+			log.Error("unable to get account balance")
+			return errors.E(op, err)
 		}
 
 		if sourceAccountBalance.Spendable.ToCoin() <= params.BalanceToMaintain {
 			log.Error("source wallet balance is less than or equals the set balance to maintain")
-			return errors.E(op, err) // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
+			return errors.E(op, "source wallet balance is less than or equals the set balance to maintain") // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
 		}
 
 		rateRequestParams := api.ExchangeRateRequest{
 			From:   params.Order.FromCurrency,
 			To:     params.Order.ToCurrency,
-			Amount: 1,
+			Amount: DefaultRateRequestAmount,
 		}
 		log.Info("Order Scheduler: getting exchange rate info")
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
 		if err != nil {
+			log.Error("unable to get exchange server rate info")
 			return errors.E(op, err)
 		}
 
-		if params.MinimumExchangeRate <= 0 {
-			params.MinimumExchangeRate = DefaultMarketDeviation // default 5%
+		if params.MaxDeviationRate <= 0 {
+			params.MaxDeviationRate = DefaultMarketDeviation // default 5%
 		}
 
 		market := params.Order.FromCurrency + "-" + params.Order.ToCurrency
 		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, market)
 		if err != nil {
+			log.Error("unable to get market rate from binance")
 			return errors.E(op, err)
 		}
 
@@ -104,12 +114,12 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		log.Info(params.Order.ExchangeServer.Server+" rate: ", exchangeServerRate)
 		log.Info(ext.Binance+" rate: ", binanceRate)
 
-		// check if the server rate deviates from the market rate by more than 5%
-		// exit
+		// check if the server rate deviates from the market rate by ± 5%
+		// exit if true
 		percentageDiff := math.Abs((exchangeServerRate-binanceRate)/((exchangeServerRate+binanceRate)/2)) * 100
-		if percentageDiff > params.MinimumExchangeRate {
+		if percentageDiff > params.MaxDeviationRate {
 			log.Error("exchange rate deviates from the market rate by more than 5%")
-			return errors.E(op, err)
+			return errors.E(op, "exchange rate deviates from the market rate by more than 5%")
 		}
 
 		// set the max send amount to the max limit set by the server
@@ -125,14 +135,15 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
 		if estimatedBalanceAfterExchange < params.BalanceToMaintain {
 			log.Error("source wallet balance after the exchange would be less than the set balance to maintain")
-			return errors.E(op, err) // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
+			return errors.E(op, "source wallet balance after the exchange would be less than the set balance to maintain") // stop scheduling if the source wallet balance after the exchange would be less than the set balance to maintain
 		}
 
 		log.Info("Order Scheduler: creating order")
 		params.Order.InvoicedAmount = invoicedAmount
 		order, err := mgr.InstantSwap.CreateOrder(exchangeObject, params.Order)
 		if err != nil {
-			return err
+			log.Error("error creating order: ", err.Error())
+			return errors.E(op, err)
 		}
 
 		log.Info("Order Scheduler: creating unsigned transaction")
@@ -153,12 +164,14 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		log.Info("Order Scheduler: adding send destination")
 		err = sourceWallet.AddSendDestination(order.DepositAddress, amount, false)
 		if err != nil {
+			log.Error("error adding send destination: ", err.Error())
 			return errors.E(op, err)
 		}
 
 		log.Info("Order Scheduler: broadcasting tx")
 		_, err = sourceWallet.Broadcast(params.SpendingPassphrase, "")
 		if err != nil {
+			log.Error("error broadcasting tx: ", err.Error())
 			return errors.E(op, err)
 		}
 
@@ -216,7 +229,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				Confirms:  DefaultConfirmations,
 			}
 
-			log.Info("Order Scheduler: verify transaction")
+			log.Info("Order Scheduler: verifying transaction")
 			verification, err := explorer.VerifyTransaction(verificationInfo)
 			if err != nil {
 				return errors.E(op, err)
@@ -248,6 +261,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 	}
 }
 
+// StopScheduler stops the order scheduler.
 func (mgr *AssetsManager) StopScheduler() {
 	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 	if mgr.InstantSwap.CancelOrderScheduler != nil {
@@ -258,12 +272,14 @@ func (mgr *AssetsManager) StopScheduler() {
 	log.Info("Order Scheduler: stopped")
 }
 
+// IsOrderSchedulerRunning returns true if the order scheduler is running.
 func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
 	mgr.InstantSwap.CancelOrderSchedulerMu.RLock()
 	defer mgr.InstantSwap.CancelOrderSchedulerMu.RUnlock()
 	return mgr.InstantSwap.CancelOrderScheduler != nil
 }
 
+// GetShedulerRuntime returns the duration the order scheduler has been running.
 func (mgr *AssetsManager) GetShedulerRuntime() string {
 	return time.Since(mgr.InstantSwap.SchedulerStartTime).Round(time.Second).String()
 }

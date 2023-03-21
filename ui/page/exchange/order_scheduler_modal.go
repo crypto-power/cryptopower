@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"gioui.org/layout"
@@ -13,6 +12,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -271,15 +271,14 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																				if osm.exchangeSelector.SelectedExchange() != nil && osm.exchangeRate != -1 {
 																					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 																						layout.Rigid(func(gtx C) D {
-																							exchangeRate := fmt.Sprintf(osm.exchangeSelector.SelectedExchange().Name+" rate: %f", osm.exchangeRate)
+																							exchangeRate := values.StringF(values.StrServerRate, osm.exchangeSelector.SelectedExchange().Name, osm.exchangeRate)
 																							txt := osm.Theme.Label(values.TextSize14, exchangeRate)
 																							txt.Font.Weight = text.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							binanceRate := fmt.Sprintf("Binance rate: %f", osm.binanceRate)
-
+																							binanceRate := values.StringF(values.StrBinanceRate, osm.binanceRate)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = text.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
@@ -432,9 +431,10 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 }
 
 func (osm *orderSchedulerModal) startOrderScheduler() {
-	osm.SetLoading(true)
+	// osm.SetLoading(true)
 
 	go func() {
+		osm.SetLoading(true)
 		err := osm.sourceWalletSelector.SelectedWallet().UnlockWallet(osm.passwordEditor.Editor.Text())
 		if err != nil {
 			osm.SetError(err.Error())
@@ -463,7 +463,13 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
-		go osm.WL.AssetsManager.StartScheduler(context.Background(), params)
+		go func() {
+			err = osm.WL.AssetsManager.StartScheduler(context.Background(), params)
+			if err != nil {
+				log.Error(err)
+				// log(err)
+			}
+		}()
 
 		osm.Dismiss()
 		osm.orderSchedulerStarted()
@@ -494,10 +500,10 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 	}
 
 	var binanceRate float64
-	if osm.fromCurrency.String() == "DCR" {
+	if osm.fromCurrency.String() == utils.DCRWalletAsset.String() {
 		binanceRate = ticker.LastTradePrice
 	}
-	if osm.fromCurrency.String() == "BTC" {
+	if osm.fromCurrency.String() == utils.BTCWalletAsset.String() {
 		binanceRate = 1 / ticker.LastTradePrice
 	}
 

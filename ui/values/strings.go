@@ -833,4 +833,6 @@ const (
 	StrSchedulerRunning                = "schedulerRunning"
 	StrFrequency                       = "frequency"
 	StrSelectFrequency                 = "selectFrequency"
+	StrBinanceRate                     = "binanceRate"
+	StrServerRate                      = "serverRate"
 )

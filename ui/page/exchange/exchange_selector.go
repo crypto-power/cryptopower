@@ -72,7 +72,8 @@ func NewExchangeSelector(l *load.Load, server ...instantswap.Server) *ExchangeSe
 }
 
 // SupportedExchanges returns a slice containing all the exchanges
-// Currently supported.
+// Currently supported. If the server param is passed, it returns
+// a slice  containing the filtered server only.
 func (es *ExchangeSelector) SupportedExchanges(server ...instantswap.Server) []*Exchange {
 	// check if server is not nil
 	if len(server) > 0 {

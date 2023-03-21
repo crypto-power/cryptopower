@@ -734,15 +734,14 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								if pg.exchangeRate != -1 {
 									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 										layout.Rigid(func(gtx C) D {
-											exchangeRate := fmt.Sprintf(pg.exchangeSelector.SelectedExchange().Name+" rate: %f", pg.exchangeRate)
+											exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
 											txt := pg.Theme.Label(values.TextSize14, exchangeRate)
 											txt.Font.Weight = text.SemiBold
 											txt.Color = pg.Theme.Color.Gray1
 											return txt.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
-											binanceRate := fmt.Sprintf("Binance rate: %f", pg.binanceRate)
-
+											binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
 											txt := pg.Theme.Label(values.TextSize14, binanceRate)
 											txt.Font.Weight = text.SemiBold
 											txt.Color = pg.Theme.Color.Gray1

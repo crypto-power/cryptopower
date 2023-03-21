@@ -723,4 +723,6 @@ const EN = `
 "schedulerRunning" = "Order Scheduler is running"
 "frequency" = "Frequency"
 "selectFrequency" = "Select frequency"
+"binanceRate" = "Binance rate: %f"
+"serverRate" = "%s rate: %f"
 `
