@@ -108,14 +108,6 @@ func NewSendPage(l *load.Load) *Page {
 		Asset: l.WL.SelectedWallet.Wallet,
 	}
 
-	// Incase the user edits the amounts fields, manual coin selection is disabled.
-	resetSelectedUTXOs := func() {
-		if len(pg.selectedUTXOs) > 0 {
-			pg.selectedUTXOs = pg.selectedUTXOs[:0]
-		}
-	}
-	pg.amount.restUTXOsCallback(resetSelectedUTXOs)
-
 	pg.feeRateSelector = components.NewFeeRateSelector(l).ShowSizeAndCost()
 	pg.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
 	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
@@ -248,16 +240,9 @@ func (pg *Page) OnNavigatedTo() {
 	}
 
 	if len(pg.selectedUTXOs) > 0 {
-		var sendAmount float64
 		for _, elem := range pg.selectedUTXOs {
 			pg.selectedUTXOsAmount += elem.Amount.ToInt()
-			sendAmount += elem.Amount.ToCoin()
 		}
-
-		pg.amount.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", sendAmount))
-		pg.amount.validateAmount()
-		// when selectedUTXOs exists no change outputs are expected.
-		pg.amount.SendMax = true
 	}
 }
 
