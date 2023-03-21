@@ -30,7 +30,6 @@ const (
 	// Below lists the Http APIs that have a privacy control implemented on them.
 	GovernanceHttpAPI HttpAPIType = iota
 	FeeRateHttpAPI
-	OnlineCheckHttpAPI
 	ExchangeHttpAPI
 )
 

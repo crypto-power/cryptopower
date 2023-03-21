@@ -56,11 +56,10 @@ type SettingsPage struct {
 	logLevel                *cryptomaterial.Clickable
 	viewLog                 *cryptomaterial.Clickable
 
-	onlineCheckAPI *cryptomaterial.Switch
-	governanceAPI  *cryptomaterial.Switch
-	exchangeAPI    *cryptomaterial.Switch
-	feeRateAPI     *cryptomaterial.Switch
-	privacyActive  *cryptomaterial.Switch
+	governanceAPI *cryptomaterial.Switch
+	exchangeAPI   *cryptomaterial.Switch
+	feeRateAPI    *cryptomaterial.Switch
+	privacyActive *cryptomaterial.Switch
 
 	isDarkModeOn      bool
 	isStartupPassword bool
@@ -77,7 +76,6 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
-		onlineCheckAPI:          l.Theme.Switch(),
 		governanceAPI:           l.Theme.Switch(),
 		exchangeAPI:             l.Theme.Switch(),
 		feeRateAPI:              l.Theme.Switch(),
@@ -263,9 +261,6 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return pg.subSectionSwitch(gtx, values.String(values.StrOnlineCheckAPI), pg.onlineCheckAPI)
-				}),
-				layout.Rigid(func(gtx C) D {
 					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 					l := preference.GetKeyValue(lKey, preference.ExchOptions)
 					exchangeRate := row{
@@ -435,9 +430,6 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	if pg.transactionNotification.Changed() {
 		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
-	}
-	if pg.onlineCheckAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.OnlineCheckHttpAPI, pg.onlineCheckAPI.IsChecked())
 	}
 	if pg.governanceAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
@@ -619,7 +611,6 @@ func (pg *SettingsPage) updateSettingOptions() {
 func (pg *SettingsPage) updatePrivacySettings() {
 	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
 	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
-		pg.setInitialSwitchStatus(pg.onlineCheckAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.OnlineCheckHttpAPI))
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
 		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI))
 		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI))
@@ -647,11 +638,5 @@ func (pg *SettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.S
 	switchComponent.SetChecked(false)
 	if ischecked {
 		switchComponent.SetChecked(ischecked)
-	}
-
-	// Always have the online wallet check set to true and disabled from making changes.
-	if pg.onlineCheckAPI == switchComponent {
-		pg.onlineCheckAPI.SetChecked(true)
-		pg.onlineCheckAPI.SetEnabled(false)
 	}
 }

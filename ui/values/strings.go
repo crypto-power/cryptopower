@@ -488,7 +488,6 @@ const (
 	StrOldest                          = "oldest"
 	StrOnChainVote                     = "onChainVote"
 	StrOnline                          = "online"
-	StrOnlineCheckAPI                  = "onlineCheckAPI"
 	StrOpeningWallet                   = "openingWallet"
 	StrOrderCeated                     = "orderCreated"
 	StrOrderDetails                    = "orderDetails"

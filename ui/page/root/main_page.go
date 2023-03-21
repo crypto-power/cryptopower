@@ -829,7 +829,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 	)
 }
 
-// postDdesktopNotification posts notifications to the desktop.
+// postDesktopNotification posts notifications to the desktop.
 func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
 	switch t := notifier.(type) {
