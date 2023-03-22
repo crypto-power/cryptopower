@@ -29,7 +29,7 @@ const (
 	DefaultMarketDeviation = 5 // 5%
 	// DefaultConfirmations is the number of confirmations required
 	DefaultConfirmations = 1
-	// DefaultRateRequestAmount is the amount used to performt he rate request query.
+	// DefaultRateRequestAmount is the amount used to perform the rate request query.
 	DefaultRateRequestAmount = 1
 )
 
@@ -64,7 +64,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 	// Initialize the exchange server.
 	log.Info("Order Scheduler: initializing exchange server")
-	exchangeObject, err := mgr.InstantSwap.NewExchanageServer(params.Order.ExchangeServer)
+	exchangeObject, err := mgr.InstantSwap.NewExchangeServer(params.Order.ExchangeServer)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -89,7 +89,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		rateRequestParams := api.ExchangeRateRequest{
 			From:   params.Order.FromCurrency,
 			To:     params.Order.ToCurrency,
-			Amount: DefaultRateRequestAmount,
+			Amount: DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 		}
 		log.Info("Order Scheduler: getting exchange rate info")
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
@@ -154,10 +154,10 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		var amount int64
-		switch sourceWallet.GetAssetType().ToStringLower() {
-		case utils.BTCWalletAsset.ToStringLower():
+		switch sourceWallet.GetAssetType() {
+		case utils.BTCWalletAsset:
 			amount = btc.AmountSatoshi(params.Order.InvoicedAmount)
-		case utils.DCRWalletAsset.ToStringLower():
+		case utils.DCRWalletAsset:
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
 
@@ -201,7 +201,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			}
 
 			if orderInfo.Status == api.OrderStatusRefunded {
-				log.Error("order was refunded. verifing that the order was refunded successfully from the blockchain explorer")
+				log.Info("order was refunded. verifying that the order was refunded successfully from the blockchain explorer")
 				tmpFromCurrency := params.Order.FromCurrency
 				tmpToCurrency := params.Order.ToCurrency
 

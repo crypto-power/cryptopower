@@ -113,7 +113,7 @@ type SchedulerParams struct {
 	Frequency         time.Duration // in hours
 	BalanceToMaintain float64
 	// MaxDeviationRate is the maximum deviation rate allowed between
-	// the exchange server rate and the market rate  the deviation
+	// the exchange server rate and the market rate. If the deviation
 	// rate is greater than the MaxDeviationRate, the order is not created
 	MaxDeviationRate float64
 

@@ -10,6 +10,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
@@ -95,7 +96,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 
 	osm.exchangeSelector.ExchangeSelected(func(es *Exchange) {
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := osm.WL.AssetsManager.InstantSwap.NewExchanageServer(es.Server)
+		exchange, err := osm.WL.AssetsManager.InstantSwap.NewExchangeServer(es.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -463,13 +464,7 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
-		go func() {
-			err = osm.WL.AssetsManager.StartScheduler(context.Background(), params)
-			if err != nil {
-				log.Error(err)
-				// log(err)
-			}
-		}()
+		go osm.WL.AssetsManager.StartScheduler(context.Background(), params)
 
 		osm.Dismiss()
 		osm.orderSchedulerStarted()
@@ -483,7 +478,7 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 	params := api.ExchangeRateRequest{
 		From:   osm.fromCurrency.String(),
 		To:     osm.toCurrency.String(),
-		Amount: 1,
+		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := osm.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
 	if err != nil {
@@ -492,7 +487,7 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 		return err
 	}
 
-	ticker, err := osm.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, "dcr-btc")
+	ticker, err := osm.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
 	if err != nil {
 		osm.rateError = true
 		osm.fetchingRate = false
@@ -500,10 +495,10 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 	}
 
 	var binanceRate float64
-	if osm.fromCurrency.String() == utils.DCRWalletAsset.String() {
+	switch osm.fromCurrency {
+	case utils.DCRWalletAsset:
 		binanceRate = ticker.LastTradePrice
-	}
-	if osm.fromCurrency.String() == utils.BTCWalletAsset.String() {
+	case utils.BTCWalletAsset:
 		binanceRate = 1 / ticker.LastTradePrice
 	}
 

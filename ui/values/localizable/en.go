@@ -725,4 +725,5 @@ const EN = `
 "selectFrequency" = "Select frequency"
 "binanceRate" = "Binance rate: %f"
 "serverRate" = "%s rate: %f"
+"dcrBtcPair" = "dcr-btc"
 `

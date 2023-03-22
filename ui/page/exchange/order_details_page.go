@@ -75,7 +75,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		}
 	}
 
-	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(order.ExchangeServer)
+	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchangeServer(order.ExchangeServer)
 	if err != nil {
 		log.Error(err)
 	}

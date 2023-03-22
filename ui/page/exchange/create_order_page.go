@@ -12,6 +12,7 @@ import (
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
@@ -174,7 +175,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.selectedExchange = es
 
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(pg.selectedExchange.Server)
+		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchangeServer(pg.selectedExchange.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -927,7 +928,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	params := api.ExchangeRateRequest{
 		From:   pg.fromCurrency.String(),
 		To:     pg.toCurrency.String(),
-		Amount: 1,
+		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
@@ -937,18 +938,19 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
-	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, "dcr-btc")
+	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
 	if err != nil {
 		log.Error(err)
 	}
 
 	var binanceRate float64
-	if pg.fromCurrency.String() == "DCR" {
+	switch pg.fromCurrency {
+	case libutils.DCRWalletAsset:
 		binanceRate = ticker.LastTradePrice
-	}
-	if pg.fromCurrency.String() == "BTC" {
+	case libutils.BTCWalletAsset:
 		binanceRate = 1 / ticker.LastTradePrice
 	}
+
 	pg.min = res.Min
 	pg.max = res.Max
 	pg.exchangeRate = 1 / res.ExchangeRate

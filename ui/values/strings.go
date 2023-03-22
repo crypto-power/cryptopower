@@ -835,4 +835,5 @@ const (
 	StrSelectFrequency                 = "selectFrequency"
 	StrBinanceRate                     = "binanceRate"
 	StrServerRate                      = "serverRate"
+	StrDcrBtcPair                      = "dcrBtcPair"
 )

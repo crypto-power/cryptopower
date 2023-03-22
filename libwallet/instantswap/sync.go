@@ -47,7 +47,7 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 		}
 
 		// Initialize the exchange server.
-		exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
+		exchangeObject, err := instantSwap.NewExchangeServer(exchangeServer)
 		if err != nil {
 			log.Errorf("Error instantiating exchange server: %v", err)
 			continue // skip server if there was an error instantiating the server

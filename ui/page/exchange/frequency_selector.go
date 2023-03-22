@@ -197,7 +197,7 @@ func (fm *frequencyModal) OnResume() {}
 func (fm *frequencyModal) Handle() {
 	if fm.eventQueue != nil {
 		for _, frequencyItem := range fm.frequencyItems {
-			for frequencyItem.clickable.Clicked() {
+			if frequencyItem.clickable.Clicked() {
 				fm.onFrequencyClicked(frequencyItem)
 				fm.Dismiss()
 			}
