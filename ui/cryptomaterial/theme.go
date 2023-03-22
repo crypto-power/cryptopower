@@ -19,7 +19,6 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"golang.org/x/exp/shiny/materialdesign/icons"
-	"golang.org/x/image/draw"
 )
 
 type (
@@ -144,12 +143,7 @@ func (t *Theme) Surface(gtx layout.Context, w layout.Widget) layout.Dimensions {
 }
 
 func (t *Theme) ImageIcon(gtx layout.Context, icon image.Image, size int) layout.Dimensions {
-	img := image.NewRGBA(image.Rectangle{Max: image.Point{X: size, Y: size}})
-	draw.CatmullRom.Scale(img, img.Bounds(), icon, icon.Bounds(), draw.Src, nil)
-
-	i := widget.Image{Src: paint.NewImageOp(img)}
-	i.Scale = float32(size) / float32(gtx.Dp(unit.Dp(float32(size))))
-	return i.Layout(gtx)
+	return NewImage(icon).LayoutSize(gtx, unit.Dp(float32(size)))
 }
 
 func MustIcon(ic *widget.Icon, err error) *widget.Icon {
