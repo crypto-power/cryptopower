@@ -105,7 +105,7 @@ type Asset interface {
 
 	NewUnsignedTx(accountNumber int32, utxos []*UnspentOutput) error
 	AddSendDestination(address string, unitAmount int64, sendMax bool) error
-	ComputeUTXOsSize(utxos []*UnspentOutput) (int, error)
+	ComputeTxSize(utxos []*UnspentOutput) (int, error)
 	Broadcast(passphrase, label string) ([]byte, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool

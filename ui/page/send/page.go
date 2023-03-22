@@ -73,7 +73,7 @@ type Page struct {
 
 	toCoinSelection *cryptomaterial.Clickable
 
-	selectedUTXOs *selectedUTXOsInfo
+	selectedUTXOs selectedUTXOsInfo
 }
 
 type authoredTxData struct {
@@ -108,7 +108,6 @@ func NewSendPage(l *load.Load) *Page {
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
-		selectedUTXOs:  &selectedUTXOsInfo{},
 	}
 	pg.selectedWallet = &load.WalletMapping{
 		Asset: l.WL.SelectedWallet.Wallet,
@@ -213,9 +212,10 @@ func (pg *Page) RestyleWidgets() {
 }
 
 func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
-	pg.selectedUTXOs.selectedUTXOs = utxos
-	pg.selectedUTXOs.sourceAccount = pg.sourceAccountSelector.SelectedAccount()
-
+	pg.selectedUTXOs = selectedUTXOsInfo{
+		selectedUTXOs: utxos,
+		sourceAccount: pg.sourceAccountSelector.SelectedAccount(),
+	}
 	if len(utxos) > 0 {
 		for _, elem := range utxos {
 			pg.selectedUTXOs.totalUTXOsAmount += elem.Amount.ToInt()

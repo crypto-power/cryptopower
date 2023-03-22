@@ -3,7 +3,6 @@ package send
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"sort"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -93,7 +92,6 @@ type ManualCoinSelectionPage struct {
 
 type componentProperties struct {
 	direction layout.Direction
-	spacing   layout.Spacing
 	weight    float32
 }
 
@@ -130,11 +128,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.clearButton.Font.Weight = text.SemiBold
 	pg.clearButton.Color = l.Theme.Color.Danger
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
-
-	c := l.Theme.Color.Danger
-	// Highlight Color is 8% of the Danger color.
-	alphaChan := 127 - (127 * 0.8)
-	pg.clearButton.HighlightColor = color.NRGBA{c.R, c.G, c.B, uint8(alphaChan)}
+	pg.clearButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.Danger)
 
 	pg.txSize = pg.Theme.Label(values.TextSize14, "--")
 	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
@@ -166,11 +160,14 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 
 	// properties describes the spacing constants set for the display of UTXOs.
 	pg.properties = []componentProperties{
-		{direction: layout.Center, weight: 0.10}, // Component 1
-		{direction: layout.W, weight: 0.20},      // Component 2
-		{direction: layout.W, weight: 0.23},      // Component 3
-		{direction: layout.E, weight: 0.22},      // Component 4
-		{direction: layout.Center, weight: 0.25}, // Component 5
+		{direction: layout.Center, weight: 0.1}, // Component 1
+		{direction: layout.E, weight: 0.17},     // Component 2
+		{direction: layout.W, weight: 0.02},     // Spacing Column
+		{direction: layout.W, weight: 0.25},     // Component 3
+		{direction: layout.W, weight: 0.005},    // Spacing Column
+		{direction: layout.E, weight: 0.18},     // Component 4
+		{direction: layout.W, weight: 0.02},     // Spacing Column
+		{direction: layout.E, weight: 0.23},     // Component 5
 	}
 
 	// clickables defines the event handlers mapped to an individual title field.
@@ -239,6 +236,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 			addressCopy:   pg.Theme.NewClickable(false),
 		}
 
+		info.checkbox.CheckBoxStyle.Size = 20
 		// Check if TxID match. If true, set checked to true.
 		_, info.checkbox.CheckBox.Value = previousUTXOs[info.TxID]
 
@@ -314,7 +312,13 @@ func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 				pg.selectedUTXOrows = append(pg.selectedUTXOrows, record.UnspentOutput)
 				pg.selectedAmount += record.Amount.ToCoin()
 			} else {
-				pg.selectedUTXOrows = pg.selectedUTXOrows[:len(pg.selectedUTXOrows)-1]
+				for index, item := range pg.selectedUTXOrows {
+					if item.TxID == record.TxID {
+						copy(pg.selectedUTXOrows[index:], pg.selectedUTXOrows[index+1:])
+						pg.selectedUTXOrows = pg.selectedUTXOrows[:len(pg.selectedUTXOrows)-1]
+						break
+					}
+				}
 				pg.selectedAmount -= record.Amount.ToCoin()
 			}
 
@@ -334,7 +338,7 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 
 	switch wallet.GetAssetType() {
 	case libutils.BTCWalletAsset:
-		feeNSize, err := wallet.ComputeUTXOsSize(pg.selectedUTXOrows)
+		feeNSize, err := wallet.ComputeTxSize(pg.selectedUTXOrows)
 		if err != nil {
 			log.Error(err)
 		}
@@ -541,7 +545,8 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 	return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return pg.rowItemsSection(gtx, nil, pg.amountLabel, pg.addressLabel, pg.confirmationsLabel, pg.dateLabel)
+				return pg.rowItemsSection(gtx, nil, pg.amountLabel, nil, pg.addressLabel,
+					nil, pg.confirmationsLabel, nil, pg.dateLabel)
 			}),
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -549,32 +554,33 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 				return pg.Theme.List(pg.listContainer).Layout(gtx, len(utxos), func(gtx C, index int) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-								v := utxos[index]
-								checkButton := &v.checkbox                                                            // Component 1
-								amountLabel := pg.generateLabel(v.Amount.ToCoin(), nil)                               // component 2
-								addresslabel := pg.generateLabel(v.Address, nil)                                      // Component 3
-								confirmationsLabel := pg.generateLabel(v.Confirmations, nil)                          // Component 4
-								dateLabel := pg.generateLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), nil) // Component 5
+							v := utxos[index]
+							checkButton := &v.checkbox                                                            // Component 1
+							amountLabel := pg.generateLabel(v.Amount.ToCoin(), nil)                               // component 2
+							addresslabel := pg.generateLabel(v.Address, nil)                                      // Component 3
+							confirmationsLabel := pg.generateLabel(v.Confirmations, nil)                          // Component 4
+							dateLabel := pg.generateLabel(libutils.FormatUTCShortTime(v.ReceiveTime.Unix()), nil) // Component 5
 
-								// copy destination Address
-								if v.addressCopy.Clicked() {
-									clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
-									pg.Toast.Notify(values.String(values.StrAddressCopied))
-								}
+							// copy destination Address
+							if v.addressCopy.Clicked() {
+								clipboard.WriteOp{Text: v.Address}.Add(gtx.Ops)
+								pg.Toast.Notify(values.String(values.StrAddressCopied))
+							}
 
-								addressComponent := func(gtx C) D {
-									return v.addressCopy.Layout(gtx, addresslabel.label.Layout)
-								}
-								return pg.rowItemsSection(gtx, checkButton, amountLabel, addressComponent, confirmationsLabel, dateLabel)
-							})
+							addressComponent := func(gtx C) D {
+								return v.addressCopy.Layout(gtx, addresslabel.label.Layout)
+							}
+							return pg.rowItemsSection(gtx, checkButton, amountLabel, nil, addressComponent,
+								nil, confirmationsLabel, nil, dateLabel)
 						}),
 						layout.Rigid(func(gtx C) D {
 							// No divider for last row
 							if index == len(utxos)-1 {
 								return D{}
 							}
-							return pg.Theme.Separator().Layout(gtx)
+							return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+								return pg.Theme.Separator().Layout(gtx)
+							})
 						}),
 					)
 				})
@@ -584,7 +590,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 }
 
 func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interface{}) D {
-	getRowItem := func(gtx C, index int) D {
+	getRowItem := func(gtx C, index int) layout.Widget {
 		var widget layout.Widget
 		c := components[index]
 
@@ -596,7 +602,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		case labelCell:
 			if n.clickable != nil {
 				widget = func(gtx C) D {
-					return layout.UniformInset(values.MarginPadding6).Layout(gtx, func(gtx C) D {
+					return layout.UniformInset(values.MarginPadding0).Layout(gtx, func(gtx C) D {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
 							Height:      cryptomaterial.WrapContent,
@@ -607,7 +613,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 							layout.Rigid(n.label.Layout),
 							layout.Rigid(func(gtx C) D {
 								count := pg.lastSortEvent.count
-								if pg.lastSortEvent.clicked == index-1 && count >= 0 {
+								if pg.lastSortEvent.clicked == (index-1)/2 && count >= 0 {
 									m := values.MarginPadding4
 									inset := layout.Inset{Left: m}
 
@@ -630,7 +636,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 			// create an empty default placeholder for unsupported widgets.
 			widget = func(gtx C) D { return D{} }
 		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(widget))
+		return widget
 	}
 
 	max := float32(gtx.Constraints.Max.X)
@@ -638,7 +644,9 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		c := pg.properties[index]
 		gtx.Constraints.Min.X = int(max * c.weight)
 		return c.direction.Layout(gtx, func(gtx C) D {
-			return getRowItem(gtx, index)
+			return layout.Flex{Alignment: layout.End}.Layout(gtx,
+				layout.Rigid(getRowItem(gtx, index)),
+			)
 		})
 	})
 }

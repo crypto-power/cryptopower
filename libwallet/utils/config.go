@@ -22,10 +22,9 @@ const (
 	BTCWalletAsset AssetType = "BTC"
 	DCRWalletAsset AssetType = "DCR"
 
-	fullDateformat = "2006-01-02 15:04:05"
-	dateOnlyFormat = "2006-01-02"
-	timeOnlyformat = "15:04:05"
-
+	fullDateformat  = "2006-01-02 15:04:05"
+	dateOnlyFormat  = "2006-01-02"
+	timeOnlyformat  = "15:04:05"
 	shortTimeformat = "2006-01-02 15:04"
 
 	InvalidSyncStage          SyncStage = -1

@@ -76,8 +76,8 @@ func (t *Theme) Button(txt string) Button {
 func (t *Theme) OutlineButton(txt string) Button {
 	btn := t.Button(txt)
 	btn.Background = color.NRGBA{}
-	btn.HighlightColor = t.Color.SurfaceHighlight
 	btn.Color = t.Color.Primary
+	btn.HighlightColor = GenHighlightColor(btn.Color)
 	btn.disabledBackground = color.NRGBA{}
 	btn.disabledTextColor = t.Color.Gray3
 
@@ -88,7 +88,13 @@ func (t *Theme) OutlineButton(txt string) Button {
 func (t *Theme) DangerButton(text string) Button {
 	btn := t.Button(text)
 	btn.Background = t.Color.Danger
+	btn.HighlightColor = GenHighlightColor(btn.Background)
 	return btn
+}
+
+func GenHighlightColor(c color.NRGBA) color.NRGBA {
+	// 127 is transluscent level
+	return color.NRGBA{c.R, c.G, c.B, uint8(127)}
 }
 
 func (t *Theme) ButtonLayout() ButtonLayout {
@@ -181,7 +187,7 @@ func (b Button) buttonStyleLayout(gtx layout.Context, w layout.Widget) layout.Di
 				b.setDisabledColors()
 				background = b.disabledBackground
 			} else if b.clickable.Hovered() {
-				background = Hovered(b.Background)
+				background = Hovered(b.HighlightColor)
 			}
 
 			paint.Fill(gtx.Ops, background)

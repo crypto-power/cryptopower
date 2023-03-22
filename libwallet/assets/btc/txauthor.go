@@ -49,7 +49,7 @@ func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.Un
 	}
 
 	if len(utxos) == 0 {
-		// Ignore this account validation if some selectedUTXOs were passed.
+		// Validate source account number if no utxos were passed.
 		_, err := asset.GetAccount(sourceAccountNumber)
 		if err != nil {
 			return err
@@ -75,9 +75,9 @@ func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
-// ComputeUTXOsSize computes the estimated size of the final raw transaction.
+// ComputeTxSize computes the estimated size of the final raw transaction.
 // A placeholder address is selected so as to generate a single tx output.
-func (asset *Asset) ComputeUTXOsSize(utxos []*sharedW.UnspentOutput) (int, error) {
+func (asset *Asset) ComputeTxSize(utxos []*sharedW.UnspentOutput) (int, error) {
 	if len(utxos) == 0 {
 		return 0, nil
 	}
