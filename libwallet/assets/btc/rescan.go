@@ -393,7 +393,16 @@ func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
 	}, nil
 }
 
+// updateSyncedToBlock is used to update syncedTo block. Sometimes btcwallet might
+// miss the trigger event to update syncedTo block so the update is done here
+// regardless thus avoid handling the possible scenario where btcwallet might miss
+// the syncedto store trigger event.
 func (asset *Asset) updateSyncedToBlock(height int32) {
+	// Ignore blocks notifications recieved during the wallet recovery phase.
+	if !asset.IsSynced() || asset.IsRescanning() {
+		return
+	}
+
 	err := walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
 		addrmgrNs := dbtx.ReadWriteBucket(wAddrMgrBkt)
 

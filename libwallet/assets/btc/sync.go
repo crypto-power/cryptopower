@@ -155,8 +155,6 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 	// Update the best block synced in the connected peers if need be
 	asset.bestServerPeerBlockHeight()
 
-	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
-
 	// initial set up when sync begins.
 	if asset.syncData.headersFetchProgress.StartHeaderHeight == nil {
 		asset.syncData.syncStage = utils.HeadersFetchSyncStage
@@ -168,6 +166,7 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 			return
 		}
 	}
+	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
 
 	timeSpentSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
 	if timeSpentSoFar < 1 {
@@ -234,21 +233,12 @@ notificationsLoop:
 				// Trigger the progress report only when the block to be reported
 				// is the best chaintip.
 
-				syncedTo := asset.Internal().BTC.Manager.SyncedTo()
-				// Ignore blocks notifications recieved during the wallet recovery phase.
-				if syncedTo.Height != n.Height && asset.IsSynced() && !asset.IsRescanning() {
-					asset.updateSyncedToBlock(n.Height)
-				}
+				asset.updateSyncedToBlock(n.Height)
 
 				select {
 				case <-t.C:
-					if !asset.IsSynced() {
-						// initial sync is inprogress.
-						asset.updateSyncProgress(n.Block.Height)
-					} else {
-						// initial sync is complete
-						asset.publishBlockAttached(n.Block.Height)
-					}
+					// log sync progress always
+					asset.updateSyncProgress(n.Block.Height)
 				default:
 				}
 
@@ -318,6 +308,8 @@ notificationsLoop:
 				if asset.blocksRescanProgressListener != nil {
 					asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
 				}
+
+				asset.updateSyncedToBlock(n.Height)
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
