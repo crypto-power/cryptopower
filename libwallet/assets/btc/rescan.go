@@ -9,11 +9,11 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/wallet/walletdb"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
-	"github.com/btcsuite/btcwallet/walletdb"
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.
@@ -147,8 +147,6 @@ func (asset *Asset) RescanAsync() error {
 		// continue with the rescan despite the error occuring
 	}
 
-	asset.ForceRescan()
-
 	log.Info("Starting wallet...")
 	asset.Internal().BTC.Start()
 
@@ -157,7 +155,7 @@ func (asset *Asset) RescanAsync() error {
 	}
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
-	asset.synchronizeRPC(asset.chainClient)
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 	return nil
 }
 

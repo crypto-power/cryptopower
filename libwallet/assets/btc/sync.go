@@ -291,10 +291,6 @@ notificationsLoop:
 				// on startup when a wallet is syncing from scratch.
 				go asset.listenForTransactions()
 
-				// update the birthday and birthday block so that on next startup,
-				// the recovery if necessary takes lesser time.
-				go asset.updateAssetBirthday()
-
 				// Since the initial run on a restored wallet, address discovery
 				// is complete, mark discovered accounts as true.
 				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
@@ -491,7 +487,7 @@ func (asset *Asset) startSync() error {
 
 	log.Infof("Synchronizing wallet (%s) with network...", asset.GetWalletName())
 	// Initializes the goroutines handling chain notifications, rescan progress and handlers.
-	asset.synchronizeRPC(asset.chainClient)
+	asset.Internal().BTC.SynchronizeRPC(asset.chainClient)
 
 	select {
 	// Wait for 5 seconds so that all goroutines initialized in SynchronizeRPC()
@@ -512,29 +508,6 @@ func (asset *Asset) startSync() error {
 	return nil
 }
 
-// synchronizeRPC calls the asset upstream upstream SynchronizeRPC,
-// to sync the wallet with the lastes changes to blockchain.
-// this function is able to recover if the chain client/service panics.
-func (asset *Asset) synchronizeRPC(chainClient chain.Interface) {
-	go func() {
-		defer func() {
-			// attempt recovery if exit status is non-zero.
-			if r := recover(); r != nil {
-				// write panic log.
-				log.Debugf("(%v) panicked during sync, attempting recovery", asset.GetWalletName())
-				// At this point, is it best to check the status and or restart upstream wallet? or is it best disable the
-				// to disable access to the wallet?
-			}
-		}()
-		// Call upstream SynchronizeRPC func to sync the wallet
-		asset.Internal().BTC.SynchronizeRPC(chainClient)
-		// Block until sync is done.
-		<-asset.syncCtx.Done()
-
-	}()
-
-}
-
 // IsConnectedToBitcoinNetwork returns true if the wallet is connected to the
 // bitcoin network.
 func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
@@ -548,15 +521,6 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
-	if asset.isRecoveryRequired() {
-		if !asset.AllowAutomaticRescan() {
-			return errors.New("cannot set earlier birthday while there are active deals")
-		}
-
-		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
-		asset.ForceRescan()
-	}
-
 	// Initiate the sync protocol and return an error incase of failure.
 	return asset.startSync()
 }

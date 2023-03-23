@@ -123,7 +123,7 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		return nil, errors.New("ErrEmptySeed")
 	}
 
-	wal, err := ldr.CreateNewWallet(params.PubPassphrase, params.PrivPassphrase, params.Seed, time.Now().UTC())
+	wal, err := ldr.CreateNewWallet(params.PubPassphrase, params.PrivPassphrase, params.Seed, time.Now())
 	if err != nil {
 		log.Errorf("Failed to create new wallet btc wallet: %v", err)
 		return nil, err
