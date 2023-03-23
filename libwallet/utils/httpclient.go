@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -19,11 +20,16 @@ type HttpAPIType uint8
 const (
 	// Default http client timeout in secs.
 	defaultHttpClientTimeout = 30 * time.Second
+	// DNS server to determine internet connectivity status, 84.200.69.80
+	// is DNSWatch primary dns server address, it is used because of it's privacy
+	// offerings, can be replaced if found inadequate.
+	checkDNSAddress = "84.200.69.80:53"
+	// Address to look up during DNS connectivity check.
+	addressToLookUp = "www.google.com"
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
 	GovernanceHttpAPI HttpAPIType = iota
 	FeeRateHttpAPI
-	OnlineCheckHttpAPI
 	ExchangeHttpAPI
 )
 
@@ -154,7 +160,7 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -204,9 +210,8 @@ func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 
 // IsOnline is a function to check whether an internet connection can be
 // established. If established, IsOnline should return true otherwise IsOnline returns false.
-// Default url to check connection is http://google.com.
 func IsOnline() bool {
-	// If the was wallet online, and the wallet's online status was updated in
+	// If the wallet was online, and the wallet's online status was updated in
 	// the last 2 minutes return true.
 	if time.Since(netC.lastUpdate) < time.Minute*2 && netC.isConnected {
 		return true
@@ -217,8 +222,21 @@ func IsOnline() bool {
 		return netC.isConnected
 	}
 
-	_, err := new(http.Client).Get("https://google.com")
-	// When err != nil, internet connection test failed.
+	// Use DNS resolver to determine internet connectivity status.
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: defaultHttpClientTimeout,
+			}
+			return d.DialContext(ctx, network, checkDNSAddress)
+		},
+	}
+
+	// DNS look up failed if err != nil.
+	_, err := resolver.LookupHost(context.Background(), addressToLookUp)
+
+	// if err == nil, the internet link is up.
 	netC.isConnected = err == nil
 	netC.lastUpdate = time.Now()
 
