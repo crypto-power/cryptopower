@@ -4,10 +4,8 @@ package cryptomaterial
 
 import (
 	"image/color"
-	_ "image/png" //makes png images a decodable format
 
 	"gioui.org/unit"
-
 	"gioui.org/widget"
 )
 

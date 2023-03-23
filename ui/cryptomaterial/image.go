@@ -7,22 +7,17 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"golang.org/x/image/draw"
 )
 
 type Image struct {
-	*widget.Image
+	image.Image
 }
 
 func NewImage(src image.Image) *Image {
 	return &Image{
-		Image: &widget.Image{
-			Src: paint.NewImageOp(src),
-		},
+		Image: src,
 	}
-}
-
-func (img *Image) Layout(gtx C) D {
-	return img.Image.Layout(gtx)
 }
 
 func (img *Image) Layout12dp(gtx C) D {
@@ -50,8 +45,10 @@ func (img *Image) Layout48dp(gtx C) D {
 }
 
 func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
-	width := img.Src.Size().X
-	scale := float32(size) / float32(width)
-	img.Scale = scale
-	return img.Layout(gtx)
+	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: int(size), Y: int(size)}})
+	draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
+
+	i := widget.Image{Src: paint.NewImageOp(dst)}
+	i.Scale = 1
+	return i.Layout(gtx)
 }
