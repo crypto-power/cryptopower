@@ -446,15 +446,14 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 	go func() {
 		for {
 			select {
-			case n := <-pg.TxAndBlockNotifChan:
+			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.NewTransaction {
 					pg.loadTransactions(false)
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
 				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
-				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(pg.TxAndBlockNotifChan)
+				pg.CloseTxAndBlockChan()
 				pg.TxAndBlockNotificationListener = nil
 
 				return

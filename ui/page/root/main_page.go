@@ -945,7 +945,7 @@ func (mp *MainPage) listenForNotifications() {
 	go func() {
 		for {
 			select {
-			case n := <-mp.TxAndBlockNotifChan:
+			case n := <-mp.TxAndBlockNotifChan():
 				switch n.Type {
 				case listeners.NewTransaction:
 					mp.updateBalance()
@@ -994,8 +994,7 @@ func (mp *MainPage) listenForNotifications() {
 				mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
 
 				close(mp.SyncStatusChan)
-				close(mp.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(mp.TxAndBlockNotifChan)
+				mp.CloseTxAndBlockChan()
 				close(mp.ProposalNotifChan)
 				close(mp.OrderNotifChan)
 

@@ -553,7 +553,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			// this is needed to refresh the UI on every block
-			case n := <-pg.TxAndBlockNotifChan:
+			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.BlockAttached {
 					pg.getMixerBalance()
 					pg.ParentWindow().Reload()
@@ -563,8 +563,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
 				pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 				close(pg.MixerChan)
-				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(pg.TxAndBlockNotifChan)
+				pg.CloseTxAndBlockChan()
 				pg.AccountMixerNotificationListener = nil
 				return
 			}

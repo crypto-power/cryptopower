@@ -248,7 +248,7 @@ func (pg *WalletInfo) listenForNotifications() {
 				// refresh the window display.
 				pg.ParentWindow().Reload()
 
-			case n := <-pg.TxAndBlockNotifChan:
+			case n := <-pg.TxAndBlockNotifChan():
 				switch n.Type {
 				case listeners.NewTransaction:
 					pg.ParentWindow().Reload()
@@ -266,8 +266,7 @@ func (pg *WalletInfo) listenForNotifications() {
 				selectedWallet.SetBlocksRescanProgressListener(nil)
 
 				close(pg.SyncStatusChan)
-				close(pg.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(pg.TxAndBlockNotifChan)
+				pg.CloseTxAndBlockChan()
 				close(pg.BlockRescanChan)
 
 				pg.SyncProgressListener = nil

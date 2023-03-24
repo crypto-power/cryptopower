@@ -320,7 +320,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 	go func() {
 		for {
 			select {
-			case n := <-ws.TxAndBlockNotifChan:
+			case n := <-ws.TxAndBlockNotifChan():
 				switch n.Type {
 				case listeners.BlockAttached:
 					// refresh wallet and account balance on every new block
@@ -349,8 +349,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 				}
 			case <-ctx.Done():
 				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
-				close(ws.NotifChanClosed) // Must be closed before TxAndBlockNotifChan.
-				close(ws.TxAndBlockNotifChan)
+				ws.CloseTxAndBlockChan()
 				ws.TxAndBlockNotificationListener = nil
 				return
 			}
