@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	SendPageID   = "Send"
-	SendToWallet = 2
+	SendPageID    = "Send"
+	sendToAddress = 1
+	SendToWallet  = 2
 
 	// MaxTxLabelSize defines the maximum number of characters to be allowed on
 	// txLabelInputEditor component.
@@ -133,9 +134,15 @@ func NewSendPage(l *load.Load) *Page {
 				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
-				// only mixed accounts can send to address for wallet with privacy setup
-				if pg.sendDestination.accountSwitch.SelectedIndex() == 1 {
+				// only mixed accounts can send to address/wallets for wallet with privacy setup
+				switch pg.sendDestination.accountSwitch.SelectedIndex() {
+				case sendToAddress:
 					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+				case SendToWallet:
+					destinationWalletId := pg.sendDestination.destinationAccountSelector.SelectedAccount().WalletID
+					if destinationWalletId != pg.selectedWallet.GetWalletID() {
+						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+					}
 				}
 			}
 			return accountIsValid
@@ -166,28 +173,7 @@ func NewSendPage(l *load.Load) *Page {
 	})
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.sourceAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
-			accountIsValid := account.Number != load.MaxInt32
-
-			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
-				if pg.sendDestination.accountSwitch.SelectedIndex() == SendToWallet {
-					destinationWalletId := pg.sendDestination.destinationAccountSelector.SelectedAccount().WalletID
-					if destinationWalletId != pg.selectedWallet.GetWalletID() {
-						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
-					}
-				} else {
-					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
-				}
-			}
-			return accountIsValid
-		})
-		acc, _ := pg.selectedWallet.GetAccountsRaw()
-		for _, acc := range acc.Accounts {
-			if acc.Number == pg.selectedWallet.MixedAccountNumber() {
-				pg.sourceAccountSelector.SetSelectedAccount(acc)
-			}
-		}
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
