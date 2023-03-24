@@ -32,7 +32,9 @@ func NewSelectAssetEditor(l *load.Load) *SelectAssetEditor {
 }
 
 func (sae SelectAssetEditor) Layout(window app.WindowNavigator, gtx C) D {
-	l := sae.Theme.SeparatorVertical(int(gtx.Metric.PxPerDp)*20, int(gtx.Metric.PxPerDp)*2)
+	width := int(gtx.Metric.PxPerDp * 2.0)
+	height := int(gtx.Metric.PxPerDp * 31.0)
+	l := sae.Theme.SeparatorVertical(height, width)
 	l.Color = sae.Theme.Color.Gray3
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,

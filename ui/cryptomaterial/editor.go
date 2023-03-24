@@ -69,7 +69,6 @@ func (t *Theme) EditorPassword(editor *widget.Editor, hint string) Editor {
 }
 
 func (t *Theme) RestoreEditor(editor *widget.Editor, hint string, title string) RestoreEditor {
-
 	e := t.Editor(editor, hint)
 	e.Bordered = false
 	e.SelectionColor = color.NRGBA{}
@@ -103,7 +102,7 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	m.Hint = hint
 	m.HintColor = t.Color.GrayText3
 
-	var m0 = unit.Dp(0)
+	m0 := unit.Dp(0)
 
 	return Editor{
 		t:            t,
@@ -295,7 +294,9 @@ func (e Editor) handleEvents() {
 }
 
 func (re RestoreEditor) Layout(gtx layout.Context) layout.Dimensions {
-	l := re.t.SeparatorVertical(int(gtx.Metric.PxPerDp)*re.height, int(gtx.Metric.PxPerDp)*2)
+	width := int(gtx.Metric.PxPerDp * 2.0)
+	height := int(gtx.Metric.PxPerDp * float32(re.height))
+	l := re.t.SeparatorVertical(height, width)
 	if re.Edit.Editor.Focused() {
 		re.TitleLabel.Color, re.LineColor, l.Color = re.t.Color.Primary, re.t.Color.Primary, re.t.Color.Primary
 	} else {
