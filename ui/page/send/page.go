@@ -123,8 +123,6 @@ func NewSendPage(l *load.Load) *Page {
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
-			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
-				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
@@ -139,7 +137,7 @@ func NewSendPage(l *load.Load) *Page {
 				case sendToAddress:
 					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 				case SendToWallet:
-					destinationWalletId := pg.sendDestination.destinationAccountSelector.SelectedAccount().WalletID
+					destinationWalletId := pg.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
 					if destinationWalletId != pg.selectedWallet.GetWalletID() {
 						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 					}
@@ -173,8 +171,8 @@ func NewSendPage(l *load.Load) *Page {
 	})
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	})
 
 	pg.sendDestination.addressChanged = func() {
@@ -225,6 +223,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
 	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
