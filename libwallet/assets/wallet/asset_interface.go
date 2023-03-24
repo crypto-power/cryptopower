@@ -70,6 +70,7 @@ type Asset interface {
 	AccountNumber(accountName string) (int32, error)
 	AccountNameRaw(accountNumber uint32) (string, error)
 	GetAccountBalance(accountNumber int32) (*Balance, error)
+	UnspentOutputs(account int32) ([]*UnspentOutput, error)
 
 	AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error
 	RemoveSyncProgressListener(uniqueIdentifier string)
@@ -102,8 +103,9 @@ type Asset interface {
 	ReadLongConfigValueForKey(key string, defaultValue int64) int64
 	ReadStringConfigValueForKey(key string, defaultValue string) string
 
-	NewUnsignedTx(accountNumber int32) error
+	NewUnsignedTx(accountNumber int32, utxos []*UnspentOutput) error
 	AddSendDestination(address string, unitAmount int64, sendMax bool) error
+	ComputeTxSizeEstimation(dstAddress string, utxos []*UnspentOutput) (int, error)
 	Broadcast(passphrase, label string) ([]byte, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool

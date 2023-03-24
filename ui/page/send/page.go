@@ -3,7 +3,6 @@ package send
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -27,6 +26,11 @@ const (
 	// MaxTxLabelSize defines the maximum number of characters to be allowed on
 	// txLabelInputEditor component.
 	MaxTxLabelSize = 100
+)
+
+var (
+	automaticCoinSelection = values.String(values.StrAutomatic)
+	manualCoinSelection    = values.String(values.StrManual)
 )
 
 type Page struct {
@@ -66,6 +70,10 @@ type Page struct {
 	*authoredTxData
 	selectedWallet  *load.WalletMapping
 	feeRateSelector *components.FeeRateSelector
+
+	toCoinSelection *cryptomaterial.Clickable
+
+	selectedUTXOs selectedUTXOsInfo
 }
 
 type authoredTxData struct {
@@ -80,6 +88,12 @@ type authoredTxData struct {
 	balanceAfterSendUSD string
 	sendAmount          string
 	sendAmountUSD       string
+}
+
+type selectedUTXOsInfo struct {
+	sourceAccount    *sharedW.Account
+	selectedUTXOs    []*sharedW.UnspentOutput
+	totalUTXOsAmount int64
 }
 
 func NewSendPage(l *load.Load) *Page {
@@ -127,7 +141,11 @@ func NewSendPage(l *load.Load) *Page {
 			return accountIsValid
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+
+	// if a source account exists, don't overwrite it.
+	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+	}
 
 	pg.sendDestination.destinationAccountSelector = pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 		accountIsValid := account.Number != load.MaxInt32
@@ -174,8 +192,6 @@ func NewSendPage(l *load.Load) *Page {
 	})
 
 	pg.sendDestination.addressChanged = func() {
-		// refresh selected account when addressChanged is called
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		pg.validateAndConstructTx()
 	}
 
@@ -195,6 +211,18 @@ func (pg *Page) RestyleWidgets() {
 	pg.sendDestination.styleWidgets()
 }
 
+func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
+	pg.selectedUTXOs = selectedUTXOsInfo{
+		selectedUTXOs: utxos,
+		sourceAccount: pg.sourceAccountSelector.SelectedAccount(),
+	}
+	if len(utxos) > 0 {
+		for _, elem := range utxos {
+			pg.selectedUTXOs.totalUTXOsAmount += elem.Amount.ToInt()
+		}
+	}
+}
+
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -210,7 +238,6 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
@@ -245,7 +272,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
 	if err != nil {
-		log.Printf("Error fetching exchange rate : %s \n", err)
+		log.Errorf("Error fetching exchange rate : %v", err)
 		return
 	}
 
@@ -258,6 +285,9 @@ func (pg *Page) fetchExchangeRate() {
 }
 
 func (pg *Page) validateAndConstructTx() {
+	// delete all the previous errors set earlier.
+	pg.feeEstimationError("")
+
 	if pg.validate() {
 		pg.constructTx()
 	} else {
@@ -279,10 +309,11 @@ func (pg *Page) validateAndConstructTxAmountOnly() {
 func (pg *Page) validate() bool {
 	amountIsValid := pg.amount.amountIsValid()
 	addressIsValid := pg.sendDestination.validate()
-	noErrMsg := pg.amount.amountErrorText == ""
 
+	// No need for checking the err message since it is as result of amount and
+	// address validation.
 	// validForSending
-	return amountIsValid && addressIsValid && noErrMsg
+	return amountIsValid && addressIsValid
 }
 
 func (pg *Page) constructTx() {
@@ -300,7 +331,12 @@ func (pg *Page) constructTx() {
 	}
 
 	sourceAccount := pg.sourceAccountSelector.SelectedAccount()
-	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number)
+	selectedUTXOs := make([]*sharedW.UnspentOutput, 0)
+	if sourceAccount == pg.selectedUTXOs.sourceAccount {
+		selectedUTXOs = pg.selectedUTXOs.selectedUTXOs
+	}
+
+	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, selectedUTXOs)
 	if err != nil {
 		pg.feeEstimationError(err.Error())
 		return
@@ -319,13 +355,18 @@ func (pg *Page) constructTx() {
 	}
 
 	feeAtom := feeAndSize.Fee.UnitValue
+	spendableAmount := sourceAccount.Balance.Spendable.ToInt()
+	if len(selectedUTXOs) > 0 {
+		spendableAmount = pg.selectedUTXOs.totalUTXOsAmount
+	}
+
 	if SendMax {
-		amountAtom = sourceAccount.Balance.Spendable.ToInt() - feeAtom
+		amountAtom = spendableAmount - feeAtom
 	}
 
 	wal := pg.WL.SelectedWallet.Wallet
 	totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
-	balanceAfterSend := wal.ToAmount(sourceAccount.Balance.Spendable.ToInt() - totalSendingAmount.ToInt())
+	balanceAfterSend := wal.ToAmount(spendableAmount - totalSendingAmount.ToInt())
 
 	// populate display data
 	pg.txFee = wal.ToAmount(feeAtom).String()
@@ -400,9 +441,11 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.feeRateSelector.FetchRates.Clicked() {
 		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
 	}
+
 	if pg.feeRateSelector.EditRates.Clicked() {
 		pg.feeRateSelector.OnEditRateCliked(pg.selectedWallet)
 	}
+
 	pg.nextButton.SetEnabled(pg.validate())
 	pg.sendDestination.handle()
 	pg.amount.handle()
@@ -420,6 +463,16 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
+	if pg.toCoinSelection.Clicked() && pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+		_, err := pg.sendDestination.destinationAddress()
+		if err != nil {
+			pg.feeEstimationError(values.String(values.StrDestinationMissing))
+			pg.sendDestination.destinationAddressEditor.Editor.Focus()
+		} else {
+			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+		}
+	}
+
 	if pg.nextButton.Clicked() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
 			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
@@ -432,21 +485,6 @@ func (pg *Page) HandleUserInteractions() {
 			}
 
 			pg.ParentWindow().ShowModal(pg.confirmTxModal)
-		}
-	}
-
-	modalShown := pg.confirmTxModal != nil && pg.confirmTxModal.IsShown()
-	isAmountEditorActive := pg.amount.amountEditor.Editor.Focused() ||
-		pg.amount.usdAmountEditor.Editor.Focused()
-
-	if !modalShown && !isAmountEditorActive {
-		isSendToWallet := pg.sendDestination.accountSwitch.SelectedIndex() == 2
-		isDestinationEditorFocused := pg.sendDestination.destinationAddressEditor.Editor.Focused()
-
-		switch {
-		// If accounts switch selects the wallet option.
-		case isSendToWallet && !isDestinationEditorFocused:
-			pg.amount.amountEditor.Editor.Focus()
 		}
 	}
 
@@ -479,7 +517,10 @@ func (pg *Page) HandleUserInteractions() {
 
 	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
 		pg.amount.validateAmount()
-		pg.validateAndConstructTxAmountOnly()
+		if pg.amount.amountErrorText == "" {
+			// proceed with validation only when the amount is valid.
+			pg.validateAndConstructTxAmountOnly()
+		}
 	}
 
 	if pg.amount.IsMaxClicked() {

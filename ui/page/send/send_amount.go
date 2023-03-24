@@ -34,7 +34,6 @@ type sendAmount struct {
 }
 
 func newSendAmount(l *load.Load) *sendAmount {
-
 	sa := &sendAmount{
 		Load:         l,
 		exchangeRate: -1,
@@ -144,7 +143,6 @@ func (sa *sendAmount) validateAmount() {
 
 // validateUSDAmount is called when usd text changes
 func (sa *sendAmount) validateUSDAmount() bool {
-
 	sa.amountErrorText = ""
 	if sa.inputsNotEmpty(sa.usdAmountEditor.Editor) {
 		usdAmount, err := strconv.ParseFloat(sa.usdAmountEditor.Editor.Text(), 64)

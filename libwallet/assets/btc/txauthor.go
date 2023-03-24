@@ -37,24 +37,30 @@ type TxAuthor struct {
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 
+	selectedUXTOs []*sharedW.UnspentOutput
+
 	mu sync.RWMutex
 }
 
 // NewUnsignedTx creates a new unsigned transaction.
-func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32) error {
+func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
 	if asset == nil {
 		return fmt.Errorf(utils.ErrWalletNotFound)
 	}
 
-	_, err := asset.GetAccount(sourceAccountNumber)
-	if err != nil {
-		return err
+	if len(utxos) == 0 {
+		// Validate source account number if no utxos were passed.
+		_, err := asset.GetAccount(sourceAccountNumber)
+		if err != nil {
+			return err
+		}
 	}
 
 	asset.TxAuthoredInfo = &TxAuthor{
 		sourceAccountNumber: uint32(sourceAccountNumber),
 		destinations:        make(map[string]*sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
+		selectedUXTOs:       utxos,
 	}
 	return nil
 }
@@ -67,6 +73,31 @@ func (asset *Asset) GetUnsignedTx() *TxAuthor {
 // IsUnsignedTxExist returns true if an unsigned transaction exists.
 func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
+}
+
+// ComputeTxSizeEstimation computes the estimated size of the final raw transaction.
+// A placeholder address is selected so as to generate a single tx output.
+func (asset *Asset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
+	if len(utxos) == 0 {
+		return 0, nil
+	}
+
+	if dstAddress == "" {
+		return -1, errors.New("destination address missing")
+	}
+
+	var sendAmount int64
+	for _, c := range utxos {
+		sendAmount += c.Amount.ToInt()
+	}
+
+	output, err := txhelper.MakeBTCTxOutput(dstAddress, sendAmount, asset.chainParams)
+	if err != nil {
+		return -1, fmt.Errorf("computing utxo size failed: %v", err)
+	}
+
+	estimatedSize := txsizes.EstimateSerializeSize(len(utxos), []*wire.TxOut{output}, true)
+	return estimatedSize, nil
 }
 
 // AddSendDestination adds a destination address to the transaction.
@@ -153,7 +184,7 @@ func (asset *Asset) TotalSendAmount() *sharedW.Amount {
 // EstimateFeeAndSize estimates the fee and size of the transaction.
 func (asset *Asset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	// compute the amount to be sent in the current tx.
-	var sendAmount = btcutil.Amount(asset.TotalSendAmount().UnitValue)
+	sendAmount := btcutil.Amount(asset.TotalSendAmount().UnitValue)
 
 	asset.TxAuthoredInfo.mu.Lock()
 	defer asset.TxAuthoredInfo.mu.Unlock()
@@ -326,9 +357,9 @@ func (asset *Asset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 
 func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var err error
-	var outputs = make([]*wire.TxOut, 0)
+	outputs := make([]*wire.TxOut, 0)
 	var changeSource *txauthor.ChangeSource
-	var setFeeRate = btcutil.Amount(asset.GetUserFeeRate().ToInt())
+	setFeeRate := btcutil.Amount(asset.GetUserFeeRate().ToInt())
 	var sendMax bool
 
 	for _, destination := range asset.TxAuthoredInfo.destinations {
@@ -380,9 +411,13 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
-	unspents, err := asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
-	if err != nil {
-		return nil, err
+	// if preset with a selected list of UTXOs exists, use them instead.
+	unspents := asset.TxAuthoredInfo.selectedUXTOs
+	if len(unspents) == 0 {
+		unspents, err = asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	inputSource := asset.makeInputSource(unspents, sendMax)
@@ -441,7 +476,7 @@ func (asset *Asset) validateSendAmount(sendMax bool, satoshiAmount int64) error 
 // transaction possible. It plans not to spend all the utxos available when servicing
 // the current transaction spending amount if possible. The sendMax shows that
 // all utxos must be spent without any balance(unspent utxo) left in the account.
-func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) txauthor.InputSource {
+func (asset *Asset) makeInputSource(outputs []*sharedW.UnspentOutput, sendMax bool) txauthor.InputSource {
 	var (
 		sourceErr       error
 		totalInputValue btcutil.Amount
@@ -456,7 +491,7 @@ func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) 
 		// Sorts the outputs in the descending order (utxo with largest amount start)
 		// This descending order helps in selecting the least number of utxos needed
 		// in the servicing the transaction to be made.
-		sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount > outputs[j].Amount })
+		sort.Slice(outputs, func(i, j int) bool { return outputs[i].Amount.ToCoin() > outputs[j].Amount.ToCoin() })
 	}
 
 	// validates the utxo amounts and if an invalid amount is discovered an
@@ -467,18 +502,12 @@ func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) 
 			continue
 		}
 
-		outputAmount, err := btcutil.NewAmount(output.Amount)
-		if err != nil {
-			sourceErr = fmt.Errorf("invalid amount `%v` in listunspent result", output.Amount)
-			break
-		}
-
-		if outputAmount == 0 {
+		if output.Amount == nil || output.Amount.ToCoin() == 0 {
 			continue
 		}
 
-		if !saneOutputValue(outputAmount) {
-			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", outputAmount)
+		if !saneOutputValue(output.Amount.(Amount)) {
+			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", output.Amount)
 			break
 		}
 
@@ -495,14 +524,14 @@ func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) 
 		}
 
 		// Determine whether this transaction output is considered dust
-		if txrules.IsDustOutput(wire.NewTxOut(int64(outputAmount), script), txrules.DefaultRelayFeePerKb) {
-			log.Errorf("transaction contains a dust output with value: %v", outputAmount.String())
+		if txrules.IsDustOutput(wire.NewTxOut(output.Amount.ToInt(), script), txrules.DefaultRelayFeePerKb) {
+			log.Errorf("transaction contains a dust output with value: %v", output.Amount.String())
 			continue
 		}
 
-		totalInputValue += outputAmount
+		totalInputValue += btcutil.Amount(output.Amount.(Amount))
 		pkScripts = append(pkScripts, script)
-		inputValues = append(inputValues, outputAmount)
+		inputValues = append(inputValues, btcutil.Amount(output.Amount.(Amount)))
 		inputs = append(inputs, wire.NewTxIn(previousOutPoint, nil, nil))
 	}
 
@@ -549,11 +578,11 @@ func (asset *Asset) makeInputSource(outputs []*ListUnspentResult, sendMax bool) 
 	}
 }
 
-func saneOutputValue(amount btcutil.Amount) bool {
+func saneOutputValue(amount Amount) bool {
 	return amount >= 0 && amount <= btcutil.MaxSatoshi
 }
 
-func parseOutPoint(input *ListUnspentResult) (*wire.OutPoint, error) {
+func parseOutPoint(input *sharedW.UnspentOutput) (*wire.OutPoint, error) {
 	txHash, err := chainhash.NewHashFromStr(input.TxID)
 	if err != nil {
 		return nil, err

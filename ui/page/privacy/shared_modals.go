@@ -116,7 +116,7 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, password string) err
 		return err
 	}
 
-	err = dcrUniqueImpl.NewUnsignedTx(sourceAccount.Number)
+	err = dcrUniqueImpl.NewUnsignedTx(sourceAccount.Number, nil)
 	if err != nil {
 		return err
 	}

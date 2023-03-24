@@ -2,12 +2,15 @@ package btc
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 )
@@ -128,7 +131,7 @@ func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 
 // UnspentOutputs returns all the unspent outputs available for the provided
 // account index.
-func (asset *Asset) UnspentOutputs(account int32) ([]*ListUnspentResult, error) {
+func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	accountName, err := asset.AccountName(account)
 	if err != nil {
 		return nil, err
@@ -140,18 +143,28 @@ func (asset *Asset) UnspentOutputs(account int32) ([]*ListUnspentResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	resp := make([]*ListUnspentResult, 0, len(unspents))
+	resp := make([]*sharedW.UnspentOutput, 0, len(unspents))
 
 	for _, utxo := range unspents {
-		resp = append(resp, &ListUnspentResult{
+		// error returned is ignored because the amount value is from upstream
+		// and doesn't require an extra layer of validation.
+		amount, _ := btcutil.NewAmount(utxo.Amount)
+
+		txInfo, err := asset.GetTransactionRaw(utxo.TxID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid TxID %v : error: %v", utxo.TxID, err)
+		}
+
+		resp = append(resp, &sharedW.UnspentOutput{
 			TxID:          utxo.TxID,
 			Vout:          utxo.Vout,
 			Address:       utxo.Address,
 			ScriptPubKey:  utxo.ScriptPubKey,
 			RedeemScript:  utxo.RedeemScript,
-			Amount:        utxo.Amount,
-			Confirmations: int64(utxo.Confirmations),
+			Amount:        Amount(amount),
+			Confirmations: int32(utxo.Confirmations),
 			Spendable:     utxo.Spendable,
+			ReceiveTime:   time.Unix(txInfo.Timestamp, 0),
 		})
 	}
 
@@ -172,7 +185,6 @@ func (asset *Asset) CreateNewAccount(accountName, privPass string) (int32, error
 
 // NextAccount returns the next account number for the provided account name.
 func (asset *Asset) NextAccount(accountName string) (int32, error) {
-
 	if asset.IsLocked() {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}

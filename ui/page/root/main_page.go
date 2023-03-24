@@ -634,7 +634,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							switch mp.CurrentPage().ID() {
 							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
 								transaction.TransactionsPageID, privacy.AccountMixerPageID:
-								if !mp.WL.SelectedWallet.Wallet.IsSynced() {
+								// Disable page functionality if a page is not synced or rescanning is in progress.
+								if !mp.WL.SelectedWallet.Wallet.IsSynced() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
 									return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
 										values.String(values.StrFunctionUnavailable))
 								}

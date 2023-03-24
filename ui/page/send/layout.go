@@ -50,6 +50,8 @@ func (pg *Page) initLayoutWidgets() {
 	pg.txLabelInputEditor.Editor.SetText("")
 	// Set the maximum characters the editor can accept.
 	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
+
+	pg.toCoinSelection = pg.Theme.NewClickable(false)
 }
 
 func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
@@ -207,6 +209,7 @@ func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch
 									inset := layout.Inset{
 										Top: values.MarginPaddingMinus5,
 									}
+									pg.sendDestination.accountSwitch.SetSelectedIndex(pg.sendDestination.selectedIndex)
 									return inset.Layout(gtx, pg.sendDestination.accountSwitch.Layout)
 								})
 							}
@@ -309,31 +312,33 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) coinSelectionSection(gtx layout.Context) D {
-	m := values.MarginPadding20
+	selectedOption := automaticCoinSelection
+	sourceAcc := pg.sourceAccountSelector.SelectedAccount()
+	if len(pg.selectedUTXOs.selectedUTXOs) > 0 && pg.selectedUTXOs.sourceAccount == sourceAcc {
+		selectedOption = manualCoinSelection
+	}
+
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		inset := layout.Inset{
-			Top:    values.MarginPadding15,
-			Right:  values.MarginPadding15,
-			Bottom: values.MarginPadding15,
-			Left:   values.MarginPadding15,
-		}
+		inset := layout.UniformInset(values.MarginPadding15)
 		return inset.Layout(gtx, func(gtx C) D {
 			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
-			return layout.Inset{}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(textLabel.Layout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrAutomatic)).Layout),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Left: m}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
-								}),
-							)
-						})
-					}),
-				)
-			})
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(textLabel.Layout),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   pg.toCoinSelection,
+						}.Layout(gtx,
+							layout.Rigid(pg.Theme.Label(values.TextSize16, selectedOption).Layout),
+							layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
+						)
+					})
+				}),
+			)
 		})
 	})
 }

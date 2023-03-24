@@ -27,17 +27,3 @@ func (a Amount) MulF64(f float64) sharedW.AssetAmount {
 func (a Amount) ToInt() int64 {
 	return int64(btcutil.Amount(a))
 }
-
-// ListUnspentResult is a type that represents the result of the ListUnspent
-// RPC call.
-type ListUnspentResult struct {
-	TxID          string  `json:"txid"`
-	Vout          uint32  `json:"vout"`
-	Address       string  `json:"address"`
-	Account       string  `json:"account"`
-	ScriptPubKey  string  `json:"scriptPubKey"`
-	RedeemScript  string  `json:"redeemScript,omitempty"`
-	Amount        float64 `json:"amount"`
-	Confirmations int64   `json:"confirmations"`
-	Spendable     bool    `json:"spendable"`
-}

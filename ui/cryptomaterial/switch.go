@@ -224,3 +224,7 @@ func (s *SwitchButtonText) Changed() bool {
 	s.changed = false
 	return changed
 }
+
+func (s *SwitchButtonText) SetSelectedIndex(index int) {
+	s.selected = index
+}

@@ -1,10 +1,10 @@
 package dcr
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/addresshelper"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -12,7 +12,6 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
-	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 func (asset *DCRAsset) GetAccounts() (string, error) {
@@ -130,52 +129,44 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
-func (asset *DCRAsset) UnspentOutputs(account int32) ([]*UnspentOutput, error) {
+
+func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(account),
 		RequiredConfirmations: asset.RequiredConfirmations(),
 	}
 
-	// fetch all utxos in account to extract details for the utxos selected by user
-	// use targetAmount = 0 to fetch ALL utxos in account
 	ctx, _ := asset.ShutdownContextWithCancel()
-	inputDetail, err := asset.Internal().DCR.SelectInputs(ctx, dcrutil.Amount(0), policy)
-
+	unspents, err := asset.Internal().DCR.UnspentOutputs(ctx, policy)
 	if err != nil {
 		return nil, err
 	}
 
-	unspentOutputs := make([]*UnspentOutput, len(inputDetail.Inputs))
-
-	for i, input := range inputDetail.Inputs {
-		outputInfo, err := asset.Internal().DCR.OutputInfo(ctx, &input.PreviousOutPoint)
-		if err != nil {
-			return nil, err
-		}
-
-		// unique key to identify utxo
-		outputKey := fmt.Sprintf("%s:%d", input.PreviousOutPoint.Hash, input.PreviousOutPoint.Index)
-
-		addresses := addresshelper.PkScriptAddresses(asset.chainParams, inputDetail.Scripts[i])
+	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(unspents))
+	for _, utxo := range unspents {
+		addresses := addresshelper.PkScriptAddresses(asset.chainParams, utxo.Output.PkScript)
 
 		var confirmations int32
-		inputBlockHeight := int32(input.BlockHeight)
+		inputBlockHeight := utxo.ContainingBlock.Height
 		if inputBlockHeight != -1 {
 			confirmations = asset.GetBestBlockHeight() - inputBlockHeight + 1
 		}
 
-		unspentOutputs[i] = &UnspentOutput{
-			TransactionHash: input.PreviousOutPoint.Hash[:],
-			OutputIndex:     input.PreviousOutPoint.Index,
-			OutputKey:       outputKey,
-			Tree:            int32(input.PreviousOutPoint.Tree),
-			Amount:          int64(outputInfo.Amount),
-			PkScript:        inputDetail.Scripts[i],
-			ReceiveTime:     outputInfo.Received.Unix(),
-			FromCoinbase:    outputInfo.FromCoinbase,
-			Addresses:       strings.Join(addresses, ", "),
-			Confirmations:   confirmations,
+		addr := ""
+		if len(addresses) > 0 {
+			addr = addresses[0]
 		}
+
+		unspentOutputs = append(unspentOutputs, &sharedW.UnspentOutput{
+			TxID:          utxo.OutPoint.Hash.String(),
+			Vout:          utxo.OutPoint.Index,
+			Address:       addr,
+			Amount:        DCRAmount(utxo.Output.Value),
+			ScriptPubKey:  hex.EncodeToString(utxo.Output.PkScript),
+			ReceiveTime:   utxo.ReceiveTime,
+			Confirmations: confirmations,
+			Spendable:     true,
+		})
 	}
 
 	return unspentOutputs, nil
@@ -193,7 +184,6 @@ func (asset *DCRAsset) CreateNewAccount(accountName, privPass string) (int32, er
 }
 
 func (asset *DCRAsset) NextAccount(accountName string) (int32, error) {
-
 	if asset.IsLocked() {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}

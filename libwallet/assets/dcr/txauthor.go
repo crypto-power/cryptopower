@@ -31,7 +31,7 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32) error {
+func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
 	_, err := asset.GetAccount(sourceAccountNumber)
 	if err != nil {
 		return err
@@ -43,6 +43,10 @@ func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32) error {
 		needsConstruct:      true,
 	}
 	return nil
+}
+
+func (asset *DCRAsset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
+	return -1, errors.New("ComputeTxSizeEstimation Not implemented")
 }
 
 func (asset *DCRAsset) GetUnsignedTx() *TxAuthor {

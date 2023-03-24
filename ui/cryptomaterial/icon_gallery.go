@@ -26,7 +26,7 @@ type Icons struct {
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
-	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon *Image
+	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -157,6 +157,8 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
 	i.ChevronRight = NewImage(decredIcons["chevron_coll"])
 	i.ChevronLeft = NewImage(decredIcons["chevron_left"])
+	i.CaretUp = NewImage(decredIcons["caret_up"])
+	i.CaretDown = NewImage(decredIcons["caret_down"])
 	i.NotSynced = NewImage(decredIcons["notSynced"])
 	i.UnmixedTxIcon = NewImage(decredIcons["unmixed_icon"])
 	i.MixedTxIcon = NewImage(decredIcons["mixed_icon"])
