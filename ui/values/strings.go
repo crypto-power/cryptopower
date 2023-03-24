@@ -273,6 +273,7 @@ const (
 	StrDescriptionNote                 = "descriptionNote"
 	StrDestAddr                        = "destAddr"
 	StrDestination                     = "destination"
+	StrDestinationMissing              = "destinationMissing"
 	StrDestinationModalInfo            = "destinationModalInfo"
 	StrDestinationWalletNotSynced      = "destinationWalletNotSynced"
 	StrDex                             = "dex"

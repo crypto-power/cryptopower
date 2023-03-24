@@ -163,6 +163,7 @@ const EN = `
 "descriptionNote" = "Description Note"
 "destAddr" = "Destination Address"
 "destination" = "Destination"
+"destinationMissing" = "destination missing"
 "destinationModalInfo" = "A new receiving address will be automatically generated within the selected account."
 "destinationWalletNotSynced" = "Destination wallet is not synced"
 "dex" = "Dex"

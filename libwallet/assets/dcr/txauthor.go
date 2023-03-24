@@ -45,6 +45,10 @@ func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW
 	return nil
 }
 
+func (asset *DCRAsset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
+	return -1, errors.New("ComputeTxSizeEstimation Not implemented")
+}
+
 func (asset *DCRAsset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }

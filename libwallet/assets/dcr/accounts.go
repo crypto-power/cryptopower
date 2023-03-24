@@ -129,9 +129,6 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
-func (asset *DCRAsset) ComputeTxSizeEstimation(utxos []*sharedW.UnspentOutput) (int, error) {
-	return -1, errors.New("ComputeTxSizeEstimation Not implemented")
-}
 
 func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	policy := w.OutputSelectionPolicy{

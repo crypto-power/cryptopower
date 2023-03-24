@@ -77,9 +77,13 @@ func (asset *Asset) IsUnsignedTxExist() bool {
 
 // ComputeTxSizeEstimation computes the estimated size of the final raw transaction.
 // A placeholder address is selected so as to generate a single tx output.
-func (asset *Asset) ComputeTxSizeEstimation(utxos []*sharedW.UnspentOutput) (int, error) {
+func (asset *Asset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
 	if len(utxos) == 0 {
 		return 0, nil
+	}
+
+	if dstAddress == "" {
+		return -1, errors.New("destination address missing")
 	}
 
 	var sendAmount int64
@@ -87,8 +91,7 @@ func (asset *Asset) ComputeTxSizeEstimation(utxos []*sharedW.UnspentOutput) (int
 		sendAmount += c.Amount.ToInt()
 	}
 
-	placeholderAddress := utxos[0].Address
-	output, err := txhelper.MakeBTCTxOutput(placeholderAddress, sendAmount, asset.chainParams)
+	output, err := txhelper.MakeBTCTxOutput(dstAddress, sendAmount, asset.chainParams)
 	if err != nil {
 		return -1, fmt.Errorf("computing utxo size failed: %v", err)
 	}

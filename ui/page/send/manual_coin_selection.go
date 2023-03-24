@@ -336,9 +336,12 @@ func (pg *ManualCoinSelectionPage) updateSummaryInfo() {
 func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 	wallet := pg.WL.SelectedWallet.Wallet
 
+	// Access to coin selection page is restricted unless destination address is selected.
+	destination, _ := pg.sendPage.sendDestination.destinationAddress()
+
 	switch wallet.GetAssetType() {
 	case libutils.BTCWalletAsset:
-		feeNSize, err := wallet.ComputeTxSizeEstimation(pg.selectedUTXOrows)
+		feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
 		if err != nil {
 			log.Error(err)
 		}
