@@ -82,7 +82,7 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, param
 	path := []uint32{hardenedKey(asset.GetScope().Purpose), hardenedKey(asset.GetScope().Coin)}
 	path = append(path, hardenedKey(account))
 
-	var currentKey = masterNode
+	currentKey := masterNode
 	for _, pathPart := range path {
 		currentKey, err = currentKey.Derive(pathPart)
 		if err != nil {

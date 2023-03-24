@@ -10,8 +10,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
@@ -31,15 +29,10 @@ func (asset *Asset) RescanBlocks() error {
 // RescanBlocksFromHeight rescans the blockchain for all addresses in the wallet
 // starting from the provided block height.
 func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
-	hash, err := asset.GetBlockHash(int64(startHeight))
-	if err != nil {
-		return err
-	}
-
-	return asset.rescanBlocks(hash, nil)
+	return asset.rescanBlocks(startHeight, nil)
 }
 
-func (asset *Asset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Address) error {
+func (asset *Asset) rescanBlocks(startHeight int32, addrs []btcutil.Address) error {
 	if !asset.IsConnectedToBitcoinNetwork() {
 		return errors.E(utils.ErrNotConnected)
 	}
@@ -52,8 +45,9 @@ func (asset *Asset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Addr
 		return errors.E(utils.ErrSyncAlreadyInProgress)
 	}
 
-	if startHash == nil {
-		return errors.New("block hash from where to start rescanning must be provided")
+	bs, err := asset.getblockStamp(startHeight)
+	if err != nil {
+		return err
 	}
 
 	if addrs == nil {
@@ -65,12 +59,28 @@ func (asset *Asset) rescanBlocks(startHash *chainhash.Hash, addrs []btcutil.Addr
 	asset.syncData.rescanStartTime = time.Now()
 	asset.syncData.mu.Unlock()
 
+	job := &w.RescanJob{
+		Addrs:      addrs,
+		OutPoints:  nil,
+		BlockStamp: *bs,
+	}
+
+	// It submits a rescan job without blocking on finishing the rescan.
+	// The rescan success or failure is logged elsewhere, and the channel
+	// is not required to be read, so discard the return value.
+	errChan := asset.Internal().BTC.SubmitRescan(job)
+
+	// Listen for the rescan finish event and update it.
 	go func() {
-		err := asset.chainClient.Rescan(startHash, addrs, nil)
-		if err != nil {
-			asset.CancelRescan()
-			log.Error(err)
+		for err := range errChan {
+			if err != nil {
+				log.Errorf("rescan job failed: %v", err)
+			}
 		}
+
+		asset.syncData.mu.Lock()
+		asset.syncData.isRescan = false
+		asset.syncData.mu.Unlock()
 	}()
 
 	// Attempt to start up the notifications handler.
@@ -115,8 +125,11 @@ func (asset *Asset) RescanAsync() error {
 		log.Error("rescan already in progress")
 		return fmt.Errorf("rescan already in progress")
 	}
+
 	defer atomic.StoreUint32(&asset.rescanStarting, 0)
+
 	log.Info("Stopping wallet and chain client...")
+
 	asset.Internal().BTC.Stop() // stops Wallet and chainClient (not chainService)
 	asset.Internal().BTC.WaitForShutdown()
 	asset.chainClient.WaitForShutdown()
@@ -151,7 +164,6 @@ func (asset *Asset) RescanAsync() error {
 // ForceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
 func (asset *Asset) ForceRescan() {
-
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
@@ -159,11 +171,13 @@ func (asset *Asset) ForceRescan() {
 		if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 			// Force restored wallets on initial run to restore from genesis block.
 			block := asset.Internal().BTC.ChainParams().GenesisBlock
+
 			bs := waddrmgr.BlockStamp{
 				Height:    0,
 				Hash:      block.BlockHash(),
 				Timestamp: block.Header.Timestamp,
 			}
+
 			// Setting the verification to true, requests the upstream not to
 			// attempt checking for a better birthday block. This check causes
 			// a crash if the optimum value identified by the upstream doesn't
@@ -225,7 +239,7 @@ func (asset *Asset) updateAssetBirthday() {
 		return
 	}
 
-	var block *wire.MsgBlock
+	var block *waddrmgr.BlockStamp
 	var birthdayBlockHeight int32
 
 	if len(txs) > 0 {
@@ -245,15 +259,9 @@ func (asset *Asset) updateAssetBirthday() {
 		// block can never hold any relavant txs otherwise the rescan will ignore them.
 		birthdayBlockHeight = blockHeight - 10
 
-		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
+		block, err = asset.getblockStamp(birthdayBlockHeight)
 		if err != nil {
-			log.Error(errors.E(op, "GetBlockHash failed %v", err))
-			return
-		}
-
-		block, err = asset.chainClient.GetBlock(hash)
-		if err != nil {
-			log.Error(errors.E(op, "GetBlock failed %v", err))
+			log.Error(errors.E(op, "getblockStamp ", err))
 			return
 		}
 
@@ -293,34 +301,22 @@ func (asset *Asset) updateAssetBirthday() {
 			return
 		}
 
-		hash, err := asset.chainClient.GetBlockHash(int64(birthdayBlockHeight))
+		block, err = asset.getblockStamp(birthdayBlockHeight)
 		if err != nil {
-			log.Error(errors.E(op, "querying BlockHash failed %v", err))
-			return
-		}
-
-		block, err = asset.chainClient.GetBlock(hash)
-		if err != nil {
-			log.Error(errors.E(op, "querying Block failed %v", err))
+			log.Error(errors.E(op, err))
 			return
 		}
 	}
 
 	// At the wallet level update the new birthday chosen.
-	asset.SetBirthday(block.Header.Timestamp)
+	asset.SetBirthday(block.Timestamp)
 
 	// At the address manager level update the new birthday and birthday block chosen.
 	err = walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)
-		err := asset.Internal().BTC.Manager.SetBirthday(ns, block.Header.Timestamp)
+		err := asset.Internal().BTC.Manager.SetBirthday(ns, block.Timestamp)
 		if err != nil {
 			return err
-		}
-
-		birthdayBlock := waddrmgr.BlockStamp{
-			Hash:      chainhash.Hash(block.Header.BlockHash()),
-			Height:    birthdayBlockHeight,
-			Timestamp: block.Header.Timestamp,
 		}
 
 		// Setting the verification to true, requests the upstream not to
@@ -330,7 +326,7 @@ func (asset *Asset) updateAssetBirthday() {
 		// Once the initial sync is complete, the system automatically sets
 		// the most optimum birthday block. On premature exit if the
 		// optimum will be available by then, its also set automatically.
-		return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, birthdayBlock, true)
+		return asset.Internal().BTC.Manager.SetBirthdayBlock(ns, *block, true)
 	})
 
 	if err != nil {
@@ -389,5 +385,48 @@ func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 
 	if asset.blocksRescanProgressListener != nil {
 		asset.blocksRescanProgressListener.OnBlocksRescanProgress(rescanProgressReport)
+	}
+}
+
+func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
+	startHash, err := asset.GetBlockHash(int64(height))
+	if err != nil {
+		return nil, fmt.Errorf("invalid block height provided: Error: %v", err)
+	}
+
+	block, err := asset.chainClient.GetBlock(startHash)
+	if err != nil {
+		return nil, fmt.Errorf("invalid block hash provided: Error: %v", err)
+	}
+
+	return &waddrmgr.BlockStamp{
+		Hash:      block.BlockHash(),
+		Height:    height,
+		Timestamp: block.Header.Timestamp,
+	}, nil
+}
+
+// updateSyncedToBlock is used to update syncedTo block. Sometimes btcwallet might
+// miss the trigger event to update syncedTo block so the update is done here
+// regardless thus avoid handling the possible scenario where btcwallet might miss
+// the syncedto store trigger event.
+func (asset *Asset) updateSyncedToBlock(height int32) {
+	// Ignore blocks notifications recieved during the wallet recovery phase.
+	if !asset.IsSynced() || asset.IsRescanning() {
+		return
+	}
+
+	err := walletdb.Update(asset.Internal().BTC.Database(), func(dbtx walletdb.ReadWriteTx) error {
+		addrmgrNs := dbtx.ReadWriteBucket(wAddrMgrBkt)
+
+		bs, err := asset.getblockStamp(height)
+		if err != nil {
+			return err
+		}
+
+		return asset.Internal().BTC.Manager.SetSyncedTo(addrmgrNs, bs)
+	})
+	if err != nil {
+		log.Errorf("updating syncedTo block failed: Error: %v", err)
 	}
 }

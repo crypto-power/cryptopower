@@ -166,7 +166,6 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 			return
 		}
 	}
-
 	log.Infof("Current sync progress update is on block %v, target sync block is %v", rawBlockHeight, asset.syncData.bestBlockheight)
 
 	timeSpentSoFar := time.Since(asset.syncData.headersFetchProgress.BeginFetchTimeStamp).Seconds()
@@ -234,15 +233,12 @@ notificationsLoop:
 				// Trigger the progress report only when the block to be reported
 				// is the best chaintip.
 
+				asset.updateSyncedToBlock(n.Height)
+
 				select {
 				case <-t.C:
-					if !asset.IsSynced() {
-						// initial sync is inprogress.
-						asset.updateSyncProgress(n.Block.Height)
-					} else {
-						// initial sync is complete
-						asset.publishBlockAttached(n.Block.Height)
-					}
+					// log sync progress always
+					asset.updateSyncProgress(n.Block.Height)
 				default:
 				}
 
@@ -312,6 +308,8 @@ notificationsLoop:
 				if asset.blocksRescanProgressListener != nil {
 					asset.blocksRescanProgressListener.OnBlocksRescanEnded(asset.ID, nil)
 				}
+
+				asset.updateSyncedToBlock(n.Height)
 			}
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
