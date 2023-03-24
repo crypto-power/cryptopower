@@ -165,7 +165,7 @@ func (asset *DCRAsset) fetchHeadersStarted(peerInitialHeight int32) {
 
 	asset.waitingForHeaders = true
 
-	lowestBlockHeight := asset.GetLowestBlock().Height
+	lowestBlockHeight := asset.GetBestBlock().Height
 
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = HeadersFetchSyncStage

@@ -419,31 +419,14 @@ func (asset *DCRAsset) PeerInfo() (string, error) {
 }
 
 func (asset *DCRAsset) GetBestBlock() *sharedW.BlockInfo {
-	var bestBlock int32 = -1
-	var blockInfo *sharedW.BlockInfo
+	blockInfo := sharedW.InvalidBlock
 	if !asset.WalletOpened() {
-		return nil
+		return blockInfo
 	}
 
 	walletBestBLock := asset.GetBestBlockHeight()
-	if walletBestBLock > bestBlock || bestBlock == -1 {
-		bestBlock = walletBestBLock
-		blockInfo = &sharedW.BlockInfo{Height: bestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
-	}
-
-	return blockInfo
-}
-
-func (asset *DCRAsset) GetLowestBlock() *sharedW.BlockInfo {
-	var lowestBlock int32 = -1
-	var blockInfo *sharedW.BlockInfo
-	if !asset.WalletOpened() {
-		return nil
-	}
-	walletBestBLock := asset.GetBestBlockHeight()
-	if walletBestBLock < lowestBlock || lowestBlock == -1 {
-		lowestBlock = walletBestBLock
-		blockInfo = &sharedW.BlockInfo{Height: lowestBlock, Timestamp: asset.GetBestBlockTimeStamp()}
+	if walletBestBLock > sharedW.InvalidBlock.Height {
+		blockInfo = &sharedW.BlockInfo{Height: walletBestBLock, Timestamp: asset.GetBestBlockTimeStamp()}
 	}
 
 	return blockInfo
@@ -453,7 +436,7 @@ func (asset *DCRAsset) GetBestBlockHeight() int32 {
 	if asset.Internal() == nil {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block height without a loaded asset.")
-		return 0
+		return sharedW.InvalidBlock.Height
 	}
 	ctx, _ := asset.ShutdownContextWithCancel()
 	_, height := asset.Internal().DCR.MainChainTip(ctx)
@@ -464,7 +447,7 @@ func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
 	if asset.Internal() == nil {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block timestamp without a loaded asset.")
-		return 0
+		return sharedW.InvalidBlock.Timestamp
 	}
 
 	ctx, _ := asset.ShutdownContextWithCancel()
@@ -473,19 +456,9 @@ func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
 	info, err := asset.Internal().DCR.BlockInfo(ctx, identifier)
 	if err != nil {
 		log.Error(err)
-		return 0
+		return sharedW.InvalidBlock.Timestamp
 	}
 	return info.Timestamp
-}
-
-func (asset *DCRAsset) GetLowestBlockTimestamp() int64 {
-	var timestamp int64 = -1
-	bestBlockTimestamp := asset.GetBestBlockTimeStamp()
-	if bestBlockTimestamp < timestamp || timestamp == -1 {
-		timestamp = bestBlockTimestamp
-	}
-
-	return timestamp
 }
 
 func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {

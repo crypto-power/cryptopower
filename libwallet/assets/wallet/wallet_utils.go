@@ -37,6 +37,12 @@ const (
 	dcrLogFilename = "dcr.log"
 )
 
+// InvalidBlock defines invalid height and timestamp returned in case of an error.
+var InvalidBlock = &BlockInfo{
+	Height:    -1, // No block has this height.
+	Timestamp: -1, // Evaluates to 1969-12-31 11:59:59 +0000
+}
+
 // RequiredConfirmations specifies the minimum number of confirmations
 // a transaction needs to be consider as confirmed.
 func (wallet *Wallet) RequiredConfirmations() int32 {

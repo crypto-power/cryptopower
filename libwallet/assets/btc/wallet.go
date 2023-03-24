@@ -319,7 +319,7 @@ func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	block, err := asset.chainClient.CS.BestBlock()
 	if err != nil {
 		log.Error("GetBestBlock hash for BTC failed, Err: ", err)
-		return nil
+		return sharedW.InvalidBlock
 	}
 
 	return &sharedW.BlockInfo{
