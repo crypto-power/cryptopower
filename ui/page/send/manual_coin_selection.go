@@ -338,7 +338,7 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 
 	switch wallet.GetAssetType() {
 	case libutils.BTCWalletAsset:
-		feeNSize, err := wallet.ComputeTxSize(pg.selectedUTXOrows)
+		feeNSize, err := wallet.ComputeTxSizeEstimation(pg.selectedUTXOrows)
 		if err != nil {
 			log.Error(err)
 		}
