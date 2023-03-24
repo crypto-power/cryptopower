@@ -68,7 +68,20 @@ func (asset *Asset) rescanBlocks(startHeight int32, addrs []btcutil.Address) err
 	// It submits a rescan job without blocking on finishing the rescan.
 	// The rescan success or failure is logged elsewhere, and the channel
 	// is not required to be read, so discard the return value.
-	_ = asset.Internal().BTC.SubmitRescan(job)
+	errChan := asset.Internal().BTC.SubmitRescan(job)
+
+	// Listen for the rescan finish event and update it.
+	go func() {
+		for err := range errChan {
+			if err != nil {
+				log.Errorf("rescan job failed: %v", err)
+			}
+		}
+
+		asset.syncData.mu.Lock()
+		asset.syncData.isRescan = false
+		asset.syncData.mu.Unlock()
+	}()
 
 	// Attempt to start up the notifications handler.
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
