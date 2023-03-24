@@ -357,11 +357,15 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																						layout.Flexed(0.9, osm.Load.Theme.Body1(osm.addressEditor.Editor.Text()).Layout),
 																						layout.Flexed(0.1, func(gtx C) D {
 																							return layout.E.Layout(gtx, func(gtx C) D {
+																								mGtx := gtx
+																								if osm.addressEditor.Editor.Text() == "" {
+																									mGtx = gtx.Disabled()
+																								}
 																								if osm.copyRedirect.Clicked() {
-																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(gtx.Ops)
+																									clipboard.WriteOp{Text: osm.addressEditor.Editor.Text()}.Add(mGtx.Ops)
 																									osm.Load.Toast.Notify(values.String(values.StrCopied))
 																								}
-																								return osm.copyRedirect.Layout(gtx, osm.Load.Theme.Icons.CopyIcon.Layout24dp)
+																								return osm.copyRedirect.Layout(mGtx, osm.Load.Theme.Icons.CopyIcon.Layout24dp)
 																							})
 																						}),
 																					)
