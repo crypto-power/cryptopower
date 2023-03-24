@@ -69,6 +69,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		return errors.E(op, err)
 	}
 
+	var lastOrderTime time.Time
 	for {
 		// Check if scheduler has been shutdown and exit if true.
 		if mgr.InstantSwap.SchedulerCtx.Err() != nil {
@@ -145,6 +146,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			log.Error("error creating order: ", err.Error())
 			return errors.E(op, err)
 		}
+		lastOrderTime = time.Now()
 
 		log.Info("Order Scheduler: creating unsigned transaction")
 		// construct the transaction to send the invoiced amount to the exchange server
@@ -254,10 +256,17 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		log.Info("Order Scheduler: creating next order based on selected frequency")
-		// run at the specified frequency
-		time.Sleep(params.Frequency * time.Hour)
 
-		continue
+		// calculate time until the next order
+		timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
+		if timeUntilNextOrder <= 0 {
+			log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
+			continue
+		} else {
+			log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
+			time.Sleep(timeUntilNextOrder)
+			continue
+		}
 	}
 }
 
