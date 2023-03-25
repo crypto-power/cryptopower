@@ -701,8 +701,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
-	if pg.spendUnconfirmed.Changed() {
-		if pg.spendUnconfirmed.IsChecked() {
+	if pg.spendUnmixedFunds.Changed() {
+		if pg.spendUnmixedFunds.IsChecked() {
 			textModal := modal.NewTextInputModal(pg.Load).
 				SetTextWithTemplate(modal.AllowUnmixedSpendingTemplate).
 				// Hint(""). Code not deleted because a proper hint is required.
@@ -720,7 +720,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			textModal.Title(values.String(values.StrConfirmUmixedSpending)).
 				SetPositiveButtonText(values.String(values.StrConfirm)).
 				SetNegativeButtonCallback(func() {
-					pg.spendUnconfirmed.SetChecked(false)
+					pg.spendUnmixedFunds.SetChecked(false)
 				})
 			pg.ParentWindow().ShowModal(textModal)
 
