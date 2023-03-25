@@ -459,7 +459,7 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.toCoinSelection.Clicked() && pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+	if pg.toCoinSelection.Clicked() {
 		_, err := pg.sendDestination.destinationAddress()
 		if err != nil {
 			pg.feeEstimationError(values.String(values.StrDestinationMissing))

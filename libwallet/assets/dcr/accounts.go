@@ -140,7 +140,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(" >>>> UTXO number: ", len(unspents))
 	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(unspents))
 	for _, utxo := range unspents {
 		addresses := addresshelper.PkScriptAddresses(asset.chainParams, utxo.Output.PkScript)
@@ -165,6 +165,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 			ReceiveTime:   utxo.ReceiveTime,
 			Confirmations: confirmations,
 			Spendable:     true,
+			Tree:          utxo.OutPoint.Tree,
 		})
 	}
 
