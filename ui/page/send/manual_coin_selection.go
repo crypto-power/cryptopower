@@ -338,21 +338,11 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 
 	// Access to coin selection page is restricted unless destination address is selected.
 	destination, _ := pg.sendPage.sendDestination.destinationAddress()
-
-	switch wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-		feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
-		if err != nil {
-			log.Error(err)
-		}
-		return fmt.Sprintf("%d bytes", feeNSize)
-
-	case libutils.DCRWalletAsset:
-		return "--"
-
-	default:
-		return "--"
+	feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
+	if err != nil {
+		log.Error(err)
 	}
+	return fmt.Sprintf("%d bytes", feeNSize)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
