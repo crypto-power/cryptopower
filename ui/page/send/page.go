@@ -172,7 +172,9 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		if pg.selectedWallet.Asset.GetAssetType() == libUtil.DCRWalletAsset {
+			pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		}
 	})
 
 	pg.sendDestination.addressChanged = func() {
