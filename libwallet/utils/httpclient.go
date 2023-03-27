@@ -20,10 +20,6 @@ type HttpAPIType uint8
 const (
 	// Default http client timeout in secs.
 	defaultHttpClientTimeout = 30 * time.Second
-	// DNS server to determine internet connectivity status, 84.200.69.80
-	// is DNSWatch primary dns server address, it is used because of it's privacy
-	// offerings, can be replaced if found inadequate.
-	checkDNSAddress = "84.200.69.80:53"
 	// Address to look up during DNS connectivity check.
 	addressToLookUp = "www.google.com"
 
@@ -222,19 +218,8 @@ func IsOnline() bool {
 		return netC.isConnected
 	}
 
-	// Use DNS resolver to determine internet connectivity status.
-	resolver := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: defaultHttpClientTimeout,
-			}
-			return d.DialContext(ctx, network, checkDNSAddress)
-		},
-	}
-
-	// DNS look up failed if err != nil.
-	_, err := resolver.LookupHost(context.Background(), addressToLookUp)
+	// DNS lookup failed if err != nil.
+	_, err := net.LookupHost(addressToLookUp)
 
 	// if err == nil, the internet link is up.
 	netC.isConnected = err == nil
