@@ -147,6 +147,11 @@ func NewSendPage(l *load.Load) *Page {
 		}).
 		SetActionInfoText(values.String(values.StrTxConfModalInfoTxt))
 
+	// if a source account exists, don't overwrite it.
+	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+	}
+
 	pg.sendDestination.destinationAccountSelector = pg.sendDestination.destinationAccountSelector.AccountValidator(func(account *sharedW.Account) bool {
 		accountIsValid := account.Number != load.MaxInt32
 		// Filter mixed wallet
@@ -167,7 +172,9 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		if pg.selectedWallet.Asset.GetAssetType() == libUtil.DCRWalletAsset {
+			pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+		}
 	})
 
 	pg.sendDestination.addressChanged = func() {
@@ -216,11 +223,6 @@ func (pg *Page) OnNavigatedTo() {
 	}
 
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
-	// if a source account exists, don't overwrite it.
-	if pg.sourceAccountSelector.SelectedAccount() == nil {
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
-	}
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
