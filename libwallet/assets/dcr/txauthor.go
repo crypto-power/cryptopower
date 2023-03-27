@@ -26,8 +26,7 @@ type TxAuthor struct {
 	sourceAccountNumber uint32
 	destinations        []sharedW.TransactionDestination
 	changeAddress       string
-	// inputs              []*wire.TxIn
-	changeDestination *sharedW.TransactionDestination
+	changeDestination   *sharedW.TransactionDestination
 
 	utxos          []*sharedW.UnspentOutput
 	unsignedTx     *txauthor.AuthoredTx
@@ -313,10 +312,6 @@ func (asset *DCRAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
-	// if len(asset.TxAuthoredInfo.inputs) != 0 {
-	// 	return asset.constructCustomTransaction()
-	// }
-
 	var err error
 	outputs := make([]*wire.TxOut, 0)
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
