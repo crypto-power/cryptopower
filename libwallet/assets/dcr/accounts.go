@@ -43,6 +43,10 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 		}
 
 		accounts[i] = &sharedW.Account{
+			AccountProperties: sharedW.AccountProperties{
+				AccountNumber: a.AccountNumber,
+				AccountName:   a.AccountName,
+			},
 			WalletID:         asset.ID,
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
@@ -140,7 +144,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(" >>>> UTXO number: ", len(unspents))
+
 	unspentOutputs := make([]*sharedW.UnspentOutput, 0, len(unspents))
 	for _, utxo := range unspents {
 		addresses := addresshelper.PkScriptAddresses(asset.chainParams, utxo.Output.PkScript)
