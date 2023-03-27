@@ -124,13 +124,13 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		}
 
 		// set the max send amount to the max limit set by the server
-		invoicedAmount := res.Max
+		invoicedAmount := res.Min
 
 		// if the max send limit is 0, then the server does not have a max limit constraint
 		// so we can send the entire source wallet balance
-		if res.Max == 0 {
-			invoicedAmount = sourceAccountBalance.Spendable.ToCoin() - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
-		}
+		// if res.Max == 0 {
+		// 	invoicedAmount = sourceAccountBalance.Spendable.ToCoin() - params.BalanceToMaintain // deduct the balance to maintain from the source wallet balance
+		// }
 
 		log.Info("Order Scheduler: check balance after exchange")
 		estimatedBalanceAfterExchange := sourceAccountBalance.Spendable.ToCoin() - invoicedAmount
@@ -150,7 +150,8 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 		log.Info("Order Scheduler: creating unsigned transaction")
 		// construct the transaction to send the invoiced amount to the exchange server
-		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber)
+
+		err = sourceWallet.NewUnsignedTx(params.Order.SourceAccountNumber, nil)
 		if err != nil {
 			return errors.E(op, err)
 		}
@@ -163,7 +164,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			amount = dcr.AmountAtom(params.Order.InvoicedAmount)
 		}
 
-		log.Info("Order Scheduler: adding send destination")
+		log.Infof("Order Scheduler: adding send destination, address: %s, amount: %d", order.DepositAddress, amount)
 		err = sourceWallet.AddSendDestination(order.DepositAddress, amount, false)
 		if err != nil {
 			log.Error("error adding send destination: ", err.Error())
@@ -187,7 +188,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 			// depending on the block time for the asset, the order may take a while to complete
 			// so we wait for the estimated block time before checking the order status
-			switch params.Order.FromCurrency {
+			switch params.Order.ToCurrency {
 			case utils.BTCWalletAsset.String():
 				log.Info("Order Scheduler: waiting for btc block time (10 minutes)")
 				time.Sleep(BTCBlockTime)
@@ -220,6 +221,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			// verify that the order was completed successfully from the blockchain explorer
 			explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
 			if err != nil {
+				log.Error("error instantiating block explorer: ", err.Error())
 				return errors.E(op, err)
 			}
 
@@ -231,14 +233,17 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				Confirms:  DefaultConfirmations,
 			}
 
-			log.Info("Order Scheduler: verifying transaction")
+			log.Infof("Order Scheduler: verifying transaction with ID: %s", orderInfo.TxID)
 			verification, err := explorer.VerifyTransaction(verificationInfo)
 			if err != nil {
+				log.Error("error verifying transaction: ", err.Error())
 				return errors.E(op, err)
 			}
 
 			if verification.Verified {
 				if verification.BlockExplorerAmount.ToCoin() != orderInfo.ReceiveAmount {
+					log.Infof("received amount: %f", verification.BlockExplorerAmount.ToCoin())
+					log.Infof("expected amount: %f", orderInfo.ReceiveAmount)
 					log.Error("received amount does not match the expected amount")
 					return errors.E(op, err)
 				}
@@ -252,6 +257,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 				break // order is completed, break out of the loop
 			}
 
+			log.Info("Order Scheduler: order is not completed, checking again")
 			continue // order is not completed, check again
 		}
 
