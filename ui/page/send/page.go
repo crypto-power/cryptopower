@@ -241,6 +241,9 @@ func (pg *Page) OnNavigatedTo() {
 		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
+	} else {
+		// If exchange rate is not supported, validate and construct the TX.
+		pg.validateAndConstructTx()
 	}
 
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {

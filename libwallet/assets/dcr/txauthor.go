@@ -393,12 +393,12 @@ func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOut
 		sourceErr       error
 		totalInputValue dcrutil.Amount
 
-		inputs            = make([]*wire.TxIn, 0, len(asset.TxAuthoredInfo.utxos))
-		pkScripts         = make([][]byte, 0, len(asset.TxAuthoredInfo.utxos))
-		redeemScriptSizes = make([]int, 0, len(asset.TxAuthoredInfo.utxos))
+		inputs            = make([]*wire.TxIn, 0, len(utxos))
+		pkScripts         = make([][]byte, 0, len(utxos))
+		redeemScriptSizes = make([]int, 0, len(utxos))
 	)
 
-	for _, output := range asset.TxAuthoredInfo.utxos {
+	for _, output := range utxos {
 		if output.Amount == nil || output.Amount.ToCoin() == 0 {
 			continue
 		}
