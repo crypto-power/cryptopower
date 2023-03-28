@@ -9,11 +9,11 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/wallet/walletdb"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcwallet/chain"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 	w "github.com/btcsuite/btcwallet/wallet"
+	"github.com/btcsuite/btcwallet/walletdb"
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.
@@ -206,23 +206,6 @@ func (asset *Asset) ForceRescan() {
 	// Trigger UI update showing btc address recovery is in progress.
 	// Its helps most when the wallet is synced but wallet recovery is running.
 	asset.handleSyncUIUpdate()
-}
-
-// isRecoveryRequired scans if the current wallet requires a recovery. Starting
-// a rescan leads to the recovery of funds and utxos scanned from the birthday block.
-// If the the address manager is not synced to the last two new blocks detected,
-// Or birthday mismatch exists, a rescan is initiated.
-func (asset *Asset) isRecoveryRequired() bool {
-	// Last block synced to the address manager.
-	syncedTo := asset.Internal().BTC.Manager.SyncedTo()
-	// Address manager should be synced to one of the blocks in the last 10 blocks,
-	// from the current best block synced. Otherwise recovery will be triggered.
-	isAddrmngNotSynced := !(syncedTo.Height >= asset.GetBestBlockHeight()-10)
-
-	walletBirthday := asset.Internal().BTC.Manager.Birthday()
-	isBirthdayMismatch := !asset.GetBirthday().Equal(walletBirthday)
-
-	return isAddrmngNotSynced || isBirthdayMismatch
 }
 
 // updateAssetBirthday updates the appropriate birthday and birthday block

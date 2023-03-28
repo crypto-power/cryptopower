@@ -294,6 +294,9 @@ notificationsLoop:
 				// Since the initial run on a restored wallet, address discovery
 				// is complete, mark discovered accounts as true.
 				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
+					// Update the assets birthday from genesis block to a date closer
+					// to when the privatekey was first used.
+					asset.updateAssetBirthday()
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
 
@@ -521,6 +524,11 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
+	// If this is an imported wallet and address dicovery has not been performed,
+	// We want to set the assets birtday to the genesis block.
+	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+		asset.ForceRescan()
+	}
 	// Initiate the sync protocol and return an error incase of failure.
 	return asset.startSync()
 }
