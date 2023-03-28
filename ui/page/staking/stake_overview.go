@@ -154,7 +154,7 @@ func (pg *Page) loadPageData() {
 }
 
 func (pg *Page) isTicketsPurchaseAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.TicketsPurchaseAPI)
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.VspAPI)
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -166,7 +166,7 @@ func (pg *Page) Layout(gtx C) D {
 	if !pg.isTicketsPurchaseAllowed() {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrTicketPurchase))
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
 		})
 	}

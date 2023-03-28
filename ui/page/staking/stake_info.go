@@ -2,7 +2,6 @@ package staking
 
 import (
 	"fmt"
-	"math"
 
 	"gioui.org/layout"
 
@@ -158,17 +157,6 @@ func (pg *Page) CalculateTotalTicketsCanBuy() int {
 
 func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	totalBalance, _ := components.CalculateMixedAccountBalance(pg.dcrImpl)
-	price := 1.0
-
-	ticketPrice, err := pg.dcrImpl.TicketPrice()
-	if err != nil {
-		log.Errorf("ticketPrice error:", err)
-	} else {
-		price = dcrutil.Amount(ticketPrice.TicketPrice).ToCoin()
-	}
-
-	canBuy := totalBalance.Spendable.ToCoin() / dcrutil.Amount(ticketPrice.TicketPrice).ToCoin()
-	spendable := price * math.Floor(canBuy)
 
 	items := []cryptomaterial.ProgressBarItem{
 		{
@@ -176,7 +164,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 			Color: pg.Theme.Color.NavyBlue,
 		},
 		{
-			Value: spendable,
+			Value: totalBalance.Spendable.ToCoin(),
 			Color: pg.Theme.Color.Turquoise300,
 		},
 	}
@@ -188,7 +176,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrStaked)+": ", totalBalance.LockedByTickets.String(), items[0].Color)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrLabelSpendable)+": ", fmt.Sprintf("%f", spendable), items[1].Color)
+					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrLabelSpendable)+": ", totalBalance.Spendable.String(), items[1].Color)
 				}),
 			)
 		})

@@ -27,7 +27,7 @@ const (
 	GovernanceHttpAPI HttpAPIType = iota
 	FeeRateHttpAPI
 	ExchangeHttpAPI
-	TicketsPurchaseAPI
+	VspAPI
 )
 
 type (
