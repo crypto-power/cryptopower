@@ -675,6 +675,8 @@ const (
 	StrTicketDetails                   = "ticketDetails"
 	StrTicketError                     = "ticketError"
 	StrTicketPrice                     = "ticketPrice"
+	StrTicketPurchase                  = "ticketPurchase"
+	StrTicketPurchaseAPI               = "ticketPurchaseAPI"
 	StrTicketRecord                    = "ticketRecord"
 	StrTicketRevoked                   = "ticketRevoked"
 	StrTicketRevokedTitle              = "ticketRevokedTitle"

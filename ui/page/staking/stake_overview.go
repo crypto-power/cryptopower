@@ -11,6 +11,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -119,7 +120,7 @@ func (pg *Page) fetchTicketPrice() {
 }
 
 func (pg *Page) setStakingButtonsState() {
-	//disable auto ticket purchase if wallet is not synced
+	// disable auto ticket purchase if wallet is not synced
 	pg.stake.SetEnabled(pg.WL.SelectedWallet.Wallet.IsSynced() || !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
 }
 
@@ -152,14 +153,32 @@ func (pg *Page) loadPageData() {
 	}()
 }
 
+func (pg *Page) isTicketsPurchaseAllowed() bool {
+	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.TicketsPurchaseAPI)
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-		return pg.layoutMobile(gtx)
+	// If Tickets Purcahse API is not allowed, display the overlay with the message.
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isTicketsPurchaseAllowed() {
+		gtx = gtx.Disabled()
+		overlay = layout.Stacked(func(gtx C) D {
+			str := values.StringF(values.StrNotAllowed, values.String(values.StrTicketPurchase))
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+		})
 	}
-	return pg.layoutDesktop(gtx)
+
+	mainChild := layout.Expanded(func(gtx C) D {
+		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			return pg.layoutMobile(gtx)
+		}
+		return pg.layoutDesktop(gtx)
+	})
+
+	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
@@ -217,8 +236,8 @@ func (pg *Page) HandleUserInteractions() {
 		if pg.stake.IsChecked() {
 			if pg.dcrImpl.TicketBuyerConfigIsSet() {
 				// get ticket buyer config to check if the saved wallet account is mixed
-				//check if mixer is set, if yes check if allow spend from unmixed account
-				//if not set, check if the saved account is mixed before opening modal
+				// check if mixer is set, if yes check if allow spend from unmixed account
+				// if not set, check if the saved account is mixed before opening modal
 				// if it is not, open stake config modal
 				tbConfig := pg.dcrImpl.AutoTicketsBuyerConfig()
 				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
