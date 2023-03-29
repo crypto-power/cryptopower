@@ -774,6 +774,7 @@ const (
 	StrVotingServiceProvider           = "votingServiceProvider"
 	StrVotingWallet                    = "votingWallet"
 	StrVsp                             = "vsp"
+	StrVSPAPI                          = "vspAPI"
 	StrVspFee                          = "vspFee"
 	StrWaitingAuthor                   = "waitingForAuthor"
 	StrWaitingForAdmin                 = "waitingForAdmin"

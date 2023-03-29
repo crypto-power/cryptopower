@@ -59,6 +59,7 @@ type SettingsPage struct {
 	governanceAPI *cryptomaterial.Switch
 	exchangeAPI   *cryptomaterial.Switch
 	feeRateAPI    *cryptomaterial.Switch
+	vspAPI        *cryptomaterial.Switch
 	privacyActive *cryptomaterial.Switch
 
 	isDarkModeOn      bool
@@ -79,6 +80,7 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 		governanceAPI:           l.Theme.Switch(),
 		exchangeAPI:             l.Theme.Switch(),
 		feeRateAPI:              l.Theme.Switch(),
+		vspAPI:                  l.Theme.Switch(),
 		privacyActive:           l.Theme.Switch(),
 
 		changeStartupPass: l.Theme.NewClickable(false),
@@ -279,6 +281,9 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 				layout.Rigid(func(gtx C) D {
 					return pg.subSectionSwitch(gtx, values.String(values.StrFeeRateAPI), pg.feeRateAPI)
 				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.subSectionSwitch(gtx, values.String(values.StrVSPAPI), pg.vspAPI)
+				}),
 			)
 		})
 	}
@@ -439,6 +444,9 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 	if pg.feeRateAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+	}
+	if pg.vspAPI.Changed() {
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, pg.vspAPI.IsChecked())
 	}
 
 	if pg.privacyActive.Changed() {
@@ -615,6 +623,7 @@ func (pg *SettingsPage) updatePrivacySettings() {
 		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI))
 		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI))
 		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.FeeRateHttpAPI))
+		pg.setInitialSwitchStatus(pg.vspAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.VspAPI))
 	} else {
 		if pg.WL.SelectedWallet != nil {
 			go func() {

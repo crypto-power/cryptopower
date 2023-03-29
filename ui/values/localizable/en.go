@@ -664,6 +664,7 @@ const EN = `
 "votingServiceProvider" = "Voting service provider"
 "votingWallet" = "Voting wallet"
 "vsp" = "VSP"
+"vspAPI" = "VSP API"
 "vspFee" = "VSP Fee"
 "waitingForAdmin" = "Waiting for admin to trigger the start of voting"
 "waitingForAuthor" = "Waiting for author to authorize voting"

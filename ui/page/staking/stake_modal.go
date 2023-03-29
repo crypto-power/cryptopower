@@ -99,17 +99,17 @@ func (tb *ticketBuyerModal) OnResume() {
 	// temporary work around for only one wallet.
 	if tb.dcrImpl.TicketBuyerConfigIsSet() {
 		tbConfig := tb.dcrImpl.AutoTicketsBuyerConfig()
-		acct, err := tb.WL.SelectedWallet.Wallet.GetAccount(tbConfig.PurchaseAccount)
+
+		account, err := components.GetTicketPurchaseAccount(tb.dcrImpl)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
 		}
 
-		if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-			!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
-			(tbConfig.PurchaseAccount == tb.dcrImpl.MixedAccountNumber()) {
-			tb.accountSelector.SetSelectedAccount(acct)
+		if account != nil {
+			tb.accountSelector.SetSelectedAccount(account)
 		} else {
+			// If a valid account is not set, choose one from available the valid accounts.
 			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)

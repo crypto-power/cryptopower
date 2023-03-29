@@ -4,6 +4,7 @@
 package components
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"os/exec"
@@ -533,6 +534,59 @@ func CoinImageBySymbol(l *load.Load, coinName string) *cryptomaterial.Image {
 		return l.Theme.Icons.DCR
 	}
 	return nil
+}
+
+// GetTicketPurchaseAccount returns the validly set ticket purchase account if it exists.
+func GetTicketPurchaseAccount(selectedWallet *dcr.DCRAsset) (acct *sharedW.Account, err error) {
+	tbConfig := selectedWallet.AutoTicketsBuyerConfig()
+
+	isPurchaseAccountSet := tbConfig.PurchaseAccount != -1
+	isMixerAccountSet := tbConfig.PurchaseAccount == selectedWallet.MixedAccountNumber()
+	isSpendUnmixedAllowed := selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
+	isAccountMixerConfigSet := selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
+
+	if isPurchaseAccountSet {
+		acct, err = selectedWallet.GetAccount(tbConfig.PurchaseAccount)
+
+		if isAccountMixerConfigSet && !isSpendUnmixedAllowed && isMixerAccountSet && err == nil {
+			// Mixer account is set and spending from unmixed account is blocked.
+		} else if isSpendUnmixedAllowed && err == nil {
+			// Spending from unmixed account is allowed. Choose the set account whether its mixed or not.
+		} else {
+			// invalid account found. Set it to nil
+			acct = nil
+		}
+	}
+	return
+}
+
+func CalculateMixedAccountBalance(selectedWallet *dcr.DCRAsset) (*CummulativeWalletsBalance, error) {
+	if selectedWallet == nil {
+		return nil, errors.New("mixed account only supported by DCR asset")
+	}
+
+	// ignore the returned because an invalid purchase account was set previously.
+	// Proceed to go and select a valid account if one wasn't provided.
+	account, _ := GetTicketPurchaseAccount(selectedWallet)
+
+	var err error
+	if account == nil {
+		// A valid purchase account hasn't been set. Use default mixed account.
+		account, err = selectedWallet.GetAccount(selectedWallet.MixedAccountNumber())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &CummulativeWalletsBalance{
+		Total:                   account.Balance.Total,
+		Spendable:               account.Balance.Spendable,
+		ImmatureReward:          account.Balance.ImmatureReward,
+		ImmatureStakeGeneration: account.Balance.ImmatureStakeGeneration,
+		LockedByTickets:         account.Balance.LockedByTickets,
+		VotingAuthority:         account.Balance.VotingAuthority,
+		UnConfirmed:             account.Balance.UnConfirmed,
+	}, nil
 }
 
 func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, error) {
