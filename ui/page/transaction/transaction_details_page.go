@@ -81,10 +81,10 @@ type TxDetailsPage struct {
 	moreItems  []moreItem
 	txnWidgets transactionWdg
 
-	txSourceAccount      string
-	txDestinationAddress string
-	title                string
-	vspHost              string
+	txSourceAccount, txDestinationAccount string
+	txDestinationAddress                  string
+	title                                 string
+	vspHost                               string
 
 	moreOptionIsOpen bool
 }
@@ -179,6 +179,17 @@ destinationAddrLoop:
 				} else {
 					pg.txDestinationAddress = accountName
 				}
+				break destinationAddrLoop
+			}
+		case txhelper.TxDirectionTransferred:
+			if output.AccountNumber != -1 {
+				accountName, err := pg.wallet.AccountName(output.AccountNumber)
+				if err != nil {
+					log.Error(err)
+				} else {
+					pg.txDestinationAccount = accountName
+				}
+
 				break destinationAddrLoop
 			}
 		}
@@ -554,7 +565,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			return pg.keyValue(gtx, label, pg.Theme.Label(values.TextSize14, pg.txSourceAccount).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if (pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction != txhelper.TxDirectionTransferred) || pg.transaction.Type == txhelper.TxTypeMixed {
+			if pg.transaction.Type == txhelper.TxTypeRegular || pg.transaction.Type == txhelper.TxTypeMixed {
 				dim := func(gtx C) D {
 					lbl := pg.Theme.Label(values.TextSize14, utils.SplitSingleString(pg.txDestinationAddress, 0))
 
@@ -569,6 +580,18 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						pg.Toast.Notify(values.String(values.StrTxHashCopied))
 					}
 					return pg.destAddressClickable.Layout(gtx, lbl.Layout)
+
+				}
+				// if transaction is transferred, show the destination account
+				// without being wrapped in a clickable
+				if pg.transaction.Direction == txhelper.TxDirectionTransferred {
+					dim = func(gtx C) D {
+						// var lbl cryptomaterial.Label
+
+						lbl := pg.Theme.Label(values.TextSize14, pg.txDestinationAccount)
+						// }
+						return lbl.Layout(gtx)
+					}
 				}
 
 				return pg.keyValue(gtx, values.String(values.StrTo), dim)
@@ -580,6 +603,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 			if pg.transaction.Type == txhelper.TxTypeRegular &&
 				pg.transaction.Direction == txhelper.TxDirectionSent ||
 				pg.transaction.Direction == txhelper.TxDirectionReceived ||
+				pg.transaction.Direction == txhelper.TxDirectionTransferred ||
 				pg.transaction.Type == txhelper.TxTypeMixed {
 				return D{}
 			}
