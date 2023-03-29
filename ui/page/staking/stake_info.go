@@ -141,10 +141,15 @@ func (pg *Page) dataRows(title string, count int) layout.FlexChild {
 }
 
 func (pg *Page) CalculateTotalTicketsCanBuy() int {
-	totalBalance, _ := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	if err != nil {
+		log.Debugf("missing set mixed account error: %v", err)
+		return 0
+	}
+
 	ticketPrice, err := pg.dcrImpl.TicketPrice()
 	if err != nil {
-		log.Errorf("ticketPrice error:", err)
+		log.Errorf("ticketPrice error: %v", err)
 		return 0
 	}
 	canBuy := totalBalance.Spendable.ToCoin() / dcrutil.Amount(ticketPrice.TicketPrice).ToCoin()
@@ -156,7 +161,10 @@ func (pg *Page) CalculateTotalTicketsCanBuy() int {
 }
 
 func (pg *Page) balanceProgressBarLayout(gtx C) D {
-	totalBalance, _ := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	if err != nil {
+		return D{}
+	}
 
 	items := []cryptomaterial.ProgressBarItem{
 		{
