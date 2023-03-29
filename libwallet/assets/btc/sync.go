@@ -526,7 +526,7 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 func (asset *Asset) startWallet() (err error) {
 	// If this is an imported wallet and address dicovery has not been performed,
 	// We want to set the assets birtday to the genesis block.
-	if asset.IsRestored && !asset.HasDiscoveredAccounts {
+	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		asset.ForceRescan()
 	}
 	// Initiate the sync protocol and return an error incase of failure.
