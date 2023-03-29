@@ -291,13 +291,12 @@ notificationsLoop:
 				// on startup when a wallet is syncing from scratch.
 				go asset.listenForTransactions()
 
-				// update the birthday and birthday block so that on next startup,
-				// the recovery if necessary takes lesser time.
-				go asset.updateAssetBirthday()
-
 				// Since the initial run on a restored wallet, address discovery
 				// is complete, mark discovered accounts as true.
 				if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
+					// Update the assets birthday from genesis block to a date closer
+					// to when the privatekey was first used.
+					asset.updateAssetBirthday()
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
 
@@ -525,15 +524,11 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
-	if asset.isRecoveryRequired() {
-		if !asset.AllowAutomaticRescan() {
-			return errors.New("cannot set earlier birthday while there are active deals")
-		}
-
-		log.Infof("Atempting a Forced Rescan on wallet (%s)", asset.GetWalletName())
+	// If this is an imported wallet and address dicovery has not been performed,
+	// We want to set the assets birtday to the genesis block.
+	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		asset.ForceRescan()
 	}
-
 	// Initiate the sync protocol and return an error incase of failure.
 	return asset.startSync()
 }
