@@ -123,6 +123,14 @@ func NewSendPage(l *load.Load) *Page {
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
+			// this resets the selected destination account based on the
+			// selected source account. This is done to prevent sending to
+			// an account that is invalid either because the destination
+			// account is the same as the source account or because the
+			// destination account needs to change based on if the selected
+			// wallet has privacy enabled.
+			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
+				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
@@ -223,6 +231,9 @@ func (pg *Page) OnNavigatedTo() {
 	}
 
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
+	// destinationAccountSelector does not have a default value,
+	// so assign it an initial value here
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
