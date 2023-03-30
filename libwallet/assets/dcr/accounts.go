@@ -43,6 +43,10 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 		}
 
 		accounts[i] = &sharedW.Account{
+			AccountProperties: sharedW.AccountProperties{
+				AccountNumber: a.AccountNumber,
+				AccountName:   a.AccountName,
+			},
 			WalletID:         asset.ID,
 			Number:           int32(a.AccountNumber),
 			Name:             a.AccountName,
@@ -165,6 +169,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 			ReceiveTime:   utxo.ReceiveTime,
 			Confirmations: confirmations,
 			Spendable:     true,
+			Tree:          utxo.OutPoint.Tree,
 		})
 	}
 

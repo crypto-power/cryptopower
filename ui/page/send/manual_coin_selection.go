@@ -163,11 +163,11 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		{direction: layout.Center, weight: 0.1}, // Component 1
 		{direction: layout.E, weight: 0.17},     // Component 2
 		{direction: layout.W, weight: 0.02},     // Spacing Column
-		{direction: layout.W, weight: 0.25},     // Component 3
+		{direction: layout.W, weight: 0.26},     // Component 3
 		{direction: layout.W, weight: 0.005},    // Spacing Column
 		{direction: layout.E, weight: 0.18},     // Component 4
 		{direction: layout.W, weight: 0.02},     // Spacing Column
-		{direction: layout.E, weight: 0.23},     // Component 5
+		{direction: layout.E, weight: 0.22},     // Component 5
 	}
 
 	// clickables defines the event handlers mapped to an individual title field.
@@ -338,21 +338,11 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 
 	// Access to coin selection page is restricted unless destination address is selected.
 	destination, _ := pg.sendPage.sendDestination.destinationAddress()
-
-	switch wallet.GetAssetType() {
-	case libutils.BTCWalletAsset:
-		feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
-		if err != nil {
-			log.Error(err)
-		}
-		return fmt.Sprintf("%d bytes", feeNSize)
-
-	case libutils.DCRWalletAsset:
-		return "--"
-
-	default:
-		return "--"
+	feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
+	if err != nil {
+		log.Error(err)
 	}
+	return fmt.Sprintf("%d bytes", feeNSize)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -521,7 +511,7 @@ func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cry
 	case string:
 		txtStr = n
 	case float64:
-		txtStr = fmt.Sprintf("%0.8f", n) // to 8 decimal places
+		txtStr = fmt.Sprintf("%8.8f", n)
 	case int32, int, int64:
 		txtStr = fmt.Sprintf("%d", n)
 	}

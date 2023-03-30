@@ -241,6 +241,9 @@ func (pg *Page) OnNavigatedTo() {
 		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
 		pg.usdExchangeSet = true
 		go pg.fetchExchangeRate()
+	} else {
+		// If exchange rate is not supported, validate and construct the TX.
+		pg.validateAndConstructTx()
 	}
 
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
@@ -459,7 +462,7 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.toCoinSelection.Clicked() && pg.selectedWallet.Asset.GetAssetType() == libUtil.BTCWalletAsset {
+	if pg.toCoinSelection.Clicked() {
 		_, err := pg.sendDestination.destinationAddress()
 		if err != nil {
 			pg.feeEstimationError(values.String(values.StrDestinationMissing))

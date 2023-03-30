@@ -445,4 +445,5 @@ type UnspentOutput struct {
 	Confirmations int32
 	Spendable     bool
 	ReceiveTime   time.Time
+	Tree          int8
 }

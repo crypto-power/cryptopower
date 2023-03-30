@@ -3,6 +3,7 @@ package dcr
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	w "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txauthor"
 	"decred.org/dcrwallet/v2/wallet/txrules"
+	"decred.org/dcrwallet/v2/wallet/txsizes"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
@@ -24,9 +26,9 @@ type TxAuthor struct {
 	sourceAccountNumber uint32
 	destinations        []sharedW.TransactionDestination
 	changeAddress       string
-	inputs              []*wire.TxIn
 	changeDestination   *sharedW.TransactionDestination
 
+	utxos          []*sharedW.UnspentOutput
 	unsignedTx     *txauthor.AuthoredTx
 	needsConstruct bool
 }
@@ -41,12 +43,40 @@ func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW
 		sourceAccountNumber: uint32(sourceAccountNumber),
 		destinations:        make([]sharedW.TransactionDestination, 0),
 		needsConstruct:      true,
+		utxos:               utxos,
 	}
 	return nil
 }
 
-func (asset *DCRAsset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
-	return -1, errors.New("ComputeTxSizeEstimation Not implemented")
+// ComputeTxSizeEstimation computes the estimated size of the final raw transaction.
+func (asset *DCRAsset) ComputeTxSizeEstimation(dstnAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
+	if len(utxos) == 0 {
+		return 0, nil
+	}
+
+	if dstnAddress == "" {
+		return -1, errors.New("destination address missing")
+	}
+
+	var sendAmount int64
+	inputScriptSizes := make([]int, len(utxos))
+	for i, c := range utxos {
+		sendAmount += c.Amount.ToInt()
+		inputScriptSizes[i] = txsizes.RedeemP2PKHSigScriptSize
+	}
+
+	changeScript, err := txhelper.MakeTxChangeSource(dstnAddress, asset.chainParams)
+	if err != nil {
+		return -1, fmt.Errorf("calculating change script failed; %v", err)
+	}
+
+	output, err := txhelper.MakeTxOutput(dstnAddress, sendAmount, asset.chainParams)
+	if err != nil {
+		return -1, fmt.Errorf("calculating TxOutput failed; %v", err)
+	}
+
+	size := txsizes.EstimateSerializeSize(inputScriptSizes, []*wire.TxOut{output}, changeScript.ScriptSize())
+	return size, nil
 }
 
 func (asset *DCRAsset) GetUnsignedTx() *TxAuthor {
@@ -282,15 +312,12 @@ func (asset *DCRAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 }
 
 func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
-	if len(asset.TxAuthoredInfo.inputs) != 0 {
-		return asset.constructCustomTransaction()
-	}
-
 	var err error
 	outputs := make([]*wire.TxOut, 0)
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
 	var changeSource txauthor.ChangeSource
 
+	var sendMax bool
 	ctx, _ := asset.ShutdownContextWithCancel()
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		if err := asset.validateSendAmount(destination.SendMax, destination.UnitAmount); err != nil {
@@ -312,6 +339,7 @@ func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 				log.Errorf("constructTransaction: error preparing change source: %v", err)
 				return nil, fmt.Errorf("max amount change source error: %v", err)
 			}
+			sendMax = true
 		} else {
 			output, err := txhelper.MakeTxOutput(destination.Address, destination.UnitAmount, asset.chainParams)
 			if err != nil {
@@ -337,9 +365,111 @@ func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 		}
 	}
 
+	// if preset with a selected list of UTXOs exists, use them instead.
+	unspents := asset.TxAuthoredInfo.utxos
+	if len(unspents) == 0 {
+		unspents, err = asset.UnspentOutputs(int32(asset.TxAuthoredInfo.sourceAccountNumber))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Use the custom input source function instead of querying the same data from the
+	// db for every utxo.
+	inputsSourceFunc := asset.makeInputSource(sendMax, unspents)
+
 	requiredConfirmations := asset.RequiredConfirmations()
 	return asset.Internal().DCR.NewUnsignedTransaction(ctx, outputs, txrules.DefaultRelayFeePerKb, asset.TxAuthoredInfo.sourceAccountNumber,
-		requiredConfirmations, outputSelectionAlgorithm, changeSource, nil)
+		requiredConfirmations, outputSelectionAlgorithm, changeSource, inputsSourceFunc)
+}
+
+// makeInputSource creates an InputSource that creates inputs for every unspent
+// output with non-zero output values. The importsource aims to create the leanest
+// transaction possible. It plans not to spend all the utxos available when servicing
+// the current transaction spending amount if possible. The sendMax shows that
+// all utxos must be spent without any balance(unspent utxo) left in the account.
+func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOutput) txauthor.InputSource {
+	var (
+		sourceErr       error
+		totalInputValue dcrutil.Amount
+
+		inputs            = make([]*wire.TxIn, 0, len(utxos))
+		pkScripts         = make([][]byte, 0, len(utxos))
+		redeemScriptSizes = make([]int, 0, len(utxos))
+	)
+
+	for _, output := range utxos {
+		if output.Amount == nil || output.Amount.ToCoin() == 0 {
+			continue
+		}
+
+		if !saneOutputValue(output.Amount.(DCRAmount)) {
+			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", output.Amount)
+			break
+		}
+
+		previousOutPoint, err := parseOutPoint(output)
+		if err != nil {
+			sourceErr = fmt.Errorf("invalid TxIn data found: %v", err)
+			break
+		}
+
+		script, err := hex.DecodeString(output.ScriptPubKey)
+		if err != nil {
+			sourceErr = fmt.Errorf("invalid TxIn pkScript data found: %v", err)
+			break
+		}
+
+		totalInputValue += dcrutil.Amount(output.Amount.(DCRAmount))
+		pkScripts = append(pkScripts, script)
+		redeemScriptSizes = append(redeemScriptSizes, txsizes.RedeemP2PKHSigScriptSize)
+		inputs = append(inputs, wire.NewTxIn(&previousOutPoint, output.Amount.ToInt(), nil))
+	}
+
+	if sourceErr == nil && totalInputValue == 0 {
+		// Constructs an error describing the possible reasons why the
+		// wallet balance cannot be spent.
+		sourceErr = fmt.Errorf("inputs have less than %d confirmations",
+			asset.RequiredConfirmations())
+	}
+
+	return func(target dcrutil.Amount) (*txauthor.InputDetail, error) {
+		// If an error was found return it first.
+		if sourceErr != nil {
+			return nil, sourceErr
+		}
+
+		inputDetails := &txauthor.InputDetail{}
+
+		// All utxos are to be spent with no change amount expected.
+		if sendMax {
+			inputDetails.Inputs = inputs
+			inputDetails.Amount = totalInputValue
+			inputDetails.Scripts = pkScripts
+			inputDetails.RedeemScriptSizes = redeemScriptSizes
+			return inputDetails, nil
+		}
+
+		var index int
+		var currentTotal dcrutil.Amount
+
+		for _, utxoAmount := range inputs {
+			if currentTotal < target || target == 0 {
+				// Found some utxo(s) we can spend in the current tx.
+				index++
+
+				currentTotal += dcrutil.Amount(utxoAmount.ValueIn)
+				continue
+			}
+			break
+		}
+
+		inputDetails.Amount = currentTotal
+		inputDetails.Inputs = inputs[:index]
+		inputDetails.Scripts = pkScripts[:index]
+		inputDetails.RedeemScriptSizes = redeemScriptSizes[:index]
+		return inputDetails, nil
+	}
 }
 
 // changeSource derives an internal address from the source wallet and account
@@ -380,4 +510,16 @@ func (asset *DCRAsset) validateSendAmount(sendMax bool, atomAmount int64) error 
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil
+}
+
+func saneOutputValue(amount DCRAmount) bool {
+	return amount >= 0 && amount <= dcrutil.MaxAmount
+}
+
+func parseOutPoint(input *sharedW.UnspentOutput) (wire.OutPoint, error) {
+	txHash, err := chainhash.NewHashFromStr(input.TxID)
+	if err != nil {
+		return wire.OutPoint{}, err
+	}
+	return wire.OutPoint{Hash: *txHash, Index: input.Vout, Tree: input.Tree}, nil
 }
