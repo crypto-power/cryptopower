@@ -81,6 +81,7 @@ type CreateOrderPage struct {
 	exchangeRate, binanceRate float64
 
 	errMsg string
+	loading, initialLoadingDone, loadedAll bool
 
 	*orderData
 }
@@ -207,9 +208,8 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
-		pg.FetchOrders()
-
 		pg.loadOrderConfig()
+		go pg.fetchOrders(false)
 	}
 }
 
@@ -513,6 +513,8 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg)
 		})
 	}
+
+	pg.onScrollChangeListener()
 
 	container := func(gtx C) D {
 		sp := components.SubPage{
@@ -850,9 +852,50 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	})
 }
 
-func (pg *CreateOrderPage) FetchOrders() {
-	items := components.LoadOrders(pg.Load, true)
-	pg.orderItems = items
+func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
+	if pg.loading {
+		return
+	}
+	defer func() {
+		pg.loading = false
+	}()
+	pg.loadedAll = false
+	pg.loading = true
+
+	limit := 10
+
+	offset := 0
+	if loadMore {
+		offset = len(pg.orderItems)
+	}
+
+	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true)
+	if tempOrders == nil {
+		pg.orderItems = nil
+		return
+	}
+
+	pg.initialLoadingDone = true
+
+	if len(tempOrders) == 0 {
+		pg.loadedAll = true
+		pg.loading = false
+
+		if !loadMore {
+			pg.orderItems = nil
+		}
+		return
+	}
+
+	if len(tempOrders) < limit {
+		pg.loadedAll = true
+	}
+
+	if loadMore {
+		pg.orderItems = append(pg.orderItems, tempOrders...)
+	} else {
+		pg.orderItems = tempOrders
+	}
 
 	pg.ParentWindow().Reload()
 }
@@ -905,7 +948,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.FetchOrders()
+			pg.fetchOrders(false)
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1152,4 +1195,20 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			}
 		}
 	}()
+}
+
+func (pg *CreateOrderPage) onScrollChangeListener() {
+	if len(pg.orderItems) < 5 || !pg.initialLoadingDone {
+		return
+	}
+
+	// The first check is for when the list is scrolled to the bottom using the scroll bar.
+	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
+	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
+	// is to check if the page is still scrollable.
+	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
+		if !pg.loadedAll {
+			pg.fetchOrders(true)
+		}
+	}
 }
