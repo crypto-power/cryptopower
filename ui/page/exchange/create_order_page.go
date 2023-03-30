@@ -938,17 +938,18 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
+	var binanceRate float64
 	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
 	if err != nil {
 		log.Error(err)
 	}
-
-	var binanceRate float64
-	switch pg.fromCurrency {
-	case libutils.DCRWalletAsset:
-		binanceRate = ticker.LastTradePrice
-	case libutils.BTCWalletAsset:
-		binanceRate = 1 / ticker.LastTradePrice
+	if ticker != nil {
+		switch pg.fromCurrency {
+		case libutils.DCRWalletAsset:
+			binanceRate = ticker.LastTradePrice
+		case libutils.BTCWalletAsset:
+			binanceRate = 1 / ticker.LastTradePrice
+		}
 	}
 
 	pg.min = res.Min
