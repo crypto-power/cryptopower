@@ -22,9 +22,13 @@ type Modal struct {
 	background   color.NRGBA
 	list         *widget.List
 	button       *widget.Clickable
-	card         Card
-	scroll       ListStyle
-	padding      unit.Dp
+	// overlayBlinder sits between the overlay and modal widget
+	// it acts to intercept and prevent clicks on widget from getting
+	// to the overlay.
+	overlayBlinder *widget.Clickable
+	card           Card
+	scroll         ListStyle
+	padding        unit.Dp
 
 	isFloatTitle  bool
 	isDisabled    bool
@@ -49,9 +53,10 @@ func (t *Theme) Modal(id string) *Modal {
 		list: &widget.List{
 			List: layout.List{Axis: layout.Vertical, Alignment: layout.Middle},
 		},
-		button:  new(widget.Clickable),
-		card:    t.Card(),
-		padding: unit.Dp(24),
+		button:         new(widget.Clickable),
+		overlayBlinder: new(widget.Clickable),
+		card:           t.Card(),
+		padding:        unit.Dp(24),
 	}
 
 	m.scroll = t.List(m.list)
@@ -116,56 +121,65 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget) layout.Dimen
 				Bottom: unit.Dp(30),
 			}
 			return inset.Layout(gtx, func(gtx C) D {
-				return LinearLayout{
-					Orientation: layout.Vertical,
-					Width:       WrapContent,
-					Height:      WrapContent,
-					Padding:     layout.UniformInset(m.padding),
-					Alignment:   layout.Middle,
-					Border: Border{
-						Radius: Radius(14),
-					},
-					Direction:  layout.Center,
-					Background: m.background,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						if m.isFloatTitle && len(widgets) > 0 {
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							if m.padding == unit.Dp(0) {
-								return layout.UniformInset(m.padding).Layout(gtx, title)
-							}
-
-							inset := layout.Inset{
-								Top:    unit.Dp(5),
-								Bottom: unit.Dp(5),
-							}
-							return inset.Layout(gtx, title)
-						}
-						return D{}
-					}),
-					layout.Rigid(func(gtx C) D {
-						mTB := unit.Dp(5)
-						mLR := unit.Dp(0)
-						if m.padding == unit.Dp(0) {
-							mLR = mTB
-						}
-						inset := layout.Inset{
-							Top:    mTB,
-							Bottom: mTB,
-							Left:   mLR,
-							Right:  mLR,
-						}
-						if m.showScrollBar {
-							return m.scroll.Layout(gtx, len(widgetFuncs), func(gtx C, i int) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return inset.Layout(gtx, widgetFuncs[i])
-							})
-						}
-						list := &layout.List{Axis: layout.Vertical}
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return list.Layout(gtx, len(widgetFuncs), func(gtx C, i int) D {
-							return inset.Layout(gtx, widgetFuncs[i])
+				return layout.Stack{Alignment: layout.Center}.Layout(gtx,
+					layout.Expanded(func(gtx C) D {
+						return m.overlayBlinder.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return layout.Dimensions{Size: gtx.Constraints.Min}
 						})
+					}),
+					layout.Stacked(func(gtx C) D {
+						return LinearLayout{
+							Orientation: layout.Vertical,
+							Width:       WrapContent,
+							Height:      WrapContent,
+							Padding:     layout.UniformInset(m.padding),
+							Alignment:   layout.Middle,
+							Border: Border{
+								Radius: Radius(14),
+							},
+							Direction:  layout.Center,
+							Background: m.background,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if m.isFloatTitle && len(widgets) > 0 {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									if m.padding == unit.Dp(0) {
+										return layout.UniformInset(m.padding).Layout(gtx, title)
+									}
+
+									inset := layout.Inset{
+										Top:    unit.Dp(5),
+										Bottom: unit.Dp(5),
+									}
+									return inset.Layout(gtx, title)
+								}
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								mTB := unit.Dp(5)
+								mLR := unit.Dp(0)
+								if m.padding == unit.Dp(0) {
+									mLR = mTB
+								}
+								inset := layout.Inset{
+									Top:    mTB,
+									Bottom: mTB,
+									Left:   mLR,
+									Right:  mLR,
+								}
+								if m.showScrollBar {
+									return m.scroll.Layout(gtx, len(widgetFuncs), func(gtx C, i int) D {
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return inset.Layout(gtx, widgetFuncs[i])
+									})
+								}
+								list := &layout.List{Axis: layout.Vertical}
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return list.Layout(gtx, len(widgetFuncs), func(gtx C, i int) D {
+									return inset.Layout(gtx, widgetFuncs[i])
+								})
+							}),
+						)
 					}),
 				)
 			})
