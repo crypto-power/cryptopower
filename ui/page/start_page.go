@@ -211,6 +211,17 @@ func (sp *startPage) loadingSection(gtx C) D {
 							switch {
 							case sp.isQuitting:
 								loadStatus.Text = values.String(values.StrClosingWallet)
+
+								for {
+									// Closes all pending modals still open.
+									modal := sp.ParentWindow().TopModal()
+									if modal == nil {
+										// No modal that exists.
+										break
+									}
+									sp.ParentWindow().DismissModal(modal.ID())
+								}
+
 							default:
 								loadStatus.Text = values.String(values.StrOpeningWallet)
 							}
