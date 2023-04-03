@@ -257,6 +257,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	if pg.settingsButton.Button.Clicked() {
 		orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
 			OnSettingsSaved(func(params *callbackParams) {
+				pg.orderData.sourceAccountSelector = params.sourceAccountSelector
+				pg.orderData.sourceWalletSelector = params.sourceWalletSelector
+				pg.orderData.destinationAccountSelector = params.destinationAccountSelector
+				pg.orderData.destinationWalletSelector = params.destinationWalletSelector
 				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrOrderSettingsSaved), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(infoModal)
 			}).

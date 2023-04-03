@@ -165,10 +165,6 @@ func (osm *orderSettingsModal) Handle() {
 
 		osm.WL.AssetsManager.SetExchangeConfig(fromCurrency, sourceWalletId, toCurrency, destinationWalletId, sourceAccountId, destinationAccountId)
 		osm.settingsSaved(params)
-		osm.orderData.sourceAccountSelector = osm.sourceAccountSelector
-		osm.orderData.sourceWalletSelector = osm.sourceWalletSelector
-		osm.orderData.destinationAccountSelector = osm.destinationAccountSelector
-		osm.orderData.destinationWalletSelector = osm.destinationWalletSelector
 		osm.Dismiss()
 	}
 
