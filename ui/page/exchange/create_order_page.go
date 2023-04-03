@@ -76,7 +76,7 @@ type CreateOrderPage struct {
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 	statusDropdown         *cryptomaterial.DropDown
-	serverDropdown         *cryptomaterial.DropDown
+	viewAllButton          cryptomaterial.Button
 
 	min                       float64
 	max                       float64
@@ -139,6 +139,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
+
+	pg.viewAllButton = l.Theme.Button("View all orders")
+	pg.viewAllButton.Font.Weight = text.SemiBold
+	pg.viewAllButton.Color = l.Theme.Color.Primary
+	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
+	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().Background
+	pg.viewAllButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.GrayText4)
+
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	pg.infoButton.Size = values.MarginPadding18
 	buttonInset := layout.UniformInset(values.MarginPadding0)
@@ -279,6 +287,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			OnCancel(func() { // needed to satisfy the modal instance
 			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
+	}
+
+	if pg.viewAllButton.Clicked() {
+		pg.ParentNavigator().Display(NewOrderHistoryPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -823,66 +835,68 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}),
 									layout.Flexed(1, func(gtx C) D {
 										body := func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													var text string
-													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-														text = values.String(values.StrSyncingState)
-													} else {
-														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+											return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 
-														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
-															text = values.String(values.StrNeverSynced)
-														}
-													}
-
-													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
-													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
-												}),
 												layout.Rigid(func(gtx C) D {
-													return cryptomaterial.LinearLayout{
-														Width:     cryptomaterial.WrapContent,
-														Height:    cryptomaterial.WrapContent,
-														Clickable: pg.refreshClickable,
-														Direction: layout.Center,
-														Alignment: layout.Middle,
-														Margin:    layout.Inset{Left: values.MarginPadding10},
-													}.Layout(gtx,
+													return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
+															var text string
 															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																text = values.String(values.StrSyncingState)
+															} else {
+																text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+
+																if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+																	text = values.String(values.StrNeverSynced)
+																}
 															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
-															})
+
+															lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+															lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+															return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:     cryptomaterial.WrapContent,
+																Height:    cryptomaterial.WrapContent,
+																Clickable: pg.refreshClickable,
+																Direction: layout.Center,
+																Alignment: layout.Middle,
+																Margin:    layout.Inset{Left: values.MarginPadding10},
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+																		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																		return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																	}
+																	return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+																		return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+																	})
+
+																}),
+															)
 														}),
 													)
 												}),
+												layout.Rigid(func(gtx C) D {
+													return layout.E.Layout(gtx, pg.viewAllButton.Layout)
+												}),
+												// layout.Rigid(func(gtx C) D {
+
+												// }),
 											)
 										}
 										return layout.E.Layout(gtx, body)
 									}),
 								)
 							}),
-							// layout.Rigid(func(gtx C) D {
-							// 	return layout.Inset{
-							// 		Top: values.MarginPadding10,
-							// 	}.Layout(gtx, pg.layoutHistory)
-							// }),
 							layout.Flexed(1, func(gtx C) D {
 								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 									return layout.Stack{}.Layout(gtx,
 										layout.Expanded(func(gtx C) D {
 											return layout.Inset{
-												Top: values.MarginPadding60,
 											}.Layout(gtx, pg.layoutHistory)
-										}),
-										layout.Expanded(func(gtx C) D {
-											return pg.statusDropdown.Layout(gtx, 30, true)
-
 										}),
 									)
 								})
@@ -914,9 +928,6 @@ func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
 	default:
 		statusFilter = api.OrderStatusUnknown
 	}
-
-	fmt.Println("selectedStatus", selectedStatus)
-	fmt.Println("statusFilter", statusFilter)
 
 	if pg.loading {
 		return
