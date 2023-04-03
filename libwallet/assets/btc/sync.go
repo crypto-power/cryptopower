@@ -396,7 +396,9 @@ func (asset *Asset) CancelSync() {
 	// reset the sync data first.
 	asset.resetSyncProgressData()
 
-	asset.stopSync()
+	// Call stopSync in a goroutine, stopSync's shutdown waits, block
+	// the calling thread - the UI thread - if stopsync is not called in a different routine.
+	go asset.stopSync()
 
 	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
 }
