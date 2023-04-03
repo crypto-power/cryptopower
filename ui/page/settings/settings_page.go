@@ -429,7 +429,7 @@ func (pg *SettingsPage) HandleUserInteractions() {
 
 	for pg.appearanceMode.Clicked() {
 		pg.isDarkModeOn = !pg.isDarkModeOn
-		pg.WL.AssetsManager.IsDarkModeOn()
+		pg.WL.AssetsManager.SetDarkMode(pg.isDarkModeOn)
 		pg.RefreshTheme(pg.ParentWindow())
 	}
 
