@@ -10,6 +10,7 @@ import (
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -48,6 +49,12 @@ type orderSettingsModal struct {
 	feeRateSelector *components.FeeRateSelector
 
 	*orderData
+
+	sourceAccountSelector *components.WalletAndAccountSelector
+	sourceWalletSelector  *components.WalletAndAccountSelector
+
+	destinationAccountSelector *components.WalletAndAccountSelector
+	destinationWalletSelector  *components.WalletAndAccountSelector
 }
 
 func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsModal {
@@ -83,6 +90,7 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 
 	osm.feeRateSelector = components.NewFeeRateSelector(l)
 	osm.feeRateSelector.TitleFontWeight = text.SemiBold
+	osm.initWalletSelectors()
 
 	return osm
 }
@@ -139,7 +147,7 @@ func (osm *orderSettingsModal) OnDismiss() {
 func (osm *orderSettingsModal) Handle() {
 	osm.saveBtn.SetEnabled(osm.canSave())
 
-	for osm.saveBtn.Clicked() {
+	if osm.saveBtn.Clicked() {
 		params := &callbackParams{
 			sourceAccountSelector: osm.sourceAccountSelector,
 			sourceWalletSelector:  osm.sourceWalletSelector,
@@ -438,4 +446,113 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 		},
 	}
 	return osm.Modal.Layout(gtx, w)
+}
+
+func (pg *orderSettingsModal) initWalletSelectors() {
+	if pg.WL.AssetsManager.ExchangeConfigIsSet() {
+		exchangeConfig := pg.WL.AssetsManager.ExchangeConfig()
+		sourceWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
+		destinationWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
+
+		sourceCurrency := exchangeConfig.SourceAsset
+		toCurrency := exchangeConfig.DestinationAsset
+
+		if sourceWallet != nil {
+			_, err := sourceWallet.GetAccount(exchangeConfig.SourceAccountNumber)
+			if err != nil {
+				log.Error(err)
+			}
+
+			// Source wallet picker
+			pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, sourceCurrency).
+				Title(values.String(values.StrSource))
+
+			sourceW := &load.WalletMapping{
+				Asset: sourceWallet,
+			}
+			pg.sourceWalletSelector.SetSelectedWallet(sourceW)
+
+			// Source account picker
+			pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+				Title(values.String(values.StrAccount)).
+				AccountValidator(func(account *sharedW.Account) bool {
+					accountIsValid := account.Number != load.MaxInt32
+					return accountIsValid
+				})
+			pg.sourceAccountSelector.SelectAccount(pg.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
+
+			pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+				pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+			})
+		}
+
+		if destinationWallet != nil {
+			_, err := destinationWallet.GetAccount(exchangeConfig.DestinationAccountNumber)
+			if err != nil {
+				log.Error(err)
+			}
+
+			// Destination wallet picker
+			pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
+				Title(values.String(values.StrDestination)).
+				EnableWatchOnlyWallets(true)
+
+			destW := &load.WalletMapping{
+				Asset: destinationWallet,
+			}
+			pg.destinationWalletSelector.SetSelectedWallet(destW)
+
+			// Destination account picker
+			pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+				Title(values.String(values.StrAccount)).
+				AccountValidator(func(account *sharedW.Account) bool {
+					// Imported accounts and watch only accounts are imvalid
+					accountIsValid := account.Number != load.MaxInt32
+
+					return accountIsValid
+				})
+			pg.destinationAccountSelector.SelectAccount(pg.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
+
+			pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+				pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+			})
+		}
+	} else {
+		// Source wallet picker
+		pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+			Title(values.String(values.StrFrom))
+
+		// Source account picker
+		pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+			Title(values.String(values.StrAccount)).
+			AccountValidator(func(account *sharedW.Account) bool {
+				accountIsValid := account.Number != load.MaxInt32
+
+				return accountIsValid
+			})
+		pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
+
+		pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+		})
+
+		// Destination wallet picker
+		pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
+			Title(values.String(values.StrTo)).
+			EnableWatchOnlyWallets(true)
+
+		// Destination account picker
+		pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+			Title(values.String(values.StrAccount)).
+			AccountValidator(func(account *sharedW.Account) bool {
+				accountIsValid := account.Number != load.MaxInt32
+
+				return accountIsValid
+			})
+		pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
+
+		pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+		})
+	}
 }
