@@ -108,7 +108,7 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 	// init shared page functions
 	toggleSync := func(unlock load.NeedUnlockRestore) {
 		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
-			pg.WL.SelectedWallet.Wallet.CancelSync()
+			go pg.WL.SelectedWallet.Wallet.CancelSync()
 			unlock(false)
 		} else {
 			pg.startSyncing(pg.WL.SelectedWallet.Wallet, unlock)
