@@ -75,6 +75,8 @@ type CreateOrderPage struct {
 	iconClickable          *cryptomaterial.Clickable
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
+	statusDropdown         *cryptomaterial.DropDown
+	serverDropdown         *cryptomaterial.DropDown
 
 	min                       float64
 	max                       float64
@@ -190,6 +192,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		}()
 	})
 
+	pg.statusDropdown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+		{Text: api.OrderStatusWaitingForDeposit.String()},
+		{Text: api.OrderStatusDepositReceived.String()},
+		{Text: api.OrderStatusNew.String()},
+		{Text: api.OrderStatusCompleted.String()},
+		{Text: api.OrderStatusExpired.String()},
+	}, values.ConsensusDropdownGroup, 0)
+
 	return pg
 }
 
@@ -220,6 +230,10 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
+	for pg.statusDropdown.Changed() {
+		go pg.fetchOrders(false)
+	}
+
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
 	if pg.swapButton.Button.Clicked() {
@@ -532,7 +546,21 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
 			},
 		}
-		return sp.Layout(pg.ParentWindow(), gtx)
+
+		return cryptomaterial.LinearLayout{
+			Width:     cryptomaterial.MatchParent,
+			Height:    cryptomaterial.MatchParent,
+			Direction: layout.Center,
+		}.Layout2(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:     gtx.Dp(values.MarginPadding550),
+				Height:    cryptomaterial.MatchParent,
+				Alignment: layout.Middle,
+			}.Layout2(gtx, func(gtx C) D {
+				return sp.Layout(pg.ParentWindow(), gtx)
+
+			})
+		})
 	}
 
 	return components.UniformPadding(gtx, container)
@@ -839,10 +867,25 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}),
 								)
 							}),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Top: values.MarginPadding10,
-								}.Layout(gtx, pg.layoutHistory)
+							// layout.Rigid(func(gtx C) D {
+							// 	return layout.Inset{
+							// 		Top: values.MarginPadding10,
+							// 	}.Layout(gtx, pg.layoutHistory)
+							// }),
+							layout.Flexed(1, func(gtx C) D {
+								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+									return layout.Stack{}.Layout(gtx,
+										layout.Expanded(func(gtx C) D {
+											return layout.Inset{
+												Top: values.MarginPadding60,
+											}.Layout(gtx, pg.layoutHistory)
+										}),
+										layout.Expanded(func(gtx C) D {
+											return pg.statusDropdown.Layout(gtx, 30, true)
+
+										}),
+									)
+								})
 							}),
 						)
 					})
@@ -853,6 +896,28 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
+	selectedStatus := pg.statusDropdown.Selected()
+	var statusFilter api.Status
+	switch selectedStatus {
+	case api.OrderStatusWaitingForDeposit.String():
+		statusFilter = api.OrderStatusWaitingForDeposit
+	case api.OrderStatusDepositReceived.String():
+		statusFilter = api.OrderStatusDepositReceived
+	case api.OrderStatusNew.String():
+		statusFilter = api.OrderStatusNew
+	case api.OrderStatusRefunded.String():
+		statusFilter = api.OrderStatusRefunded
+	case api.OrderStatusExpired.String():
+		statusFilter = api.OrderStatusExpired
+	case api.OrderStatusCompleted.String():
+		statusFilter = api.OrderStatusCompleted
+	default:
+		statusFilter = api.OrderStatusUnknown
+	}
+
+	fmt.Println("selectedStatus", selectedStatus)
+	fmt.Println("statusFilter", statusFilter)
+
 	if pg.loading {
 		return
 	}
@@ -869,7 +934,7 @@ func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
 		offset = len(pg.orderItems)
 	}
 
-	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true)
+	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), statusFilter, true)
 	if tempOrders == nil {
 		pg.orderItems = nil
 		return

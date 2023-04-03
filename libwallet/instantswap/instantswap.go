@@ -25,6 +25,11 @@ const (
 	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93"
 	// API_KEY_GODEX is the godex API key.
 	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
+
+	// OrderStatusAll int32 = iota + 1
+
+	// OrderStatusCompleted
+
 )
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
@@ -89,13 +94,20 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 }
 
 // GetOrdersRaw fetches and returns all saved orders.
-func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool) ([]*Order, error) {
+// If status is specified, only orders with that status will be returned.
+// status is made optional to the sync functionality can update all orders.
+func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, status ...instantswap.Status) ([]*Order, error) {
 
 	var query storm.Query
-
 	query = instantSwap.db.Select(
 		q.True(),
 	)
+
+	if len(status) > 0 {
+		query = instantSwap.db.Select(
+			q.Eq("Status", status[0]),
+		)
+	}
 
 	if offset > 0 {
 		query = query.Skip(int(offset))
