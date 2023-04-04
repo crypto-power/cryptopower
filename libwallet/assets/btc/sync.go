@@ -45,6 +45,8 @@ type SyncData struct {
 	rescanStartHeight  *int32
 	isSyncShuttingDown bool
 
+	wg sync.WaitGroup
+
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
 
@@ -407,12 +409,15 @@ func (asset *Asset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *Asset) stopSync() {
+	asset.syncData.wg.Add(1)
+
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if loadedAsset != nil {
 		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
 			asset.syncData.isSyncShuttingDown = false
+			asset.syncData.wg.Done()
 			return
 		}
 
@@ -430,9 +435,12 @@ func (asset *Asset) stopSync() {
 		// a wallet sync.
 		// 3. Disabled the peers connectivity allows the handleChainNotification
 		// goroutine to return.
-		asset.chainClient.CS.Stop()
-		asset.syncData.chainServiceStopped = true
+		if err := asset.chainClient.CS.Stop(); err != nil {
+			// ignore the error and proceed with shutdown.
+			log.Errorf("Stopping chain client failed: %v", err)
+		}
 
+		asset.syncData.chainServiceStopped = true
 		// 4. Wait for the upstream wallet to shutdown completely.
 		loadedAsset.WaitForShutdown()
 	}
@@ -459,6 +467,7 @@ func (asset *Asset) stopSync() {
 		// when syncing is disabled.
 		loadedAsset.Start()
 	}
+	asset.syncData.wg.Done()
 }
 
 // startSync initiates the full chain sync starting protocols. It attempts to
