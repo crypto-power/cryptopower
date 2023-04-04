@@ -252,7 +252,9 @@ func (asset *Asset) SafelyCancelSync() {
 	if loadWallet != nil && loadWallet.Database() != nil {
 		// Close the upstream loader database connection to disable the wallet
 		// recovery if it is running in the background.
-		loadWallet.Database().Close()
+		if err := loadWallet.Database().Close(); err != nil {
+			log.Errorf("closing upstream db failed: %v", err)
+		}
 	}
 
 	asset.syncData.wg.Wait()
