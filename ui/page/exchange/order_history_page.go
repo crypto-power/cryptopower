@@ -376,7 +376,7 @@ func (pg *OrderHistoryPage) onScrollChangeListener() {
 	// is to check if the page is still scrollable.
 	// The page scroll starts from a negative number and the closer you get to 0,
 	// it means you're getting closer to the end of the list. 0 is the last item on the list.
-	// The -50 is to load more orders before reaching the end of the list. 
+	// The -50 is to load more orders before reaching the end of the list.
 	// (-50 is an arbitrary number)
 	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
 		if !pg.loadedAll {

@@ -849,5 +849,5 @@ const (
 	StrDcrBtcPair                      = "dcrBtcPair"
 	StrOrderHistory                    = "orderHistory"
 	StrRecentOrders                    = "recentOrders"
-	StrViewAllOrders				   = "viewAllOrders"
+	StrViewAllOrders                   = "viewAllOrders"
 )
