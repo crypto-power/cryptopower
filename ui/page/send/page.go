@@ -3,6 +3,7 @@ package send
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -20,9 +21,7 @@ import (
 )
 
 const (
-	SendPageID    = "Send"
-	sendToAddress = 1
-	SendToWallet  = 2
+	SendPageID = "Send"
 
 	// MaxTxLabelSize defines the maximum number of characters to be allowed on
 	// txLabelInputEditor component.
@@ -285,7 +284,8 @@ func (pg *Page) fetchExchangeRate() {
 
 func (pg *Page) validateAndConstructTx() {
 	// delete all the previous errors set earlier.
-	pg.feeEstimationError("")
+	pg.amountValidationError("")
+	pg.addressValidationError("")
 
 	if pg.validate() {
 		pg.constructTx()
@@ -318,14 +318,14 @@ func (pg *Page) validate() bool {
 func (pg *Page) constructTx() {
 	destinationAddress, err := pg.sendDestination.destinationAddress()
 	if err != nil {
-		pg.feeEstimationError(err.Error())
+		pg.addressValidationError(err.Error())
 		return
 	}
 	destinationAccount := pg.sendDestination.destinationAccount()
 
 	amountAtom, SendMax, err := pg.amount.validAmount()
 	if err != nil {
-		pg.feeEstimationError(err.Error())
+		pg.amountValidationError(err.Error())
 		return
 	}
 
@@ -337,19 +337,23 @@ func (pg *Page) constructTx() {
 
 	err = pg.selectedWallet.NewUnsignedTx(sourceAccount.Number, selectedUTXOs)
 	if err != nil {
-		pg.feeEstimationError(err.Error())
+		pg.amountValidationError(err.Error())
 		return
 	}
 
 	err = pg.selectedWallet.AddSendDestination(destinationAddress, amountAtom, SendMax)
 	if err != nil {
-		pg.feeEstimationError(err.Error())
+		if strings.Contains(err.Error(), "amount") {
+			pg.amountValidationError(err.Error())
+			return
+		}
+		pg.addressValidationError(err.Error())
 		return
 	}
 
 	feeAndSize, err := pg.selectedWallet.EstimateFeeAndSize()
 	if err != nil {
-		pg.feeEstimationError(err.Error())
+		pg.amountValidationError(err.Error())
 		return
 	}
 
@@ -406,8 +410,13 @@ func (pg *Page) showBalaceAfterSend() {
 	}
 }
 
-func (pg *Page) feeEstimationError(err string) {
+func (pg *Page) amountValidationError(err string) {
 	pg.amount.setError(err)
+	pg.clearEstimates()
+}
+
+func (pg *Page) addressValidationError(err string) {
+	pg.sendDestination.setError(err)
 	pg.clearEstimates()
 }
 
@@ -465,7 +474,7 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.toCoinSelection.Clicked() {
 		_, err := pg.sendDestination.destinationAddress()
 		if err != nil {
-			pg.feeEstimationError(values.String(values.StrDestinationMissing))
+			pg.addressValidationError(err.Error())
 			pg.sendDestination.destinationAddressEditor.Editor.Focus()
 		} else {
 			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
@@ -516,10 +525,7 @@ func (pg *Page) HandleUserInteractions() {
 
 	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
 		pg.amount.validateAmount()
-		if pg.amount.amountErrorText == "" {
-			// proceed with validation only when the amount is valid.
-			pg.validateAndConstructTxAmountOnly()
-		}
+		pg.validateAndConstructTxAmountOnly()
 	}
 
 	if pg.amount.IsMaxClicked() {

@@ -97,7 +97,13 @@ func (sa *sendAmount) setAmount(amount int64) {
 }
 
 func (sa *sendAmount) amountIsValid() bool {
-	_, err := strconv.ParseFloat(sa.amountEditor.Editor.Text(), 64)
+	txt := sa.amountEditor.Editor.Text()
+	_, err := strconv.ParseFloat(txt, 64)
+	if err != nil && sa.amountErrorText == "" && len(txt) > 0 {
+		// do not overwrite existing errors
+		sa.amountErrorText = values.String(values.StrInvalidAmount)
+	}
+
 	amountEditorErrors := sa.amountErrorText == ""
 	return err == nil && amountEditorErrors || sa.SendMax
 }
