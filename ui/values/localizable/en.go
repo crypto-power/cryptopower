@@ -739,4 +739,5 @@ const EN = `
 "dcrBtcPair" = "dcr-btc"
 "orderHistory" = "Order History"
 "recentOrders" = "Recent Orders (%d)"
+"viewAllOrders" = "View all orders"
 `

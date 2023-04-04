@@ -139,7 +139,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
 
-	pg.viewAllButton = l.Theme.Button("View all orders")
+	pg.viewAllButton = l.Theme.Button(values.String(values.StrViewAllOrders))
 	pg.viewAllButton.Font.Weight = text.SemiBold
 	pg.viewAllButton.Color = l.Theme.Color.Primary
 	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
@@ -1220,10 +1220,10 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			case n := <-pg.OrderNotifChan:
 				switch n.OrderStatus {
 				case wallet.OrderStatusSynced:
-					pg.FetchOrders()
+					pg.fetchOrders(false)
 					pg.ParentWindow().Reload()
 				case wallet.OrderCreated:
-					pg.FetchOrders()
+					pg.fetchOrders(false)
 					pg.ParentWindow().Reload()
 				case wallet.OrderSchedulerStarted:
 					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
@@ -1242,6 +1242,10 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 }
 
 func (pg *CreateOrderPage) onScrollChangeListener() {
+	// if the number of orders is less than 5, don't load more orders. (5 is an arbitrary number)
+	// This is to avoid loading more orders when there are no more orders to load.
+	// if initialLoadingDone is false, don't load more orders.
+	// This is to avoid loading more orders when orders are still being fetched.
 	if len(pg.orderItems) < 5 || !pg.initialLoadingDone {
 		return
 	}
@@ -1250,6 +1254,10 @@ func (pg *CreateOrderPage) onScrollChangeListener() {
 	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
 	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
 	// is to check if the page is still scrollable.
+	// The page scroll starts from a negative number and the closer you get to 0,
+	// it means you're getting closer to the end of the list. 0 is the last item on the list.
+	// The -50 is to load more orders before reaching the end of the list. 
+	// (-50 is an arbitrary number)
 	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
 		if !pg.loadedAll {
 			pg.fetchOrders(false)
