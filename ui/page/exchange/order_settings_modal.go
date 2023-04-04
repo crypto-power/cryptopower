@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -397,7 +396,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		if osm.sourceWalletSelector.SelectedWallet().GetAssetType() != utils.BTCWalletAsset {
+																		if osm.sourceWalletSelector.SelectedWallet().GetAssetType() != libutils.BTCWalletAsset {
 																			return D{}
 																		}
 																		return osm.feeRateSelector.Layout(gtx)
