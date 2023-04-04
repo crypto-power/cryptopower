@@ -41,8 +41,13 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 	exchangeServers := instantSwap.ExchangeServers()
 	// Loop through each exchange server and sync the selected server.
 	for _, exchangeServer := range exchangeServers {
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
 		// Initialize the exchange server.
-		exchangeObject, err := instantSwap.NewExchanageServer(exchangeServer)
+		exchangeObject, err := instantSwap.NewExchangeServer(exchangeServer)
 		if err != nil {
 			log.Errorf("Error instantiating exchange server: %v", err)
 			continue // skip server if there was an error instantiating the server
@@ -71,6 +76,11 @@ func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchan
 
 	attempts := 0
 	for {
+		// Check if instantswap has been shutdown and exit if true.
+		if instantSwap.ctx.Err() != nil {
+			return instantSwap.ctx.Err()
+		}
+
 		attempts++
 		if attempts > maxSyncRetries {
 			return errors.Errorf("failed to sync exchange server [%v] after 3 attempts", exchangeServer)
@@ -176,6 +186,33 @@ func (instantSwap *InstantSwap) publishSynced() {
 
 	for _, notificationListener := range instantSwap.notificationListeners {
 		notificationListener.OnExchangeOrdersSynced()
+	}
+}
+
+func (instantSwap *InstantSwap) publishOrderCreated(order *Order) {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderCreated(order)
+	}
+}
+
+func (instantSwap *InstantSwap) PublishOrderSchedulerStarted() {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderSchedulerStarted()
+	}
+}
+
+func (instantSwap *InstantSwap) PublishOrderSchedulerEnded() {
+	instantSwap.notificationListenersMu.Lock()
+	defer instantSwap.notificationListenersMu.Unlock()
+
+	for _, notificationListener := range instantSwap.notificationListeners {
+		notificationListener.OnOrderSchedulerEnded()
 	}
 }
 

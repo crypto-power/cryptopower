@@ -51,6 +51,7 @@ require (
 )
 
 require (
+	code.cryptopower.dev/group/blockexplorer v0.0.0-20230309085755-e79cfca9224c
 	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2

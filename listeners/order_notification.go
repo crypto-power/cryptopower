@@ -24,6 +24,27 @@ func (on *OrderNotificationListener) OnExchangeOrdersSynced() {
 	})
 }
 
+func (on *OrderNotificationListener) OnOrderCreated(order *instantswap.Order) {
+	on.sendNotification(wallet.Order{
+		Order:       order,
+		OrderStatus: wallet.OrderCreated,
+	})
+}
+
+func (on *OrderNotificationListener) OnOrderSchedulerStarted() {
+	on.sendNotification(wallet.Order{
+		Order:       &instantswap.Order{},
+		OrderStatus: wallet.OrderSchedulerStarted,
+	})
+}
+
+func (on *OrderNotificationListener) OnOrderSchedulerEnded() {
+	on.sendNotification(wallet.Order{
+		Order:       &instantswap.Order{},
+		OrderStatus: wallet.OrderSchedulerEnded,
+	})
+}
+
 func (on *OrderNotificationListener) sendNotification(signal wallet.Order) {
 	if signal.Order != nil {
 		select {

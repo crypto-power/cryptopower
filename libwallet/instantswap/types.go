@@ -3,6 +3,7 @@ package instantswap
 import (
 	"context"
 	"sync"
+	"time"
 
 	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
@@ -54,12 +55,20 @@ type InstantSwap struct {
 	ctx        context.Context
 	cancelSync context.CancelFunc
 
+	SchedulerCtx           context.Context
+	CancelOrderScheduler   context.CancelFunc
+	CancelOrderSchedulerMu sync.RWMutex
+	SchedulerStartTime     time.Time
+
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
 	notificationListeners   map[string]OrderNotificationListener
 }
 
 type OrderNotificationListener interface {
 	OnExchangeOrdersSynced()
+	OnOrderCreated(order *Order)
+	OnOrderSchedulerStarted()
+	OnOrderSchedulerEnded()
 }
 
 type Order struct {
@@ -96,4 +105,17 @@ type Order struct {
 	UserID  string `json:"userId"`  //changenow.io partner requirement
 
 	Signature string `json:"signature"` //evercoin requirement
+}
+
+type SchedulerParams struct {
+	Order Order
+
+	Frequency         time.Duration // in hours
+	BalanceToMaintain float64
+	// MaxDeviationRate is the maximum deviation rate allowed between
+	// the exchange server rate and the market rate. If the deviation
+	// rate is greater than the MaxDeviationRate, the order is not created
+	MaxDeviationRate float64
+
+	SpendingPassphrase string
 }

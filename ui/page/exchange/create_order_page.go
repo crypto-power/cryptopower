@@ -7,11 +7,14 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	"code.cryptopower.dev/group/cryptopower/libwallet"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
@@ -69,12 +72,13 @@ type CreateOrderPage struct {
 	refreshExchangeRateBtn cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
 	settingsButton         cryptomaterial.IconButton
+	iconClickable          *cryptomaterial.Clickable
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 
-	min          float64
-	max          float64
-	exchangeRate float64
+	min                       float64
+	max                       float64
+	exchangeRate, binanceRate float64
 
 	*orderData
 }
@@ -102,6 +106,8 @@ type orderData struct {
 
 	refundAddress      string
 	destinationAddress string
+
+	scheduler *cryptomaterial.Switch
 }
 
 func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
@@ -114,12 +120,15 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
+		binanceRate:      -1,
 		refreshClickable: l.Theme.NewClickable(true),
+		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
+	pg.scheduler = pg.Theme.Switch()
 	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
 	pg.refreshExchangeRateBtn = l.Theme.IconButton(l.Theme.Icons.NavigationRefresh)
 	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
@@ -166,7 +175,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.selectedExchange = es
 
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchanageServer(pg.selectedExchange.Server)
+		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchangeServer(pg.selectedExchange.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -210,6 +219,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	if pg.isExchangeAPIAllowed() {
+		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
 	}
@@ -338,9 +348,42 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
+		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
 	}
 
+	if pg.scheduler.Changed() {
+		if pg.scheduler.IsChecked() {
+
+			orderSettingsModal := newOrderSettingsModalModal(pg.Load, pg.orderData).
+				OnSettingsSaved(func(params *callbackParams) {
+					refundAddress, _ := pg.sourceWalletSelector.SelectedWallet().CurrentAddress(pg.sourceAccountSelector.SelectedAccount().Number)
+					destinationAddress, _ := pg.destinationWalletSelector.SelectedWallet().CurrentAddress(pg.destinationAccountSelector.SelectedAccount().Number)
+					pg.sourceWalletID = pg.sourceWalletSelector.SelectedWallet().GetWalletID()
+					pg.sourceAccountNumber = pg.sourceAccountSelector.SelectedAccount().Number
+					pg.destinationWalletID = pg.destinationWalletSelector.SelectedWallet().GetWalletID()
+					pg.destinationAccountNumber = pg.destinationAccountSelector.SelectedAccount().Number
+
+					pg.refundAddress = refundAddress
+					pg.destinationAddress = destinationAddress
+
+					orderSchedulerModal := newOrderSchedulerModalModal(pg.Load, pg.orderData).
+						OnOrderSchedulerStarted(func() {
+							infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrSchedulerRunning), modal.DefaultClickFunc())
+							pg.ParentWindow().ShowModal(infoModal)
+						}).
+						OnCancel(func() { // needed to satisfy the modal instance
+							pg.scheduler.SetChecked(false)
+						})
+					pg.ParentWindow().ShowModal(orderSchedulerModal)
+				}).
+				OnCancel(func() { // needed to satisfy the modal instance
+					pg.scheduler.SetChecked(false)
+				})
+			pg.ParentWindow().ShowModal(orderSettingsModal)
+		} else {
+			pg.WL.AssetsManager.StopScheduler()
+		}
+	}
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -526,6 +569,57 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										Alignment: layout.Middle,
 									}.Layout(gtx,
 										layout.Rigid(func(gtx C) D {
+											return layout.Flex{
+												Axis: layout.Vertical,
+											}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													title := pg.Theme.Label(values.TextSize16, values.String(values.StrScheduler))
+													title.Color = pg.Theme.Color.GrayText2
+													return title.Layout(gtx)
+												}),
+												layout.Rigid(func(gtx C) D {
+													if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+														return layout.Flex{
+															Axis: layout.Horizontal,
+														}.Layout(gtx,
+															layout.Rigid(func(gtx C) D {
+																return layout.Inset{
+																	Top:   values.MarginPadding5,
+																	Right: values.MarginPadding2,
+																}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
+															}),
+															layout.Rigid(func(gtx C) D {
+																title := pg.Theme.Label(values.TextSize16, pg.WL.AssetsManager.GetShedulerRuntime())
+																title.Color = pg.Theme.Color.GrayText2
+																return title.Layout(gtx)
+															}),
+														)
+
+													}
+
+													return D{}
+												}),
+											)
+
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{
+												Left: values.MarginPadding4,
+											}.Layout(gtx, pg.scheduler.Layout)
+										}),
+										layout.Rigid(func(gtx C) D {
+											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+												return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
+													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+													gtx.Constraints.Min.X = gtx.Constraints.Max.X
+													loader := material.Loader(pg.Theme.Base)
+													loader.Color = pg.Theme.Color.Gray1
+													return loader.Layout(gtx)
+												})
+											}
+											return D{}
+										}),
+										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
 												Right: values.MarginPadding10,
 												Left:  values.MarginPadding10,
@@ -600,7 +694,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							Axis:      layout.Horizontal,
 							Alignment: layout.Middle,
 						}.Layout(gtx,
-							layout.Flexed(0.45, func(gtx C) D {
+							layout.Flexed(0.55, func(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										if pg.amountErrorText != "" {
@@ -634,6 +728,33 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										)
 									}),
 								)
+							}),
+							layout.Flexed(0.45, func(gtx C) D {
+								if pg.fetchingRate {
+									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.materialLoader.Layout(gtx)
+								}
+
+								if pg.exchangeRate != -1 {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
+											txt := pg.Theme.Label(values.TextSize14, exchangeRate)
+											txt.Font.Weight = text.SemiBold
+											txt.Color = pg.Theme.Color.Gray1
+											return txt.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
+											txt := pg.Theme.Label(values.TextSize14, binanceRate)
+											txt.Font.Weight = text.SemiBold
+											txt.Color = pg.Theme.Color.Gray1
+											return txt.Layout(gtx)
+										}),
+									)
+								}
+								return D{}
 							}),
 						)
 					})
@@ -811,7 +932,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	params := api.ExchangeRateRequest{
 		From:   pg.fromCurrency.String(),
 		To:     pg.toCurrency.String(),
-		Amount: 1,
+		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
@@ -821,9 +942,24 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
+	var binanceRate float64
+	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
+	if err != nil {
+		log.Error(err)
+	}
+	if ticker != nil {
+		switch pg.fromCurrency {
+		case libutils.DCRWalletAsset:
+			binanceRate = ticker.LastTradePrice
+		case libutils.BTCWalletAsset:
+			binanceRate = 1 / ticker.LastTradePrice
+		}
+	}
+
 	pg.min = res.Min
 	pg.max = res.Max
-	pg.exchangeRate = res.ExchangeRate
+	pg.exchangeRate = 1 / res.ExchangeRate
+	pg.binanceRate = binanceRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.updateAmount()
@@ -957,9 +1093,17 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 		for {
 			select {
 			case n := <-pg.OrderNotifChan:
-				if n.OrderStatus == wallet.OrderStatusSynced {
+				switch n.OrderStatus {
+				case wallet.OrderStatusSynced:
 					pg.FetchOrders()
 					pg.ParentWindow().Reload()
+				case wallet.OrderCreated:
+					pg.FetchOrders()
+					pg.ParentWindow().Reload()
+				case wallet.OrderSchedulerStarted:
+					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+				case wallet.OrderSchedulerEnded:
+					pg.scheduler.SetChecked(false)
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
