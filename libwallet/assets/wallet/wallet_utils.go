@@ -35,6 +35,9 @@ const (
 
 	// dcrLogFilename defines the dcr log file name
 	dcrLogFilename = "dcr.log"
+
+	// ltcLogFilename defines the ltc log file name
+	ltcLogFilename = "ltc.log"
 )
 
 // InvalidBlock defines invalid height and timestamp returned in case of an error.

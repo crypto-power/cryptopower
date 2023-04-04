@@ -9,6 +9,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
+	ltcW "github.com/ltcsuite/ltcwallet/wallet"
 
 	_ "code.cryptopower.dev/group/cryptopower/libwallet/badgerdb" // initialize badger driver
 )
@@ -30,6 +31,7 @@ type Loader struct {
 type LoaderWallets struct {
 	BTC *btcW.Wallet
 	DCR *dcrW.Wallet
+	LTC *ltcW.Wallet
 }
 
 type WatchOnlyWalletParams struct {

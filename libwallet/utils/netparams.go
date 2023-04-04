@@ -6,6 +6,7 @@ import (
 
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
+	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -52,6 +53,7 @@ func ToNetworkType(str string) NetworkType {
 type ChainsParams struct {
 	DCR *dcrcfg.Params
 	BTC *btccfg.Params
+	LTC *ltccfg.Params
 }
 
 var (
@@ -63,6 +65,10 @@ var (
 	BTCtestnetParams = &btccfg.TestNet3Params
 	BTCSimnetParams  = &btccfg.SimNetParams
 	BTCRegnetParams  = &btccfg.RegressionNetParams
+	LTCmainnetParams = &ltccfg.MainNetParams
+	LTCtestnetParams = &ltccfg.TestNet4Params
+	LTCSimnetParams  = &ltccfg.SimNetParams
+	LTCRegnetParams  = &ltccfg.RegressionNetParams
 )
 
 // DCRChainParams returns the network parameters from the DCR chain provided
@@ -99,6 +105,23 @@ func BTCChainParams(netType NetworkType) (*btccfg.Params, error) {
 	}
 }
 
+// LTCChainParams returns the network parameters from the LTC chain provided
+// a network type is given.
+func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
+	switch netType {
+	case Mainnet:
+		return LTCmainnetParams, nil
+	case Testnet:
+		return LTCtestnetParams, nil
+	case Simulation:
+		return LTCSimnetParams, nil
+	case Regression:
+		return LTCRegnetParams, nil
+	default:
+		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
+	}
+}
+
 // GetChainParams returns the network parameters of a chain provided its
 // asset type and network type.
 func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, error) {
@@ -115,6 +138,12 @@ func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, er
 			return nil, err
 		}
 		return &ChainsParams{DCR: params}, nil
+	case LTCWalletAsset:
+		params, err := LTCChainParams(netType)
+		if err != nil {
+			return nil, err
+		}
+		return &ChainsParams{LTC: params}, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrAssetUnknown, assetType)
 	}

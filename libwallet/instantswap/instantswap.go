@@ -71,9 +71,9 @@ func (instantSwap *InstantSwap) updateOrder(order *Order) error {
 	return instantSwap.db.Update(order)
 }
 
-// NewExchanageServer sets up a new exchange server for use.
-func (instantSwap *InstantSwap) NewExchanageServer(exchangeServer ExchangeServer) (instantswap.IDExchange, error) {
-	const op errors.Op = "instantSwap.NewExchanageServer"
+// NewExchangeServer sets up a new exchange server for use.
+func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer) (instantswap.IDExchange, error) {
+	const op errors.Op = "instantSwap.NewExchangeServer"
 
 	exchange, err := instantswap.NewExchange(exchangeServer.Server.ToString(), instantswap.ExchangeConfig{
 		Debug:       exchangeServer.Config.Debug,
@@ -184,6 +184,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 	}
 
 	instantSwap.saveOrder(order)
+	instantSwap.publishOrderCreated(order)
 
 	return order, nil
 }
