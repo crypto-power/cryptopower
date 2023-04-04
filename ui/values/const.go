@@ -5,4 +5,5 @@ const (
 	StakingDropdownGroup
 	ProposalDropdownGroup
 	ConsensusDropdownGroup
+	OrderStatusDropdownGroup
 )

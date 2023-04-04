@@ -75,7 +75,6 @@ type CreateOrderPage struct {
 	iconClickable          *cryptomaterial.Clickable
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
-	statusDropdown         *cryptomaterial.DropDown
 	viewAllButton          cryptomaterial.Button
 
 	min                       float64
@@ -144,7 +143,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.viewAllButton.Font.Weight = text.SemiBold
 	pg.viewAllButton.Color = l.Theme.Color.Primary
 	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
-	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().Background
+	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().SurfaceHighlight
 	pg.viewAllButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.GrayText4)
 
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -200,14 +199,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		}()
 	})
 
-	pg.statusDropdown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
-		{Text: api.OrderStatusWaitingForDeposit.String()},
-		{Text: api.OrderStatusDepositReceived.String()},
-		{Text: api.OrderStatusNew.String()},
-		{Text: api.OrderStatusCompleted.String()},
-		{Text: api.OrderStatusExpired.String()},
-	}, values.ConsensusDropdownGroup, 0)
-
 	return pg
 }
 
@@ -238,9 +229,6 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
-	for pg.statusDropdown.Changed() {
-		go pg.fetchOrders(false)
-	}
 
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
@@ -829,7 +817,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
+										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, len(pg.orderItems)))
 										txt.Font.Weight = text.SemiBold
 										return txt.Layout(gtx)
 									}),
@@ -880,11 +868,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 													)
 												}),
 												layout.Rigid(func(gtx C) D {
-													return layout.E.Layout(gtx, pg.viewAllButton.Layout)
-												}),
-												// layout.Rigid(func(gtx C) D {
+													return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 
-												// }),
+														return layout.E.Layout(gtx, pg.viewAllButton.Layout)
+													})
+												}),
 											)
 										}
 										return layout.E.Layout(gtx, body)
@@ -895,8 +883,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 									return layout.Stack{}.Layout(gtx,
 										layout.Expanded(func(gtx C) D {
-											return layout.Inset{
-											}.Layout(gtx, pg.layoutHistory)
+											return layout.Inset{}.Layout(gtx, pg.layoutHistory)
 										}),
 									)
 								})
@@ -910,25 +897,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
-	selectedStatus := pg.statusDropdown.Selected()
-	var statusFilter api.Status
-	switch selectedStatus {
-	case api.OrderStatusWaitingForDeposit.String():
-		statusFilter = api.OrderStatusWaitingForDeposit
-	case api.OrderStatusDepositReceived.String():
-		statusFilter = api.OrderStatusDepositReceived
-	case api.OrderStatusNew.String():
-		statusFilter = api.OrderStatusNew
-	case api.OrderStatusRefunded.String():
-		statusFilter = api.OrderStatusRefunded
-	case api.OrderStatusExpired.String():
-		statusFilter = api.OrderStatusExpired
-	case api.OrderStatusCompleted.String():
-		statusFilter = api.OrderStatusCompleted
-	default:
-		statusFilter = api.OrderStatusUnknown
-	}
-
 	if pg.loading {
 		return
 	}
@@ -938,14 +906,14 @@ func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
 	pg.loadedAll = false
 	pg.loading = true
 
-	limit := 10
+	limit := 3
 
 	offset := 0
 	if loadMore {
 		offset = len(pg.orderItems)
 	}
 
-	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), statusFilter, true)
+	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true)
 	if tempOrders == nil {
 		pg.orderItems = nil
 		return
@@ -1284,7 +1252,7 @@ func (pg *CreateOrderPage) onScrollChangeListener() {
 	// is to check if the page is still scrollable.
 	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
 		if !pg.loadedAll {
-			pg.fetchOrders(true)
+			pg.fetchOrders(false)
 		}
 	}
 }

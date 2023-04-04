@@ -25,7 +25,6 @@ const (
 	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93"
 	// API_KEY_GODEX is the godex API key.
 	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
-
 )
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {

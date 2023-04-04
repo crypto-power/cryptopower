@@ -43,14 +43,9 @@ type OrderHistoryPage struct {
 
 	backButton cryptomaterial.IconButton
 
-	createOrderBtn         cryptomaterial.Button
-	swapButton             cryptomaterial.IconButton
-	refreshExchangeRateBtn cryptomaterial.IconButton
-	infoButton             cryptomaterial.IconButton
-	settingsButton         cryptomaterial.IconButton
-	refreshClickable       *cryptomaterial.Clickable
-	refreshIcon            *cryptomaterial.Image
-	statusDropdown         *cryptomaterial.DropDown
+	refreshClickable *cryptomaterial.Clickable
+	refreshIcon      *cryptomaterial.Image
+	statusDropdown   *cryptomaterial.DropDown
 
 	loading, initialLoadingDone, loadedAll bool
 }
@@ -68,20 +63,10 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
-	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
-	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
-	pg.infoButton.Size = values.MarginPadding18
-	buttonInset := layout.UniformInset(values.MarginPadding0)
-	pg.settingsButton.Inset, pg.infoButton.Inset,
-		pg.swapButton.Inset, pg.refreshExchangeRateBtn.Inset = buttonInset, buttonInset, buttonInset, buttonInset
-
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	pg.ordersList = pg.Theme.NewClickableList(layout.Vertical)
 	pg.ordersList.IsShadowEnabled = true
-
-	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
-	pg.createOrderBtn.SetEnabled(false)
 
 	pg.statusDropdown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: api.OrderStatusWaitingForDeposit.String()},
@@ -89,7 +74,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		{Text: api.OrderStatusNew.String()},
 		{Text: api.OrderStatusCompleted.String()},
 		{Text: api.OrderStatusExpired.String()},
-	}, values.ConsensusDropdownGroup, 0)
+	}, values.OrderStatusDropdownGroup, 0)
 
 	return pg
 }
@@ -113,7 +98,7 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
 	for pg.statusDropdown.Changed() {
-		go pg.fetchOrders(false)
+		pg.fetchOrders(false)
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
@@ -133,7 +118,7 @@ func (pg *OrderHistoryPage) Layout(gtx C) D {
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
-			Title:      "Order History",
+			Title:      values.String(values.StrOrderHistory),
 			BackButton: pg.backButton,
 			Back: func() {
 				pg.ParentNavigator().CloseCurrentPage()
@@ -286,7 +271,7 @@ func (pg *OrderHistoryPage) fetchOrders(loadMore bool) {
 		offset = len(pg.orderItems)
 	}
 
-	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), statusFilter, true)
+	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true, statusFilter)
 	if tempOrders == nil {
 		pg.orderItems = nil
 		return
@@ -321,6 +306,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 	if len(pg.orderItems) == 0 {
 		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
+
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
@@ -335,10 +321,9 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 							Padding:     layout.UniformInset(values.MarginPadding15),
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
-						}.
-							Layout2(gtx, func(gtx C) D {
-								return components.OrderItemWidget(gtx, pg.Load, pg.orderItems[i])
-							})
+						}.Layout2(gtx, func(gtx C) D {
+							return components.OrderItemWidget(gtx, pg.Load, pg.orderItems[i])
+						})
 					})
 				})
 			})
