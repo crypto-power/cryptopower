@@ -752,7 +752,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
 									Left:  values.MarginPadding12,
-									Right: values.MarginPadding24,
+									Right: values.MarginPadding12,
 								}.Layout(gtx, func(gtx C) D {
 									return mp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding12)
 								})
