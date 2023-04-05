@@ -18,9 +18,9 @@ type (
 const (
 	LogFileName = "libwallet.log"
 
-	// ETHTokenAsset AssetType = "ETH"
 	BTCWalletAsset AssetType = "BTC"
 	DCRWalletAsset AssetType = "DCR"
+	LTCWalletAsset AssetType = "LTC"
 
 	fullDateformat  = "2006-01-02 15:04:05"
 	dateOnlyFormat  = "2006-01-02"
@@ -78,6 +78,8 @@ func (str AssetType) ToFull() string {
 		return "Bitcoin"
 	case DCRWalletAsset:
 		return "Decred"
+	case LTCWalletAsset:
+		return "Litecoin"
 	default:
 		return "Unknown"
 	}

@@ -521,6 +521,8 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 			return w.DCR.WatchingOnly()
 		case utils.BTCWalletAsset:
 			return w.BTC.Manager.WatchOnly()
+		case utils.LTCWalletAsset:
+			return w.LTC.Manager.WatchOnly()
 		}
 	}
 
@@ -546,6 +548,8 @@ func (wallet *Wallet) WalletOpened() bool {
 		return wallet.Internal().BTC != nil
 	case utils.DCRWalletAsset:
 		return wallet.Internal().DCR != nil
+	case utils.LTCWalletAsset:
+		return wallet.Internal().LTC != nil
 	default:
 		return false
 	}
@@ -563,6 +567,8 @@ func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 	case utils.DCRWalletAsset:
 		ctx, _ := wallet.ShutdownContextWithCancel()
 		err = loadedWallet.DCR.Unlock(ctx, []byte(privPass), nil)
+	case utils.LTCWalletAsset:
+		err = loadedWallet.LTC.Unlock([]byte(privPass), nil)
 	}
 
 	if err != nil {
@@ -584,6 +590,8 @@ func (wallet *Wallet) LockWallet() {
 			loadedWallet.BTC.Lock()
 		case utils.DCRWalletAsset:
 			loadedWallet.DCR.Lock()
+		case utils.LTCWalletAsset:
+			loadedWallet.LTC.Lock()
 		}
 	}
 }
@@ -599,6 +607,8 @@ func (wallet *Wallet) IsLocked() bool {
 		return loadedWallet.BTC.Locked()
 	case utils.DCRWalletAsset:
 		return loadedWallet.DCR.Locked()
+	case utils.LTCWalletAsset:
+		return loadedWallet.LTC.Locked()
 	default:
 		return false
 	}
@@ -666,6 +676,8 @@ func (wallet *Wallet) changePrivatePassphrase(oldPass []byte, newPass []byte) (e
 	case utils.DCRWalletAsset:
 		ctx, _ := wallet.ShutdownContextWithCancel()
 		err = wallet.Internal().DCR.ChangePrivatePassphrase(ctx, oldPass, newPass)
+	case utils.LTCWalletAsset:
+		err = wallet.Internal().LTC.ChangePrivatePassphrase(oldPass, newPass)
 	}
 	if err != nil {
 		return utils.TranslateError(err)
@@ -711,6 +723,8 @@ func (wallet *Wallet) LogFile() string {
 		return filepath.Join(wallet.logDir, btcLogFilename)
 	case utils.DCRWalletAsset:
 		return filepath.Join(wallet.logDir, dcrLogFilename)
+	case utils.LTCWalletAsset:
+		return filepath.Join(wallet.logDir, ltcLogFilename)
 	}
 	return ""
 }

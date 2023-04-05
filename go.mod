@@ -38,7 +38,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
-	github.com/nxadm/tail v1.4.4
+	github.com/nxadm/tail v1.4.8
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
 	github.com/yeqown/go-qrcode v1.5.1
@@ -60,6 +60,10 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/decred/dcrd/dcrutil/v3 v3.0.0
 	github.com/lightninglabs/neutrino v0.14.2
+	github.com/ltcsuite/ltcd v0.22.1-beta
+	github.com/ltcsuite/ltcd/ltcutil v1.1.0
+	github.com/ltcsuite/ltcwallet v0.13.1
+	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 )
 
@@ -102,7 +106,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-text/typesetting v0.0.0-20221214153724-0399769901d5 // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
@@ -122,6 +126,16 @@ require (
 	github.com/lightningnetwork/lnd/queue v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.0.2 // indirect
+	github.com/ltcsuite/lnd/clock v0.0.0-20200822020009-1a001cbb895a // indirect
+	github.com/ltcsuite/lnd/queue v1.0.3 // indirect
+	github.com/ltcsuite/lnd/ticker v1.0.1 // indirect
+	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0 // indirect
+	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.0-1 // indirect
+	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0 // indirect
+	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0 // indirect
+	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0 // indirect
+	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0 // indirect
+	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/pkg/errors v0.9.1 // indirect
