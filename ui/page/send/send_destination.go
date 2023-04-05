@@ -14,6 +14,11 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
+const (
+	sendToAddress int = 1
+	SendToWallet  int = 2
+)
+
 type destination struct {
 	*load.Load
 
@@ -56,21 +61,19 @@ func newSendDestination(l *load.Load) *destination {
 	return dst
 }
 
+// destinationAddress validates the destination address obtained from the provided
+// raw address or the selected account address.
 func (dst *destination) destinationAddress() (string, error) {
 	if dst.sendToAddress {
-		valid, address := dst.validateDestinationAddress()
-		if valid {
-			return address, nil
-		}
-
-		return "", fmt.Errorf(values.String(values.StrInvalidAddress))
+		return dst.validateDestinationAddress()
 	}
+
 	destinationAccount := dst.destinationAccountSelector.SelectedAccount()
 	if destinationAccount == nil {
 		return "", fmt.Errorf(values.String(values.StrInvalidAddress))
 	}
-	wal := dst.WL.AssetsManager.WalletWithID(destinationAccount.WalletID)
 
+	wal := dst.WL.AssetsManager.WalletWithID(destinationAccount.WalletID)
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 
@@ -82,31 +85,41 @@ func (dst *destination) destinationAccount() *sharedW.Account {
 	return dst.destinationAccountSelector.SelectedAccount()
 }
 
-func (dst *destination) validateDestinationAddress() (bool, string) {
+// validateDestinationAddress checks if raw address provided as destination is
+// valid.
+func (dst *destination) validateDestinationAddress() (string, error) {
 	address := dst.destinationAddressEditor.Editor.Text()
 	address = strings.TrimSpace(address)
 
-	if len(address) == 0 {
-		dst.destinationAddressEditor.SetError("")
-		return false, address
+	if address == "" {
+		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
 	if dst.WL.SelectedWallet.Wallet.IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
-		return true, address
+		return address, nil
 	}
 
-	dst.destinationAddressEditor.SetError(values.String(values.StrInvalidAddress))
-	return false, address
+	return address, fmt.Errorf(values.String(values.StrInvalidAddress))
 }
 
 func (dst *destination) validate() bool {
 	if dst.sendToAddress {
-		validAddress, _ := dst.validateDestinationAddress()
-		return validAddress
+		_, err := dst.validateDestinationAddress()
+		// if err equals to nil then the address is valid.
+		return err == nil
 	}
 
 	return true
+}
+
+func (dst *destination) setError(errMsg string) {
+	switch dst.accountSwitch.SelectedIndex() {
+	case SendToWallet:
+		dst.destinationAccountSelector.SetError(errMsg)
+	default: // SendToAddress option
+		dst.destinationAddressEditor.SetError(errMsg)
+	}
 }
 
 func (dst *destination) clearAddressInput() {
@@ -117,12 +130,12 @@ func (dst *destination) clearAddressInput() {
 func (dst *destination) handle() {
 	dst.selectedIndex = dst.accountSwitch.SelectedIndex()
 	if dst.selectedIndex == 0 {
-		dst.selectedIndex = 1 // default value is 1
+		dst.selectedIndex = sendToAddress // default value is sendToAddress option
 	}
 
-	sendToAddress := dst.accountSwitch.SelectedIndex() == 1
-	if sendToAddress != dst.sendToAddress { // switch changed
-		dst.sendToAddress = sendToAddress
+	isSendToAddress := dst.accountSwitch.SelectedIndex() == sendToAddress
+	if isSendToAddress != dst.sendToAddress { // switch changed
+		dst.sendToAddress = isSendToAddress
 		dst.addressChanged()
 	}
 

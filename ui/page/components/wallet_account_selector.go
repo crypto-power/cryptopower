@@ -9,6 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -30,6 +31,8 @@ type WalletAndAccountSelector struct {
 
 	totalBalance string
 	changed      bool
+
+	errorLabel cryptomaterial.Label
 }
 
 type selectorModal struct {
@@ -62,6 +65,7 @@ type selectorModal struct {
 func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *WalletAndAccountSelector {
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
+		errorLabel:         l.Theme.ErrorLabel(""),
 	}
 
 	ws.selectorModal = newSelectorModal(l, assetType...).
@@ -235,58 +239,86 @@ func (ws *WalletAndAccountSelector) SelectedWallet() *load.WalletMapping {
 	return ws.selectedWallet
 }
 
+func (ws *WalletAndAccountSelector) SetError(errMsg string) {
+	ws.errorLabel.Text = errMsg
+}
+
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 	ws.Handle(window)
 
-	return cryptomaterial.LinearLayout{
-		Width:   cryptomaterial.MatchParent,
-		Height:  cryptomaterial.WrapContent,
-		Padding: layout.UniformInset(values.MarginPadding12),
-		Border: cryptomaterial.Border{
-			Width:  values.MarginPadding2,
-			Color:  ws.Theme.Color.Gray2,
-			Radius: cryptomaterial.Radius(8),
-		},
-		Clickable: ws.Clickable(),
-	}.Layout(gtx,
-		layout.Rigid(ws.setWalletLogo),
-		layout.Rigid(func(gtx C) D {
-			if ws.accountSelector {
-				if ws.selectedAccount == nil {
-					return ws.Theme.Body1("").Layout(gtx)
-				}
-				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
-					layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
-				)
-			}
-			return ws.Theme.Body1(ws.SelectedWallet().GetWalletName()).Layout(gtx)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						if ws.accountSelector {
-							if ws.selectedAccount == nil {
-								return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)
+	borderColor := ws.Theme.Color.Gray2
+	if ws.errorLabel.Text != "" {
+		borderColor = ws.errorLabel.Color
+	}
+
+	return layout.Stack{}.Layout(gtx,
+		layout.Stacked(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:   cryptomaterial.MatchParent,
+						Height:  cryptomaterial.WrapContent,
+						Padding: layout.UniformInset(values.MarginPadding12),
+						Border: cryptomaterial.Border{
+							Width:  values.MarginPadding2,
+							Color:  borderColor,
+							Radius: cryptomaterial.Radius(8),
+						},
+						Clickable: ws.Clickable(),
+					}.Layout(gtx,
+						layout.Rigid(ws.setWalletLogo),
+						layout.Rigid(func(gtx C) D {
+							if ws.accountSelector {
+								if ws.selectedAccount == nil {
+									return ws.Theme.Body1("").Layout(gtx)
+								}
+								return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
+									layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
+								)
 							}
-							return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
-						}
-						selectWallet := ws.SelectedWallet()
-						totalBal, _ := walletBalance(selectWallet)
-						return ws.Theme.Body1(selectWallet.ToAmount(totalBal).String()).Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
+							return ws.Theme.Body1(ws.SelectedWallet().GetWalletName()).Layout(gtx)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Flex{}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										if ws.accountSelector {
+											if ws.selectedAccount == nil {
+												return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)
+											}
+											return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
+										}
+										selectWallet := ws.SelectedWallet()
+										totalBal, _ := walletBalance(selectWallet)
+										return ws.Theme.Body1(selectWallet.ToAmount(totalBal).String()).Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										inset := layout.Inset{
+											Left: values.MarginPadding15,
+										}
+										return inset.Layout(gtx, func(gtx C) D {
+											ic := cryptomaterial.NewIcon(ws.Theme.Icons.DropDownIcon)
+											ic.Color = ws.Theme.Color.Gray1
+											return ic.Layout(gtx, values.MarginPadding20)
+										})
+									}),
+								)
+							})
+						}),
+					)
+				}), layout.Rigid(func(gtx C) D {
+					if ws.errorLabel.Text != "" {
 						inset := layout.Inset{
-							Left: values.MarginPadding15,
+							Top:  unit.Dp(2),
+							Left: unit.Dp(5),
 						}
 						return inset.Layout(gtx, func(gtx C) D {
-							ic := cryptomaterial.NewIcon(ws.Theme.Icons.DropDownIcon)
-							ic.Color = ws.Theme.Color.Gray1
-							return ic.Layout(gtx, values.MarginPadding20)
+							return ws.errorLabel.Layout(gtx)
 						})
-					}),
-				)
-			})
+					}
+					return layout.Dimensions{}
+				}),
+			)
 		}),
 	)
 }
