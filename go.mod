@@ -57,6 +57,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
+	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/decred/dcrd/dcrutil/v3 v3.0.0
 	github.com/lightninglabs/neutrino v0.14.2

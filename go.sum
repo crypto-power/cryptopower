@@ -313,6 +313,8 @@ github.com/dchest/siphash v1.2.1/go.mod h1:q+IRvb2gOSrUnYoPqHiyHXS0FOBBOdl6tONBl
 github.com/dchest/siphash v1.2.2/go.mod h1:q+IRvb2gOSrUnYoPqHiyHXS0FOBBOdl6tONBlVnOnt4=
 github.com/dchest/siphash v1.2.3 h1:QXwFc8cFOR2dSa/gE6o/HokBMWtLUaNDVd+22aKHeEA=
 github.com/dchest/siphash v1.2.3/go.mod h1:0NvQU092bT0ipiFN++/rXm69QG9tVxLAlQHIXMPAkHc=
+github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead h1:pblpm/kKhsgJTDdJmolLYkQO2jsRRr9bcIoKaHV7cpE=
+github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead/go.mod h1:dWndR5wa89ZDMGbiizpTvVDsck+GWOVhDgGo0GZmMxI=
 github.com/decred/base58 v1.0.0/go.mod h1:LLY1p5e3g91byL/UO1eiZaYd+uRoVRarybgcoymu9Ks=
 github.com/decred/base58 v1.0.1/go.mod h1:H2ENcsJjye1G7CbRa67kV9OFaui0LGr56ntKKoY5g9c=
 github.com/decred/base58 v1.0.3/go.mod h1:pXP9cXCfM2sFLb2viz2FNIdeMWmZDBKG3ZBYbiSM78E=

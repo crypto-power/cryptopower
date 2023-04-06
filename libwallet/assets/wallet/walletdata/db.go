@@ -11,6 +11,7 @@ import (
 const (
 	DCRDbName = "walletData.db"
 	BTCDBName = "neutrino.db"
+	LTCDBName = "neutrino.db"
 	OldDbName = "tx.db"
 
 	TxBucketName = "TxIndexInfo"
@@ -22,6 +23,8 @@ const (
 )
 
 type DB struct {
+	BTC            *BTCDB
+	LTC            *LTCDB
 	walletDataDB   *storm.DB
 	ticketMaturity int32
 	ticketExpiry   int32
@@ -50,6 +53,12 @@ func Initialize(dbPath string, txData interface{}) (*DB, error) {
 	}
 
 	return &DB{
+		BTC: &BTCDB{
+			Bolt: walletDataDB.Bolt,
+		},
+		LTC: &LTCDB{
+			Bolt: walletDataDB.Bolt,
+		},
 		walletDataDB: walletDataDB,
 		Path:         dbPath,
 	}, nil
@@ -65,6 +74,11 @@ func (db *DB) SetTicketMaturity(val int32) *DB {
 func (db *DB) SetTicketExpiry(val int32) *DB {
 	db.ticketExpiry = val
 	return db
+}
+
+// Close closes the wallet data database.
+func (db *DB) Close() error {
+	return db.walletDataDB.Close()
 }
 
 func openOrCreateDB(dbPath string) (*storm.DB, error) {
