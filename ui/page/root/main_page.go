@@ -769,6 +769,11 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 										return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
 									}
 									return mp.Theme.Icons.BTC.Layout24dp(gtx)
+								case libutils.LTCWalletAsset:
+									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+										return mp.Theme.Icons.LtcWatchOnly.Layout24dp(gtx)
+									}
+									return mp.Theme.Icons.LTC.Layout24dp(gtx)
 								default:
 									return D{}
 								}

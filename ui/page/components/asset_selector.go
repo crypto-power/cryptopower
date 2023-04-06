@@ -96,6 +96,8 @@ func (ats *AssetTypeSelector) setAssetTypeIcon(assetType utils.AssetType) *crypt
 		return ats.Theme.Icons.DecredLogo
 	case utils.BTCWalletAsset:
 		return ats.Theme.Icons.BTC
+	case utils.LTCWalletAsset:
+		return ats.Theme.Icons.LTC
 	default:
 		return ats.Theme.Icons.AddExchange
 	}

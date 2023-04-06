@@ -357,6 +357,11 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType
 						return pg.Theme.Icons.DcrWatchOnly.Layout36dp(gtx)
 					}
 					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding30)
+				case libutils.LTCWalletAsset:
+					if isWatchingOnlyWallet {
+						return pg.Theme.Icons.LtcWatchOnly.Layout36dp(gtx)
+					}
+					return pg.Theme.Icons.LTC.LayoutSize(gtx, values.MarginPadding30)
 				}
 				return D{}
 			})
