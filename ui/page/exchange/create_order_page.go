@@ -80,6 +80,8 @@ type CreateOrderPage struct {
 	max                       float64
 	exchangeRate, binanceRate float64
 
+	errMsg string
+
 	*orderData
 }
 
@@ -202,7 +204,7 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	if pg.isExchangeAPIAllowed() {
+	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
@@ -469,15 +471,40 @@ func (pg *CreateOrderPage) swapCurrency() {
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
+	pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
 	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+}
+
+// isMultipleAssetTypeWalletAvailable checks if multiple asset types are available
+// for exchange funtionality to run smoothly. Otherwise exchange functionality is
+// disable till different asset type wallets are created.
+func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
+	allWallets := len(pg.WL.AssetsManager.AllWallets())
+	btcWallets := len(pg.WL.AssetsManager.AllBTCWallets())
+	dcrWallets := len(pg.WL.AssetsManager.AllDCRWallets())
+	if allWallets == 0 {
+		// no wallets exist
+		return false
+	}
+
+	switch {
+	case allWallets > btcWallets && btcWallets > 0:
+		// BTC and some other wallets exists
+	case allWallets > dcrWallets && dcrWallets > 0:
+		// DCR and some other wallets exists
+	default:
+		return false
+	}
+
+	pg.errMsg = values.String(values.StrMultipleAssetsRequired)
+	return true
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isExchangeAPIAllowed() {
+	if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg)
 		})
 	}
 
@@ -491,7 +518,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 			},
 			Body: func(gtx C) D {
 				gtxCopy := gtx
-				if !pg.isExchangeAPIAllowed() {
+				if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
 					gtxCopy = gtx.Disabled()
 				}
 				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
@@ -973,8 +1000,16 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	} else {
 		// New exchange configuration will be generated using the set asset types
 		// since none existed before.
-		pg.fromCurrency = libutils.DCRWalletAsset
-		pg.toCurrency = libutils.BTCWalletAsset
+		// It two distinct asset type wallet don't exist execution does get here.
+		wals := pg.WL.AssetsManager.AllWallets()
+		pg.fromCurrency = wals[0].GetAssetType()
+
+		for _, w := range wals {
+			if w.GetAssetType() != pg.fromCurrency {
+				pg.toCurrency = w.GetAssetType()
+				break
+			}
+		}
 	}
 
 	// Source wallet picker
