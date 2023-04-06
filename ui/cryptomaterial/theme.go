@@ -197,6 +197,10 @@ func Fill(gtx layout.Context, col color.NRGBA) layout.Dimensions {
 	return fill(gtx, col)
 }
 
+func FillMax(gtx layout.Context, col color.NRGBA, radius int) layout.Dimensions {
+	return fillMax(gtx, col, Radius(radius))
+}
+
 // mulAlpha scales all color components by alpha/255.
 func mulAlpha(c color.NRGBA, alpha uint8) color.NRGBA {
 	a := uint16(alpha)

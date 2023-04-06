@@ -471,14 +471,18 @@ func (pg *CreateOrderPage) swapCurrency() {
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+	isAllowed := pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+	if !isAllowed {
+		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+	}
+	return isAllowed
 }
 
 // isMultipleAssetTypeWalletAvailable checks if multiple asset types are available
 // for exchange funtionality to run smoothly. Otherwise exchange functionality is
 // disable till different asset type wallets are created.
 func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
+	pg.errMsg = values.String(values.StrMinimumAssetType)
 	allWallets := len(pg.WL.AssetsManager.AllWallets())
 	btcWallets := len(pg.WL.AssetsManager.AllBTCWallets())
 	dcrWallets := len(pg.WL.AssetsManager.AllDCRWallets())
@@ -495,8 +499,7 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 	default:
 		return false
 	}
-
-	pg.errMsg = values.String(values.StrMultipleAssetsRequired)
+	pg.errMsg = ""
 	return true
 }
 
@@ -956,15 +959,15 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	if ticker != nil {
 		switch pg.fromCurrency {
 		case libutils.DCRWalletAsset:
-			binanceRate = ticker.LastTradePrice
-		case libutils.BTCWalletAsset:
 			binanceRate = 1 / ticker.LastTradePrice
+		case libutils.BTCWalletAsset:
+			binanceRate = ticker.LastTradePrice
 		}
 	}
 
 	pg.min = res.Min
 	pg.max = res.Max
-	pg.exchangeRate = 1 / res.ExchangeRate
+	pg.exchangeRate = res.ExchangeRate
 	pg.binanceRate = binanceRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
@@ -1061,7 +1064,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrAccount)).
 		AccountValidator(func(account *sharedW.Account) bool {
-			return account.Number != load.MaxInt32 && !sourceWallet.IsWatchingOnlyWallet()
+			return account.Number != load.MaxInt32
 		})
 
 	if destinationAccount != -1 {

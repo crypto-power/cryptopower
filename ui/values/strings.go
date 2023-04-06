@@ -452,7 +452,6 @@ const (
 	StrMore                            = "more"
 	StrMoveFundsFrmDefaultToUnmixed    = "moveFundsFrmDefaultToUnmixed"
 	StrMoveToUnmixed                   = "moveToUnmixed"
-	StrMultipleAssetsRequired          = "multipleAssetsRequired"
 	StrMultipleMixerAccNeeded          = "multipleMixerAccNeeded"
 	StrMyAcct                          = "myAcct"
 	StrNConfirmations                  = "nConfirmations"
