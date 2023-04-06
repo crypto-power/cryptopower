@@ -43,12 +43,7 @@ const (
 	TicketBuyerAccountConfigKey = "tb_account_number"
 	TicketBuyerATMConfigKey     = "tb_amount_to_maintain"
 
-	ExchangeSourceAssetTypeConfigKey      = "exchange_source_asset_type"
-	ExchangeDestinationAssetTypeConfigKey = "exchange_destination_asset_type"
-	ExchangeSourceWalletConfigKey         = "exchange_source_wallet"
-	ExchangeDestinationWalletConfigKey    = "exchange_destination_wallet"
-	ExchangeSourceAccountConfigKey        = "exchange_source_account"
-	ExchangeDestinationAccountConfigKey   = "exchange_destination_account"
+	ExchangeSourceDstnTypeConfigKey = "exchange_source_destination_key"
 
 	HideBalanceConfigKey             = "hide_balance"
 	AutoSyncConfigKey                = "autoSync"
