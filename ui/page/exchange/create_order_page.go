@@ -985,6 +985,10 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	sourceAccount, destinationAccount := int32(-1), int32(-1)
 	var sourceWallet, destinationWallet *load.WalletMapping
 
+	// isConfigUpdateRequired is set to true when updating the configuration is
+	// necessary.
+	var isConfigUpdateRequired bool
+
 	if pg.WL.AssetsManager.IsExchangeConfigSet() {
 		// Use preset exchange configuration.
 		exchangeConfig := pg.WL.AssetsManager.GetExchangeConfig()
@@ -1020,6 +1024,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		Title(values.String(values.StrSource))
 
 	if sourceWallet == nil {
+		isConfigUpdateRequired = true
 		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
 		sourceWallet = pg.sourceWalletSelector.SelectedWallet()
 	} else {
@@ -1042,6 +1047,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	}
 
 	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
 		pg.sourceAccountSelector.SelectFirstValidAccount(sourceWallet)
 	}
 
@@ -1054,6 +1060,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		Title(values.String(values.StrDestination))
 
 	if destinationWallet == nil {
+		isConfigUpdateRequired = true
 		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
 		destinationWallet = pg.destinationWalletSelector.SelectedWallet()
 	} else {
@@ -1076,6 +1083,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	}
 
 	if pg.destinationAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
 		pg.destinationAccountSelector.SelectFirstValidAccount(destinationWallet)
 	}
 
@@ -1083,7 +1091,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
-	if !pg.WL.AssetsManager.IsExchangeConfigSet() {
+	if isConfigUpdateRequired {
 		pg.updateExchangeConfig()
 	}
 
@@ -1096,8 +1104,8 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 	configInfo := sharedW.ExchangeConfig{
 		SourceAsset:              pg.fromCurrency,
 		DestinationAsset:         pg.toCurrency,
-		SourceWalletID:           int32(pg.sourceAccountSelector.SelectedWallet().GetWalletID()),
-		DestinationWalletID:      int32(pg.destinationAccountSelector.SelectedWallet().GetWalletID()),
+		SourceWalletID:           int32(pg.sourceWalletSelector.SelectedWallet().GetWalletID()),
+		DestinationWalletID:      int32(pg.destinationWalletSelector.SelectedWallet().GetWalletID()),
 		SourceAccountNumber:      pg.sourceAccountSelector.SelectedAccount().Number,
 		DestinationAccountNumber: pg.destinationAccountSelector.SelectedAccount().Number,
 	}
