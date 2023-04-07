@@ -652,10 +652,6 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 			case sharedW.Asset:
 				tb, sb := walletBalance(t)
 				totalBal = t.ToAmount(tb).String()
-				if t.IsWatchingOnlyWallet() {
-					// watch only wallet do not have spendable balances.
-					sb = 0
-				}
 				spendableBal = t.ToAmount(sb).String()
 				name = t.GetWalletName()
 			}
