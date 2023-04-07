@@ -433,7 +433,7 @@ func (asset *DCRAsset) GetBestBlock() *sharedW.BlockInfo {
 }
 
 func (asset *DCRAsset) GetBestBlockHeight() int32 {
-	if asset.Internal() == nil {
+	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block height without a loaded asset.")
 		return sharedW.InvalidBlock.Height
@@ -444,7 +444,7 @@ func (asset *DCRAsset) GetBestBlockHeight() int32 {
 }
 
 func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
-	if asset.Internal() == nil {
+	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block timestamp without a loaded asset.")
 		return sharedW.InvalidBlock.Timestamp
@@ -462,6 +462,10 @@ func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
 }
 
 func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
+	if !asset.WalletOpened() {
+		return utils.ErrDCRNotInitialized
+	}
+
 	netBackend, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return errors.E(utils.ErrNotConnected)

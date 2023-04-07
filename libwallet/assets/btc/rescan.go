@@ -37,6 +37,10 @@ func (asset *Asset) rescanBlocks(startHeight int32, addrs []btcutil.Address) err
 		return errors.E(utils.ErrNotConnected)
 	}
 
+	if !asset.WalletOpened() {
+		return utils.ErrBTCNotInitialized
+	}
+
 	if !asset.IsSynced() {
 		return errors.E(utils.ErrNotSynced)
 	}
@@ -110,7 +114,7 @@ func (asset *Asset) CancelRescan() {
 	}
 }
 
-// RescanAsync initiates a full wallet recovery (used address discovery
+// rescanAsync initiates a full wallet recovery (used address discovery
 // and transaction scanning) by stopping the btcwallet, dropping the transaction
 // history from the wallet db, resetting the synced-to height of the wallet
 // manager, restarting the wallet and its chain client, and finally commanding
@@ -120,7 +124,7 @@ func (asset *Asset) CancelRescan() {
 // located. The SPVService is not stopped, so most spvWallet methods will
 // continue to work without error, but methods using the btcWallet will likely
 // return incorrect results or errors.
-func (asset *Asset) RescanAsync() error {
+func (asset *Asset) rescanAsync() error {
 	if !atomic.CompareAndSwapUint32(&asset.rescanStarting, 0, 1) {
 		log.Error("rescan already in progress")
 		return fmt.Errorf("rescan already in progress")
@@ -159,9 +163,9 @@ func (asset *Asset) RescanAsync() error {
 	return nil
 }
 
-// ForceRescan forces a full rescan with active address discovery on wallet
+// forceRescan forces a full rescan with active address discovery on wallet
 // restart by setting the "synced to" field to nil.
-func (asset *Asset) ForceRescan() {
+func (asset *Asset) forceRescan() {
 	wdb := asset.Internal().BTC.Database()
 	err := walletdb.Update(wdb, func(dbtx walletdb.ReadWriteTx) error {
 		ns := dbtx.ReadWriteBucket(wAddrMgrBkt)

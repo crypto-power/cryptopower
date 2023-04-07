@@ -230,6 +230,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 // will be checked for watch-only wallets, other wallets will only check the
 // xpub that matches the coin type key used by the asset.
 func (asset *DCRAsset) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
+	if !asset.WalletOpened() {
+		return false, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 
 	acctXPubKey, err := asset.Internal().DCR.AccountXpub(ctx, account)

@@ -21,6 +21,10 @@ const (
 
 // VSPClient loads or creates a VSP client instance for the specified host.
 func (asset *DCRAsset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	asset.vspClientsMu.Lock()
 	defer asset.vspClientsMu.Unlock()
 	client, ok := asset.vspClients[host]
@@ -166,7 +170,7 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 		IsRetByte: true,
 	}
 
-	var respBytes = []byte{}
+	respBytes := []byte{}
 	resp, err := utils.HttpRequest(req, &respBytes)
 	if err != nil {
 		return nil, err

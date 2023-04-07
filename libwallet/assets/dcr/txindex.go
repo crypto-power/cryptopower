@@ -8,6 +8,10 @@ import (
 )
 
 func (asset *DCRAsset) IndexTransactions() error {
+	if !asset.WalletOpened() {
+		return utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 
 	var totalIndex int32

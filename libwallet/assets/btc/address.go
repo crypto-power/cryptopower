@@ -27,6 +27,10 @@ func (asset *Asset) IsAddressValid(address string) bool {
 
 // HaveAddress checks if the provided address belongs to the wallet.
 func (asset *Asset) HaveAddress(address string) bool {
+	if !asset.WalletOpened() {
+		return false
+	}
+
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return false
@@ -43,6 +47,10 @@ func (asset *Asset) HaveAddress(address string) bool {
 // AddressInfo returns information about an address.
 func (asset *Asset) AddressInfo(address string) (*AddressInfo, error) {
 	const op errors.Op = "btc.AddressInfo"
+
+	if !asset.WalletOpened() {
+		return nil, utils.ErrBTCNotInitialized
+	}
 
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
@@ -83,6 +91,10 @@ func (asset *Asset) CurrentAddress(account int32) (string, error) {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
 
+	if !asset.WalletOpened() {
+		return "", utils.ErrBTCNotInitialized
+	}
+
 	addr, err := asset.Internal().BTC.CurrentAddress(uint32(account), asset.GetScope())
 	if err != nil {
 		log.Errorf("CurrentAddress error: %v", err)
@@ -97,6 +109,10 @@ func (asset *Asset) CurrentAddress(account int32) (string, error) {
 func (asset *Asset) NextAddress(account int32) (string, error) {
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
+	}
+
+	if !asset.WalletOpened() {
+		return "", utils.ErrBTCNotInitialized
 	}
 
 	// NewAddress returns the next external chained address for a wallet.
@@ -114,6 +130,10 @@ func (asset *Asset) AccountOfAddress(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", utils.TranslateError(err)
+	}
+
+	if !asset.WalletOpened() {
+		return "", utils.ErrBTCNotInitialized
 	}
 
 	accountNumber, err := asset.Internal().BTC.AccountOfAddress(addr)
@@ -134,6 +154,10 @@ func (asset *Asset) AddressPubKey(address string) (string, error) {
 	addr, err := btcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", err
+	}
+
+	if !asset.WalletOpened() {
+		return "", utils.ErrBTCNotInitialized
 	}
 
 	isMine, _ := asset.Internal().BTC.HaveAddress(addr)
