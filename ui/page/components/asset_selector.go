@@ -81,7 +81,7 @@ func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
 	for _, at := range assetTypes {
 		asset := &AssetTypeItem{
 			Type: at,
-			Icon: ats.setAssetTypeIcon(at.ToStringLower()),
+			Icon: ats.setAssetTypeIcon(at),
 		}
 
 		assetType = append(assetType, asset)
@@ -90,11 +90,11 @@ func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
 	return assetType
 }
 
-func (ats *AssetTypeSelector) setAssetTypeIcon(assetType string) *cryptomaterial.Image {
+func (ats *AssetTypeSelector) setAssetTypeIcon(assetType utils.AssetType) *cryptomaterial.Image {
 	switch assetType {
-	case utils.DCRWalletAsset.ToStringLower():
+	case utils.DCRWalletAsset:
 		return ats.Theme.Icons.DecredLogo
-	case utils.BTCWalletAsset.ToStringLower():
+	case utils.BTCWalletAsset:
 		return ats.Theme.Icons.BTC
 	default:
 		return ats.Theme.Icons.AddExchange
@@ -128,27 +128,13 @@ func (ats *AssetTypeSelector) SelectedAssetType() *utils.AssetType {
 }
 
 // SetSelectedAssetType sets assetType as the current selected asset type.
-func (ats *AssetTypeSelector) SetSelectedAssetType(assetType *utils.AssetType) {
+func (ats *AssetTypeSelector) SetSelectedAssetType(assetType utils.AssetType) {
 	asset := &AssetTypeItem{
-		Type:      *assetType,
-		Icon:      ats.setAssetTypeIcon(assetType.ToStringLower()),
+		Type:      assetType,
+		Icon:      ats.setAssetTypeIcon(assetType),
 		clickable: ats.Theme.NewClickable(true),
 	}
 	ats.selectedAssetType = asset
-}
-
-// SelectFirstValidAssetType selects the first valid asset type excluding the asset type passed in.
-func (ats *AssetTypeSelector) SelectFirstValidAssetType(assetType *utils.AssetType) {
-	if ats.selectedAssetType.Type.ToStringLower() != assetType.ToStringLower() {
-		return
-	}
-	allAssetTypes := ats.SupportedAssetTypes()
-	for _, v := range allAssetTypes {
-		if v.Type.ToStringLower() != assetType.ToStringLower() {
-			ats.selectedAssetType = v
-			break
-		}
-	}
 }
 
 // Title Sets the title of the asset type list dialog.
@@ -204,7 +190,6 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 				txt.Color = ats.Theme.Color.Text
 			}
 			return txt.Layout(gtx)
-
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {

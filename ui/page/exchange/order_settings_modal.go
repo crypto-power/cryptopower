@@ -156,14 +156,16 @@ func (osm *orderSettingsModal) Handle() {
 			destinationWalletSelector:  osm.destinationWalletSelector,
 		}
 
-		fromCurrency := osm.orderData.fromCurrency
-		toCurrency := osm.orderData.toCurrency
-		sourceWalletId := int32(params.sourceWalletSelector.SelectedWallet().GetWalletID())
-		destinationWalletId := int32(params.destinationWalletSelector.SelectedWallet().GetWalletID())
-		sourceAccountId := params.sourceAccountSelector.SelectedAccount().Number
-		destinationAccountId := params.destinationAccountSelector.SelectedAccount().Number
+		configInfo := sharedW.ExchangeConfig{
+			SourceAsset:              osm.orderData.fromCurrency,
+			DestinationAsset:         osm.orderData.toCurrency,
+			SourceWalletID:           int32(params.sourceWalletSelector.SelectedWallet().GetWalletID()),
+			DestinationWalletID:      int32(params.destinationWalletSelector.SelectedWallet().GetWalletID()),
+			SourceAccountNumber:      params.sourceAccountSelector.SelectedAccount().Number,
+			DestinationAccountNumber: params.destinationAccountSelector.SelectedAccount().Number,
+		}
 
-		osm.WL.AssetsManager.SetExchangeConfig(fromCurrency, sourceWalletId, toCurrency, destinationWalletId, sourceAccountId, destinationAccountId)
+		osm.WL.AssetsManager.SetExchangeConfig(configInfo)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}
@@ -453,8 +455,8 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 }
 
 func (pg *orderSettingsModal) initWalletSelectors() {
-	if pg.WL.AssetsManager.ExchangeConfigIsSet() {
-		exchangeConfig := pg.WL.AssetsManager.ExchangeConfig()
+	if pg.WL.AssetsManager.IsExchangeConfigSet() {
+		exchangeConfig := pg.WL.AssetsManager.GetExchangeConfig()
 		sourceWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
 		destinationWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
 

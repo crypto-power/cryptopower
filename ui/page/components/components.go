@@ -708,7 +708,7 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 			overlayColor.A = 220
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			cryptomaterial.Fill(gtx, overlayColor)
+			cryptomaterial.FillMax(gtx, overlayColor, 10)
 
 			lbl := l.Theme.Label(values.TextSize20, txt)
 			lbl.Font.Weight = text.SemiBold

@@ -80,6 +80,8 @@ type CreateOrderPage struct {
 	max                       float64
 	exchangeRate, binanceRate float64
 
+	errMsg string
+
 	*orderData
 }
 
@@ -150,23 +152,20 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		if pg.fromCurrency.ToStringLower() == ati.Type.ToStringLower() {
+		isMatching := pg.fromCurrency == pg.toCurrency && pg.fromCurrency != libutils.NilAsset
+		if pg.fromCurrency == ati.Type || isMatching {
 			return
 		}
-		// update destination input amount
-		pg.toAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		pg.updateWalletAndAccountSelector(ati.Type)
-	})
-	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
-		if pg.toCurrency.ToStringLower() == ati.Type.ToStringLower() {
-			return
-		}
-		// update source input amount
-		pg.fromAmountEditor.AssetTypeSelector.SelectFirstValidAssetType(&ati.Type)
-		pg.updateWalletAndAccountSelector(ati.Type)
+		pg.updateWalletAndAccountSelector()
 	})
 
-	pg.loadOrderConfig()
+	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+		isMatching := pg.fromCurrency == pg.toCurrency && pg.toCurrency != libutils.NilAsset
+		if pg.toCurrency == ati.Type || isMatching {
+			return
+		}
+		pg.updateWalletAndAccountSelector()
+	})
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
 	pg.createOrderBtn.SetEnabled(false)
@@ -193,21 +192,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	return pg
 }
 
-func (pg *CreateOrderPage) updateWalletAndAccountSelector(assetType libutils.AssetType) {
-	// update source wallet selector
-	pg.sourceWalletSelector.SetSelectedAsset(*pg.fromAmountEditor.AssetTypeSelector.SelectedAssetType())
-
-	// update destination wallet selector
-	pg.destinationWalletSelector.SetSelectedAsset(*pg.toAmountEditor.AssetTypeSelector.SelectedAssetType())
-
-	// update destination account selector
-	pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
-
-	// update source account selector
-	pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
-
-	pg.fromCurrency = pg.sourceWalletSelector.SelectedAsset()
-	pg.toCurrency = pg.destinationWalletSelector.SelectedAsset()
+func (pg *CreateOrderPage) updateWalletAndAccountSelector() {
+	pg.swapCurrency()
 	pg.updateExchangeRate()
 }
 
@@ -218,10 +204,12 @@ func (pg *CreateOrderPage) ID() string {
 func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	if pg.isExchangeAPIAllowed() {
+	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.FetchOrders()
+
+		pg.loadOrderConfig()
 	}
 }
 
@@ -388,13 +376,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 func (pg *CreateOrderPage) updateAmount() {
 	if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
-		if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
-			pg.toAmountEditor.Edit.Editor.SetText(pg.fromAmountEditor.Edit.Editor.Text())
-			return
-		}
 		f, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 		if err != nil {
-			// empty usd input
 			pg.toAmountEditor.Edit.Editor.SetText("")
 			pg.amountErrorText = values.String(values.StrInvalidAmount)
 			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
@@ -436,7 +419,7 @@ func (pg *CreateOrderPage) canCreateOrder() bool {
 		return false
 	}
 
-	if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
+	if pg.fromCurrency == pg.toCurrency {
 		return false
 	}
 
@@ -466,13 +449,13 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.sourceAccountSelector = pg.destinationAccountSelector
 	pg.fromCurrency = pg.toCurrency
 	pg.fromAmountEditor.Edit.Editor.SetText(pg.toAmountEditor.Edit.Editor.Text())
-	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
+	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
 
 	pg.destinationWalletSelector = tempSourceWalletSelector
 	pg.destinationAccountSelector = tempSourceAccountSelector
 	pg.toCurrency = tempFromCurrencyType
 	pg.toAmountEditor.Edit.Editor.SetText(tempFromCurrencyValue)
-	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
 
 	// check the watch only wallet on destination
 	if pg.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
@@ -482,18 +465,49 @@ func (pg *CreateOrderPage) swapCurrency() {
 	// update title of wallet selector
 	pg.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
 	pg.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
+
+	// Save the exchange configuration changes.
+	pg.updateExchangeConfig()
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+	isAllowed := pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+	if !isAllowed {
+		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+	}
+	return isAllowed
+}
+
+// isMultipleAssetTypeWalletAvailable checks if multiple asset types are available
+// for exchange funtionality to run smoothly. Otherwise exchange functionality is
+// disable till different asset type wallets are created.
+func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
+	pg.errMsg = values.String(values.StrMinimumAssetType)
+	allWallets := len(pg.WL.AssetsManager.AllWallets())
+	btcWallets := len(pg.WL.AssetsManager.AllBTCWallets())
+	dcrWallets := len(pg.WL.AssetsManager.AllDCRWallets())
+	if allWallets == 0 {
+		// no wallets exist
+		return false
+	}
+
+	switch {
+	case allWallets > btcWallets && btcWallets > 0:
+		// BTC and some other wallets exists
+	case allWallets > dcrWallets && dcrWallets > 0:
+		// DCR and some other wallets exists
+	default:
+		return false
+	}
+	pg.errMsg = ""
+	return true
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isExchangeAPIAllowed() {
+	if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
 		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg)
 		})
 	}
 
@@ -507,7 +521,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 			},
 			Body: func(gtx C) D {
 				gtxCopy := gtx
-				if !pg.isExchangeAPIAllowed() {
+				if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
 					gtxCopy = gtx.Disabled()
 				}
 				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
@@ -594,13 +608,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 																return title.Layout(gtx)
 															}),
 														)
-
 													}
 
 													return D{}
 												}),
 											)
-
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Inset{
@@ -641,11 +653,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									walletName := "----"
-									if pg.sourceWalletSelector.SelectedWallet() != nil {
+									if pg.sourceWalletSelector != nil && pg.sourceWalletSelector.SelectedWallet() != nil {
 										walletName = pg.sourceWalletSelector.SelectedWallet().GetWalletName()
 									}
 									accountName := "----"
-									if pg.sourceAccountSelector.SelectedAccount() != nil {
+									if pg.sourceAccountSelector != nil && pg.sourceAccountSelector.SelectedAccount() != nil {
 										accountName = pg.sourceAccountSelector.SelectedAccount().Name
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
@@ -653,7 +665,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
 								}),
-								// layout.Rigid(pg.fromAmountEditor.Layout),
 								layout.Rigid(func(gtx C) D {
 									return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
 								}),
@@ -666,11 +677,11 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									walletName := "----"
-									if pg.destinationWalletSelector.SelectedWallet() != nil {
+									if pg.destinationWalletSelector != nil && pg.destinationWalletSelector.SelectedWallet() != nil {
 										walletName = pg.destinationWalletSelector.SelectedWallet().GetWalletName()
 									}
 									accountName := "----"
-									if pg.destinationAccountSelector.SelectedAccount() != nil {
+									if pg.destinationAccountSelector != nil && pg.destinationAccountSelector.SelectedAccount() != nil {
 										accountName = pg.destinationAccountSelector.SelectedAccount().Name
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
@@ -678,7 +689,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									lb.Font.Weight = text.SemiBold
 									return lb.Layout(gtx)
 								}),
-								// layout.Rigid(pg.toAmountEditor.Layout),
 								layout.Rigid(func(gtx C) D {
 									return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
 								}),
@@ -815,7 +825,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
 															})
-
 														}),
 													)
 												}),
@@ -914,7 +923,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 }
 
 func (pg *CreateOrderPage) updateExchangeRate() {
-	if pg.fromCurrency.ToStringLower() == pg.toCurrency.ToStringLower() {
+	if pg.fromCurrency == pg.toCurrency {
 		return
 	}
 	if pg.exchange != nil {
@@ -950,15 +959,15 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	if ticker != nil {
 		switch pg.fromCurrency {
 		case libutils.DCRWalletAsset:
-			binanceRate = ticker.LastTradePrice
-		case libutils.BTCWalletAsset:
 			binanceRate = 1 / ticker.LastTradePrice
+		case libutils.BTCWalletAsset:
+			binanceRate = ticker.LastTradePrice
 		}
 	}
 
 	pg.min = res.Min
 	pg.max = res.Max
-	pg.exchangeRate = 1 / res.ExchangeRate
+	pg.exchangeRate = res.ExchangeRate
 	pg.binanceRate = binanceRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
@@ -970,112 +979,138 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	return nil
 }
 
+// loadOrderConfig loads the existing exchange configuration or creates a
+// new one if none existed before.
 func (pg *CreateOrderPage) loadOrderConfig() {
-	if pg.WL.AssetsManager.ExchangeConfigIsSet() {
-		exchangeConfig := pg.WL.AssetsManager.ExchangeConfig()
-		sourceWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
-		destinationWallet := pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
+	sourceAccount, destinationAccount := int32(-1), int32(-1)
+	var sourceWallet, destinationWallet *load.WalletMapping
 
-		sourceCurrency := exchangeConfig.SourceAsset
-		toCurrency := exchangeConfig.DestinationAsset
+	// isConfigUpdateRequired is set to true when updating the configuration is
+	// necessary.
+	var isConfigUpdateRequired bool
 
-		if sourceWallet != nil {
-			_, err := sourceWallet.GetAccount(exchangeConfig.SourceAccountNumber)
-			if err != nil {
-				log.Error(err)
-			}
+	if pg.WL.AssetsManager.IsExchangeConfigSet() {
+		// Use preset exchange configuration.
+		exchangeConfig := pg.WL.AssetsManager.GetExchangeConfig()
+		pg.fromCurrency = exchangeConfig.SourceAsset
+		pg.toCurrency = exchangeConfig.DestinationAsset
 
-			// Source wallet picker
-			pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, sourceCurrency).
-				Title(values.String(values.StrSource))
-
-			sourceW := &load.WalletMapping{
-				Asset: sourceWallet,
-			}
-			pg.sourceWalletSelector.SetSelectedWallet(sourceW)
-
-			// Source account picker
-			pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
-				Title(values.String(values.StrAccount)).
-				AccountValidator(func(account *sharedW.Account) bool {
-					accountIsValid := account.Number != load.MaxInt32
-					return accountIsValid
-				})
-			pg.sourceAccountSelector.SelectAccount(pg.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
-
-			pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-				pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-			})
+		sourceWallet = &load.WalletMapping{
+			Asset: pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID)),
+		}
+		destinationWallet = &load.WalletMapping{
+			Asset: pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID)),
 		}
 
-		if destinationWallet != nil {
-			_, err := destinationWallet.GetAccount(exchangeConfig.DestinationAccountNumber)
-			if err != nil {
-				log.Error(err)
-			}
-
-			// Destination wallet picker
-			pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, toCurrency).
-				Title(values.String(values.StrDestination)).
-				EnableWatchOnlyWallets(true)
-
-			// Destination account picker
-			pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
-				Title(values.String(values.StrAccount)).
-				AccountValidator(func(account *sharedW.Account) bool {
-					// Imported accounts and watch only accounts are imvalid
-					accountIsValid := account.Number != load.MaxInt32
-
-					return accountIsValid
-				})
-			pg.destinationAccountSelector.SelectAccount(pg.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
-
-			pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-				pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-			})
-		}
+		sourceAccount = exchangeConfig.SourceAccountNumber
+		destinationAccount = exchangeConfig.DestinationAccountNumber
 	} else {
-		// Source wallet picker
-		pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
-			Title(values.String(values.StrFrom))
+		// New exchange configuration will be generated using the set asset types
+		// since none existed before.
+		// It two distinct asset type wallet don't exist execution does get here.
+		wals := pg.WL.AssetsManager.AllWallets()
+		pg.fromCurrency = wals[0].GetAssetType()
 
-		// Source account picker
-		pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
-			Title(values.String(values.StrAccount)).
-			AccountValidator(func(account *sharedW.Account) bool {
-				accountIsValid := account.Number != load.MaxInt32
-
-				return accountIsValid
-			})
-		pg.sourceAccountSelector.SelectFirstValidAccount(pg.sourceWalletSelector.SelectedWallet())
-
-		pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-		})
-
-		// Destination wallet picker
-		pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.BTCWalletAsset).
-			Title(values.String(values.StrTo)).
-			EnableWatchOnlyWallets(true)
-
-		// Destination account picker
-		pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
-			Title(values.String(values.StrAccount)).
-			AccountValidator(func(account *sharedW.Account) bool {
-				accountIsValid := account.Number != load.MaxInt32
-
-				return accountIsValid
-			})
-		pg.destinationAccountSelector.SelectFirstValidAccount(pg.destinationWalletSelector.SelectedWallet())
-
-		pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-			pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		})
+		for _, w := range wals {
+			if w.GetAssetType() != pg.fromCurrency {
+				pg.toCurrency = w.GetAssetType()
+				break
+			}
+		}
 	}
-	pg.fromCurrency = pg.sourceWalletSelector.SelectedWallet().GetAssetType()
-	pg.toCurrency = pg.destinationWalletSelector.SelectedWallet().GetAssetType()
-	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.fromCurrency)
-	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(&pg.toCurrency)
+
+	// Source wallet picker
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.fromCurrency).
+		Title(values.String(values.StrSource))
+
+	if sourceWallet == nil {
+		isConfigUpdateRequired = true
+		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+		sourceWallet = pg.sourceWalletSelector.SelectedWallet()
+	} else {
+		pg.sourceWalletSelector.SetSelectedWallet(sourceWallet)
+	}
+
+	// Source account picker
+	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			return account.Number != load.MaxInt32 && !sourceWallet.IsWatchingOnlyWallet()
+		})
+
+	if sourceAccount != -1 {
+		if _, err := sourceWallet.GetAccount(sourceAccount); err != nil {
+			log.Error(err)
+		} else {
+			pg.sourceAccountSelector.SelectAccount(sourceWallet, sourceAccount)
+		}
+	}
+
+	if pg.sourceAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
+		pg.sourceAccountSelector.SelectFirstValidAccount(sourceWallet)
+	}
+
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
+	})
+
+	// Destination wallet picker
+	pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.toCurrency).
+		Title(values.String(values.StrDestination))
+
+	if destinationWallet == nil {
+		isConfigUpdateRequired = true
+		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
+		destinationWallet = pg.destinationWalletSelector.SelectedWallet()
+	} else {
+		pg.destinationWalletSelector.SetSelectedWallet(destinationWallet)
+	}
+
+	// Destination account picker
+	pg.destinationAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
+		Title(values.String(values.StrAccount)).
+		AccountValidator(func(account *sharedW.Account) bool {
+			return account.Number != load.MaxInt32
+		})
+
+	if destinationAccount != -1 {
+		if _, err := destinationWallet.GetAccount(destinationAccount); err != nil {
+			log.Error(err)
+		} else {
+			pg.destinationAccountSelector.SelectAccount(destinationWallet, destinationAccount)
+		}
+	}
+
+	if pg.destinationAccountSelector.SelectedAccount() == nil {
+		isConfigUpdateRequired = true
+		pg.destinationAccountSelector.SelectFirstValidAccount(destinationWallet)
+	}
+
+	pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
+	})
+
+	if isConfigUpdateRequired {
+		pg.updateExchangeConfig()
+	}
+
+	pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+}
+
+// updateExchangeConfig Updates the newly created or modified exchange configuration.
+func (pg *CreateOrderPage) updateExchangeConfig() {
+	configInfo := sharedW.ExchangeConfig{
+		SourceAsset:              pg.fromCurrency,
+		DestinationAsset:         pg.toCurrency,
+		SourceWalletID:           int32(pg.sourceWalletSelector.SelectedWallet().GetWalletID()),
+		DestinationWalletID:      int32(pg.destinationWalletSelector.SelectedWallet().GetWalletID()),
+		SourceAccountNumber:      pg.sourceAccountSelector.SelectedAccount().Number,
+		DestinationAccountNumber: pg.destinationAccountSelector.SelectedAccount().Number,
+	}
+
+	pg.WL.AssetsManager.SetExchangeConfig(configInfo)
 }
 
 func (pg *CreateOrderPage) listenForSyncNotifications() {

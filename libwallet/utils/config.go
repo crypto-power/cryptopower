@@ -18,6 +18,7 @@ type (
 const (
 	LogFileName = "libwallet.log"
 
+	NilAsset       AssetType = ""
 	BTCWalletAsset AssetType = "BTC"
 	DCRWalletAsset AssetType = "DCR"
 	LTCWalletAsset AssetType = "LTC"

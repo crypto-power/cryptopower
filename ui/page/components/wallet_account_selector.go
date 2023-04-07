@@ -152,20 +152,6 @@ func (ws *WalletAndAccountSelector) SelectedAsset() utils.AssetType {
 	return ws.assetType[0]
 }
 
-// SelectFirstValidAssetType selects the first valid asset type excluding the asset type passed in.
-func (ws *WalletAndAccountSelector) SelectFirstValidAssetType(assetType *utils.AssetType) {
-	if ws.assetType[0].ToStringLower() != assetType.ToStringLower() {
-		return
-	}
-	allAssetTypes := ws.WL.AssetsManager.AllAssetTypes()
-	for _, v := range allAssetTypes {
-		if v.ToStringLower() != assetType.ToStringLower() {
-			ws.SetSelectedAsset(v)
-			break
-		}
-	}
-}
-
 func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
 	if !ws.accountSelector {
 		ws.accountSelector = true
