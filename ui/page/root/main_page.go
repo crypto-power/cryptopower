@@ -782,25 +782,12 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								switch assetType {
-								case libutils.DCRWalletAsset:
-									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										return mp.Theme.Icons.DcrWatchOnly.Layout24dp(gtx)
-									}
-									return mp.Theme.Icons.DecredSymbol2.Layout24dp(gtx)
-								case libutils.BTCWalletAsset:
-									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
-									}
-									return mp.Theme.Icons.BTC.Layout24dp(gtx)
-								case libutils.LTCWalletAsset:
-									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										return mp.Theme.Icons.LtcWatchOnly.Layout24dp(gtx)
-									}
-									return mp.Theme.Icons.LTC.Layout24dp(gtx)
-								default:
-									return D{}
+								image := components.CoinImageBySymbol(mp.Load, assetType,
+									mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
+								if image != nil {
+									return image.Layout24dp(gtx)
 								}
+								return D{}
 							}),
 							layout.Rigid(func(gtx C) D {
 								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())

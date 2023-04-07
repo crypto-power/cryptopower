@@ -10,6 +10,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
@@ -183,7 +184,8 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																layout.Rigid(func(gtx C) D {
 																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																		layout.Rigid(func(gtx C) D {
-																			return components.SetWalletLogo(pg.Load, gtx, pg.orderInfo.FromCurrency, values.MarginPadding30)
+																			frmCurrency := libutils.AssetType(pg.orderInfo.FromCurrency)
+																			return components.SetWalletLogo(pg.Load, gtx, frmCurrency, values.MarginPadding30)
 																		}),
 																		layout.Rigid(func(gtx C) D {
 																			return layout.Inset{
@@ -217,7 +219,8 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																layout.Rigid(func(gtx C) D {
 																	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																		layout.Rigid(func(gtx C) D {
-																			return components.SetWalletLogo(pg.Load, gtx, pg.orderInfo.ToCurrency, values.MarginPadding30)
+																			toCurrency := libutils.AssetType(pg.orderInfo.ToCurrency)
+																			return components.SetWalletLogo(pg.Load, gtx, toCurrency, values.MarginPadding30)
 																		}),
 																		layout.Rigid(func(gtx C) D {
 																			return layout.Inset{
@@ -243,7 +246,6 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																}),
 															)
 														})
-
 													})
 												})
 											})

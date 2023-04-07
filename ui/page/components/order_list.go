@@ -7,6 +7,7 @@ import (
 	"gioui.org/layout"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -34,7 +35,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 									Right: values.MarginPadding10,
 									Left:  values.MarginPadding10,
 								}.Layout(gtx, func(gtx C) D {
-									return SetWalletLogo(l, gtx, orderItem.FromCurrency, values.MarginPadding30)
+									return SetWalletLogo(l, gtx, libutils.AssetType(orderItem.FromCurrency), values.MarginPadding30)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -51,7 +52,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 												Right: values.MarginPadding10,
 												Left:  values.MarginPadding10,
 											}.Layout(gtx, func(gtx C) D {
-												return SetWalletLogo(l, gtx, orderItem.ToCurrency, values.MarginPadding30)
+												return SetWalletLogo(l, gtx, libutils.AssetType(orderItem.ToCurrency), values.MarginPadding30)
 											})
 										}),
 										layout.Rigid(func(gtx C) D {
@@ -62,7 +63,6 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 							}),
 						)
 					})
-
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

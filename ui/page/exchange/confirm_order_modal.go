@@ -195,7 +195,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {
-														return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency.String(), values.MarginPadding30)
+														return components.SetWalletLogo(com.Load, gtx, com.orderData.fromCurrency, values.MarginPadding30)
 													}),
 													layout.Rigid(func(gtx C) D {
 														return layout.Inset{
@@ -231,7 +231,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 											layout.Rigid(func(gtx C) D {
 												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {
-														return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency.String(), values.MarginPadding30)
+														return components.SetWalletLogo(com.Load, gtx, com.orderData.toCurrency, values.MarginPadding30)
 													}),
 													layout.Rigid(func(gtx C) D {
 														return layout.Inset{
