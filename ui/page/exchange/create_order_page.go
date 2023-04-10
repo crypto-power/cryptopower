@@ -486,6 +486,7 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 	allWallets := len(pg.WL.AssetsManager.AllWallets())
 	btcWallets := len(pg.WL.AssetsManager.AllBTCWallets())
 	dcrWallets := len(pg.WL.AssetsManager.AllDCRWallets())
+	ltcWallets := len(pg.WL.AssetsManager.AllLTCWallets())
 	if allWallets == 0 {
 		// no wallets exist
 		return false
@@ -496,6 +497,8 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 		// BTC and some other wallets exists
 	case allWallets > dcrWallets && dcrWallets > 0:
 		// DCR and some other wallets exists
+	case allWallets > ltcWallets && ltcWallets > 0:
+		// LTC and some other wallets exists
 	default:
 		return false
 	}
