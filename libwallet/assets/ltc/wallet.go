@@ -2,6 +2,7 @@ package ltc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,11 +12,11 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 
 	// "decred.org/dcrwallet/v2/errors"
-	// "github.com/btcsuite/btcd/btcec/v2/ecdsa"
+	// "github.com/LTCsuite/LTCd/LTCec/v2/ecdsa"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
 
-	// "github.com/btcsuite/btcd/btcutil/gcs"
+	// "github.com/LTCsuite/LTCd/LTCutil/gcs"
 	// "github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/wire"
@@ -28,14 +29,14 @@ import (
 	// "github.com/lightninglabs/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/headerfs"
-	// btcneutrino "github.com/lightninglabs/neutrino"
+	// LTCneutrino "github.com/lightninglabs/neutrino"
 	// "github.com/lightninglabs/neutrino/headerfs"
 )
 
 // Asset confirm that LTC implements that shared assets interface.
 var _ sharedW.Asset = (*Asset)(nil)
 
-// Asset is a wrapper around the btcwallet.Wallet struct.
+// Asset is a wrapper around the LTCwallet.Wallet struct.
 // It implements the sharedW.Asset interface.
 // It also implements the sharedW.AssetsManagerDB interface.
 // This is done to allow the Asset to be used as a db interface
@@ -65,7 +66,7 @@ type Asset struct {
 
 	notificationListenersMu sync.RWMutex
 
-	// syncData                        *SyncData
+	syncData                        *SyncData
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
 }
@@ -97,17 +98,19 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir)
-	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.BTCWalletAsset)
+	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.LTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Printf("wallet created LTC %v \n", w)
+
 	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-		// syncData: &SyncData{
-		// 	syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
-		// },
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
@@ -147,12 +150,12 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 
 	ldr := initWalletLoader(chainParams, params.RootDir)
 	w, err := sharedW.CreateWatchOnlyWallet(walletName, extendedPublicKey,
-		ldr, params, utils.BTCWalletAsset)
+		ldr, params, utils.LTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
 
-	btcWallet := &Asset{
+	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		// syncData: &SyncData{
@@ -161,13 +164,13 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
-	if err := btcWallet.prepareChain(); err != nil {
+	if err := ltcWallet.prepareChain(); err != nil {
 		return nil, err
 	}
 
-	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+	ltcWallet.SetNetworkCancelCallback(ltcWallet.SafelyCancelSync)
 
-	return btcWallet, nil
+	return ltcWallet, nil
 }
 
 // RestoreWallet accepts the seed, wallet pass information and the init parameters.
@@ -184,12 +187,12 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir)
-	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.BTCWalletAsset)
+	w, err := sharedW.RestoreWallet(seedMnemonic, pass, ldr, params, utils.LTCWalletAsset)
 	if err != nil {
 		return nil, err
 	}
 
-	btcWallet := &Asset{
+	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		// syncData: &SyncData{
@@ -198,13 +201,13 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
-	if err := btcWallet.prepareChain(); err != nil {
+	if err := ltcWallet.prepareChain(); err != nil {
 		return nil, err
 	}
 
-	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+	ltcWallet.SetNetworkCancelCallback(ltcWallet.SafelyCancelSync)
 
-	return btcWallet, nil
+	return ltcWallet, nil
 }
 
 // LoadExisting accepts the stored shared wallet information and the init parameters.
@@ -224,27 +227,27 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	// successful and therefore it should try the recovery again till it successfully
 	// completes.
 	ldr := initWalletLoader(chainParams, params.RootDir)
-	btcWallet := &Asset{
+	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-		// syncData: &SyncData{
-		// 	syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
-		// },
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
-	err = btcWallet.Prepare(ldr, params)
+	err = ltcWallet.Prepare(ldr, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := btcWallet.prepareChain(); err != nil {
+	if err := ltcWallet.prepareChain(); err != nil {
 		return nil, err
 	}
 
-	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
+	ltcWallet.SetNetworkCancelCallback(ltcWallet.SafelyCancelSync)
 
-	return btcWallet, nil
+	return ltcWallet, nil
 }
 
 // SafelyCancelSync shuts down all the upstream processes. If not explicity
@@ -285,7 +288,7 @@ func (asset *Asset) IsSynced() bool {
 
 // IsWaiting returns true if the wallet is waiting for headers.
 func (asset *Asset) IsWaiting() bool {
-	log.Warn(utils.ErrBTCMethodNotImplemented("IsWaiting"))
+	log.Warn(utils.ErrLTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 
@@ -362,12 +365,12 @@ func (asset *Asset) GetBlockHash(height int64) (*chainhash.Hash, error) {
 
 // SignMessage signs a message with the private key associated with an address.
 func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {
-	return nil, utils.ErrBTCMethodNotImplemented("SignMessage")
+	return nil, utils.ErrLTCMethodNotImplemented("SignMessage")
 }
 
 // VerifyMessage verifies a signed message.
 func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
-	return false, utils.ErrBTCMethodNotImplemented("VerifyMessage")
+	return false, utils.ErrLTCMethodNotImplemented("VerifyMessage")
 }
 
 // RemovePeers removes all peers from the wallet.
@@ -377,12 +380,12 @@ func (asset *Asset) RemovePeers() {}
 func (asset *Asset) SetSpecificPeer(address string) {}
 
 // GetExtendedPubKey returns the extended public key of the given account,
-// to do that it calls btcwallet's AccountProperties method, using KeyScopeBIP0084
+// to do that it calls LTCwallet's AccountProperties method, using KeyScopeBIP0084
 // and the account number. On failure it returns error.
 func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	loadedAsset := asset.Internal().LTC
 	if loadedAsset == nil {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	extendedPublicKey, err := loadedAsset.AccountProperties(asset.GetScope(), uint32(account))

@@ -471,6 +471,23 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				pg.handlerWalletDexServerSelectorCallBacks()
 				return
 			}
+
+			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.LTCWalletAsset.String() {
+				_, err := pg.WL.AssetsManager.CreateNewLTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				if err != nil {
+					if err.Error() == libutils.ErrExist {
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						return
+					}
+
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
+
+				pg.handlerWalletDexServerSelectorCallBacks()
+				return
+			}
 		}()
 	}
 

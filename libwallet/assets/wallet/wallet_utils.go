@@ -14,6 +14,7 @@ import (
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
+	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -179,6 +180,11 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 		}
 	case utils.DCRWalletAsset:
 		seed, err = dcrhdkeychain.GenerateSeed(dcrhdkeychain.RecommendedSeedLen)
+		if err != nil {
+			return "", err
+		}
+	case utils.LTCWalletAsset:
+		seed, err = ltchdkeychain.GenerateSeed(ltchdkeychain.RecommendedSeedLen)
 		if err != nil {
 			return "", err
 		}

@@ -95,6 +95,8 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
+	// fmt.Printf("wallet created BTC %v \n", w)
+
 	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
@@ -148,9 +150,9 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	btcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
-		},
+		// syncData: &SyncData{
+		// 	syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		// },
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 

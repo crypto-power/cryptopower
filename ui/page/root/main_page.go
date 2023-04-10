@@ -282,7 +282,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
-	mp.updateBalance()
+	// mp.updateBalance()
 	// updateExchangeSetting also calls updateBalance() but because of the API
 	// call it may take a while before the balance and USD conversion is updated.
 	// updateBalance() is called above first to prevent crash when balance value
@@ -313,6 +313,7 @@ func (mp *MainPage) OnNavigatedTo() {
 			go mp.WL.AssetsManager.Politeia.Sync(mp.ctx)
 		}
 	case libutils.BTCWalletAsset:
+	case libutils.LTCWalletAsset:
 	}
 
 	mp.CurrentPage().OnNavigatedTo()
@@ -359,6 +360,7 @@ func (mp *MainPage) updateBalance() {
 	if err != nil {
 		log.Error(err)
 	}
+	fmt.Println("totalBalance", totalBalance)
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
@@ -624,6 +626,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							case libutils.DCRWalletAsset:
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
+							case libutils.LTCWalletAsset:
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							}
 							return drawer
 						}),
@@ -815,12 +819,12 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								return mp.totalAssetBalance(gtx)
+								return D{}
 							}),
 							layout.Rigid(func(gtx C) D {
-								if !mp.isBalanceHidden {
-									return mp.LayoutUSDBalance(gtx)
-								}
+								// if !mp.isBalanceHidden {
+								// 	return mp.LayoutUSDBalance(gtx)
+								// }
 								return D{}
 							}),
 						)
