@@ -381,13 +381,11 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 		}
 	}
 
-	fmt.Println("length of LTC wallets: ", len(mgr.Assets.LTC.Wallets))
 	for _, wallet := range mgr.Assets.LTC.Wallets {
 		select {
 		case <-mgr.shuttingDown:
 		// If shutdown protocol is detected, exit immediately.
 		default:
-			fmt.Println("opening LTC wallet")
 			err := wallet.OpenWallet()
 			if err != nil {
 				return err

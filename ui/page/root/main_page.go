@@ -282,7 +282,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
-	// mp.updateBalance()
+	mp.updateBalance()
 	// updateExchangeSetting also calls updateBalance() but because of the API
 	// call it may take a while before the balance and USD conversion is updated.
 	// updateBalance() is called above first to prevent crash when balance value
@@ -356,13 +356,33 @@ func (mp *MainPage) fetchExchangeRate() {
 }
 
 func (mp *MainPage) updateBalance() {
-	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
-	if err != nil {
-		log.Error(err)
+	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.LTCWalletAsset {
+
+		totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
+		if err != nil {
+			log.Error(err)
+		}
+		mp.totalBalance = totalBalance.Total
+		balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
+		mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+
+		return
 	}
-	fmt.Println("totalBalance", totalBalance)
+
+	// TODO: remove this when LTC account methods is supported
+	toAmount := func(v int64) sharedW.AssetAmount {
+		return mp.WL.SelectedWallet.Wallet.ToAmount(v)
+	}
+	totalBalance := &components.CummulativeWalletsBalance{
+		Total:                   toAmount(0),
+		ImmatureReward:          toAmount(0),
+		ImmatureStakeGeneration: toAmount(0),
+		LockedByTickets:         toAmount(0),
+		VotingAuthority:         toAmount(0),
+		UnConfirmed:             toAmount(0),
+	}
 	mp.totalBalance = totalBalance.Total
-	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
+	balanceInUSD := totalBalance.Total.MulF64(0.00).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
@@ -819,12 +839,12 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								return D{}
+								return mp.totalAssetBalance(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
-								// if !mp.isBalanceHidden {
-								// 	return mp.LayoutUSDBalance(gtx)
-								// }
+								if !mp.isBalanceHidden {
+									return mp.LayoutUSDBalance(gtx)
+								}
 								return D{}
 							}),
 						)
