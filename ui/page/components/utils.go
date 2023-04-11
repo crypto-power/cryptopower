@@ -131,10 +131,17 @@ func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.
 }
 
 func SetWalletLogo(l *load.Load, gtx C, assetType string, size unit.Dp) D {
-	if strings.ToLower(assetType) == utils.DCRWalletAsset.ToStringLower() {
+
+	switch strings.ToLower(assetType) {
+	case utils.DCRWalletAsset.ToStringLower():
 		return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
+	case utils.BTCWalletAsset.ToStringLower():
+		return l.Theme.Icons.BTC.LayoutSize(gtx, size)
+	case utils.LTCWalletAsset.ToStringLower():
+		return l.Theme.Icons.LTC.LayoutSize(gtx, size)
+	default:
+		return l.Theme.Icons.BTC.LayoutSize(gtx, size)
 	}
-	return l.Theme.Icons.BTC.LayoutSize(gtx, size)
 }
 
 func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D {

@@ -18,6 +18,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
@@ -37,7 +38,7 @@ type Assets struct {
 	}
 }
 
-var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower()}
+var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower(), utils.LTCWalletAsset.ToStringLower()}
 
 // AssetsManager is a struct that holds all the necessary parameters
 // to manage the assets supported by the wallet.
@@ -235,6 +236,19 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 				log.Warnf("Ignored dcr wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 			} else {
 				mgr.Assets.DCR.Wallets[wallet.ID] = w
+			}
+
+		case utils.LTCWalletAsset:
+			w, err := ltc.LoadExisting(wallet, mgr.params)
+			if err == nil && !isOK(w) {
+				err = fmt.Errorf("missing wallet database file: %v", path)
+				log.Debug(err)
+			}
+			if err != nil {
+				mgr.Assets.LTC.BadWallets[wallet.ID] = wallet
+				log.Warnf("Ignored ltc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
+			} else {
+				mgr.Assets.LTC.Wallets[wallet.ID] = w
 			}
 
 		default:

@@ -313,6 +313,7 @@ func (mp *MainPage) OnNavigatedTo() {
 			go mp.WL.AssetsManager.Politeia.Sync(mp.ctx)
 		}
 	case libutils.BTCWalletAsset:
+	case libutils.LTCWalletAsset:
 	}
 
 	mp.CurrentPage().OnNavigatedTo()
@@ -355,12 +356,33 @@ func (mp *MainPage) fetchExchangeRate() {
 }
 
 func (mp *MainPage) updateBalance() {
-	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
-	if err != nil {
-		log.Error(err)
+	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.LTCWalletAsset {
+
+		totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
+		if err != nil {
+			log.Error(err)
+		}
+		mp.totalBalance = totalBalance.Total
+		balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
+		mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+
+		return
+	}
+
+	// TODO: remove this when LTC account methods is supported
+	toAmount := func(v int64) sharedW.AssetAmount {
+		return mp.WL.SelectedWallet.Wallet.ToAmount(v)
+	}
+	totalBalance := &components.CummulativeWalletsBalance{
+		Total:                   toAmount(0),
+		ImmatureReward:          toAmount(0),
+		ImmatureStakeGeneration: toAmount(0),
+		LockedByTickets:         toAmount(0),
+		VotingAuthority:         toAmount(0),
+		UnConfirmed:             toAmount(0),
 	}
 	mp.totalBalance = totalBalance.Total
-	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
+	balanceInUSD := totalBalance.Total.MulF64(0.00).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
@@ -624,6 +646,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							case libutils.DCRWalletAsset:
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
+							case libutils.LTCWalletAsset:
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							}
 							return drawer
 						}),
@@ -769,6 +793,11 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 										return mp.Theme.Icons.BtcWatchOnly.Layout24dp(gtx)
 									}
 									return mp.Theme.Icons.BTC.Layout24dp(gtx)
+								case libutils.LTCWalletAsset:
+									if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+										return mp.Theme.Icons.LtcWatchOnly.Layout24dp(gtx)
+									}
+									return mp.Theme.Icons.LTC.Layout24dp(gtx)
 								default:
 									return D{}
 								}

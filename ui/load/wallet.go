@@ -81,6 +81,8 @@ func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
 		return wl.AssetsManager.AllBTCWallets()
 	case utils.DCRWalletAsset:
 		return wl.AssetsManager.AllDCRWallets()
+	case utils.LTCWalletAsset:
+		return wl.AssetsManager.AllLTCWallets()
 	default:
 		return nil
 	}

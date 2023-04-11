@@ -367,7 +367,7 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 
 	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
-		Database:      asset.GetWalletDataDb(),
+		Database:      asset.GetWalletDataDb().BTC,
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		ConnectPeers:  persistentPeers,

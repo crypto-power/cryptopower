@@ -145,7 +145,7 @@ type AccountProperties struct {
 	// derive any address relevant to said account.
 	//
 	// NOTE: This may be nil for imported accounts.
-	AccountPubKey *btchdkeychain.ExtendedKey
+	AccountPubKey *btchdkeychain.ExtendedKey // TODO: support LTC
 
 	// MasterKeyFingerprint represents the fingerprint of the root key
 	// corresponding to the master public key (also known as the key with

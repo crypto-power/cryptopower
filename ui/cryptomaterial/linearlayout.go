@@ -70,6 +70,12 @@ var assetsGradientColorSchemes = map[utils.AssetType]gradientcolorScheme{
 		color2: colorScheme{R: 45, G: 216, B: 163, O: 0.3}, // rgba(45, 216, 163, 0.3)
 		blend2: 65.88,                                      // 65.88 %
 	},
+	utils.LTCWalletAsset: {
+		color1: colorScheme{R: 224, G: 224, B: 224, O: 0.3}, // rgba(224, 224, 224, 0.3)
+		blend1: 34.76,                                       // 34.76%
+		color2: colorScheme{R: 56, G: 115, B: 223, O: 0.3},  // rgba(56, 115, 223, 0.3)
+		blend2: 65.88,                                       // 65.88 %
+	},
 }
 
 // Layout2 displays a linear layout with a single child.

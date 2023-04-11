@@ -404,6 +404,8 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 			wallets = sm.WL.AssetsManager.AllBTCWallets()
 		case utils.DCRWalletAsset:
 			wallets = sm.WL.AssetsManager.AllDCRWallets()
+		case utils.LTCWalletAsset:
+			wallets = sm.WL.AssetsManager.AllLTCWallets()
 		}
 	}
 
@@ -434,6 +436,8 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 			wallets = sm.WL.AssetsManager.AllBTCWallets()
 		case utils.DCRWalletAsset:
 			wallets = sm.WL.AssetsManager.AllDCRWallets()
+		case utils.LTCWalletAsset:
+			wallets = sm.WL.AssetsManager.AllLTCWallets()
 		}
 	}
 

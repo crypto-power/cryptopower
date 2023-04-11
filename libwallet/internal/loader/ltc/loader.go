@@ -1,4 +1,4 @@
-package btc
+package ltc
 
 import (
 	"context"
@@ -39,7 +39,7 @@ type ltcLoader struct {
 	mu sync.RWMutex
 }
 
-// LoaderConf models the configuration options of a btc loader.
+// LoaderConf models the configuration options of a ltc loader.
 type LoaderConf struct {
 	ChainParams      *chaincfg.Params
 	DBDirPath        string
@@ -50,7 +50,7 @@ type LoaderConf struct {
 // Confirm that ltcLoader implements the complete asset loader interface.
 var _ loader.AssetLoader = (*ltcLoader)(nil)
 
-// NewLoader constructs a BTC Loader.
+// NewLoader constructs a LTC Loader.
 func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 
 	return &ltcLoader{
@@ -62,7 +62,7 @@ func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 	}
 }
 
-// getWalletLoader creates the btc loader by configuring the path with the
+// getWalletLoader creates the ltc loader by configuring the path with the
 // provided parameters. If createIfNotFound the missing directory path is created.
 // This is mostly done when new wallets are being created. When reading existing
 // wallets createIfNotFound is set to false signifying that if the path doesn't
@@ -73,14 +73,14 @@ func (l *ltcLoader) getWalletLoader(walletID string, createIfNotFound bool) (*wa
 
 	if createIfNotFound {
 		// If the directory path doesn't exists, it creates it.
-		dbpath, err = l.CreateDirPath(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
+		dbpath, err = l.CreateDirPath(walletID, wallet.WalletDBName, utils.LTCWalletAsset)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var exists bool
 		// constructs and checks if the file path exists
-		dbpath, exists, err = l.FileExists(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
+		dbpath, exists, err = l.FileExists(walletID, wallet.WalletDBName, utils.LTCWalletAsset)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +125,7 @@ func (l *ltcLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 
 	wal, err := ldr.CreateNewWallet(params.PubPassphrase, params.PrivPassphrase, params.Seed, time.Now())
 	if err != nil {
-		log.Errorf("Failed to create new wallet btc wallet: %v", err)
+		log.Errorf("Failed to create new wallet ltc wallet: %v", err)
 		return nil, err
 	}
 
@@ -205,7 +205,7 @@ func (l *ltcLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 
 	wal, err := ldr.OpenExistingWallet(pubPassphrase, false)
 	if err != nil {
-		log.Errorf("Failed to open existing btc wallet: %v", err)
+		log.Errorf("Failed to open existing ltc wallet: %v", err)
 		return nil, err
 	}
 
@@ -219,7 +219,7 @@ func (l *ltcLoader) GetDbDirPath() string {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	return filepath.Join(l.DbDirPath, utils.BTCWalletAsset.ToStringLower())
+	return filepath.Join(l.DbDirPath, utils.LTCWalletAsset.ToStringLower())
 }
 
 // LoadedWallet returns the loaded wallet, if any, and a bool for whether the
@@ -252,7 +252,7 @@ func (l *ltcLoader) WalletExists(walletID string) (bool, error) {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	_, exists, err := l.FileExists(walletID, wallet.WalletDBName, utils.BTCWalletAsset)
+	_, exists, err := l.FileExists(walletID, wallet.WalletDBName, utils.LTCWalletAsset)
 	if err != nil {
 		return false, err
 	}

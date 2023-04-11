@@ -95,10 +95,16 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	// open database for indexing transactions for faster loading
-	dbName := walletdata.DCRDbName
-	if wallet.Type == utils.BTCWalletAsset {
+	var dbName string
+	switch wallet.Type {
+	case utils.DCRWalletAsset:
+		dbName = walletdata.DCRDbName
+	case utils.BTCWalletAsset:
 		dbName = walletdata.BTCDBName
+	case utils.LTCWalletAsset:
+		dbName = walletdata.LTCDBName
 	}
+
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
 	oldTxDBPath := filepath.Join(wallet.dataDir(), walletdata.OldDbName)
 	if exists, _ := fileExists(oldTxDBPath); exists {

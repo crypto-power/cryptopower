@@ -17,7 +17,7 @@ type Icons struct {
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
-	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly, BtcWatchOnly,
+	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly,
 	Next, SettingsIcon, SecurityIcon, HelpIcon, AboutIcon, DebugIcon, VerifyMessageIcon, LocationPinIcon, SignMessageIcon,
 	HeaderSettingsIcon, AlertGray, ArrowDownIcon, WatchOnlyWalletIcon, CurrencySwapIcon, SyncingIcon, TransactionFingerprint,
 	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, DecredLogo, EllipseVert,
@@ -37,7 +37,7 @@ type Icons struct {
 	TicketRevokedIcon,
 	TicketUnminedIcon *Image
 
-	DexIcon, DexIconInactive, BTC, DCR *Image
+	DexIcon, DexIconInactive, BTC, DCR, LTC *Image
 }
 
 func (i *Icons) StandardMaterialIcons() *Icons {
@@ -144,6 +144,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.DexIconInactive = NewImage(decredIcons["dex_icon_inactive"])
 	i.BTC = NewImage(decredIcons["dex_btc"])
 	i.DCR = NewImage(decredIcons["dex_dcr"])
+	i.LTC = NewImage(decredIcons["ltc"])
 	i.SuccessIcon = NewImage(decredIcons["success_check"])
 	i.FailedIcon = NewImage(decredIcons["crossmark_red"])
 	i.ReceiveInactiveIcon = NewImage(decredIcons["receive_inactive"])
@@ -152,6 +153,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.MixerInactive = NewImage(decredIcons["mixer_inactive"])
 	i.DcrWatchOnly = NewImage(decredIcons["dcr_watch_only"])
 	i.BtcWatchOnly = NewImage(decredIcons["btc_watch_only"])
+	i.LtcWatchOnly = NewImage(decredIcons["ltc_watch_only"])
 	i.RedAlert = NewImage(decredIcons["red_alert"])
 	i.ChevronExpand = NewImage(decredIcons["chevron_expand"])
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
