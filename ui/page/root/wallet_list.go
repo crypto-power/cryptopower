@@ -107,8 +107,7 @@ func (pg *WalletDexServerSelector) loadLTCWallets() {
 	mainWalletList := make([]*load.WalletItem, 0)
 	watchOnlyWalletList := make([]*load.WalletItem, 0)
 
-	// fmt.Println("[][][][][] len of wallets: ", len(wallets))
-
+	// TODO: account methods need to be implemented
 	for _, wal := range wallets {
 		// accountsResult, err := wal.GetAccountsRaw()
 		// if err != nil {
@@ -280,7 +279,6 @@ func (pg *WalletDexServerSelector) BTCwalletListLayout(gtx C) D {
 
 func (pg *WalletDexServerSelector) LTCwalletListLayout(gtx C) D {
 	walletSections := []func(gtx C) D{}
-	// fmt.Println(" [][][][][][][] len of ltc wallet list: ", len(pg.ltcWalletList))
 	if len(pg.ltcWalletList) > 0 {
 		walletSections = append(walletSections, pg.LTCWalletSection)
 	}

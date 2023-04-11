@@ -133,10 +133,6 @@ type BTCTX struct {
 	boltTx *bbolt.Tx
 }
 
-// type transaction struct {
-// 	boltTx *bbolt.Tx
-// }
-
 var _ walletdb.ReadWriteTx = (*BTCTX)(nil)
 
 // ReadBucket opens the root bucket for read only access.  If the bucket

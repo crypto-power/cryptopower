@@ -104,9 +104,6 @@ func (wallet *Wallet) prepare() (err error) {
 	case utils.LTCWalletAsset:
 		dbName = walletdata.LTCDBName
 	}
-	// if wallet.Type == utils.BTCWalletAsset {
-	// 	dbName = walletdata.BTCDBName
-	// }
 
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
 	oldTxDBPath := filepath.Join(wallet.dataDir(), walletdata.OldDbName)

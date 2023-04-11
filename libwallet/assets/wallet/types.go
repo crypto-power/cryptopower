@@ -5,9 +5,8 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
-	// btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/decred/dcrd/dcrutil/v4"
-	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 )
 
 type AssetAmount interface {
@@ -146,7 +145,7 @@ type AccountProperties struct {
 	// derive any address relevant to said account.
 	//
 	// NOTE: This may be nil for imported accounts.
-	AccountPubKey *ltchdkeychain.ExtendedKey
+	AccountPubKey *btchdkeychain.ExtendedKey // TODO: support LTC
 
 	// MasterKeyFingerprint represents the fingerprint of the root key
 	// corresponding to the master public key (also known as the key with

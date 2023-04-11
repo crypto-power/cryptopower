@@ -1,8 +1,6 @@
 package walletdata
 
 import (
-	// "io"
-
 	"go.etcd.io/bbolt"
 )
 

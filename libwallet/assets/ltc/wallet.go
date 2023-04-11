@@ -158,9 +158,9 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-		// syncData: &SyncData{
-		// 	syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
-		// },
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
@@ -195,9 +195,9 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	ltcWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-		// syncData: &SyncData{
-		// 	syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
-		// },
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
