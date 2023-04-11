@@ -23,5 +23,5 @@ func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationList
 // RemoveTxAndBlockNotificationListener removes a previously registered
 // transaction and block notification listener.
 func (asset *Asset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
-
+	log.Error(utils.ErrLTCMethodNotImplemented("RemoveTxAndBlockNotificationListener"))
 }

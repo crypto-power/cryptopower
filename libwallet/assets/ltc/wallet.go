@@ -267,7 +267,7 @@ func (asset *Asset) SafelyCancelSync() {
 		}
 	}
 
-	// asset.syncData.wg.Wait()
+	asset.syncData.wg.Wait()
 
 	// Stop the goroutines left active to manage the wallet functionalities that
 	// don't require activation of sync i.e. wallet rename, password update etc.
@@ -283,22 +283,25 @@ func (asset *Asset) SafelyCancelSync() {
 
 // IsSynced returns true if the wallet is synced.
 func (asset *Asset) IsSynced() bool {
+	log.Error(utils.ErrLTCMethodNotImplemented("IsSynced"))
 	return false
 }
 
 // IsWaiting returns true if the wallet is waiting for headers.
 func (asset *Asset) IsWaiting() bool {
-	log.Warn(utils.ErrLTCMethodNotImplemented("IsWaiting"))
+	log.Error(utils.ErrLTCMethodNotImplemented("IsWaiting"))
 	return false
 }
 
 // IsSyncing returns true if the wallet is syncing.
 func (asset *Asset) IsSyncing() bool {
+	log.Error(utils.ErrLTCMethodNotImplemented("IsSyncing"))
 	return false
 }
 
 // IsSyncShuttingDown returns true if the wallet is shutting down.
 func (asset *Asset) IsSyncShuttingDown() bool {
+	log.Error(utils.ErrLTCMethodNotImplemented("IsSyncShuttingDown"))
 	return false
 }
 
@@ -374,10 +377,14 @@ func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (boo
 }
 
 // RemovePeers removes all peers from the wallet.
-func (asset *Asset) RemovePeers() {}
+func (asset *Asset) RemovePeers() {
+	log.Error(utils.ErrLTCMethodNotImplemented("RemovePeers"))
+}
 
 // SetSpecificPeer sets a specific peer to connect to.
-func (asset *Asset) SetSpecificPeer(address string) {}
+func (asset *Asset) SetSpecificPeer(address string) {
+	log.Error(utils.ErrLTCMethodNotImplemented("SetSpecificPeer"))
+}
 
 // GetExtendedPubKey returns the extended public key of the given account,
 // to do that it calls LTCwallet's AccountProperties method, using KeyScopeBIP0084

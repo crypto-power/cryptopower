@@ -12,6 +12,7 @@ func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.Un
 
 // IsUnsignedTxExist returns true if an unsigned transaction exists.
 func (asset *Asset) IsUnsignedTxExist() bool {
+	log.Error(utils.ErrLTCMethodNotImplemented("IsUnsignedTxExist"))
 	return false
 }
 

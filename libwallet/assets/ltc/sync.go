@@ -178,11 +178,13 @@ func (asset *Asset) AddSyncProgressListener(syncProgressListener sharedW.SyncPro
 
 // RemoveSyncProgressListener unregisters a sync progress listener from the asset.
 func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
-	utils.ErrLTCMethodNotImplemented("RemoveSyncProgressListener")
+	log.Error(utils.ErrLTCMethodNotImplemented("RemoveSyncProgressListener"))
 }
 
 // CancelSync stops the sync process.
-func (asset *Asset) CancelSync() {}
+func (asset *Asset) CancelSync() {
+	log.Error(utils.ErrLTCMethodNotImplemented("CancelSync"))
+}
 
 // SpvSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.

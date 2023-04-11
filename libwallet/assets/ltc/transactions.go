@@ -17,6 +17,7 @@ func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 
 // TxMatchesFilter checks if the transaction matches the given filter.
 func (asset *Asset) TxMatchesFilter(_ *sharedW.Transaction, txFilter int32) bool {
+	log.Error(utils.ErrLTCMethodNotImplemented("TxMatchesFilter"))
 	return false
 }
 
