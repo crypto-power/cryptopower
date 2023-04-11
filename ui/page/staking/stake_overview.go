@@ -182,6 +182,7 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
+	pg.onScrollChangeListener()
 	widgets := []layout.Widget{
 		func(gtx C) D {
 			return components.UniformHorizontalPadding(gtx, pg.stakePriceSection)

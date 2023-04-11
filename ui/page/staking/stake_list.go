@@ -10,6 +10,8 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
+const pageSize int32 = 20
+
 func (pg *Page) initTicketList() {
 	pg.ticketsList = pg.Theme.NewClickableList(layout.Vertical)
 }
@@ -46,7 +48,8 @@ func (pg *Page) listenForTxNotifications() {
 }
 
 func (pg *Page) fetchTickets() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcr.TxFilterTickets, true)
+	offset := len(pg.tickets)
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(int32(offset), pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
@@ -62,7 +65,9 @@ func (pg *Page) fetchTickets() {
 		return
 	}
 
-	pg.tickets = tickets
+	if len(tickets) > 0 {
+		pg.tickets = append(pg.tickets, tickets...)
+	}
 }
 
 func (pg *Page) ticketListLayout(gtx C) D {
@@ -127,4 +132,18 @@ func (pg *Page) ticketListLayout(gtx C) D {
 			})
 		})
 	})
+}
+
+func (pg *Page) onScrollChangeListener() {
+	if len(pg.tickets) < int(pageSize) {
+		return
+	}
+
+	// The first check is for when the list is scrolled to the bottom using the scroll bar.
+	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
+	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
+	// is to check if the page is still scrollable.
+	if (pg.list.List.Position.OffsetLast >= -50 && pg.list.List.Position.BeforeEnd) || (pg.list.List.Position.OffsetLast == 0 && pg.list.List.Position.Length > 0) {
+		pg.fetchTickets()
+	}
 }
