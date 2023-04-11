@@ -144,6 +144,6 @@ func (pg *Page) onScrollChangeListener() {
 	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
 	// is to check if the page is still scrollable.
 	if (pg.list.List.Position.OffsetLast >= -50 && pg.list.List.Position.BeforeEnd) || (pg.list.List.Position.OffsetLast == 0 && pg.list.List.Position.Length > 0) {
-		pg.fetchTickets()
+		go pg.fetchTickets()
 	}
 }
