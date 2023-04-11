@@ -413,7 +413,7 @@ func (asset *Asset) stopSync() {
 
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
-	if loadedAsset != nil {
+	if !asset.WalletOpened() {
 		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
 			asset.syncData.isSyncShuttingDown = false
@@ -429,7 +429,7 @@ func (asset *Asset) stopSync() {
 	// 2. shutdown the chain client.
 	asset.chainClient.Stop() // If active, attempt to shut it down.
 
-	if loadedAsset != nil {
+	if !asset.WalletOpened() {
 		// Neutrino performs explicit chain service start but never explicit
 		// chain service stop thus the need to have it done here when stopping
 		// a wallet sync.
@@ -457,7 +457,7 @@ func (asset *Asset) stopSync() {
 
 	log.Infof("Stopping (%s) wallet and its neutrino interface", asset.GetWalletName())
 
-	if loadedAsset != nil {
+	if !asset.WalletOpened() {
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
 		//
@@ -538,7 +538,7 @@ func (asset *Asset) startWallet() (err error) {
 	// If this is an imported wallet and address dicovery has not been performed,
 	// We want to set the assets birtday to the genesis block.
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
-		asset.ForceRescan()
+		asset.forceRescan()
 	}
 	// Initiate the sync protocol and return an error incase of failure.
 	return asset.startSync()
@@ -574,6 +574,10 @@ func (asset *Asset) waitForSyncCompletion() {
 // SpvSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
 func (asset *Asset) SpvSync() (err error) {
+	if !asset.WalletOpened() {
+		return utils.ErrBTCNotInitialized
+	}
+
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
@@ -615,6 +619,10 @@ func (asset *Asset) SpvSync() (err error) {
 // for sync. It restarts sync if the wallet was previously connected to the btc newtork
 // before the function call.
 func (asset *Asset) reloadChainService() error {
+	if !asset.WalletOpened() {
+		return utils.ErrBTCNotInitialized
+	}
+
 	isPrevConnected := asset.IsConnectedToNetwork()
 	if isPrevConnected {
 		asset.CancelSync()

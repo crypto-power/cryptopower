@@ -294,7 +294,8 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 }
 
 func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
 	if err != nil {
 		return nil, err
@@ -360,7 +361,8 @@ func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error
 }
 
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:     walletName,
 		db:       params.DB,
@@ -404,7 +406,8 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 }
 
 func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.AssetLoader,
-	params *InitParams, assetType utils.AssetType) (*Wallet, error) {
+	params *InitParams, assetType utils.AssetType,
+) (*Wallet, error) {
 	wallet := &Wallet{
 		Name:                  pass.Name,
 		PrivatePassphraseType: pass.PrivatePassType,
@@ -542,6 +545,8 @@ func (wallet *Wallet) OpenWallet() error {
 	return nil
 }
 
+// WalletOpened checks if the upstream loader instance of the asset wallet
+// is loaded (i.e. open).
 func (wallet *Wallet) WalletOpened() bool {
 	switch wallet.Type {
 	case utils.BTCWalletAsset:

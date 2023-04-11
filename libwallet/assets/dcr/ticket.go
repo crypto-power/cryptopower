@@ -82,6 +82,10 @@ func (asset *DCRAsset) StakingOverview() (stOverview *StakingOverview, err error
 // the stake difficulty. May be incorrect if blockchain sync is ongoing or if
 // blockchain is not up-to-date.
 func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	sdiff, err := asset.Internal().DCR.NextStakeDifficulty(ctx)
 	if err != nil {
@@ -99,6 +103,10 @@ func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
 // PurchaseTickets purchases tickets from the asset.
 // Returns a slice of hashes for tickets purchased.
 func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost, passphrase string, vspPubKey []byte) ([]*chainhash.Hash, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	vspClient, err := asset.VSPClient(vspHost, vspPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("VSP Server instance failed to start: %v", err)
@@ -154,6 +162,9 @@ func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost, passp
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
 func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
 
 	ticketHash, err := chainhash.NewHashFromStr(hash)
 	if err != nil {
@@ -225,6 +236,10 @@ func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 // should already be configured with the required parameters using
 // asset.SetAutoTicketsBuyerConfig().
 func (asset *DCRAsset) StartTicketBuyer(passphrase string) error {
+	if !asset.WalletOpened() {
+		return utils.ErrDCRNotInitialized
+	}
+
 	cfg := asset.AutoTicketsBuyerConfig()
 	if cfg.VspHost == "" {
 		return errors.New("ticket buyer config not set for this wallet")
@@ -491,7 +506,6 @@ func (asset *DCRAsset) IsAutoTicketsPurchaseActive() bool {
 
 // StopAutoTicketsPurchase stops the automatic ticket buyer.
 func (asset *DCRAsset) StopAutoTicketsPurchase() error {
-
 	asset.cancelAutoTicketBuyerMu.Lock()
 	defer asset.cancelAutoTicketBuyerMu.Unlock()
 
@@ -532,7 +546,6 @@ func (asset *DCRAsset) TicketBuyerConfigIsSet() bool {
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.
 func (asset *DCRAsset) ClearTicketBuyerConfig(walletID int) error {
-
 	asset.SetLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, -1)
 	asset.SetInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1)
 	asset.SetStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "")

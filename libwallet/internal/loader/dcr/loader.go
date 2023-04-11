@@ -81,7 +81,6 @@ type LoaderConf struct {
 
 // NewLoader constructs a DCR Loader.
 func NewLoader(cfg *LoaderConf) loader.AssetLoader {
-
 	return &dcrLoader{
 		chainParams:             cfg.ChainParams,
 		stakeOptions:            cfg.StakeOptions,

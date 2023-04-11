@@ -49,6 +49,10 @@ const (
 )
 
 func (asset *DCRAsset) PublishUnminedTransactions() error {
+	if !asset.WalletOpened() {
+		return utils.ErrDCRNotInitialized
+	}
+
 	n, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		log.Error(err)
@@ -75,6 +79,10 @@ func (asset *DCRAsset) GetTransaction(txHash string) (string, error) {
 }
 
 func (asset *DCRAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	hash, err := chainhash.NewHashFromStr(txHash)
 	if err != nil {
 		log.Error(err)
@@ -140,7 +148,6 @@ func (asset *DCRAsset) TicketSpender(ticketHash string) (*sharedW.Transaction, e
 }
 
 func (asset *DCRAsset) TransactionOverview() (txOverview *sharedW.TransactionOverview, err error) {
-
 	txOverview = &sharedW.TransactionOverview{}
 
 	txOverview.Sent, err = asset.CountTransactions(TxFilterSent)

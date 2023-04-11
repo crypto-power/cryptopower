@@ -43,7 +43,7 @@ func (asset *Asset) GetAccounts() (string, error) {
 // GetAccountsRaw returns a list of all accounts for the wallet
 // without marshalling the response.
 func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
-	if asset.Internal().BTC == nil {
+	if !asset.WalletOpened() {
 		return nil, utils.ErrBTCNotInitialized
 	}
 
@@ -100,7 +100,7 @@ func (asset *Asset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 
 // GetAccountBalance returns the balance for the provided account number.
 func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
-	if asset.Internal().BTC == nil {
+	if !asset.WalletOpened() {
 		return nil, utils.ErrBTCNotInitialized
 	}
 
@@ -118,7 +118,7 @@ func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, er
 
 // SpendableForAccount returns the spendable balance for the provided account
 func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
-	if asset.Internal().BTC == nil {
+	if !asset.WalletOpened() {
 		return -1, utils.ErrBTCNotInitialized
 	}
 
@@ -132,6 +132,10 @@ func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 // UnspentOutputs returns all the unspent outputs available for the provided
 // account index.
 func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrBTCNotInitialized
+	}
+
 	accountName, err := asset.AccountName(account)
 	if err != nil {
 		return nil, err
@@ -185,6 +189,10 @@ func (asset *Asset) CreateNewAccount(accountName, privPass string) (int32, error
 
 // NextAccount returns the next account number for the provided account name.
 func (asset *Asset) NextAccount(accountName string) (int32, error) {
+	if !asset.WalletOpened() {
+		return -1, utils.ErrBTCNotInitialized
+	}
+
 	if asset.IsLocked() {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}
@@ -199,6 +207,10 @@ func (asset *Asset) NextAccount(accountName string) (int32, error) {
 
 // RenameAccount renames the account with the provided account number.
 func (asset *Asset) RenameAccount(accountNumber int32, newName string) error {
+	if !asset.WalletOpened() {
+		return utils.ErrBTCNotInitialized
+	}
+
 	err := asset.Internal().BTC.RenameAccount(asset.GetScope(), uint32(accountNumber), newName)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -219,17 +231,29 @@ func (asset *Asset) AccountName(accountNumber int32) (string, error) {
 // AccountNameRaw returns the account name for the provided account number
 // from the internal wallet.
 func (asset *Asset) AccountNameRaw(accountNumber uint32) (string, error) {
+	if !asset.WalletOpened() {
+		return "", utils.ErrBTCNotInitialized
+	}
+
 	return asset.Internal().BTC.AccountName(asset.GetScope(), accountNumber)
 }
 
 // AccountNumber returns the account number for the provided account name.
 func (asset *Asset) AccountNumber(accountName string) (int32, error) {
+	if !asset.WalletOpened() {
+		return -1, utils.ErrBTCNotInitialized
+	}
+
 	accountNumber, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
 // HasAccount returns true if there is an account with the provided account name.
 func (asset *Asset) HasAccount(accountName string) bool {
+	if !asset.WalletOpened() {
+		return false
+	}
+
 	_, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
 	return err == nil
 }

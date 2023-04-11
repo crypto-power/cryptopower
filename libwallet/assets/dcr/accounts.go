@@ -25,7 +25,7 @@ func (asset *DCRAsset) GetAccounts() (string, error) {
 }
 
 func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
-	if asset.Internal().DCR == nil {
+	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
 
@@ -106,6 +106,10 @@ func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 }
 
 func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	balance, err := asset.Internal().DCR.AccountBalance(ctx, uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
@@ -124,6 +128,10 @@ func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 }
 
 func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
+	if !asset.WalletOpened() {
+		return -1, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	bals, err := asset.Internal().DCR.AccountBalance(ctx, uint32(account), asset.RequiredConfirmations())
 	if err != nil {
@@ -134,6 +142,10 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 }
 
 func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrDCRNotInitialized
+	}
+
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(account),
 		RequiredConfirmations: asset.RequiredConfirmations(),
@@ -188,6 +200,10 @@ func (asset *DCRAsset) CreateNewAccount(accountName, privPass string) (int32, er
 }
 
 func (asset *DCRAsset) NextAccount(accountName string) (int32, error) {
+	if !asset.WalletOpened() {
+		return -1, utils.ErrDCRNotInitialized
+	}
+
 	if asset.IsLocked() {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}
@@ -202,6 +218,10 @@ func (asset *DCRAsset) NextAccount(accountName string) (int32, error) {
 }
 
 func (asset *DCRAsset) RenameAccount(accountNumber int32, newName string) error {
+	if !asset.WalletOpened() {
+		return utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	err := asset.Internal().DCR.RenameAccount(ctx, uint32(accountNumber), newName)
 	if err != nil {
@@ -220,23 +240,39 @@ func (asset *DCRAsset) AccountName(accountNumber int32) (string, error) {
 }
 
 func (asset *DCRAsset) AccountNameRaw(accountNumber uint32) (string, error) {
+	if !asset.WalletOpened() {
+		return "", utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	return asset.Internal().DCR.AccountName(ctx, accountNumber)
 }
 
 func (asset *DCRAsset) AccountNumber(accountName string) (int32, error) {
+	if !asset.WalletOpened() {
+		return -1, utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	accountNumber, err := asset.Internal().DCR.AccountNumber(ctx, accountName)
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
 func (asset *DCRAsset) HasAccount(accountName string) bool {
+	if !asset.WalletOpened() {
+		return false
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	_, err := asset.Internal().DCR.AccountNumber(ctx, accountName)
 	return err == nil
 }
 
 func (asset *DCRAsset) HDPathForAccount(accountNumber int32) (string, error) {
+	if !asset.WalletOpened() {
+		return "", utils.ErrDCRNotInitialized
+	}
+
 	ctx, _ := asset.ShutdownContextWithCancel()
 	cointype, err := asset.Internal().DCR.CoinType(ctx)
 	if err != nil {
@@ -263,6 +299,10 @@ func (asset *DCRAsset) HDPathForAccount(accountNumber int32) (string, error) {
 }
 
 func (asset *DCRAsset) GetExtendedPubKey(account int32) (string, error) {
+	if !asset.WalletOpened() {
+		return "", utils.ErrDCRNotInitialized
+	}
+
 	loadedAsset := asset.Internal().DCR
 	if loadedAsset == nil {
 		return "", fmt.Errorf("dcr asset not initialised")
