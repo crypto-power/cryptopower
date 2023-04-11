@@ -72,7 +72,11 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
-	ltcChainParams, err := initializeLTCWalletParameters(netType)
+	ltcNetType := netType
+	if netType == utils.Testnet {
+		ltcNetType = utils.Testnet4
+	}
+	ltcChainParams, err := initializeLTCWalletParameters(ltcNetType)
 	if err != nil {
 		log.Errorf("error initializing LTC parameters: %s", err.Error())
 		return nil, errors.Errorf("error initializing LTC parameters: %s", err.Error())

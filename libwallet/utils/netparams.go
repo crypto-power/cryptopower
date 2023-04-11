@@ -7,6 +7,8 @@ import (
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
+// ltcwire "github.com/ltcsuite/ltcd/wire"
+	// dexltc "decred.org/dcrdex/dex/networks/ltc"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -16,6 +18,7 @@ type NetworkType string
 const (
 	Mainnet    NetworkType = "mainnet"
 	Testnet    NetworkType = "testnet3"
+	Testnet4   NetworkType = "testnet4"
 	Regression NetworkType = "regression"
 	Simulation NetworkType = "simulation"
 	Unknown    NetworkType = "unknown"
@@ -40,6 +43,8 @@ func ToNetworkType(str string) NetworkType {
 		return Mainnet
 	case "testnet", "testnet3", "test":
 		return Testnet
+	case "testnet4":
+		return Testnet4
 	case "regression", "reg", "regnet":
 		return Regression
 	case "simulation", "sim", "simnet":
@@ -111,7 +116,7 @@ func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
 	switch netType {
 	case Mainnet:
 		return LTCmainnetParams, nil
-	case Testnet:
+	case Testnet4:
 		return LTCtestnetParams, nil
 	case Simulation:
 		return LTCSimnetParams, nil
