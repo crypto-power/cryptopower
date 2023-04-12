@@ -33,11 +33,13 @@ func (asset *Asset) HaveAddress(address string) bool {
 
 	addr, err := ltcutil.DecodeAddress(address, asset.chainParams)
 	if err != nil {
+		log.Debugf("DecodeAddress failed: ", err)
 		return false
 	}
 
 	have, err := asset.Internal().LTC.HaveAddress(addr)
 	if err != nil {
+		log.Debugf("HaveAddress failed: ", err)
 		return false
 	}
 
@@ -46,10 +48,10 @@ func (asset *Asset) HaveAddress(address string) bool {
 
 // AddressInfo returns information about an address.
 func (asset *Asset) AddressInfo(address string) (*AddressInfo, error) {
-	const op errors.Op = "btc.AddressInfo"
+	const op errors.Op = "ltc.AddressInfo"
 
 	if !asset.WalletOpened() {
-		return nil, utils.ErrBTCNotInitialized
+		return nil, utils.ErrLTCNotInitialized
 	}
 
 	addr, err := ltcutil.DecodeAddress(address, asset.chainParams)
@@ -92,7 +94,7 @@ func (asset *Asset) CurrentAddress(account int32) (string, error) {
 	}
 
 	if !asset.WalletOpened() {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	addr, err := asset.Internal().LTC.CurrentAddress(uint32(account), asset.GetScope())
@@ -112,7 +114,7 @@ func (asset *Asset) NextAddress(account int32) (string, error) {
 	}
 
 	if !asset.WalletOpened() {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	// NewAddress returns the next external chained address for a wallet.
@@ -133,7 +135,7 @@ func (asset *Asset) AccountOfAddress(address string) (string, error) {
 	}
 
 	if !asset.WalletOpened() {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	accountNumber, err := asset.Internal().LTC.AccountOfAddress(addr)
@@ -157,7 +159,7 @@ func (asset *Asset) AddressPubKey(address string) (string, error) {
 	}
 
 	if !asset.WalletOpened() {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	isMine, _ := asset.Internal().LTC.HaveAddress(addr)
