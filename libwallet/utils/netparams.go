@@ -17,7 +17,7 @@ type NetworkType string
 
 const (
 	Mainnet    NetworkType = "mainnet"
-	Testnet    NetworkType = "testnet3"
+	Testnet3    NetworkType = "testnet3"
 	Testnet4   NetworkType = "testnet4"
 	Regression NetworkType = "regression"
 	Simulation NetworkType = "simulation"
@@ -27,7 +27,7 @@ const (
 // Display returns the title case network name to be displayed on the app UI.
 func (n NetworkType) Display() string {
 	switch n {
-	case Testnet:
+	case Testnet3, Testnet4:
 		return "Testnet"
 	default:
 		caser := cases.Title(language.Und)
@@ -42,7 +42,7 @@ func ToNetworkType(str string) NetworkType {
 	case "mainnet":
 		return Mainnet
 	case "testnet", "testnet3", "test":
-		return Testnet
+		return Testnet3
 	case "testnet4":
 		return Testnet4
 	case "regression", "reg", "regnet":
@@ -82,7 +82,7 @@ func DCRChainParams(netType NetworkType) (*dcrcfg.Params, error) {
 	switch netType {
 	case Mainnet:
 		return DCRmainnetParams, nil
-	case Testnet:
+	case Testnet3:
 		return DCRtestnetParams, nil
 	case Simulation:
 		return DCRSimnetParams, nil
@@ -99,7 +99,7 @@ func BTCChainParams(netType NetworkType) (*btccfg.Params, error) {
 	switch netType {
 	case Mainnet:
 		return BTCmainnetParams, nil
-	case Testnet:
+	case Testnet3:
 		return BTCtestnetParams, nil
 	case Simulation:
 		return BTCSimnetParams, nil
@@ -113,10 +113,11 @@ func BTCChainParams(netType NetworkType) (*btccfg.Params, error) {
 // LTCChainParams returns the network parameters from the LTC chain provided
 // a network type is given.
 func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
+	// fmt.Println("[][][][] LTCChainParams", dexltc.TestNet4Params.Name)
 	switch netType {
 	case Mainnet:
 		return LTCmainnetParams, nil
-	case Testnet4:
+	case Testnet3:
 		return LTCtestnetParams, nil
 	case Simulation:
 		return LTCSimnetParams, nil

@@ -25,7 +25,7 @@ import (
 	labschain "github.com/dcrlabs/neutrino-ltc/chain"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
-
+	ltcwire "github.com/ltcsuite/ltcd/wire"
 	// "github.com/lightninglabs/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/headerfs"
@@ -125,13 +125,26 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 
 func initWalletLoader(chainParams *ltcchaincfg.Params, dbDirPath string) loader.AssetLoader {
 	conf := &ltc.LoaderConf{
-		ChainParams:      chainParams,
+		ChainParams:      walletParams(chainParams),
 		DBDirPath:        dbDirPath,
 		DefaultDBTimeout: defaultDBTimeout,
 		RecoveryWin:      recoverWindow,
 	}
 
 	return ltc.NewLoader(conf)
+}
+
+// walletParams works around a bug in ltcwallet that doesn't recognize
+// wire.TestNet4 in (*ScopedKeyManager).cloneKeyWithVersion which is called from
+// AccountProperties. Only do this for the *wallet.Wallet, not the
+// *neutrino.ChainService.
+func walletParams(chainParams *ltcchaincfg.Params) *ltcchaincfg.Params {
+	if chainParams.Name != ltcchaincfg.TestNet4Params.Name {
+		return chainParams
+	}
+	spoofParams := *chainParams
+	spoofParams.Net = ltcwire.TestNet3
+	return &spoofParams
 }
 
 // CreateWatchOnlyWallet accepts the wallet name, extended public key and the

@@ -9,11 +9,7 @@ import (
 
 // initializeLTCWalletParameters initializes the fields each LTC wallet is going to need to be setup
 func initializeLTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params, error) {
-	ltcNetType := netType
-	if netType == utils.Testnet {
-		ltcNetType = utils.Testnet4
-	}
-	chainParams, err := utils.LTCChainParams(ltcNetType)
+	chainParams, err := utils.LTCChainParams(netType)
 	if err != nil {
 		return chainParams, err
 	}
@@ -27,11 +23,7 @@ func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase strin
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
 	}
-	ltcNetType := mgr.params.NetType
-	if mgr.params.NetType == utils.Testnet {
-		ltcNetType = utils.Testnet4
-	}
-	mgr.params.NetType = ltcNetType
+
 	wallet, err := ltc.CreateNewWallet(pass, mgr.params)
 	if err != nil {
 		return nil, err
