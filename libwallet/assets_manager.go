@@ -61,7 +61,6 @@ type AssetsManager struct {
 // to initialize the rest of the other fields.
 func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 
-	fmt.Println("[][][][][][] nettype: ", netType)
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -74,10 +73,6 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 		return nil, errors.Errorf("error initializing BTC parameters: %s", err.Error())
 	}
 
-	// ltcNetType := netType
-	// if netType == utils.Testnet {
-	// 	ltcNetType = utils.Testnet4
-	// }
 	ltcChainParams, err := initializeLTCWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing LTC parameters: %s", err.Error())

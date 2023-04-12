@@ -7,8 +7,6 @@ import (
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
-// ltcwire "github.com/ltcsuite/ltcd/wire"
-	// dexltc "decred.org/dcrdex/dex/networks/ltc"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -17,7 +15,7 @@ type NetworkType string
 
 const (
 	Mainnet    NetworkType = "mainnet"
-	Testnet3    NetworkType = "testnet3"
+	Testnet3   NetworkType = "testnet3"
 	Testnet4   NetworkType = "testnet4"
 	Regression NetworkType = "regression"
 	Simulation NetworkType = "simulation"

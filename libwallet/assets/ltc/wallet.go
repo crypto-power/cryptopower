@@ -24,8 +24,8 @@ import (
 	// "github.com/ltcsuite/ltcwallet/chain"
 	labschain "github.com/dcrlabs/neutrino-ltc/chain"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
-	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	ltcwire "github.com/ltcsuite/ltcd/wire"
+	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 	// "github.com/lightninglabs/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/headerfs"
