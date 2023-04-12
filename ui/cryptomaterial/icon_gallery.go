@@ -17,11 +17,11 @@ type Icons struct {
 	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
-	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly,
+	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer,
 	Next, SettingsIcon, SecurityIcon, HelpIcon, AboutIcon, DebugIcon, VerifyMessageIcon, LocationPinIcon, SignMessageIcon,
 	HeaderSettingsIcon, AlertGray, ArrowDownIcon, WatchOnlyWalletIcon, CurrencySwapIcon, SyncingIcon, TransactionFingerprint,
-	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, DecredLogo, EllipseVert,
-	DecredSymbol2, GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast,
+	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, EllipseVert,
+	GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast,
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
@@ -37,7 +37,7 @@ type Icons struct {
 	TicketRevokedIcon,
 	TicketUnminedIcon *Image
 
-	DexIcon, DexIconInactive, BTC, DCR, LTC *Image
+	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly *Image
 }
 
 func (i *Icons) StandardMaterialIcons() *Icons {
@@ -122,8 +122,6 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.TicketMissedIcon = NewImage(decredIcons["ticket_missed"])
 	i.TicketExpiredIcon = NewImage(decredIcons["ticket_expired"])
 	i.TicketRevokedIcon = NewImage(decredIcons["ticket_revoked"])
-	i.DecredLogo = NewImage(decredIcons["decred_symbol"])
-	i.DecredSymbol2 = NewImage(decredIcons["ic_decred02"])
 	i.GovernanceActiveIcon = NewImage(decredIcons["governance_active"])
 	i.GovernanceInactiveIcon = NewImage(decredIcons["governance_inactive"])
 	i.Rebroadcast = NewImage(decredIcons["rebroadcast"])
@@ -140,20 +138,21 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.TransactionFingerprint = NewImage(decredIcons["transaction_fingerprint"])
 	i.ArrowForward = NewImage(decredIcons["arrow_fwd"])
 
-	i.DexIcon = NewImage(decredIcons["dex_icon"])
-	i.DexIconInactive = NewImage(decredIcons["dex_icon_inactive"])
-	i.BTC = NewImage(decredIcons["dex_btc"])
-	i.DCR = NewImage(decredIcons["dex_dcr"])
-	i.LTC = NewImage(decredIcons["ltc"])
+	/* Start - Asset types Icons */
+	i.BTC = NewImage(decredIcons["logo_btc"])
+	i.DCR = NewImage(decredIcons["logo_dcr"])
+	i.LTC = NewImage(decredIcons["logo_ltc"])
+	i.DcrWatchOnly = NewImage(decredIcons["logo_dcr_watch_only"])
+	i.BtcWatchOnly = NewImage(decredIcons["logo_btc_watch_only"])
+	i.LtcWatchOnly = NewImage(decredIcons["logo_ltc_watch_only"])
+	/* End - Asset types Icons */
+
 	i.SuccessIcon = NewImage(decredIcons["success_check"])
 	i.FailedIcon = NewImage(decredIcons["crossmark_red"])
 	i.ReceiveInactiveIcon = NewImage(decredIcons["receive_inactive"])
 	i.SendInactiveIcon = NewImage(decredIcons["send_inactive"])
 	i.DarkmodeIcon = NewImage(decredIcons["darkmodeIcon"])
 	i.MixerInactive = NewImage(decredIcons["mixer_inactive"])
-	i.DcrWatchOnly = NewImage(decredIcons["dcr_watch_only"])
-	i.BtcWatchOnly = NewImage(decredIcons["btc_watch_only"])
-	i.LtcWatchOnly = NewImage(decredIcons["ltc_watch_only"])
 	i.RedAlert = NewImage(decredIcons["red_alert"])
 	i.ChevronExpand = NewImage(decredIcons["chevron_expand"])
 	i.ChevronCollapse = NewImage(decredIcons["coll_half"])
@@ -221,13 +220,11 @@ func (i *Icons) DarkModeIcons() *Icons {
 	i.WalletIcon = NewImage(decredIcons["dm_wallet"])
 	i.StakeIcon = NewImage(decredIcons["dm_stake"])
 	i.TicketRevokedIcon = NewImage(decredIcons["dm_ticket_revoked"])
-	i.DecredLogo = NewImage(decredIcons["dm_decred_symbol"])
 	i.GovernanceActiveIcon = NewImage(decredIcons["dm_governance_active"])
 	i.GovernanceInactiveIcon = NewImage(decredIcons["dm_governance_inactive"])
 	i.Rebroadcast = NewImage(decredIcons["dm_rebroadcast"])
 	i.ActivatedActiveIcon = NewImage(decredIcons["dm_activated_active"])
 	i.LockinActiveIcon = NewImage(decredIcons["dm_lockin_active"])
-	i.DexIcon = NewImage(decredIcons["dm_dex_icon"])
 	i.TransactionFingerprint = NewImage(decredIcons["dm_transaction_fingerprint"])
 	i.ArrowForward = NewImage(decredIcons["dm_arrow_fwd"])
 	i.ChevronLeft = NewImage(decredIcons["chevron_left"])

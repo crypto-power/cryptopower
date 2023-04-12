@@ -9,6 +9,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
@@ -450,22 +451,9 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType
 				Right: values.MarginPadding10,
 				Left:  values.MarginPadding10,
 			}.Layout(gtx, func(gtx C) D {
-				switch wType {
-				case libutils.BTCWalletAsset:
-					if isWatchingOnlyWallet {
-						return pg.Theme.Icons.BtcWatchOnly.Layout36dp(gtx)
-					}
-					return pg.Theme.Icons.BTC.LayoutSize(gtx, values.MarginPadding30)
-				case libutils.DCRWalletAsset:
-					if isWatchingOnlyWallet {
-						return pg.Theme.Icons.DcrWatchOnly.Layout36dp(gtx)
-					}
-					return pg.Theme.Icons.DecredSymbol2.LayoutSize(gtx, values.MarginPadding30)
-				case libutils.LTCWalletAsset:
-					if isWatchingOnlyWallet {
-						return pg.Theme.Icons.LtcWatchOnly.Layout36dp(gtx)
-					}
-					return pg.Theme.Icons.LTC.LayoutSize(gtx, values.MarginPadding30)
+				image := components.CoinImageBySymbol(pg.Load, wType, isWatchingOnlyWallet)
+				if image != nil {
+					return image.LayoutSize(gtx, values.MarginPadding30)
 				}
 				return D{}
 			})

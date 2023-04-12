@@ -310,9 +310,10 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 }
 
 func (ws *WalletAndAccountSelector) setWalletLogo(gtx C) D {
-	walletIcon := ws.Theme.Icons.DecredLogo
-	if ws.selectedWallet.GetAssetType() == utils.BTCWalletAsset {
-		walletIcon = ws.Theme.Icons.BTC
+	walletIcon := CoinImageBySymbol(ws.Load, ws.selectedWallet.GetAssetType(),
+		ws.selectedWallet.IsWatchingOnlyWallet())
+	if walletIcon == nil {
+		return D{}
 	}
 	if ws.accountSelector {
 		walletIcon = ws.Theme.Icons.AccountIcon
@@ -629,14 +630,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 	case *sharedW.Account:
 		accountIcon = sm.Theme.Icons.AccountIcon
 	case sharedW.Asset:
-		{
-			switch n.GetAssetType() {
-			case utils.BTCWalletAsset:
-				accountIcon = sm.Theme.Icons.BTC
-			case utils.DCRWalletAsset:
-				accountIcon = sm.Theme.Icons.DecredLogo
-			}
-		}
+		accountIcon = CoinImageBySymbol(sm.Load, n.GetAssetType(), n.IsWatchingOnlyWallet())
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -647,11 +641,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 		Clickable: selectorItem.clickable,
 		Alignment: layout.Middle,
 	}.Layout(gtx,
-		layout.Flexed(0.1, func(gtx C) D {
-			return layout.Inset{
-				Right: values.MarginPadding18,
-			}.Layout(gtx, accountIcon.Layout16dp)
-		}),
+		layout.Flexed(0.1, accountIcon.Layout20dp),
 		layout.Flexed(0.8, func(gtx C) D {
 			var name, totalBal, spendableBal string
 			switch t := selectorItem.item.(type) {

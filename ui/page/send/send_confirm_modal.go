@@ -12,10 +12,10 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
+	"code.cryptopower.dev/group/cryptopower/ui/page/components"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -369,9 +369,9 @@ func (scm *sendConfirmModal) contentRow(gtx layout.Context, leftValue, rightValu
 }
 
 func (scm *sendConfirmModal) setWalletLogo(gtx C) D {
-	walletIcon := scm.Theme.Icons.DecredLogo
-	if scm.asset.GetAssetType() == utils.BTCWalletAsset {
-		walletIcon = scm.Theme.Icons.BTC
+	walletIcon := components.CoinImageBySymbol(scm.Load, scm.asset.GetAssetType(), false)
+	if walletIcon == nil {
+		return D{}
 	}
 	inset := layout.Inset{
 		Right: values.MarginPadding8, Left: values.MarginPadding25,

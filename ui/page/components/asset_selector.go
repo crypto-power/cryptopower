@@ -9,6 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -90,17 +91,12 @@ func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
 	return assetType
 }
 
-func (ats *AssetTypeSelector) setAssetTypeIcon(assetType utils.AssetType) *cryptomaterial.Image {
-	switch assetType {
-	case utils.DCRWalletAsset:
-		return ats.Theme.Icons.DecredLogo
-	case utils.BTCWalletAsset:
-		return ats.Theme.Icons.BTC
-	case utils.LTCWalletAsset:
-		return ats.Theme.Icons.LTC
-	default:
-		return ats.Theme.Icons.AddExchange
+func (ats *AssetTypeSelector) setAssetTypeIcon(assetType libutils.AssetType) *cryptomaterial.Image {
+	image := CoinImageBySymbol(ats.Load, assetType, false)
+	if image != nil {
+		return image
 	}
+	return ats.Theme.Icons.AddExchange
 }
 
 // SetBackground sets the asset background colour

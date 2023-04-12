@@ -14,6 +14,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
@@ -56,7 +57,7 @@ func RetryFunc(retryAttempts int, sleepDur time.Duration, funcDesc string, errFu
 func SeedWordsToHex(seedWords string) (string, error) {
 	var seedHex string
 	wordList := dcr.PGPWordList()
-	var wordIndexes = make(map[string]uint16, len(wordList))
+	wordIndexes := make(map[string]uint16, len(wordList))
 	for i, word := range wordList {
 		wordIndexes[strings.ToLower(word)] = uint16(i)
 	}
@@ -130,18 +131,12 @@ func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.
 	})
 }
 
-func SetWalletLogo(l *load.Load, gtx C, assetType string, size unit.Dp) D {
-
-	switch strings.ToLower(assetType) {
-	case utils.DCRWalletAsset.ToStringLower():
-		return l.Theme.Icons.DecredSymbol2.LayoutSize(gtx, size)
-	case utils.BTCWalletAsset.ToStringLower():
-		return l.Theme.Icons.BTC.LayoutSize(gtx, size)
-	case utils.LTCWalletAsset.ToStringLower():
-		return l.Theme.Icons.LTC.LayoutSize(gtx, size)
-	default:
-		return l.Theme.Icons.BTC.LayoutSize(gtx, size)
+func SetWalletLogo(l *load.Load, gtx C, assetType libutils.AssetType, size unit.Dp) D {
+	image := CoinImageBySymbol(l, assetType, false)
+	if image != nil {
+		return image.LayoutSize(gtx, size)
 	}
+	return D{}
 }
 
 func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D {
