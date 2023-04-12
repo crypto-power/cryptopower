@@ -79,7 +79,6 @@ func (pg *LTCAcctDetailsPage) OnNavigatedTo() {
 	pg.totalBalance = pg.account.Balance.Total.String()
 
 	pg.hdPath = pg.WL.LTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
-	fmt.Println("[][][][] HD Path: ", pg.hdPath)
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount

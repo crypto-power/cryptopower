@@ -111,7 +111,6 @@ func BTCChainParams(netType NetworkType) (*btccfg.Params, error) {
 // LTCChainParams returns the network parameters from the LTC chain provided
 // a network type is given.
 func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
-	// fmt.Println("[][][][] LTCChainParams", dexltc.TestNet4Params.Name)
 	switch netType {
 	case Mainnet:
 		return LTCmainnetParams, nil
