@@ -2,6 +2,7 @@ package ltc
 
 import (
 	"fmt"
+	"net/netip"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -10,6 +11,8 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/ltcsuite/ltcd/chaincfg"
+	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/chain"
 
 	// "github.com/ltcsuite/neutrino"
@@ -31,6 +34,14 @@ const (
 	// terminating the notifications handler.
 	stop uint32 = 0
 )
+
+// Testnet4Seeds defines the default seed peers for the testnet 4 network.
+var Testnet4Seeds = [][]byte{
+	{0x12, 0xc0, 0x38, 0x95, 0x87, 0x4b},
+	{0x3, 0x47, 0x1e, 0x2e, 0x87, 0x4b},
+	{0x22, 0x59, 0x4e, 0x2d, 0x87, 0x4b},
+	{0x22, 0x8c, 0xc5, 0x98, 0x87, 0x4b},
+}
 
 // SyncData holds the data required to sync the wallet.
 type SyncData struct {
@@ -367,7 +378,7 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 			return chainService, errors.New(utils.ErrInvalidPeers)
 		}
 	}
-
+	// asset.setSeedPeers()
 	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb().LTC,
@@ -380,6 +391,8 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		// not cancel queries too readily.
 		BroadcastTimeout: 6 * time.Second,
 	})
+
+	// chainService.AddPeer(sp *neutrino.ServerPeer)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
@@ -644,4 +657,23 @@ func (asset *Asset) reloadChainService() error {
 		return asset.SpvSync()
 	}
 	return nil
+}
+
+// setSeedPeers sets the supported default DNS Seed peers.
+func (asset *Asset) setSeedPeers() {
+	switch asset.chainParams.Net {
+	case ltcwire.TestNet4:
+		defaultPeers := make([]chaincfg.DNSSeed, 0)
+		for _, host := range Testnet4Seeds {
+			var addr netip.AddrPort
+			addr.UnmarshalBinary(host)
+			defaultPeers = append(defaultPeers, chaincfg.DNSSeed{
+				Host:         addr.String(),
+				HasFiltering: true,
+			})
+		}
+		fmt.Println("Seed peers: ", defaultPeers)
+		asset.chainParams.DNSSeeds = defaultPeers
+	case ltcwire.TestNet, ltcwire.SimNet: // plain "wire.TestNet" is regnet!
+	}
 }
