@@ -74,8 +74,8 @@ type OrderNotificationListener interface {
 type Order struct {
 	ID                       int            `storm:"id,increment"`
 	UUID                     string         `storm:"unique" json:"uuid"`
-	Server                   Server         `json:"server"`         // Legacy Exchange Server field, used to update the new ExchangeServer field
-	ExchangeServer           ExchangeServer `json:"exchangeServer"` // New Exchange Server field
+	Server                   Server         `json:"server" storm:"index"`         // Legacy Exchange Server field, used to update the new ExchangeServer field
+	ExchangeServer           ExchangeServer `json:"exchangeServer" storm:"index"` // New Exchange Server field
 	SourceWalletID           int            `json:"sourceWalletID"`
 	SourceAccountNumber      int32          `json:"sourceAccountNumber"`
 	DestinationWalletID      int            `json:"destinationWalletID"`
@@ -96,7 +96,7 @@ type Order struct {
 	ChargedFee         float64 `json:"chargedFee"`
 
 	Confirmations string             `json:"confirmations"`
-	Status        instantswap.Status `json:"status"`
+	Status        instantswap.Status `json:"status" storm:"index"`
 	ExpiryTime    int                `json:"expiryTime"` // in seconds
 	CreatedAt     int64              `storm:"index" json:"createdAt"`
 	LastUpdate    string             `json:"lastUpdate"` // should be timestamp (api currently returns string)

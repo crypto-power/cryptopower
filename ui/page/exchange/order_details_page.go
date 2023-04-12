@@ -86,18 +86,16 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateNewOrder))
 	pg.refreshBtn = pg.Theme.Button(values.String(values.StrRefresh))
 
-	pg.isRefreshing = true
-	pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
-	if err != nil {
-		pg.isRefreshing = false
-		log.Error(err)
-	}
-
 	go func() {
-		select {
-		case <-time.After(2 * time.Second):
+		pg.isRefreshing = true
+		pg.orderInfo, err = pg.getOrderInfo(pg.orderInfo.UUID)
+		if err != nil {
 			pg.isRefreshing = false
+			log.Error(err)
 		}
+
+		time.Sleep(1 * time.Second)
+		pg.isRefreshing = false
 	}()
 
 	return pg
@@ -119,13 +117,12 @@ func (pg *OrderDetailsPage) OnNavigatedFrom() {
 
 func (pg *OrderDetailsPage) HandleUserInteractions() {
 	if pg.refreshBtn.Clicked() {
-		pg.isRefreshing = true
-		pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
 		go func() {
-			select {
-			case <-time.After(2 * time.Second):
-				pg.isRefreshing = false
-			}
+			pg.isRefreshing = true
+			pg.orderInfo, _ = pg.getOrderInfo(pg.orderInfo.UUID)
+
+			time.Sleep(1 * time.Second)
+			pg.isRefreshing = false
 		}()
 	}
 

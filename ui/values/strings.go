@@ -836,4 +836,7 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
+	StrOrderHistory                    = "orderHistory"
+	StrRecentOrders                    = "recentOrders"
+	StrViewAllOrders                   = "viewAllOrders"
 )

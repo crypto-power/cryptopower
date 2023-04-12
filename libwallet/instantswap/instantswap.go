@@ -89,13 +89,20 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 }
 
 // GetOrdersRaw fetches and returns all saved orders.
-func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool) ([]*Order, error) {
+// If status is specified, only orders with that status will be returned.
+// status is made optional to the sync functionality can update all orders.
+func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, status ...instantswap.Status) ([]*Order, error) {
 
 	var query storm.Query
-
 	query = instantSwap.db.Select(
 		q.True(),
 	)
+
+	if len(status) > 0 {
+		query = instantSwap.db.Select(
+			q.Eq("Status", status[0]),
+		)
+	}
 
 	if offset > 0 {
 		query = query.Skip(int(offset))

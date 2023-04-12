@@ -726,4 +726,7 @@ const EN = `
 "yourAddress" = "Your Address"
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
+"orderHistory" = "Order History"
+"recentOrders" = "Recent Orders (%d)"
+"viewAllOrders" = "View all orders"
 `

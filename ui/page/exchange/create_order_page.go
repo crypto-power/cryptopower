@@ -75,12 +75,14 @@ type CreateOrderPage struct {
 	iconClickable          *cryptomaterial.Clickable
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
+	viewAllButton          cryptomaterial.Button
 
 	min                       float64
 	max                       float64
 	exchangeRate, binanceRate float64
 
 	errMsg string
+	loading, initialLoadingDone, loadedAll bool
 
 	*orderData
 }
@@ -136,6 +138,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
+
+	pg.viewAllButton = l.Theme.Button(values.String(values.StrViewAllOrders))
+	pg.viewAllButton.Font.Weight = text.SemiBold
+	pg.viewAllButton.Color = l.Theme.Color.Primary
+	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
+	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().SurfaceHighlight
+	pg.viewAllButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.GrayText4)
+
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 	pg.infoButton.Size = values.MarginPadding18
 	buttonInset := layout.UniformInset(values.MarginPadding0)
@@ -207,9 +217,8 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
-		pg.FetchOrders()
-
 		pg.loadOrderConfig()
+		go pg.fetchOrders(false)
 	}
 }
 
@@ -220,6 +229,7 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
+
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
 	if pg.swapButton.Button.Clicked() {
@@ -265,6 +275,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			OnCancel(func() { // needed to satisfy the modal instance
 			})
 		pg.ParentWindow().ShowModal(orderSettingsModal)
+	}
+
+	if pg.viewAllButton.Clicked() {
+		pg.ParentNavigator().Display(NewOrderHistoryPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -514,6 +528,8 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		})
 	}
 
+	pg.onScrollChangeListener()
+
 	container := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -530,7 +546,21 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
 			},
 		}
-		return sp.Layout(pg.ParentWindow(), gtx)
+
+		return cryptomaterial.LinearLayout{
+			Width:     cryptomaterial.MatchParent,
+			Height:    cryptomaterial.MatchParent,
+			Direction: layout.Center,
+		}.Layout2(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:     gtx.Dp(values.MarginPadding550),
+				Height:    cryptomaterial.MatchParent,
+				Alignment: layout.Middle,
+			}.Layout2(gtx, func(gtx C) D {
+				return sp.Layout(pg.ParentWindow(), gtx)
+
+			})
+		})
 	}
 
 	return components.UniformPadding(gtx, container)
@@ -787,49 +817,61 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize18, values.String(values.StrHistory))
+										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, len(pg.orderItems)))
 										txt.Font.Weight = text.SemiBold
 										return txt.Layout(gtx)
 									}),
 									layout.Flexed(1, func(gtx C) D {
 										body := func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													var text string
-													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-														text = values.String(values.StrSyncingState)
-													} else {
-														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+											return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 
-														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
-															text = values.String(values.StrNeverSynced)
-														}
-													}
-
-													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
-													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
-												}),
 												layout.Rigid(func(gtx C) D {
-													return cryptomaterial.LinearLayout{
-														Width:     cryptomaterial.WrapContent,
-														Height:    cryptomaterial.WrapContent,
-														Clickable: pg.refreshClickable,
-														Direction: layout.Center,
-														Alignment: layout.Middle,
-														Margin:    layout.Inset{Left: values.MarginPadding10},
-													}.Layout(gtx,
+													return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
+															var text string
 															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																text = values.String(values.StrSyncingState)
+															} else {
+																text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+
+																if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+																	text = values.String(values.StrNeverSynced)
+																}
 															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
-															})
+
+															lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+															lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+															return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+														}),
+														layout.Rigid(func(gtx C) D {
+															return cryptomaterial.LinearLayout{
+																Width:     cryptomaterial.WrapContent,
+																Height:    cryptomaterial.WrapContent,
+																Clickable: pg.refreshClickable,
+																Direction: layout.Center,
+																Alignment: layout.Middle,
+																Margin:    layout.Inset{Left: values.MarginPadding10},
+															}.Layout(gtx,
+																layout.Rigid(func(gtx C) D {
+																	if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+																		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																		return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																	}
+																	return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+																		return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+																	})
+
+																}),
+															)
 														}),
 													)
+												}),
+												layout.Rigid(func(gtx C) D {
+													return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+
+														return layout.E.Layout(gtx, pg.viewAllButton.Layout)
+													})
 												}),
 											)
 										}
@@ -837,10 +879,14 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}),
 								)
 							}),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Top: values.MarginPadding10,
-								}.Layout(gtx, pg.layoutHistory)
+							layout.Flexed(1, func(gtx C) D {
+								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+									return layout.Stack{}.Layout(gtx,
+										layout.Expanded(func(gtx C) D {
+											return layout.Inset{}.Layout(gtx, pg.layoutHistory)
+										}),
+									)
+								})
 							}),
 						)
 					})
@@ -850,9 +896,50 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	})
 }
 
-func (pg *CreateOrderPage) FetchOrders() {
-	items := components.LoadOrders(pg.Load, true)
-	pg.orderItems = items
+func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
+	if pg.loading {
+		return
+	}
+	defer func() {
+		pg.loading = false
+	}()
+	pg.loadedAll = false
+	pg.loading = true
+
+	limit := 3
+
+	offset := 0
+	if loadMore {
+		offset = len(pg.orderItems)
+	}
+
+	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true)
+	if tempOrders == nil {
+		pg.orderItems = nil
+		return
+	}
+
+	pg.initialLoadingDone = true
+
+	if len(tempOrders) == 0 {
+		pg.loadedAll = true
+		pg.loading = false
+
+		if !loadMore {
+			pg.orderItems = nil
+		}
+		return
+	}
+
+	if len(tempOrders) < limit {
+		pg.loadedAll = true
+	}
+
+	if loadMore {
+		pg.orderItems = append(pg.orderItems, tempOrders...)
+	} else {
+		pg.orderItems = tempOrders
+	}
 
 	pg.ParentWindow().Reload()
 }
@@ -905,7 +992,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.FetchOrders()
+			pg.fetchOrders(false)
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1133,10 +1220,10 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			case n := <-pg.OrderNotifChan:
 				switch n.OrderStatus {
 				case wallet.OrderStatusSynced:
-					pg.FetchOrders()
+					pg.fetchOrders(false)
 					pg.ParentWindow().Reload()
 				case wallet.OrderCreated:
-					pg.FetchOrders()
+					pg.fetchOrders(false)
 					pg.ParentWindow().Reload()
 				case wallet.OrderSchedulerStarted:
 					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
@@ -1152,4 +1239,28 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			}
 		}
 	}()
+}
+
+func (pg *CreateOrderPage) onScrollChangeListener() {
+	// if the number of orders is less than 5, don't load more orders. (5 is an arbitrary number)
+	// This is to avoid loading more orders when there are no more orders to load.
+	// if initialLoadingDone is false, don't load more orders.
+	// This is to avoid loading more orders when orders are still being fetched.
+	if len(pg.orderItems) < 5 || !pg.initialLoadingDone {
+		return
+	}
+
+	// The first check is for when the list is scrolled to the bottom using the scroll bar.
+	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
+	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
+	// is to check if the page is still scrollable.
+	// The page scroll starts from a negative number and the closer you get to 0,
+	// it means you're getting closer to the end of the list. 0 is the last item on the list.
+	// The -50 is to load more orders before reaching the end of the list.
+	// (-50 is an arbitrary number)
+	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
+		if !pg.loadedAll {
+			pg.fetchOrders(false)
+		}
+	}
 }

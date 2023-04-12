@@ -10,6 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
+	api "code.cryptopower.dev/group/instantswap"
 )
 
 func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
@@ -112,10 +113,10 @@ func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadOrders(l *load.Load, newestFirst bool) []*instantswap.Order {
+func LoadOrders(l *load.Load, offset, limit int32, newestFirst bool, status ...api.Status) []*instantswap.Order {
 	var orders []*instantswap.Order
 
-	orders, err := l.WL.AssetsManager.InstantSwap.GetOrdersRaw(0, 0, true)
+	orders, err := l.WL.AssetsManager.InstantSwap.GetOrdersRaw(offset, limit, true, status...)
 	if err != nil {
 		log.Error(err)
 	}
