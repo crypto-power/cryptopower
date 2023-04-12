@@ -188,7 +188,7 @@ func (pg *LTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 						return pg.theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 								return pg.acctDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-									return layout.Inset{}.Layout(gtx, widgets[i])
+									return widgets[i](gtx)
 								})
 							})
 						})
@@ -197,10 +197,7 @@ func (pg *LTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 			},
 			ExtraItem: pg.renameAccount,
 			Extra: func(gtx C) D {
-				return layout.Inset{}.Layout(gtx, func(gtx C) D {
-					edit := pg.Theme.Icons.EditIcon
-					return layout.E.Layout(gtx, edit.Layout24dp)
-				})
+				return layout.E.Layout(gtx, pg.Theme.Icons.EditIcon.Layout24dp)
 			},
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
@@ -226,7 +223,7 @@ func (pg *LTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gt
 						return pg.theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 								return pg.acctDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-									return layout.Inset{}.Layout(gtx, widgets[i])
+									return widgets[i](gtx)
 								})
 							})
 						})

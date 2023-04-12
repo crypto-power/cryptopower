@@ -2,7 +2,6 @@ package ltc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
+
 	// "github.com/lightninglabs/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	"github.com/dcrlabs/neutrino-ltc/headerfs"
@@ -102,8 +102,6 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("wallet created LTC %v \n", w)
 
 	ltcWallet := &Asset{
 		Wallet:      w,

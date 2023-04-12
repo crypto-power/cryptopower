@@ -49,7 +49,6 @@ func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 
 	resp, err := asset.Internal().LTC.Accounts(asset.GetScope())
 	if err != nil {
-		fmt.Println("GetAccountsRaw 1: ", err)
 		return nil, err
 	}
 
@@ -57,8 +56,6 @@ func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	for i, a := range resp.Accounts {
 		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
 		if err != nil {
-			fmt.Println("GetAccountsRaw 2: ", err)
-
 			return nil, err
 		}
 
