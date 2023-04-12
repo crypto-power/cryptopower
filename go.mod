@@ -53,7 +53,6 @@ require (
 require (
 	code.cryptopower.dev/group/blockexplorer v0.0.0-20230309085755-e79cfca9224c
 	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
-	decred.org/dcrdex v0.6.0
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
@@ -66,6 +65,7 @@ require (
 	github.com/ltcsuite/ltcd/ltcutil v1.1.0
 	github.com/ltcsuite/ltcwallet v0.13.1
 	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
+	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 )
 
@@ -79,6 +79,7 @@ require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
+	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
@@ -122,7 +123,6 @@ require (
 	github.com/jrick/bitset v1.0.0 // indirect
 	github.com/jrick/wsrpc/v2 v2.3.5 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightningnetwork/lnd/clock v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/queue v1.0.1 // indirect
@@ -136,7 +136,6 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0 // indirect
 	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0 // indirect
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0 // indirect
-	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0 // indirect
 	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
@@ -150,7 +149,6 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
 // Older versions of github.com/lib/pq are required by politeia (v1.9.0)
