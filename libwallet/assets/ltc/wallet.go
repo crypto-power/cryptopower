@@ -54,7 +54,7 @@ type Asset struct {
 	// This field has been added to cache the expensive call to GetTransactions.
 	// If the best block height hasn't changed there is no need to make another
 	// expensive GetTransactions call.
-	// txs txCache
+	txs txCache
 
 	// This fields helps to prevent unnecessary API calls if a new block hasn't
 	// been introduced.
@@ -294,8 +294,10 @@ func (asset *Asset) SafelyCancelSync() {
 
 // IsSynced returns true if the wallet is synced.
 func (asset *Asset) IsSynced() bool {
-	log.Error(utils.ErrLTCMethodNotImplemented("IsSynced"))
-	return false
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	return asset.syncData.synced
 }
 
 // IsWaiting returns true if the wallet is waiting for headers.
@@ -306,14 +308,18 @@ func (asset *Asset) IsWaiting() bool {
 
 // IsSyncing returns true if the wallet is syncing.
 func (asset *Asset) IsSyncing() bool {
-	log.Error(utils.ErrLTCMethodNotImplemented("IsSyncing"))
-	return false
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	return asset.syncData.syncing
 }
 
 // IsSyncShuttingDown returns true if the wallet is shutting down.
 func (asset *Asset) IsSyncShuttingDown() bool {
-	log.Error(utils.ErrLTCMethodNotImplemented("IsSyncShuttingDown"))
-	return false
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	return asset.syncData.isSyncShuttingDown
 }
 
 // ConnectedPeers returns the number of connected peers.
