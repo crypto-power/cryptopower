@@ -6,7 +6,14 @@ import (
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
 )
 
-const ()
+const (
+	// TestnetHDPath is the BIP 84 HD path used for deriving addresses on the
+	// test network.
+	TestnetHDPath = "m / 84' / 1' / "
+	// MainnetHDPath is the BIP 84 HD path used for deriving addresses on the
+	// main network.
+	MainnetHDPath = "m / 84' / 0' / "
+)
 
 // GetScope returns the key scope that will be used within the waddrmgr to
 // create an HD chain for deriving all of our required keys. A different

@@ -16,10 +16,10 @@ import (
 const (
 	maxAmountSatoshi = btcutil.MaxSatoshi // MaxSatoshi is the maximum transaction amount allowed in satoshi.
 
-	// TestnetHDPath is the BIP 44 HD path used for deriving addresses on the
+	// TestnetHDPath is the BIP 84 HD path used for deriving addresses on the
 	// test network.
 	TestnetHDPath = "m / 84' / 1' / "
-	// MainnetHDPath is the BIP 44 HD path used for deriving addresses on the
+	// MainnetHDPath is the BIP 84 HD path used for deriving addresses on the
 	// main network.
 	MainnetHDPath = "m / 84' / 0' / "
 )

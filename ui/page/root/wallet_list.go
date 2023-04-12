@@ -1,6 +1,8 @@
 package root
 
 import (
+	"fmt"
+
 	"gioui.org/layout"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -110,16 +112,16 @@ func (pg *WalletDexServerSelector) loadLTCWallets() {
 
 	// TODO: account methods need to be implemented
 	for _, wal := range wallets {
-		// accountsResult, err := wal.GetAccountsRaw()
-		// if err != nil {
-		// 	fmt.Println("[][][][][] err: ", err)
-		// 	continue
-		// }
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			fmt.Println("[][][][][] err: ", err)
+			continue
+		}
 
-		totalBalance := int64(10889)
-		// for _, acc := range accountsResult.Accounts {
-		// 	totalBalance += acc.Balance.Total.ToInt()
-		// }
+		var totalBalance int64
+		for _, acc := range accountsResult.Accounts {
+			totalBalance += acc.Balance.Total.ToInt()
+		}
 
 		// sort wallets into normal wallet and watchonly wallets
 		if wal.IsWatchingOnlyWallet() {

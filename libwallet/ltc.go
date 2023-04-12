@@ -23,6 +23,7 @@ func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase strin
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
 	}
+
 	wallet, err := ltc.CreateNewWallet(pass, mgr.params)
 	if err != nil {
 		return nil, err

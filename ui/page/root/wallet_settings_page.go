@@ -800,6 +800,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
 		case libutils.DCRWalletAsset:
 			pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
+		case libutils.LTCWalletAsset:
+			pg.ParentNavigator().Display(s.NewAcctLTCDetailsPage(pg.Load, pg.accounts[selectedItem].Account))
 		}
 	}
 }

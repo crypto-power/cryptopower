@@ -8,6 +8,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/wallet"
@@ -117,7 +118,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount,
 
 func (wl *WalletLoad) DCRHDPrefix() string {
 	switch wl.Wallet.Net {
-	case utils.Testnet:
+	case utils.Testnet3:
 		return dcr.TestnetHDPath
 	case utils.Mainnet:
 		return dcr.MainnetHDPath
@@ -128,10 +129,22 @@ func (wl *WalletLoad) DCRHDPrefix() string {
 
 func (wl *WalletLoad) BTCHDPrefix() string {
 	switch wl.Wallet.Net {
-	case utils.Testnet:
+	case utils.Testnet3:
 		return btc.TestnetHDPath
 	case utils.Mainnet:
 		return btc.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
+// LTC HDPrefix returns the HD path prefix for the Litecoin wallet network.
+func (wl *WalletLoad) LTCHDPrefix() string {
+	switch wl.Wallet.Net {
+	case utils.Testnet3, utils.Testnet4:
+		return ltc.TestnetHDPath
+	case utils.Mainnet:
+		return ltc.MainnetHDPath
 	default:
 		return ""
 	}

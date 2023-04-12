@@ -73,7 +73,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	switch net {
 	case utils.Mainnet:
 		feerateURL = MainnetAPIFeeRateURL
-	case utils.Testnet:
+	case utils.Testnet3, utils.Testnet4:
 		feerateURL = TestnetAPIFeeRateURL
 	default:
 		return nil, fmt.Errorf("%v network is not supported", net)

@@ -60,6 +60,7 @@ type AssetsManager struct {
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
 func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
+
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
