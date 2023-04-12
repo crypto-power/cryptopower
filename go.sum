@@ -82,8 +82,6 @@ decred.org/cspp v0.3.0/go.mod h1:UygjYilC94dER3BEU65Zzyoqy9ngJfWCD2rdJqvUs2A=
 decred.org/cspp/v2 v2.0.0-20211207170141-a6b5f958a91f/go.mod h1:USyJS44Kqxz2wT/VaNsf9iTAONegO/qKXRdLg1nvrWI=
 decred.org/cspp/v2 v2.0.0 h1:b4fZrElRufz30rYnBZ2shhC8AjNVTN4i6TMzDi+hk44=
 decred.org/cspp/v2 v2.0.0/go.mod h1:0shJWKTWY3LxZEWGxtbER1Y45+HVjC0WZtj4bctSzCI=
-decred.org/dcrdex v0.6.0 h1:FG0WcgG2o4zRqJazp21HliOpfn44WKjAfZhskcC8FaM=
-decred.org/dcrdex v0.6.0/go.mod h1:IY/WzCTcRpLsZBUTSbpKyihNVhVluwzn25+5SaY/uC8=
 decred.org/dcrwallet v1.7.1 h1:6AGyjNgv7PQSRJOGNXYjOoua1SZHQWsBcuMMNfinEJM=
 decred.org/dcrwallet v1.7.1/go.mod h1:hNOGyvH53gWdgFB601/ubGRzCPfPtWnEVAi9Grs90y4=
 decred.org/dcrwallet/v2 v2.0.0-20211207180344-e2bce3d3b877/go.mod h1:nRvFh0CChWgRxXxxCWG2wBpzJnfOhGhdxU7meaMhSfA=
@@ -110,6 +108,7 @@ github.com/Azure/go-autorest v12.0.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSW
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
+github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/GoogleCloudPlatform/cloudsql-proxy v0.0.0-20191009163259-e802c2cb94ae/go.mod h1:mjwGPas4yKduTyubHvD1Atl9r1rUq8DfVy+gkVvZ+oo=
 github.com/JohannesKaufmann/html-to-markdown v1.2.1 h1:VgNHWizxsocCx99W8VOd6NkGLQsq7tzRWcGdxP65RpQ=
 github.com/JohannesKaufmann/html-to-markdown v1.2.1/go.mod h1:JNSClIRYICFDiFhw6RBhBeWGnMSSKVZ6sPQA+TK4tyM=
@@ -456,11 +455,9 @@ github.com/decred/dcrd/rpc/jsonrpc/types/v2 v2.3.0/go.mod h1:krn89ZOgSa8yc7sA4Wp
 github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0-20210129200153-14fd1a785bf2/go.mod h1:9izQEJ5wU0ZwYHESMaaOIvE6H6y3IvDsQL3ByYGn9oc=
 github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0 h1:WzG2IARR6OghjhWdxfUbXSPE4GEF2hZlCE5y2L/45f4=
 github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0/go.mod h1:1ILDxMKVS/qY71MylpZzuEX4O0u1SON4RPKbaZP71K0=
-github.com/decred/dcrd/rpcclient v1.0.1 h1:mSkVtOQKXnMJ2P08xPFnD2J9w54+YFQuMeBd5tC9iBI=
 github.com/decred/dcrd/rpcclient v1.0.1/go.mod h1:tApXK3wwrAQtz7lcXeeqBwuktUZesvrFfvhAdedYqdM=
 github.com/decred/dcrd/rpcclient/v4 v4.0.0/go.mod h1:DNGwfiL5H+K/pk3hVB0z5ypRdiDXMssR+YEqDUEXCQo=
 github.com/decred/dcrd/rpcclient/v7 v7.0.0-20211119190215-20dc378a4341/go.mod h1:fHve6G5hIaq2RklBG8Tsiz8id2S+0U3bvBACcYqZStc=
-github.com/decred/dcrd/rpcclient/v7 v7.0.0 h1:1XuGWpyjOPMscpwSDuumWTnfLl94LbIqg+5X6uCPYeY=
 github.com/decred/dcrd/rpcclient/v7 v7.0.0/go.mod h1:k4UDXFt0iwTRhKzdMGJbz/0wD/1lIKrQ5iYWyY7w8R4=
 github.com/decred/dcrd/txscript v1.0.0/go.mod h1:9byvrOaBSBVVnDG7Cm0JgN8bZytl1oi9Ba245VBeI18=
 github.com/decred/dcrd/txscript v1.0.1/go.mod h1:FqUX07Y+u3cJ1eIGPoyWbJg+Wk1NTllln/TyDpx9KnY=
@@ -838,8 +835,6 @@ github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23/go.mod h1:J+Gs4SYgM6
 github.com/kkdai/bstream v0.0.0-20181106074824-b3251f7901ec/go.mod h1:J+Gs4SYgM6CZQHDETBtE9HaSEkGmuNXF86RwHhHUvq4=
 github.com/kkdai/bstream v1.0.0 h1:Se5gHwgp2VT2uHfDrkbbgbgEvV9cimLELwrPJctSjg8=
 github.com/kkdai/bstream v1.0.0/go.mod h1:FDnDOHt5Yx4p3FaHcioFT0QjDOtgUpvjeZqAs+NVZZA=
-github.com/klauspost/cpuid/v2 v2.0.9 h1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=
-github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
@@ -1877,7 +1872,6 @@ gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMy
 gopkg.in/gcfg.v1 v1.2.3/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=
 gopkg.in/ini.v1 v1.51.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/ini.v1 v1.62.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
-gopkg.in/ini.v1 v1.67.0 h1:Dgnx+6+nfE+IfzjUEISNeydPJh9AXNNsWbGP9KzCsOA=
 gopkg.in/linkedin/goavro.v1 v1.0.5/go.mod h1:Aw5GdAbizjOEl0kAMHV9iHmA8reZzW/OKuJAl4Hb9F0=
 gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
@@ -1910,8 +1904,6 @@ honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
 honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
-lukechampine.com/blake3 v1.1.7 h1:GgRMhmdsuK8+ii6UZFDL8Nb+VyMwadAgcJyfYHxG6n0=
-lukechampine.com/blake3 v1.1.7/go.mod h1:tkKEOtDkNtklkXtLNEOGNq5tcV90tJiA1vAA12R78LA=
 pack.ag/amqp v0.11.2/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=

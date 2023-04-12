@@ -12,6 +12,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
@@ -38,14 +39,17 @@ import (
 	dcrw "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/btcsuite/btclog"
-	"github.com/btcsuite/btcwallet/chain"
-	bw "github.com/btcsuite/btcwallet/wallet"
-	"github.com/btcsuite/btcwallet/wtxmgr"
+	btcC "github.com/btcsuite/btcwallet/chain"
+	btcw "github.com/btcsuite/btcwallet/wallet"
+	btcWtx "github.com/btcsuite/btcwallet/wtxmgr"
 	"github.com/decred/dcrd/addrmgr/v2"
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 	"github.com/lightninglabs/neutrino"
+	ltcC "github.com/ltcsuite/ltcwallet/chain"
+	ltcw "github.com/ltcsuite/ltcwallet/wallet"
+	ltcWtx "github.com/ltcsuite/ltcwallet/wtxmgr"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -71,11 +75,13 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 var (
 	// dcrLogger, btcLogger, mainLogger indentifies the respective loggers.
 	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", "cryptopower.log"
+	ltcLogger                        = "ltc.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
 	// or data races and/or nil pointer dereferences will occur.
 	dcrBackendLog = slog.NewBackend(logWriter{dcrLogger})
 	btcBackendLog = btclog.NewBackend(logWriter{btcLogger})
+	ltcBackendLog = btclog.NewBackend(logWriter{ltcLogger})
 	backendLog    = slog.NewBackend(logWriter{mainLogger})
 
 	// logRotator is one of the logging outputs.  It should be closed on
@@ -97,6 +103,7 @@ var (
 	dcrWalletLog = dcrBackendLog.Logger("WLLT")
 	ntrn         = btcBackendLog.Logger("NTRN")
 	btcLog       = btcBackendLog.Logger("BTC")
+	ltcLog       = ltcBackendLog.Logger("LTC")
 )
 
 // Initialize package-global logger variables.
@@ -119,6 +126,7 @@ func init() {
 	privacy.UseLogger(winLog)
 	modal.UseLogger(winLog)
 	btc.UseLogger(btcLog)
+	ltc.UseLogger(ltcLog)
 	ext.UseLogger(extLog)
 	exchange.UseLogger(sharedWLog)
 	addrmgr.UseLogger(dcrLog)
@@ -127,9 +135,12 @@ func init() {
 	ticketbuyer.UseLogger(tkbyLog)
 	udb.UseLogger(dcrWalletLog)
 	neutrino.UseLogger(ntrn)
-	wtxmgr.UseLogger(btcLog)
-	chain.UseLogger(btcLog)
-	bw.UseLogger(btcLog)
+	ltcWtx.UseLogger(ltcLog)
+	btcWtx.UseLogger(btcLog)
+	ltcC.UseLogger(ltcLog)
+	btcC.UseLogger(btcLog)
+	btcw.UseLogger(btcLog)
+	ltcw.UseLogger(ltcLog)
 	dcrw.UseLogger(dcrLog)
 	spv.UseLogger(dcrLog)
 	instantswap.UseLogger(sharedWLog)
@@ -158,6 +169,7 @@ var subsystemSLoggers = map[string]slog.Logger{
 
 var subsystemBLoggers = map[string]btclog.Logger{
 	"BTC": btcLog,
+	"LTC": ltcLog,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -167,6 +179,7 @@ func initLogRotator(logDir string, maxRolls int) {
 	logRotators = map[string]*rotator.Rotator{
 		btcLogger:  nil,
 		dcrLogger:  nil,
+		ltcLogger:  nil,
 		mainLogger: nil,
 	}
 
