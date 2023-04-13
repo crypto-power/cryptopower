@@ -54,9 +54,11 @@ type Page struct {
 	infoButton     cryptomaterial.IconButton
 	materialLoader material.LoaderStyle
 
-	ticketPrice    string
-	totalRewards   string
-	loadingTickets bool
+	ticketPrice      string
+	totalRewards     string
+	loadingTickets   bool
+	ticketOffset     int32
+	loadedAllTickets bool
 
 	dcrImpl *dcr.DCRAsset
 }
@@ -107,7 +109,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.setStakingButtonsState()
 
 	pg.listenForTxNotifications()
-	go pg.fetchTickets()
+	go pg.fetchTickets(false)
 }
 
 // fetch ticket price only when the wallet is synced
@@ -195,15 +197,13 @@ func (pg *Page) layoutDesktop(gtx C) D {
 			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+					if pg.loadingTickets {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Center.Layout(gtx, func(gtx C) D {
+							return pg.materialLoader.Layout(gtx)
+						})
+					}
 					return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
-						if pg.loadingTickets {
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							return layout.Center.Layout(gtx, func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding100}.Layout(gtx, func(gtx C) D {
-									return pg.materialLoader.Layout(gtx)
-								})
-							})
-						}
 						return components.UniformHorizontalPadding(gtx, pg.ticketListLayout)
 					})
 				})

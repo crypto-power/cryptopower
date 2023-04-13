@@ -10,7 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
-const pageSize int32 = 20
+const pageSize int32 = 10
 
 func (pg *Page) initTicketList() {
 	pg.ticketsList = pg.Theme.NewClickableList(layout.Vertical)
@@ -33,7 +33,6 @@ func (pg *Page) listenForTxNotifications() {
 			select {
 			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.BlockAttached || n.Type == listeners.NewTransaction {
-					pg.fetchTickets()
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
@@ -47,16 +46,25 @@ func (pg *Page) listenForTxNotifications() {
 	}()
 }
 
-func (pg *Page) fetchTickets() {
-	if pg.loadingTickets {
+func (pg *Page) fetchTickets(reverse bool) {
+	if pg.loadingTickets || pg.loadedAllTickets {
 		return
 	}
 	defer func() {
 		pg.loadingTickets = false
+		pg.list.Position.Offset = 4
+		pg.list.Position.OffsetLast = pg.list.Position.OffsetLast + 4
 	}()
 	pg.loadingTickets = true
-	offset := len(pg.tickets)
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(int32(offset), pageSize, dcr.TxFilterTickets, true)
+	switch reverse {
+	case true:
+		pg.ticketOffset -= pageSize
+	default:
+		if len(pg.tickets) != 0 {
+			pg.ticketOffset += pageSize
+		}
+	}
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(pg.ticketOffset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
@@ -72,8 +80,15 @@ func (pg *Page) fetchTickets() {
 		return
 	}
 
-	if len(tickets) > 0 {
-		pg.tickets = append(pg.tickets, tickets...)
+	switch ticketLen := len(tickets); {
+	case ticketLen > 0:
+		if len(tickets) < int(pageSize) {
+			pg.tickets = append(pg.tickets, tickets...) // if the last batch is too small append to existing.
+		} else {
+			pg.tickets = tickets
+		}
+	default:
+		pg.loadedAllTickets = true
 	}
 }
 
@@ -146,11 +161,15 @@ func (pg *Page) onScrollChangeListener() {
 		return
 	}
 
-	// The first check is for when the list is scrolled to the bottom using the scroll bar.
-	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
-	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
-	// is to check if the page is still scrollable.
-	if (pg.list.List.Position.OffsetLast >= -50 && pg.list.List.Position.BeforeEnd) || (pg.list.List.Position.OffsetLast == 0 && pg.list.List.Position.Length > 0) {
-		go pg.fetchTickets()
+	if pg.list.List.Position.OffsetLast == 0 && !pg.list.List.Position.BeforeEnd {
+		go pg.fetchTickets(false)
+	}
+
+	// Fetches preceeding pagesize tickets if the list scrollbar is at the beginning.
+	if pg.list.List.Position.BeforeEnd && pg.list.Position.Offset == 0 && pg.ticketOffset >= pageSize {
+		if pg.loadedAllTickets {
+			pg.loadedAllTickets = false
+		}
+		go pg.fetchTickets(true)
 	}
 }
