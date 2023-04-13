@@ -103,7 +103,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.setStakingButtonsState()
 
 	pg.listenForTxNotifications()
-	pg.fetchTickets()
+	go pg.fetchTickets()
 }
 
 // fetch ticket price only when the wallet is synced
