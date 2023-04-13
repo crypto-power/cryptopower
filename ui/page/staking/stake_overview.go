@@ -54,11 +54,12 @@ type Page struct {
 	infoButton     cryptomaterial.IconButton
 	materialLoader material.LoaderStyle
 
-	ticketPrice      string
-	totalRewards     string
-	loadingTickets   bool
-	ticketOffset     int32
-	loadedAllTickets bool
+	ticketPrice        string
+	totalRewards       string
+	loadingTickets     bool
+	ticketOffset       int32
+	loadedAllTickets   bool
+	showMaterialLoader bool
 
 	dcrImpl *dcr.DCRAsset
 }
@@ -98,18 +99,28 @@ func NewStakingPage(l *load.Load) *Page {
 func (pg *Page) OnNavigatedTo() {
 	// pg.ctx is used to load known vsps in background and
 	// canceled in OnNavigatedFrom().
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.fetchTicketPrice()
+	// If staking is disabled no startup func should be called
+	// Layout will draw an overlay to show that stacking is disabled.
 
-	pg.loadPageData() // starts go routines to refresh the display which is just about to be displayed, ok?
+	if pg.isTicketsPurchaseAllowed() {
+		pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.stake.SetChecked(pg.dcrImpl.IsAutoTicketsPurchaseActive())
+		pg.fetchTicketPrice()
 
-	pg.setStakingButtonsState()
+		pg.loadPageData() // starts go routines to refresh the display which is just about to be displayed, ok?
 
-	pg.listenForTxNotifications()
-	go pg.fetchTickets(false)
+		pg.stake.SetChecked(pg.dcrImpl.IsAutoTicketsPurchaseActive())
+
+		pg.setStakingButtonsState()
+
+		pg.listenForTxNotifications()
+		go func() {
+			pg.showMaterialLoader = true
+			pg.fetchTickets(false)
+			pg.showMaterialLoader = false
+		}()
+	}
 }
 
 // fetch ticket price only when the wallet is synced
@@ -168,13 +179,14 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
 	// If Tickets Purcahse API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() {
 		gtx = gtx.Disabled()
-		overlay = layout.Stacked(func(gtx C) D {
+		overlay := layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
 		})
+
+		return layout.Stack{}.Layout(gtx, overlay)
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
@@ -184,7 +196,7 @@ func (pg *Page) Layout(gtx C) D {
 		return pg.layoutDesktop(gtx)
 	})
 
-	return layout.Stack{}.Layout(gtx, mainChild, overlay)
+	return layout.Stack{}.Layout(gtx, mainChild)
 }
 
 func (pg *Page) layoutDesktop(gtx C) D {
@@ -197,7 +209,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 			}),
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-					if pg.loadingTickets {
+					if pg.showMaterialLoader {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Center.Layout(gtx, func(gtx C) D {
 							return pg.materialLoader.Layout(gtx)
@@ -434,5 +446,10 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	pg.ctxCancel()
+	// There are cases where context was never created in the first place
+	// for instance if VSP is disabled will not be created, so context cancellation
+	// should be ignored.
+	if pg.ctxCancel != nil {
+		pg.ctxCancel()
+	}
 }

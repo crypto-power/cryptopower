@@ -10,7 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
-const pageSize int32 = 10
+const pageSize int32 = 20
 
 func (pg *Page) initTicketList() {
 	pg.ticketsList = pg.Theme.NewClickableList(layout.Vertical)
