@@ -7,6 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -47,13 +48,15 @@ type Page struct {
 
 	ticketOverview *dcr.StakingOverview
 
-	ticketsList   *cryptomaterial.ClickableList
-	stakeSettings *cryptomaterial.Clickable
-	stake         *cryptomaterial.Switch
-	infoButton    cryptomaterial.IconButton
+	ticketsList    *cryptomaterial.ClickableList
+	stakeSettings  *cryptomaterial.Clickable
+	stake          *cryptomaterial.Switch
+	infoButton     cryptomaterial.IconButton
+	materialLoader material.LoaderStyle
 
-	ticketPrice  string
-	totalRewards string
+	ticketPrice    string
+	totalRewards   string
+	loadingTickets bool
 
 	dcrImpl *dcr.DCRAsset
 }
@@ -77,6 +80,7 @@ func NewStakingPage(l *load.Load) *Page {
 		},
 	}
 
+	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.ticketOverview = new(dcr.StakingOverview)
 
 	pg.initStakePriceWidget()
@@ -190,8 +194,16 @@ func (pg *Page) layoutDesktop(gtx C) D {
 				return components.UniformHorizontalPadding(gtx, pg.stakePriceSection)
 			}),
 			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 					return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+						if pg.loadingTickets {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return layout.Center.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Top: values.MarginPadding100}.Layout(gtx, func(gtx C) D {
+									return pg.materialLoader.Layout(gtx)
+								})
+							})
+						}
 						return components.UniformHorizontalPadding(gtx, pg.ticketListLayout)
 					})
 				})

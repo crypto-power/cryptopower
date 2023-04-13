@@ -48,6 +48,13 @@ func (pg *Page) listenForTxNotifications() {
 }
 
 func (pg *Page) fetchTickets() {
+	if pg.loadingTickets {
+		return
+	}
+	defer func() {
+		pg.loadingTickets = false
+	}()
+	pg.loadingTickets = true
 	offset := len(pg.tickets)
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(int32(offset), pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
