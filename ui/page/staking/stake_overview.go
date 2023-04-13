@@ -181,21 +181,23 @@ func (pg *Page) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
-func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *Page) layoutDesktop(gtx C) D {
 	pg.onScrollChangeListener()
-	widgets := []layout.Widget{
-		func(gtx C) D {
-			return components.UniformHorizontalPadding(gtx, pg.stakePriceSection)
-		},
-		func(gtx C) D {
-			return components.UniformHorizontalPadding(gtx, pg.ticketListLayout)
-		},
-	}
 
-	return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-		return pg.Theme.List(pg.list).Layout(gtx, len(widgets), func(gtx C, i int) D {
-			return widgets[i](gtx)
-		})
+	return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding14}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return components.UniformHorizontalPadding(gtx, pg.stakePriceSection)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+					return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+						return components.UniformHorizontalPadding(gtx, pg.ticketListLayout)
+					})
+				})
+
+			}),
+		)
 	})
 }
 
