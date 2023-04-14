@@ -1,6 +1,8 @@
 package staking
 
 import (
+	"math"
+
 	"gioui.org/layout"
 	"gioui.org/text"
 
@@ -52,8 +54,14 @@ func (pg *Page) fetchTickets(reverse bool) {
 	}
 	defer func() {
 		pg.loadingTickets = false
-		pg.list.Position.Offset = 4
-		pg.list.Position.OffsetLast = pg.list.Position.OffsetLast + 4
+		if reverse {
+			pg.list.Position.Offset = int(math.Abs(float64(pg.list.Position.OffsetLast + 4)))
+			pg.list.Position.OffsetLast = -4
+		} else {
+			pg.list.Position.Offset = 4
+			pg.list.Position.OffsetLast = pg.list.Position.OffsetLast + 4
+		}
+
 	}()
 	pg.loadingTickets = true
 	switch reverse {
