@@ -215,8 +215,10 @@ func (pg *Page) layoutDesktop(gtx C) D {
 							return pg.materialLoader.Layout(gtx)
 						})
 					}
-					return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
-						return components.UniformHorizontalPadding(gtx, pg.ticketListLayout)
+					return components.UniformHorizontalPadding(gtx, func(gtx C) D {
+						return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+							return pg.ticketListLayout(gtx)
+						})
 					})
 				})
 
