@@ -54,6 +54,9 @@ func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D
 
 	statusLabel := l.Theme.Label(values.TextSize14, treasuryKeyPolicy.PiKey)
 	backgroundColor := l.Theme.Color.LightBlue
+	if l.WL.AssetsManager.IsDarkModeOn() {
+		backgroundColor = l.Theme.Color.Background
+	}
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

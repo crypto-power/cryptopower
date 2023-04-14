@@ -1048,7 +1048,7 @@ func (mp *MainPage) showBackupInfo() {
 
 func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D {
 	indexLabel := theme.Label(values.TextSize16, content)
-	indexLabel.Color = theme.Color.GrayText1
+	indexLabel.Color = theme.Color.PageNavText
 	indexLabel.Font.Weight = text.Medium
 	return cryptomaterial.LinearLayout{
 		Width:      gtx.Dp(values.MarginPadding100),
