@@ -81,7 +81,7 @@ type CreateOrderPage struct {
 	max                       float64
 	exchangeRate, binanceRate float64
 
-	errMsg string
+	errMsg                                 string
 	loading, initialLoadingDone, loadedAll bool
 
 	*orderData
