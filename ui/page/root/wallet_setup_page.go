@@ -88,7 +88,9 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		Load: l,
 	}
 
-	pg.assetTypeSelector.SetBackground(l.Theme.Color.White)
+	if !l.WL.AssetsManager.IsDarkModeOn() {
+		pg.assetTypeSelector.SetBackground(l.Theme.Color.White)
+	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
