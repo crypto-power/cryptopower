@@ -136,8 +136,8 @@ func init() {
 	p2p.UseLogger(syncLog)
 	ticketbuyer.UseLogger(tkbyLog)
 	udb.UseLogger(dcrWalletLog)
-	btcN.UseLogger(btcLog)
-	ltcN.UseLogger(ltcLog)
+	btcN.UseLogger(btcNtrn)
+	ltcN.UseLogger(ltcNtrn)
 	ltcWtx.UseLogger(ltcLog)
 	btcWtx.UseLogger(btcLog)
 	ltcC.UseLogger(ltcLog)
@@ -150,7 +150,7 @@ func init() {
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
-	ltcNtrn.SetLevel(btclog.LevelInfo)
+	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
 }
 

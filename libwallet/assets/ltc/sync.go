@@ -2,7 +2,6 @@ package ltc
 
 import (
 	"fmt"
-	"net/netip"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -11,7 +10,6 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/chain"
 
@@ -34,14 +32,6 @@ const (
 	// terminating the notifications handler.
 	stop uint32 = 0
 )
-
-// Testnet4Seeds defines the default seed peers for the testnet 4 network.
-var Testnet4Seeds = [][]byte{
-	{0x12, 0xc0, 0x38, 0x95, 0x87, 0x4b},
-	{0x3, 0x47, 0x1e, 0x2e, 0x87, 0x4b},
-	{0x22, 0x59, 0x4e, 0x2d, 0x87, 0x4b},
-	{0x22, 0x8c, 0xc5, 0x98, 0x87, 0x4b},
-}
 
 // SyncData holds the data required to sync the wallet.
 type SyncData struct {
@@ -378,13 +368,14 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 			return chainService, errors.New(utils.ErrInvalidPeers)
 		}
 	}
-	// asset.setSeedPeers()
+
 	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb().LTC,
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		ConnectPeers:  persistentPeers,
+		AddPeers:      asset.setSeedPeers(),
 		// WARNING: PublishTransaction currently uses the entire duration
 		// because if an external bug, but even if the resolved, a typical
 		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
@@ -660,20 +651,24 @@ func (asset *Asset) reloadChainService() error {
 }
 
 // setSeedPeers sets the supported default DNS Seed peers.
-func (asset *Asset) setSeedPeers() {
+func (asset *Asset) setSeedPeers() []string {
+	var defaultPeers []string
 	switch asset.chainParams.Net {
 	case ltcwire.TestNet4:
-		defaultPeers := make([]chaincfg.DNSSeed, 0)
-		for _, host := range Testnet4Seeds {
-			var addr netip.AddrPort
-			addr.UnmarshalBinary(host)
-			defaultPeers = append(defaultPeers, chaincfg.DNSSeed{
-				Host:         addr.String(),
-				HasFiltering: true,
-			})
+		defaultPeers = []string{
+			"178.62.46.195:19333",
+			"45.76.236.69:19335",
+			"80.82.21.77:19335",
+			"54.187.149.230:19335",
+			"54.39.129.45:19335",
+			"18.213.13.51:19335",
+			"44.204.151.133:19335",
+			"3.84.1.183:19335",
+			"162.55.210.70:19335",
+			"213.255.227.211:19335",
 		}
-		fmt.Println("Seed peers: ", defaultPeers)
-		asset.chainParams.DNSSeeds = defaultPeers
 	case ltcwire.TestNet, ltcwire.SimNet: // plain "wire.TestNet" is regnet!
+		defaultPeers = []string{"127.0.0.1:20585"}
 	}
+	return defaultPeers
 }
