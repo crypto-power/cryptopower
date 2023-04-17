@@ -5,11 +5,14 @@ import (
 
 	"github.com/btcsuite/btcd/btcutil"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
+	btctxscript "github.com/btcsuite/btcd/txscript"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
+	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcd/ltcutil"
+	ltctxscript "github.com/ltcsuite/ltcd/txscript"
 )
 
 const scriptVersion = 0
@@ -37,7 +40,27 @@ func BTCPkScript(address string, net *btccfg.Params) ([]byte, error) {
 	}
 
 	// Create a public key script that pays to the address.
-	pkScript, err := txscript.PayToAddrScript(addr)
+	pkScript, err := btctxscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	return pkScript, nil
+}
+
+// LTCPkScript returns the public key payment script for the given address.
+func LTCPkScript(address string, net *ltccfg.Params) ([]byte, error) {
+	// Parse the address to send the coins to into a ltcutil.Address
+	// which is useful to ensure the accuracy of the address and determine
+	// the address type. It is also required for the upcoming call to
+	// PayToAddrScript.
+	addr, err := ltcutil.DecodeAddress(address, net)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding address '%s': %s", address, err.Error())
+	}
+
+	// Create a public key script that pays to the address.
+	pkScript, err := ltctxscript.PayToAddrScript(addr)
 	if err != nil {
 		return nil, err
 	}
