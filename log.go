@@ -42,11 +42,12 @@ import (
 	btcC "github.com/btcsuite/btcwallet/chain"
 	btcw "github.com/btcsuite/btcwallet/wallet"
 	btcWtx "github.com/btcsuite/btcwallet/wtxmgr"
+	ltcN "github.com/dcrlabs/neutrino-ltc"
 	"github.com/decred/dcrd/addrmgr/v2"
 	"github.com/decred/dcrd/connmgr/v3"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/lightninglabs/neutrino"
+	btcN "github.com/lightninglabs/neutrino"
 	ltcC "github.com/ltcsuite/ltcwallet/chain"
 	ltcw "github.com/ltcsuite/ltcwallet/wallet"
 	ltcWtx "github.com/ltcsuite/ltcwallet/wtxmgr"
@@ -101,7 +102,8 @@ var (
 	syncLog      = dcrBackendLog.Logger("SYNC")
 	tkbyLog      = dcrBackendLog.Logger("TKBY")
 	dcrWalletLog = dcrBackendLog.Logger("WLLT")
-	ntrn         = btcBackendLog.Logger("NTRN")
+	btcNtrn      = btcBackendLog.Logger("B-NTR")
+	ltcNtrn      = btcBackendLog.Logger("L-NTR")
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
 )
@@ -134,7 +136,8 @@ func init() {
 	p2p.UseLogger(syncLog)
 	ticketbuyer.UseLogger(tkbyLog)
 	udb.UseLogger(dcrWalletLog)
-	neutrino.UseLogger(ntrn)
+	btcN.UseLogger(btcNtrn)
+	ltcN.UseLogger(ltcNtrn)
 	ltcWtx.UseLogger(ltcLog)
 	btcWtx.UseLogger(btcLog)
 	ltcC.UseLogger(ltcLog)
@@ -147,7 +150,8 @@ func init() {
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
-	ntrn.SetLevel(btclog.LevelError)
+	ltcNtrn.SetLevel(btclog.LevelError)
+	btcNtrn.SetLevel(btclog.LevelError)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
