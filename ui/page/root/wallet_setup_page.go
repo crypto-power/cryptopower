@@ -255,15 +255,25 @@ func (pg *CreateWallet) walletOptions(gtx C) D {
 					TopLeft:     8,
 					BottomLeft:  8,
 				}
+				border := pg.Theme.Color.White
+				if pg.WL.AssetsManager.IsDarkModeOn() {
+					border = pg.Theme.Color.Background
+				}
 				item.border = cryptomaterial.Border{
 					Radius: radius,
-					Color:  pg.Theme.Color.White,
+					Color:  border,
 					Width:  values.MarginPadding2,
 				}
 
 				if pg.selectedWalletAction == i {
+
 					col = pg.Theme.Color.White
 					title.Color = pg.Theme.Color.Primary
+
+					if pg.WL.AssetsManager.IsDarkModeOn() {
+						col = pg.Theme.Color.Gray2
+						title.Color = pg.Theme.Color.White
+					}
 
 					item.border = cryptomaterial.Border{
 						Radius: radius,
