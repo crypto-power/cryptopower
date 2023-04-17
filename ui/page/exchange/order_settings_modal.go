@@ -356,9 +356,9 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		})
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		border := widget.Border{Color: osm.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+																		border := widget.Border{Color: osm.Load.Theme.Color.Gray2, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
 																		wrapper := osm.Load.Theme.Card()
-																		wrapper.Color = osm.Load.Theme.Color.Gray4
+																		wrapper.Color = osm.Load.Theme.Color.Background
 																		return border.Layout(gtx, func(gtx C) D {
 																			return wrapper.Layout(gtx, func(gtx C) D {
 																				return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {

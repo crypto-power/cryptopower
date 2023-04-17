@@ -36,10 +36,14 @@ func (sae SelectAssetEditor) Layout(window app.WindowNavigator, gtx C) D {
 	height := int(gtx.Metric.PxPerDp * 31.0)
 	l := sae.Theme.SeparatorVertical(height, width)
 	l.Color = sae.Theme.Color.Gray3
+	bg := sae.Theme.Color.White
+	if sae.WL.AssetsManager.IsDarkModeOn() {
+		bg = sae.Theme.Color.Background
+	}
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     cryptomaterial.WrapContent,
-		Background: sae.Theme.Color.White,
+		Background: bg,
 		Alignment:  layout.Middle,
 		Border: cryptomaterial.Border{
 			Width:  values.MarginPadding2,

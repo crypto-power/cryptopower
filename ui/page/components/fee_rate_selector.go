@@ -116,9 +116,9 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						border := widget.Border{Color: fs.Load.Theme.Color.Gray4, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
+						border := widget.Border{Color: fs.Load.Theme.Color.Gray2, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
 						wrapper := fs.Load.Theme.Card()
-						wrapper.Color = fs.Load.Theme.Color.Gray4
+						wrapper.Color = fs.Load.Theme.Color.Background
 						return border.Layout(gtx, func(gtx C) D {
 							return wrapper.Layout(gtx, func(gtx C) D {
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X // Wrapper should fill available width

@@ -170,11 +170,16 @@ func (es *ExchangeSelector) Handle(window app.WindowNavigator) {
 func (es *ExchangeSelector) Layout(window app.WindowNavigator, gtx C) D {
 	es.Handle(window)
 
+	bg := es.Theme.Color.White
+	if es.WL.AssetsManager.IsDarkModeOn() {
+		bg = es.Theme.Color.Background
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
 		Height:     cryptomaterial.WrapContent,
 		Padding:    layout.UniformInset(values.MarginPadding12),
-		Background: es.Theme.Color.White,
+		Background: bg,
 		Border: cryptomaterial.Border{
 			Width:  values.MarginPadding2,
 			Color:  es.Theme.Color.Gray2,
