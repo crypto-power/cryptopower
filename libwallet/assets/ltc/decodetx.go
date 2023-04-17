@@ -34,7 +34,7 @@ func (asset *Asset) decodeTxInputs(mtx *wire.MsgTx,
 			PreviousTransactionHash:  txIn.PreviousOutPoint.Hash.String(),
 			PreviousTransactionIndex: int32(txIn.PreviousOutPoint.Index),
 			PreviousOutpoint:         txIn.PreviousOutPoint.String(),
-			AccountNumber:            -1, // correct account number is set below if this is a wallet output
+			AccountNumber:            -1, // correct account number is set below if this is a wallet input
 		}
 
 		// override account details if this is wallet input

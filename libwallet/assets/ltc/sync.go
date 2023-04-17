@@ -243,7 +243,7 @@ notificationsLoop:
 
 				select {
 				case <-t.C:
-					// log sync progress always
+					// log sync progress.
 					asset.updateSyncProgress(n.Block.Height)
 				default:
 				}
@@ -288,7 +288,7 @@ notificationsLoop:
 				asset.updateSyncProgress(n.Height)
 				asset.publishHeadersFetchComplete()
 
-				// once initial scan is complete reset the ticket to track every
+				// once initial scan is complete reset the ticker to track every
 				// new block or transaction detected.
 				t.Reset(1 * time.Second)
 
@@ -383,7 +383,6 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		BroadcastTimeout: 6 * time.Second,
 	})
 
-	// chainService.AddPeer(sp *neutrino.ServerPeer)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("couldn't create Neutrino ChainService: %v", err)
@@ -656,8 +655,10 @@ func (asset *Asset) setSeedPeers() []string {
 	switch asset.chainParams.Net {
 	case ltcwire.TestNet4:
 		defaultPeers = []string{
+			// The two below are the sure clients that connect to testnet.
 			"178.62.46.195:19333",
 			"45.76.236.69:19335",
+
 			"80.82.21.77:19335",
 			"54.187.149.230:19335",
 			"54.39.129.45:19335",
