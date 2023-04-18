@@ -25,7 +25,7 @@ type txCache struct {
 // PublishUnminedTransactions publishes all unmined transactions to the network.
 func (asset *Asset) PublishUnminedTransactions() error {
 	if !asset.WalletOpened() {
-		return utils.ErrBTCNotInitialized
+		return utils.ErrLTCNotInitialized
 	}
 
 	// Triggers the update of txs in the mempool if they are outdated
@@ -52,7 +52,7 @@ func (asset *Asset) PublishUnminedTransactions() error {
 // CountTransactions returns the total number of transactions for the wallet.
 func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 	if !asset.WalletOpened() {
-		return -1, utils.ErrBTCNotInitialized
+		return -1, utils.ErrLTCNotInitialized
 	}
 
 	transactions, err := asset.filterTxs(0, 0, txFilter, true)
@@ -62,7 +62,7 @@ func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 // GetTransactionRaw returns the transaction details for the given transaction hash.
 func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
 	if !asset.WalletOpened() {
-		return nil, utils.ErrBTCNotInitialized
+		return nil, utils.ErrLTCNotInitialized
 	}
 
 	transactions, err := asset.getTransactionsRaw(0, 0, true)
@@ -76,13 +76,13 @@ func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, erro
 
 // TxMatchesFilter checks if the transaction matches the given filter.
 func (asset *Asset) TxMatchesFilter(_ *sharedW.Transaction, txFilter int32) bool {
-	return txhelper.TxDirectionInvalid != asset.btcSupportedTxFilter(txFilter)
+	return txhelper.TxDirectionInvalid != asset.ltcSupportedTxFilter(txFilter)
 }
 
 // GetTransactions returns the transactions for the wallet.
 func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
 	if !asset.WalletOpened() {
-		return "", utils.ErrBTCNotInitialized
+		return "", utils.ErrLTCNotInitialized
 	}
 
 	transactions, err := asset.filterTxs(offset, limit, txFilter, newestFirst)
@@ -106,7 +106,7 @@ func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst b
 // If newestFirst is true, it will return transactions from newest to oldest
 func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
 	if !asset.WalletOpened() {
-		return nil, utils.ErrBTCNotInitialized
+		return nil, utils.ErrLTCNotInitialized
 	}
 
 	transactions, err := asset.filterTxs(0, 0, txFilter, newestFirst)
@@ -130,7 +130,7 @@ func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirs
 	return txs, nil
 }
 
-func (asset *Asset) btcSupportedTxFilter(txFilter int32) int32 {
+func (asset *Asset) ltcSupportedTxFilter(txFilter int32) int32 {
 	switch txFilter {
 	case utils.TxFilterSent:
 		return txhelper.TxDirectionSent
@@ -146,7 +146,7 @@ func (asset *Asset) btcSupportedTxFilter(txFilter int32) int32 {
 // the offset is the height of start block
 // limit is number of blocks will take from offset to get transactions
 func (asset *Asset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
-	txType := asset.btcSupportedTxFilter(txFilter)
+	txType := asset.ltcSupportedTxFilter(txFilter)
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
 	if err != nil {
 		return []sharedW.Transaction{}, nil
