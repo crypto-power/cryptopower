@@ -710,3 +710,13 @@ func (asset *Asset) setSeedPeers() []string {
 	}
 	return defaultPeers
 }
+
+// IsConnectedToBitcoinNetwork returns true if the wallet is connected to the
+// bitcoin network.
+func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	isSyncing := asset.syncData.syncing || asset.syncData.synced
+	return isSyncing || asset.syncData.isRescan
+}
