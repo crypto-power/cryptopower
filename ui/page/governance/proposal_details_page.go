@@ -132,7 +132,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 
 	for pg.viewInPoliteiaBtn.Clicked() {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet3 {
+		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://test-proposals.decred.org/record/" + pg.proposal.Token
 		}
 

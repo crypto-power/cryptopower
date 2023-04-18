@@ -19,7 +19,7 @@ const (
 	// Mainnet represents the main network.
 	Mainnet = utils.Mainnet
 	// Testnet3 represents the test network.
-	Testnet3 = utils.Testnet3
+	Testnet = utils.Testnet
 
 	walletsMetadataBucketName    = "metadata"
 	walletstartupPassphraseField = "startup-passphrase"
