@@ -60,7 +60,6 @@ type AssetsManager struct {
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
 func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
-
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -209,6 +208,9 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
+		// preset the network type so as to generate correct folder path
+		wallet.SetNetType(mgr.NetType())
+
 		path := filepath.Join(mgr.params.RootDir, wallet.DataDir())
 		log.Infof("loading properties of wallet=%v at location=%v", wallet.Name, path)
 
@@ -220,6 +222,7 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 				log.Warn(err)
 			}
 			if err != nil {
+				log.Errorf("BTC Error: %v ", err)
 				mgr.Assets.BTC.BadWallets[wallet.ID] = wallet
 				log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 			} else {
@@ -558,9 +561,9 @@ func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
 
 // RootDirFileSizeInBytes returns the total directory size of
 // Assets Manager's root directory in bytes.
-func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {
+func (mgr *AssetsManager) RootDirFileSizeInBytes(dataDir string) (int64, error) {
 	var size int64
-	err := filepath.Walk(mgr.params.RootDir, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dataDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

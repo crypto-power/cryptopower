@@ -2,6 +2,7 @@ package ltc
 
 import (
 	"context"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -122,9 +123,17 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 }
 
 func initWalletLoader(chainParams *ltcchaincfg.Params, dbDirPath string) loader.AssetLoader {
+	dirName := ""
+	// testnet datadir takes a special structure to differentiate "testnet4" and "testnet3"
+	// data directory.
+	netType := utils.ToNetworkType(chainParams.Net.String())
+	if netType == utils.Testnet {
+		dirName = utils.NetDir(utils.LTCWalletAsset, netType)
+	}
+
 	conf := &ltc.LoaderConf{
 		ChainParams:      walletParams(chainParams),
-		DBDirPath:        dbDirPath,
+		DBDirPath:        filepath.Join(dbDirPath, dirName),
 		DefaultDBTimeout: defaultDBTimeout,
 		RecoveryWin:      recoverWindow,
 	}

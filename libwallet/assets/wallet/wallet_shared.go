@@ -106,10 +106,6 @@ func (wallet *Wallet) prepare() (err error) {
 	}
 
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
-	oldTxDBPath := filepath.Join(wallet.dataDir(), walletdata.OldDbName)
-	if exists, _ := fileExists(oldTxDBPath); exists {
-		moveFile(oldTxDBPath, walletDataDBPath)
-	}
 
 	// Initialize the walletDataDb
 	walletDb, err := walletdata.Initialize(walletDataDBPath, &Transaction{})
@@ -196,7 +192,13 @@ func (wallet *Wallet) DataDir() string {
 }
 
 func (wallet *Wallet) dataDir() string {
-	return filepath.Join(wallet.rootDir, wallet.Type.ToStringLower(), strconv.Itoa(wallet.ID))
+	dirName := ""
+	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
+	// data directory.
+	if wallet.netType == utils.Testnet {
+		dirName = utils.NetDir(wallet.Type, wallet.netType)
+	}
+	return filepath.Join(wallet.rootDir, dirName, wallet.Type.ToStringLower(), strconv.Itoa(wallet.ID))
 }
 
 // RootDir returns the root of current wallet bucket. It is exported via the interface
@@ -206,6 +208,18 @@ func (wallet *Wallet) RootDir() string {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	return wallet.rootDir
+}
+
+// SetNetType is used to set the net type if it doesn't exist. This method is
+// used before the actual wallet is loaded otherwise once loaded the nettype
+// can't be altered. This method help create the full method with the unique
+// path for the folder structure for the testnet data dirs.
+func (wallet *Wallet) SetNetType(netType utils.NetworkType) {
+	wallet.mu.Lock()
+	defer wallet.mu.Unlock()
+	if string(wallet.netType) == "" {
+		wallet.netType = netType
+	}
 }
 
 // NetType returns the current network type. It is exported via the interface thus the

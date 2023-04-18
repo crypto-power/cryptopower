@@ -151,11 +151,11 @@ func (wl *WalletLoad) LTCHDPrefix() string {
 }
 
 func (wl *WalletLoad) WalletDirectory() string {
-	return fmt.Sprintf("%s/%s", wl.Wallet.Root, wl.Wallet.Net)
+	return wl.SelectedWallet.Wallet.DataDir()
 }
 
 func (wl *WalletLoad) DataSize() string {
-	v, err := wl.AssetsManager.RootDirFileSizeInBytes()
+	v, err := wl.AssetsManager.RootDirFileSizeInBytes(wl.WalletDirectory())
 	if err != nil {
 		return "Unknown"
 	}

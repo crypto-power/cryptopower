@@ -66,6 +66,27 @@ var (
 	LTCRegnetParams  = &ltccfg.RegressionNetParams
 )
 
+// NetDir return data directory name for a given asset's type and network connected.
+// If "unknown" is returned, unsupported asset type or network was detected.
+func NetDir(assetType AssetType, netType NetworkType) string {
+	dirName := "unknown"
+	params, err := GetChainParams(assetType, netType)
+	if err != nil {
+		return dirName
+	}
+
+	switch assetType {
+	case BTCWalletAsset:
+		dirName = params.BTC.Name
+	case DCRWalletAsset:
+		dirName = params.DCR.Name
+	case LTCWalletAsset:
+		dirName = params.LTC.Name
+	}
+
+	return strings.ToLower(dirName)
+}
+
 // DCRChainParams returns the network parameters from the DCR chain provided
 // a given network.
 func DCRChainParams(netType NetworkType) (*dcrcfg.Params, error) {
