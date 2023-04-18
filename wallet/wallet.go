@@ -119,3 +119,16 @@ func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 		return ""
 	}
 }
+
+// GetLTCBlockExplorerURL accepts transaction hash,
+// return the block explorer URL with respect to the network
+func (wal *Wallet) GetLTCBlockExplorerURL(txnHash string) string {
+	switch wal.Net {
+	case libwallet.Testnet3:
+		return "https://chain.so/tx/LTCTEST/" + txnHash
+	case libwallet.Mainnet:
+		return "https://chain.so/tx/LTC/" + txnHash
+	default:
+		return ""
+	}
+}

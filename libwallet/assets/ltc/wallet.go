@@ -44,9 +44,9 @@ var _ sharedW.Asset = (*Asset)(nil)
 type Asset struct {
 	*sharedW.Wallet
 
-	chainClient *labschain.NeutrinoClient
-	chainParams *ltcchaincfg.Params
-	// TxAuthoredInfo *TxAuthor
+	chainClient    *labschain.NeutrinoClient
+	chainParams    *ltcchaincfg.Params
+	TxAuthoredInfo *TxAuthor
 
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
@@ -58,7 +58,7 @@ type Asset struct {
 
 	// This fields helps to prevent unnecessary API calls if a new block hasn't
 	// been introduced.
-	// fees feeEstimateCache
+	fees feeEstimateCache
 
 	// rescanStarting is set while reloading the wallet and dropping
 	// transactions from the wallet db.

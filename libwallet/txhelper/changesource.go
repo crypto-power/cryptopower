@@ -3,8 +3,10 @@ package txhelper
 import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/addresshelper"
 	btccfg "github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcwallet/wallet/txauthor"
+	btctxauthor "github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/decred/dcrd/dcrutil/v4"
+	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
+	ltctxauthor "github.com/ltcsuite/ltcwallet/wallet/txauthor"
 )
 
 const scriptVersion = 0
@@ -38,11 +40,26 @@ func MakeTxChangeSource(destAddr string, net dcrutil.AddressParams) (*txChangeSo
 	return changeSource, nil
 }
 
-func MakeBTCTxChangeSource(destAddr string, net *btccfg.Params) (*txauthor.ChangeSource, error) {
+func MakeBTCTxChangeSource(destAddr string, net *btccfg.Params) (*btctxauthor.ChangeSource, error) {
 	var pkScript []byte
-	changeSource := &txauthor.ChangeSource{
+	changeSource := &btctxauthor.ChangeSource{
 		NewScript: func() ([]byte, error) {
 			pkScript, err := addresshelper.BTCPkScript(destAddr, net)
+			if err != nil {
+				return nil, err
+			}
+			return pkScript, nil
+		},
+		ScriptSize: len(pkScript),
+	}
+	return changeSource, nil
+}
+
+func MakeLTCTxChangeSource(destAddr string, net *ltccfg.Params) (*ltctxauthor.ChangeSource, error) {
+	var pkScript []byte
+	changeSource := &ltctxauthor.ChangeSource{
+		NewScript: func() ([]byte, error) {
+			pkScript, err := addresshelper.LTCPkScript(destAddr, net)
 			if err != nil {
 				return nil, err
 			}
