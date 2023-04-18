@@ -849,9 +849,15 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 }
 
 func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clickable) {
-	redirectURL := pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
-	if pg.wallet.GetAssetType() == libutils.BTCWalletAsset {
+	var redirectURL string
+
+	switch pg.wallet.GetAssetType() {
+	case libutils.DCRWalletAsset:
+		redirectURL = pg.WL.Wallet.GetDCRBlockExplorerURL(pg.transaction.Hash)
+	case libutils.BTCWalletAsset:
 		redirectURL = pg.WL.Wallet.GetBTCBlockExplorerURL(pg.transaction.Hash)
+	case libutils.LTCWalletAsset:
+		redirectURL = pg.WL.Wallet.GetLTCBlockExplorerURL(pg.transaction.Hash)
 	}
 
 	info := modal.NewCustomModal(pg.Load).
