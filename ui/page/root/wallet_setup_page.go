@@ -525,8 +525,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 		pg.showLoader = true
 		var err error
 		go func() {
-			switch pg.assetTypeSelector.SelectedAssetType().String() {
-			case libutils.DCRWalletAsset.String():
+			switch *pg.assetTypeSelector.SelectedAssetType() {
+			case libutils.DCRWalletAsset:
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.AssetsManager.DCRWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -534,7 +534,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.BTCWalletAsset.String():
+			case libutils.BTCWalletAsset:
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.AssetsManager.BTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
@@ -542,7 +542,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
-			case libutils.LTCWalletAsset.String():
+			case libutils.LTCWalletAsset:
 				var walletWithXPub int
 				walletWithXPub, err = pg.WL.AssetsManager.LTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
 				if walletWithXPub == -1 {
