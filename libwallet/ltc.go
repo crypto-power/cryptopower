@@ -43,6 +43,23 @@ func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase strin
 	return wallet, nil
 }
 
+// CreateNewBTCWatchOnlyWallet creates a new BTC watch only wallet and returns it.
+func (mgr *AssetsManager) CreateNewLTCWatchOnlyWallet(walletName, extendedPublicKey string) (sharedW.Asset, error) {
+	wallet, err := ltc.CreateWatchOnlyWallet(walletName, extendedPublicKey, mgr.params)
+	if err != nil {
+		return nil, err
+	}
+
+	mgr.Assets.LTC.Wallets[wallet.GetWalletID()] = wallet
+
+	// extract the db interface if it hasn't been set already.
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
+	}
+
+	return wallet, nil
+}
+
 // LTCWalletWithSeed returns the ID of the LTC wallet that was created or restored
 // using the same seed as the one provided. Returns -1 if no wallet uses the
 // provided seed.
@@ -81,6 +98,41 @@ func (mgr *AssetsManager) LTCWalletWithSeed(seedMnemonic string) (int, error) {
 				return -1, err
 			}
 			if usesSameSeed {
+				return wallet.GetWalletID(), nil
+			}
+		}
+	}
+	return -1, nil
+}
+
+// LTCWalletWithXPub returns the ID of the LTC wallet that has an account with the
+// provided xpub. Returns -1 if there is no such wallet.
+func (mgr *AssetsManager) LTCWalletWithXPub(xpub string) (int, error) {
+	for _, wallet := range mgr.Assets.LTC.Wallets {
+		if !wallet.WalletOpened() {
+			return -1, errors.Errorf("wallet %d is not open and cannot be checked", wallet.GetWalletID())
+		}
+
+		wAccs, err := wallet.GetAccountsRaw()
+		if err != nil {
+			return -1, err
+		}
+
+		asset, ok := wallet.(*ltc.Asset)
+		if !ok {
+			return -1, fmt.Errorf("invalid asset type")
+		}
+
+		for _, accs := range wAccs.Accounts {
+			if accs.AccountNumber == ltc.ImportedAccountNumber {
+				continue
+			}
+			acctXPubKey, err := wallet.Internal().LTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
+			if err != nil {
+				return -1, err
+			}
+
+			if acctXPubKey.AccountPubKey.String() == xpub {
 				return wallet.GetWalletID(), nil
 			}
 		}

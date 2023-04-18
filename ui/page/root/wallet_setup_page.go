@@ -542,6 +542,14 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				} else {
 					err = errors.New(values.String(values.StrXpubWalletExist))
 				}
+			case libutils.LTCWalletAsset.String():
+				var walletWithXPub int
+				walletWithXPub, err = pg.WL.AssetsManager.LTCWalletWithXPub(pg.watchOnlyWalletHex.Editor.Text())
+				if walletWithXPub == -1 {
+					_, err = pg.WL.AssetsManager.CreateNewLTCWatchOnlyWallet(pg.walletName.Editor.Text(), pg.watchOnlyWalletHex.Editor.Text())
+				} else {
+					err = errors.New(values.String(values.StrXpubWalletExist))
+				}
 			}
 
 			if err != nil {
