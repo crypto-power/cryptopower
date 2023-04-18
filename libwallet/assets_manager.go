@@ -590,8 +590,8 @@ func (mgr *AssetsManager) WalletWithSeed(walletType utils.AssetType, seedMnemoni
 		return mgr.BTCWalletWithSeed(seedMnemonic)
 	case utils.DCRWalletAsset:
 		return mgr.DCRWalletWithSeed(seedMnemonic)
-	// case utils.LTCWalletAsset:
-	// 	return mgr.LTCWalletWithSeed(seedMnemonic)
+	case utils.LTCWalletAsset:
+	 	return mgr.LTCWalletWithSeed(seedMnemonic)
 	// case utils.ETHWalletAsset:
 	// 	return mgr.ETHWalletWithSeed(seedMnemonic)
 	default:
@@ -606,10 +606,15 @@ func (mgr *AssetsManager) RestoreWallet(walletType utils.AssetType, walletName, 
 		return mgr.RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
 	case utils.DCRWalletAsset:
 		return mgr.RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+<<<<<<< HEAD
 	// case utils.LTCWalletAsset:
 	// 	return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
 	// case utils.ETHWalletAsset:
 	// 	return mgr.RestoreETHWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+=======
+	case utils.LTCWalletAsset:
+		return mgr.RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase, privatePassphraseType)
+>>>>>>> 429ac427 (Restore ltc wallet using seed/hex)
 	default:
 		return nil, utils.ErrAssetUnknown
 	}
@@ -623,7 +628,7 @@ func (mgr *AssetsManager) WalletWithXPub(walletType utils.AssetType, xPub string
 		return mgr.DCRWalletWithXPub(xPub)
 	case utils.BTCWalletAsset:
 		return mgr.BTCWalletWithXPub(xPub)
-	// case utils.LTCWalletAsset:
+	//case utils.LTCWalletAsset:
 	// 	return mgr.LTCWalletWithXPub(xPub)
 	// case utils.ETHWalletAsset:
 	// 	return mgr.ETHWalletWithXPub(xPub)

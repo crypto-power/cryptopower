@@ -1,10 +1,14 @@
 package libwallet
 
 import (
+	"fmt"
+
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"decred.org/dcrwallet/v2/errors"
 	"github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcwallet/waddrmgr"
 )
 
 // initializeLTCWalletParameters initializes the fields each LTC wallet is going to need to be setup
@@ -37,4 +41,49 @@ func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase strin
 	}
 
 	return wallet, nil
+}
+
+// LTCWalletWithSeed returns the ID of the LTC wallet that was created or restored
+// using the same seed as the one provided. Returns -1 if no wallet uses the
+// provided seed.
+func (mgr *AssetsManager) LTCWalletWithSeed(seedMnemonic string) (int, error) {
+	if len(seedMnemonic) == 0 {
+		return -1, errors.New(utils.ErrEmptySeed)
+	}
+
+	for _, wallet := range mgr.Assets.LTC.Wallets {
+		if !wallet.WalletOpened() {
+			return -1, errors.Errorf("cannot check if seed matches unloaded wallet %d", wallet.GetWalletID())
+		}
+
+		asset, ok := wallet.(*ltc.Asset)
+		if !ok {
+			return -1, fmt.Errorf("invalid asset type")
+		}
+
+		wAccs, err := wallet.GetAccountsRaw()
+		if err != nil {
+			return -1, err
+		}
+
+		for _, accs := range wAccs.Accounts {
+			if accs.AccountNumber == waddrmgr.ImportedAddrAccount {
+				continue
+			}
+			xpub, err := asset.DeriveAccountXpub(seedMnemonic,
+				accs.AccountNumber, wallet.Internal().LTC.ChainParams())
+			if err != nil {
+				return -1, err
+			}
+
+			usesSameSeed, err := asset.AccountXPubMatches(accs.AccountNumber, xpub)
+			if err != nil {
+				return -1, err
+			}
+			if usesSameSeed {
+				return wallet.GetWalletID(), nil
+			}
+		}
+	}
+	return -1, nil
 }
