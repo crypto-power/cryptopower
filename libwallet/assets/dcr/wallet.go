@@ -65,11 +65,10 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 	}
 
 	dirName := ""
-	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
+	// testnet datadir takes a special structure to differentiate "testnet4" and "testnet3"
 	// data directory.
-	netType := utils.ToNetworkType(chainParams.Net.String())
-	if netType == utils.Testnet {
-		dirName = utils.NetDir(utils.DCRWalletAsset, netType)
+	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
+		dirName = utils.NetDir(utils.DCRWalletAsset, utils.Testnet)
 	}
 
 	loaderCfg := &dcr.LoaderConf{

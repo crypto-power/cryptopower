@@ -118,9 +118,8 @@ func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.Ass
 	dirName := ""
 	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
 	// data directory.
-	netType := utils.ToNetworkType(chainParams.Net.String())
-	if netType == utils.Testnet {
-		dirName = utils.NetDir(utils.BTCWalletAsset, netType)
+	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
+		dirName = utils.NetDir(utils.BTCWalletAsset, utils.Testnet)
 	}
 
 	conf := &btc.LoaderConf{

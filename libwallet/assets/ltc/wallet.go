@@ -126,9 +126,8 @@ func initWalletLoader(chainParams *ltcchaincfg.Params, dbDirPath string) loader.
 	dirName := ""
 	// testnet datadir takes a special structure to differentiate "testnet4" and "testnet3"
 	// data directory.
-	netType := utils.ToNetworkType(chainParams.Net.String())
-	if netType == utils.Testnet {
-		dirName = utils.NetDir(utils.LTCWalletAsset, netType)
+	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
+		dirName = utils.NetDir(utils.LTCWalletAsset, utils.Testnet)
 	}
 
 	conf := &ltc.LoaderConf{

@@ -193,7 +193,7 @@ func (wallet *Wallet) DataDir() string {
 
 func (wallet *Wallet) dataDir() string {
 	dirName := ""
-	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
+	// testnet datadir takes a special structure to differentiate "testnet4" and "testnet3"
 	// data directory.
 	if wallet.netType == utils.Testnet {
 		dirName = utils.NetDir(wallet.Type, wallet.netType)

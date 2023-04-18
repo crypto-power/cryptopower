@@ -66,7 +66,7 @@ var (
 	LTCRegnetParams  = &ltccfg.RegressionNetParams
 )
 
-// NetDir return data directory name for a given asset's type and network connected.
+// NetDir returns data directory name for a given asset's type and network connected.
 // If "unknown" is returned, unsupported asset type or network was detected.
 func NetDir(assetType AssetType, netType NetworkType) string {
 	dirName := "unknown"

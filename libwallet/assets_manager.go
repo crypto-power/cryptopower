@@ -222,7 +222,6 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 				log.Warn(err)
 			}
 			if err != nil {
-				log.Errorf("BTC Error: %v ", err)
 				mgr.Assets.BTC.BadWallets[wallet.ID] = wallet
 				log.Warnf("Ignored btc wallet load error for wallet %d (%s)", wallet.ID, wallet.Name)
 			} else {
