@@ -110,6 +110,9 @@ func (mgr *AssetsManager) IsStartupSecuritySet() bool {
 // IsDarkModeOn checks if the dark mode is set.
 func (mgr *AssetsManager) IsDarkModeOn() bool {
 	var data bool
+	if !mgr.IsAssetManagerDB() {
+		return data
+	}
 	mgr.db.ReadWalletConfigValue(sharedW.DarkModeConfigKey, &data)
 	return data
 }
