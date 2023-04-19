@@ -2,6 +2,7 @@ package dcr
 
 import (
 	"context"
+	"path/filepath"
 	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -63,9 +64,16 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 		VotingAddress: nil,
 	}
 
+	dirName := ""
+	// testnet datadir takes a special structure to differentiate "testnet4" and "testnet3"
+	// data directory.
+	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
+		dirName = utils.NetDir(utils.DCRWalletAsset, utils.Testnet)
+	}
+
 	loaderCfg := &dcr.LoaderConf{
 		ChainParams:             chainParams,
-		DBDirPath:               rootdir,
+		DBDirPath:               filepath.Join(rootdir, dirName),
 		StakeOptions:            stakeOptions,
 		GapLimit:                cfg.GapLimit,
 		RelayFee:                cfg.RelayFee,

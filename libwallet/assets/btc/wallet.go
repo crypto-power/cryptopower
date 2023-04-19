@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -114,9 +115,16 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 }
 
 func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.AssetLoader {
+	dirName := ""
+	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
+	// data directory.
+	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
+		dirName = utils.NetDir(utils.BTCWalletAsset, utils.Testnet)
+	}
+
 	conf := &btc.LoaderConf{
 		ChainParams:      chainParams,
-		DBDirPath:        dbDirPath,
+		DBDirPath:        filepath.Join(dbDirPath, dirName),
 		DefaultDBTimeout: defaultDBTimeout,
 		RecoveryWin:      recoverWindow,
 	}

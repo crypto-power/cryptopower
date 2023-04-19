@@ -110,7 +110,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet3 {
+		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 

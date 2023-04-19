@@ -19,7 +19,7 @@ const (
 	// Mainnet represents the main network.
 	Mainnet = utils.Mainnet
 	// Testnet3 represents the test network.
-	Testnet3 = utils.Testnet3
+	Testnet = utils.Testnet
 
 	walletsMetadataBucketName    = "metadata"
 	walletstartupPassphraseField = "startup-passphrase"
@@ -110,6 +110,9 @@ func (mgr *AssetsManager) IsStartupSecuritySet() bool {
 // IsDarkModeOn checks if the dark mode is set.
 func (mgr *AssetsManager) IsDarkModeOn() bool {
 	var data bool
+	if !mgr.IsAssetManagerDB() {
+		return data
+	}
 	mgr.db.ReadWalletConfigValue(sharedW.DarkModeConfigKey, &data)
 	return data
 }

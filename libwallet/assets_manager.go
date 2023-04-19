@@ -38,8 +38,6 @@ type Assets struct {
 	}
 }
 
-var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower(), utils.LTCWalletAsset.ToStringLower()}
-
 // AssetsManager is a struct that holds all the necessary parameters
 // to manage the assets supported by the wallet.
 type AssetsManager struct {
@@ -60,7 +58,6 @@ type AssetsManager struct {
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
 func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
-
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -171,7 +168,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
 
 	// Attempt to set the log levels if a valid db interface was found.
-	if mgr.db != nil {
+	if mgr.IsAssetManagerDB() {
 		mgr.GetLogLevels()
 	}
 
@@ -209,6 +206,9 @@ func (mgr *AssetsManager) prepareExistingWallets() error {
 
 	// prepare the wallets loaded from db for use
 	for _, wallet := range wallets {
+		// preset the network type so as to generate correct folder path
+		wallet.SetNetType(mgr.NetType())
+
 		path := filepath.Join(mgr.params.RootDir, wallet.DataDir())
 		log.Infof("loading properties of wallet=%v at location=%v", wallet.Name, path)
 
@@ -330,6 +330,14 @@ func (mgr *AssetsManager) NetType() utils.NetworkType {
 // LogDir returns the log directory of the assets manager.
 func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
+}
+
+// IsAssetManagerDB returns true if the asset manager db interface was extracted
+// from one of the loaded valid wallets. Assets Manager Db interface exists in
+// all wallets by default. If no valid asset manager db interface exists,
+// there is no valid wallet loaded yet; - they maybe no wallets at all to load.
+func (mgr *AssetsManager) IsAssetManagerDB() bool {
+	return mgr.db != nil
 }
 
 // OpenWallets opens all wallets in the assets manager.
@@ -558,9 +566,9 @@ func (mgr *AssetsManager) DeleteBadWallet(walletID int) error {
 
 // RootDirFileSizeInBytes returns the total directory size of
 // Assets Manager's root directory in bytes.
-func (mgr *AssetsManager) RootDirFileSizeInBytes() (int64, error) {
+func (mgr *AssetsManager) RootDirFileSizeInBytes(dataDir string) (int64, error) {
 	var size int64
-	err := filepath.Walk(mgr.params.RootDir, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dataDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -639,15 +647,19 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 	}
 
 	// filter all wallets to be deleted.
-	for _, wType := range slicesAccessType {
-		rootDir := filepath.Join(mgr.params.RootDir, wType)
+	for _, wType := range mgr.AllAssetTypes() {
+		dirName := ""
+		if mgr.NetType() == utils.Testnet {
+			dirName = utils.NetDir(wType, utils.Testnet)
+		}
+		rootDir := filepath.Join(mgr.params.RootDir, dirName, wType.ToStringLower())
 		files, err := os.ReadDir(rootDir)
 		if err != nil {
-			log.Errorf("can't read %s root wallet type", wType)
+			log.Errorf("can't read %s root wallet type: %v", wType, err)
 			return
 		}
 		for _, f := range files {
-			key := wType + f.Name()
+			key := wType.ToStringLower() + f.Name()
 			if f.IsDir() && !validWallets[key] {
 				deletedWalletDirs = append(deletedWalletDirs, filepath.Join(rootDir, f.Name()))
 			}

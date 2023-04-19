@@ -53,7 +53,7 @@ func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.A
 
 func (wl *WalletLoad) TotalWalletsBalance() (sharedW.AssetAmount, error) {
 	totalBalance := int64(0)
-	var wallets = wl.getAssets()
+	wallets := wl.getAssets()
 	if wallets == nil {
 		return wl.nilAmount(), nil
 	}
@@ -118,7 +118,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount,
 
 func (wl *WalletLoad) DCRHDPrefix() string {
 	switch wl.Wallet.Net {
-	case utils.Testnet3:
+	case utils.Testnet:
 		return dcr.TestnetHDPath
 	case utils.Mainnet:
 		return dcr.MainnetHDPath
@@ -129,7 +129,7 @@ func (wl *WalletLoad) DCRHDPrefix() string {
 
 func (wl *WalletLoad) BTCHDPrefix() string {
 	switch wl.Wallet.Net {
-	case utils.Testnet3:
+	case utils.Testnet:
 		return btc.TestnetHDPath
 	case utils.Mainnet:
 		return btc.MainnetHDPath
@@ -141,7 +141,7 @@ func (wl *WalletLoad) BTCHDPrefix() string {
 // LTC HDPrefix returns the HD path prefix for the Litecoin wallet network.
 func (wl *WalletLoad) LTCHDPrefix() string {
 	switch wl.Wallet.Net {
-	case utils.Testnet3, utils.Testnet4:
+	case utils.Testnet:
 		return ltc.TestnetHDPath
 	case utils.Mainnet:
 		return ltc.MainnetHDPath
@@ -151,11 +151,11 @@ func (wl *WalletLoad) LTCHDPrefix() string {
 }
 
 func (wl *WalletLoad) WalletDirectory() string {
-	return fmt.Sprintf("%s/%s", wl.Wallet.Root, wl.Wallet.Net)
+	return wl.SelectedWallet.Wallet.DataDir()
 }
 
 func (wl *WalletLoad) DataSize() string {
-	v, err := wl.AssetsManager.RootDirFileSizeInBytes()
+	v, err := wl.AssetsManager.RootDirFileSizeInBytes(wl.WalletDirectory())
 	if err != nil {
 		return "Unknown"
 	}

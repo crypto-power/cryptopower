@@ -81,12 +81,14 @@ func main() {
 	}
 
 	// if debuglevel is passed at commandLine persist the option.
-	if cfg.DebugLevel != "" {
+	if cfg.DebugLevel != "" && wal.GetAssetsManager().IsAssetManagerDB() {
 		wal.GetAssetsManager().SetLogLevels(cfg.DebugLevel)
 	}
 
-	// now that assets manager is up, set stored debuglevel
-	logger.SetLogLevels(wal.GetAssetsManager().GetLogLevels())
+	if wal.GetAssetsManager().IsAssetManagerDB() {
+		// now that assets manager is up, set stored debuglevel
+		logger.SetLogLevels(wal.GetAssetsManager().GetLogLevels())
+	}
 
 	win, err := ui.CreateWindow(wal)
 	if err != nil {

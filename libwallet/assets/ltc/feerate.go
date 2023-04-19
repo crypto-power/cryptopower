@@ -75,13 +75,13 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 	switch net {
 	case utils.Mainnet:
 		feerateURL = MainnetAPIFeeRateURL
-	case utils.Testnet3, utils.Testnet4:
+	case utils.Testnet:
 		feerateURL = TestnetAPIFeeRateURL
 	default:
 		return nil, fmt.Errorf("%v network is not supported", net)
 	}
 
-	var resp = make(map[string]float64, 0)
+	resp := make(map[string]float64, 0)
 
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
@@ -97,7 +97,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 		return nil, errors.New("API fee estimates not found")
 	}
 
-	var results = make([]FeeEstimate, 0, len(resp))
+	results := make([]FeeEstimate, 0, len(resp))
 
 	// Fee rate returned is in Sat/vB units.
 	for blocks, feerate := range resp {
@@ -144,7 +144,7 @@ func (asset *Asset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) 
 	})
 
 	if len(feerates) > 5 {
-		//TODO: subject to confirmation! => persist top five fee rates only.
+		// TODO: subject to confirmation! => persist top five fee rates only.
 		feerates = feerates[:5]
 	}
 

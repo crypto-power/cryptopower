@@ -75,7 +75,7 @@ func (wal *Wallet) GetAssetsManager() *libwallet.AssetsManager {
 
 func (wal *Wallet) InitAssetsManager() error {
 	politeiaHost := libwallet.PoliteiaMainnetHost
-	if wal.Net == libwallet.Testnet3 {
+	if wal.Net == libwallet.Testnet {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
 	assetsManager, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net)
@@ -98,7 +98,7 @@ func (wal *Wallet) Shutdown() {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case libwallet.Testnet3:
+	case libwallet.Testnet:
 		return "https://testnet.dcrdata.org/tx/" + txnHash
 	case libwallet.Mainnet:
 		return "https://explorer.dcrdata.org/tx/" + txnHash
@@ -111,7 +111,7 @@ func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case libwallet.Testnet3:
+	case libwallet.Testnet:
 		return "https://live.blockcypher.com/btc-testnet/tx/" + txnHash
 	case libwallet.Mainnet:
 		return "https://www.blockchain.com/btc/tx/" + txnHash
@@ -124,7 +124,7 @@ func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 // return the block explorer URL with respect to the network
 func (wal *Wallet) GetLTCBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
-	case libwallet.Testnet3:
+	case libwallet.Testnet:
 		return "https://chain.so/tx/LTCTEST/" + txnHash
 	case libwallet.Mainnet:
 		return "https://chain.so/tx/LTC/" + txnHash
