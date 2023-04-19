@@ -356,33 +356,12 @@ func (mp *MainPage) fetchExchangeRate() {
 }
 
 func (mp *MainPage) updateBalance() {
-	if mp.WL.SelectedWallet.Wallet.GetAssetType() != libutils.LTCWalletAsset {
-
-		totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
-		if err != nil {
-			log.Error(err)
-		}
-		mp.totalBalance = totalBalance.Total
-		balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
-		mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
-
-		return
-	}
-
-	// TODO: remove this when LTC account methods is supported
-	toAmount := func(v int64) sharedW.AssetAmount {
-		return mp.WL.SelectedWallet.Wallet.ToAmount(v)
-	}
-	totalBalance := &components.CummulativeWalletsBalance{
-		Total:                   toAmount(0),
-		ImmatureReward:          toAmount(0),
-		ImmatureStakeGeneration: toAmount(0),
-		LockedByTickets:         toAmount(0),
-		VotingAuthority:         toAmount(0),
-		UnConfirmed:             toAmount(0),
+	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
+	if err != nil {
+		log.Error(err)
 	}
 	mp.totalBalance = totalBalance.Total
-	balanceInUSD := totalBalance.Total.MulF64(0.00).ToCoin()
+	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
