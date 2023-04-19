@@ -168,7 +168,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
 
 	// Attempt to set the log levels if a valid db interface was found.
-	if mgr.db != nil {
+	if mgr.IsAssetManagerDB() {
 		mgr.GetLogLevels()
 	}
 
@@ -330,6 +330,14 @@ func (mgr *AssetsManager) NetType() utils.NetworkType {
 // LogDir returns the log directory of the assets manager.
 func (mgr *AssetsManager) LogDir() string {
 	return filepath.Join(mgr.params.RootDir, logFileName)
+}
+
+// IsAssetManagerDB returns true if the asset manager db interface was extracted
+// from one of the loaded valid wallets. Assets Manager Db interface exists in
+// all wallets by default. If no valid asset manager db interface exists,
+// there is no valid wallet loaded yet; - they maybe no wallets at all to load.
+func (mgr *AssetsManager) IsAssetManagerDB() bool {
+	return mgr.db != nil
 }
 
 // OpenWallets opens all wallets in the assets manager.
