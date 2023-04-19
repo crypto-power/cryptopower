@@ -58,8 +58,12 @@ func (asset *Asset) rescanBlocks(startHeight int32, addrs []ltcutil.Address) err
 		addrs = []ltcutil.Address{}
 	}
 
+	// Force rescan, to enforce address discovery.
+	asset.forceRescan()
+
 	asset.syncData.mu.Lock()
 	asset.syncData.isRescan = true
+	asset.syncData.forcedRescanActive = true
 	asset.syncData.rescanStartTime = time.Now()
 	asset.syncData.mu.Unlock()
 

@@ -49,6 +49,8 @@ type SyncData struct {
 	rescanStartTime    time.Time
 	rescanStartHeight  *int32
 	isSyncShuttingDown bool
+	// forcedRescanActive is set to true if forcedRescan is activated.
+	forcedRescanActive bool
 
 	wg sync.WaitGroup
 
@@ -306,9 +308,16 @@ notificationsLoop:
 					asset.updateAssetBirthday()
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
+				asset.syncData.mu.Lock()
+				forcedRescanActive := asset.syncData.forcedRescanActive
+				asset.syncData.mu.Unlock()
+				if forcedRescanActive {
+					asset.updateAssetBirthday()
+				}
 
 				asset.syncData.mu.Lock()
 				asset.syncData.isRescan = false
+				asset.syncData.forcedRescanActive = false
 				asset.syncData.mu.Unlock()
 
 				if asset.blocksRescanProgressListener != nil {
