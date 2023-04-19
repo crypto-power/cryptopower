@@ -16,6 +16,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
@@ -166,7 +167,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		if pg.fromCurrency == ati.Type || isMatching {
 			return
 		}
-		pg.updateWalletAndAccountSelector()
+		pg.updateWalletAndAccountSelector([]libutils.AssetType{ati.Type}, nil)
 	})
 
 	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
@@ -174,7 +175,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		if pg.toCurrency == ati.Type || isMatching {
 			return
 		}
-		pg.updateWalletAndAccountSelector()
+		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{ati.Type})
 	})
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
@@ -202,8 +203,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	return pg
 }
 
-func (pg *CreateOrderPage) updateWalletAndAccountSelector() {
-	pg.swapCurrency()
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) {
+	pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
 	pg.updateExchangeRate()
 }
 
@@ -448,6 +449,73 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
+}
+
+func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) {
+	if len(selectedFromAsset) > 0 {
+		pg.fromCurrency = selectedFromAsset[0]
+		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+
+		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+
+		// If the to and from asset are the same, select a new from asset.
+		if selectedFromAsset[0] == pg.toCurrency {
+			// Get all available assets.
+			allAssets := pg.WL.AssetsManager.AllAssetTypes()
+
+			// Remove the selected to asset from the list of available assets.
+			availableAssets := make([]utils.AssetType, 0)
+			for _, asset := range allAssets {
+				if asset != selectedFromAsset[0] {
+					availableAssets = append(availableAssets, asset)
+				}
+			}
+
+			// Select the first available asset as the new from asset.
+			pg.toCurrency = availableAssets[0]
+			pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
+			pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+		}
+	}
+
+	if len(selectedToAsset) > 0 {
+		pg.toCurrency = selectedToAsset[0]
+		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
+
+		pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+
+		// If the to and from asset are the same, select a new from asset.
+		if selectedToAsset[0] == pg.fromCurrency {
+
+			// Get all available assets.
+			allAssets := pg.WL.AssetsManager.AllAssetTypes()
+
+			// Remove the selected to asset from the list of available assets.
+			availableAssets := make([]utils.AssetType, 0)
+			for _, asset := range allAssets {
+				if asset != selectedToAsset[0] {
+					availableAssets = append(availableAssets, asset)
+				}
+			}
+
+			// Select the first available asset as the new from asset.
+			pg.fromCurrency = availableAssets[0]
+			pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+			pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+		}
+	}
+
+	// check the watch only wallet on destination
+	if pg.sourceWalletSelector.SelectedWallet().IsWatchingOnlyWallet() {
+		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+	}
+
+	// update title of wallet selector
+	pg.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
+	pg.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
+
+	// // Save the exchange configuration changes.
+	pg.updateExchangeConfig()
 }
 
 // swapCurrency swaps the values of the from and to currency fields.
