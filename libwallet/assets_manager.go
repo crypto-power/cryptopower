@@ -38,8 +38,6 @@ type Assets struct {
 	}
 }
 
-var slicesAccessType = []string{utils.BTCWalletAsset.ToStringLower(), utils.DCRWalletAsset.ToStringLower(), utils.LTCWalletAsset.ToStringLower()}
-
 // AssetsManager is a struct that holds all the necessary parameters
 // to manage the assets supported by the wallet.
 type AssetsManager struct {
@@ -641,15 +639,19 @@ func (mgr *AssetsManager) cleanDeletedWallets() {
 	}
 
 	// filter all wallets to be deleted.
-	for _, wType := range slicesAccessType {
-		rootDir := filepath.Join(mgr.params.RootDir, wType)
+	for _, wType := range mgr.AllAssetTypes() {
+		dirName := ""
+		if mgr.NetType() == utils.Testnet {
+			dirName = utils.NetDir(wType, utils.Testnet)
+		}
+		rootDir := filepath.Join(mgr.params.RootDir, dirName, wType.ToStringLower())
 		files, err := os.ReadDir(rootDir)
 		if err != nil {
-			log.Errorf("can't read %s root wallet type", wType)
+			log.Errorf("can't read %s root wallet type: %v", wType, err)
 			return
 		}
 		for _, f := range files {
-			key := wType + f.Name()
+			key := wType.ToStringLower() + f.Name()
 			if f.IsDir() && !validWallets[key] {
 				deletedWalletDirs = append(deletedWalletDirs, filepath.Join(rootDir, f.Name()))
 			}
