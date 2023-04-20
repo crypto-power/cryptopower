@@ -596,6 +596,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
 			pg.WL.SelectedWallet.Wallet.RemovePeers()
+			pg.peerAddr = ""
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)

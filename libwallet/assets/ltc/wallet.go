@@ -3,6 +3,7 @@ package ltc
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -403,12 +404,35 @@ func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (boo
 
 // RemovePeers removes all peers from the wallet.
 func (asset *Asset) RemovePeers() {
-	log.Error(utils.ErrLTCMethodNotImplemented("RemovePeers"))
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+	go func() {
+		err := asset.reloadChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
 
 // SetSpecificPeer sets a specific peer to connect to.
 func (asset *Asset) SetSpecificPeer(address string) {
-	log.Error(utils.ErrLTCMethodNotImplemented("SetSpecificPeer"))
+	knownAddr := asset.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+
+	// Prevent setting same address twice
+	if !strings.Contains(address, ";") && !strings.Contains(knownAddr, address) {
+		if knownAddr == "" {
+			knownAddr = address
+		} else {
+			knownAddr += ";" + address
+		}
+	}
+
+	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, knownAddr)
+	go func() {
+		err := asset.reloadChainService()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 }
 
 // GetExtendedPubKey returns the extended public key of the given account,
