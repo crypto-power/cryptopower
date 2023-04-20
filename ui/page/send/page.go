@@ -376,6 +376,7 @@ func (pg *Page) constructTx() {
 
 	pg.feeRateSelector.EstSignedSize = fmt.Sprintf("%d Bytes", feeAndSize.EstimatedSignedSize)
 	pg.feeRateSelector.TxFee = pg.txFee
+	pg.feeRateSelector.SetFeerate(feeAndSize.FeeRate)
 	pg.totalCost = totalSendingAmount.String()
 	pg.balanceAfterSend = balanceAfterSend.String()
 	pg.sendAmount = wal.ToAmount(amountAtom).String()
@@ -431,6 +432,7 @@ func (pg *Page) clearEstimates() {
 	pg.balanceAfterSendUSD = " - "
 	pg.sendAmount = " - "
 	pg.sendAmountUSD = " - "
+	pg.feeRateSelector.SetFeerate(0)
 }
 
 func (pg *Page) resetFields() {
@@ -451,7 +453,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if pg.feeRateSelector.EditRates.Clicked() {
-		pg.feeRateSelector.OnEditRateCliked(pg.selectedWallet)
+		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
 	}
 
 	pg.nextButton.SetEnabled(pg.validate())

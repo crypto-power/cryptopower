@@ -6,6 +6,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
@@ -33,22 +34,34 @@ func (w *WalletMapping) MixedAccountNumber() int32 {
 // SetAPIFeeRate validates the string input its a number before sending it upstream.
 // It returns the string convert to int amount.
 func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
+	var amount sharedW.AssetAmount
+	var setUserFeeRate func(feeRatePerkvB sharedW.AssetAmount) error
+
+	rate, err := strconv.ParseInt(feerate, 10, 64)
+	if err != nil {
+		return 0, w.invalidParameter(feerate, "tx fee rate")
+	}
+
 	switch asset := w.Asset.(type) {
 	case *btc.Asset:
-		rate, err := strconv.ParseInt(feerate, 10, 64)
-		if err != nil {
-			return 0, w.invalidParameter(feerate, "tx fee rate")
-		}
-		err = asset.SetUserFeeRate(asset.ToAmount(rate))
-		return rate, err
+		amount = asset.ToAmount(rate)
+		setUserFeeRate = asset.SetUserFeeRate
+	case *ltc.Asset:
+		amount = asset.ToAmount(rate)
+		setUserFeeRate = asset.SetUserFeeRate
 	default:
 		return 0, w.invalidWallet()
 	}
+
+	err = setUserFeeRate(amount)
+	return rate, err
 }
 
-func (w *WalletMapping) GetAPIFeeRate() ([]btc.FeeEstimate, error) {
+func (w *WalletMapping) GetAPIFeeRate() ([]sharedW.FeeEstimate, error) {
 	switch asset := w.Asset.(type) {
 	case *btc.Asset:
+		return asset.GetAPIFeeEstimateRate()
+	case *ltc.Asset:
 		return asset.GetAPIFeeEstimateRate()
 	default:
 		return nil, w.invalidWallet()

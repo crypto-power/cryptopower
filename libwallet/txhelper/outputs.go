@@ -37,14 +37,14 @@ func MakeBTCTxOutput(address string, amountInSatoshi int64, net *btcchaincfg.Par
 	return
 }
 
-func MakeLTCTxOutput(address string, amountInSatoshi int64, net *ltcchaincfg.Params) (output *ltcWire.TxOut, err error) {
+func MakeLTCTxOutput(address string, amountInLitoshi int64, net *ltcchaincfg.Params) (output *ltcWire.TxOut, err error) {
 	pkScript, err := addresshelper.LTCPkScript(address, net)
 	if err != nil {
 		return
 	}
 
 	output = &ltcWire.TxOut{
-		Value:    amountInSatoshi,
+		Value:    amountInLitoshi,
 		PkScript: pkScript,
 	}
 	return

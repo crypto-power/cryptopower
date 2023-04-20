@@ -58,11 +58,20 @@ type BlockInfo struct {
 	Timestamp int64
 }
 
+// FeeEstimate defines the fee estimate returned by the API.
+type FeeEstimate struct {
+	// Number of confrmed blocks that show the average fee rate represented below.
+	ConfirmedBlocks int32
+	// Feerate shows estimate fee rate in Sat/kvB or Lit/kvB.
+	Feerate AssetAmount
+}
+
 type Amount struct {
 	// UnitValue holds the base monetary unit value for a cryptocurrency.
-	// The field is currently used for both BTC and DCR.
+	// The field is currently used for both BTC, LTC and DCR.
 	// For Decred it holds the number of Atoms per DCR.
 	// For Bitcoin it holds the number of satoshis per BTC.
+	// For Litecoin it holds the number of litoshis per LTC.
 	UnitValue int64
 	// CoinValue holds the monetary amount counted in a cryptocurrency base
 	// units, converted to a floating point value representing the amount
@@ -73,7 +82,7 @@ type Amount struct {
 type TxFeeAndSize struct {
 	Fee                 *Amount
 	Change              *Amount
-	FeeRate             int64 // calculated in Sat/kvB
+	FeeRate             int64 // calculated in Sat/kvB or Lit/kvB
 	EstimatedSignedSize int
 }
 

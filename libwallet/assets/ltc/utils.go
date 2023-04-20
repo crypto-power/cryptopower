@@ -34,7 +34,7 @@ func AmountLTC(amount int64) float64 {
 	return ltcutil.Amount(amount).ToBTC()
 }
 
-// AmountSatoshi converts a LTC amount to a litoshi amount.
+// AmountLitoshi converts a LTC amount to a litoshi amount.
 func AmountLitoshi(f float64) int64 {
 	amount, err := ltcutil.NewAmount(f)
 	if err != nil {
