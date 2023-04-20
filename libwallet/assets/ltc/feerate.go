@@ -22,26 +22,26 @@ const (
 	TestnetAPIFeeRateURL = "https://blockstream.info/testnet/api/fee-estimates" // TODO: Update for Litecoin
 
 	// Since the introduction of segwit account, a different tx size measument was
-	// introduced (Sat/VB). When sending a transaction from the legacy account,
+	// introduced (Lit/VB). When sending a transaction from the legacy account,
 	// 1B (byte) = 1vB (virtual byte). When sending a transaction from segwit
 	// (legacy segwit, bech32, taproot), then 1B = 4vB.
 
-	// 1,000 sat/kvB = 1 sat/vB
-	// 1 sat/vB = 0.25 sat/wu
-	// 0.25 sat/wu = 250 sat/kwu
-	// 20 sat/vB = 5,000 sat/kwu
+	// 1,000 lit/kvB = 1 lit/vB
+	// 1 lit/vB = 0.25 lit/wu
+	// 0.25 lit/wu = 250 lit/kwu
+	// 20 lit/vB = 5,000 lit/kwu
 
 	// 1vB = 0.0001 kvB
-	// 1 BTC = 10 ^ 8 Sats = 100,000,000 Sats.
+	// 1 BTC = 10 ^ 8 lits = 100,000,000 lits.
 
 	// FallBackFeeRatePerkvB defines the default fee rate to be used if API source of the
-	// current fee rates fails. Fee rate in Sat/kvB => 50,000 Sat/kvB = 50 Sat/vB.
+	// current fee rates fails. Fee rate in lit/kvB => 50,000 lit/kvB = 50 lit/vB.
 	// This feerate guarrantees relatively low fee cost and extremely fast tx
 	// confirmation.
 	FallBackFeeRatePerkvB ltcutil.Amount = 50 * 1000
 
 	// MinFeeRatePerkvB defines the minimum fee rate a user can set on a tx.
-	MinFeeRatePerkvB ltcutil.Amount = 1000 // Equals to 1 sat/vB.
+	MinFeeRatePerkvB ltcutil.Amount = 1000 // Equals to 1 lit/vB.
 )
 
 // feeEstimateCache helps to cache the resolved fee rate until a new
@@ -91,7 +91,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]sharedW.FeeEstimate, error) {
 
 	results := make([]sharedW.FeeEstimate, 0, len(resp))
 
-	// Fee rate returned is in Sat/vB units.
+	// Fee rate returned is in lit/vB units.
 	for blocks, feerate := range resp {
 		vals, err := strconv.ParseInt(blocks, 10, 64)
 		if err != nil {
@@ -101,8 +101,8 @@ func (asset *Asset) fetchAPIFeeRate() ([]sharedW.FeeEstimate, error) {
 
 		results = append(results, sharedW.FeeEstimate{
 			ConfirmedBlocks: int32(vals),
-			// Fee rate conversion from Sat/vB to Sat/kvB is at the rate of
-			// 1000 Sat/kvB == 1 Sat/vB
+			// Fee rate conversion from lit/vB to lit/kvB is at the rate of
+			// 1000 lit/kvB == 1 lit/vB
 			Feerate: Amount(int(feerate * 1000.0)),
 		})
 	}
@@ -155,7 +155,7 @@ func (asset *Asset) SetUserFeeRate(feeRatePerkvB sharedW.AssetAmount) error {
 	defer asset.fees.mu.Unlock()
 
 	if feeRatePerkvB.ToInt() < int64(MinFeeRatePerkvB) {
-		return fmt.Errorf("minimum rate is %d Sat/kvB", int64(MinFeeRatePerkvB))
+		return fmt.Errorf("minimum rate is %d Lit/kvB", int64(MinFeeRatePerkvB))
 	}
 
 	asset.fees.SetFeeRatePerkvB = feeRatePerkvB
@@ -169,7 +169,7 @@ func (asset *Asset) GetUserFeeRate() sharedW.AssetAmount {
 	defer asset.fees.mu.RUnlock()
 
 	if asset.fees.SetFeeRatePerkvB == nil {
-		// If not set, defaults to the fall back fee of 1000 sats/kvB = (1 Sat/vB)
+		// If not set, defaults to the fall back fee of 1000 lits/kvB = (1 lits/vB)
 		return Amount(FallBackFeeRatePerkvB)
 	}
 	return asset.fees.SetFeeRatePerkvB

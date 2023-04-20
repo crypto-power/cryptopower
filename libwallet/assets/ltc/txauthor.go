@@ -100,7 +100,7 @@ func (asset *Asset) ComputeTxSizeEstimation(dstAddress string, utxos []*sharedW.
 }
 
 // AddSendDestination adds a destination address to the transaction.
-// The amount to be sent to the address is specified in satoshi.
+// The amount to be sent to the address is specified in litoshi.
 // If sendMax is true, the amount is ignored and the maximum amount is sent.
 func (asset *Asset) AddSendDestination(address string, litoshiAmount int64, sendMax bool) error {
 	_, err := ltcutil.DecodeAddress(address, asset.chainParams)
@@ -169,14 +169,14 @@ func (asset *Asset) TotalSendAmount() *sharedW.Amount {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
-	var totalSendAmountSatoshi int64 = 0
+	var totalSendAmountLitoshi int64 = 0
 	for _, destination := range asset.TxAuthoredInfo.destinations {
-		totalSendAmountSatoshi += destination.UnitAmount
+		totalSendAmountLitoshi += destination.UnitAmount
 	}
 
 	return &sharedW.Amount{
-		UnitValue: totalSendAmountSatoshi,
-		CoinValue: ltcutil.Amount(totalSendAmountSatoshi).ToBTC(),
+		UnitValue: totalSendAmountLitoshi,
+		CoinValue: ltcutil.Amount(totalSendAmountLitoshi).ToBTC(),
 	}
 }
 

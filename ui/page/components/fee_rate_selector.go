@@ -77,7 +77,7 @@ func NewFeeRateSelector(l *load.Load) *FeeRateSelector {
 	fs.FetchRates.TextSize, fs.EditRates.TextSize = values.TextSize12, values.TextSize12
 	fs.FetchRates.Inset, fs.EditRates.Inset = buttonInset, buttonInset
 
-	fs.ratesEditor = fs.Theme.Editor(new(widget.Editor), "in Sat/kvB")
+	fs.ratesEditor = fs.Theme.Editor(new(widget.Editor), "In "+fs.ratesUnit())
 	fs.ratesEditor.HasCustomButton = false
 	fs.ratesEditor.Editor.SingleLine = true
 	fs.ratesEditor.TextSize = values.TextSize14
@@ -317,7 +317,16 @@ func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet *load.WalletMapping)
 }
 
 func (fs *FeeRateSelector) addRatesUnits(rates int64) string {
-	return fs.Load.Printer.Sprintf("%d Sat/kvB", rates)
+	return fs.Load.Printer.Sprintf("%d %s", rates, fs.ratesUnit())
+}
+
+func (fs *FeeRateSelector) ratesUnit() string {
+	switch fs.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.LTCWalletAsset:
+		return "Lit/kvB"
+	default:
+		return "Sat/kvB"
+	}
 }
 
 // SetFeerate updates the fee rate in use upstream.
