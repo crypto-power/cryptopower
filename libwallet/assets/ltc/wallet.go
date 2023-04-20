@@ -1,7 +1,10 @@
 package ltc
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -11,14 +14,17 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/ltc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"decred.org/dcrwallet/v2/errors"
 
 	// "decred.org/dcrwallet/v2/errors"
 	// "github.com/LTCsuite/LTCd/LTCec/v2/ecdsa"
+
+	"github.com/ltcsuite/ltcd/btcec/v2/ecdsa"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
 
 	// "github.com/LTCsuite/LTCd/LTCutil/gcs"
-	// "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/wire"
 
@@ -394,12 +400,89 @@ func (asset *Asset) GetBlockHash(height int64) (*chainhash.Hash, error) {
 
 // SignMessage signs a message with the private key associated with an address.
 func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {
-	return nil, utils.ErrLTCMethodNotImplemented("SignMessage")
+	err := asset.UnlockWallet(passphrase)
+	if err != nil {
+		return nil, err
+	}
+	defer asset.LockWallet()
+
+	addr, err := decodeAddress(address, asset.chainParams)
+	if err != nil {
+		return nil, err
+	}
+
+	privKey, err := asset.Internal().LTC.PrivKeyForAddress(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	err = wire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
+	if err != nil {
+		return nil, err
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return nil, err
+	}
+
+	messageHash := chainhash.DoubleHashB(buf.Bytes())
+	sigbytes, err := ecdsa.SignCompact(privKey, messageHash, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return sigbytes, nil
 }
 
 // VerifyMessage verifies a signed message.
 func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
-	return false, utils.ErrLTCMethodNotImplemented("VerifyMessage")
+	addr, err := decodeAddress(address, asset.chainParams)
+	if err != nil {
+		return false, err
+	}
+
+	// decode base64 signature
+	sig, err := base64.StdEncoding.DecodeString(signatureBase64)
+	if err != nil {
+		return false, err
+	}
+
+	// Validate the signature - this just shows that it was valid at all.
+	// we will compare it with the key next.
+	var buf bytes.Buffer
+	err = wire.WriteVarString(&buf, 0, "Litecoin Signed Message:\n")
+	if err != nil {
+		return false, nil
+	}
+	err = wire.WriteVarString(&buf, 0, message)
+	if err != nil {
+		return false, nil
+	}
+	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
+	pk, wasCompressed, err := ecdsa.RecoverCompact(sig, expectedMessageHash)
+	if err != nil {
+		return false, err
+	}
+
+	var serializedPubKey []byte
+	if wasCompressed {
+		serializedPubKey = pk.SerializeCompressed()
+	} else {
+		serializedPubKey = pk.SerializeUncompressed()
+	}
+	// Verify that the signed-by address matches the given address
+	switch checkAddr := addr.(type) {
+	case *ltcutil.AddressPubKeyHash:
+		return bytes.Equal(ltcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:]), nil
+	case *ltcutil.AddressPubKey:
+		return string(serializedPubKey) == checkAddr.String(), nil
+	case *ltcutil.AddressWitnessPubKeyHash:
+		byteEq := bytes.Compare(ltcutil.Hash160(serializedPubKey), checkAddr.Hash160()[:])
+		return byteEq == 0, nil
+	default:
+		return false, errors.New("address type not supported")
+	}
 }
 
 // RemovePeers removes all peers from the wallet.
@@ -460,4 +543,16 @@ func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error
 	}
 
 	return acctXPubKey.AccountPubKey.String() == xPub, nil
+}
+
+func decodeAddress(s string, params *chaincfg.Params) (ltcutil.Address, error) {
+	addr, err := ltcutil.DecodeAddress(s, params)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address %q: decode failed with %#q", s, err)
+	}
+	if !addr.IsForNet(params) {
+		return nil, fmt.Errorf("invalid address %q: not intended for use on %s",
+			addr, params.Name)
+	}
+	return addr, nil
 }
