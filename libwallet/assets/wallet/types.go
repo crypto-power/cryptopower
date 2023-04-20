@@ -58,6 +58,14 @@ type BlockInfo struct {
 	Timestamp int64
 }
 
+// FeeEstimate defines the fee estimate returned by the API.
+type FeeEstimate struct {
+	// Number of confrmed blocks that show the average fee rate represented below.
+	ConfirmedBlocks int32
+	// Feerate shows estimate fee rate in Sat/kvB.
+	Feerate AssetAmount
+}
+
 type Amount struct {
 	// UnitValue holds the base monetary unit value for a cryptocurrency.
 	// The field is currently used for both BTC and DCR.

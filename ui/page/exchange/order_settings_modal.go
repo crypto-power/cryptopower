@@ -197,7 +197,7 @@ func (osm *orderSettingsModal) Handle() {
 	}
 
 	if osm.feeRateSelector.EditRates.Clicked() {
-		osm.feeRateSelector.OnEditRateCliked(osm.sourceWalletSelector.SelectedWallet())
+		osm.feeRateSelector.OnEditRateClicked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }
 

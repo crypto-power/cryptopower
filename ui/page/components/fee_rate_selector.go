@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"code.cryptopower.dev/group/cryptopower/app"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
@@ -95,6 +96,10 @@ func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 	return fs
 }
 
+func (fs *FeeRateSelector) isFeerateAPIApproved() bool {
+	return fs.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.FeeRateHttpAPI)
+}
+
 // Layout draws the UI components.
 func (fs *FeeRateSelector) Layout(gtx C) D {
 	return fs.ContainerInset.Layout(gtx, func(gtx C) D {
@@ -141,12 +146,25 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 													}),
 													layout.Rigid(func(gtx C) D {
 														if fs.fetchingRate {
-															return layout.Inset{Left: values.MarginPadding18,
+															return layout.Inset{
+																Left:   values.MarginPadding18,
 																Right:  values.MarginPadding8,
-																Bottom: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+																Bottom: values.MarginPadding4,
+															}.Layout(gtx, func(gtx C) D {
 																return material.Loader(fs.Theme.Base).Layout(gtx)
 															})
 														}
+
+														str := fs.FetchRates.Text
+														if !fs.isFeerateAPIApproved() {
+															str = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
+															fs.FetchRates.SetEnabled(false)
+														} else if fs.WL.SelectedWallet.Wallet.GetAssetType() == libutils.LTCWalletAsset {
+															// TODO: Add fee rate API query for LTC
+															str = values.StringF(values.StrNotSupported, values.String(values.StrFeeRateAPI))
+															fs.FetchRates.SetEnabled(false)
+														}
+														fs.FetchRates.Text = str
 														return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, fs.FetchRates.Layout)
 													}),
 												)
@@ -205,13 +223,11 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 											}
 
 											return D{}
-
 										}),
 									)
 								})
 							})
 						})
-
 					}),
 				)
 			})
@@ -284,7 +300,7 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
-func (fs *FeeRateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) {
+func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet *load.WalletMapping) {
 	fs.rateEditMode = !fs.rateEditMode
 	if fs.rateEditMode {
 		fs.EditRates.Text = values.String(values.StrSave)
@@ -293,12 +309,22 @@ func (fs *FeeRateSelector) OnEditRateCliked(selectedWallet *load.WalletMapping) 
 		rateInt, err := selectedWallet.SetAPIFeeRate(rateStr)
 		if err != nil {
 			fs.feeRateText = " - "
+		} else {
+			fs.feeRateText = fs.addRatesUnits(rateInt)
 		}
-		fs.feeRateText = fs.addRatesUnits(rateInt)
 		fs.EditRates.Text = values.String(values.StrEdit)
 	}
 }
 
 func (fs *FeeRateSelector) addRatesUnits(rates int64) string {
 	return fs.Load.Printer.Sprintf("%d Sat/kvB", rates)
+}
+
+// SetFeerate updates the fee rate in use upstream.
+func (fs *FeeRateSelector) SetFeerate(rateInt int64) {
+	if rateInt == 0 {
+		fs.feeRateText = " - "
+		return
+	}
+	fs.feeRateText = fs.addRatesUnits(rateInt)
 }

@@ -52,7 +52,7 @@ type feeEstimateCache struct {
 	SetFeeRatePerkvB sharedW.AssetAmount
 	// If not empty, they hold the fee rate queries from the API when the best
 	// block was set at LastBestBlock.
-	APIFeeRates []FeeEstimate
+	APIFeeRates []sharedW.FeeEstimate
 	// LastBestblock defines the last height when results were cached. This
 	// helps to keep the API calls to under control.
 	LastBestblock int32
@@ -60,16 +60,8 @@ type feeEstimateCache struct {
 	mu sync.RWMutex
 }
 
-// FeeEstimate defines the fee estimate returned by the API.
-type FeeEstimate struct {
-	// Number of confrmed blocks that show the average fee rate represented below.
-	ConfirmedBlocks int32
-	// Feerate shows estimate fee rate in Sat/kvB.
-	Feerate sharedW.AssetAmount
-}
-
 // fetchAPIFeeRate queries the API fee rate.
-func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
+func (asset *Asset) fetchAPIFeeRate() ([]sharedW.FeeEstimate, error) {
 	var feerateURL string
 	net := asset.NetType()
 	switch net {
@@ -97,7 +89,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 		return nil, errors.New("API fee estimates not found")
 	}
 
-	results := make([]FeeEstimate, 0, len(resp))
+	results := make([]sharedW.FeeEstimate, 0, len(resp))
 
 	// Fee rate returned is in Sat/vB units.
 	for blocks, feerate := range resp {
@@ -107,7 +99,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 			continue
 		}
 
-		results = append(results, FeeEstimate{
+		results = append(results, sharedW.FeeEstimate{
 			ConfirmedBlocks: int32(vals),
 			// Fee rate conversion from Sat/vB to Sat/kvB is at the rate of
 			// 1000 Sat/kvB == 1 Sat/vB
@@ -118,7 +110,7 @@ func (asset *Asset) fetchAPIFeeRate() ([]FeeEstimate, error) {
 }
 
 // GetAPIFeeEstimateRate returns the fee estimates from the API.
-func (asset *Asset) GetAPIFeeEstimateRate() (feerates []FeeEstimate, err error) {
+func (asset *Asset) GetAPIFeeEstimateRate() (feerates []sharedW.FeeEstimate, err error) {
 	asset.fees.mu.RLock()
 	feerates = asset.fees.APIFeeRates
 	lastblock := asset.fees.LastBestblock
