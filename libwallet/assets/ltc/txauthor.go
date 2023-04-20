@@ -251,7 +251,7 @@ func (asset *Asset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 // Broadcast broadcasts the transaction to the network.
 func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
 	if !asset.WalletOpened() {
-		return nil, utils.ErrBTCNotInitialized
+		return nil, utils.ErrLTCNotInitialized
 	}
 
 	asset.TxAuthoredInfo.mu.Lock()

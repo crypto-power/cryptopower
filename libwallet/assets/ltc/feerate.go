@@ -32,7 +32,7 @@ const (
 	// 20 lit/vB = 5,000 lit/kwu
 
 	// 1vB = 0.0001 kvB
-	// 1 BTC = 10 ^ 8 lits = 100,000,000 lits.
+	// 1 LTC = 10 ^ 8 Lits = 100,000,000 Lits.
 
 	// FallBackFeeRatePerkvB defines the default fee rate to be used if API source of the
 	// current fee rates fails. Fee rate in lit/kvB => 50,000 lit/kvB = 50 lit/vB.
