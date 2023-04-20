@@ -458,7 +458,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 
 		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
 
-		// If the to and from asset are the same, select a new from asset.
+		// If the to and from asset are the same, select a new to asset.
 		if selectedFromAsset[0] == pg.toCurrency {
 			// Get all available assets.
 			allAssets := pg.WL.AssetsManager.AllAssetTypes()
@@ -471,7 +471,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 				}
 			}
 
-			// Select the first available asset as the new from asset.
+			// Select the first available asset as the new to asset.
 			pg.toCurrency = availableAssets[0]
 			pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
 			pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
@@ -514,7 +514,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 	pg.sourceWalletSelector.Title(values.String(values.StrSource)).EnableWatchOnlyWallets(false)
 	pg.destinationWalletSelector.Title(values.String(values.StrDestination)).EnableWatchOnlyWallets(true)
 
-	// // Save the exchange configuration changes.
+	// Save the exchange configuration changes.
 	pg.updateExchangeConfig()
 }
 
