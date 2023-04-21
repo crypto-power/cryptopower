@@ -20,6 +20,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
+	"github.com/ltcsuite/ltcd/ltcutil"
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -140,10 +141,21 @@ func SetWalletLogo(l *load.Load, gtx C, assetType libutils.AssetType, size unit.
 }
 
 func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D {
-	if strings.ToLower(assetType) == utils.DCRWalletAsset.ToStringLower() {
+	var convertedAmountStr string
+
+	switch strings.ToLower(assetType) {
+	case utils.DCRWalletAsset.ToStringLower():
 		convertedAmount, _ := dcrutil.NewAmount(amount)
-		return l.Theme.Label(values.TextSize16, convertedAmount.String()).Layout(gtx)
+		convertedAmountStr = convertedAmount.String()
+	case utils.BTCWalletAsset.ToStringLower():
+		convertedAmount, _ := btcutil.NewAmount(amount)
+		convertedAmountStr = convertedAmount.String()
+	case utils.LTCWalletAsset.ToStringLower():
+		convertedAmount, _ := ltcutil.NewAmount(amount)
+		convertedAmountStr = convertedAmount.String()
+	default:
+		convertedAmountStr = "Unsupported asset type"
 	}
-	convertedAmount, _ := btcutil.NewAmount(amount)
-	return l.Theme.Label(values.TextSize16, convertedAmount.String()).Layout(gtx)
+
+	return l.Theme.Label(values.TextSize16, convertedAmountStr).Layout(gtx)
 }
