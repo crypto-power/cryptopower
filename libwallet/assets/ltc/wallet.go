@@ -15,30 +15,18 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/ltc"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
-
-	// "decred.org/dcrwallet/v2/errors"
-	// "github.com/LTCsuite/LTCd/LTCec/v2/ecdsa"
-
+	neutrino "github.com/dcrlabs/neutrino-ltc"
+	labschain "github.com/dcrlabs/neutrino-ltc/chain"
+	"github.com/dcrlabs/neutrino-ltc/headerfs"
 	"github.com/ltcsuite/ltcd/btcec/v2/ecdsa"
+	"github.com/ltcsuite/ltcd/chaincfg"
+	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/gcs"
-
-	// "github.com/LTCsuite/LTCd/LTCutil/gcs"
-	"github.com/ltcsuite/ltcd/chaincfg"
-	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/wire"
-
-	// "github.com/ltcsuite/ltcwallet/chain"
-	labschain "github.com/dcrlabs/neutrino-ltc/chain"
-	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
-
-	// "github.com/lightninglabs/neutrino"
-	neutrino "github.com/dcrlabs/neutrino-ltc"
-	"github.com/dcrlabs/neutrino-ltc/headerfs"
-	// LTCneutrino "github.com/lightninglabs/neutrino"
-	// "github.com/lightninglabs/neutrino/headerfs"
 )
 
 // Asset confirm that LTC implements that shared assets interface.
