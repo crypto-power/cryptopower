@@ -462,19 +462,17 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 		if selectedFromAsset[0] == pg.toCurrency {
 			// Get all available assets.
 			allAssets := pg.WL.AssetsManager.AllAssetTypes()
-
-			// Remove the selected to asset from the list of available assets.
-			availableAssets := make([]utils.AssetType, 0)
 			for _, asset := range allAssets {
 				if asset != selectedFromAsset[0] {
-					availableAssets = append(availableAssets, asset)
+
+					// Select the first available asset as the new to asset.
+					pg.toCurrency = asset
+					pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
+					pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
+
+					break
 				}
 			}
-
-			// Select the first available asset as the new to asset.
-			pg.toCurrency = availableAssets[0]
-			pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
-			pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
 		}
 	}
 
@@ -489,19 +487,15 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 
 			// Get all available assets.
 			allAssets := pg.WL.AssetsManager.AllAssetTypes()
-
-			// Remove the selected to asset from the list of available assets.
-			availableAssets := make([]utils.AssetType, 0)
 			for _, asset := range allAssets {
 				if asset != selectedToAsset[0] {
-					availableAssets = append(availableAssets, asset)
+
+					// Select the first available asset as the new from asset.
+					pg.fromCurrency = asset
+					pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+					pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
 				}
 			}
-
-			// Select the first available asset as the new from asset.
-			pg.fromCurrency = availableAssets[0]
-			pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
-			pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
 		}
 	}
 
