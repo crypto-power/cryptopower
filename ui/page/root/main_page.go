@@ -337,10 +337,20 @@ func (mp *MainPage) fetchExchangeRate() {
 	}
 
 	mp.isFetchingExchangeRate = true
-	market := values.DCRUSDTMarket
-	if mp.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset {
+	var market string
+	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+	case libutils.DCRWalletAsset:
+		market = values.DCRUSDTMarket
+	case libutils.BTCWalletAsset:
 		market = values.BTCUSDTMarket
+	case libutils.LTCWalletAsset:
+		market = values.LTCUSDTMarket
+	default:
+		log.Errorf("Unsupported asset type: %s", mp.WL.SelectedWallet.Wallet.GetAssetType())
+		mp.isFetchingExchangeRate = false
+		return
 	}
+
 	rate, err := mp.WL.AssetsManager.ExternalService.GetTicker(mp.currencyExchangeValue, market)
 	if err != nil {
 		log.Error(err)
