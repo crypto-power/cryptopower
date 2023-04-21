@@ -413,7 +413,7 @@ func (asset *Asset) stopSync() {
 
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
-	if !asset.WalletOpened() {
+	if asset.WalletOpened() {
 		// If wallet shutdown is in progress ignore the current request to shutdown.
 		if loadedAsset.ShuttingDown() {
 			asset.syncData.isSyncShuttingDown = false
@@ -429,11 +429,11 @@ func (asset *Asset) stopSync() {
 	// 2. shutdown the chain client.
 	asset.chainClient.Stop() // If active, attempt to shut it down.
 
-	if !asset.WalletOpened() {
+	if asset.WalletOpened() {
 		// Neutrino performs explicit chain service start but never explicit
 		// chain service stop thus the need to have it done here when stopping
 		// a wallet sync.
-		// 3. Disabled the peers connectivity allows the handleChainNotification
+		// 3. Disabling the peers connectivity allows the upstream handleChainNotification
 		// goroutine to return.
 		if err := asset.chainClient.CS.Stop(); err != nil {
 			// ignore the error and proceed with shutdown.
@@ -457,7 +457,7 @@ func (asset *Asset) stopSync() {
 
 	log.Infof("Stopping (%s) wallet and its neutrino interface", asset.GetWalletName())
 
-	if !asset.WalletOpened() {
+	if asset.WalletOpened() {
 		// Initializes goroutine responsible for creating txs preventing double spend.
 		// Initializes goroutine responsible for managing locked/unlocked wallet state.
 		//

@@ -273,9 +273,8 @@ func (asset *Asset) SafelyCancelSync() {
 	}
 
 	loadWallet := asset.Internal().LTC
-	if loadWallet != nil && loadWallet.Database() != nil {
-		// Close the upstream loader database connection to disable the wallet
-		// recovery if it is running in the background.
+	if asset.WalletOpened() && loadWallet.Database() != nil {
+		// Close the upstream loader database connection.
 		if err := loadWallet.Database().Close(); err != nil {
 			log.Errorf("closing upstream db failed: %v", err)
 		}
@@ -285,7 +284,7 @@ func (asset *Asset) SafelyCancelSync() {
 
 	// Stop the goroutines left active to manage the wallet functionalities that
 	// don't require activation of sync i.e. wallet rename, password update etc.
-	if loadWallet != nil {
+	if asset.WalletOpened() {
 		if loadWallet.ShuttingDown() {
 			return
 		}
