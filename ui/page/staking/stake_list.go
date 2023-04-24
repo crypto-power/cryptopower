@@ -1,18 +1,13 @@
 package staking
 
 import (
-	"math"
-
 	"gioui.org/layout"
 	"gioui.org/text"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
 	"code.cryptopower.dev/group/cryptopower/listeners"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
-
-const pageSize int32 = 20
 
 func (pg *Page) initTicketList() {
 	pg.ticketsList = pg.Theme.NewClickableList(layout.Vertical)
@@ -48,56 +43,16 @@ func (pg *Page) listenForTxNotifications() {
 	}()
 }
 
-func (pg *Page) fetchTickets(reverse bool) {
-	if pg.loadingTickets || pg.loadedAllTickets {
-		return
-	}
-	defer func() {
-		pg.loadingTickets = false
-		if reverse {
-			pg.list.Position.Offset = int(math.Abs(float64(pg.list.Position.OffsetLast + 4)))
-			pg.list.Position.OffsetLast = -4
-		} else {
-			pg.list.Position.Offset = 4
-			pg.list.Position.OffsetLast = pg.list.Position.OffsetLast + 4
-		}
-
-	}()
-	pg.loadingTickets = true
-	switch reverse {
-	case true:
-		pg.ticketOffset -= pageSize
-	default:
-		if len(pg.tickets) != 0 {
-			pg.ticketOffset += pageSize
-		}
-	}
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(pg.ticketOffset, pageSize, dcr.TxFilterTickets, true)
+func (pg *Page) fetchTickets(offset, pageSize int32) (interface{}, int, error) {
+	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
-		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(errModal)
-		return
+		return nil, -1, err
 	}
 
 	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
 		return filter == dcr.TxFilterTickets
 	})
-	if err != nil {
-		errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(errModal)
-		return
-	}
-
-	switch ticketLen := len(tickets); {
-	case ticketLen > 0:
-		if len(tickets) < int(pageSize) {
-			pg.tickets = append(pg.tickets, tickets...) // if the last batch is too small append to existing.
-		} else {
-			pg.tickets = tickets
-		}
-	default:
-		pg.loadedAllTickets = true
-	}
+	return tickets, len(tickets), err
 }
 
 func (pg *Page) ticketListLayout(gtx C) D {
@@ -118,7 +73,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, txt.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						tickets := pg.tickets
+						tickets := pg.scroll.FetchedData().([]*transactionItem)
 
 						if len(tickets) == 0 {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -162,22 +117,4 @@ func (pg *Page) ticketListLayout(gtx C) D {
 			})
 		})
 	})
-}
-
-func (pg *Page) onScrollChangeListener() {
-	if len(pg.tickets) < int(pageSize) {
-		return
-	}
-
-	if pg.list.List.Position.OffsetLast == 0 && !pg.list.List.Position.BeforeEnd {
-		go pg.fetchTickets(false)
-	}
-
-	// Fetches preceeding pagesize tickets if the list scrollbar is at the beginning.
-	if pg.list.List.Position.BeforeEnd && pg.list.Position.Offset == 0 && pg.ticketOffset >= pageSize {
-		if pg.loadedAllTickets {
-			pg.loadedAllTickets = false
-		}
-		go pg.fetchTickets(true)
-	}
 }
