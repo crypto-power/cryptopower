@@ -43,16 +43,16 @@ func (pg *Page) listenForTxNotifications() {
 	}()
 }
 
-func (pg *Page) fetchTickets(offset, pageSize int32) (interface{}, int, error) {
+func (pg *Page) fetchTickets(offset, pageSize int32) (interface{}, int, bool, error) {
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
-		return nil, -1, err
+		return nil, -1, false, err
 	}
 
 	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
 		return filter == dcr.TxFilterTickets
 	})
-	return tickets, len(tickets), err
+	return tickets, len(tickets), false, err
 }
 
 func (pg *Page) ticketListLayout(gtx C) D {
@@ -73,9 +73,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, txt.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						tickets := pg.scroll.FetchedData().([]*transactionItem)
-
-						if len(tickets) == 0 {
+						if pg.scroll.ItemsCount() <= 0 {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
 							txt := pg.Theme.Body1(values.String(values.StrNoTickets))
@@ -84,6 +82,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding15, Bottom: values.MarginPadding16}.Layout(gtx, txt.Layout)
 						}
 
+						tickets := pg.scroll.FetchedData().([]*transactionItem)
 						return pg.ticketsList.Layout(gtx, len(tickets), func(gtx C, index int) D {
 							ticket := tickets[index]
 

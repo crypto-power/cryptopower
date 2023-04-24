@@ -12,8 +12,9 @@ import (
 )
 
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
-// returns data interface, count of the items in the data interface and an error.
-type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, err error)
+// returns data interface, count of the items in the data interface, isReset and an error.
+// isReset is used to reset the offset value.
+type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, isReset bool, err error)
 
 type Scroll struct {
 	load       *load.Load
@@ -38,12 +39,14 @@ func NewScroll(pageSize int32, queryFunc ScrollFunc) *Scroll {
 				Axis: layout.Vertical,
 			},
 		},
-		pageSize:  pageSize,
-		queryFunc: queryFunc,
+		pageSize:   pageSize,
+		queryFunc:  queryFunc,
+		itemsCount: -1,
 	}
 }
 
-// FetchScrollData is a mutex protected fetchScrollData function.
+// FetchScrollData is a mutex protected fetchScrollData function. At the end of
+// the function call a window reload is triggered.
 func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -53,7 +56,8 @@ func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 // fetchScrollData fetchs the scroll data and manages data returned depending on
 // on the up or downwards scrollbar movement. Unless the data fetched is less than
 // the page, all the old data is replaced by the new fetched data making it
-// easier and smoother to scroll on the UI.
+// easier and smoother to scroll on the UI. At the end of the function call
+// a window reload is triggered.
 func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	if s.isLoadingItems || s.loadedAllItems {
 		return
@@ -84,19 +88,23 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 		}
 	}
 
-	items, itemsLen, err := s.queryFunc(s.offset, s.pageSize)
+	items, itemsLen, isReset, err := s.queryFunc(s.offset, s.pageSize)
 	if err != nil {
 		errModal := modal.NewErrorModal(s.load, err.Error(), modal.DefaultClickFunc())
 		window.ShowModal(errModal)
 		return
 	}
 
-	if itemsLen > 0 {
-		s.data = items
-		s.itemsCount = itemsLen
-		if itemsLen < int(s.pageSize) {
-			s.loadedAllItems = true
-		}
+	s.data = items
+	s.itemsCount = itemsLen
+	if itemsLen > 0 && itemsLen < int(s.pageSize) {
+		s.loadedAllItems = true
+	}
+
+	if isReset {
+		// resets the values for use on the next iteration.
+		s.offset = 0
+		s.loadedAllItems = false
 	}
 }
 
@@ -105,6 +113,13 @@ func (s *Scroll) FetchedData() interface{} {
 	defer s.mu.RUnlock()
 	s.mu.RLock()
 	return s.data
+}
+
+// ItemsCount returns the count of the last fetched items.
+func (s *Scroll) ItemsCount() int {
+	defer s.mu.RUnlock()
+	s.mu.RLock()
+	return s.itemsCount
 }
 
 func (s *Scroll) List() *widget.List {
@@ -125,6 +140,7 @@ func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 
 	if s.list.List.Position.OffsetLast == 0 && !s.list.List.Position.BeforeEnd {
 		go s.fetchScrollData(false, window)
+		return
 	}
 
 	// Fetches preceeding pagesize items if the list scrollbar is at the beginning.

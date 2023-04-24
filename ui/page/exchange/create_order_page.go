@@ -29,12 +29,7 @@ import (
 	api "code.cryptopower.dev/group/instantswap"
 )
 
-const (
-	CreateOrderPageID = "CreateOrder"
-
-	// pageSize defines the number of orders that can be fetched at ago.
-	pageSize = 5
-)
+const CreateOrderPageID = "CreateOrder"
 
 type (
 	C = layout.Context
@@ -131,6 +126,9 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
+
+	// pageSize defines the number of orders that can be fetched at ago.
+	pageSize := int32(5)
 	pg.scroll = components.NewScroll(pageSize, pg.fetchOrders)
 
 	pg.scheduler = pg.Theme.Switch()
@@ -877,8 +875,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
-										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, len(orderItems)))
+										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
 										txt.Font.Weight = text.SemiBold
 										return txt.Layout(gtx)
 									}),
@@ -955,16 +952,16 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	})
 }
 
-func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, error) {
+func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
-	return orders, len(orders), nil
+	return orders, len(orders), false, nil
 }
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
-	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
-	if len(orderItems) == 0 {
+	if pg.scroll.ItemsCount() <= 0 {
 		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
+	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {

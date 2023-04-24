@@ -306,11 +306,6 @@ func (pg *Page) HandleUserInteractions() {
 
 	if clicked, selectedItem := pg.ticketsList.ItemClicked(); clicked {
 		tickets := pg.scroll.FetchedData().([]*transactionItem)
-		if len(tickets) == 0 {
-			log.Error("missing valid tickets data")
-			return
-		}
-
 		ticketTx := tickets[selectedItem].transaction
 		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
 
