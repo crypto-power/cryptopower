@@ -29,7 +29,12 @@ import (
 	api "code.cryptopower.dev/group/instantswap"
 )
 
-const CreateOrderPageID = "CreateOrder"
+const (
+	CreateOrderPageID = "CreateOrder"
+
+	// pageSize defines the number of orders that can be fetched at ago.
+	pageSize = 5
+)
 
 type (
 	C = layout.Context
@@ -49,9 +54,7 @@ type CreateOrderPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	listContainer *widget.List
-
-	orderItems       []*instantswap.Order
+	scroll           *components.Scroll
 	ordersList       *cryptomaterial.ClickableList
 	exchangeSelector *ExchangeSelector
 	selectedExchange *Exchange
@@ -82,8 +85,7 @@ type CreateOrderPage struct {
 	max                       float64
 	exchangeRate, binanceRate float64
 
-	errMsg                                 string
-	loading, initialLoadingDone, loadedAll bool
+	errMsg string
 
 	*orderData
 }
@@ -119,9 +121,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg := &CreateOrderPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateOrderPageID),
-		listContainer: &widget.List{
-			List: layout.List{Axis: layout.Vertical},
-		},
 		exchangeSelector: NewExchangeSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
@@ -132,6 +131,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.scroll = components.NewScroll(pageSize, pg.fetchOrders)
 
 	pg.scheduler = pg.Theme.Switch()
 	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
@@ -219,7 +219,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.loadOrderConfig()
-		go pg.fetchOrders(false)
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 }
 
@@ -230,7 +230,6 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
-
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
 	if pg.swapButton.Button.Clicked() {
@@ -246,8 +245,8 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
-		selectedOrder := pg.orderItems[selectedItem]
-		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, selectedOrder))
+		orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
 	if pg.refreshExchangeRateBtn.Button.Clicked() {
@@ -590,7 +589,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		})
 	}
 
-	pg.onScrollChangeListener()
+	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	container := func(gtx C) D {
 		sp := components.SubPage{
@@ -620,7 +619,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				Alignment: layout.Middle,
 			}.Layout2(gtx, func(gtx C) D {
 				return sp.Layout(pg.ParentWindow(), gtx)
-
 			})
 		})
 	}
@@ -879,7 +877,8 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, len(pg.orderItems)))
+										orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, len(orderItems)))
 										txt.Font.Weight = text.SemiBold
 										return txt.Layout(gtx)
 									}),
@@ -923,7 +922,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 																	return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 																		return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
 																	})
-
 																}),
 															)
 														}),
@@ -931,7 +929,6 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 												}),
 												layout.Rigid(func(gtx C) D {
 													return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-
 														return layout.E.Layout(gtx, pg.viewAllButton.Layout)
 													})
 												}),
@@ -958,63 +955,21 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	})
 }
 
-func (pg *CreateOrderPage) fetchOrders(loadMore bool) {
-	if pg.loading {
-		return
-	}
-	defer func() {
-		pg.loading = false
-	}()
-	pg.loadedAll = false
-	pg.loading = true
-
-	limit := 3
-
-	offset := 0
-	if loadMore {
-		offset = len(pg.orderItems)
-	}
-
-	tempOrders := components.LoadOrders(pg.Load, int32(offset), int32(limit), true)
-	if tempOrders == nil {
-		pg.orderItems = nil
-		return
-	}
-
-	pg.initialLoadingDone = true
-
-	if len(tempOrders) == 0 {
-		pg.loadedAll = true
-		pg.loading = false
-
-		if !loadMore {
-			pg.orderItems = nil
-		}
-		return
-	}
-
-	if len(tempOrders) < limit {
-		pg.loadedAll = true
-	}
-
-	if loadMore {
-		pg.orderItems = append(pg.orderItems, tempOrders...)
-	} else {
-		pg.orderItems = tempOrders
-	}
-
-	pg.ParentWindow().Reload()
+func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, error) {
+	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
+	return orders, len(orders), nil
 }
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
-	if len(pg.orderItems) == 0 {
+	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+	if len(orderItems) == 0 {
 		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return pg.ordersList.Layout(gtx, len(pg.orderItems), func(gtx C, i int) D {
+					return pg.ordersList.Layout(gtx, len(orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{
 							Orientation: layout.Vertical,
 							Width:       cryptomaterial.MatchParent,
@@ -1026,7 +981,7 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
 						}.
 							Layout2(gtx, func(gtx C) D {
-								return components.OrderItemWidget(gtx, pg.Load, pg.orderItems[i])
+								return components.OrderItemWidget(gtx, pg.Load, orderItems[i])
 							})
 					})
 				})
@@ -1054,7 +1009,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.fetchOrders(false)
+			pg.scroll.FetchScrollData(false, pg.ParentWindow())
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1281,11 +1236,8 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			select {
 			case n := <-pg.OrderNotifChan:
 				switch n.OrderStatus {
-				case wallet.OrderStatusSynced:
-					pg.fetchOrders(false)
-					pg.ParentWindow().Reload()
-				case wallet.OrderCreated:
-					pg.fetchOrders(false)
+				case wallet.OrderStatusSynced, wallet.OrderCreated:
+					pg.scroll.FetchScrollData(false, pg.ParentWindow())
 					pg.ParentWindow().Reload()
 				case wallet.OrderSchedulerStarted:
 					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
@@ -1301,28 +1253,4 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			}
 		}
 	}()
-}
-
-func (pg *CreateOrderPage) onScrollChangeListener() {
-	// if the number of orders is less than 5, don't load more orders. (5 is an arbitrary number)
-	// This is to avoid loading more orders when there are no more orders to load.
-	// if initialLoadingDone is false, don't load more orders.
-	// This is to avoid loading more orders when orders are still being fetched.
-	if len(pg.orderItems) < 5 || !pg.initialLoadingDone {
-		return
-	}
-
-	// The first check is for when the list is scrolled to the bottom using the scroll bar.
-	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
-	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
-	// is to check if the page is still scrollable.
-	// The page scroll starts from a negative number and the closer you get to 0,
-	// it means you're getting closer to the end of the list. 0 is the last item on the list.
-	// The -50 is to load more orders before reaching the end of the list.
-	// (-50 is an arbitrary number)
-	if (pg.listContainer.List.Position.OffsetLast >= -50 && pg.listContainer.List.Position.BeforeEnd) || (pg.listContainer.List.Position.OffsetLast == 0 && pg.listContainer.List.Position.Length > 0) {
-		if !pg.loadedAll {
-			pg.fetchOrders(false)
-		}
-	}
 }
