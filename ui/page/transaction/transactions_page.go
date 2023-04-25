@@ -10,7 +10,6 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -23,7 +22,12 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
-const TransactionsPageID = "Transactions"
+const (
+	TransactionsPageID = "Transactions"
+
+	// pageSize defines the number of transactions that can be fetched at ago.
+	pageSize = int32(20)
+)
 
 type (
 	C = layout.Context
@@ -52,27 +56,22 @@ type TransactionsPage struct {
 
 	txTypeDropDown  *cryptomaterial.DropDown
 	transactionList *cryptomaterial.ClickableList
-	container       *widget.List
-	transactions    []sharedW.Transaction
+	scroll          *components.Scroll
 
 	tabs *cryptomaterial.ClickableList
 
 	materialLoader material.LoaderStyle
-
-	loading, initialLoadingDone, loadedAll bool
 }
 
 func NewTransactionsPage(l *load.Load) *TransactionsPage {
 	pg := &TransactionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
-		container: &widget.List{
-			List: layout.List{Axis: layout.Vertical},
-		},
-		separator:       l.Theme.Separator(),
-		transactionList: l.Theme.NewClickableList(layout.Vertical),
+		separator:        l.Theme.Separator(),
+		transactionList:  l.Theme.NewClickableList(layout.Vertical),
 	}
 
+	pg.scroll = components.NewScroll(pageSize, pg.loadTransactions)
 	pg.tabs = l.Theme.NewClickableList(layout.Horizontal)
 	pg.tabs.IsHoverable = false
 
@@ -98,7 +97,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	}
 
 	pg.listenForTxNotifications()
-	go pg.loadTransactions(false)
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
 func (pg *TransactionsPage) sectionNavTab(gtx C) D {
@@ -189,67 +188,27 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(loadMore bool) {
-	if pg.loading {
-		return
-	}
-	defer func() {
-		pg.loading = false
-	}()
-	pg.loadedAll = false
-	pg.loading = true
-
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
-		log.Warnf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
-		return
+		err := fmt.Errorf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
+		return nil, -1, false, err
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
 	txFilter, ok := mapinfo[selectedVal]
 	if !ok {
-		log.Warnf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
+		err := fmt.Errorf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)
-		return
+		return nil, -1, false, err
 	}
 
-	limit := 20
-
-	offset := 0
-	if loadMore {
-		offset = len(pg.transactions)
-	}
-
-	tempTxs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(int32(offset), int32(limit), txFilter, true)
+	tempTxs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, txFilter, true)
 	if err != nil {
-		// log error and return an empty list.
-		log.Errorf("Error loading transactions: %v", err)
-		pg.transactions = nil
-		return
+		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
-
-	pg.initialLoadingDone = true
-
-	if len(tempTxs) == 0 {
-		pg.loadedAll = true
-		pg.loading = false
-
-		if !loadMore {
-			pg.transactions = nil
-		}
-		return
-	}
-
-	if len(tempTxs) < limit {
-		pg.loadedAll = true
-	}
-
-	if loadMore {
-		pg.transactions = append(pg.transactions, tempTxs...)
-	} else {
-		pg.transactions = tempTxs
-	}
+	return tempTxs, len(tempTxs), false, err
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -263,21 +222,20 @@ func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	pg.onScrollChangeListener()
+	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	return components.UniformPadding(gtx, func(gtx C) D {
 		txlisingView := layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
-				wallTxs := pg.transactions
 				return layout.Stack{Alignment: layout.N}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
 						return layout.Inset{
 							Top: values.MarginPadding60,
 						}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
+							return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
 								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-										if pg.loading {
+										if pg.scroll.ItemsCount() == -1 {
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
 											return layout.Center.Layout(gtx, func(gtx C) D {
 												return pg.materialLoader.Layout(gtx)
@@ -285,7 +243,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 										}
 
 										// return "No transactions yet" text if there are no transactions
-										if len(wallTxs) == 0 {
+										if pg.scroll.ItemsCount() == 0 {
 											padding := values.MarginPadding16
 											txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
 											txt.Color = pg.Theme.Color.GrayText3
@@ -295,6 +253,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 											})
 										}
 
+										wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
 										return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
 											row := components.TransactionRow{
 												Transaction: wallTxs[index],
@@ -347,7 +306,6 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 
 func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	container := func(gtx C) D {
-		wallTxs := pg.transactions
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Stack{Alignment: layout.N}.Layout(gtx,
@@ -355,10 +313,10 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{
 							Top: values.MarginPadding60,
 						}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
+							return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
 								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 									// return "No transactions yet" text if there are no transactions
-									if len(wallTxs) == 0 {
+									if pg.scroll.ItemsCount() <= 0 {
 										padding := values.MarginPadding16
 										txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
 										txt.Color = pg.Theme.Color.GrayText3
@@ -367,7 +325,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 											return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
 										})
 									}
-
+									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
 										row := components.TransactionRow{
 											Transaction: wallTxs[index],
@@ -416,19 +374,20 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
-		go pg.loadTransactions(false)
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 		break
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
-		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &pg.transactions[selectedItem], false))
+		transactions := pg.scroll.FetchedData().([]sharedW.Transaction)
+		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &transactions[selectedItem], false))
 	}
 	cryptomaterial.DisplayOneDropdown(pg.txTypeDropDown)
 
 	if tabItemClicked, clickedTabIndex := pg.tabs.ItemClicked(); tabItemClicked {
 		pg.selectedTabIndex = clickedTabIndex
 		pg.refreshAvailableTxType()
-		go pg.loadTransactions(false)
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 }
 
@@ -448,7 +407,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			select {
 			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.NewTransaction {
-					pg.loadTransactions(false)
+					pg.scroll.FetchScrollData(false, pg.ParentWindow())
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
@@ -471,20 +430,4 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
-}
-
-func (pg *TransactionsPage) onScrollChangeListener() {
-	if len(pg.transactions) < 5 || !pg.initialLoadingDone {
-		return
-	}
-
-	// The first check is for when the list is scrolled to the bottom using the scroll bar.
-	// The second check is for when the list is scrolled to the bottom using the mouse wheel.
-	// OffsetLast is 0 if we've scrolled to the last item on the list. Position.Length > 0
-	// is to check if the page is still scrollable.
-	if (pg.container.List.Position.OffsetLast >= -50 && pg.container.List.Position.BeforeEnd) || (pg.container.List.Position.OffsetLast == 0 && pg.container.List.Position.Length > 0) {
-		if !pg.loadedAll {
-			pg.loadTransactions(true)
-		}
-	}
 }
