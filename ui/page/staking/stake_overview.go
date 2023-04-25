@@ -76,7 +76,7 @@ func NewStakingPage(l *load.Load) *Page {
 		dcrImpl:          impl,
 	}
 
-	pg.scroll = components.NewScroll(pageSize, pg.fetchTickets)
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.ticketOverview = new(dcr.StakingOverview)
 
@@ -210,7 +210,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 						})
 					}
 					return components.UniformHorizontalPadding(gtx, func(gtx C) D {
-						return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
+						return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 							return pg.ticketListLayout(gtx)
 						})
 					})
@@ -228,7 +228,7 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 	return components.UniformMobile(gtx, true, true, func(gtx layout.Context) layout.Dimensions {
 		return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-			return pg.Theme.List(pg.scroll.List()).Layout(gtx, len(widgets), func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, len(widgets), func(gtx C, i int) D {
 				return widgets[i](gtx)
 			})
 		})

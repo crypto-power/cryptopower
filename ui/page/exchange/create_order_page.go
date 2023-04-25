@@ -129,7 +129,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
-	pg.scroll = components.NewScroll(pageSize, pg.fetchOrders)
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchOrders)
 
 	pg.scheduler = pg.Theme.Switch()
 	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
@@ -964,7 +964,7 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.ordersList.Layout(gtx, len(orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{

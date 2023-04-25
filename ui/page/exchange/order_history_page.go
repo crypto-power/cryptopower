@@ -58,7 +58,7 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(10)
-	pg.scroll = components.NewScroll(pageSize, pg.fetchOrders)
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchOrders)
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
@@ -268,7 +268,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.ordersList.Layout(gtx, len(orderItems), func(gtx C, i int) D {
 						return cryptomaterial.LinearLayout{

@@ -54,9 +54,10 @@ type TransactionsPage struct {
 
 	selectedTabIndex int
 
-	txTypeDropDown  *cryptomaterial.DropDown
-	transactionList *cryptomaterial.ClickableList
-	scroll          *components.Scroll
+	txTypeDropDown   *cryptomaterial.DropDown
+	transactionList  *cryptomaterial.ClickableList
+	previousTxFilter int32
+	scroll           *components.Scroll
 
 	tabs *cryptomaterial.ClickableList
 
@@ -71,7 +72,7 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 		transactionList:  l.Theme.NewClickableList(layout.Vertical),
 	}
 
-	pg.scroll = components.NewScroll(pageSize, pg.loadTransactions)
+	pg.scroll = components.NewScroll(l, pageSize, pg.loadTransactions)
 	pg.tabs = l.Theme.NewClickableList(layout.Horizontal)
 	pg.tabs.IsHoverable = false
 
@@ -204,11 +205,18 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{
 		return nil, -1, false, err
 	}
 
-	tempTxs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, txFilter, true)
+	isReset := pg.previousTxFilter != txFilter
+	if isReset {
+		// reset the offset to zero
+		offset = 0
+		pg.previousTxFilter = txFilter
+	}
+
+	tempTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, true)
 	if err != nil {
 		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
-	return tempTxs, len(tempTxs), false, err
+	return tempTxs, len(tempTxs), isReset, err
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -232,7 +240,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 						return layout.Inset{
 							Top: values.MarginPadding60,
 						}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
+							return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 										if pg.scroll.ItemsCount() == -1 {
@@ -313,7 +321,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{
 							Top: values.MarginPadding60,
 						}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.List(pg.scroll.List()).Layout(gtx, 1, func(gtx C, i int) D {
+							return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 									// return "No transactions yet" text if there are no transactions
 									if pg.scroll.ItemsCount() <= 0 {
