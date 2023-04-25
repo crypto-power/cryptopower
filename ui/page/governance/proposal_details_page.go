@@ -39,7 +39,7 @@ type ProposalDetails struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	*listeners.ProposalNotificationListener //not needed.
+	*listeners.ProposalNotificationListener // not needed.
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
