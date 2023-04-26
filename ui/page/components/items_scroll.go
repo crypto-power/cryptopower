@@ -177,19 +177,25 @@ func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 		return
 	}
 
+	scrollPos := s.list.Position
 	// isScrollingDown checks when to fetch the Next page items because the scrollbar
 	// has reached at the end of the current list loaded.
-	isScrollingDown := s.list.Position.Offset > s.prevListOffset && s.list.Position.OffsetLast == 0
+	// The -50 is to load more orders before reaching the end of the list.
+	// (-50 is an arbitrary number)
+	isScrollingDown := scrollPos.Offset > s.prevListOffset && scrollPos.OffsetLast >= -50
 	// isScrollingUp checks when to fetch the Previous page items because the scrollbar
 	// has reached at the beginning of the current list loaded.
-	isScrollingUp := s.list.Position.Offset < s.prevListOffset && s.list.Position.Offset == 0 && s.offset > 0
-	s.prevListOffset = s.list.Position.Offset
+	isScrollingUp := scrollPos.Offset < s.prevListOffset && scrollPos.Offset == 0 && s.offset > 0
+	s.prevListOffset = scrollPos.Offset
 
 	if isScrollingDown {
+		// Enforce the first item to be at the list top.
+		s.list.ScrollToEnd = false
 		go s.fetchScrollData(false, window)
 	}
 
 	if isScrollingUp {
+		// Enforce the first item to be at the list bottom.
 		s.list.ScrollToEnd = true
 		s.loadedAllItems = false
 		go s.fetchScrollData(true, window)
