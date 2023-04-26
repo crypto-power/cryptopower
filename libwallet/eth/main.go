@@ -114,11 +114,11 @@ func (w *wallet) GetBestBlockHeight() (uint64, error) {
 }
 
 // transfer ETH between accounts
-func (w *wallet) TransferETH(privateKey *ecdsa.PrivateKey, toHex string, amount *big.Int) (string, error) {
-	// privateKey, err := crypto.HexToECDSA(fromHex)
-	// if err != nil {
-	// 	return "", err
-	// }
+func (w *wallet) TransferETH(fromHex string, toHex string, amount *big.Int) (string, error) {
+	privateKey, err := crypto.HexToECDSA(fromHex)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -222,23 +222,23 @@ func main() {
 	w := &wallet{client}
 
 	// CREATE WALLET
-	wallet, err := createWallet()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("wallet: ", wallet)
+	// wallet, err := createWallet()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println("wallet: ", wallet)
 
 	// print each field in a single line print statement
-	fmt.Printf("privateKey: %v \nprivateKeyBytes: %v \npublicKey: %v \naddress: %v \nhash: %v \nhex: %v \n", wallet.privateKey, wallet.privateKeyBytes, wallet.publicKey, wallet.address, wallet.hash, wallet.hex)
+	// fmt.Printf("privateKey: %v \nprivateKeyBytes: %v \npublicKey: %v \naddress: %v \nhash: %v \nhex: %v \n", wallet.privateKey, wallet.privateKeyBytes, wallet.publicKey, wallet.address, wallet.hash, wallet.hex)
 
-	balance, err := w.AccountBalance(wallet.hex)
+	balance, err := w.AccountBalance("0xdf5534e4567532089e2529095b4f554fd3bbba00")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("balance: ", balance)
 
 	// get wallet address
-	walletAddress := w.GetWalletAddress(wallet.hex)
+	walletAddress := w.GetWalletAddress("0xdf5534e4567532089e2529095b4f554fd3bbba00")
 	fmt.Println("walletAddress: ", walletAddress)
 
 	// get best block
@@ -249,24 +249,18 @@ func main() {
 	fmt.Println("bestBlock: ", bestBlock)
 
 	// from account hex is gotten from my local node
-	// amount := big.NewInt(1000000000000000000) // in wei (1 eth)
-	// // from private key
-	// // new *ecdsa.PrivateKey private key
-	// privateKey, err := PrivateKeyFromString("0x02db5b7f9b6e71942f939901523c90193c8e23f2fe853925242c3d70677ec598")
-	// if err != nil {
-	// 	log.Fatal(fmt.Errorf("error converting private key string to *ecdsa.PrivateKey: %v", err))
-	// }
-		
-	// signedTxHex, err := w.TransferETH(privateKey, "0xE41d2489571d322189246DaFA5ebDe1F4699F498", amount)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("signedTxHex: ", signedTxHex)
+	amount := big.NewInt(1000000000000000000) // in wei (1 eth)
 
-	// // get balance after transfer
-	// balance, err = w.AccountBalance(wallet.hex)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("new balance after transfer: ", balance)
+	signedTxHex, err := w.TransferETH("50050d5ca2af4f29ea8a83f517f24e89c0a28b4ca077882df0e64bf3211f576f", "0xdf5534e4567532089e2529095b4f554fd3bbba00", amount)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("signedTxHex: ", signedTxHex)
+
+	// get balance after transfer
+	balance, err = w.AccountBalance("0xdf5534e4567532089e2529095b4f554fd3bbba00")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("new balance after transfer: ", balance)
 }
