@@ -15,6 +15,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -27,6 +28,7 @@ type Page struct {
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
 	enableGovernanceBtn    cryptomaterial.Button
+	navigateToSettingsBtn  cryptomaterial.Button
 }
 
 var governanceTabTitles = []string{
@@ -45,6 +47,7 @@ func NewGovernancePage(l *load.Load) *Page {
 	pg.tabCategoryList.IsHoverable = false
 
 	pg.initSplashScreenWidgets()
+	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	return pg
 }
@@ -85,6 +88,10 @@ func (pg *Page) OnNavigatedFrom() {
 func (pg *Page) HandleUserInteractions() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.HandleUserInteractions()
+	}
+
+	if pg.navigateToSettingsBtn.Button.Clicked() {
+		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
 	}
 
 	if pg.splashScreenInfoButton.Button.Clicked() {

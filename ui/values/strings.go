@@ -297,6 +297,7 @@ const (
 	StrEmptyMsg                        = "emptyMsg"
 	StrEmptySign                       = "emptySign"
 	StrEnabled                         = "enabled"
+	StrEnableAPI                       = "enableAPI"
 	StrEnglish                         = "english"
 	StrEnterAddressToSign              = "enterAddressToSign"
 	StrEnterExtendedPubKey             = "enterXpubKey"

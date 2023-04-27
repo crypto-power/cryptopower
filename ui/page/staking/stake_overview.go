@@ -17,6 +17,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	tpage "code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -60,6 +61,8 @@ type Page struct {
 	totalRewards       string
 	showMaterialLoader bool
 
+	navToSettingsBtn cryptomaterial.Button
+
 	dcrImpl *dcr.DCRAsset
 }
 
@@ -82,6 +85,8 @@ func NewStakingPage(l *load.Load) *Page {
 
 	pg.initStakePriceWidget()
 	pg.initTicketList()
+
+	pg.navToSettingsBtn = l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrVsp)))
 
 	return pg
 }
@@ -174,10 +179,9 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 func (pg *Page) Layout(gtx C) D {
 	// If Tickets Purcahse API is not allowed, display the overlay with the message.
 	if !pg.isTicketsPurchaseAllowed() {
-		gtx = gtx.Disabled()
 		overlay := layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navToSettingsBtn)
 		})
 
 		return layout.Stack{}.Layout(gtx, overlay)
@@ -253,6 +257,10 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	pg.setStakingButtonsState()
+
+	if pg.navToSettingsBtn.Clicked() {
+		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
+	}
 
 	if pg.stake.Changed() {
 		if pg.stake.IsChecked() {

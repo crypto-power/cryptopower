@@ -187,6 +187,7 @@ const EN = `
 "emptyMsg" = "Field cannot be empty. Please provide valid signed message."
 "emptySign" = "Field cannot be empty. Please provide valid signature."
 "enabled" = "enabled"
+"enableAPI" = "Enable %v API"
 "english" = "English"
 "enterAddressToSign" = "Enter an address and message to sign:"
 "enterHex"       = "Enter Hex"

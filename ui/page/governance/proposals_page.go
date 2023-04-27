@@ -220,7 +220,7 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, nil)
 		})
 	}
 
