@@ -24,9 +24,12 @@ func (pg *Page) splashScreenLayout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
 		})
+		return layout.Stack{}.Layout(gtx, overlay)
 	}
 
-	return layout.Stack{}.Layout(gtx, layout.Expanded(pg.splashScreen), overlay)
+	return components.UniformPadding(gtx, func(gtx C) D {
+		return layout.Stack{}.Layout(gtx, layout.Expanded(pg.splashScreen), overlay)
+	})
 }
 
 func (pg *Page) splashScreen(gtx layout.Context) layout.Dimensions {
