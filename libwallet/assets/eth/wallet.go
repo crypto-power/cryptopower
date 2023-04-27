@@ -8,15 +8,53 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
-// Asset confirm that LTC implements that shared assets interface.
+// Asset confirm that ETH implements that shared assets interface.
 var _ sharedW.Asset = (*Asset)(nil)
 
-// Asset is a wrapper around the LTCwallet.Wallet struct.
-// It implements the sharedW.Asset interface.
+// Asset implements the sharedW.Asset interface.
 // It also implements the sharedW.AssetsManagerDB interface.
 // This is done to allow the Asset to be used as a db interface
 // for the AssetsManager.
 type Asset struct{}
+
+// CreateNewWallet creates a new wallet for the ETH asset.
+func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+	return nil, utils.ErrETHMethodNotImplemented("CreateNewWallet")
+}
+
+// CreateWatchOnlyWallet accepts the wallet name, extended public key and the
+// init parameters to create a watch only wallet for the ETH asset.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the ETH asset. It then generates the ETH loader interface
+// that is passed to be used upstream while creating the watch only wallet in the
+// shared wallet implemenation.
+// Immediately a watch only wallet is created, the function to safely cancel network sync
+// is set. There after returning the watch only wallet's interface.
+func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
+	return nil, utils.ErrETHMethodNotImplemented("CreateWatchOnlyWallet")
+}
+
+// RestoreWallet accepts the seed, wallet pass information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the ETH asset. It then generates the ETH loader interface
+// that is passed to be used upstream while restoring the wallet in the
+// shared wallet implemenation.
+// Immediately wallet restore is complete, the function to safely cancel network sync
+// is set. There after returning the restored wallet's interface.
+func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+	return nil, utils.ErrETHMethodNotImplemented("RestoreWallet")
+}
+
+// LoadExisting accepts the stored shared wallet information and the init parameters.
+// It validates the network type passed by fetching the chain parameters
+// associated with it for the ETH asset. It then generates the ETH loader interface
+// that is passed to be used upstream while loading the existing the wallet in the
+// shared wallet implemenation.
+// Immediately loading the existing wallet is complete, the function to safely
+// cancel network sync is set. There after returning the loaded wallet's interface.
+func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
+	return nil, utils.ErrETHMethodNotImplemented("LoadExisting")
+}
 
 func (asset *Asset) LockWallet() {
 	log.Error(utils.ErrETHMethodNotImplemented("LockWallet"))
