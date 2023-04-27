@@ -610,6 +610,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		overlay = layout.Stacked(func(gtx C) D {
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg, nil)
 		})
+		overlaySet = true
 	}
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
@@ -623,7 +624,10 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
+				if overlaySet {
+					return layout.Stack{}.Layout(gtx, overlay)
+				}
+				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout))
 			},
 		}
 
