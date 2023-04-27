@@ -739,7 +739,7 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, lbl.Layout)
+						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if actionButton != nil {
