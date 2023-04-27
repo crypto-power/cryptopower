@@ -360,6 +360,7 @@ const EN = `
 "noActiveTickets" = "No active tickets"
 "noAgendaYet" = "No agendas yet"
 "noConnectedPeer" = "no connected peers."
+"noExchangeOnTestnet" = "Exchange functionality is not available on the test network""
 "noInternet" = "no Internet Connectivity."
 "nonAccSelector" = "This widget isn't set to show accounts"
 "none" = "None"

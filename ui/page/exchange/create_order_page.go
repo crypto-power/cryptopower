@@ -589,9 +589,26 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
+	overlaySet := false
+	onTestNet := pg.Load.WL.AssetsManager.NetType() == libutils.Testnet
+
+	if onTestNet {
+		overlay = layout.Stacked(func(gtx C) D {
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), values.String(values.StrNoExchangeOnTestnet), nil)
+		})
+		overlaySet = true
+	}
+
+	if !overlaySet && !pg.isExchangeAPIAllowed() {
 		overlay = layout.Stacked(func(gtx C) D {
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx, pg.errMsg, &pg.navToSettingsBtn)
+		})
+		overlaySet = true
+	}
+
+	if !overlaySet && !pg.isMultipleAssetTypeWalletAvailable() {
+		overlay = layout.Stacked(func(gtx C) D {
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg, nil)
 		})
 	}
 

@@ -468,6 +468,7 @@ const (
 	StrNoActiveTickets                 = "noActiveTickets"
 	StrNoAgendaYet                     = "noAgendaYet"
 	StrNoConnectedPeer                 = "noConnectedPeer"
+	StrNoExchangeOnTestnet             = "noExchangeOnTestnet"
 	StrNoInternet                      = "noInternet"
 	StrNoMixable                       = "errNoMixable"
 	StrNonAccSelector                  = "nonAccSelector"
