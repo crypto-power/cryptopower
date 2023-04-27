@@ -37,7 +37,7 @@ type Icons struct {
 	TicketRevokedIcon,
 	TicketUnminedIcon *Image
 
-	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly *Image
+	BTC, DCR, LTC, ETH, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, EthWatchOnly *Image
 }
 
 func (i *Icons) StandardMaterialIcons() *Icons {
@@ -142,9 +142,11 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.BTC = NewImage(decredIcons["logo_btc"])
 	i.DCR = NewImage(decredIcons["logo_dcr"])
 	i.LTC = NewImage(decredIcons["logo_ltc"])
+	i.ETH = NewImage(decredIcons["logo_btc"]) // TODO: Set proper Icon
 	i.DcrWatchOnly = NewImage(decredIcons["logo_dcr_watch_only"])
 	i.BtcWatchOnly = NewImage(decredIcons["logo_btc_watch_only"])
 	i.LtcWatchOnly = NewImage(decredIcons["logo_ltc_watch_only"])
+	i.EthWatchOnly = NewImage(decredIcons["logo_btc_watch_only"]) // TODO: Set proper Icon
 	/* End - Asset types Icons */
 
 	i.SuccessIcon = NewImage(decredIcons["success_check"])
