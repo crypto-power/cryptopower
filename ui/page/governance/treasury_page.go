@@ -166,10 +166,13 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTreasuryAPIAllowed() {
+		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
 		})
+		// Disable main page from recieving events
+		gtx = gtx.Disabled()
 	}
 
 	return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)

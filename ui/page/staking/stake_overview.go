@@ -181,10 +181,13 @@ func (pg *Page) Layout(gtx C) D {
 	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
+		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navToSettingsBtn)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
 		})
+		// Disable main page from recieving events
+		gtx = gtx.Disabled()
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
