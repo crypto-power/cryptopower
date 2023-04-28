@@ -82,7 +82,6 @@ func NewStakingPage(l *load.Load) *Page {
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.ticketOverview = new(dcr.StakingOverview)
-
 	pg.initStakePriceWidget()
 	pg.initTicketList()
 
@@ -102,7 +101,8 @@ func (pg *Page) OnNavigatedTo() {
 	// If staking is disabled no startup func should be called
 	// Layout will draw an overlay to show that stacking is disabled.
 
-	if pg.isTicketsPurchaseAllowed() {
+	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	if pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
 		pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 		pg.fetchTicketPrice()
