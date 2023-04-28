@@ -590,9 +590,9 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	overlaySet := false
-	isDevNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
+	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
 
-	if isDevNet {
+	if isTestNet {
 		overlay = layout.Stacked(func(gtx C) D {
 			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), values.String(values.StrNoExchangeOnTestnet), nil)
 		})
