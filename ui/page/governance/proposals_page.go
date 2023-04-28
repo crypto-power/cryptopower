@@ -2,7 +2,6 @@ package governance
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"gioui.org/layout"
@@ -21,7 +20,12 @@ import (
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
 
-const ProposalsPageID = "Proposals"
+const (
+	ProposalsPageID = "Proposals"
+
+	// pageSize defines the number of proposals that can be fetched at ago.
+	pageSize = int32(10)
+)
 
 type (
 	C = layout.Context
@@ -37,12 +41,11 @@ type ProposalsPage struct {
 	*app.GenericPageModal
 
 	*listeners.ProposalNotificationListener
-	ctx        context.Context // page context
-	ctxCancel  context.CancelFunc
-	proposalMu sync.RWMutex
-
+	ctx            context.Context // page context
+	ctxCancel      context.CancelFunc
 	assetsManager  *libwallet.AssetsManager
-	listContainer  *widget.List
+	scroll         *components.Scroll
+	previousFilter int32
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
 	syncButton     *widget.Clickable
@@ -51,8 +54,6 @@ type ProposalsPage struct {
 	infoButton cryptomaterial.IconButton
 
 	updatedIcon *cryptomaterial.Icon
-
-	proposalItems []*components.ProposalItem
 
 	syncCompleted bool
 	isSyncing     bool
@@ -63,9 +64,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ProposalsPageID),
 		assetsManager:    l.WL.AssetsManager,
-		listContainer: &widget.List{
-			List: layout.List{Axis: layout.Vertical},
-		},
 	}
 	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
@@ -74,6 +72,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.updatedIcon.Color = pg.Theme.Color.Success
 
 	pg.syncButton = new(widget.Clickable)
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchProposals)
 
 	pg.proposalsList = pg.Theme.NewClickableList(layout.Vertical)
 	pg.proposalsList.IsShadowEnabled = true
@@ -106,14 +105,14 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 	if pg.isProposalsAPIAllowed() {
 		// Only proceed if allowed make Proposals API call.
 		pg.listenForSyncNotifications()
-		go pg.fetchProposals()
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 		pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
 	}
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
 // UI update with the new proposals list.
-func (pg *ProposalsPage) fetchProposals() {
+func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, int, bool, error) {
 	var proposalFilter int32
 	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
@@ -127,7 +126,14 @@ func (pg *ProposalsPage) fetchProposals() {
 		proposalFilter = libwallet.ProposalCategoryAll
 	}
 
-	proposalItems := components.LoadProposals(proposalFilter, true, pg.Load)
+	isReset := pg.previousFilter != proposalFilter
+	if isReset {
+		// reset the offset to zero
+		offset = 0
+		pg.previousFilter = proposalFilter
+	}
+
+	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true)
 	listItems := make([]*components.ProposalItem, 0)
 
 	if selectedType == values.String(values.StrUnderReview) {
@@ -142,11 +148,7 @@ func (pg *ProposalsPage) fetchProposals() {
 		listItems = proposalItems
 	}
 
-	pg.proposalMu.Lock()
-	pg.proposalItems = listItems
-	pg.proposalMu.Unlock()
-
-	pg.ParentWindow().Reload()
+	return listItems, len(listItems), isReset, nil
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -155,8 +157,8 @@ func (pg *ProposalsPage) fetchProposals() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
-	for pg.statusDropDown.Changed() {
-		go pg.fetchProposals()
+	if pg.statusDropDown.Changed() {
+		pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
@@ -164,10 +166,8 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
-		pg.proposalMu.RLock()
-		selectedProposal := pg.proposalItems[selectedItem].Proposal
-		pg.proposalMu.RUnlock()
-
+		proposalItems := pg.scroll.FetchedData().([]*components.ProposalItem)
+		selectedProposal := proposalItems[selectedItem].Proposal
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
 
@@ -231,6 +231,8 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 		return pg.layoutDesktop(gtx)
 	})
 
+	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
+
 	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
@@ -287,16 +289,13 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 func (pg *ProposalsPage) layoutContent(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			pg.proposalMu.RLock()
-			proposalItems := pg.proposalItems
-			pg.proposalMu.RUnlock()
-
-			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-						if len(proposalItems) == 0 {
+						if pg.scroll.ItemsCount() <= 0 {
 							return components.LayoutNoProposalsFound(gtx, pg.Load, pg.isSyncing, 0)
 						}
+						proposalItems := pg.scroll.FetchedData().([]*components.ProposalItem)
 						return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
@@ -393,7 +392,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.syncCompleted = true
 					pg.isSyncing = false
 
-					pg.fetchProposals()
+					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)

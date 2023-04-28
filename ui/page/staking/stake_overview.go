@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"code.cryptopower.dev/group/cryptopower/app"
@@ -28,7 +27,12 @@ type (
 	D = layout.Dimensions
 )
 
-const OverviewPageID = "staking"
+const (
+	OverviewPageID = "staking"
+
+	// pageSize define the maximum number of items fetched for the list scroll view.
+	pageSize int32 = 20
+)
 
 type Page struct {
 	*load.Load
@@ -39,12 +43,10 @@ type Page struct {
 	*app.GenericPageModal
 	*listeners.TxAndBlockNotificationListener
 
-	list *widget.List
+	scroll *components.Scroll
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
-
-	tickets []*transactionItem
 
 	ticketOverview *dcr.StakingOverview
 
@@ -56,9 +58,6 @@ type Page struct {
 
 	ticketPrice        string
 	totalRewards       string
-	loadingTickets     bool
-	ticketOffset       int32
-	loadedAllTickets   bool
 	showMaterialLoader bool
 
 	dcrImpl *dcr.DCRAsset
@@ -77,12 +76,7 @@ func NewStakingPage(l *load.Load) *Page {
 		dcrImpl:          impl,
 	}
 
-	pg.list = &widget.List{
-		List: layout.List{
-			Axis: layout.Vertical,
-		},
-	}
-
+	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.ticketOverview = new(dcr.StakingOverview)
 
@@ -117,7 +111,7 @@ func (pg *Page) OnNavigatedTo() {
 		pg.listenForTxNotifications()
 		go func() {
 			pg.showMaterialLoader = true
-			pg.fetchTickets(false)
+			pg.scroll.FetchScrollData(false, pg.ParentWindow())
 			pg.showMaterialLoader = false
 		}()
 	}
@@ -200,7 +194,7 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx C) D {
-	pg.onScrollChangeListener()
+	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding14}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -216,12 +210,11 @@ func (pg *Page) layoutDesktop(gtx C) D {
 						})
 					}
 					return components.UniformHorizontalPadding(gtx, func(gtx C) D {
-						return pg.Theme.List(pg.list).Layout(gtx, 1, func(gtx C, i int) D {
+						return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 							return pg.ticketListLayout(gtx)
 						})
 					})
 				})
-
 			}),
 		)
 	})
@@ -235,7 +228,7 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 	return components.UniformMobile(gtx, true, true, func(gtx layout.Context) layout.Dimensions {
 		return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-			return pg.Theme.List(pg.list).Layout(gtx, len(widgets), func(gtx C, i int) D {
+			return pg.scroll.List().Layout(gtx, len(widgets), func(gtx C, i int) D {
 				return widgets[i](gtx)
 			})
 		})
@@ -312,7 +305,8 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ticketsList.ItemClicked(); clicked {
-		ticketTx := pg.tickets[selectedItem].transaction
+		tickets := pg.scroll.FetchedData().([]*transactionItem)
+		ticketTx := tickets[selectedItem].transaction
 		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
 
 		// Check if this ticket is fully registered with a VSP

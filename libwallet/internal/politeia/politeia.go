@@ -95,7 +95,6 @@ func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFi
 }
 
 func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool) ([]Proposal, error) {
-
 	var query storm.Query
 	switch category {
 	case ProposalCategoryAll:
@@ -140,7 +139,6 @@ func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFi
 
 // GetProposals returns the result of GetProposalsRaw as a JSON string
 func (p *Politeia) GetProposals(category int32, offset, limit int32, newestFirst bool) (string, error) {
-
 	result, err := p.GetProposalsRaw(category, offset, limit, newestFirst)
 	if err != nil {
 		return "", err
@@ -209,7 +207,6 @@ func (p *Politeia) Count(category int32) (int32, error) {
 }
 
 func (p *Politeia) Overview() (*ProposalOverview, error) {
-
 	pre, err := p.Count(ProposalCategoryPre)
 	if err != nil {
 		return nil, err
@@ -255,7 +252,6 @@ func (p *Politeia) ClearSavedProposals() error {
 }
 
 func (p *Politeia) marshalResult(result interface{}, err error) (string, error) {
-
 	if err != nil {
 		return "", translateError(err)
 	}
