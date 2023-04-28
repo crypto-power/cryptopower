@@ -94,6 +94,14 @@ func (p *Politeia) StopSync() {
 }
 
 func (p *Politeia) checkForUpdates() error {
+	// if server's policy is not set at this point the politeia server is not accessible
+	p.mu.RLock()
+	clientPolicy := p.client.policy
+	p.mu.RUnlock()
+	if clientPolicy == nil {
+		return errors.New("politeia server policy not set")
+	}
+
 	offset := 0
 	p.mu.RLock()
 	limit := int32(p.client.policy.ProposalListPageSize)
