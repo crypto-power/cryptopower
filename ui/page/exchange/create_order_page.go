@@ -390,7 +390,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.navToSettingsBtn.Button.Clicked() {
-		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
 }
 

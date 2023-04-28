@@ -103,7 +103,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {

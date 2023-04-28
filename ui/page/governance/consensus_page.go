@@ -144,7 +144,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
