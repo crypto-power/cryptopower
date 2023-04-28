@@ -49,6 +49,7 @@ type ChainsParams struct {
 	DCR *dcrcfg.Params
 	BTC *btccfg.Params
 	LTC *ltccfg.Params
+	ETH *ltccfg.Params // TODO: To be replaced with proper ETH chain params
 }
 
 var (
