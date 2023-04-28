@@ -650,7 +650,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if !mp.WL.SelectedWallet.Wallet.IsSynced() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
 									return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
-										values.String(values.StrFunctionUnavailable))
+										values.String(values.StrFunctionUnavailable), nil)
 								}
 								fallthrough
 							default:

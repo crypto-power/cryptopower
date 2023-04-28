@@ -16,6 +16,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"code.cryptopower.dev/group/cryptopower/wallet"
 )
@@ -55,8 +56,9 @@ type ProposalsPage struct {
 
 	updatedIcon *cryptomaterial.Icon
 
-	syncCompleted bool
-	isSyncing     bool
+	syncCompleted         bool
+	isSyncing             bool
+	navigateToSettingsBtn cryptomaterial.Button
 }
 
 func NewProposalsPage(l *load.Load) *ProposalsPage {
@@ -79,6 +81,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
+	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
@@ -161,6 +164,10 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 
+	if pg.navigateToSettingsBtn.Button.Clicked() {
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+	}
+
 	pg.searchEditor.EditorIconButtonEvent = func() {
 		// TODO: Proposals search functionality
 	}
@@ -217,10 +224,9 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isProposalsAPIAllowed() {
-		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
 		})
 	}
 

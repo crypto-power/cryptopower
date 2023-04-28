@@ -17,6 +17,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	tpage "code.cryptopower.dev/group/cryptopower/ui/page/transaction"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -60,6 +61,8 @@ type Page struct {
 	totalRewards       string
 	showMaterialLoader bool
 
+	navToSettingsBtn cryptomaterial.Button
+
 	dcrImpl *dcr.DCRAsset
 }
 
@@ -79,9 +82,10 @@ func NewStakingPage(l *load.Load) *Page {
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
 	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.ticketOverview = new(dcr.StakingOverview)
-
 	pg.initStakePriceWidget()
 	pg.initTicketList()
+
+	pg.navToSettingsBtn = l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrVsp)))
 
 	return pg
 }
@@ -97,7 +101,8 @@ func (pg *Page) OnNavigatedTo() {
 	// If staking is disabled no startup func should be called
 	// Layout will draw an overlay to show that stacking is disabled.
 
-	if pg.isTicketsPurchaseAllowed() {
+	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	if pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
 		pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 		pg.fetchTicketPrice()
@@ -173,14 +178,13 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
 	// If Tickets Purcahse API is not allowed, display the overlay with the message.
-	if !pg.isTicketsPurchaseAllowed() {
-		gtx = gtx.Disabled()
-		overlay := layout.Stacked(func(gtx C) D {
+	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
+		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navToSettingsBtn)
 		})
-
-		return layout.Stack{}.Layout(gtx, overlay)
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
@@ -190,7 +194,7 @@ func (pg *Page) Layout(gtx C) D {
 		return pg.layoutDesktop(gtx)
 	})
 
-	return layout.Stack{}.Layout(gtx, mainChild)
+	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
 func (pg *Page) layoutDesktop(gtx C) D {
@@ -253,6 +257,10 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	pg.setStakingButtonsState()
+
+	if pg.navToSettingsBtn.Clicked() {
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+	}
 
 	if pg.stake.Changed() {
 		if pg.stake.IsChecked() {

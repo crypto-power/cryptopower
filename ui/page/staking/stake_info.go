@@ -38,7 +38,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Center.Layout(gtx, func(gtx C) D {
-											if pg.WL.SelectedWallet.Wallet.IsSyncing() {
+											if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
 												title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
 												title.Color = col
 												return title.Layout(gtx)

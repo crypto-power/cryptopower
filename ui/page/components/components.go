@@ -717,7 +717,7 @@ func IsFetchExchangeRateAPIAllowed(wl *load.WalletLoad) bool {
 // DisablePageWithOverlay disables the provided page by highlighting a message why
 // the page is disabled and adding a background color overlay that blocks any
 // page event being triggered.
-func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string) D {
+func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string, actionButton *cryptomaterial.Button) D {
 	return layout.Stack{Alignment: layout.N}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			if currentPage == nil {
@@ -737,7 +737,19 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 			lbl.Font.Weight = text.SemiBold
 			lbl.Color = l.Theme.Color.PageNavText
 			return layout.Center.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding200}.Layout(gtx, lbl.Layout)
+				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx.Disabled(), lbl.Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if actionButton != nil {
+							actionButton.TextSize = values.TextSize14
+							return actionButton.Layout(gtx)
+						}
+						return D{}
+					}),
+				)
+
 			})
 		}),
 	)

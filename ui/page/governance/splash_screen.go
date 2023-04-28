@@ -20,10 +20,9 @@ func (pg *Page) splashScreenLayout(gtx C) D {
 	// If Proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isProposalsAPIAllowed() {
-		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
 		})
 	}
 

@@ -19,6 +19,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -43,7 +44,8 @@ type ConsensusPage struct {
 	statusDropDown *cryptomaterial.DropDown
 	consensusList  *cryptomaterial.ClickableList
 
-	infoButton cryptomaterial.IconButton
+	infoButton            cryptomaterial.IconButton
+	navigateToSettingsBtn cryptomaterial.Button
 
 	syncCompleted bool
 	isSyncing     bool
@@ -66,6 +68,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
+	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
@@ -138,6 +141,10 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 func (pg *ConsensusPage) HandleUserInteractions() {
 	for pg.statusDropDown.Changed() {
 		pg.FetchAgendas()
+	}
+
+	if pg.navigateToSettingsBtn.Button.Clicked() {
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
 
 	for _, item := range pg.consensusItems {
@@ -255,10 +262,9 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	// If Agendas API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isAgendaAPIAllowed() {
-		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
 		})
 	}
 

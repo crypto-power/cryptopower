@@ -23,6 +23,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"code.cryptopower.dev/group/cryptopower/wallet"
 
@@ -75,6 +76,7 @@ type CreateOrderPage struct {
 	refreshClickable       *cryptomaterial.Clickable
 	refreshIcon            *cryptomaterial.Image
 	viewAllButton          cryptomaterial.Button
+	navToSettingsBtn       cryptomaterial.Button
 
 	min                       float64
 	max                       float64
@@ -178,6 +180,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
 	pg.createOrderBtn.SetEnabled(false)
+
+	pg.navToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange)))
 
 	pg.exchangeSelector.ExchangeSelected(func(es *Exchange) {
 		pg.selectedExchange = es
@@ -384,6 +388,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			pg.WL.AssetsManager.StopScheduler()
 		}
 	}
+
+	if pg.navToSettingsBtn.Button.Clicked() {
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+	}
 }
 
 func (pg *CreateOrderPage) updateAmount() {
@@ -581,10 +589,28 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
+	overlaySet := false
+	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
+
+	if isTestNet {
 		overlay = layout.Stacked(func(gtx C) D {
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), values.String(values.StrNoExchangeOnTestnet), nil)
 		})
+		overlaySet = true
+	}
+
+	if !overlaySet && !pg.isExchangeAPIAllowed() {
+		overlay = layout.Stacked(func(gtx C) D {
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, pg.errMsg, &pg.navToSettingsBtn)
+		})
+		overlaySet = true
+	}
+
+	if !overlaySet && !pg.isMultipleAssetTypeWalletAvailable() {
+		overlay = layout.Stacked(func(gtx C) D {
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx.Disabled(), pg.errMsg, nil)
+		})
+		overlaySet = true
 	}
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
@@ -598,11 +624,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				gtxCopy := gtx
-				if !pg.isExchangeAPIAllowed() || !pg.isMultipleAssetTypeWalletAvailable() {
-					gtxCopy = gtx.Disabled()
-				}
-				return layout.Stack{}.Layout(gtxCopy, layout.Expanded(pg.layout), overlay)
+				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
 			},
 		}
 
