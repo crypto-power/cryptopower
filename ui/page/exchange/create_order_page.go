@@ -624,10 +624,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				if overlaySet {
-					return layout.Stack{}.Layout(gtx, overlay)
-				}
-				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout))
+				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
 			},
 		}
 

@@ -17,6 +17,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/ui/load"
 	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"code.cryptopower.dev/group/cryptopower/ui/page/components"
+	"code.cryptopower.dev/group/cryptopower/ui/page/settings"
 	"code.cryptopower.dev/group/cryptopower/ui/values"
 )
 
@@ -46,6 +47,7 @@ type TreasuryPage struct {
 	infoButton   cryptomaterial.IconButton
 
 	isPolicyFetchInProgress bool
+	navigateToSettingsBtn   cryptomaterial.Button
 }
 
 func NewTreasuryPage(l *load.Load) *TreasuryPage {
@@ -67,6 +69,7 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
+	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	return pg
 }
@@ -97,6 +100,10 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 		if pg.treasuryItems[i].SetChoiceButton.Clicked() {
 			pg.updatePolicyPreference(pg.treasuryItems[i])
 		}
+	}
+
+	if pg.navigateToSettingsBtn.Button.Clicked() {
+		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -159,10 +166,9 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTreasuryAPIAllowed() {
-		gtx = gtx.Disabled()
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, nil)
+			return components.DisablePageWithOverlay(pg.Load, nil, gtx, str, &pg.navigateToSettingsBtn)
 		})
 	}
 

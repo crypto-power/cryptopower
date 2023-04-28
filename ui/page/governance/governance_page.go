@@ -128,8 +128,8 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	if !pg.isGovernanceFeatureEnabled() || !pg.isProposalsAPIAllowed() {
-		return pg.splashScreenLayout(gtx)
+	if !pg.isGovernanceFeatureEnabled() {
+		return components.UniformPadding(gtx, pg.splashScreenLayout)
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
