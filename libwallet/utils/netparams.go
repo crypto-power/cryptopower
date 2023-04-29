@@ -6,6 +6,7 @@ import (
 
 	btccfg "github.com/btcsuite/btcd/chaincfg"
 	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
+	ethcfg "github.com/ethereum/go-ethereum/params"
 	ltccfg "github.com/ltcsuite/ltcd/chaincfg"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -49,7 +50,7 @@ type ChainsParams struct {
 	DCR *dcrcfg.Params
 	BTC *btccfg.Params
 	LTC *ltccfg.Params
-	ETH *ltccfg.Params // TODO: To be replaced with proper ETH chain params
+	ETH *ethcfg.ChainConfig
 }
 
 var (
@@ -65,6 +66,11 @@ var (
 	LTCtestnetParams = &ltccfg.TestNet4Params
 	LTCSimnetParams  = &ltccfg.SimNetParams
 	LTCRegnetParams  = &ltccfg.RegressionNetParams
+	ETHMainnetParams = ethcfg.MainnetChainConfig
+	ETHSepoliaParams = ethcfg.SepoliaChainConfig // ETH Sepolia testnet.
+	ETHGoerliParams  = ethcfg.GoerliChainConfig  // ETH Goerli testnet.
+	ETHRinkebyParams = ethcfg.RinkebyChainConfig // ETH Rinkeby testnet.
+	ETHSimnetParams  = ethcfg.TestChainConfig
 )
 
 // NetDir returns data directory name for a given asset's type and network connected.
@@ -83,6 +89,8 @@ func NetDir(assetType AssetType, netType NetworkType) string {
 		dirName = params.DCR.Name
 	case LTCWalletAsset:
 		dirName = params.LTC.Name
+	case ETHWalletAsset:
+		dirName = params.ETH.ChainID.String()
 	}
 
 	return strings.ToLower(dirName)
@@ -139,6 +147,21 @@ func LTCChainParams(netType NetworkType) (*ltccfg.Params, error) {
 	}
 }
 
+// ETHChainParams returns the network parameters from the ETH chain provided
+// a network type is given.
+func ETHChainParams(netType NetworkType) (*ethcfg.ChainConfig, error) {
+	switch netType {
+	case Mainnet:
+		return ETHMainnetParams, nil
+	case Testnet:
+		return ETHSepoliaParams, nil
+	case Simulation, Regression:
+		return ETHSimnetParams, nil
+	default:
+		return nil, fmt.Errorf("%v: (%v)", ErrInvalidNet, netType)
+	}
+}
+
 // GetChainParams returns the network parameters of a chain provided its
 // asset type and network type.
 func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, error) {
@@ -161,6 +184,12 @@ func GetChainParams(assetType AssetType, netType NetworkType) (*ChainsParams, er
 			return nil, err
 		}
 		return &ChainsParams{LTC: params}, nil
+	case ETHWalletAsset:
+		params, err := ETHChainParams(netType)
+		if err != nil {
+			return nil, err
+		}
+		return &ChainsParams{ETH: params}, nil
 	default:
 		return nil, fmt.Errorf("%v: (%v)", ErrAssetUnknown, assetType)
 	}

@@ -60,10 +60,15 @@ require (
 	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/decred/dcrd/dcrutil/v3 v3.0.0
+	github.com/ethereum/go-ethereum v1.11.6
 	github.com/lightninglabs/neutrino v0.14.3-0.20221024182812-792af8548c14
 	github.com/ltcsuite/ltcd v0.22.1-beta.0.20230329025258-1ea035d2e665
+	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0
 	github.com/ltcsuite/ltcd/ltcutil v1.1.0
 	github.com/ltcsuite/ltcwallet v0.13.1
+	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0
+	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0
+	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0
 	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
 	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
@@ -71,7 +76,7 @@ require (
 
 require (
 	decred.org/cspp/v2 v2.0.0 // indirect
-	decred.org/dcrwallet v1.7.1 // indirect
+	decred.org/dcrwallet v1.7.1
 	github.com/companyzero/sntrup4591761 v0.0.0-20200131011700-2b0d299dbd22 // indirect
 )
 
@@ -79,7 +84,6 @@ require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
-	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
@@ -114,7 +118,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/trillian v1.4.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
@@ -131,11 +135,7 @@ require (
 	github.com/ltcsuite/lnd/clock v0.0.0-20200822020009-1a001cbb895a // indirect
 	github.com/ltcsuite/lnd/queue v1.0.3 // indirect
 	github.com/ltcsuite/lnd/ticker v1.0.1 // indirect
-	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0 // indirect
 	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.0-1 // indirect
-	github.com/ltcsuite/ltcwallet/wallet/txauthor v1.1.0 // indirect
-	github.com/ltcsuite/ltcwallet/wallet/txrules v1.2.0 // indirect
-	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0 // indirect
 	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect

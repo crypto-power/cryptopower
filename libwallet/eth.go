@@ -1,20 +1,19 @@
 package libwallet
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
+	"code.cryptopower.dev/group/cryptopower/libwallet/assets/eth"
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"github.com/ltcsuite/ltcd/chaincfg"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // initializeETHWalletParameters initializes the fields each ETH wallet is going to need to be setup
-func initializeETHWalletParameters(netType utils.NetworkType) (*chaincfg.Params, error) {
-	// chainParams, err := utils.ETHChainParams(netType)
-	// if err != nil {
-	// 	return chainParams, err
-	// }
-	// return chainParams, nil
-	return nil, utils.ErrETHMethodNotImplemented("initializeETHWalletParameters")
+func initializeETHWalletParameters(netType utils.NetworkType) (*params.ChainConfig, error) {
+	chainParams, err := utils.ETHChainParams(netType)
+	if err != nil {
+		return chainParams, err
+	}
+	return chainParams, nil
 }
 
 // CreateNewETHWallet creates a new ETH wallet and returns it.
@@ -25,7 +24,7 @@ func (mgr *AssetsManager) CreateNewETHWallet(walletName, privatePassphrase strin
 		PrivatePassType: privatePassphraseType,
 	}
 
-	wallet, err := ltc.CreateNewWallet(pass, mgr.params)
+	wallet, err := eth.CreateNewWallet(pass, mgr.params)
 	if err != nil {
 		return nil, err
 	}

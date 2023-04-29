@@ -81,7 +81,7 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 		return nil, errors.Errorf("error initializing LTC parameters: %s", err.Error())
 	}
 
-	ethChainParams, err := initializeLTCWalletParameters(netType)
+	ethChainParams, err := initializeETHWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing ETH parameters: %s", err.Error())
 		return nil, errors.Errorf("error initializing ETH parameters: %s", err.Error())
