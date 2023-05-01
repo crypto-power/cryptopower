@@ -14,7 +14,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
 )
 
@@ -346,17 +345,17 @@ func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(pass.PrivatePass, seed)
+		return wallet.createWallet(pass.PrivatePass, seed)
 	})
 }
 
-func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error {
+func (wallet *Wallet) createWallet(privatePassphrase, seedMnemonic string) error {
 	log.Info("Creating Wallet")
 	if len(seedMnemonic) == 0 {
 		return errors.New(utils.ErrEmptySeed)
 	}
 
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+	seed, err := DecodeSeedMnemonic(seedMnemonic, wallet.Type)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -447,7 +446,7 @@ func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.Asse
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(pass.PrivatePass, seedMnemonic)
+		return wallet.createWallet(pass.PrivatePass, seedMnemonic)
 	})
 }
 

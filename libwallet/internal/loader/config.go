@@ -9,6 +9,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	ltcW "github.com/ltcsuite/ltcwallet/wallet"
 
 	_ "code.cryptopower.dev/group/cryptopower/libwallet/badgerdb" // initialize badger driver
@@ -27,11 +28,17 @@ type Loader struct {
 	DbDriver string
 }
 
+// type EthWalletInfo struct {
+// 	Kstore  *keystore.KeyStore
+// 	Account accounts.Account
+// }
+
 // LoaderWallets holds all the upstream wallets managed by the loader
 type LoaderWallets struct {
 	BTC *btcW.Wallet
 	DCR *dcrW.Wallet
 	LTC *ltcW.Wallet
+	ETH *keystore.KeyStore
 }
 
 type WatchOnlyWalletParams struct {

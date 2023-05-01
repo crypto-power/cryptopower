@@ -2,10 +2,13 @@ package eth
 
 import (
 	"context"
+	"path/filepath"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
+	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/eth"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // Asset confirm that ETH implements that shared assets interface.
@@ -15,11 +18,46 @@ var _ sharedW.Asset = (*Asset)(nil)
 // It also implements the sharedW.AssetsManagerDB interface.
 // This is done to allow the Asset to be used as a db interface
 // for the AssetsManager.
-type Asset struct{}
+type Asset struct {
+	*sharedW.Wallet
+
+	chainParams *params.ChainConfig
+}
+
+func initWalletLoader(chainParams *params.ChainConfig, dbDirPath string) loader.AssetLoader {
+	dirName := ""
+	// testnet datadir takes a special structure differenting "sepolia" , "rinkeby"
+	// and "georli" data directory.
+	if utils.ToNetworkType(chainParams.ChainID.String()) != utils.Mainnet {
+		dirName = utils.NetDir(utils.BTCWalletAsset, utils.Testnet)
+	}
+
+	conf := &eth.LoaderConf{
+		DBDirPath: filepath.Join(dbDirPath, dirName),
+	}
+
+	return eth.NewLoader(conf)
+}
 
 // CreateNewWallet creates a new wallet for the ETH asset.
 func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
-	return nil, utils.ErrETHMethodNotImplemented("CreateNewWallet")
+	chainParams, err := utils.ETHChainParams(params.NetType)
+	if err != nil {
+		return nil, err
+	}
+
+	ldr := initWalletLoader(chainParams, params.RootDir)
+	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.ETHWalletAsset)
+	if err != nil {
+		return nil, err
+	}
+
+	ethWallet := &Asset{
+		Wallet:      w,
+		chainParams: chainParams,
+	}
+
+	return ethWallet, nil
 }
 
 // CreateWatchOnlyWallet accepts the wallet name, extended public key and the

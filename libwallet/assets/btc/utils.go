@@ -6,7 +6,6 @@ import (
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -62,7 +61,7 @@ func hardenedKey(key uint32) uint32 {
 
 // DeriveAccountXpub derives the xpub for the given account.
 func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, params *chaincfg.Params) (xpub string, err error) {
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+	seed, err := sharedW.DecodeSeedMnemonic(seedMnemonic, asset.Type)
 	if err != nil {
 		return "", err
 	}

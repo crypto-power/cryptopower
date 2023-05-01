@@ -485,7 +485,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	if isValid {
 		pg.seedPhrase = seedphrase
-		if !sharedW.VerifySeed(pg.seedPhrase) {
+		if !sharedW.VerifySeed(pg.seedPhrase, pg.walletType) {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 			pg.window.ShowModal(errModal)
 			return false
