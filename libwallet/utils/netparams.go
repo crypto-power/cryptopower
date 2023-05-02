@@ -90,7 +90,7 @@ func NetDir(assetType AssetType, netType NetworkType) string {
 	case LTCWalletAsset:
 		dirName = params.LTC.Name
 	case ETHWalletAsset:
-		dirName = params.ETH.ChainID.String()
+		dirName = ethcfg.NetworkNames[params.ETH.ChainID.String()]
 	}
 
 	return strings.ToLower(dirName)

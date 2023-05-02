@@ -8,6 +8,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/eth"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -22,14 +23,15 @@ type Asset struct {
 	*sharedW.Wallet
 
 	chainParams *params.ChainConfig
+	stack       *node.Node
 }
 
 func initWalletLoader(chainParams *params.ChainConfig, dbDirPath string) loader.AssetLoader {
 	dirName := ""
 	// testnet datadir takes a special structure differenting "sepolia" , "rinkeby"
 	// and "georli" data directory.
-	if utils.ToNetworkType(chainParams.ChainID.String()) != utils.Mainnet {
-		dirName = utils.NetDir(utils.BTCWalletAsset, utils.Testnet)
+	if utils.ToNetworkType(params.NetworkNames[chainParams.ChainID.String()]) != utils.Mainnet {
+		dirName = utils.NetDir(utils.ETHWalletAsset, utils.Testnet)
 	}
 
 	conf := &eth.LoaderConf{
@@ -92,6 +94,10 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 // cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
 	return nil, utils.ErrETHMethodNotImplemented("LoadExisting")
+}
+
+func (asset *Asset) prepareChain(){
+	
 }
 
 func (asset *Asset) LockWallet() {
