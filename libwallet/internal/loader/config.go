@@ -9,6 +9,7 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	ltcW "github.com/ltcsuite/ltcwallet/wallet"
 
@@ -28,17 +29,19 @@ type Loader struct {
 	DbDriver string
 }
 
-// type EthWalletInfo struct {
-// 	Kstore  *keystore.KeyStore
-// 	Account accounts.Account
-// }
+// EthWalletInfo helps expose the accounts wallet interface and the underlying
+// keystore implementation used.
+type EthWalletInfo struct {
+	Keystore *keystore.KeyStore
+	Wallet   accounts.Wallet // Wallet interface
+}
 
 // LoaderWallets holds all the upstream wallets managed by the loader
 type LoaderWallets struct {
 	BTC *btcW.Wallet
 	DCR *dcrW.Wallet
 	LTC *ltcW.Wallet
-	ETH *keystore.KeyStore
+	ETH *EthWalletInfo
 }
 
 type WatchOnlyWalletParams struct {

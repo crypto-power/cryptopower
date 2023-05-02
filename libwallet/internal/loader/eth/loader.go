@@ -13,10 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+const walletDataDb = "wallet.db"
+
 type ethLoader struct {
 	*loader.Loader
 
-	wallet *keystore.KeyStore
+	wallet *loader.EthWalletInfo
 	mu     sync.RWMutex
 }
 
@@ -38,10 +40,12 @@ func (l *ethLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		return nil, err
 	}
 
-	// generates a private key using the provided hashed seed.
-	privKey, err := crypto.ToECDSA(params.Seed)
+	// generates a private key using the provided hashed seed. Params.Seeds has
+	// a length of 64 bytes but only 32 are required to generate an ECDSA private
+	// key.
+	privKey, err := crypto.ToECDSA(params.Seed[:32])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generating the private key from seed failed: %v", err)
 	}
 
 	// ImportECDSA stores the private key in the datadir as a json file.
@@ -52,7 +56,12 @@ func (l *ethLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		return nil, err
 	}
 
-	return &loader.LoaderWallets{ETH: ks}, nil
+	w := &loader.EthWalletInfo{
+		Keystore: ks,
+		Wallet:   ks.Wallets()[0], // Only one account per wallet is allowed.
+	}
+
+	return &loader.LoaderWallets{ETH: w}, nil
 }
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
@@ -75,7 +84,12 @@ func (l *ethLoader) OpenExistingWallet(ctx context.Context, WalletID string, pub
 		return nil, errors.New("found no existing ETH account")
 	}
 
-	return &loader.LoaderWallets{ETH: ks}, nil
+	w := &loader.EthWalletInfo{
+		Keystore: ks,
+		Wallet:   ks.Wallets()[0], // Only one account per wallet is allowed.
+	}
+
+	return &loader.LoaderWallets{ETH: w}, nil
 }
 
 // getWalletLoader creates the btc loader by configuring the path with the
@@ -89,14 +103,14 @@ func (l *ethLoader) getWalletKeystore(walletID string, createIfNotFound bool) (*
 
 	if createIfNotFound {
 		// If the directory path doesn't exists, it creates it.
-		dbpath, err = l.CreateDirPath(walletID, "", utils.ETHWalletAsset)
+		dbpath, err = l.CreateDirPath(walletID, walletDataDb, utils.ETHWalletAsset)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var exists bool
 		// constructs and checks if the file path exists
-		dbpath, exists, err = l.FileExists(walletID, "", utils.ETHWalletAsset)
+		dbpath, exists, err = l.FileExists(walletID, walletDataDb, utils.ETHWalletAsset)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +164,7 @@ func (l *ethLoader) WalletExists(walletID string) (bool, error) {
 	defer l.mu.RUnlock()
 	l.mu.RLock()
 
-	_, exists, err := l.FileExists(walletID, "", utils.ETHWalletAsset)
+	_, exists, err := l.FileExists(walletID, walletDataDb, utils.ETHWalletAsset)
 	if err != nil {
 		return false, err
 	}

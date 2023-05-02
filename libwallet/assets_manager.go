@@ -106,6 +106,7 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	mgr.Assets.BTC.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.DCR.BadWallets = make(map[int]*sharedW.Wallet)
 	mgr.Assets.LTC.BadWallets = make(map[int]*sharedW.Wallet)
+	mgr.Assets.ETH.BadWallets = make(map[int]*sharedW.Wallet)
 
 	mgr.chainsParams.DCR = dcrChainParams
 	mgr.chainsParams.BTC = btcChainParams

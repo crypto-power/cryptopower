@@ -1,15 +1,22 @@
 package eth
 
 import (
-	"context"
+	"errors"
 	"path/filepath"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/eth"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
+)
+
+const (
+	// executionClient defines the name of ethereum client that manages RPC API.
+	executionClient = "geth"
 )
 
 // Asset confirm that ETH implements that shared assets interface.
@@ -49,6 +56,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir)
+
 	w, err := sharedW.CreateNewWallet(pass, ldr, params, utils.ETHWalletAsset)
 	if err != nil {
 		return nil, err
@@ -57,6 +65,11 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 	ethWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
+	}
+
+	loadedWallet, _ := ldr.GetLoadedWallet()
+	if err := ethWallet.prepareChain(loadedWallet.ETH.Keystore); err != nil {
+		return nil, err
 	}
 
 	return ethWallet, nil
@@ -96,17 +109,32 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return nil, utils.ErrETHMethodNotImplemented("LoadExisting")
 }
 
-func (asset *Asset) prepareChain(){
-	
-}
+func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
+	if ks == nil {
+		return errors.New("Wallet account not loaded")
+	}
 
-func (asset *Asset) LockWallet() {
-	log.Error(utils.ErrETHMethodNotImplemented("LockWallet"))
-}
+	if len(ks.Accounts()) == 0 {
+		return errors.New("no  existing wallet account found")
+	}
 
-func (asset *Asset) IsLocked() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("IsLocked"))
-	return false
+	privatekey, err := crypto.LoadECDSA(ks.Accounts()[0].URL.Path)
+	if err != nil {
+		return err
+	}
+
+	cfg := node.DefaultConfig
+	cfg.Name = executionClient
+	cfg.WSModules = append(cfg.WSModules, "eth")
+	cfg.DataDir = asset.DataDir()
+	cfg.P2P.PrivateKey = privatekey
+
+	stack, err := node.New(&cfg)
+	if err != nil {
+		return err
+	}
+	asset.stack = stack
+	return nil
 }
 
 func (asset *Asset) IsWaiting() bool {
@@ -114,67 +142,13 @@ func (asset *Asset) IsWaiting() bool {
 	return false
 }
 
-func (asset *Asset) WalletOpened() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("WalletOpened"))
-	return false
-}
-
-func (asset *Asset) OpenWallet() error {
-	return utils.ErrETHMethodNotImplemented("OpenWallet")
-}
-
-func (asset *Asset) GetWalletID() int {
-	log.Error(utils.ErrETHMethodNotImplemented("GetWalletID"))
-	return -1
-}
-
-func (asset *Asset) GetWalletName() string {
-	log.Error(utils.ErrETHMethodNotImplemented("GetWalletName"))
-	return ""
-}
-
 func (asset *Asset) IsWatchingOnlyWallet() bool {
 	log.Error(utils.ErrETHMethodNotImplemented("IsWatchingOnlyWallet"))
 	return false
 }
 
-func (asset *Asset) UnlockWallet(string) error {
-	return utils.ErrETHMethodNotImplemented("UnlockWallet")
-}
-
-func (asset *Asset) DeleteWallet(privPass string) error {
-	return utils.ErrETHMethodNotImplemented("DeleteWallet")
-}
-
-func (asset *Asset) RenameWallet(newName string) error {
-	return utils.ErrETHMethodNotImplemented("RenameWallet")
-}
-
-func (asset *Asset) DecryptSeed(privatePassphrase string) (string, error) {
-	return "", utils.ErrETHMethodNotImplemented("DecryptSeed")
-}
-
-func (asset *Asset) VerifySeedForWallet(seedMnemonic, privpass string) (bool, error) {
-	return false, utils.ErrETHMethodNotImplemented("VerifySeedForWallet")
-}
-
 func (asset *Asset) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase string, privatePassphraseType int32) error {
 	return utils.ErrETHMethodNotImplemented("ChangePrivatePassphraseForWallet")
-}
-
-func (asset *Asset) RootDir() string {
-	log.Error(utils.ErrETHMethodNotImplemented("RootDir"))
-	return ""
-}
-
-func (asset *Asset) DataDir() string {
-	log.Error(utils.ErrETHMethodNotImplemented("DataDir"))
-	return ""
-}
-
-func (asset *Asset) GetEncryptedSeed() string {
-	log.Error(utils.ErrETHMethodNotImplemented("GetEncryptedSeed"))
-	return ""
 }
 
 func (asset *Asset) IsConnectedToNetwork() bool {
@@ -182,47 +156,9 @@ func (asset *Asset) IsConnectedToNetwork() bool {
 	return false
 }
 
-func (asset *Asset) NetType() utils.NetworkType {
-	log.Error(utils.ErrETHMethodNotImplemented("NetType"))
-	return ""
-}
-
 func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 	log.Error(utils.ErrETHMethodNotImplemented("ToAmount"))
 	return nil
-}
-
-func (asset *Asset) GetAssetType() utils.AssetType {
-	return utils.ETHWalletAsset
-}
-
-func (asset *Asset) Internal() *loader.LoaderWallets {
-	log.Error(utils.ErrETHMethodNotImplemented("Internal"))
-	return nil
-}
-
-func (asset *Asset) TargetTimePerBlockMinutes() float64 {
-	log.Error(utils.ErrETHMethodNotImplemented("TargetTimePerBlockMinutes"))
-	return -1.0
-}
-
-func (asset *Asset) RequiredConfirmations() int32 {
-	log.Error(utils.ErrETHMethodNotImplemented("RequiredConfirmations"))
-	return -1
-}
-
-func (asset *Asset) ShutdownContextWithCancel() (context.Context, context.CancelFunc) {
-	log.Error(utils.ErrETHMethodNotImplemented("ShutdownContextWithCancel"))
-	return nil, nil
-}
-
-func (asset *Asset) Shutdown() {
-	log.Error(utils.ErrETHMethodNotImplemented("Shutdown"))
-}
-
-func (asset *Asset) LogFile() string {
-	log.Error(utils.ErrETHMethodNotImplemented("LogFile"))
-	return ""
 }
 
 func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
