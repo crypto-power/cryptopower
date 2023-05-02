@@ -381,6 +381,7 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		ConnectPeers:  persistentPeers,
+		AddPeers:      asset.setSeedPeers(),
 		// WARNING: PublishTransaction currently uses the entire duration
 		// because if an external bug, but even if the resolved, a typical
 		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
@@ -699,6 +700,10 @@ func (asset *Asset) setSeedPeers() []string {
 			"202.238.193.15:19335",
 			"203.216.0.105:19335",
 			"212.83.174.255:19335",
+			"45.76.236.69:19335",
+			"35.206.173.58:18333",
+			"18.192.198.6:18333",
+			"74.118.138.206:18333",
 		}
 	case ltcwire.TestNet, ltcwire.SimNet: // plain "wire.TestNet" is regnet!
 		defaultPeers = []string{"127.0.0.1:20585"}
