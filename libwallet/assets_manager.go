@@ -314,23 +314,8 @@ func (mgr *AssetsManager) Shutdown() {
 		mgr.InstantSwap.StopSync()
 	}
 
-	for _, wallet := range mgr.Assets.DCR.Wallets {
-		wallet.Shutdown() // Cancels the DCR wallet sync too.
-		wallet.CancelRescan()
-	}
-
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		wallet.Shutdown() // Cancels the BTC wallet sync too.
-		wallet.CancelRescan()
-	}
-
-	for _, wallet := range mgr.Assets.LTC.Wallets {
-		wallet.Shutdown() // Cancels the LTC wallet sync too.
-		wallet.CancelRescan()
-	}
-
-	for _, wallet := range mgr.Assets.ETH.Wallets {
-		wallet.Shutdown() // Cancels the ETH wallet sync too.
+	for _, wallet := range mgr.AllWallets() {
+		wallet.Shutdown() // Cancels the wallet sync too.
 		wallet.CancelRescan()
 	}
 
@@ -373,19 +358,7 @@ func (mgr *AssetsManager) IsAssetManagerDB() bool {
 
 // OpenWallets opens all wallets in the assets manager.
 func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
-	for _, wallet := range mgr.Assets.DCR.Wallets {
-		if wallet.IsSyncing() {
-			return errors.New(utils.ErrSyncAlreadyInProgress)
-		}
-	}
-
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		if wallet.IsSyncing() {
-			return errors.New(utils.ErrSyncAlreadyInProgress)
-		}
-	}
-
-	for _, wallet := range mgr.Assets.LTC.Wallets {
+	for _, wallet := range mgr.AllWallets() {
 		if wallet.IsSyncing() {
 			return errors.New(utils.ErrSyncAlreadyInProgress)
 		}
@@ -395,7 +368,7 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 		return err
 	}
 
-	for _, wallet := range mgr.Assets.DCR.Wallets {
+	for _, wallet := range mgr.AllWallets() {
 		select {
 		case <-mgr.shuttingDown:
 			// If shutdown protocol is detected, exit immediately.
@@ -408,42 +381,6 @@ func (mgr *AssetsManager) OpenWallets(startupPassphrase string) error {
 		}
 	}
 
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		select {
-		case <-mgr.shuttingDown:
-			// If shutdown protocol is detected, exit immediately.
-			return nil
-		default:
-			err := wallet.OpenWallet()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, wallet := range mgr.Assets.LTC.Wallets {
-		select {
-		case <-mgr.shuttingDown:
-		// If shutdown protocol is detected, exit immediately.
-		default:
-			err := wallet.OpenWallet()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, wallet := range mgr.Assets.ETH.Wallets {
-		select {
-		case <-mgr.shuttingDown:
-		// If shutdown protocol is detected, exit immediately.
-		default:
-			err := wallet.OpenWallet()
-			if err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -469,29 +406,13 @@ func (mgr *AssetsManager) ETHBadWallets() map[int]*sharedW.Wallet {
 
 // LoadedWalletsCount returns the number of wallets loaded in the assets manager.
 func (mgr *AssetsManager) LoadedWalletsCount() int32 {
-	return int32(len(mgr.Assets.DCR.Wallets) + len(mgr.Assets.BTC.Wallets) +
-		len(mgr.Assets.LTC.Wallets) + len(mgr.Assets.ETH.Wallets))
+	return int32(len(mgr.AllWallets()))
 }
 
 // OpenedWalletsCount returns the number of wallets opened in the assets manager.
 func (mgr *AssetsManager) OpenedWalletsCount() int32 {
 	var count int32
-	for _, wallet := range mgr.Assets.DCR.Wallets {
-		if wallet.WalletOpened() {
-			count++
-		}
-	}
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		if wallet.WalletOpened() {
-			count++
-		}
-	}
-	for _, wallet := range mgr.Assets.LTC.Wallets {
-		if wallet.WalletOpened() {
-			count++
-		}
-	}
-	for _, wallet := range mgr.Assets.ETH.Wallets {
+	for _, wallet := range mgr.AllWallets() {
 		if wallet.WalletOpened() {
 			count++
 		}
@@ -504,55 +425,59 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
+// sortWallets returns the watchonly wallets ordered last.
+func (mgr *AssetsManager) sortWallets(assetType utils.AssetType) []sharedW.Asset {
+	normalWallets := make([]sharedW.Asset, 0)
+	watchOnlyWallets := make([]sharedW.Asset, 0)
+
+	var unsortedWallets map[int]sharedW.Asset
+	switch assetType {
+	case utils.DCRWalletAsset:
+		unsortedWallets = mgr.Assets.DCR.Wallets
+	case utils.BTCWalletAsset:
+		unsortedWallets = mgr.Assets.BTC.Wallets
+	case utils.LTCWalletAsset:
+		unsortedWallets = mgr.Assets.LTC.Wallets
+	case utils.ETHWalletAsset:
+		unsortedWallets = mgr.Assets.ETH.Wallets
+	}
+
+	for _, wallet := range unsortedWallets {
+		if wallet.IsWatchingOnlyWallet() {
+			watchOnlyWallets = append(watchOnlyWallets, wallet)
+		} else {
+			normalWallets = append(normalWallets, wallet)
+		}
+	}
+	return append(normalWallets, watchOnlyWallets...)
+}
+
 // AllDCRWallets returns all DCR wallets in the assets manager.
 func (mgr *AssetsManager) AllDCRWallets() (wallets []sharedW.Asset) {
-	for _, wallet := range mgr.Assets.DCR.Wallets {
-		wallets = append(wallets, wallet)
-	}
-	return wallets
+	return mgr.sortWallets(utils.DCRWalletAsset)
 }
 
 // AllBTCWallets returns all BTC wallets in the assets manager.
 func (mgr *AssetsManager) AllBTCWallets() (wallets []sharedW.Asset) {
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		wallets = append(wallets, wallet)
-	}
-	return wallets
+	return mgr.sortWallets(utils.BTCWalletAsset)
 }
 
 // AllLTCWallets returns all LTC wallets in the assets manager.
 func (mgr *AssetsManager) AllLTCWallets() (wallets []sharedW.Asset) {
-	for _, wallet := range mgr.Assets.LTC.Wallets {
-		wallets = append(wallets, wallet)
-	}
-	return wallets
+	return mgr.sortWallets(utils.LTCWalletAsset)
 }
 
 // AllLTCWallets returns all ETH wallets in the assets manager.
 func (mgr *AssetsManager) AllETHWallets() (wallets []sharedW.Asset) {
-	for _, wallet := range mgr.Assets.ETH.Wallets {
-		wallets = append(wallets, wallet)
-	}
-	return wallets
+	return mgr.sortWallets(utils.ETHWalletAsset)
 }
 
 // AllWallets returns all wallets in the assets manager.
 func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
-	for _, wallet := range mgr.Assets.DCR.Wallets {
-		wallets = append(wallets, wallet)
-	}
-
-	for _, wallet := range mgr.Assets.BTC.Wallets {
-		wallets = append(wallets, wallet)
-	}
-
-	for _, wallet := range mgr.Assets.LTC.Wallets {
-		wallets = append(wallets, wallet)
-	}
-
-	for _, wallet := range mgr.Assets.ETH.Wallets {
-		wallets = append(wallets, wallet)
-	}
+	wallets = mgr.AllDCRWallets()
+	wallets = append(wallets, mgr.AllBTCWallets()...)
+	wallets = append(wallets, mgr.AllLTCWallets()...)
+	wallets = append(wallets, mgr.AllETHWallets()...)
 	return wallets
 }
 

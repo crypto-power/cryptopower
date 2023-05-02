@@ -29,6 +29,11 @@ type WalletLoad struct {
 	SelectedAccount *int
 }
 
+// AllSortedWalletList returns all the wallets currently loaded on app startup.
+func (wl *WalletLoad) AllSortedWalletList() []sharedW.Asset {
+	return wl.AssetsManager.AllWallets()
+}
+
 // SortedWalletList can return sorted wallets based on the current selected wallet
 // type of on the basis of the provided asset type variadic variable.
 func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.Asset {
@@ -84,6 +89,8 @@ func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
 		return wl.AssetsManager.AllDCRWallets()
 	case utils.LTCWalletAsset:
 		return wl.AssetsManager.AllLTCWallets()
+	case utils.ETHWalletAsset:
+		return wl.AssetsManager.AllETHWallets()
 	default:
 		return nil
 	}
