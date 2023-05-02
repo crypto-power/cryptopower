@@ -588,33 +588,25 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	overlaySet := false
-	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
-	msg := pg.errMsg
+	var msg string
+	var overlaySet bool
 	var navBtn *cryptomaterial.Button
 
-	if isTestNet {
+	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
+
+	switch {
+	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
 		overlaySet = true
-	}
 
-	if !overlaySet && !pg.isExchangeAPIAllowed() {
+	case !pg.isExchangeAPIAllowed():
+		msg = pg.errMsg
 		navBtn = &pg.navToSettingsBtn
 		overlaySet = true
-	}
 
-	if !overlaySet && !pg.isMultipleAssetTypeWalletAvailable() {
+	case !pg.isMultipleAssetTypeWalletAvailable():
+		msg = pg.errMsg
 		overlaySet = true
-	}
-
-	if overlaySet {
-		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
-		})
-		// Disable main page from recieving events
-		gtx = gtx.Disabled()
 	}
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
@@ -628,6 +620,15 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
+				overlay := layout.Stacked(func(gtx C) D { return D{} })
+				if overlaySet {
+					gtxCopy := gtx
+					overlay = layout.Stacked(func(gtx C) D {
+						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
+					})
+					// Disable main page from recieving events
+					gtx = gtx.Disabled()
+				}
 				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
 			},
 		}
