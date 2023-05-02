@@ -754,7 +754,6 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 						return D{}
 					}),
 				)
-
 			})
 		}),
 	)
