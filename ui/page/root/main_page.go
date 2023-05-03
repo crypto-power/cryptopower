@@ -369,6 +369,7 @@ func (mp *MainPage) updateBalance() {
 	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
 	if err != nil {
 		log.Error(err)
+		return
 	}
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()

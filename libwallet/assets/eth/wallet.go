@@ -124,11 +124,6 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
-	// loadedWallet, _ := ldr.GetLoadedWallet()
-	// if err := ethWallet.prepareChain(loadedWallet.ETH.Keystore); err != nil {
-	// 	return nil, fmt.Errorf("preparing chain failed: %v", err)
-	// }
-
 	return ethWallet, nil
 }
 
@@ -178,23 +173,22 @@ func (asset *Asset) IsConnectedToNetwork() bool {
 }
 
 func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
-	log.Error(utils.ErrETHMethodNotImplemented("ToAmount"))
-	return nil
+	return Amount(v)
 }
 
 func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlock"))
-	return nil
+	return sharedW.InvalidBlock
 }
 
 func (asset *Asset) GetBestBlockHeight() int32 {
 	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlockHeight"))
-	return -1
+	return sharedW.InvalidBlock.Height
 }
 
 func (asset *Asset) GetBestBlockTimeStamp() int64 {
 	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlockTimeStamp"))
-	return -1
+	return sharedW.InvalidBlock.Timestamp
 }
 
 func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {

@@ -189,6 +189,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		btcLogger:  nil,
 		dcrLogger:  nil,
 		ltcLogger:  nil,
+		ethLogger:  nil,
 		mainLogger: nil,
 	}
 

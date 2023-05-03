@@ -9,6 +9,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"github.com/asdine/storm"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -106,6 +107,11 @@ func (l *ethLoader) getWalletKeystore(walletID string, createIfNotFound bool) (*
 	if createIfNotFound {
 		// If the directory path doesn't exists, it creates it.
 		dbpath, err = l.CreateDirPath(walletID, walletDataDb, utils.ETHWalletAsset)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err := storm.Open(dbpath)
 		if err != nil {
 			return nil, err
 		}
