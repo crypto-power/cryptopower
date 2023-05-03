@@ -23,15 +23,14 @@ func (pg *WalletDexServerSelector) loadWallets() {
 	walletsList := make([]*load.WalletItem, 0, len(wallets))
 
 	for _, wal := range wallets {
+		var totalBalance int64
 		accountsResult, err := wal.GetAccountsRaw()
 		if err != nil {
-			log.Errorf("wallet (%v) was skipped : %v", wal.GetWalletName(), err)
-			continue
-		}
-
-		var totalBalance int64
-		for _, acc := range accountsResult.Accounts {
-			totalBalance += acc.Balance.Total.ToInt()
+			log.Errorf("wallet (%v) balance was ignored : %v", wal.GetWalletName(), err)
+		} else {
+			for _, acc := range accountsResult.Accounts {
+				totalBalance += acc.Balance.Total.ToInt()
+			}
 		}
 
 		listItem := &load.WalletItem{

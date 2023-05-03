@@ -2,6 +2,7 @@ package eth
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -69,7 +70,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 
 	loadedWallet, _ := ldr.GetLoadedWallet()
 	if err := ethWallet.prepareChain(loadedWallet.ETH.Keystore); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing chain failed: %v", err)
 	}
 
 	return ethWallet, nil
@@ -106,7 +107,29 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {
-	return nil, utils.ErrETHMethodNotImplemented("LoadExisting")
+	chainParams, err := utils.ETHChainParams(params.NetType)
+	if err != nil {
+		return nil, err
+	}
+
+	ldr := initWalletLoader(chainParams, params.RootDir)
+
+	ethWallet := &Asset{
+		Wallet:      w,
+		chainParams: chainParams,
+	}
+
+	err = ethWallet.Prepare(ldr, params)
+	if err != nil {
+		return nil, err
+	}
+
+	// loadedWallet, _ := ldr.GetLoadedWallet()
+	// if err := ethWallet.prepareChain(loadedWallet.ETH.Keystore); err != nil {
+	// 	return nil, fmt.Errorf("preparing chain failed: %v", err)
+	// }
+
+	return ethWallet, nil
 }
 
 func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
@@ -118,7 +141,10 @@ func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
 		return errors.New("no  existing wallet account found")
 	}
 
-	privatekey, err := crypto.LoadECDSA(ks.Accounts()[0].URL.Path)
+	// generates a private key using the provided hashed seed. Params.Seeds has
+	// a length of 64 bytes but only 32 are required to generate an ECDSA private
+	// key.
+	privatekey, err := crypto.ToECDSA(asset.EncryptedSeed[:32])
 	if err != nil {
 		return err
 	}
@@ -139,11 +165,6 @@ func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
 
 func (asset *Asset) IsWaiting() bool {
 	log.Error(utils.ErrETHMethodNotImplemented("IsWaiting"))
-	return false
-}
-
-func (asset *Asset) IsWatchingOnlyWallet() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("IsWatchingOnlyWallet"))
 	return false
 }
 

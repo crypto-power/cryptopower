@@ -60,6 +60,7 @@ func (l *ethLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		Keystore: ks,
 		Wallet:   ks.Wallets()[0], // Only one account per wallet is allowed.
 	}
+	l.wallet = w
 
 	return &loader.LoaderWallets{ETH: w}, nil
 }
@@ -88,6 +89,7 @@ func (l *ethLoader) OpenExistingWallet(ctx context.Context, WalletID string, pub
 		Keystore: ks,
 		Wallet:   ks.Wallets()[0], // Only one account per wallet is allowed.
 	}
+	l.wallet = w
 
 	return &loader.LoaderWallets{ETH: w}, nil
 }

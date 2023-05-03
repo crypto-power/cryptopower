@@ -32,9 +32,9 @@ func (mgr *AssetsManager) CreateNewETHWallet(walletName, privatePassphrase strin
 	mgr.Assets.ETH.Wallets[wallet.GetWalletID()] = wallet
 
 	// extract the db interface if it hasn't been set already.
-	// if mgr.db == nil && wallet != nil {
-	// 	mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
-	// }
+	if mgr.db == nil && wallet != nil {
+		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
+	}
 
 	return wallet, nil
 }
