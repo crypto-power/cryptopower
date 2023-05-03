@@ -110,7 +110,7 @@ func (l *ethLoader) OpenExistingWallet(ctx context.Context, WalletID string, pub
 	return &loader.LoaderWallets{ETH: w}, nil
 }
 
-// getWalletLoader creates the btc loader by configuring the path with the
+// getWalletLoader creates the eth loader by configuring the path with the
 // provided parameters. If createIfNotFound the missing directory path is created.
 // This is mostly done when new wallets are being created. When reading existing
 // wallets createIfNotFound is set to false signifying that if the path doesn't

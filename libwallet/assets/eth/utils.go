@@ -11,7 +11,7 @@ import (
 // 1 ether = 1,000,000,000,000,000,000 wei (1e18).
 const ethTowei = 1e18
 
-// Amount implement the sharedW AssetAmount interface within ethereum.
+// Amount implements the sharedW AssetAmount interface within ethereum.
 type Amount int64
 
 // ToCoin returns an asset formatted amount in float64.

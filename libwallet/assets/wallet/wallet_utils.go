@@ -229,8 +229,10 @@ func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType) (hashedS
 	switch assetType {
 	case utils.ETHWalletAsset:
 		hashedSeed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
-	default:
+	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
 		hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
+	default:
+		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 	}
 	return
 }

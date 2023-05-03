@@ -49,7 +49,7 @@ func initWalletLoader(chainParams *params.ChainConfig, dbDirPath string) loader.
 }
 
 // CreateNewWallet creates a new wallet for the ETH asset. Ethereum uses an
-// account based funds management method, therefore within wallet in this context
+// account based funds management method, therefore a wallet in this context
 // represent an single account on ethereum.
 func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.ETHChainParams(params.NetType)
@@ -123,10 +123,10 @@ func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
 	}
 
 	if len(ks.Accounts()) == 0 {
-		return errors.New("no  existing wallet account found")
+		return errors.New("no existing wallet account found")
 	}
 
-	// generates a private key using the provided hashed seed. Params.Seeds has
+	// generates a private key using the provided hashed seed. asset.EncryptedSeed has
 	// a length of 64 bytes but only 32 are required to generate an ECDSA private
 	// key.
 	privatekey, err := crypto.ToECDSA(asset.EncryptedSeed[:32])
