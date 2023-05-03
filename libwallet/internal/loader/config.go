@@ -99,7 +99,7 @@ func (l *Loader) CreateDirPath(WalletID, walletDbName string, assetType utils.As
 	if err != nil {
 		if os.IsNotExist(err) {
 			// error expected thus now attempt data directory creation
-			if err = os.MkdirAll(folderPath, 0700); err != nil {
+			if err = os.MkdirAll(folderPath, utils.UserFilePerm); err != nil {
 				return "", err
 			}
 		} else {

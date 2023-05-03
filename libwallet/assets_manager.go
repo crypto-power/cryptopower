@@ -120,7 +120,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 
 	// Create a root dir that has the path up the network folder.
 	rootDir = filepath.Join(rootDir, string(netType))
-	if err := os.MkdirAll(rootDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(rootDir, utils.UserFilePerm); err != nil {
 		return nil, errors.Errorf("failed to create rootDir: %v", err)
 	}
 

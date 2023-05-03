@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -64,6 +65,14 @@ const (
 	LogLevelError    = "error"
 	LogLevelCritical = "critical"
 	DefaultLogLevel  = LogLevelInfo
+
+	// 700   :  --w-rwxr-- => Modifies User, group and Other Users Permissions
+	// 0700  :  -rwx------ => Modifies User's permission only.
+	// 00700 :  -rwx------ => Modifies User's permission only.
+	// 0o700 :  -rwx------ => Modifies User's permission only.
+	// UserFilePerm contains permissions for the user only. Attempting to modify
+	// more permissions require a super user permission that isn't readily available.
+	UserFilePerm = os.FileMode(0o700)
 )
 
 // Stringer used in generating the directory path where the lowercase of the

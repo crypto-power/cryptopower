@@ -517,7 +517,10 @@ func (wallet *Wallet) saveNewWallet(setupWallet func() error) (*Wallet, error) {
 			log.Infof("Undocumented file at %s moved to %s", walletDataDir, newDirName)
 		}
 
-		os.MkdirAll(walletDataDir, os.ModePerm) // create wallet dir
+		err = os.MkdirAll(walletDataDir, utils.UserFilePerm) // create wallet dir
+		if err != nil {
+			return err
+		}
 
 		if wallet.Name == "" {
 			wallet.Name = reservedWalletPrefix + strconv.Itoa(wallet.ID) // wallet-#

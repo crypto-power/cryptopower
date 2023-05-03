@@ -107,7 +107,6 @@ func loadConfig() (*config, error) {
 	// with parsed command line flags.
 	preParser := flags.NewParser(&cfg, flags.HelpFlag|flags.PassDoubleDash)
 	_, err := preParser.Parse()
-
 	if err != nil {
 		e, ok := err.(*flags.Error)
 		if !ok || e.Type != flags.ErrHelp {
@@ -183,7 +182,7 @@ func loadConfig() (*config, error) {
 
 	// Create the home directory if it doesn't already exist.
 	funcName := "loadConfig"
-	err = os.MkdirAll(cfg.HomeDir, 0700)
+	err = os.MkdirAll(cfg.HomeDir, 0o700)
 	if err != nil {
 		// Show a nicer error message if it's because a symlink is linked to a
 		// directory that does not exist (probably because it's not mounted).
