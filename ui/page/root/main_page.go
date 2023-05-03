@@ -723,7 +723,7 @@ func (mp *MainPage) LayoutUSDBalance(gtx C) D {
 }
 
 func (mp *MainPage) totalAssetBalance(gtx C) D {
-	if mp.isBalanceHidden {
+	if mp.isBalanceHidden || mp.totalBalance == nil {
 		hiddenBalanceText := mp.Theme.Label(values.TextSize18*0.8, "*******************")
 		return layout.Inset{Bottom: values.MarginPadding0, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 			hiddenBalanceText.Color = mp.Theme.Color.PageNavText
