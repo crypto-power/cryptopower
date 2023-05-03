@@ -153,10 +153,6 @@ func (asset *Asset) IsWaiting() bool {
 	return false
 }
 
-func (asset *Asset) ChangePrivatePassphraseForWallet(oldPrivatePassphrase, newPrivatePassphrase string, privatePassphraseType int32) error {
-	return utils.ErrETHMethodNotImplemented("ChangePrivatePassphraseForWallet")
-}
-
 func (asset *Asset) IsConnectedToNetwork() bool {
 	log.Error(utils.ErrETHMethodNotImplemented("IsConnectedToNetwork"))
 	return false

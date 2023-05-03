@@ -54,7 +54,7 @@ func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.A
 	}
 
 	sort.Slice(wallets, func(i, j int) bool {
-		return wallets[i].GetWalletID() < wallets[j].GetWalletID() || !wallets[i].IsWatchingOnlyWallet()
+		return wallets[i].GetWalletID() < wallets[j].GetWalletID() && !wallets[i].IsWatchingOnlyWallet()
 	})
 
 	return wallets
