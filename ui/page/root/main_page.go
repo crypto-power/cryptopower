@@ -638,6 +638,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
 							case libutils.LTCWalletAsset:
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
+							case libutils.ETHWalletAsset:
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							}
 							return drawer
 						}),
