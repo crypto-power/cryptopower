@@ -6,9 +6,12 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 )
 
-// 1 ether == 1e18 wei
+// Wei is the smallest unit of payment accepted on ethereum.
+// 1 ether = 1,000,000,000 Gwei (1e9).
+// 1 ether = 1,000,000,000,000,000,000 wei (1e18).
 const ethTowei = 1e18
 
+// Amount implement the sharedW AssetAmount interface within ethereum.
 type Amount int64
 
 // ToCoin returns an asset formatted amount in float64.
@@ -22,7 +25,7 @@ func (a Amount) ToCoin() float64 {
 // String returns an asset formatted amount in string.
 func (a Amount) String() string {
 	strVal := strconv.FormatFloat(a.ToCoin(), 'f', 0, 64)
-	return strVal + " Eth"
+	return strVal + " ETH"
 }
 
 // MulF64 multiplies an Amount by a floating point value.

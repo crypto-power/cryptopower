@@ -142,7 +142,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.BTC = NewImage(decredIcons["logo_btc"])
 	i.DCR = NewImage(decredIcons["logo_dcr"])
 	i.LTC = NewImage(decredIcons["logo_ltc"])
-	i.ETH = NewImage(decredIcons["logo_eth"]) // TODO: Set proper Icon
+	i.ETH = NewImage(decredIcons["logo_eth"])
 	i.DcrWatchOnly = NewImage(decredIcons["logo_dcr_watch_only"])
 	i.BtcWatchOnly = NewImage(decredIcons["logo_btc_watch_only"])
 	i.LtcWatchOnly = NewImage(decredIcons["logo_ltc_watch_only"])

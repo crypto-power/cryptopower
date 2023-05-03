@@ -16,6 +16,14 @@ import (
 
 const walletDataDb = "wallet.db"
 
+var log = loader.Log
+
+// ethLoader implements the creating of new and opening of existing eth wallets.
+// This is primarily intended for use by the RPC servers, to enable
+// methods and services which require the wallet when the wallet is loaded by
+// another subsystem.
+//
+// ethLoader is safe for concurrent access.
 type ethLoader struct {
 	*loader.Loader
 
@@ -27,14 +35,21 @@ type LoaderConf struct {
 	DBDirPath string
 }
 
+// Confirm that ethLoader implements the complete asset loader interface.
 var _ loader.AssetLoader = (*ethLoader)(nil)
 
+// NewLoader constructs a ETH Loader.
 func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 	return &ethLoader{
 		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
 }
 
+// CreateNewWallet creates a new wallet(account) using the provided walletID, private
+// passphrase and hashed seed. The hashed seed is used to generate the ECSDA private
+// key. Because of generating the wallet private key, its not feasible to generate
+// multiple accounts private keys using the same seed. Therefore for a given wallet
+// instance only a single wallet that can exist.
 func (l *ethLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
 	ks, err := l.getWalletKeystore(params.WalletID, true)
 	if err != nil {
