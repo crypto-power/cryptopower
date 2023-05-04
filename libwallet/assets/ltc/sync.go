@@ -10,6 +10,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/chain"
 
@@ -369,6 +370,11 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		}
 	}
 
+	// Add xurious DNS seed if it is TestNet4
+	if asset.chainParams.Net.String() == chaincfg.TestNet4Params.Name {
+		asset.chainParams.DNSSeeds = append(asset.chainParams.DNSSeeds, chaincfg.DNSSeed{Host: "testnet-seed.ltc.xurious.com", HasFiltering: true})
+	}
+
 	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb().LTC,
@@ -656,9 +662,7 @@ func (asset *Asset) setSeedPeers() []string {
 	case ltcwire.TestNet4:
 		defaultPeers = []string{
 			// The two below are the sure clients that connect to testnet.
-			"178.62.46.195:19333",
 			"45.76.236.69:19335",
-
 			"80.82.21.77:19335",
 			"54.187.149.230:19335",
 			"54.39.129.45:19335",
@@ -667,6 +671,39 @@ func (asset *Asset) setSeedPeers() []string {
 			"3.84.1.183:19335",
 			"162.55.210.70:19335",
 			"213.255.227.211:19335",
+			"3.137.68.140:49333",
+			"5.9.150.112:19335",
+			"37.59.57.96:19335",
+			"39.100.99.116:30008",
+			"51.15.115.97:19335",
+			"52.13.42.125:19335",
+			"54.255.128.110:19333",
+			"62.171.161.203:19333",
+			"64.227.19.92:19335",
+			"78.28.225.160:19335",
+			"79.98.159.7:19333",
+			"84.38.3.199:19335",
+			"89.39.104.167:19335",
+			"89.160.159.45:19335",
+			"94.79.55.28:19335",
+			"95.216.76.224:19335",
+			"100.25.120.154:19335",
+			"103.231.191.7:19333",
+			"104.237.131.138:19335",
+			"142.93.198.104:19335",
+			"147.135.11.124:49333",
+			"173.209.40.61:19335",
+			"173.209.42.7:19335",
+			"178.62.46.195:19333",
+			"185.180.221.201:19335",
+			"198.58.102.18:19335",
+			"202.238.193.15:19335",
+			"203.216.0.105:19335",
+			"212.83.174.255:19335",
+			"45.76.236.69:19335",
+			"35.206.173.58:18333",
+			"18.192.198.6:18333",
+			"74.118.138.206:18333",
 		}
 	case ltcwire.TestNet, ltcwire.SimNet: // plain "wire.TestNet" is regnet!
 		defaultPeers = []string{"127.0.0.1:20585"}
