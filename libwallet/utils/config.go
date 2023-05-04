@@ -66,9 +66,6 @@ const (
 	LogLevelCritical = "critical"
 	DefaultLogLevel  = LogLevelInfo
 
-	// 700   :  --w-rwxr-- => Modifies User, group and Other Users Permissions
-	// 0700  :  -rwx------ => Modifies User's permission only.
-	// 00700 :  -rwx------ => Modifies User's permission only.
 	// 0o700 :  -rwx------ => Modifies User's permission only.
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
