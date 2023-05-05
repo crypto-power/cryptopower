@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"io/fs"
 	"math"
 	"net"
 	"regexp"
@@ -64,6 +65,10 @@ const (
 	LogLevelError    = "error"
 	LogLevelCritical = "critical"
 	DefaultLogLevel  = LogLevelInfo
+
+	// UserFilePerm contains permissions for the user only. Attempting to modify
+	// more permissions require a super user permission that isn't readily available.
+	UserFilePerm = fs.FileMode(0700)
 )
 
 // Stringer used in generating the directory path where the lowercase of the

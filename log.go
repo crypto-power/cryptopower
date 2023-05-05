@@ -18,6 +18,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
+	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/logger"
 	"code.cryptopower.dev/group/cryptopower/ui"
@@ -193,7 +194,7 @@ func initLogRotator(logDir string, maxRolls int) {
 		mainLogger: nil,
 	}
 
-	err := os.MkdirAll(logDir, 700)
+	err := os.MkdirAll(logDir, libutils.UserFilePerm)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
 		os.Exit(1)
