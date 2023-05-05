@@ -443,7 +443,8 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			}()
 			pg.isLoading = true
 
-			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.DCRWalletAsset.String() {
+			switch *pg.assetTypeSelector.SelectedAssetType() {
+			case libutils.DCRWalletAsset:
 				wal, err := pg.WL.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
@@ -465,11 +466,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				}
 				wal.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
-				pg.handlerWalletDexServerSelectorCallBacks()
-				return
-			}
-
-			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.BTCWalletAsset.String() {
+			case libutils.BTCWalletAsset:
 				_, err := pg.WL.AssetsManager.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
@@ -482,11 +479,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					return
 				}
 
-				pg.handlerWalletDexServerSelectorCallBacks()
-				return
-			}
-
-			if pg.assetTypeSelector.SelectedAssetType().String() == libutils.LTCWalletAsset.String() {
+			case libutils.LTCWalletAsset:
 				_, err := pg.WL.AssetsManager.CreateNewLTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
@@ -499,9 +492,21 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					return
 				}
 
-				pg.handlerWalletDexServerSelectorCallBacks()
-				return
+			case libutils.ETHWalletAsset:
+				_, err := pg.WL.AssetsManager.CreateNewETHWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				if err != nil {
+					if err.Error() == libutils.ErrExist {
+						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
+						return
+					}
+
+					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
+					pg.ParentWindow().ShowModal(errModal)
+					return
+				}
+
 			}
+			pg.handlerWalletDexServerSelectorCallBacks()
 		}()
 	}
 

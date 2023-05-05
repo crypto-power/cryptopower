@@ -369,6 +369,7 @@ func (mp *MainPage) updateBalance() {
 	totalBalance, err := components.CalculateTotalWalletsBalance(mp.Load)
 	if err != nil {
 		log.Error(err)
+		return
 	}
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
@@ -637,6 +638,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
 							case libutils.LTCWalletAsset:
 								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
+							case libutils.ETHWalletAsset:
+								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
 							}
 							return drawer
 						}),
@@ -720,7 +723,7 @@ func (mp *MainPage) LayoutUSDBalance(gtx C) D {
 }
 
 func (mp *MainPage) totalAssetBalance(gtx C) D {
-	if mp.isBalanceHidden {
+	if mp.isBalanceHidden || mp.totalBalance == nil {
 		hiddenBalanceText := mp.Theme.Label(values.TextSize18*0.8, "*******************")
 		return layout.Inset{Bottom: values.MarginPadding0, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 			hiddenBalanceText.Color = mp.Theme.Color.PageNavText

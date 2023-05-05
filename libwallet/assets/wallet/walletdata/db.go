@@ -12,6 +12,7 @@ const (
 	DCRDbName = "walletData.db"
 	BTCDBName = "neutrino.db"
 	LTCDBName = "neutrino.db"
+	ETHDbName = "walletData.db"
 	OldDbName = "tx.db"
 
 	TxBucketName = "TxIndexInfo"

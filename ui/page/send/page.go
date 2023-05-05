@@ -416,6 +416,9 @@ func (pg *Page) constructTx() {
 func (pg *Page) showBalaceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
+		if sourceAccount.Balance == nil {
+			return
+		}
 		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
 		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))

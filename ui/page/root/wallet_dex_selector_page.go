@@ -56,24 +56,12 @@ type WalletDexServerSelector struct {
 	settings        *cryptomaterial.Clickable
 
 	// wallet selector options
-	listLock               sync.RWMutex
-	dcrWalletList          []*load.WalletItem
-	btcWalletList          []*load.WalletItem
-	ltcWalletList          []*load.WalletItem
-	btcWatchOnlyWalletList []*load.WalletItem
-	dcrWatchOnlyWalletList []*load.WalletItem
-	ltcWatchOnlyWalletList []*load.WalletItem
-	dcrBadWalletsList      []*badWalletListItem
-	btcBadWalletsList      []*badWalletListItem
-	ltcBadWalletsList      []*badWalletListItem
+	listLock       sync.RWMutex
+	walletsList    []*load.WalletItem
+	badWalletsList []*badWalletListItem
 
-	dcrComponents          *cryptomaterial.ClickableList
-	btcComponents          *cryptomaterial.ClickableList
-	ltcComponents          *cryptomaterial.ClickableList
-	dcrWatchOnlyComponents *cryptomaterial.ClickableList
-	btcWatchOnlyComponents *cryptomaterial.ClickableList
-	ltcWatchOnlyComponents *cryptomaterial.ClickableList
-	walletSelected         func()
+	walletComponents *cryptomaterial.ClickableList
+	walletSelected   func()
 
 	// dex selector options
 	dexServerSelected func(server string)
@@ -132,9 +120,7 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForNotifications()
-	pg.loadDCRWallets()
-	pg.loadBTCWallets()
-	pg.loadLTCWallets()
+	pg.loadWallets()
 	pg.loadBadWallets()
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
@@ -168,49 +154,12 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	pg.listLock.Lock()
 	defer pg.listLock.Unlock()
 
-	if ok, selectedItem := pg.dcrComponents.ItemClicked(); ok {
-		pg.WL.SelectedWallet = pg.dcrWalletList[selectedItem]
+	if ok, selectedItem := pg.walletComponents.ItemClicked(); ok {
+		pg.WL.SelectedWallet = pg.walletsList[selectedItem]
 		pg.walletSelected()
 	}
 
-	if ok, selectedItem := pg.btcComponents.ItemClicked(); ok {
-		pg.WL.SelectedWallet = pg.btcWalletList[selectedItem]
-		pg.walletSelected()
-	}
-
-	if ok, selectedItem := pg.ltcComponents.ItemClicked(); ok {
-		pg.WL.SelectedWallet = pg.ltcWalletList[selectedItem]
-		pg.walletSelected()
-	}
-
-	if ok, selectedItem := pg.btcWatchOnlyComponents.ItemClicked(); ok {
-		pg.WL.SelectedWallet = pg.btcWatchOnlyWalletList[selectedItem]
-		pg.walletSelected()
-	}
-
-	if ok, selectedItem := pg.dcrWatchOnlyComponents.ItemClicked(); ok {
-		pg.WL.SelectedWallet = pg.dcrWatchOnlyWalletList[selectedItem]
-		pg.walletSelected()
-	}
-
-	// if ok, selectedItem := pg.ltcWatchOnlyComponents.ItemClicked(); ok {
-	// 	pg.WL.SelectedWallet = pg.ltcWatchOnlyWalletList[selectedItem]
-	// 	pg.walletSelected()
-	// }
-
-	for _, badWallet := range pg.btcBadWalletsList {
-		if badWallet.deleteBtn.Clicked() {
-			pg.deleteBadWallet(badWallet.ID)
-		}
-	}
-
-	for _, badWallet := range pg.dcrBadWalletsList {
-		if badWallet.deleteBtn.Clicked() {
-			pg.deleteBadWallet(badWallet.ID)
-		}
-	}
-
-	for _, badWallet := range pg.ltcBadWalletsList {
+	for _, badWallet := range pg.badWalletsList {
 		if badWallet.deleteBtn.Clicked() {
 			pg.deleteBadWallet(badWallet.ID)
 		}
@@ -295,9 +244,7 @@ func (pg *WalletDexServerSelector) sectionTitle(title string) layout.Widget {
 func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
-		pg.DCRwalletListLayout,
-		pg.BTCwalletListLayout,
-		pg.LTCwalletListLayout,
+		pg.walletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
 		pg.sectionTitle(values.String(values.StrExchangeIntro)),
 		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),

@@ -1,8 +1,6 @@
 package root
 
 import (
-	"fmt"
-
 	"gioui.org/layout"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
@@ -17,133 +15,34 @@ import (
 )
 
 func (pg *WalletDexServerSelector) initWalletSelectorOptions() {
-	pg.dcrComponents = pg.Theme.NewClickableList(layout.Vertical)
-	pg.btcComponents = pg.Theme.NewClickableList(layout.Vertical)
-	pg.ltcComponents = pg.Theme.NewClickableList(layout.Vertical)
-	pg.dcrWatchOnlyComponents = pg.Theme.NewClickableList(layout.Vertical)
-	pg.btcWatchOnlyComponents = pg.Theme.NewClickableList(layout.Vertical)
+	pg.walletComponents = pg.Theme.NewClickableList(layout.Vertical)
 }
 
-func (pg *WalletDexServerSelector) loadDCRWallets() {
-	wallets := pg.WL.SortedWalletList(libutils.DCRWalletAsset)
-	mainWalletList := make([]*load.WalletItem, 0)
-	watchOnlyWalletList := make([]*load.WalletItem, 0)
+func (pg *WalletDexServerSelector) loadWallets() {
+	wallets := pg.WL.AllSortedWalletList()
+	walletsList := make([]*load.WalletItem, 0, len(wallets))
 
 	for _, wal := range wallets {
+		var totalBalance int64
 		accountsResult, err := wal.GetAccountsRaw()
 		if err != nil {
-			continue
-		}
-
-		var totalBalance int64
-		for _, acc := range accountsResult.Accounts {
-			totalBalance += acc.Balance.Total.ToInt()
-		}
-
-		// sort wallets into normal wallet and watchonly wallets
-		if wal.IsWatchingOnlyWallet() {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
-			}
-
-			watchOnlyWalletList = append(watchOnlyWalletList, listItem)
+			log.Errorf("wallet (%v) balance was ignored : %v", wal.GetWalletName(), err)
 		} else {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
+			for _, acc := range accountsResult.Accounts {
+				totalBalance += acc.Balance.Total.ToInt()
 			}
-
-			mainWalletList = append(mainWalletList, listItem)
 		}
+
+		listItem := &load.WalletItem{
+			Wallet:       wal,
+			TotalBalance: wal.ToAmount(totalBalance).String(),
+		}
+
+		walletsList = append(walletsList, listItem)
 	}
 
 	pg.listLock.Lock()
-	pg.dcrWalletList = mainWalletList
-	pg.dcrWatchOnlyWalletList = watchOnlyWalletList
-	pg.listLock.Unlock()
-}
-
-func (pg *WalletDexServerSelector) loadBTCWallets() {
-	wallets := pg.WL.SortedWalletList(libutils.BTCWalletAsset)
-	mainWalletList := make([]*load.WalletItem, 0)
-	watchOnlyWalletList := make([]*load.WalletItem, 0)
-
-	for _, wal := range wallets {
-		accountsResult, err := wal.GetAccountsRaw()
-		if err != nil {
-			continue
-		}
-
-		var totalBalance int64
-		for _, acc := range accountsResult.Accounts {
-			totalBalance += acc.Balance.Total.ToInt()
-		}
-
-		// sort wallets into normal wallet and watchonly wallets
-		if wal.IsWatchingOnlyWallet() {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
-			}
-
-			watchOnlyWalletList = append(watchOnlyWalletList, listItem)
-		} else {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
-			}
-
-			mainWalletList = append(mainWalletList, listItem)
-		}
-	}
-
-	pg.listLock.Lock()
-	pg.btcWalletList = mainWalletList
-	pg.btcWatchOnlyWalletList = watchOnlyWalletList
-	pg.listLock.Unlock()
-}
-
-// load ltc wallets
-func (pg *WalletDexServerSelector) loadLTCWallets() {
-	wallets := pg.WL.SortedWalletList(libutils.LTCWalletAsset)
-	mainWalletList := make([]*load.WalletItem, 0)
-	watchOnlyWalletList := make([]*load.WalletItem, 0)
-
-	// TODO: account methods need to be implemented
-	for _, wal := range wallets {
-		accountsResult, err := wal.GetAccountsRaw()
-		if err != nil {
-			fmt.Println("[][][][][] err: ", err)
-			continue
-		}
-
-		var totalBalance int64
-		for _, acc := range accountsResult.Accounts {
-			totalBalance += acc.Balance.Total.ToInt()
-		}
-
-		// sort wallets into normal wallet and watchonly wallets
-		if wal.IsWatchingOnlyWallet() {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
-			}
-
-			watchOnlyWalletList = append(watchOnlyWalletList, listItem)
-		} else {
-			listItem := &load.WalletItem{
-				Wallet:       wal,
-				TotalBalance: wal.ToAmount(totalBalance).String(),
-			}
-
-			mainWalletList = append(mainWalletList, listItem)
-		}
-	}
-
-	pg.listLock.Lock()
-	pg.ltcWalletList = mainWalletList
-	pg.ltcWatchOnlyWalletList = watchOnlyWalletList
+	pg.walletsList = walletsList
 	pg.listLock.Unlock()
 }
 
@@ -151,42 +50,25 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	dcrBadWallets := pg.WL.AssetsManager.DCRBadWallets()
 	btcBadWallets := pg.WL.AssetsManager.BTCBadWallets()
 	ltcBadWallets := pg.WL.AssetsManager.LTCBadWallets()
-	pg.dcrBadWalletsList = make([]*badWalletListItem, 0, len(dcrBadWallets))
-	pg.btcBadWalletsList = make([]*badWalletListItem, 0, len(btcBadWallets))
-	pg.ltcBadWalletsList = make([]*badWalletListItem, 0, len(ltcBadWallets))
+	ethBadWallets := pg.WL.AssetsManager.ETHBadWallets()
+	pg.badWalletsList = make([]*badWalletListItem, 0, len(dcrBadWallets))
 
-	// dcr bad wallets
-	for _, badWallet := range dcrBadWallets {
-		listItem := &badWalletListItem{
-			Wallet:    badWallet,
-			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
+	populatebadWallets := func(badWallets map[int]*sharedW.Wallet) {
+		for _, badWallet := range badWallets {
+			listItem := &badWalletListItem{
+				Wallet:    badWallet,
+				deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
+			}
+			listItem.deleteBtn.Color = pg.Theme.Color.Danger
+			listItem.deleteBtn.Inset = layout.Inset{}
+			pg.badWalletsList = append(pg.badWalletsList, listItem)
 		}
-		listItem.deleteBtn.Color = pg.Theme.Color.Danger
-		listItem.deleteBtn.Inset = layout.Inset{}
-		pg.dcrBadWalletsList = append(pg.dcrBadWalletsList, listItem)
 	}
 
-	// btc bad wallets
-	for _, badWallet := range btcBadWallets {
-		listItem := &badWalletListItem{
-			Wallet:    badWallet,
-			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
-		}
-		listItem.deleteBtn.Color = pg.Theme.Color.Danger
-		listItem.deleteBtn.Inset = layout.Inset{}
-		pg.btcBadWalletsList = append(pg.btcBadWalletsList, listItem)
-	}
-
-	// ltc bad wallets
-	for _, badWallet := range ltcBadWallets {
-		listItem := &badWalletListItem{
-			Wallet:    badWallet,
-			deleteBtn: pg.Theme.OutlineButton(values.String(values.StrDeleted)),
-		}
-		listItem.deleteBtn.Color = pg.Theme.Color.Danger
-		listItem.deleteBtn.Inset = layout.Inset{}
-		pg.ltcBadWalletsList = append(pg.ltcBadWalletsList, listItem)
-	}
+	populatebadWallets(dcrBadWallets) // dcr bad wallets
+	populatebadWallets(btcBadWallets) // btc bad wallets
+	populatebadWallets(ltcBadWallets) // ltc bad wallets
+	populatebadWallets(ethBadWallets) // eth bad wallets
 }
 
 func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
@@ -240,18 +122,14 @@ func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet sharedW.Asset) D
 	)
 }
 
-func (pg *WalletDexServerSelector) DCRwalletListLayout(gtx C) D {
+func (pg *WalletDexServerSelector) walletListLayout(gtx C) D {
 	walletSections := []func(gtx C) D{}
-	if len(pg.dcrWalletList) > 0 {
-		walletSections = append(walletSections, pg.DCRWalletSection)
+	if len(pg.walletsList) > 0 {
+		walletSections = append(walletSections, pg.walletSection)
 	}
 
-	if len(pg.dcrWatchOnlyWalletList) > 0 {
-		walletSections = append(walletSections, pg.DCRwatchOnlyWalletSection)
-	}
-
-	if len(pg.dcrBadWalletsList) > 0 {
-		walletSections = append(walletSections, pg.DCRbadWalletSection)
+	if len(pg.badWalletsList) > 0 {
+		walletSections = append(walletSections, pg.badWalletSection)
 	}
 
 	list := &layout.List{Axis: layout.Vertical}
@@ -260,125 +138,22 @@ func (pg *WalletDexServerSelector) DCRwalletListLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletDexServerSelector) BTCwalletListLayout(gtx C) D {
-	walletSections := []func(gtx C) D{}
-	if len(pg.btcWalletList) > 0 {
-		walletSections = append(walletSections, pg.BTCWalletSection)
-	}
+func (pg *WalletDexServerSelector) walletSection(gtx C) D {
+	pg.listLock.RLock()
+	defer pg.listLock.RUnlock()
+	mainWalletList := pg.walletsList
 
-	if len(pg.btcWatchOnlyWalletList) > 0 {
-		walletSections = append(walletSections, pg.BTCwatchOnlyWalletSection)
-	}
-
-	if len(pg.btcBadWalletsList) > 0 {
-		walletSections = append(walletSections, pg.BTCbadWalletSection)
-	}
-
-	list := &layout.List{Axis: layout.Vertical}
-	return list.Layout(gtx, len(walletSections), func(gtx C, i int) D {
-		return walletSections[i](gtx)
+	return pg.walletComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
+		wallet := mainWalletList[i]
+		return pg.walletWrapper(gtx, wallet.Wallet.GetAssetType(), wallet)
 	})
 }
 
-func (pg *WalletDexServerSelector) LTCwalletListLayout(gtx C) D {
-	walletSections := []func(gtx C) D{}
-	if len(pg.ltcWalletList) > 0 {
-		walletSections = append(walletSections, pg.LTCWalletSection)
-	}
-
-	if len(pg.ltcWatchOnlyWalletList) > 0 {
-		walletSections = append(walletSections, pg.LTCwatchOnlyWalletSection)
-	}
-	if len(pg.ltcBadWalletsList) > 0 {
-		walletSections = append(walletSections, pg.LTCbadWalletSection)
-	}
-
-	list := &layout.List{Axis: layout.Vertical}
-
-	return list.Layout(gtx, len(walletSections), func(gtx C, i int) D {
-		return walletSections[i](gtx)
-	})
-}
-
-func (pg *WalletDexServerSelector) DCRWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	mainWalletList := pg.dcrWalletList
-
-	return pg.dcrComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.DCRWalletAsset, mainWalletList[i], false)
-	})
-}
-
-func (pg *WalletDexServerSelector) BTCWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	mainWalletList := pg.btcWalletList
-
-	return pg.btcComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.BTCWalletAsset, mainWalletList[i], false)
-	})
-}
-
-func (pg *WalletDexServerSelector) LTCWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	mainWalletList := pg.ltcWalletList
-
-	return pg.ltcComponents.Layout(gtx, len(mainWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.LTCWalletAsset, mainWalletList[i], false)
-	})
-}
-
-func (pg *WalletDexServerSelector) DCRwatchOnlyWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	watchOnlyWalletList := pg.dcrWatchOnlyWalletList
-
-	return pg.dcrWatchOnlyComponents.Layout(gtx, len(watchOnlyWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.DCRWalletAsset, watchOnlyWalletList[i], true)
-	})
-}
-
-func (pg *WalletDexServerSelector) BTCwatchOnlyWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	watchOnlyWalletList := pg.btcWatchOnlyWalletList
-
-	return pg.btcWatchOnlyComponents.Layout(gtx, len(watchOnlyWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.BTCWalletAsset, watchOnlyWalletList[i], true)
-	})
-}
-
-func (pg *WalletDexServerSelector) LTCwatchOnlyWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-	watchOnlyWalletList := pg.ltcWatchOnlyWalletList
-
-	return pg.ltcWatchOnlyComponents.Layout(gtx, len(watchOnlyWalletList), func(gtx C, i int) D {
-		return pg.walletWrapper(gtx, libutils.LTCWalletAsset, watchOnlyWalletList[i], true)
-	})
-}
-
-func (pg *WalletDexServerSelector) DCRbadWalletSection(gtx C) D {
+func (pg *WalletDexServerSelector) badWalletSection(gtx C) D {
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 
-	return pg.badWalletsWrapper(gtx, pg.dcrBadWalletsList)
-}
-
-func (pg *WalletDexServerSelector) BTCbadWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-
-	return pg.badWalletsWrapper(gtx, pg.btcBadWalletsList)
-}
-
-func (pg *WalletDexServerSelector) LTCbadWalletSection(gtx C) D {
-	pg.listLock.RLock()
-	defer pg.listLock.RUnlock()
-
-	return pg.badWalletsWrapper(gtx, pg.ltcBadWalletsList)
+	return pg.badWalletsWrapper(gtx, pg.badWalletsList)
 }
 
 func (pg *WalletDexServerSelector) badWalletsWrapper(gtx C, badWalletsList []*badWalletListItem) D {
@@ -436,7 +211,7 @@ func (pg *WalletDexServerSelector) badWalletsWrapper(gtx C, badWalletsList []*ba
 	})
 }
 
-func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem, isWatchingOnlyWallet bool) D {
+func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem) D {
 	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
@@ -453,6 +228,7 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType
 				Right: values.MarginPadding10,
 				Left:  values.MarginPadding10,
 			}.Layout(gtx, func(gtx C) D {
+				isWatchingOnlyWallet := item.Wallet.IsWatchingOnlyWallet()
 				image := components.CoinImageBySymbol(pg.Load, wType, isWatchingOnlyWallet)
 				if image != nil {
 					return image.LayoutSize(gtx, values.MarginPadding30)

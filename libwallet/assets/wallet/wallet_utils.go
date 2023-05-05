@@ -15,6 +15,7 @@ import (
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
+	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -29,6 +30,7 @@ const (
 	defaultBTCRequiredConfirmations = 6
 
 	defaultLTCRequiredConfirmations = 6
+	defaultETHRequiredConfirmations = 14
 
 	// UnminedTxHeight defines the block height of the txs in the mempool
 	UnminedTxHeight int32 = -1
@@ -41,6 +43,9 @@ const (
 
 	// ltcLogFilename defines the ltc log file name
 	ltcLogFilename = "ltc.log"
+
+	// ethLogFilename defines the ltc log file name
+	ethLogFilename = "eth.log"
 )
 
 // InvalidBlock defines invalid height and timestamp returned in case of an error.
@@ -65,6 +70,8 @@ func (wallet *Wallet) RequiredConfirmations() int32 {
 		return defaultDCRRequiredConfirmations
 	case utils.LTCWalletAsset:
 		return defaultLTCRequiredConfirmations
+	case utils.ETHWalletAsset:
+		return defaultETHRequiredConfirmations
 	}
 	return -1 // Not supposed to happen
 }
@@ -192,6 +199,15 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 		if err != nil {
 			return "", err
 		}
+
+	case utils.ETHWalletAsset:
+		// This the max entropy that supports a max of 24 seed words.
+		entropy, err := bip39.NewEntropy(256)
+		if err != nil {
+			return "", err
+		}
+
+		return bip39.NewMnemonic(entropy)
 	}
 
 	if len(seed) > 0 {
@@ -204,9 +220,21 @@ func generateSeed(assetType utils.AssetType) (v string, err error) {
 	return "", fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
 }
 
-func VerifySeed(seedMnemonic string) bool {
-	_, err := walletseed.DecodeUserInput(seedMnemonic)
+func VerifySeed(seedMnemonic string, assetType utils.AssetType) bool {
+	_, err := DecodeSeedMnemonic(seedMnemonic, assetType)
 	return err == nil
+}
+
+func DecodeSeedMnemonic(seedMnemonic string, assetType utils.AssetType) (hashedSeed []byte, err error) {
+	switch assetType {
+	case utils.ETHWalletAsset:
+		hashedSeed, err = bip39.NewSeedWithErrorChecking(seedMnemonic, "")
+	case utils.BTCWalletAsset, utils.DCRWalletAsset, utils.LTCWalletAsset:
+		hashedSeed, err = walletseed.DecodeUserInput(seedMnemonic)
+	default:
+		err = fmt.Errorf("%v: (%v)", utils.ErrAssetUnknown, assetType)
+	}
+	return
 }
 
 func fileExists(filePath string) (bool, error) {

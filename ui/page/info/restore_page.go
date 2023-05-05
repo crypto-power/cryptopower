@@ -363,7 +363,7 @@ func (pg *Restore) showHexRestoreModal() {
 }
 
 func (pg *Restore) verifyHex(hex string) bool {
-	if !sharedW.VerifySeed(hex) {
+	if !sharedW.VerifySeed(hex, pg.walletType) {
 		return false
 	}
 
@@ -412,7 +412,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 	}()
 
 	seed := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
-	if !sharedW.VerifySeed(seed) {
+	if !sharedW.VerifySeed(seed, pg.walletType) {
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
 		return

@@ -14,7 +14,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
 )
 
@@ -103,6 +102,8 @@ func (wallet *Wallet) prepare() (err error) {
 		dbName = walletdata.BTCDBName
 	case utils.LTCWalletAsset:
 		dbName = walletdata.LTCDBName
+	case utils.ETHWalletAsset:
+		dbName = walletdata.ETHDbName
 	}
 
 	walletDataDBPath := filepath.Join(wallet.dataDir(), dbName)
@@ -346,17 +347,17 @@ func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(pass.PrivatePass, seed)
+		return wallet.createWallet(pass.PrivatePass, seed)
 	})
 }
 
-func (wallet *Wallet) CreateWallet(privatePassphrase, seedMnemonic string) error {
+func (wallet *Wallet) createWallet(privatePassphrase, seedMnemonic string) error {
 	log.Info("Creating Wallet")
 	if len(seedMnemonic) == 0 {
 		return errors.New(utils.ErrEmptySeed)
 	}
 
-	seed, err := walletseed.DecodeUserInput(seedMnemonic)
+	seed, err := DecodeSeedMnemonic(seedMnemonic, wallet.Type)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -447,7 +448,7 @@ func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.Asse
 		if err != nil {
 			return err
 		}
-		return wallet.CreateWallet(pass.PrivatePass, seedMnemonic)
+		return wallet.createWallet(pass.PrivatePass, seedMnemonic)
 	})
 }
 
@@ -575,6 +576,8 @@ func (wallet *Wallet) WalletOpened() bool {
 		return wallet.Internal().DCR != nil
 	case utils.LTCWalletAsset:
 		return wallet.Internal().LTC != nil
+	case utils.ETHWalletAsset:
+		return wallet.Internal().ETH != nil
 	default:
 		return false
 	}
@@ -594,6 +597,9 @@ func (wallet *Wallet) UnlockWallet(privPass string) (err error) {
 		err = loadedWallet.DCR.Unlock(ctx, []byte(privPass), nil)
 	case utils.LTCWalletAsset:
 		err = loadedWallet.LTC.Unlock([]byte(privPass), nil)
+	case utils.ETHWalletAsset:
+		ks := loadedWallet.ETH.Keystore
+		err = ks.Unlock(ks.Accounts()[0], privPass)
 	}
 
 	if err != nil {
@@ -617,6 +623,10 @@ func (wallet *Wallet) LockWallet() {
 			loadedWallet.DCR.Lock()
 		case utils.LTCWalletAsset:
 			loadedWallet.LTC.Lock()
+		case utils.ETHWalletAsset:
+			acc := loadedWallet.ETH.Wallet.Accounts()[0]
+			loadedWallet.ETH.Keystore.Lock(acc.Address)
+
 		}
 	}
 }
@@ -634,6 +644,9 @@ func (wallet *Wallet) IsLocked() bool {
 		return loadedWallet.DCR.Locked()
 	case utils.LTCWalletAsset:
 		return loadedWallet.LTC.Locked()
+	case utils.ETHWalletAsset:
+		status, _ := loadedWallet.ETH.Wallet.Status()
+		return status == "Locked"
 	default:
 		return false
 	}
@@ -703,6 +716,9 @@ func (wallet *Wallet) changePrivatePassphrase(oldPass []byte, newPass []byte) (e
 		err = wallet.Internal().DCR.ChangePrivatePassphrase(ctx, oldPass, newPass)
 	case utils.LTCWalletAsset:
 		err = wallet.Internal().LTC.ChangePrivatePassphrase(oldPass, newPass)
+	case utils.ETHWalletAsset:
+		ks := wallet.Internal().ETH.Keystore
+		err = ks.Update(ks.Accounts()[0], string(oldPass), string(newPass))
 	}
 	if err != nil {
 		return utils.TranslateError(err)
@@ -750,6 +766,8 @@ func (wallet *Wallet) LogFile() string {
 		return filepath.Join(wallet.logDir, dcrLogFilename)
 	case utils.LTCWalletAsset:
 		return filepath.Join(wallet.logDir, ltcLogFilename)
+	case utils.ETHWalletAsset:
+		return filepath.Join(wallet.logDir, ethLogFilename)
 	}
 	return ""
 }
