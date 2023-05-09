@@ -1,17 +1,25 @@
 package eth
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/eth"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
+	gethutils "github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/ethstats"
+	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -31,6 +39,29 @@ type Asset struct {
 
 	chainParams *params.ChainConfig
 	stack       *node.Node
+	client      *ethclient.Client
+
+	cancelSync context.CancelFunc
+	syncCtx    context.Context
+
+	// This field has been added to cache the expensive call to GetTransactions.
+	// If the best block height hasn't changed there is no need to make another
+	// expensive GetTransactions call.
+	// txs txCache
+
+	// This fields helps to prevent unnecessary API calls if a new block hasn't
+	// been introduced.
+	// fees feeEstimateCache
+
+	// rescanStarting is set while reloading the wallet and dropping
+	// transactions from the wallet db.
+	rescanStarting uint32 // atomic
+
+	notificationListenersMu sync.RWMutex
+
+	syncData                        *SyncData
+	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
+	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
 }
 
 func initWalletLoader(chainParams *params.ChainConfig, dbDirPath string) loader.AssetLoader {
@@ -69,8 +100,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		chainParams: chainParams,
 	}
 
-	loadedWallet, _ := ldr.GetLoadedWallet()
-	if err := ethWallet.prepareChain(loadedWallet.ETH.Keystore); err != nil {
+	if err := ethWallet.prepareChain(); err != nil {
 		return nil, fmt.Errorf("preparing chain failed: %v", err)
 	}
 
@@ -113,16 +143,21 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
+	if err := ethWallet.prepareChain(); err != nil {
+		return nil, fmt.Errorf("preparing chain failed: %v", err)
+	}
+
 	return ethWallet, nil
 }
 
 // prepareChain initialize the local node responsible for p2p connections.
-func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
-	if ks == nil {
-		return errors.New("Wallet account not loaded")
+func (asset *Asset) prepareChain() error {
+	if !asset.WalletOpened() {
+		return errors.New("wallet account not loaded")
 	}
 
-	if len(ks.Accounts()) == 0 {
+	ks := asset.Internal().ETH.Keystore
+	if ks == nil || len(ks.Accounts()) == 0 {
 		return errors.New("no existing wallet account found")
 	}
 
@@ -145,6 +180,60 @@ func (asset *Asset) prepareChain(ks *keystore.KeyStore) error {
 		return err
 	}
 	asset.stack = stack
+
+	// Assemble the Ethereum light client protocol
+	ethcfg := ethconfig.Defaults
+	ethcfg.SyncMode = downloader.LightSync
+	ethcfg.GPO = ethconfig.LightClientGPO
+	ethcfg.NetworkId = asset.chainParams.ChainID.Uint64()
+	genesis, err := utils.GetGenesis(asset.chainParams)
+	if err != nil {
+		return fmt.Errorf("invalid genesis block: %v", err)
+	}
+
+	ethcfg.Genesis = genesis
+	gethutils.SetDNSDiscoveryDefaults(&ethcfg, genesis.ToBlock().Hash())
+
+	lesBackend, err := les.New(stack, &ethcfg)
+	if err != nil {
+		return fmt.Errorf("Failed to register the Ethereum service: %w", err)
+	}
+
+	// Assemble the ethstats monitoring and reporting service'
+	stats, err := utils.GetEthStatsURL(asset.chainParams)
+	if err != nil {
+		return fmt.Errorf("invalid ethstat URL: %v", err)
+	}
+
+	if stats != "" {
+		if err := ethstats.New(stack, lesBackend.ApiBackend, lesBackend.Engine(), stats); err != nil {
+			return err
+		}
+	}
+	// Boot up the client and ensure it connects to bootnodes
+	if err := stack.Start(); err != nil {
+		return err
+	}
+
+	enodes, err := utils.GetBootstrapNodes(asset.chainParams)
+	if err != nil {
+		return fmt.Errorf("invalid bootstrap nodes: %v", err)
+	}
+
+	for _, boot := range enodes {
+		old, err := enode.Parse(enode.ValidSchemes, boot)
+		if err == nil {
+			stack.Server().AddPeer(old)
+		}
+	}
+	// Attach to the client and retrieve and interesting metadatas
+	api, err := stack.Attach()
+	if err != nil {
+		stack.Close()
+		return err
+	}
+
+	asset.client = ethclient.NewClient(api)
 	return nil
 }
 
