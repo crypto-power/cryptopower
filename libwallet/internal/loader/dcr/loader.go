@@ -23,8 +23,6 @@ import (
 
 const walletDbName = "wallet.db"
 
-var log = loader.Log
-
 // dcrLoader implements the creating of new and opening of existing dcr wallets, while
 // providing a callback system for other subsystems to handle the loading of a
 // wallet.  This is primarily intended for use by the RPC servers, to enable

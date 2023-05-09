@@ -16,8 +16,6 @@ import (
 
 const walletDataDb = "wallet.db"
 
-var log = loader.Log
-
 // ethLoader implements the creating of new and opening of existing eth wallets.
 // This is primarily intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by
@@ -106,6 +104,8 @@ func (l *ethLoader) OpenExistingWallet(ctx context.Context, WalletID string, pub
 		Wallet:   ks.Wallets()[0], // Only one account per wallet is allowed.
 	}
 	l.wallet = w
+
+	log.Info("Opened wallet")
 
 	return &loader.LoaderWallets{ETH: w}, nil
 }

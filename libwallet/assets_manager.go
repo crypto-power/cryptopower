@@ -132,10 +132,6 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 		return nil, err
 	}
 
-	if err := initLogRotator(filepath.Join(rootDir, logFileName)); err != nil {
-		return nil, errors.Errorf("failed to init logRotator: %v", err.Error())
-	}
-
 	// Attempt to acquire lock on the wallets.db file.
 	mwDB, err := storm.Open(filepath.Join(rootDir, walletsDbName))
 	if err != nil {
@@ -330,23 +326,12 @@ func (mgr *AssetsManager) Shutdown() {
 			log.Info("db closed successfully")
 		}
 	}
-
-	if logRotator != nil {
-		log.Info("Shutting down log rotator")
-		logRotator.Close()
-		log.Info("Shutdown log rotator successfully")
-	}
 }
 
 // NetType returns the network type of the assets manager.
 // It is either mainnet or testnet.
 func (mgr *AssetsManager) NetType() utils.NetworkType {
 	return mgr.params.NetType
-}
-
-// LogDir returns the log directory of the assets manager.
-func (mgr *AssetsManager) LogDir() string {
-	return filepath.Join(mgr.params.RootDir, logFileName)
 }
 
 // IsAssetManagerDB returns true if the asset manager db interface was extracted

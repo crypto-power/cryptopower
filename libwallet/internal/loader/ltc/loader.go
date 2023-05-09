@@ -18,8 +18,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 )
 
-var log = loader.Log
-
 // ltcLoader implements the creating of new and opening of existing ltc wallets.
 // This is primarily intended for use by the RPC servers, to enable
 // methods and services which require the wallet when the wallet is loaded by

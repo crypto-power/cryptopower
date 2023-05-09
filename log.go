@@ -110,6 +110,13 @@ var (
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
 	ethLog       = ethBackendLog.Logger("ETH")
+
+	vspcLog     = backendLog.Logger("VSPC")
+	politeiaLog = backendLog.Logger("POLT")
+	btcLoader   = btcBackendLog.Logger("BTC-L")
+	dcrLoader   = dcrBackendLog.Logger("DCR-L")
+	ltcLoader   = ltcBackendLog.Logger("LTC-L")
+	ethLoader   = ethBackendLog.Logger("ETH-L")
 )
 
 // Initialize package-global logger variables.
@@ -120,7 +127,6 @@ func init() {
 	ui.UseLogger(winLog)
 	send.UseLogger(winLog)
 	root.UseLogger(winLog)
-	libwallet.UseLogger(dlwlLog)
 	dcr.UseLogger(dcrLog)
 	load.UseLogger(log)
 	listeners.UseLogger(lstnersLog)
@@ -157,6 +163,10 @@ func init() {
 	// Neutrino loglevel will always be set to error to control excessive logging.
 	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
+
+	// Because internal folders cannot be accessed directly, there logger is
+	// sent the file within the common folder with the internal folder.
+	libwallet.UseLoggers(dlwlLog, dcrLoader, ethLoader, vspcLog, politeiaLog, btcLoader, ltcLoader)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

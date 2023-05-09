@@ -6,7 +6,6 @@
 package dcr
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"github.com/decred/slog"
 )
 
@@ -15,7 +14,6 @@ var log = slog.Disabled
 // UseLoggers sets the subsystem logs to use the provided loggers.
 func UseLogger(logger slog.Logger) {
 	log = logger
-	loader.UseLogger(logger)
 }
 
 // Log writes a message to the log using LevelInfo.

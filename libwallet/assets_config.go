@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	logFileName   = "libwallet.log"
 	walletsDbName = "wallets.db"
 
 	// Mainnet represents the main network.
