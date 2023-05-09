@@ -552,7 +552,7 @@ func (wallet *Wallet) IsWatchingOnlyWallet() bool {
 			return w.LTC.Manager.WatchOnly()
 		}
 	}
-
+	// Eth doesn't support watch only wallet.
 	return false
 }
 

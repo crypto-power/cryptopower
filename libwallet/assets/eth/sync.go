@@ -142,6 +142,16 @@ func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	return "", utils.ErrETHMethodNotImplemented("GetExtendedPubKey")
 }
 
+// IsConnectedToEthereumNetwork returns true if the wallet is connected to the
+// Ethereum network.
+func (asset *Asset) IsConnectedToEthereumNetwork() bool {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	isSyncing := asset.syncData.syncing || asset.syncData.synced
+	return isSyncing || asset.syncData.isRescan
+}
+
 // startSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
 func (asset *Asset) startSync() error {
@@ -153,7 +163,6 @@ func (asset *Asset) startSync() error {
 	}
 	defer sub.Unsubscribe()
 
-	
 	return nil
 }
 
@@ -180,9 +189,9 @@ func (asset *Asset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
-	// if err := asset.prepareChain(); err != nil {
-	// 	return err
-	// }
+	if err := asset.prepareChain(); err != nil {
+		return fmt.Errorf("preparing chain failed: %v", err)
+	}
 
 	// Initialize all progress report data.
 	asset.initSyncProgressData()

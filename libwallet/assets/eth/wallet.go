@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"sync"
 
@@ -43,6 +44,7 @@ type Asset struct {
 
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
+	clientCtx  context.Context
 
 	// This field has been added to cache the expensive call to GetTransactions.
 	// If the best block height hasn't changed there is no need to make another
@@ -95,13 +97,16 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
+	ctx, _ := w.ShutdownContextWithCancel()
+
 	ethWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
-	}
-
-	if err := ethWallet.prepareChain(); err != nil {
-		return nil, fmt.Errorf("preparing chain failed: %v", err)
+		clientCtx:   ctx,
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	return ethWallet, nil
@@ -132,19 +137,20 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir)
-
+	ctx, _ := w.ShutdownContextWithCancel()
 	ethWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
+		clientCtx:   ctx,
+		syncData: &SyncData{
+			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+		},
+		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
 	err = ethWallet.Prepare(ldr, params)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := ethWallet.prepareChain(); err != nil {
-		return nil, fmt.Errorf("preparing chain failed: %v", err)
 	}
 
 	return ethWallet, nil
@@ -170,6 +176,7 @@ func (asset *Asset) prepareChain() error {
 	}
 
 	cfg := node.DefaultConfig
+	cfg.DBEngine = "leveldb" // leveldb is used instead of pebble db.
 	cfg.Name = executionClient
 	cfg.WSModules = append(cfg.WSModules, "eth")
 	cfg.DataDir = asset.DataDir()
@@ -196,7 +203,7 @@ func (asset *Asset) prepareChain() error {
 
 	lesBackend, err := les.New(stack, &ethcfg)
 	if err != nil {
-		return fmt.Errorf("Failed to register the Ethereum service: %w", err)
+		return fmt.Errorf("failed to register the Ethereum service: %w", err)
 	}
 
 	// Assemble the ethstats monitoring and reporting service'
@@ -242,9 +249,9 @@ func (asset *Asset) IsWaiting() bool {
 	return false
 }
 
+// IsConnectedToNetwork returns true if the wallet is connected to the network.
 func (asset *Asset) IsConnectedToNetwork() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("IsConnectedToNetwork"))
-	return false
+	return asset.IsConnectedToEthereumNetwork()
 }
 
 // ToAmount returns the AssetAmount interface implementation using the provided
@@ -254,18 +261,43 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 }
 
 func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
-	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlock"))
-	return sharedW.InvalidBlock
+	if asset.client == nil {
+		return sharedW.InvalidBlock
+	}
+
+	blockNumber := big.NewInt(int64(asset.GetBestBlockHeight()))
+	block, err := asset.client.BlockByNumber(asset.clientCtx, blockNumber)
+	if err != nil {
+		log.Errorf("invalid best block found: %v", err)
+		return sharedW.InvalidBlock
+	}
+
+	return &sharedW.BlockInfo{
+		Height:    int32(block.NumberU64()),
+		Timestamp: block.ReceivedAt.Unix(),
+	}
 }
 
 func (asset *Asset) GetBestBlockHeight() int32 {
-	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlockHeight"))
-	return sharedW.InvalidBlock.Height
+	if asset.client == nil {
+		return sharedW.InvalidBlock.Height
+	}
+
+	height, err := asset.client.BlockNumber(asset.clientCtx)
+	if err != nil {
+		log.Errorf("invalid best block height found: %v", err)
+		return sharedW.InvalidBlock.Height
+	}
+
+	return int32(height)
 }
 
 func (asset *Asset) GetBestBlockTimeStamp() int64 {
-	log.Error(utils.ErrETHMethodNotImplemented("GetBestBlockTimeStamp"))
-	return sharedW.InvalidBlock.Timestamp
+	bestblock := asset.GetBestBlock()
+	if bestblock == nil {
+		return sharedW.InvalidBlock.Timestamp
+	}
+	return bestblock.Timestamp
 }
 
 func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {

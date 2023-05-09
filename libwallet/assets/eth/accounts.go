@@ -6,8 +6,10 @@ import (
 )
 
 func (asset *Asset) ContainsDiscoveredAccounts() bool {
-	utils.ErrETHMethodNotImplemented("ContainsDiscoveredAccounts")
-	return false
+	if !asset.WalletOpened() {
+		return false
+	}
+	return len(asset.Internal().ETH.Keystore.Accounts()) > 0
 }
 
 func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
