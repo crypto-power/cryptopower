@@ -3,24 +3,100 @@ package ltc
 import (
 	"fmt"
 	"math"
+	"sync/atomic"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcwallet/chain"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
+	ltcwallet "github.com/ltcsuite/ltcwallet/wallet"
 	"github.com/ltcsuite/ltcwallet/walletdb"
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.
 func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
-	log.Error(utils.ErrLTCMethodNotImplemented("SetBlocksRescanProgressListener"))
+	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
 // RescanBlocks rescans the blockchain for all addresses in the wallet.
 func (asset *Asset) RescanBlocks() error {
-	return utils.ErrLTCMethodNotImplemented("RescanBlocks")
+	return asset.RescanBlocksFromHeight(0)
+}
+
+// RescanBlocksFromHeight rescans the blockchain for all addresses in the wallet
+// starting from the provided block height.
+func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
+	return asset.rescanBlocks(startHeight, nil)
+}
+
+func (asset *Asset) rescanBlocks(startHeight int32, addrs []ltcutil.Address) error {
+	if !asset.IsConnectedToBitcoinNetwork() {
+		return errors.E(utils.ErrNotConnected)
+	}
+
+	if !asset.WalletOpened() {
+		return utils.ErrLTCNotInitialized
+	}
+
+	if !asset.IsSynced() {
+		return errors.E(utils.ErrNotSynced)
+	}
+
+	if asset.IsRescanning() {
+		return errors.E(utils.ErrSyncAlreadyInProgress)
+	}
+
+	bs, err := asset.getblockStamp(startHeight)
+	if err != nil {
+		return err
+	}
+
+	if addrs == nil {
+		addrs = []ltcutil.Address{}
+	}
+
+	// Force rescan, to enforce address discovery.
+	asset.forceRescan()
+
+	asset.syncData.mu.Lock()
+	asset.syncData.isRescan = true
+	asset.syncData.forcedRescanActive = true
+	asset.syncData.rescanStartTime = time.Now()
+	asset.syncData.mu.Unlock()
+
+	job := &ltcwallet.RescanJob{
+		Addrs:      addrs,
+		OutPoints:  nil,
+		BlockStamp: *bs,
+	}
+
+	// It submits a rescan job without blocking on finishing the rescan.
+	// The rescan success or failure is logged elsewhere, and the channel
+	// is not required to be read, so discard the return value.
+	errChan := asset.Internal().LTC.SubmitRescan(job)
+
+	// Listen for the rescan finish event and update it.
+	go func() {
+		for err := range errChan {
+			if err != nil {
+				log.Errorf("rescan job failed: %v", err)
+			}
+		}
+
+		asset.syncData.mu.Lock()
+		asset.syncData.isRescan = false
+		asset.syncData.mu.Unlock()
+	}()
+
+	// Attempt to start up the notifications handler.
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
+
+	return nil
 }
 
 // IsRescanning returns true if the wallet is currently rescanning the blockchain.
