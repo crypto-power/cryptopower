@@ -46,6 +46,8 @@ type Asset struct {
 	syncCtx    context.Context
 	clientCtx  context.Context
 
+	backend *les.LesApiBackend
+
 	// This field has been added to cache the expensive call to GetTransactions.
 	// If the best block height hasn't changed there is no need to make another
 	// expensive GetTransactions call.
@@ -109,6 +111,8 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
 	}
 
+	ethWallet.SetNetworkCancelCallback(ethWallet.SafelyCancelSync)
+
 	return ethWallet, nil
 }
 
@@ -153,7 +157,16 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		return nil, err
 	}
 
+	ethWallet.SetNetworkCancelCallback(ethWallet.SafelyCancelSync)
+
 	return ethWallet, nil
+}
+
+// SafelyCancelSync is used to controllably disable network activity.
+func (asset *Asset) SafelyCancelSync() {
+	if asset.IsConnectedToEthereumNetwork() {
+		asset.CancelSync()
+	}
 }
 
 // prepareChain initialize the local node responsible for p2p connections.
@@ -175,12 +188,32 @@ func (asset *Asset) prepareChain() error {
 		return err
 	}
 
+	bootnodes, err := utils.GetBootstrapNodes(asset.chainParams)
+	if err != nil {
+		return fmt.Errorf("invalid bootstrap nodes: %v", err)
+	}
+
+	// Convert the bootnodes to internal enode representations
+	var enodes []*enode.Node
+	for _, boot := range bootnodes {
+		url, err := enode.Parse(enode.ValidSchemes, boot)
+		if err == nil {
+			enodes = append(enodes, url)
+		} else {
+			log.Error("Failed to parse bootnode URL", "url", boot, " err", err)
+		}
+	}
+
 	cfg := node.DefaultConfig
 	cfg.DBEngine = "leveldb" // leveldb is used instead of pebble db.
 	cfg.Name = executionClient
 	cfg.WSModules = append(cfg.WSModules, "eth")
 	cfg.DataDir = asset.DataDir()
 	cfg.P2P.PrivateKey = privatekey
+	cfg.P2P.BootstrapNodesV5 = enodes
+	cfg.P2P.NoDiscovery = true
+	cfg.P2P.DiscoveryV5 = true
+	cfg.P2P.MaxPeers = 25
 
 	stack, err := node.New(&cfg)
 	if err != nil {
@@ -188,23 +221,26 @@ func (asset *Asset) prepareChain() error {
 	}
 	asset.stack = stack
 
-	// Assemble the Ethereum light client protocol
-	ethcfg := ethconfig.Defaults
-	ethcfg.SyncMode = downloader.LightSync
-	ethcfg.GPO = ethconfig.LightClientGPO
-	ethcfg.NetworkId = asset.chainParams.ChainID.Uint64()
 	genesis, err := utils.GetGenesis(asset.chainParams)
 	if err != nil {
 		return fmt.Errorf("invalid genesis block: %v", err)
 	}
 
+	// Assemble the Ethereum light client protocol
+	ethcfg := ethconfig.Defaults
+	ethcfg.SyncMode = downloader.LightSync
+	ethcfg.GPO = ethconfig.LightClientGPO
+	ethcfg.NetworkId = asset.chainParams.ChainID.Uint64()
 	ethcfg.Genesis = genesis
+	ethcfg.Checkpoint = params.TrustedCheckpoints[genesis.ToBlock().Hash()]
 	gethutils.SetDNSDiscoveryDefaults(&ethcfg, genesis.ToBlock().Hash())
 
 	lesBackend, err := les.New(stack, &ethcfg)
 	if err != nil {
 		return fmt.Errorf("failed to register the Ethereum service: %w", err)
 	}
+
+	asset.backend = lesBackend.ApiBackend
 
 	// Assemble the ethstats monitoring and reporting service'
 	stats, err := utils.GetEthStatsURL(asset.chainParams)
@@ -214,30 +250,27 @@ func (asset *Asset) prepareChain() error {
 
 	if stats != "" {
 		if err := ethstats.New(stack, lesBackend.ApiBackend, lesBackend.Engine(), stats); err != nil {
-			return err
+			return fmt.Errorf("ethstats connection failed: %v", err)
 		}
 	}
+
 	// Boot up the client and ensure it connects to bootnodes
 	if err := stack.Start(); err != nil {
 		return err
 	}
 
-	enodes, err := utils.GetBootstrapNodes(asset.chainParams)
-	if err != nil {
-		return fmt.Errorf("invalid bootstrap nodes: %v", err)
-	}
-
 	for _, boot := range enodes {
-		old, err := enode.Parse(enode.ValidSchemes, boot)
+		old, err := enode.Parse(enode.ValidSchemes, boot.String())
 		if err == nil {
 			stack.Server().AddPeer(old)
 		}
 	}
+
 	// Attach to the client and retrieve and interesting metadatas
 	api, err := stack.Attach()
 	if err != nil {
 		stack.Close()
-		return err
+		return fmt.Errorf("attaching the client failed: %v", err)
 	}
 
 	asset.client = ethclient.NewClient(api)

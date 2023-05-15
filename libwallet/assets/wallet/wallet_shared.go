@@ -562,7 +562,7 @@ func (wallet *Wallet) OpenWallet() error {
 	ctx, _ := wallet.ShutdownContextWithCancel()
 	_, err := wallet.loader.OpenExistingWallet(ctx, strconv.Itoa(wallet.ID), pubPass)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("OpenWallet error on wallet (%v): %v", wallet.Name, err)
 		return utils.TranslateError(err)
 	}
 

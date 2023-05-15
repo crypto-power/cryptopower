@@ -1,15 +1,29 @@
 package eth
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"github.com/ethereum/go-ethereum/core/types"
+)
+
+const (
+	// syncIntervalGap defines the interval at which to publish and log progress
+	// without unnecessarily spamming the reciever.
+	syncIntervalGap = time.Second * 3
+
+	// start helps to synchronously execute compare-and-swap operation when
+	// initiating the notifications handler.
+	start uint32 = 1
+
+	// stop helps to synchronously execute compare-and-swap operation when
+	// terminating the notifications handler.
+	stop uint32 = 0
 )
 
 // SyncData holds the data required to sync the wallet.
@@ -112,14 +126,43 @@ func (asset *Asset) IsRescanning() bool {
 }
 
 func (asset *Asset) handleNotifications() {
+	t := time.NewTicker(syncIntervalGap)
+
+	defer func() {
+		t.Stop()
+	}()
+
+notificationsLoop:
+	for {
+		select {
+		case <-t.C:
+			progress := asset.backend.SyncProgress()
+
+			d, _ := json.Marshal(progress)
+			fmt.Printf(" >>>> Progress : %v \n", string(d))
+
+		case <-asset.syncCtx.Done():
+			break notificationsLoop
+
+		}
+	}
 }
 
 func (asset *Asset) CancelRescan() {
-	log.Error(utils.ErrETHMethodNotImplemented("CancelRescan"))
+	if asset.client != nil {
+		asset.client.Close()
+	}
 }
 
 func (asset *Asset) CancelSync() {
-	log.Error(utils.ErrETHMethodNotImplemented("CancelSync"))
+	log.Info("Cancelling ETH sync")
+	err := asset.stack.Close()
+	if err != nil {
+		log.Errorf("node shutdown error: %v", err)
+	}
+
+	asset.stack.Wait()
+	// log.Error(utils.ErrETHMethodNotImplemented("CancelSync"))
 }
 
 func (asset *Asset) RescanBlocks() error {
@@ -155,13 +198,17 @@ func (asset *Asset) IsConnectedToEthereumNetwork() bool {
 // startSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
 func (asset *Asset) startSync() error {
-	// Wait for chain events and push them to clients
-	heads := make(chan *types.Header, 16)
-	sub, err := asset.client.SubscribeNewHead(context.Background(), heads)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to head events: %v", err)
+	select {
+	// Wait for 5 seconds so that all goroutines.
+	case <-time.After(time.Second * 5):
+	case <-asset.syncCtx.Done():
+		return nil
 	}
-	defer sub.Unsubscribe()
+
+	// Listen and handle incoming notification events.
+	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
+		go asset.handleNotifications()
+	}
 
 	return nil
 }

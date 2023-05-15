@@ -41,7 +41,6 @@ func ethHandler() ethlog.Handler {
 			}
 			ethformatted = fmt.Sprintf(strFormatter, ethformatted, item)
 		}
-
 		switch r.Lvl {
 		case ethlog.LvlCrit:
 			log.Critical(ethformatted)

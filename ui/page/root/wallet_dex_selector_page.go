@@ -123,22 +123,8 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadWallets()
 	pg.loadBadWallets()
 
-	// Initiate the auto sync for all the DCR wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	// Initiate the auto sync for all the BTC wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	// Initiate the auto sync for all the LTC wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.LTCWalletAsset) {
+	// Initiate the auto sync for all the wallets with set autosync.
+	for _, wallet := range pg.WL.AllSortedWalletList() {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet, func(isUnlock bool) {})
 		}
