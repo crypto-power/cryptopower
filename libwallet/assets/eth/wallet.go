@@ -2,9 +2,6 @@ package eth
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"math/big"
 	"path/filepath"
 	"sync"
 
@@ -12,16 +9,10 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/eth"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	gethutils "github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/ethstats"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const (
@@ -40,7 +31,6 @@ type Asset struct {
 
 	chainParams *params.ChainConfig
 	stack       *node.Node
-	client      *ethclient.Client
 
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
@@ -169,114 +159,6 @@ func (asset *Asset) SafelyCancelSync() {
 	}
 }
 
-// prepareChain initialize the local node responsible for p2p connections.
-func (asset *Asset) prepareChain() error {
-	if !asset.WalletOpened() {
-		return errors.New("wallet account not loaded")
-	}
-
-	ks := asset.Internal().ETH.Keystore
-	if ks == nil || len(ks.Accounts()) == 0 {
-		return errors.New("no existing wallet account found")
-	}
-
-	// generates a private key using the provided hashed seed. asset.EncryptedSeed has
-	// a length of 64 bytes but only 32 are required to generate an ECDSA private
-	// key.
-	privatekey, err := crypto.ToECDSA(asset.EncryptedSeed[:32])
-	if err != nil {
-		return err
-	}
-
-	bootnodes, err := utils.GetBootstrapNodes(asset.chainParams)
-	if err != nil {
-		return fmt.Errorf("invalid bootstrap nodes: %v", err)
-	}
-
-	// Convert the bootnodes to internal enode representations
-	var enodes []*enode.Node
-	for _, boot := range bootnodes {
-		url, err := enode.Parse(enode.ValidSchemes, boot)
-		if err == nil {
-			enodes = append(enodes, url)
-		} else {
-			log.Error("Failed to parse bootnode URL", "url", boot, " err", err)
-		}
-	}
-
-	cfg := node.DefaultConfig
-	cfg.DBEngine = "leveldb" // leveldb is used instead of pebble db.
-	cfg.Name = executionClient
-	cfg.WSModules = append(cfg.WSModules, "eth")
-	cfg.DataDir = asset.DataDir()
-	cfg.P2P.PrivateKey = privatekey
-	cfg.P2P.BootstrapNodesV5 = enodes
-	cfg.P2P.NoDiscovery = true
-	cfg.P2P.DiscoveryV5 = true
-	cfg.P2P.MaxPeers = 25
-
-	stack, err := node.New(&cfg)
-	if err != nil {
-		return err
-	}
-	asset.stack = stack
-
-	genesis, err := utils.GetGenesis(asset.chainParams)
-	if err != nil {
-		return fmt.Errorf("invalid genesis block: %v", err)
-	}
-
-	// Assemble the Ethereum light client protocol
-	ethcfg := ethconfig.Defaults
-	ethcfg.SyncMode = downloader.LightSync
-	ethcfg.GPO = ethconfig.LightClientGPO
-	ethcfg.NetworkId = asset.chainParams.ChainID.Uint64()
-	ethcfg.Genesis = genesis
-	ethcfg.Checkpoint = params.TrustedCheckpoints[genesis.ToBlock().Hash()]
-	gethutils.SetDNSDiscoveryDefaults(&ethcfg, genesis.ToBlock().Hash())
-
-	lesBackend, err := les.New(stack, &ethcfg)
-	if err != nil {
-		return fmt.Errorf("failed to register the Ethereum service: %w", err)
-	}
-
-	asset.backend = lesBackend.ApiBackend
-
-	// Assemble the ethstats monitoring and reporting service'
-	stats, err := utils.GetEthStatsURL(asset.chainParams)
-	if err != nil {
-		return fmt.Errorf("invalid ethstat URL: %v", err)
-	}
-
-	if stats != "" {
-		if err := ethstats.New(stack, lesBackend.ApiBackend, lesBackend.Engine(), stats); err != nil {
-			return fmt.Errorf("ethstats connection failed: %v", err)
-		}
-	}
-
-	// Boot up the client and ensure it connects to bootnodes
-	if err := stack.Start(); err != nil {
-		return err
-	}
-
-	for _, boot := range enodes {
-		old, err := enode.Parse(enode.ValidSchemes, boot.String())
-		if err == nil {
-			stack.Server().AddPeer(old)
-		}
-	}
-
-	// Attach to the client and retrieve and interesting metadatas
-	api, err := stack.Attach()
-	if err != nil {
-		stack.Close()
-		return fmt.Errorf("attaching the client failed: %v", err)
-	}
-
-	asset.client = ethclient.NewClient(api)
-	return nil
-}
-
 func (asset *Asset) IsWaiting() bool {
 	log.Error(utils.ErrETHMethodNotImplemented("IsWaiting"))
 	return false
@@ -294,12 +176,12 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 }
 
 func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
-	if asset.client == nil {
+	if asset.backend == nil {
 		return sharedW.InvalidBlock
 	}
 
-	blockNumber := big.NewInt(int64(asset.GetBestBlockHeight()))
-	block, err := asset.client.BlockByNumber(asset.clientCtx, blockNumber)
+	blockNumber := rpc.BlockNumber(asset.GetBestBlockHeight())
+	block, err := asset.backend.BlockByNumber(asset.clientCtx, blockNumber)
 	if err != nil {
 		log.Errorf("invalid best block found: %v", err)
 		return sharedW.InvalidBlock
@@ -307,22 +189,17 @@ func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 
 	return &sharedW.BlockInfo{
 		Height:    int32(block.NumberU64()),
-		Timestamp: block.ReceivedAt.Unix(),
+		Timestamp: int64(block.Header().Time),
 	}
 }
 
 func (asset *Asset) GetBestBlockHeight() int32 {
-	if asset.client == nil {
+	if asset.backend == nil {
 		return sharedW.InvalidBlock.Height
 	}
 
-	height, err := asset.client.BlockNumber(asset.clientCtx)
-	if err != nil {
-		log.Errorf("invalid best block height found: %v", err)
-		return sharedW.InvalidBlock.Height
-	}
-
-	return int32(height)
+	header := asset.backend.CurrentHeader()
+	return int32(header.Number.Uint64())
 }
 
 func (asset *Asset) GetBestBlockTimeStamp() int64 {
