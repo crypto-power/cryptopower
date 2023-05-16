@@ -55,6 +55,15 @@ See [CONTRIBUTING.md](https://gitlab.com/cryptopower/cryptopower/blob/master/.gi
 
 Earlier experimental work with other user interface toolkits can be found at [godcr-old](https://github.com/raedahgroup/godcr-old).
 
+## Bootstrappable Cryptopower Builds
+
+The `contrib` directory contains the files necessary to perform bootstrappable Cryptopower builds.
+
+Bootstrappability furthers our binary security guarantees by allowing us to audit and reproduce our toolchain instead of blindly trusting binary downloads.
+
+We achieve bootstrappability by using Guix as a functional package manager.
+
+
 ## Private Repo Notes
 
 In order to use this repo you will need to configure git to use ssh instead of https:
