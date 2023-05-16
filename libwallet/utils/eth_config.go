@@ -23,22 +23,6 @@ func GetGenesis(chainParams *params.ChainConfig) (*core.Genesis, error) {
 	}
 }
 
-// GetEthStatsURL returns the url needed to connect to an Ethstats API online.
-func GetEthStatsURL(chainParams *params.ChainConfig) (string, error) {
-	switch chainParams {
-	case ETHMainnetParams:
-		return "wss://ethstats.dev", nil
-	case ETHGoerliParams:
-		return "https://stats.goerli.net/", nil
-	case ETHRinkebyParams:
-		return "https://stats.rinkeby.io/", nil
-	case ETHSepoliaParams:
-		return `sepolia-instance:5cc663205a01d0bb80933f4b5d48d300c55be0b5@wss://stats.noderpc.xyz`, nil
-	default:
-		return "", fmt.Errorf("no valid chain config params provided")
-	}
-}
-
 // GetBootstrapNodes returns the nodes needed to initialize given network on ethereum.
 func GetBootstrapNodes(chainParams *params.ChainConfig) ([]string, error) {
 	switch chainParams {

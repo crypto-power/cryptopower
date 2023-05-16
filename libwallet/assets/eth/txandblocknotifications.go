@@ -100,7 +100,7 @@ func (asset *Asset) publishBlockAttached() {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
-	blockHeight := int32(asset.backend.SyncProgress().CurrentBlock)
+	blockHeight := int32(asset.client.ApiBackend.SyncProgress().CurrentBlock)
 	for _, txAndBlockNotifcationListener := range asset.txAndBlockNotificationListeners {
 		txAndBlockNotifcationListener.OnBlockAttached(asset.ID, blockHeight)
 	}

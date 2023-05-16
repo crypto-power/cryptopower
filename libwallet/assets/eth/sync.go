@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethstats"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -111,7 +110,7 @@ func (asset *Asset) updateSyncProgress() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
-	syncingProgress := asset.backend.SyncProgress()
+	syncingProgress := asset.client.ApiBackend.SyncProgress()
 	startHeaderHeight := int32(syncingProgress.StartingBlock)
 	rawBlockHeight := int32(syncingProgress.CurrentBlock)
 	bestBlockheight := int32(syncingProgress.HighestBlock)
@@ -188,7 +187,7 @@ func (asset *Asset) handleNotifications() {
 	t := time.NewTicker(syncIntervalGap)
 
 	heads := make(chan core.ChainHeadEvent, 5)
-	sub := asset.backend.SubscribeChainHeadEvent(heads)
+	sub := asset.client.ApiBackend.SubscribeChainHeadEvent(heads)
 
 	defer func() {
 		t.Stop()
@@ -215,7 +214,6 @@ notificationsLoop:
 
 		case <-asset.syncCtx.Done():
 			break notificationsLoop
-
 		}
 	}
 }
@@ -224,14 +222,10 @@ func (asset *Asset) CancelRescan() {
 	log.Error(utils.ErrETHMethodNotImplemented("CancelRescan"))
 }
 
-func (asset *Asset) CancelSync() {
+// shutdownWallet closes down the local node.
+func (asset *Asset) shutdownWallet() {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
-
-	log.Info("Canceling sync. May take a while for sync to fully cancel.")
-
-	// reset the sync data first.
-	asset.resetSyncProgressData()
 
 	err := asset.stack.Close()
 	if err != nil {
@@ -241,6 +235,25 @@ func (asset *Asset) CancelSync() {
 	asset.stack.Wait()
 
 	log.Infof("(%v) Light Ethereum (LES) wallet closed", asset.GetWalletName())
+}
+
+// CancelSync disables the events sync events subscribed to.
+func (asset *Asset) CancelSync() {
+	asset.syncData.mu.RLock()
+	defer asset.syncData.mu.RUnlock()
+
+	log.Info("Canceling sync. May take a while for sync to fully cancel.")
+
+	// reset the sync data first.
+	asset.resetSyncProgressData()
+
+	if asset.client != nil {
+		// Cancel sync download operations running.
+		asset.client.Downloader().Cancel()
+	}
+
+	// Sends a request to cancel the events subscription.
+	asset.cancelSync()
 }
 
 func (asset *Asset) RescanBlocks() error {
@@ -276,13 +289,6 @@ func (asset *Asset) IsConnectedToEthereumNetwork() bool {
 // startSync initiates the full chain sync starting protocols. It attempts to
 // restart the chain service if it hasn't been initialized.
 func (asset *Asset) startSync() error {
-	select {
-	// Wait for 5 seconds so that all goroutines.
-	case <-time.After(time.Second * 5):
-	case <-asset.syncCtx.Done():
-		return nil
-	}
-
 	// Listen and handle incoming notification events.
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
 		go asset.handleNotifications()
@@ -293,17 +299,17 @@ func (asset *Asset) startSync() error {
 
 // startWallet initializes the eth wallet and starts syncing.
 func (asset *Asset) startWallet() (err error) {
-	// If this is an imported wallet and address dicovery has not been performed,
-	// We want to set the assets birtday to the genesis block.
-	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
-		// asset.forceRescan()
-	}
 	// Initiate the sync protocol and return an error incase of failure.
 	return asset.startSync()
 }
 
 // prepareChain initialize the local node responsible for p2p connections.
 func (asset *Asset) prepareChain() error {
+	if asset.client != nil && asset.stack != nil {
+		// an active instance already exists, not need to re-initialize the same.
+		return nil
+	}
+
 	if !asset.WalletOpened() {
 		return errors.New("wallet account not loaded")
 	}
@@ -365,41 +371,12 @@ func (asset *Asset) prepareChain() error {
 	ethcfg.GPO = ethconfig.LightClientGPO
 	ethcfg.NetworkId = asset.chainParams.ChainID.Uint64()
 	ethcfg.Genesis = genesis
-	// ethcfg.Checkpoint = params.TrustedCheckpoints[genesis.ToBlock().Hash()]
 	gethutils.SetDNSDiscoveryDefaults(&ethcfg, genesis.ToBlock().Hash())
 
-	lesBackend, err := les.New(stack, &ethcfg)
+	asset.client, err = les.New(stack, &ethcfg)
 	if err != nil {
 		return fmt.Errorf("failed to register the Ethereum service: %w", err)
 	}
-
-	asset.backend = lesBackend.ApiBackend
-
-	// Assemble the ethstats monitoring and reporting service'
-	stats, err := utils.GetEthStatsURL(asset.chainParams)
-	if err != nil {
-		return fmt.Errorf("invalid ethstat URL: %v", err)
-	}
-
-	if stats != "" {
-		if err := ethstats.New(stack, lesBackend.ApiBackend, lesBackend.Engine(), stats); err != nil {
-			return fmt.Errorf("ethstats connection failed: %v", err)
-		}
-	}
-
-	// Boot up the client and ensure it connects to bootnodes
-	if err := stack.Start(); err != nil {
-		return err
-	}
-
-	for _, boot := range enodes {
-		old, err := enode.Parse(enode.ValidSchemes, boot.String())
-		if err == nil {
-			stack.Server().AddPeer(old)
-		}
-		// error messages already handled above so no need to repeat the same here.
-	}
-
 	return nil
 }
 
@@ -414,7 +391,7 @@ func (asset *Asset) waitForSyncCompletion() {
 	for {
 		select {
 		case <-t.C:
-			progress := asset.backend.SyncProgress()
+			progress := asset.client.ApiBackend.SyncProgress()
 			if progress.CurrentBlock >= progress.HighestBlock && progress.HighestBlock > 0 {
 				asset.syncData.mu.Lock()
 				asset.syncData.synced = true
@@ -443,12 +420,17 @@ func (asset *Asset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
+	// Initialize all progress report data.
+	asset.initSyncProgressData()
+
 	if err := asset.prepareChain(); err != nil {
 		return fmt.Errorf("preparing chain failed: %v", err)
 	}
 
-	// Initialize all progress report data.
-	asset.initSyncProgressData()
+	// Boot up the client and ensure it connects to bootnodes
+	if err := asset.stack.Start(); err != nil {
+		return err
+	}
 
 	ctx, cancel := asset.ShutdownContextWithCancel()
 	asset.notificationListenersMu.Lock()

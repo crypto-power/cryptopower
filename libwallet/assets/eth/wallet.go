@@ -36,7 +36,7 @@ type Asset struct {
 	syncCtx    context.Context
 	clientCtx  context.Context
 
-	backend *les.LesApiBackend
+	client *les.LightEthereum
 
 	// This field has been added to cache the expensive call to GetTransactions.
 	// If the best block height hasn't changed there is no need to make another
@@ -155,7 +155,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 // SafelyCancelSync is used to controllably disable network activity.
 func (asset *Asset) SafelyCancelSync() {
 	if asset.IsConnectedToEthereumNetwork() {
+		// disables the events.
 		asset.CancelSync()
+		// shuts down the local node closing down all connection.
+		go asset.shutdownWallet()
 	}
 }
 
@@ -176,12 +179,18 @@ func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
 }
 
 func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
-	if asset.backend == nil {
+	if !asset.WalletOpened() {
+		return sharedW.InvalidBlock
+	}
+
+	// Initializes the chain if its not yet active.
+	if err := asset.prepareChain(); err != nil {
+		log.Errorf("preparing chain failed: %v", err)
 		return sharedW.InvalidBlock
 	}
 
 	blockNumber := rpc.BlockNumber(asset.GetBestBlockHeight())
-	block, err := asset.backend.BlockByNumber(asset.clientCtx, blockNumber)
+	block, err := asset.client.ApiBackend.BlockByNumber(asset.clientCtx, blockNumber)
 	if err != nil {
 		log.Errorf("invalid best block found: %v", err)
 		return sharedW.InvalidBlock
@@ -194,12 +203,17 @@ func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 }
 
 func (asset *Asset) GetBestBlockHeight() int32 {
-	if asset.backend == nil {
+	if !asset.WalletOpened() {
 		return sharedW.InvalidBlock.Height
 	}
 
-	header := asset.backend.CurrentHeader()
-	return int32(header.Number.Uint64())
+	// Initializes the chain if its not yet active.
+	if err := asset.prepareChain(); err != nil {
+		log.Errorf("preparing chain failed: %v", err)
+		return sharedW.InvalidBlock.Height
+	}
+
+	return int32(asset.client.ApiBackend.CurrentHeader().Number.Uint64())
 }
 
 func (asset *Asset) GetBestBlockTimeStamp() int64 {
