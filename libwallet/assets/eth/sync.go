@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -427,16 +428,20 @@ func (asset *Asset) SpvSync() (err error) {
 		return fmt.Errorf("preparing chain failed: %v", err)
 	}
 
-	// Boot up the client and ensure it connects to bootnodes
-	if err := asset.stack.Start(); err != nil {
-		return err
-	}
-
 	ctx, cancel := asset.ShutdownContextWithCancel()
 	asset.notificationListenersMu.Lock()
 	asset.syncCtx = ctx
 	asset.cancelSync = cancel
 	asset.notificationListenersMu.Unlock()
+
+	g, _ := errgroup.WithContext(ctx)
+
+	// Boot up the client and ensure it connects to bootnodes
+	g.Go(asset.stack.Start)
+
+	if err = g.Wait(); err != nil {
+		return err
+	}
 
 	// Set wallet synced state to true when chainclient considers itself
 	// as synced with the network.
