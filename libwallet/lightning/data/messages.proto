@@ -1,0 +1,555 @@
+
+syntax = "proto3";
+package data;
+option go_package = "./data";
+
+service BreezAPI {
+  rpc GetLSPList(LSPListRequest) returns (LSPList) {}
+  rpc ConnectToLSP(ConnectLSPRequest) returns (ConnectLSPReply) {}
+  rpc AddFundInit(AddFundInitRequest) returns (AddFundInitReply) {}
+  rpc GetFundStatus(FundStatusRequest) returns (FundStatusReply) {}
+  rpc AddInvoice(AddInvoiceRequest) returns (AddInvoiceReply) {}
+  rpc PayInvoice(PayInvoiceRequest) returns (PaymentResponse) {}
+  rpc RestartDaemon(RestartDaemonRequest) returns (RestartDaemonReply) {}
+  rpc ListPayments(ListPaymentsRequest) returns (PaymentsList) {}
+}
+
+message ListPaymentsRequest {}
+
+message RestartDaemonRequest {}
+message RestartDaemonReply {}
+
+message AddFundInitRequest {
+  string notificationToken = 1;
+  string lspID = 2;
+}
+
+message FundStatusRequest { string notificationToken = 1; }
+
+message AddInvoiceReply {
+  string paymentRequest = 1;
+  int64 lsp_fee = 2;
+}
+
+message ChainStatus {
+  uint32 blockHeight = 1;
+  bool syncedToChain = 2;
+}
+
+message Account {
+  enum AccountStatus {
+    DISCONNECTED = 0;
+    PROCESSING_CONNECTION = 1;
+    CLOSING_CONNECTION = 2;
+    CONNECTED = 3;
+  }
+  string id = 1;
+  int64 balance = 2;
+  int64 walletBalance = 3;
+  AccountStatus status = 4;
+
+  // maximum payment this node can receive via lightning
+  int64 maxAllowedToReceive = 5;
+
+  // maximum payment this node can pay via lightning
+  int64 maxAllowedToPay = 6;
+
+  // The lightning absolute payment amount
+  int64 maxPaymentAmount = 7;
+
+  // The routing node fee as reflected in the node policy
+  int64 routingNodeFee = 8;
+
+  // the state of the account, if not enabled then no automatic
+  // attempt to open a channel with breez node will be made.
+  bool enabled = 9;
+
+  // maximum chan reserve accross all channels of this account.
+  int64 maxChanReserve = 10;
+
+  // The funding transaction id of the channel.
+  string channelPoint = 11;
+
+  // reflects if this account can receive/send payments.
+  bool readyForPayments = 12;
+
+  // the last known block height.
+  int64 tipHeight = 13;
+
+  // public keys of peers this account is connected to.
+  repeated string connectedPeers = 14;
+
+  // The max amount this node can receive without opening a new channel
+  int64 max_inbound_liquidity = 15;
+
+  repeated string unconfirmed_channels = 16;
+}
+
+message Payment {
+  enum PaymentType {
+    DEPOSIT = 0;
+    WITHDRAWAL = 1;
+    SENT = 2;
+    RECEIVED = 3;
+    CLOSED_CHANNEL = 4;
+  }
+
+  PaymentType type = 1;
+  int64 amount = 3;
+  int64 creationTimestamp = 4;
+  InvoiceMemo invoiceMemo = 6;
+  string redeemTxID = 7;
+  string paymentHash = 8;
+  string destination = 9;
+  uint32 PendingExpirationHeight = 10;
+  int64 PendingExpirationTimestamp = 11;
+  int64 fee = 12;
+  string preimage = 13;
+  string closedChannelPoint = 14;
+  bool isChannelPending = 15;
+  bool isChannelCloseConfimed = 16;
+  string closedChannelTxID = 17;
+  bool isKeySend = 18;
+  bool PendingFull = 19;
+  string closedChannelRemoteTxID = 20;
+  string closedChannelSweepTxID = 21;
+  string groupKey = 22;
+  string groupName = 23;
+  LNUrlPayInfo lnurlPayInfo = 24;
+}
+
+message PaymentsList { repeated Payment paymentsList = 1; }
+
+message PaymentResponse {
+  string paymentError = 1;
+  string traceReport = 2;
+}
+
+message SendWalletCoinsRequest {
+  string address = 1;
+  int64 satPerByteFee = 2;
+}
+
+message PayInvoiceRequest {
+  int64 amount = 1;
+  string paymentRequest = 2;
+  int64 fee = 3;
+}
+
+message SpontaneousPaymentRequest {
+  int64 amount = 1;
+  string destNode = 2;
+  string description = 3;
+  string groupKey = 4;
+  string groupName = 5;
+  int64 feeLimitMsat = 6;
+  map<int64, string> tlv = 7;
+}
+
+message InvoiceMemo {
+  string description = 1;
+  int64 amount = 2;
+  string payeeName = 3;
+  string payeeImageURL = 4;
+  string payerName = 5;
+  string payerImageURL = 6;
+  bool transferRequest = 7;
+  int64 expiry = 8;
+  bytes preimage = 9;
+}
+
+message AddInvoiceRequest {
+  InvoiceMemo invoiceDetails = 1;
+  LSPInformation lspInfo = 2;
+}
+
+message Invoice {
+  InvoiceMemo memo = 1;
+  bool settled = 2;
+  int64 amtPaid = 3;
+}
+
+message CheckLSPClosedChannelMismatchRequest {
+  LSPInformation lspInfo = 1;
+  string chanPoint = 2;
+}
+
+message CheckLSPClosedChannelMismatchResponse { bool mismatch = 1; }
+
+message ResetClosedChannelChainInfoRequest {
+  string chanPoint = 1;
+  int64 blockHeight = 2;
+}
+
+message ResetClosedChannelChainInfoReply {}
+
+message NotificationEvent {
+  enum NotificationType {
+    READY = 0;
+    INITIALIZATION_FAILED = 1;
+    ACCOUNT_CHANGED = 2;
+    PAYMENT_SENT = 3;
+    INVOICE_PAID = 4;
+    LIGHTNING_SERVICE_DOWN = 5;
+    FUND_ADDRESS_CREATED = 6;
+    FUND_ADDRESS_UNSPENT_CHANGED = 7;
+    BACKUP_SUCCESS = 8;
+    BACKUP_FAILED = 9;
+    BACKUP_AUTH_FAILED = 10;
+    BACKUP_NODE_CONFLICT = 11;
+    BACKUP_REQUEST = 12;
+    PAYMENT_FAILED = 13;
+    PAYMENT_SUCCEEDED = 14;
+    REVERSE_SWAP_CLAIM_STARTED = 15;
+    REVERSE_SWAP_CLAIM_SUCCEEDED = 16;
+    REVERSE_SWAP_CLAIM_FAILED = 17;
+    REVERSE_SWAP_CLAIM_CONFIRMED = 18;
+    LSP_CHANNEL_OPENED = 19;
+  }
+
+  NotificationType type = 1;
+  repeated string data = 2;
+}
+
+message AddFundInitReply {
+  string address = 1;
+  int64 maxAllowedDeposit = 2;
+  string errorMessage = 3;
+  string backupJson = 4;
+  int64 requiredReserve = 5;
+  int64 minAllowedDeposit = 6;
+}
+
+message AddFundReply { string errorMessage = 1; }
+
+message RefundRequest {
+  string address = 1;
+  string refundAddress = 2;
+  int32 target_conf = 3;
+  int64 sat_per_byte = 4;
+}
+
+enum SwapError {
+  NO_ERROR = 0;
+  FUNDS_EXCEED_LIMIT = 1;
+  TX_TOO_SMALL = 2;
+  INVOICE_AMOUNT_MISMATCH = 3;
+  SWAP_EXPIRED = 4;
+}
+
+message AddFundError {
+  SwapAddressInfo swapAddressInfo = 1;
+  float hoursToUnlock = 2;
+}
+
+message FundStatusReply {
+  repeated SwapAddressInfo unConfirmedAddresses = 1;
+  repeated SwapAddressInfo confirmedAddresses = 2;
+  repeated SwapAddressInfo refundableAddresses = 3;
+}
+
+message RemoveFundRequest {
+  string address = 1;
+  int64 amount = 2;
+}
+
+message RemoveFundReply {
+  string txid = 1;
+  string errorMessage = 2;
+}
+
+message SwapAddressInfo {
+  string address = 1;
+  string PaymentHash = 2;
+  int64 ConfirmedAmount = 3;
+  repeated string ConfirmedTransactionIds = 4;
+  int64 PaidAmount = 5;
+  uint32 lockHeight = 6;
+  string errorMessage = 7;
+  string lastRefundTxID = 8;
+  SwapError swapError = 9;
+  string FundingTxID = 10;
+  float hoursToUnlock = 11;
+  bool nonBlocking = 12;
+}
+
+message SwapAddressList { repeated SwapAddressInfo addresses = 1; }
+
+message CreateRatchetSessionRequest {
+  string secret = 1;
+  string remotePubKey = 2;
+  string sessionID = 3;
+  uint64 expiry = 4;
+}
+
+message CreateRatchetSessionReply {
+  string sessionID = 1;
+  string secret = 2;
+  string pubKey = 3;
+}
+
+message RatchetSessionInfoReply {
+  string sessionID = 1;
+  bool initiated = 2;
+  string userInfo = 3;
+}
+
+message RatchetSessionSetInfoRequest {
+  string sessionID = 1;
+  string userInfo = 2;
+}
+
+message RatchetEncryptRequest {
+  string sessionID = 1;
+  string message = 2;
+}
+
+message RatchetDecryptRequest {
+  string sessionID = 1;
+  string encryptedMessage = 2;
+}
+
+message BootstrapFilesRequest {
+  string WorkingDir = 1;
+  repeated string FullPaths = 2;
+}
+
+message Peers {
+  bool isDefault = 1;
+  repeated string peer = 2;
+}
+
+message TxSpentURL {
+  string URL = 1;
+  bool isDefault = 2;
+  bool disabled = 3;
+}
+
+message rate {
+  string coin = 1;
+  double value = 2;
+}
+message Rates { repeated rate rates = 1; }
+
+message LSPInformation {
+  /// The id of lsp
+  string id = 1;
+
+  /// The name of of lsp
+  string name = 2;
+
+  string widget_url = 3;
+
+  /// The identity pubkey of the Lightning node
+  string pubkey = 4;
+  /// The network location of the lightning node, e.g. `12.34.56.78:9012` or
+  /// `localhost:10011`
+  string host = 5;
+
+  /// The channel capacity in satoshis
+  int64 channel_capacity = 6;
+  /// The target number of blocks that the funding transaction should be
+  /// confirmed by.
+  int32 target_conf = 7;
+
+  /// The base fee charged regardless of the number of milli-satoshis sent.
+  int64 base_fee_msat = 8;
+  /// The effective fee rate in milli-satoshis. The precision of this value goes
+  /// up to 6 decimal places, so 1e-6.
+  double fee_rate = 9;
+  /// The required timelock delta for HTLCs forwarded over the channel.
+  uint32 time_lock_delta = 10;
+  /// The minimum value in millisatoshi we will require for incoming HTLCs on
+  /// the channel.
+  int64 min_htlc_msat = 11;
+
+  int64 channel_fee_permyriad = 12;
+
+  bytes lsp_pubkey = 13;
+  // The channel can be closed if not used this duration in seconds.
+  int64 max_inactive_duration = 14;
+
+  int64 channel_minimum_fee_msat = 15;
+}
+
+message LSPListRequest {}
+
+message LSPList {
+  map<string, LSPInformation> lsps = 1; // The key is the lsp id
+}
+
+message LSPActivity {
+  // The key is the lsp id.
+  // The value is the timestamp in seconds of the last payment.
+  map<string, int64> activity = 1;
+}
+
+message ConnectLSPRequest { string lsp_id = 1; }
+
+message ConnectLSPReply {}
+
+message LNUrlResponse {
+  oneof action {
+    LNUrlWithdraw withdraw = 1;
+    LNURLChannel channel = 2;
+    LNURLAuth auth = 3;
+    LNURLPayResponse1 payResponse1 = 4;
+  }
+}
+
+message LNUrlWithdraw {
+  int64 min_amount = 1;
+  int64 max_amount = 2;
+  string default_description = 3;
+}
+
+message LNURLChannel {
+  string k1 = 1;
+  string callback = 2;
+  string uri = 3;
+}
+
+message LNURLAuth {
+  string tag = 1;
+  string k1 = 2;
+  string callback = 3;
+  string host = 4;
+  bool jwt = 5;
+}
+
+message LNUrlPayImage {
+  string data_uri = 1;
+  string ext = 2;
+  bytes bytes = 3;
+}
+
+message LNUrlPayMetadata {
+  repeated string entry = 1;
+  string description = 2;
+  string long_description = 3;
+  LNUrlPayImage image = 4;
+}
+
+message LNURLPayResponse1 {
+  string callback = 1;
+  int64 min_amount = 2;
+  int64 max_amount = 3;
+  repeated LNUrlPayMetadata metadata = 4;
+  string tag = 5;
+  uint64 amount = 6;
+  string from_nodes = 7;
+  string comment = 8;
+  string host = 9;
+  int64 comment_allowed = 10;
+  string lightning_address = 11;
+}
+
+message SuccessAction {
+  string tag = 1;
+  string description = 2;
+  string url = 3;
+  string message = 4;
+  string ciphertext = 5;
+  string iv = 6;
+}
+
+message LNUrlPayInfo {
+  string paymentHash = 1;
+  string invoice = 2;
+  SuccessAction success_action = 3;
+  string comment = 4;
+  string invoice_description = 5;
+  repeated LNUrlPayMetadata metadata = 6;
+  string host = 7;
+  string lightning_address = 8;
+}
+
+message LNUrlPayInfoList { repeated LNUrlPayInfo infoList = 1; }
+
+message ReverseSwapRequest {
+  string address = 1;
+  int64 amount = 2;
+  string fees_hash = 3;
+}
+
+message ReverseSwap {
+  string id = 1;
+  string invoice = 2;
+  string script = 3;
+  string lockup_address = 4;
+  string preimage = 5;
+  string key = 6;
+  string claim_address = 7;
+  int64 ln_amount = 8;
+  int64 onchain_amount = 9;
+  int64 timeout_block_height = 10;
+  int64 start_block_height = 11;
+  int64 claim_fee = 12;
+  string claim_txid = 13;
+}
+
+message ReverseSwapFees {
+  double percentage = 1;
+  int64 lockup = 2;
+  int64 claim = 3;
+}
+
+message ReverseSwapInfo {
+  int64 min = 1;
+  int64 max = 2;
+  ReverseSwapFees fees = 3;
+  string fees_hash = 4;
+}
+
+message ReverseSwapPaymentRequest {
+  string hash = 1;
+  PushNotificationDetails push_notification_details = 2;
+  int64 fee = 3;
+}
+
+message PushNotificationDetails {
+  string device_id = 1;
+  string title = 2;
+  string body = 3;
+}
+
+message ReverseSwapPaymentStatus {
+  string hash = 1;
+  string txID = 2;
+  int32 eta = 3;
+}
+message ReverseSwapPaymentStatuses {
+  repeated ReverseSwapPaymentStatus payments_status = 1;
+}
+
+message ReverseSwapClaimFee {
+  string hash = 1;
+  int64 fee = 2;
+}
+
+message ClaimFeeEstimates { map<int32, int64> fees = 1; }
+
+message UnspendLockupInformation {
+  uint32 height_hint = 1;
+  bytes lockup_script = 2;
+  bytes claim_tx_hash = 3;
+}
+
+message TransactionDetails {
+  bytes tx = 1;
+  string tx_hash = 2;
+  int64 fees = 3;
+}
+
+message SweepAllCoinsTransactions {
+  int64 amt = 1;
+  map<int32, TransactionDetails> transactions = 2;
+}
+
+message DownloadBackupResponse { repeated string files = 1; }
+
+message TorConfig {
+  string control = 1;
+  string http = 2;
+  string socks = 3;
+}

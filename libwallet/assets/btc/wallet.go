@@ -12,6 +12,8 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning"
+
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
@@ -62,6 +64,8 @@ type Asset struct {
 	syncData                        *SyncData
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
+
+	LightningClient *lightning.Client
 }
 
 const (
