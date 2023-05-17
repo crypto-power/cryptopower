@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/breez/breez/config"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/build"
 )

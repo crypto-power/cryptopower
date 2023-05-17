@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	breezservice "github.com/breez/breez/breez"
-	"github.com/breez/breez/config"
-	"github.com/breez/breez/data"
-	breezlog "github.com/breez/breez/log"
 	"github.com/btcsuite/btclog"
 	"google.golang.org/grpc"
 )
@@ -38,9 +38,9 @@ type Client struct {
 	lspList    *data.LSPList
 }
 
-// NewClient creates a new client struct
+// NewClient creates a new service client struct
 func NewClient(cfg *config.Config) (*Client, error) {
-	logger, err := breezlog.GetLogger(cfg.WorkingDir, "CLIENT")
+	logger, err := log.GetLogger(cfg.WorkingDir, "CLIENT")
 	if err != nil {
 		return nil, err
 	}

@@ -10,8 +10,6 @@ import (
 	"path"
 	"sync"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/account"
-	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/backup"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/chainservice"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
@@ -20,7 +18,6 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/lnnode"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/services"
-	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/swapfunds"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/breezbackuprpc"
@@ -40,10 +37,10 @@ type Client struct {
 	lightningDB        *db.DB
 	releaseLightningDB func() error
 
-	//exposed sub services
-	AccountService *account.Service
-	BackupManager  *backup.Manager
-	SwapService    *swapfunds.Service
+	//exposed sub services are commented out until they are ready.
+	//AccountService *account.Service
+	//BackupManager  *backup.Manager
+	//SwapService    *swapfunds.Service
 	ServicesClient *services.Client
 
 	//non exposed services
@@ -125,54 +122,6 @@ func New(workingDir string, applicationServices AppServices, startBeforeSync boo
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to start doubleratchet: %v", err)
-	}
-
-	backupLogger, err := log.GetLogger(workingDir, "BCKP")
-	if err != nil {
-		return nil, err
-	}
-	client.BackupManager, err = backup.NewManager(
-		applicationServices.BackupProviderName(),
-		&AuthService{appServices: applicationServices},
-		client.onServiceEvent,
-		client.prepareBackupInfo,
-		client.cfg,
-		backupLogger,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to start backup manager: %v", err)
-	}
-	client.log.Infof("New backup")
-
-	client.lspChanStateSyncer = newLSPChanStateSync(client)
-
-	client.AccountService, err = account.NewService(
-		client.cfg,
-		client.lightningDB,
-		client.ServicesClient,
-		client.lnDaemon,
-		client.RequestBackup,
-		client.onServiceEvent,
-	)
-	client.log.Infof("New AccountService")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create AccountService: %v", err)
-	}
-
-	client.SwapService, err = swapfunds.NewService(
-		client.cfg,
-		client.lightningDB,
-		client.ServicesClient,
-		client.lnDaemon,
-		client.AccountService.SendPaymentForRequestV2,
-		client.AccountService.AddInvoice,
-		client.ServicesClient.LSPList,
-		client.AccountService.GetGlobalMaxReceiveLimit,
-		client.onServiceEvent,
-	)
-	client.log.Infof("New SwapService")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create SwapService: %v", err)
 	}
 
 	client.log.Infof("client initialized")

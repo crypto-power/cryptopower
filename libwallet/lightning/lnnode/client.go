@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/breez/breez/config"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
 	"github.com/lightningnetwork/lnd"
 	"github.com/lightningnetwork/lnd/macaroons"
 	"google.golang.org/grpc"

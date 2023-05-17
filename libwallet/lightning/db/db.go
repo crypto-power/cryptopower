@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	breezlog "github.com/breez/breez/log"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"github.com/breez/breez/refcount"
 	"github.com/btcsuite/btclog"
 	bolt "go.etcd.io/bbolt"
@@ -82,7 +82,7 @@ func Get(workingDir string) (db *DB, cleanupFn func() error, err error) {
 }
 
 func newDB(workingDir string) (*DB, refcount.ReleaseFunc, error) {
-	log, err := breezlog.GetLogger(workingDir, "BRDB")
+	log, err := log.GetLogger(workingDir, "BRDB")
 
 	dbPath := path.Join(workingDir, "breez.db")
 	db, err := openDB(dbPath, log)

@@ -1,0 +1,8 @@
+go 1.19
+
+use (
+	.
+	./libwallet/lightning
+)
+
+replace github.com/lightningnetwork/lnd => github.com/breez/lnd v0.16.2-breez

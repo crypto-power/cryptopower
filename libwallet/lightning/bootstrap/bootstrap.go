@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/breez/breez/channeldbservice"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/channeldbservice"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb/bdb"
 	"github.com/lightningnetwork/lnd/channeldb"

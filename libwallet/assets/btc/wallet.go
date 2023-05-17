@@ -65,6 +65,8 @@ type Asset struct {
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
 
+	// Add lightning client to btcwallet.
+	// We can't start the client now because it fails build.
 	LightningClient *lightning.Client
 }
 

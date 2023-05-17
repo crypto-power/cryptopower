@@ -12,15 +12,15 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/db"
-	breezlog "code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/refcount"
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btclog"
 	"github.com/btcsuite/btcwallet/walletdb"
+	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
-	"github.com/lightninglabs/neutrino/v0"
 )
 
 const (
@@ -157,7 +157,7 @@ func createService(workingDir string, breezDB *db.DB) (*neutrino.ChainService, r
 		return nil, nil, err
 	}
 	if logger == nil {
-		logger, err = breezlog.GetLogger(workingDir, "CHAIN")
+		logger, err = log.GetLogger(workingDir, "CHAIN")
 		if err != nil {
 			return nil, nil, err
 		}

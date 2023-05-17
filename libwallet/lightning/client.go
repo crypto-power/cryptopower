@@ -46,9 +46,6 @@ func (client *Client) Start() error {
 	services := []Service{
 		client.lnDaemon,
 		client.ServicesClient,
-		client.SwapService,
-		client.AccountService,
-		client.BackupManager,
 	}
 
 	if err := client.lspChanStateSyncer.recordChannelsStatus(); err != nil {
@@ -76,13 +73,9 @@ func (client *Client) Stop() error {
 	}
 
 	close(client.quitChan)
-	client.BackupManager.Stop()
-	client.SwapService.Stop()
-	client.AccountService.Stop()
-	client.ServicesClient.Stop()
 	client.lnDaemon.Stop()
 	doubleratchet.Stop()
-	client.releaseBreezDB()
+	client.releaseLightningDB()
 
 	client.wg.Wait()
 	client.log.Infof("BreezApp shutdown successfully")
@@ -106,8 +99,9 @@ OnResume recalculate things we might missed when we were idle.
 */
 func (client *Client) OnResume() {
 	if atomic.LoadInt32(&client.isReady) == 1 {
-		client.AccountService.OnResume()
-		client.SwapService.SettlePendingTransfers()
+		// Commented out until these clients are implemented properly.
+		//client.AccountService.OnResume()
+		//client.SwapService.SettlePendingTransfers()
 	}
 }
 
@@ -119,14 +113,15 @@ func (client *Client) RestartDaemon() error {
 // backup backend provider.
 func (client *Client) Restore(nodeID string, key []byte) error {
 	client.log.Infof("Restore nodeID = %v", nodeID)
-	if err := client.releaseBreezDB(); err != nil {
+	if err := client.releaseLightningDB(); err != nil {
 		return err
 	}
 	defer func() {
-		client.breezDB, client.releaseBreezDB, _ = db.Get(client.cfg.WorkingDir)
+		client.lightningDB, client.releaseLightningDB, _ = db.Get(client.cfg.WorkingDir)
 	}()
-	_, err := client.BackupManager.Restore(nodeID, key)
-	return err
+	// Commenting out until backupManager is implemented
+	//_, err := client.BackupManager.Restore(nodeID, key)
+	return nil
 }
 
 /*
@@ -142,9 +137,10 @@ func (client *Client) GetWorkingDir() string {
 }
 
 func (client *Client) startAppServices() error {
-	if err := client.AccountService.Start(); err != nil {
+	// Commenting out until AccountService client is implemented
+	/*if err := client.AccountService.Start(); err != nil {
 		return err
-	}
+	}*/
 	return nil
 }
 
@@ -168,14 +164,15 @@ func (client *Client) watchDaemonEvents() error {
 			case lnnode.DaemonDownEvent:
 				atomic.StoreInt32(&client.isReady, 0)
 				go client.notify(data.NotificationEvent{Type: data.NotificationEvent_LIGHTNING_SERVICE_DOWN})
-			case lnnode.BackupNeededEvent:
-				client.BackupManager.RequestCommitmentChangedBackup()
+			// Commenting out until BackupManager client is implemented
+			//case lnnode.BackupNeededEvent:
+			//	client.BackupManager.RequestCommitmentChangedBackup()
 			case lnnode.ChannelEvent:
 				if client.lnDaemon.HasActiveChannel() {
 					go client.ensureSafeToRunNode()
 				}
 			case lnnode.ChainSyncedEvent:
-				chainService, cleanupFn, err := chainservice.Get(client.cfg.WorkingDir, client.breezDB)
+				chainService, cleanupFn, err := chainservice.Get(client.cfg.WorkingDir, client.lightningDB)
 				if err != nil {
 					client.log.Errorf("failed to get chain service on sync event")
 					break
@@ -199,7 +196,7 @@ func (client *Client) ensureSafeToRunNode() bool {
 		client.log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
 		return true
 	}
-	safe, err := client.BackupManager.IsSafeToRunNode(info.IdentityPubkey)
+	/*safe, err := client.BackupManager.IsSafeToRunNode(info.IdentityPubkey)
 	if err != nil {
 		client.log.Errorf("ensureSafeToRunNode failed, continue anyway %v", err)
 		return true
@@ -209,7 +206,7 @@ func (client *Client) ensureSafeToRunNode() bool {
 		go client.notify(data.NotificationEvent{Type: data.NotificationEvent_BACKUP_NODE_CONFLICT})
 		client.lnDaemon.Stop()
 		return false
-	}
+	}*/
 	client.log.Infof("ensureSafeToRunNode succeed, safe to run node: %v", info.IdentityPubkey)
 	return true
 }
@@ -218,12 +215,12 @@ func (client *Client) onServiceEvent(event data.NotificationEvent) {
 	client.notify(event)
 	if event.Type == data.NotificationEvent_FUND_ADDRESS_CREATED ||
 		event.Type == data.NotificationEvent_LSP_CHANNEL_OPENED {
-		client.BackupManager.RequestNodeBackup()
+		//client.BackupManager.RequestNodeBackup()
 	}
 }
 
 func (client *Client) RequestBackup() {
-	client.BackupManager.RequestFullBackup()
+	//client.BackupManager.RequestFullBackup()
 }
 
 func (client *Client) notify(event data.NotificationEvent) {
@@ -231,7 +228,7 @@ func (client *Client) notify(event data.NotificationEvent) {
 }
 
 func (client *Client) SetPeers(peers []string) error {
-	return client.breezDB.SetPeers(peers)
+	return client.lightningDB.SetPeers(peers)
 }
 
 func (client *Client) TestPeer(peer string) error {
@@ -245,15 +242,15 @@ func (client *Client) TestPeer(peer string) error {
 }
 
 func (client *Client) GetPeers() (peers []string, isDefault bool, err error) {
-	return client.breezDB.GetPeers(client.cfg.JobCfg.ConnectedPeers)
+	return client.lightningDB.GetPeers(client.cfg.JobCfg.ConnectedPeers)
 }
 
 func (client *Client) SetTxSpentURL(txSpentURL string) error {
-	return client.breezDB.SetTxSpentURL(txSpentURL)
+	return client.lightningDB.SetTxSpentURL(txSpentURL)
 }
 
 func (client *Client) GetTxSpentURL() (txSpentURL string, isDefault bool, err error) {
-	return client.breezDB.GetTxSpentURL(client.cfg.TxSpentURL)
+	return client.lightningDB.GetTxSpentURL(client.cfg.TxSpentURL)
 }
 
 func (client *Client) ClosedChannels() (int, error) {
@@ -261,7 +258,7 @@ func (client *Client) ClosedChannels() (int, error) {
 }
 
 func (client *Client) LastSyncedHeaderTimestamp() (int64, error) {
-	return client.breezDB.FetchLastSyncedHeaderTimestamp()
+	return client.lightningDB.FetchLastSyncedHeaderTimestamp()
 }
 
 func (client *Client) DeleteGraph() error {
@@ -338,10 +335,10 @@ func (client *Client) DeleteGraph() error {
 }
 
 func (client *Client) GraphUrl() (string, error) {
-	if client.breezDB == nil {
-		return "", fmt.Errorf("breezDB still not initialized")
+	if client.lightningDB == nil {
+		return "", fmt.Errorf("lightningDB still not initialized")
 	}
-	return bootstrap.GraphURL(client.GetWorkingDir(), client.breezDB)
+	return bootstrap.GraphURL(client.GetWorkingDir(), client.lightningDB)
 }
 
 func (client *Client) BackupFiles() (string, error) {
@@ -384,13 +381,13 @@ func (client *Client) CheckLSPClosedChannelMismatch(
 
 func (client *Client) SetTorActive(enable bool) error {
 	client.log.Infof("setTorActive: setting enabled = %v", enable)
-	return client.breezDB.SetTorActive(enable)
+	return client.lightningDB.SetTorActive(enable)
 }
 
 func (client *Client) GetTorActive() bool {
 	client.log.Info("getTorActive")
 
-	b, err := client.breezDB.GetTorActive()
+	b, err := client.lightningDB.GetTorActive()
 	if err != nil {
 		client.log.Infof("getTorActive: %v", err)
 	}

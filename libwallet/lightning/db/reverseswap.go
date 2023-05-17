@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/breez/breez/data"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
 	"github.com/golang/protobuf/proto"
 	"github.com/lightningnetwork/lnd/lnrpc/chainrpc"
 	"go.etcd.io/bbolt"

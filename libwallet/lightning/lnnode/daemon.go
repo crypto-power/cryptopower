@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/breez/breez/chainservice"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/chainservice"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"github.com/breez/breez/channeldbservice"
-	breezlog "github.com/breez/breez/log"
 	"github.com/breez/breez/tor"
 
 	"github.com/dustin/go-humanize"
@@ -323,7 +323,7 @@ func (d *Daemon) createConfig(workingDir string, torConfig *tor.TorConfig, inter
 		lndConfig.InitialHeadersSyncDelta = time.Hour * 2
 	}
 
-	writer, err := breezlog.GetLogWriter(workingDir)
+	writer, err := log.GetLogWriter(workingDir)
 	if err != nil {
 		d.log.Errorf("GetLogWriter function returned with error: %v", err)
 		return nil, err

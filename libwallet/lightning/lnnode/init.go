@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/breez/breez/channeldbservice"
-	"github.com/breez/breez/config"
-	"github.com/breez/breez/db"
-	breezlog "github.com/breez/breez/log"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/channeldbservice"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/db"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"github.com/breez/breez/tor"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btclog"
@@ -79,7 +79,7 @@ type Daemon struct {
 // NewDaemon is used to create a new daemon that wraps a lightning
 // network daemon.
 func NewDaemon(cfg *config.Config, db *db.DB, startBeforeSync bool) (*Daemon, error) {
-	logger, err := breezlog.GetLogger(cfg.WorkingDir, "DAEM")
+	logger, err := log.GetLogger(cfg.WorkingDir, "DAEM")
 	if err != nil {
 		return nil, err
 	}

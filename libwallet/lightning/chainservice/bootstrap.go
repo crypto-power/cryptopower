@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
-	breezlog "code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btclog"
@@ -66,7 +66,7 @@ func bootstrapped(workingDir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	logger, err = breezlog.GetLogger(workingDir, "CHAIN")
+	logger, err = log.GetLogger(workingDir, "CHAIN")
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +84,7 @@ func Bootstrap(workingDir string) error {
 	defer bootstrapMu.Unlock()
 
 	var err error
-	logger, err = breezlog.GetLogger(workingDir, "CHAIN")
+	logger, err = log.GetLogger(workingDir, "CHAIN")
 	if err != nil {
 		return err
 	}

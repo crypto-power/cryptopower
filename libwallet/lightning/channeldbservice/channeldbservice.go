@@ -8,7 +8,7 @@ import (
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/chainservice"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/config"
-	breezlog "code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/log"
 	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/refcount"
 	"github.com/btcsuite/btclog"
 	"github.com/lightningnetwork/lnd"
@@ -105,7 +105,7 @@ func createService(workingDir string) (*channeldb.DB, error) {
 		return nil, err
 	}
 	if logger == nil {
-		logger, err = breezlog.GetLogger(workingDir, "CHANNELDB")
+		logger, err = log.GetLogger(workingDir, "CHANNELDB")
 		if err != nil {
 			return nil, err
 		}

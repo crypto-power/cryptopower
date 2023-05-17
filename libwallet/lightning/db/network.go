@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/breez/breez/data"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
 	"github.com/golang/protobuf/proto"
 )
 

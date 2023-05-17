@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/breez/breez/data"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
 	bolt "go.etcd.io/bbolt"
 )
 

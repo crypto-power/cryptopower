@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning/data"
 	breezservice "github.com/breez/breez/breez"
-	"github.com/breez/breez/data"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -36,7 +36,7 @@ func (c *Client) Stop() (err error) {
 	return
 }
 
-//NewFundManager creates a new FundsManager
+// NewFundManager creates a new FundsManager
 func (c *Client) NewFundManager() (breezservice.FundManagerClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewFundManager - connection state = %v", con.GetState())
@@ -44,7 +44,7 @@ func (c *Client) NewFundManager() (breezservice.FundManagerClient, context.Conte
 	return breezservice.NewFundManagerClient(con), ctx, cancel
 }
 
-//NewSwapper creates a new Swapper
+// NewSwapper creates a new Swapper
 func (c *Client) NewSwapper(timeout time.Duration) (breezservice.SwapperClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSwapper - connection state = %v", con.GetState())
@@ -56,7 +56,7 @@ func (c *Client) NewSwapper(timeout time.Duration) (breezservice.SwapperClient, 
 	return breezservice.NewSwapperClient(con), ctx, cancel
 }
 
-//NewSyncNotifierClient creates a new SyncNotifierClient
+// NewSyncNotifierClient creates a new SyncNotifierClient
 func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
@@ -64,7 +64,7 @@ func (c *Client) NewSyncNotifierClient() (breezservice.SyncNotifierClient, conte
 	return breezservice.NewSyncNotifierClient(con), ctx, cancel
 }
 
-//NewChannelOpenerClient creates a new SyncNotifierClient
+// NewChannelOpenerClient creates a new SyncNotifierClient
 func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewSyncNotifierClient - connection state = %v", con.GetState())
@@ -75,7 +75,7 @@ func (c *Client) NewChannelOpenerClient() (breezservice.ChannelOpenerClient, con
 	return breezservice.NewChannelOpenerClient(con), ctx, cancel
 }
 
-//NewPushTxNotifierClient creates a new PushTxNotifierClient
+// NewPushTxNotifierClient creates a new PushTxNotifierClient
 func (c *Client) NewPushTxNotifierClient() (breezservice.PushTxNotifierClient, context.Context, context.CancelFunc) {
 	con := c.getBreezClientConnection()
 	c.log.Infof("NewPushTxNotifierClient - connection state = %v", con.GetState())
@@ -115,7 +115,7 @@ func (c *Client) ensureConnection(closeOldConnection bool) *grpc.ClientConn {
 	return c.connection
 }
 
-//Versions returns the list of Breez app version authorized by the server
+// Versions returns the list of Breez app version authorized by the server
 func (c *Client) Versions() ([]string, error) {
 	con := c.getBreezClientConnection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -128,7 +128,7 @@ func (c *Client) Versions() ([]string, error) {
 	return r.Version, nil
 }
 
-//Rates returns the rates obtained from the server
+// Rates returns the rates obtained from the server
 func (c *Client) Rates() (*data.Rates, error) {
 	con := c.getBreezClientConnection()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -157,7 +157,7 @@ func (c *Client) ReceiverNode() (string, error) {
 	return receiverInfo.Pubkey, nil
 }
 
-//LSPList returns the list of the LSPs
+// LSPList returns the list of the LSPs
 func (c *Client) LSPList() (*data.LSPList, error) {
 	con := c.getBreezClientConnection()
 	c.Lock()
