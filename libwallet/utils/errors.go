@@ -59,6 +59,9 @@ var (
 	ErrUnsupporttedIPV6Address = errors.New("IPv6 addresses unsupportted by the current network")
 	ErrNetConnectionTimeout    = errors.New("Timeout on network connection")
 	ErrPeerConnectionRejected  = errors.New("Peer connection rejected")
+	ErrLTCNoLightningSupport   = errors.New("ltc does not support lightning at the moment")
+	ErrDCRNoLightningSupport   = errors.New("dcr does not support lightning at the moment")
+	ErrETHNoLightningSupport   = errors.New("eth does not support lightning at the moment")
 )
 
 // todo, should update this method to translate more error kinds.

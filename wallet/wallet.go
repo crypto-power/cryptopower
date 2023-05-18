@@ -20,18 +20,20 @@ const (
 
 // Wallet represents the wallet back end of the app
 type Wallet struct {
-	assetsManager *libwallet.AssetsManager
-	Root          string
-	buildDate     time.Time
-	version       string
-	logDir        string
-	startUpTime   time.Time
-	Net           libutils.NetworkType
+	assetsManager        *libwallet.AssetsManager
+	Root                 string
+	buildDate            time.Time
+	version              string
+	logDir               string
+	startUpTime          time.Time
+	Net                  libutils.NetworkType
+	LightningNodeAddr    string
+	LightningNodeTLSPath string
 }
 
 // NewWallet initializies an new Wallet instance.
 // The Wallet is not loaded until LoadWallets is called.
-func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wallet, error) {
+func NewWallet(root, net, version, logFolder string, buildDate time.Time, lNodeAddr string, lNodeTlsPath string) (*Wallet, error) {
 	if root == "" {
 		return nil, fmt.Errorf("root directory cannot be empty")
 	}
@@ -42,12 +44,14 @@ func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wall
 	}
 
 	wal := &Wallet{
-		Root:        root,
-		Net:         resolvedNetType,
-		buildDate:   buildDate,
-		version:     version,
-		logDir:      logFolder,
-		startUpTime: time.Now(),
+		Root:                 root,
+		Net:                  resolvedNetType,
+		buildDate:            buildDate,
+		version:              version,
+		logDir:               logFolder,
+		startUpTime:          time.Now(),
+		LightningNodeAddr:    lNodeAddr,
+		LightningNodeTLSPath: lNodeTlsPath,
 	}
 
 	return wal, nil
@@ -78,7 +82,7 @@ func (wal *Wallet) InitAssetsManager() error {
 	if wal.Net == libwallet.Testnet {
 		politeiaHost = libwallet.PoliteiaTestnetHost
 	}
-	assetsManager, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net)
+	assetsManager, err := libwallet.NewAssetsManager(wal.Root, "bdb", politeiaHost, wal.logDir, wal.Net, wal.LightningNodeAddr, wal.LightningNodeTLSPath)
 	if err != nil {
 		return err
 	}

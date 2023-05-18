@@ -282,3 +282,8 @@ func (asset *DCRAsset) SafelyCancelSync() {
 func (asset *DCRAsset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToDecredNetwork()
 }
+
+// StartLighningService connects this wallet to a lighning node.
+func (asset *DCRAsset) StartLightningService() error {
+	return utils.ErrDCRNoLightningSupport
+}
