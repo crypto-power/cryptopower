@@ -395,7 +395,6 @@ github.com/decred/dcrd/chaincfg/v2 v2.2.0/go.mod h1:hpKvhLCDAD/xDZ3V1Pqpv9fIKVYY
 github.com/decred/dcrd/chaincfg/v2 v2.3.0/go.mod h1:7qUJTvn+y/kswSRZ4sT2+EmvlDTDyy2InvNFtX/hxk0=
 github.com/decred/dcrd/chaincfg/v3 v3.0.0/go.mod h1:EspyubQ7D2w6tjP7rBGDIE7OTbuMgBjR2F2kZFnh31A=
 github.com/decred/dcrd/chaincfg/v3 v3.1.0/go.mod h1:4XF9nlx2NeGD4xzw1+L0DGICZMl0a5rKV8nnuHLgk8o=
-github.com/decred/dcrd/chaincfg/v3 v3.1.1 h1:Ki8kq5IXGmjriiQyPCrCTF1aZSBiORb91/Sr5xW4otw=
 github.com/decred/dcrd/chaincfg/v3 v3.1.1/go.mod h1:4XF9nlx2NeGD4xzw1+L0DGICZMl0a5rKV8nnuHLgk8o=
 github.com/decred/dcrd/chaincfg/v3 v3.1.2-0.20230430213532-8f3e24955554 h1:zmIpkp1ISQqA5LrvcqVUjIdU7CbSElIoKkx5A7V6Qzg=
 github.com/decred/dcrd/chaincfg/v3 v3.1.2-0.20230430213532-8f3e24955554/go.mod h1:aEEti0kQSBFAlzHln4FB+3L30k9ZN1M7YDfYuK5VWtc=

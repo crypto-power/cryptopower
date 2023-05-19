@@ -365,12 +365,15 @@ func (asset *Asset) loadChainService() (chainService *neutrino.ChainService, err
 		}
 	}
 
+	asset.dailerCtx, asset.dailerCancel = asset.ShutdownContextWithCancel()
 	chainService, err = neutrino.NewChainService(neutrino.Config{
 		DataDir:       asset.DataDir(),
 		Database:      asset.GetWalletDataDb().BTC,
 		ChainParams:   *asset.chainParams,
 		PersistToDisk: true, // keep cfilter headers on disk for efficient rescanning
 		ConnectPeers:  persistentPeers,
+		// Dailer function helps to better control the dailer functionality.
+		Dialer: utils.DialerFunc(asset.dailerCtx),
 		// WARNING: PublishTransaction currently uses the entire duration
 		// because if an external bug, but even if the resolved, a typical
 		// inv/getdata round trip is ~4 seconds, so we set this so neutrino does
@@ -394,6 +397,9 @@ func (asset *Asset) CancelSync() {
 	defer asset.syncData.mu.RUnlock()
 
 	log.Info("Canceling sync. May take a while for sync to fully cancel.")
+
+	// Cancel all the pending tcp connection at the node level.
+	asset.dailerCancel()
 
 	// reset the sync data first.
 	asset.resetSyncProgressData()
