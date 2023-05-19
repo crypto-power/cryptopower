@@ -44,6 +44,10 @@ type Asset struct {
 	cancelSync context.CancelFunc
 	syncCtx    context.Context
 
+	// variables help manage node level tcp connections.
+	dailerCtx    context.Context
+	dailerCancel context.CancelFunc
+
 	// This field has been added to cache the expensive call to GetTransactions.
 	// If the best block height hasn't changed there is no need to make another
 	// expensive GetTransactions call.

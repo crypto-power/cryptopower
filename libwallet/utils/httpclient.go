@@ -54,12 +54,27 @@ type (
 		isConnected  bool
 		lastUpdate   time.Time
 	}
+
+	dailer func(addr net.Addr) (net.Conn, error)
 )
 
 var (
 	netC       monitorNetwork
 	activeAPIs map[string]*Client
 )
+
+// DialerFunc returns a customized dialer function that is make it easier to
+// control node level tcp connections especially after a shutdown. It also
+// includes a timeout value preventing a connection waiting forever for a
+// response to be returned.
+func DialerFunc(ctx context.Context) dailer {
+	d := &net.Dialer{
+		Timeout: defaultHttpClientTimeout,
+	}
+	return func(addr net.Addr) (net.Conn, error) {
+		return d.DialContext(ctx, addr.Network(), addr.String())
+	}
+}
 
 func init() {
 	netC = monitorNetwork{}
