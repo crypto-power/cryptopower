@@ -222,4 +222,7 @@ require (
 // and dcrdex (v1.10.3) but only v1.10.4 and above can be compiled for
 // the android OS using gomobile. This replace can be removed once any
 // of those projects update their github.com/lib/pq dependency.
-replace github.com/lib/pq => github.com/lib/pq v1.10.4
+replace (
+	github.com/ethereum/go-ethereum => github.com/dmigwi/go-ethereum v0.0.0-20230519190856-d4bcfe37efbb
+	github.com/lib/pq => github.com/lib/pq v1.10.4
+)
