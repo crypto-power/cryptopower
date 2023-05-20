@@ -518,7 +518,7 @@ func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 		return "", utils.ErrLTCNotInitialized
 	}
 
-	extendedPublicKey, err := loadedAsset.AccountProperties(asset.GetScope(), uint32(account))
+	extendedPublicKey, err := loadedAsset.AccountProperties(GetScope(), uint32(account))
 	if err != nil {
 		return "", err
 	}
@@ -528,7 +528,7 @@ func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 // AccountXPubMatches checks if the xpub of the provided account matches the
 // provided xpub.
 func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error) {
-	acctXPubKey, err := asset.Internal().LTC.AccountProperties(asset.GetScope(), account)
+	acctXPubKey, err := asset.Internal().LTC.AccountProperties(GetScope(), account)
 	if err != nil {
 		return false, err
 	}

@@ -97,7 +97,7 @@ func (asset *Asset) CurrentAddress(account int32) (string, error) {
 		return "", utils.ErrLTCNotInitialized
 	}
 
-	addr, err := asset.Internal().LTC.CurrentAddress(uint32(account), asset.GetScope())
+	addr, err := asset.Internal().LTC.CurrentAddress(uint32(account), GetScope())
 	if err != nil {
 		log.Errorf("CurrentAddress error: %v", err)
 		return "", err
@@ -118,7 +118,7 @@ func (asset *Asset) NextAddress(account int32) (string, error) {
 	}
 
 	// NewAddress returns the next external chained address for a wallet.
-	address, err := asset.Internal().LTC.NewAddress(uint32(account), asset.GetScope())
+	address, err := asset.Internal().LTC.NewAddress(uint32(account), GetScope())
 	if err != nil {
 		log.Errorf("NewExternalAddress error: %w", err)
 		return "", err

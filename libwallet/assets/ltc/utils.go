@@ -74,7 +74,7 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, param
 	}
 	defer masterNode.Zero()
 
-	path := []uint32{hardenedKey(asset.GetScope().Purpose), hardenedKey(asset.GetScope().Coin)}
+	path := []uint32{hardenedKey(GetScope().Purpose), hardenedKey(GetScope().Coin)}
 	path = append(path, hardenedKey(account))
 
 	currentKey := masterNode
