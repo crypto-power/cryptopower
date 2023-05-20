@@ -47,7 +47,7 @@ func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 		return nil, utils.ErrBTCNotInitialized
 	}
 
-	resp, err := asset.Internal().BTC.Accounts(asset.GetScope())
+	resp, err := asset.Internal().BTC.Accounts(GetScope())
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (asset *Asset) NextAccount(accountName string) (int32, error) {
 		return -1, errors.New(utils.ErrWalletLocked)
 	}
 
-	accountNumber, err := asset.Internal().BTC.NextAccount(asset.GetScope(), accountName)
+	accountNumber, err := asset.Internal().BTC.NextAccount(GetScope(), accountName)
 	if err != nil {
 		return -1, err
 	}
@@ -211,7 +211,7 @@ func (asset *Asset) RenameAccount(accountNumber int32, newName string) error {
 		return utils.ErrBTCNotInitialized
 	}
 
-	err := asset.Internal().BTC.RenameAccount(asset.GetScope(), uint32(accountNumber), newName)
+	err := asset.Internal().BTC.RenameAccount(GetScope(), uint32(accountNumber), newName)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -235,7 +235,7 @@ func (asset *Asset) AccountNameRaw(accountNumber uint32) (string, error) {
 		return "", utils.ErrBTCNotInitialized
 	}
 
-	return asset.Internal().BTC.AccountName(asset.GetScope(), accountNumber)
+	return asset.Internal().BTC.AccountName(GetScope(), accountNumber)
 }
 
 // AccountNumber returns the account number for the provided account name.
@@ -244,7 +244,7 @@ func (asset *Asset) AccountNumber(accountName string) (int32, error) {
 		return -1, utils.ErrBTCNotInitialized
 	}
 
-	accountNumber, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
+	accountNumber, err := asset.Internal().BTC.AccountNumber(GetScope(), accountName)
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
@@ -254,7 +254,7 @@ func (asset *Asset) HasAccount(accountName string) bool {
 		return false
 	}
 
-	_, err := asset.Internal().BTC.AccountNumber(asset.GetScope(), accountName)
+	_, err := asset.Internal().BTC.AccountNumber(GetScope(), accountName)
 	return err == nil
 }
 

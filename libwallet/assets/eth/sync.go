@@ -3,12 +3,12 @@ package eth
 import "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 
 func (asset *Asset) IsSynced() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("IsSynced"))
+	// log.Error(utils.ErrETHMethodNotImplemented("IsSynced"))
 	return false
 }
 
 func (asset *Asset) IsSyncing() bool {
-	log.Error(utils.ErrETHMethodNotImplemented("IsSyncing"))
+	// log.Error(utils.ErrETHMethodNotImplemented("IsSyncing"))
 	return false
 }
 
