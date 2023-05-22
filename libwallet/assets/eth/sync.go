@@ -38,19 +38,13 @@ const (
 type SyncData struct {
 	mu sync.RWMutex
 
-	syncstarted         uint32
-	syncEnded           uint32
-	txlistening         uint32
-	chainServiceStopped bool
+	syncstarted uint32
+	syncEnded   uint32
 
 	syncing            bool
 	synced             bool
 	isRescan           bool
-	rescanStartTime    time.Time
-	rescanStartHeight  *int32
 	isSyncShuttingDown bool
-
-	wg sync.WaitGroup
 
 	// Listeners
 	syncProgressListeners map[string]sharedW.SyncProgressListener
@@ -421,9 +415,6 @@ func (asset *Asset) SpvSync() (err error) {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
 	}
 
-	// Initialize all progress report data.
-	asset.initSyncProgressData()
-
 	if err := asset.prepareChain(); err != nil {
 		return fmt.Errorf("preparing chain failed: %v", err)
 	}
@@ -439,9 +430,8 @@ func (asset *Asset) SpvSync() (err error) {
 	// Boot up the client and ensure it connects to bootnodes
 	g.Go(asset.stack.Start)
 
-	if err = g.Wait(); err != nil {
-		return err
-	}
+	// Initialize all progress report data.
+	asset.initSyncProgressData()
 
 	// Set wallet synced state to true when chainclient considers itself
 	// as synced with the network.
@@ -454,6 +444,11 @@ func (asset *Asset) SpvSync() (err error) {
 
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listener.OnSyncStarted()
+	}
+
+	// Wait for the node to finish booting.
+	if err = g.Wait(); err != nil {
+		return err
 	}
 
 	go func() {
