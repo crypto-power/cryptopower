@@ -1,121 +1,176 @@
 package lightning
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"path"
+	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/lightninglabs/lndclient"
-	"github.com/lightningnetwork/lnd/lnrpc/verrpc"
+	"github.com/jessevdk/go-flags"
+	"github.com/lightningnetwork/lnd"
+	"github.com/lightningnetwork/lnd/build"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/signal"
 )
 
-// Client models a lightning service.
+// Service represents the lightning service
 type Service struct {
-	*lndclient.GrpcLndServices
+	sync.Mutex
+	started         int32
+	stopped         int32
+	lightningClient lnrpc.LightningClient
+	config          *ServiceConfig
+	startTime       time.Time
+	running         bool
+	quitChan        chan struct{}
+	wg              sync.WaitGroup
+	interceptor     signal.Interceptor
 }
 
-// Type config models a lightning configuration.
-type Config struct {
-	// LndAddress is the network address (host:port) of the lnd node to
-	// connect to.
-	LndAddress string
-
-	// Network is the bitcoin network we expect the lnd node to operate on.
-	Network lndclient.Network
-
-	// MacaroonDir is the directory where all lnd macaroons can be found.
-	// Either this, CustomMacaroonPath, or CustomMacaroonHex should be set,
-	// but only one of them, depending on macaroon preferences.
-	MacaroonDir string
-
-	// CustomMacaroonPath is the full path to a custom macaroon file. Either
-	// this, MacaroonDir, or CustomMacaroonHex should be set, but only one
-	// of them.
-	CustomMacaroonPath string
-
-	// CustomMacaroonHex is a hexadecimal encoded macaroon string. Either
-	// this, MacaroonDir, or CustomMacaroonPath should be set, but only
-	// one of them.
-	CustomMacaroonHex string
-
-	// TLSPath is the path to lnd's TLS certificate file. Only this or
-	// TLSData can be set, not both.
-	TLSPath string
-
-	// TLSData holds the TLS certificate data. Only this or TLSPath can be
-	// set, not both.
-	TLSData string
-
-	// Insecure can be checked if we don't need to use tls, such as if
-	// we're connecting to lnd via a bufconn, then we'll skip verification.
-	Insecure bool
-
-	// SystemCert specifies whether we'll fallback to a system cert pool
-	// for tls.
-	SystemCert bool
-
-	// CheckVersion is the minimum version the connected lnd node needs to
-	// be in order to be compatible. The node will be checked against this
-	// when connecting. If no version is supplied, the default minimum
-	// version will be used.
-	CheckVersion *verrpc.Version
-
-	// Dialer is an optional dial function that can be passed in if the
-	// default lncfg.ClientAddressDialer should not be used.
-	Dialer lndclient.DialerFunc
-
-	// BlockUntilChainSynced denotes that the NewLndServices function should
-	// block until the lnd node is fully synced to its chain backend. This
-	// can take a long time if lnd was offline for a while or if the initial
-	// block download is still in progress.
-	BlockUntilChainSynced bool
-
-	// BlockUntilUnlocked denotes that the NewLndServices function should
-	// block until lnd is unlocked.
-	BlockUntilUnlocked bool
-
-	// CallerCtx is an optional context that can be passed if the caller
-	// would like to be able to cancel the long waits involved in starting
-	// up the client, such as waiting for chain sync to complete when
-	// BlockUntilChainSynced is set to true, or waiting for lnd to be
-	// unlocked when BlockUntilUnlocked is set to true. If a context is
-	// passed in and its Done() channel sends a message, these waits will
-	// be aborted. This allows a client to still be shut down properly.
-	CallerCtx context.Context
-
-	// RPCTimeout is an optional custom timeout that will be used for rpc
-	// calls to lnd. If this value is not set, it will default to 30
-	// seconds.
-	RPCTimeout time.Duration
+// ServiceConfig represents the configuration of the lightning service
+type ServiceConfig struct {
+	WorkingDir string
+	Network    string `long:"network"`
 }
 
-// NewService creates a new lightning service. Returns an error if
-// failed initialization.
-func NewService(config *Config) (*Service, error) {
+// NewService returns an initialized instance of lightning service.
+func NewService(cfg *ServiceConfig) (*Service, error) {
+	return &Service{
+		config: cfg,
+	}, nil
+}
 
-	serviceConfgig := lndclient.LndServicesConfig{
-		LndAddress:            config.LndAddress,
-		Network:               config.Network,
-		MacaroonDir:           config.MacaroonDir,
-		CustomMacaroonPath:    config.CustomMacaroonPath,
-		CustomMacaroonHex:     config.CustomMacaroonHex,
-		TLSPath:               config.TLSPath,
-		TLSData:               config.TLSData,
-		Insecure:              config.Insecure,
-		SystemCert:            config.SystemCert,
-		CheckVersion:          config.CheckVersion,
-		Dialer:                config.Dialer,
-		BlockUntilChainSynced: config.BlockUntilChainSynced,
-		BlockUntilUnlocked:    config.BlockUntilUnlocked,
-		CallerCtx:             config.CallerCtx,
-		RPCTimeout:            config.RPCTimeout,
+// Start is used to start the lightning network service.
+func (s *Service) Start() error {
+	if atomic.SwapInt32(&s.started, 1) == 1 {
+		return errors.New("Service already started")
+	}
+	s.startTime = time.Now()
+
+	if err := s.startService(); err != nil {
+		return fmt.Errorf("failed to start daemon: %v", err)
 	}
 
-	lndServices, err := lndclient.NewLndServices(&serviceConfgig)
+	return nil
+}
+
+func (s *Service) startService() error {
+	s.Lock()
+	defer s.Unlock()
+	if s.running {
+		return errors.New("lightning service already running")
+	}
+
+	s.quitChan = make(chan struct{})
+	//readyChan := make(chan interface{})
+
+	s.wg.Add(1)
+	//go d.notifyWhenReady(readyChan)
+	s.running = true
+
+	go func() {
+		defer func() {
+			defer s.wg.Done()
+			go s.stopService()
+		}()
+
+		interceptor, err := signal.Intercept()
+		if err != nil {
+			fmt.Printf("failed to create signal interceptor %v", err)
+			return
+		}
+		s.interceptor = interceptor
+
+		lndConfig, err := s.createConfig(s.config.WorkingDir, interceptor)
+		if err != nil {
+			fmt.Printf("failed to create config %v", err)
+		}
+
+		implConfig := lndConfig.ImplementationConfig(interceptor)
+
+		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, implConfig, interceptor)
+		if err != nil {
+			fmt.Printf("lnd main function returned with error: %v", err)
+		}
+	}()
+	return nil
+}
+
+func (s *Service) stopService() {
+	s.Lock()
+	defer s.Unlock()
+	if !s.running {
+		return
+	}
+
+	fmt.Println("Lightning service shutting down")
+	close(s.quitChan)
+	s.wg.Wait()
+	s.running = false
+}
+
+// Stop is used to stop the lightning network service.
+func (s *Service) Stop() error {
+	if atomic.SwapInt32(&s.stopped, 1) == 0 {
+		s.stopService()
+	}
+	s.wg.Wait()
+	fmt.Println("lightning service shutdown successfully")
+	return nil
+}
+
+func (s *Service) createConfig(workingDir string, interceptor signal.Interceptor) (*lnd.Config, error) {
+	lndConfig := lnd.DefaultConfig()
+	lndConfig.Bitcoin.Active = true
+	lndConfig.Bitcoin.Node = "neutrino" // Use neutrino node
+	if s.config.Network == "mainnet" {
+		lndConfig.Bitcoin.MainNet = true
+	} else if s.config.Network == "testnet" {
+		lndConfig.Bitcoin.TestNet3 = true
+	} else {
+		lndConfig.Bitcoin.SimNet = true
+	}
+	lndConfig.LndDir = workingDir
+	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
+
+	cfg := lndConfig
+	if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
+		fmt.Printf("Failed to parse config %v", err)
+		return nil, err
+	}
+
+	// This section should be moved to to log file once that is added.s
+	buildLogWriter := build.NewRotatingLogWriter()
+	filename := workingDir + "/logs/bitcoin/" + s.config.Network + "/lnd.log"
+	err := buildLogWriter.InitLogRotator(filename, 10, 3)
+	if err != nil {
+		fmt.Printf("Error initializing log %v", err)
+		return nil, err
+	}
+
+	cfg.LogWriter = buildLogWriter
+	cfg.MinBackoff = time.Second * 20
+	cfg.TLSDisableAutofill = true
+
+	fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
+	err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Service{
-		GrpcLndServices: lndServices,
-	}, nil
+	// Finally, parse the remaining command line options again to ensure
+	// they take precedence.
+	flagParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
+	if _, err := flagParser.Parse(); err != nil {
+		return nil, err
+	}
+
+	conf, err := lnd.ValidateConfig(cfg, interceptor, fileParser, flagParser)
+	if err != nil {
+		fmt.Printf("ValidateConfig returned with error: %v", err)
+		return nil, err
+	}
+	return conf, nil
 }

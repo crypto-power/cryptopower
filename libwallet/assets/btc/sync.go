@@ -620,13 +620,13 @@ func (asset *Asset) SpvSync() (err error) {
 	}
 	if asset.lightningService != nil {
 		// Get chain information.
-		chainInfo, err := asset.lightningService.Client.GetInfo(ctx)
-		if err != nil {
-			return fmt.Errorf("error getting chain information: %s", err)
-		}
+		//chainInfo, err := asset.lightningService.Client.GetInfo(ctx)
+		//if err != nil {
+		//	return fmt.Errorf("error getting chain information: %s", err)
+		//}
 		// Print chain information to show that we are connected.
-		log.Info("Connect to lightning node")
-		log.Infof("lightning node information: %+v\n", chainInfo)
+		//log.Info("Connect to lightning node")
+		//log.Infof("lightning node information: %+v\n", chainInfo)
 	}
 
 	return err

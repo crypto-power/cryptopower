@@ -24,7 +24,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
-	"github.com/lightninglabs/lndclient"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
 )
@@ -537,21 +536,16 @@ func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error
 // StartLighningService connects this wallet to a lighning node.
 func (asset *Asset) StartLightningService() error {
 	log.Info("Starting Lightning...")
-	lndNetwork := lndclient.NetworkMainnet
-	switch asset.chainParams.Name {
-	case chaincfg.TestNet3Params.Name:
-		lndNetwork = lndclient.NetworkTestnet
-	}
 
-	lightningConfig := lightning.Config{
-		LndAddress: asset.lightningConfig.LndAddress,
-		Network:    lndNetwork,
-		TLSPath:    asset.lightningConfig.TLSPath,
+	lightningConfig := lightning.ServiceConfig{
+		WorkingDir: "/home/crux/.cryptopower/lightning",
+		Network:    "testnet",
 	}
 	lightningService, err := lightning.NewService(&lightningConfig)
 	if err != nil {
 		return fmt.Errorf("error starting lightning service: %s", err)
 	}
 	asset.lightningService = lightningService
+	asset.lightningService.Start()
 	return nil
 }
