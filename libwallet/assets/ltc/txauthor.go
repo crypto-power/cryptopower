@@ -450,7 +450,7 @@ func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 func (asset *Asset) changeSource() (*txauthor.ChangeSource, error) {
 	if asset.TxAuthoredInfo.changeAddress == "" {
 		changeAccount := asset.TxAuthoredInfo.sourceAccountNumber
-		address, err := asset.Internal().LTC.NewChangeAddress(changeAccount, asset.GetScope())
+		address, err := asset.Internal().LTC.NewChangeAddress(changeAccount, GetScope())
 		if err != nil {
 			return nil, fmt.Errorf("change address error: %v", err)
 		}

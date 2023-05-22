@@ -96,16 +96,11 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 			return -1, err
 		}
 
-		asset, ok := wallet.(*btc.Asset)
-		if !ok {
-			return -1, fmt.Errorf("invalid asset type")
-		}
-
 		for _, accs := range wAccs.Accounts {
 			if accs.AccountNumber == btc.ImportedAccountNumber {
 				continue
 			}
-			acctXPubKey, err := wallet.Internal().BTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
+			acctXPubKey, err := wallet.Internal().BTC.AccountProperties(btc.GetScope(), uint32(accs.AccountNumber))
 			if err != nil {
 				return -1, err
 			}

@@ -28,7 +28,7 @@ var wAddrMgrBkt = []byte("waddrmgr")
 // GetScope returns the key scope that will be used within the waddrmgr to
 // create an HD chain for deriving all of our required keys. A different
 // scope is used for each specific coin type.
-func (asset *Asset) GetScope() waddrmgr.KeyScope {
+func GetScope() waddrmgr.KeyScope {
 	// Construct the key scope that will be used within the waddrmgr to
 	// create an HD chain for deriving all of our required keys. A different
 	// scope is used for each specific coin type.
@@ -78,7 +78,7 @@ func (asset *Asset) DeriveAccountXpub(seedMnemonic string, account uint32, param
 	}
 	defer masterNode.Zero()
 
-	path := []uint32{hardenedKey(asset.GetScope().Purpose), hardenedKey(asset.GetScope().Coin)}
+	path := []uint32{hardenedKey(GetScope().Purpose), hardenedKey(GetScope().Coin)}
 	path = append(path, hardenedKey(account))
 
 	currentKey := masterNode

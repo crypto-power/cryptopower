@@ -118,16 +118,11 @@ func (mgr *AssetsManager) LTCWalletWithXPub(xpub string) (int, error) {
 			return -1, err
 		}
 
-		asset, ok := wallet.(*ltc.Asset)
-		if !ok {
-			return -1, fmt.Errorf("invalid asset type")
-		}
-
 		for _, accs := range wAccs.Accounts {
 			if accs.AccountNumber == ltc.ImportedAccountNumber {
 				continue
 			}
-			acctXPubKey, err := wallet.Internal().LTC.AccountProperties(asset.GetScope(), uint32(accs.AccountNumber))
+			acctXPubKey, err := wallet.Internal().LTC.AccountProperties(ltc.GetScope(), uint32(accs.AccountNumber))
 			if err != nil {
 				return -1, err
 			}

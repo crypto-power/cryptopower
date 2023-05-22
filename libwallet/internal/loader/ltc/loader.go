@@ -12,7 +12,6 @@ import (
 	"github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
 	"github.com/ltcsuite/ltcwallet/wallet"
-	"github.com/ltcsuite/ltcwallet/walletdb"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
@@ -35,6 +34,7 @@ type ltcLoader struct {
 
 	recoveryWindow uint32
 	dbTimeout      time.Duration
+	keyscope       waddrmgr.KeyScope
 
 	mu sync.RWMutex
 }
@@ -45,6 +45,7 @@ type LoaderConf struct {
 	DBDirPath        string
 	DefaultDBTimeout time.Duration
 	RecoveryWin      uint32
+	Keyscope         waddrmgr.KeyScope
 }
 
 // Confirm that ltcLoader implements the complete asset loader interface.
@@ -52,11 +53,11 @@ var _ loader.AssetLoader = (*ltcLoader)(nil)
 
 // NewLoader constructs a LTC Loader.
 func NewLoader(cfg *LoaderConf) loader.AssetLoader {
-
 	return &ltcLoader{
 		chainParams:    cfg.ChainParams,
 		dbTimeout:      cfg.DefaultDBTimeout,
 		recoveryWindow: cfg.RecoveryWin,
+		keyscope:       cfg.Keyscope,
 
 		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
@@ -154,35 +155,19 @@ func (l *ltcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 		return nil, err
 	}
 
-	// Newly created watch-only wallets is missing scope information.
-	// Update wallet DB with scope data.
-	err = walletdb.Update(wal.Database(), func(tx walletdb.ReadWriteTx) error {
-		ns := tx.ReadWriteBucket([]byte("waddrmgr"))
-		for scope, schema := range waddrmgr.ScopeAddrMap {
-			_, err := wal.Manager.NewScopedKeyManager(
-				ns, scope, schema,
-			)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Create extended key from the xpub string.
 	extendedKety, err := hdkeychain.NewKeyFromString(params.ExtendedPubKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// Import account into the newly created watch-only wallet.
-	// The first argument to ImportAccount {default} will be the account when imported.
-	// It doesn't matter what the account name use to be on a previous wallet, it'll be imported as default.
-	addrType := waddrmgr.WitnessPubKey
-	_, err = wal.ImportAccount("default", extendedKety, extendedKety.ParentFingerprint(), &addrType)
+	// ImportAccountWithScope imports an account into the newly created watch-only wallet
+	// using the supported scope. The first parameter "default" will be the imported account's
+	// name, It doesn't matter what the account name use to be on a previous wallet.
+	//  Since the MasterFingerPrint is not provided when inputing the extended
+	// public key, 0 is set instead.
+	addrSchema := waddrmgr.ScopeAddrMap[l.keyscope]
+	_, err = wal.ImportAccountWithScope("default", extendedKety, 0, l.keyscope, addrSchema)
 	if err != nil {
 		return nil, err
 	}
