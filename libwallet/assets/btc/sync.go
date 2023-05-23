@@ -611,24 +611,6 @@ func (asset *Asset) SpvSync() (err error) {
 			log.Warn("error occured when starting BTC sync: ", err)
 		}
 	}()
-
-	// This function should probably be called from the ui by,
-	// it is called here for the ease of testing purposes.
-	err = asset.StartLightningService()
-	if err != nil {
-		return err
-	}
-	if asset.lightningService != nil {
-		// Get chain information.
-		//chainInfo, err := asset.lightningService.Client.GetInfo(ctx)
-		//if err != nil {
-		//	return fmt.Errorf("error getting chain information: %s", err)
-		//}
-		// Print chain information to show that we are connected.
-		//log.Info("Connect to lightning node")
-		//log.Infof("lightning node information: %+v\n", chainInfo)
-	}
-
 	return err
 }
 

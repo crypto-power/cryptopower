@@ -543,8 +543,3 @@ func decodeAddress(s string, params *chaincfg.Params) (ltcutil.Address, error) {
 	}
 	return addr, nil
 }
-
-// StartLighningService connects this wallet to a lighning node.
-func (asset *Asset) StartLightningService() error {
-	return utils.ErrLTCNoLightningSupport
-}

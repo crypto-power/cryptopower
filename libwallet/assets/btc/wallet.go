@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,7 +12,6 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/lightning"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
@@ -64,13 +62,6 @@ type Asset struct {
 	syncData                        *SyncData
 	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
 	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
-	lightningService                *lightning.Service
-	lightningConfig                 *lightningConfig
-}
-
-type lightningConfig struct {
-	LndAddress string
-	TLSPath    string
 }
 
 const (
@@ -116,10 +107,6 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 
 	if err := btcWallet.prepareChain(); err != nil {
 		return nil, err
-	}
-	btcWallet.lightningConfig = &lightningConfig{
-		LndAddress: params.LightningNodeAddr,
-		TLSPath:    params.LightningTLSPath,
 	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
@@ -215,10 +202,6 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 	if err := btcWallet.prepareChain(); err != nil {
 		return nil, err
 	}
-	btcWallet.lightningConfig = &lightningConfig{
-		LndAddress: params.LightningNodeAddr,
-		TLSPath:    params.LightningTLSPath,
-	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
 
@@ -258,10 +241,6 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 
 	if err := btcWallet.prepareChain(); err != nil {
 		return nil, err
-	}
-	btcWallet.lightningConfig = &lightningConfig{
-		LndAddress: params.LightningNodeAddr,
-		TLSPath:    params.LightningTLSPath,
 	}
 
 	btcWallet.SetNetworkCancelCallback(btcWallet.SafelyCancelSync)
@@ -531,21 +510,4 @@ func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error
 	}
 
 	return acctXPubKey.AccountPubKey.String() == xPub, nil
-}
-
-// StartLighningService connects this wallet to a lighning node.
-func (asset *Asset) StartLightningService() error {
-	log.Info("Starting Lightning...")
-
-	lightningConfig := lightning.ServiceConfig{
-		WorkingDir: "/home/crux/.cryptopower/lightning",
-		Network:    "testnet",
-	}
-	lightningService, err := lightning.NewService(&lightningConfig)
-	if err != nil {
-		return fmt.Errorf("error starting lightning service: %s", err)
-	}
-	asset.lightningService = lightningService
-	asset.lightningService.Start()
-	return nil
 }

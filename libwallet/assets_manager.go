@@ -10,6 +10,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
 	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
@@ -55,14 +56,15 @@ type AssetsManager struct {
 	cancelFuncs  []context.CancelFunc
 	chainsParams utils.ChainsParams
 
-	Politeia        *politeia.Politeia
-	InstantSwap     *instantswap.InstantSwap
-	ExternalService *ext.Service
+	Politeia         *politeia.Politeia
+	InstantSwap      *instantswap.InstantSwap
+	ExternalService  *ext.Service
+	LightningService *lightning.Service
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
 // to initialize the rest of the other fields.
-func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType, lNodeAddr string, lNodeTlsPath string) (*AssetsManager, error) {
+func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.NetworkType, lWorkingDir string) (*AssetsManager, error) {
 	dcrChainParams, err := initializeDCRWalletParameters(netType)
 	if err != nil {
 		log.Errorf("error initializing DCR parameters: %s", err.Error())
@@ -88,12 +90,10 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 	}
 
 	params := &sharedW.InitParams{
-		DbDriver:          dbDriver,
-		RootDir:           rootDir,
-		NetType:           netType,
-		LogDir:            logDir,
-		LightningNodeAddr: lNodeAddr,
-		LightningTLSPath:  lNodeTlsPath,
+		DbDriver: dbDriver,
+		RootDir:  rootDir,
+		NetType:  netType,
+		LogDir:   logDir,
 	}
 
 	mgr := &AssetsManager{
@@ -119,7 +119,7 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 }
 
 // NewAssetsManager creates a new AssetsManager instance.
-func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType utils.NetworkType, lNodeAddr string, lNodeTlsPath string) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType utils.NetworkType, lWokingDir string) (*AssetsManager, error) {
 	errors.Separator = ":: "
 
 	// Create a root dir that has the path up the network folder.
@@ -129,7 +129,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	}
 
 	// validate the network type before proceeding to initialize the othe fields.
-	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType, lNodeAddr, lNodeTlsPath)
+	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType, lWokingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +164,25 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	if err != nil {
 		return nil, err
 	}
+
+	// Create lightning working directory.
+	lWokingDir = filepath.Join(rootDir, lWokingDir)
+	if err := os.MkdirAll(lWokingDir, utils.UserFilePerm); err != nil {
+		return nil, errors.Errorf("failed to create lightning dir: %v", err)
+	}
+
+	// initialize lightning configuration
+	lightningConfig := lightning.ServiceConfig{
+		WorkingDir: lWokingDir,
+		Network:    string(mgr.NetType()),
+	}
+	// Initialize the lightning service.
+	lightningService, err := lightning.NewService(&lightningConfig)
+	if err != nil {
+		log.Infof("error starting lightning service: %s", err)
+	}
+	mgr.LightningService = lightningService
+	go mgr.LightningService.Start() // start lightning service
 
 	mgr.params.DB = mwDB
 	mgr.Politeia = politeia

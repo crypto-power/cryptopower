@@ -68,7 +68,7 @@ func main() {
 	}
 
 	logDir := filepath.Join(cfg.LogDir, net)
-	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logDir, buildDate, cfg.LightningNodeAddr, cfg.LightningNodeTLSPath)
+	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logDir, buildDate, cfg.LightningDir)
 	if err != nil {
 		log.Error(err)
 		return

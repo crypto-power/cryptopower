@@ -186,8 +186,3 @@ func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, er
 func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
 	return false, utils.ErrETHMethodNotImplemented("VerifyMessage")
 }
-
-// StartLighningService connects this wallet to a lighning node.
-func (asset *Asset) StartLightningService() error {
-	return utils.ErrETHNoLightningSupport
-}

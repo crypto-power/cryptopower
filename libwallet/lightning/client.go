@@ -2,6 +2,10 @@ package lightning
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
+	"io/ioutil"
+	"path"
 	"time"
 
 	"github.com/lightninglabs/lndclient"
@@ -9,9 +13,18 @@ import (
 )
 
 // Client models a lightning service.
-type LightningClient struct {
+type Client struct {
 	*lndclient.GrpcLndServices
 }
+
+const (
+	defaultTLSCertFilename  = "tls.cert"
+	defaultMacaroonFilename = "admin.macaroon"
+	defaultDataDir          = "data"
+	defaultChainSubDir      = "chain"
+	defaultRPCPort          = "10009"
+	defaultRPCHostPort      = "localhost:" + defaultRPCPort
+)
 
 // Type config models a lightning configuration.
 type ClientConfig struct {
@@ -90,9 +103,8 @@ type ClientConfig struct {
 
 // NewService creates a new lightning service. Returns an error if
 // failed initialization.
-func NewClient(config *ClientConfig) (*LightningClient, error) {
-
-	serviceConfgig := lndclient.LndServicesConfig{
+func NewClient(config *ClientConfig) (*Client, error) {
+	clientConfgig := lndclient.LndServicesConfig{
 		LndAddress:            config.LndAddress,
 		Network:               config.Network,
 		MacaroonDir:           config.MacaroonDir,
@@ -110,12 +122,38 @@ func NewClient(config *ClientConfig) (*LightningClient, error) {
 		RPCTimeout:            config.RPCTimeout,
 	}
 
-	lndServices, err := lndclient.NewLndServices(&serviceConfgig)
+	lndServices, err := lndclient.NewLndServices(&clientConfgig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &LightningClient{
+	return &Client{
 		GrpcLndServices: lndServices,
 	}, nil
+}
+
+func buildClienConfig(config *ServiceConfig) *ClientConfig {
+	clientConfig := &ClientConfig{}
+	if config.Network == "mainnet" {
+		clientConfig.Network = lndclient.NetworkMainnet
+	} else if config.Network == "testnet" {
+		clientConfig.Network = lndclient.NetworkTestnet
+	} else {
+		clientConfig.Network = lndclient.NetworkRegtest
+	}
+
+	clientConfig.TLSPath = path.Join(config.WorkingDir, defaultTLSCertFilename)
+	macPath := path.Join(config.WorkingDir, defaultDataDir, defaultChainSubDir, "bitcoin",
+		config.Network, defaultMacaroonFilename)
+
+	macBytes, err := ioutil.ReadFile(macPath)
+	if err != nil {
+		fmt.Printf("Error reading macaroon %v \n", err)
+	}
+
+	macHex := hex.EncodeToString(macBytes)
+	clientConfig.CustomMacaroonHex = macHex
+	clientConfig.LndAddress = defaultRPCHostPort
+
+	return clientConfig
 }

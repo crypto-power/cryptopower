@@ -38,13 +38,12 @@ type WalletConfig struct {
 // InitParams defines the basic parameters required to instantiate any
 // wallet interface.
 type InitParams struct {
-	RootDir           string
-	NetType           utils.NetworkType
-	DB                *storm.DB
-	DbDriver          string
-	LogDir            string
-	LightningNodeAddr string
-	LightningTLSPath  string
+	RootDir             string
+	NetType             utils.NetworkType
+	DB                  *storm.DB
+	DbDriver            string
+	LogDir              string
+	LightningWorkingDir string
 }
 
 // WalletAuthInfo defines the complete information required to either create a

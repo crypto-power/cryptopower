@@ -109,6 +109,4 @@ type Asset interface {
 	Broadcast(passphrase, label string) ([]byte, error)
 	EstimateFeeAndSize() (*TxFeeAndSize, error)
 	IsUnsignedTxExist() bool
-
-	StartLightningService() error
 }

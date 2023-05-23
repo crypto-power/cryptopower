@@ -17,43 +17,39 @@ import (
 )
 
 const (
-	defaultNetwork           = "mainnet"
-	defaultConfigFileName    = "cryptopower.conf"
-	defaultLogFilename       = "cryptopower.log"
-	defaultLogDirname        = "logs"
-	defaultLightningNodeAddr = "127.0.0.1:10009" // default to localhost testnet port
+	defaultNetwork        = "mainnet"
+	defaultConfigFileName = "cryptopower.conf"
+	defaultLogFilename    = "cryptopower.log"
+	defaultLogDirname     = "logs"
+	defaultLightningDir   = "lightning"
 )
 
 var (
-	defaultHomeDir              = dcrutil.AppDataDir("cryptopower", false)
-	defaultConfigFilename       = filepath.Join(defaultHomeDir, defaultConfigFileName)
-	defaultLogDir               = filepath.Join(defaultHomeDir, defaultLogDirname)
-	userHomeDir, _              = os.UserHomeDir()
-	defaultLightningNodeTLSPath = userHomeDir + "/.lnd/tls.cert"
+	defaultHomeDir        = dcrutil.AppDataDir("cryptopower", false)
+	defaultConfigFilename = filepath.Join(defaultHomeDir, defaultConfigFileName)
+	defaultLogDir         = filepath.Join(defaultHomeDir, defaultLogDirname)
 )
 
 type config struct {
-	Network              string `long:"network" description:"Network to use"`
-	HomeDir              string `long:"appdata" description:"Directory where the app configuration file and wallet data is stored"`
-	ConfigFile           string `long:"configfile" description:"Filename of the config file in the app directory"`
-	ShowVersion          bool   `short:"V" long:"version" description:"Display version information and exit"`
-	MaxLogZips           int    `long:"max-log-zips" description:"The number of zipped log files created by the log rotator to be retained. Setting to 0 will keep all."`
-	LogDir               string `long:"logdir" description:"Directory to log output."`
-	DebugLevel           string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}"`
-	Quiet                bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
-	SpendUnconfirmed     bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
-	Profile              int    `long:"profile" description:"Runs local web server for profiling"`
-	LightningNodeAddr    string `long:"lnodeaddr" description:"Lightning node address in addr:port format"`
-	LightningNodeTLSPath string `long:"lnodetlspath" description:"Path to lightning node tls cert"`
+	Network          string `long:"network" description:"Network to use"`
+	HomeDir          string `long:"appdata" description:"Directory where the app configuration file and wallet data is stored"`
+	ConfigFile       string `long:"configfile" description:"Filename of the config file in the app directory"`
+	ShowVersion      bool   `short:"V" long:"version" description:"Display version information and exit"`
+	MaxLogZips       int    `long:"max-log-zips" description:"The number of zipped log files created by the log rotator to be retained. Setting to 0 will keep all."`
+	LogDir           string `long:"logdir" description:"Directory to log output."`
+	DebugLevel       string `short:"d" long:"debuglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}"`
+	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
+	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
+	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
+	LightningDir     string `long:"lightningdir" description:"Lightning work directory"`
 }
 
 var defaultConfig = config{
-	Network:              defaultNetwork,
-	HomeDir:              defaultHomeDir,
-	ConfigFile:           defaultConfigFilename,
-	LogDir:               defaultLogDir,
-	LightningNodeAddr:    defaultLightningNodeAddr,
-	LightningNodeTLSPath: defaultLightningNodeTLSPath,
+	Network:      defaultNetwork,
+	HomeDir:      defaultHomeDir,
+	ConfigFile:   defaultConfigFilename,
+	LogDir:       defaultLogDir,
+	LightningDir: defaultLightningDir,
 }
 
 // validLogLevel returns whether or not logLevel is a valid debug log level.

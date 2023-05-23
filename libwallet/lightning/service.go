@@ -1,182 +1,64 @@
 package lightning
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"path"
-	"sync"
-	"sync/atomic"
 	"time"
-
-	"github.com/jessevdk/go-flags"
-	"github.com/lightningnetwork/lnd"
-	"github.com/lightningnetwork/lnd/build"
-	"github.com/lightningnetwork/lnd/lnrpc"
-	"github.com/lightningnetwork/lnd/signal"
 )
 
-// Service represents the lightning service
 type Service struct {
-	sync.Mutex
-	started         int32
-	stopped         int32
-	lightningClient lnrpc.LightningClient
-	config          *ServiceConfig
-	startTime       time.Time
-	running         bool
-	quitChan        chan struct{}
-	wg              sync.WaitGroup
-	interceptor     signal.Interceptor
+	daemon *Daemon
+	client *Client
+	config *ServiceConfig
 }
 
-// ServiceConfig represents the configuration of the lightning service
+// ServiceConfig represents the configuration of the lightning service.
 type ServiceConfig struct {
 	WorkingDir string
-	Network    string `long:"network"`
+	Network    string
 }
 
-// NewService returns an initialized instance of lightning service.
-func NewService(cfg *ServiceConfig) (*Service, error) {
+func NewService(config *ServiceConfig) (*Service, error) {
+	dm := NewDaemon(config)
 	return &Service{
-		config: cfg,
+		daemon: dm,
+		config: config,
 	}, nil
 }
 
-// Start is used to start the lightning network service.
 func (s *Service) Start() error {
-	if atomic.SwapInt32(&s.started, 1) == 1 {
-		return errors.New("Service already started")
-	}
-	s.startTime = time.Now()
-
-	if err := s.startService(); err != nil {
-		return fmt.Errorf("failed to start lightning service: %v", err)
-	}
-
-	return nil
-}
-
-func (s *Service) startService() error {
-	s.Lock()
-	defer s.Unlock()
-	if s.running {
-		return errors.New("lightning service already running")
-	}
-
-	s.quitChan = make(chan struct{})
-	//readyChan := make(chan interface{})
-
-	s.wg.Add(1)
-	//go d.notifyWhenReady(readyChan)
-	s.running = true
-
 	go func() {
-		defer func() {
-			defer s.wg.Done()
-			go s.stopService()
-		}()
+		go s.daemon.Start()
+		ticker := time.NewTicker(time.Second * 10)
 
-		interceptor, err := signal.Intercept()
+		// Wait for the daemon to start
+		// TODO: write a listener outside that doesn't block and doesn't use lightning client.
+		time.Sleep(120 * time.Second)
+
+		// TODO: This will fail because the daemon don't have a lightning wallet at this point, so admin macaroon
+		// is not created. Wallet should be created before calling this function.
+		cl, err := NewClient(buildClienConfig(s.config))
 		if err != nil {
-			fmt.Printf("failed to create signal interceptor %v", err)
-			return
+			fmt.Printf("Error creating client %+v \n", err)
 		}
-		s.interceptor = interceptor
-
-		lndConfig, err := s.createConfig(s.config.WorkingDir, interceptor)
-		if err != nil {
-			fmt.Printf("failed to create config %v", err)
-		}
-
-		implConfig := lndConfig.ImplementationConfig(interceptor)
-
-		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, implConfig, interceptor)
-		if err != nil {
-			fmt.Printf("lnd main function returned with error: %v", err)
+		s.client = cl
+		// poll and fetch node information to ascertain connectivity.
+		for {
+			select {
+			case <-ticker.C:
+				if s.client != nil {
+					state, err := s.client.Client.GetInfo(context.Background())
+					if err != nil {
+						fmt.Printf("Error getting state %s: \n", err)
+						continue
+					}
+					fmt.Printf("State: %+v\n", state)
+				}
+			default:
+				continue
+			}
 		}
 	}()
+
 	return nil
-}
-
-func (s *Service) stopService() {
-	s.Lock()
-	defer s.Unlock()
-	if !s.running {
-		return
-	}
-
-	fmt.Println("Lightning service shutting down")
-	close(s.quitChan)
-	s.wg.Wait()
-	s.running = false
-}
-
-// Stop is used to stop the lightning network service.
-func (s *Service) Stop() error {
-	if atomic.SwapInt32(&s.stopped, 1) == 0 {
-		s.stopService()
-	}
-	s.wg.Wait()
-	fmt.Println("lightning service shutdown successfully")
-	return nil
-}
-
-func (s *Service) createConfig(workingDir string, interceptor signal.Interceptor) (*lnd.Config, error) {
-	lndConfig := lnd.DefaultConfig()
-	lndConfig.Bitcoin.Active = true
-	lndConfig.Bitcoin.Node = "neutrino" // Use neutrino node
-	if s.config.Network == "mainnet" {
-		lndConfig.Bitcoin.MainNet = true
-	} else if s.config.Network == "testnet" {
-		lndConfig.Bitcoin.TestNet3 = true
-	} else {
-		lndConfig.Bitcoin.SimNet = true
-	}
-	lndConfig.LndDir = workingDir
-	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
-
-	cfg := lndConfig
-	// If a config file exists parse it.
-	if lnrpc.FileExists(lndConfig.ConfigFile) {
-		if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
-			fmt.Printf("Failed to parse config %v", err)
-			return nil, err
-		}
-	}
-
-	// This section should be moved to log file once that is added.s
-	buildLogWriter := build.NewRotatingLogWriter()
-	filename := workingDir + "/logs/bitcoin/" + s.config.Network + "/lnd.log"
-	err := buildLogWriter.InitLogRotator(filename, 10, 3)
-	if err != nil {
-		fmt.Printf("Error initializing log %v", err)
-		return nil, err
-	}
-
-	cfg.LogWriter = buildLogWriter
-	cfg.MinBackoff = time.Second * 20
-	cfg.TLSDisableAutofill = true
-
-	fileParser := &flags.Parser{}
-	if lnrpc.FileExists(lndConfig.ConfigFile) {
-		fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
-		err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Finally, parse the remaining command line options again to ensure
-	// they take precedence.
-	flagParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
-	if _, err := flagParser.Parse(); err != nil {
-		return nil, err
-	}
-
-	conf, err := lnd.ValidateConfig(cfg, interceptor, fileParser, flagParser)
-	if err != nil {
-		fmt.Printf("ValidateConfig returned with error: %v", err)
-		return nil, err
-	}
-	return conf, nil
 }
