@@ -3,7 +3,7 @@ module code.cryptopower.dev/group/cryptopower
 go 1.19
 
 require (
-	decred.org/dcrwallet/v2 v2.0.11
+	decred.org/dcrwallet/v2 v2.1.1
 	gioui.org v0.0.0-20230118222818-e0cf570339bd
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -60,6 +60,7 @@ require (
 	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/decred/dcrd/dcrutil/v3 v3.0.0
+	github.com/decred/dcrlnd v0.3.8
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/lightninglabs/lndclient v0.16.0-11
 	github.com/lightninglabs/neutrino v0.15.0
@@ -75,6 +76,7 @@ require (
 	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
+	google.golang.org/appengine v1.6.7
 )
 
 require (
@@ -88,8 +90,7 @@ require (
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/NebulousLabs/fastrand v0.0.0-20181203155948-6fb6489aac4e // indirect
-	github.com/NebulousLabs/go-upnp v0.0.0-20180202185039-29b680b06c82 // indirect
+	github.com/NebulousLabs/go-upnp v0.0.0-20181203152547-b32978b8ccbf // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/Yawning/aez v0.0.0-20211027044916-e49e68abd344 // indirect
 	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
@@ -110,16 +111,23 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v0.0.0-20230209160836-829675f94811 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
+	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/base58 v1.0.4 // indirect
+	github.com/decred/dcrd v1.2.1-0.20220120180802-74a67dce2480 // indirect
+	github.com/decred/dcrd/bech32 v1.1.2 // indirect
 	github.com/decred/dcrd/blockchain/stake/v3 v3.0.0 // indirect
+	github.com/decred/dcrd/blockchain/v4 v4.0.2 // indirect
 	github.com/decred/dcrd/certgen v1.1.1 // indirect
+	github.com/decred/dcrd/chaincfg v1.5.2 // indirect
+	github.com/decred/dcrd/connmgr v1.1.0 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.1-0.20200921185235-6d75c7ec1199 // indirect
 	github.com/decred/dcrd/crypto/ripemd160 v1.0.1 // indirect
 	github.com/decred/dcrd/database/v2 v2.0.2 // indirect
@@ -129,9 +137,11 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0 // indirect
 	github.com/decred/dcrd/gcs/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/lru v1.1.1 // indirect
+	github.com/decred/dcrd/rpcclient/v7 v7.0.0 // indirect
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
+	github.com/decred/lightning-onion/v4 v4.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -148,7 +158,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
@@ -204,6 +214,7 @@ require (
 	github.com/ltcsuite/ltcd/ltcutil/psbt v1.1.0-1 // indirect
 	github.com/ltcsuite/neutrino v0.13.2 // indirect
 	github.com/marcopeereboom/sbox v1.1.0 // indirect
+	github.com/matheusd/etcd v0.5.0-alpha.5.0.20230215150709-cb359727eca4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
@@ -249,6 +260,8 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
+	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
+	gitlab.com/NebulousLabs/go-upnp v0.0.0-20181011194642-3a71999ed0d3 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	go.etcd.io/etcd/api/v3 v3.5.7 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.7 // indirect
@@ -277,7 +290,7 @@ require (
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/errgo.v1 v1.0.1 // indirect
-	gopkg.in/macaroon-bakery.v2 v2.0.1 // indirect
+	gopkg.in/macaroon-bakery.v2 v2.1.0 // indirect
 	gopkg.in/macaroon.v2 v2.1.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

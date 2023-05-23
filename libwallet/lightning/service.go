@@ -50,7 +50,7 @@ func (s *Service) Start() error {
 	s.startTime = time.Now()
 
 	if err := s.startService(); err != nil {
-		return fmt.Errorf("failed to start daemon: %v", err)
+		return fmt.Errorf("failed to start lightning service: %v", err)
 	}
 
 	return nil
@@ -136,12 +136,15 @@ func (s *Service) createConfig(workingDir string, interceptor signal.Interceptor
 	lndConfig.ConfigFile = path.Join(workingDir, "lnd.conf")
 
 	cfg := lndConfig
-	if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
-		fmt.Printf("Failed to parse config %v", err)
-		return nil, err
+	// If a config file exists parse it.
+	if lnrpc.FileExists(lndConfig.ConfigFile) {
+		if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
+			fmt.Printf("Failed to parse config %v", err)
+			return nil, err
+		}
 	}
 
-	// This section should be moved to to log file once that is added.s
+	// This section should be moved to log file once that is added.s
 	buildLogWriter := build.NewRotatingLogWriter()
 	filename := workingDir + "/logs/bitcoin/" + s.config.Network + "/lnd.log"
 	err := buildLogWriter.InitLogRotator(filename, 10, 3)
@@ -154,10 +157,13 @@ func (s *Service) createConfig(workingDir string, interceptor signal.Interceptor
 	cfg.MinBackoff = time.Second * 20
 	cfg.TLSDisableAutofill = true
 
-	fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
-	err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
-	if err != nil {
-		return nil, err
+	fileParser := &flags.Parser{}
+	if lnrpc.FileExists(lndConfig.ConfigFile) {
+		fileParser := flags.NewParser(&cfg, flags.IgnoreUnknown)
+		err = flags.NewIniParser(fileParser).ParseFile(lndConfig.ConfigFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Finally, parse the remaining command line options again to ensure
