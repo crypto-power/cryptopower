@@ -61,10 +61,8 @@ func (d *Daemon) startDaemon() error {
 	}
 
 	d.quitChan = make(chan struct{})
-	readyChan := make(chan interface{})
 
 	d.wg.Add(1)
-	go d.notifyWhenReady(readyChan)
 	d.running = true
 
 	go func() {
@@ -75,21 +73,21 @@ func (d *Daemon) startDaemon() error {
 
 		interceptor, err := signal.Intercept()
 		if err != nil {
-			fmt.Printf("failed to create signal interceptor %v", err)
+			log.Infof("failed to create signal interceptor %v", err)
 			return
 		}
 		d.interceptor = interceptor
 
 		lndConfig, err := d.createConfig(d.config.WorkingDir, interceptor)
 		if err != nil {
-			fmt.Printf("failed to create config %v", err)
+			log.Infof("failed to create config %v", err)
 		}
 
 		implConfig := lndConfig.ImplementationConfig(interceptor)
 
 		err = lnd.Main(lndConfig, lnd.ListenerCfg{}, implConfig, interceptor)
 		if err != nil {
-			fmt.Printf("lnd main function returned with error: %v", err)
+			log.Infof("lnd main function returned with error: %v", err)
 		}
 	}()
 	return nil
@@ -114,17 +112,8 @@ func (d *Daemon) Stop() error {
 		d.stopDaemon()
 	}
 	d.wg.Wait()
-	fmt.Println("lightning daemon shutdown successfully")
+	log.Infof("lightning daemon shutdown successfully")
 	return nil
-}
-
-func (d *Daemon) notifyWhenReady(readyChan chan interface{}) {
-	defer d.wg.Done()
-	select {
-	case <-readyChan:
-
-	case <-d.quitChan:
-	}
 }
 
 // createConfig creates the daemon config configuration by parsing config file/cmd options or using defaults.
@@ -146,7 +135,7 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 	// If a config file exists parse it.
 	if lnrpc.FileExists(lndConfig.ConfigFile) {
 		if err := flags.IniParse(lndConfig.ConfigFile, &cfg); err != nil {
-			fmt.Printf("Failed to parse config %v", err)
+			log.Infof("Failed to parse config %v", err)
 			return nil, err
 		}
 	}
@@ -156,7 +145,7 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 	filename := workingDir + "/logs/bitcoin/" + d.config.Network + "/lnd.log"
 	err := buildLogWriter.InitLogRotator(filename, 10, 3)
 	if err != nil {
-		fmt.Printf("Error initializing log %v", err)
+		log.Infof("Error initializing log %v", err)
 		return nil, err
 	}
 
@@ -184,7 +173,7 @@ func (d *Daemon) createConfig(workingDir string, interceptor signal.Interceptor)
 
 	conf, err := lnd.ValidateConfig(cfg, interceptor, fileParser, flagParser)
 	if err != nil {
-		fmt.Printf("ValidateConfig returned with error: %v", err)
+		log.Infof("ValidateConfig returned with error: %v", err)
 		return nil, err
 	}
 	return conf, nil

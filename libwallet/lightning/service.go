@@ -39,7 +39,7 @@ func (s *Service) Start() error {
 		// is not created. Wallet should be created before calling this function.
 		cl, err := NewClient(buildClienConfig(s.config))
 		if err != nil {
-			fmt.Printf("Error creating client %+v \n", err)
+			log.Infof("Error creating client %+v \n", err)
 		}
 		s.client = cl
 		// poll and fetch node information to ascertain connectivity.
@@ -49,7 +49,7 @@ func (s *Service) Start() error {
 				if s.client != nil {
 					state, err := s.client.Client.GetInfo(context.Background())
 					if err != nil {
-						fmt.Printf("Error getting state %s: \n", err)
+						log.Infof("Error getting state %s: \n", err)
 						continue
 					}
 					fmt.Printf("State: %+v\n", state)

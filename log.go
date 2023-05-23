@@ -17,6 +17,7 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"code.cryptopower.dev/group/cryptopower/libwallet/lightning"
 	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
@@ -110,6 +111,7 @@ var (
 	btcLog       = btcBackendLog.Logger("BTC")
 	ltcLog       = ltcBackendLog.Logger("LTC")
 	ethLog       = ethBackendLog.Logger("ETH")
+	lightningLog = backendLog.Logger("LGHT")
 )
 
 // Initialize package-global logger variables.
@@ -152,6 +154,7 @@ func init() {
 	spv.UseLogger(dcrLog)
 	instantswap.UseLogger(sharedWLog)
 	eth.UseLogger(ethLog)
+	lightning.UseLogger(lightningLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
@@ -175,6 +178,7 @@ var subsystemSLoggers = map[string]slog.Logger{
 	"WLLT": dcrWalletLog,
 	"SHWL": sharedWLog,
 	"ETH":  ethLog,
+	"LGHT": lightningLog,
 }
 
 var subsystemBLoggers = map[string]btclog.Logger{
