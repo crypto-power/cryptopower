@@ -38,19 +38,6 @@ type Asset struct {
 
 	client *les.LightEthereum
 
-	// This field has been added to cache the expensive call to GetTransactions.
-	// If the best block height hasn't changed there is no need to make another
-	// expensive GetTransactions call.
-	// txs txCache
-
-	// This fields helps to prevent unnecessary API calls if a new block hasn't
-	// been introduced.
-	// fees feeEstimateCache
-
-	// rescanStarting is set while reloading the wallet and dropping
-	// transactions from the wallet db.
-	rescanStarting uint32 // atomic
-
 	notificationListenersMu sync.RWMutex
 
 	syncData                        *SyncData

@@ -131,8 +131,7 @@ func (asset *Asset) mempoolTransactionNotification(transaction string) {
 }
 
 // publishTransactionConfirmed publishes all the relevant tx identified in a filtered
-// block. A valid list of addresses associated with the current block need to
-// be provided.
+// block.
 func (asset *Asset) publishTransactionConfirmed(txHash string, blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()

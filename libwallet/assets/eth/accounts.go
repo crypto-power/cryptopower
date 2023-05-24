@@ -7,6 +7,7 @@ import (
 
 func (asset *Asset) ContainsDiscoveredAccounts() bool {
 	if !asset.WalletOpened() {
+		log.Warnf("discovered accounts check failed: %v", utils.ErrETHNotInitialized)
 		return false
 	}
 	return len(asset.Internal().ETH.Keystore.Accounts()) > 0

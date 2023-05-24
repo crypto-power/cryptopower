@@ -9,6 +9,8 @@ import (
 	"github.com/btcsuite/btclog"
 )
 
+// btclog is used because ltc in a clone of btc.
+
 // log is a logger that is initialized with no output filters.  This
 // means the package will not perform any logging by default until the caller
 // requests it.

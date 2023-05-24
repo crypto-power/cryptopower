@@ -113,10 +113,10 @@ var (
 
 	vspcLog     = backendLog.Logger("VSPC")
 	politeiaLog = backendLog.Logger("POLT")
-	btcLoader   = btcBackendLog.Logger("BTC-L")
-	dcrLoader   = dcrBackendLog.Logger("DCR-L")
-	ltcLoader   = ltcBackendLog.Logger("LTC-L")
-	ethLoader   = ethBackendLog.Logger("ETH-L")
+	btcLoader   = btcBackendLog.Logger("BTC-LDR")
+	dcrLoader   = dcrBackendLog.Logger("DCR-LDR")
+	ltcLoader   = ltcBackendLog.Logger("LTC-LDR")
+	ethLoader   = ethBackendLog.Logger("ETH-LDR")
 )
 
 // Initialize package-global logger variables.
@@ -164,8 +164,8 @@ func init() {
 	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
 
-	// Because internal folders cannot be accessed directly, there logger is
-	// sent the file within the common folder with the internal folder.
+	// Because an internal folder cannot be accessed directly, their loggers are
+	// sent to a file within a common folder shared with the internal folder.
 	libwallet.UseLoggers(dlwlLog, dcrLoader, ethLoader, vspcLog, politeiaLog, btcLoader, ltcLoader)
 }
 

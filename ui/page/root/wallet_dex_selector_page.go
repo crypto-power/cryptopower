@@ -123,7 +123,7 @@ func (pg *WalletDexServerSelector) OnNavigatedTo() {
 	pg.loadWallets()
 	pg.loadBadWallets()
 
-	// Initiate the auto sync for all the wallets with set autosync.
+	// Initiate the auto sync for all the wallets with autosync enabled.
 	for _, wallet := range pg.WL.AllSortedWalletList() {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			pg.startSyncing(wallet, func(isUnlock bool) {})

@@ -282,14 +282,21 @@ func (asset *Asset) IsConnectedToEthereumNetwork() bool {
 }
 
 // startSync initiates the full chain sync starting protocols. It attempts to
-// restart the chain service if it hasn't been initialized.
+// boot up the local node that triggers chain connection via the supported
+// bootnodes set.
 func (asset *Asset) startSync() error {
+	g, _ := errgroup.WithContext(asset.syncCtx)
+
+	// Boot up the local node and ensure it connects to set bootnodes
+	g.Go(asset.stack.Start)
+
 	// Listen and handle incoming notification events.
 	if atomic.CompareAndSwapUint32(&asset.syncData.syncstarted, stop, start) {
 		go asset.handleNotifications()
 	}
 
-	return nil
+	// Wait for the node to finish booting.
+	return g.Wait()
 }
 
 // startWallet initializes the eth wallet and starts syncing.
@@ -425,11 +432,6 @@ func (asset *Asset) SpvSync() (err error) {
 	asset.cancelSync = cancel
 	asset.notificationListenersMu.Unlock()
 
-	g, _ := errgroup.WithContext(ctx)
-
-	// Boot up the client and ensure it connects to bootnodes
-	g.Go(asset.stack.Start)
-
 	// Initialize all progress report data.
 	asset.initSyncProgressData()
 
@@ -444,11 +446,6 @@ func (asset *Asset) SpvSync() (err error) {
 
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listener.OnSyncStarted()
-	}
-
-	// Wait for the node to finish booting.
-	if err = g.Wait(); err != nil {
-		return err
 	}
 
 	go func() {
