@@ -90,10 +90,6 @@ func ErrLTCMethodNotImplemented(method string) error {
 	return fmt.Errorf("%v not implemented for the %v Asset", method, LTCWalletAsset)
 }
 
-func ErrETHMethodNotImplemented(method string) error {
-	return fmt.Errorf("%v not implemented for the %v Asset", method, ETHWalletAsset)
-}
-
 func TranslateNetworkError(host string, errMsg error) error {
 	switch {
 	case net.ParseIP(host).To4() == nil && strings.Contains(errMsg.Error(), "connect: network is unreachable"):

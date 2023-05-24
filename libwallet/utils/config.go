@@ -23,7 +23,6 @@ const (
 	BTCWalletAsset AssetType = "BTC"
 	DCRWalletAsset AssetType = "DCR"
 	LTCWalletAsset AssetType = "LTC"
-	ETHWalletAsset AssetType = "ETH"
 
 	fullDateformat  = "2006-01-02 15:04:05"
 	dateOnlyFormat  = "2006-01-02"
@@ -68,7 +67,7 @@ const (
 
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
-	UserFilePerm = fs.FileMode(0700)
+	UserFilePerm = fs.FileMode(0o700)
 )
 
 // Stringer used in generating the directory path where the lowercase of the
@@ -87,8 +86,6 @@ func (str AssetType) ToFull() string {
 		return "Decred"
 	case LTCWalletAsset:
 		return "Litecoin"
-	case ETHWalletAsset:
-		return "Ethereum"
 	default:
 		return "Unknown"
 	}

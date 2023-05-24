@@ -34,7 +34,6 @@ func (wl *WalletLoad) AllSortedWalletList() []sharedW.Asset {
 	wallets := wl.SortedWalletList(utils.DCRWalletAsset)
 	wallets = append(wallets, wl.SortedWalletList(utils.BTCWalletAsset)...)
 	wallets = append(wallets, wl.SortedWalletList(utils.LTCWalletAsset)...)
-	wallets = append(wallets, wl.SortedWalletList(utils.ETHWalletAsset)...)
 	return wallets
 }
 
@@ -93,8 +92,6 @@ func (wl *WalletLoad) getAssets(assetType ...utils.AssetType) []sharedW.Asset {
 		return wl.AssetsManager.AllDCRWallets()
 	case utils.LTCWalletAsset:
 		return wl.AssetsManager.AllLTCWallets()
-	case utils.ETHWalletAsset:
-		return wl.AssetsManager.AllETHWallets()
 	default:
 		return nil
 	}

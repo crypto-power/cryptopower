@@ -50,7 +50,6 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	dcrBadWallets := pg.WL.AssetsManager.DCRBadWallets()
 	btcBadWallets := pg.WL.AssetsManager.BTCBadWallets()
 	ltcBadWallets := pg.WL.AssetsManager.LTCBadWallets()
-	ethBadWallets := pg.WL.AssetsManager.ETHBadWallets()
 	pg.badWalletsList = make([]*badWalletListItem, 0, len(dcrBadWallets))
 
 	populatebadWallets := func(badWallets map[int]*sharedW.Wallet) {
@@ -68,7 +67,6 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	populatebadWallets(dcrBadWallets) // dcr bad wallets
 	populatebadWallets(btcBadWallets) // btc bad wallets
 	populatebadWallets(ltcBadWallets) // ltc bad wallets
-	populatebadWallets(ethBadWallets) // eth bad wallets
 }
 
 func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
