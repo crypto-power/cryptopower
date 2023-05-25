@@ -67,7 +67,7 @@ const (
 
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
-	UserFilePerm = fs.FileMode(0o700)
+	UserFilePerm = fs.FileMode(0700)
 )
 
 // Stringer used in generating the directory path where the lowercase of the
