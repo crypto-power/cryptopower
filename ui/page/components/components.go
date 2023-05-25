@@ -555,11 +555,6 @@ func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly b
 			return l.Theme.Icons.LtcWatchOnly
 		}
 		return l.Theme.Icons.LTC
-	case libutils.ETHWalletAsset:
-		if isWatchOnly {
-			return l.Theme.Icons.EthWatchOnly
-		}
-		return l.Theme.Icons.ETH
 	}
 	return nil
 }
