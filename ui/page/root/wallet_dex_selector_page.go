@@ -162,6 +162,7 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	for _, badWallet := range pg.badWalletsList {
 		if badWallet.deleteBtn.Clicked() {
 			pg.deleteBadWallet(badWallet.ID)
+			pg.ParentWindow().Reload()
 		}
 	}
 
