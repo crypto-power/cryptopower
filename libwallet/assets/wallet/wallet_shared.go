@@ -78,6 +78,7 @@ func (wallet *Wallet) Prepare(loader loader.AssetLoader, params *InitParams) (er
 // wallet.netType = netType
 // wallet.rootDir = rootDir
 // wallet.Type = assetType
+// wallet.logDir = params.LogDir
 func (wallet *Wallet) prepare() (err error) {
 	// Confirms if the correct wallet type and network types were set and passed.
 	// Wallet type should be preset by the caller otherwise an error is returned.
@@ -332,6 +333,7 @@ func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
 		db:            params.DB,
 		dbDriver:      params.DbDriver,
 		rootDir:       params.RootDir,
+		logDir:        params.LogDir,
 		CreatedAt:     time.Now(),
 		EncryptedSeed: encryptedSeed,
 
@@ -389,6 +391,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, loader loader.A
 		db:       params.DB,
 		dbDriver: params.DbDriver,
 		rootDir:  params.RootDir,
+		logDir:   params.LogDir,
 
 		IsRestored: true,
 		// Setting HasDiscoveredAccounts to false causes address recovery to be
@@ -435,6 +438,7 @@ func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.Asse
 		db:                    params.DB,
 		dbDriver:              params.DbDriver,
 		rootDir:               params.RootDir,
+		logDir:                params.LogDir,
 
 		IsRestored:            true,
 		HasDiscoveredAccounts: false,
