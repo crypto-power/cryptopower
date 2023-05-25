@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gioui.org/layout"
+	"gioui.org/widget"
 
 	"code.cryptopower.dev/group/cryptopower/app"
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
@@ -45,7 +46,7 @@ type WalletSettingsPage struct {
 	wallet   sharedW.Asset
 	accounts []*accountData
 
-	pageContainer layout.List
+	pageContainer *widget.List
 	accountsList  *cryptomaterial.ClickableList
 
 	changePass, rescan                         *cryptomaterial.Clickable
@@ -91,7 +92,9 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		spendUnmixedFunds: l.Theme.Switch(),
 		connectToPeer:     l.Theme.Switch(),
 
-		pageContainer: layout.List{Axis: layout.Vertical},
+		pageContainer: &widget.List{
+			List: layout.List{Axis: layout.Vertical},
+		},
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 	}
 
@@ -175,7 +178,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 			pg.dangerZone(),
 		}
 
-		return pg.pageContainer.Layout(gtx, len(w), func(gtx C, i int) D {
+		return pg.Theme.List(pg.pageContainer).Layout(gtx, len(w), func(gtx C, i int) D {
 			return layout.Inset{Left: values.MarginPadding50}.Layout(gtx, w[i])
 		})
 	}
@@ -625,11 +628,13 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				SetNegativeButtonText(values.String(values.StrCancel)).
 				PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 				SetPositiveButtonText(values.String(values.StrRescan)).
-				SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
+				SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
 					err := pg.WL.SelectedWallet.Wallet.RescanBlocks()
 					if err != nil {
 						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
+						im.Dismiss()
+
 						return false
 					}
 
