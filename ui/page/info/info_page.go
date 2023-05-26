@@ -52,15 +52,22 @@ type WalletInfo struct {
 	checkBox         cryptomaterial.CheckBoxStyle
 
 	isStatusConnected bool
+	redirectfunc      seedbackup.Redirectfunc
+}
 
+type progressInfo struct {
 	remainingSyncTime    string
 	headersToFetchOrScan int32
 	stepFetchProgress    int32
 	syncProgress         int
 	syncStep             int
-
-	redirectfunc seedbackup.Redirectfunc
 }
+
+// SyncProgressInfo is made independent of the walletInfo struct so that once
+// set with a value, it always persists till unset. This will help address the
+// progress bar issue where, changing UI pages alters the progress on the sync
+// status progress percentage.
+var syncProgressInfo = map[sharedW.Asset]progressInfo{}
 
 func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 	pg := &WalletInfo{
@@ -224,29 +231,40 @@ func (pg *WalletInfo) listenForNotifications() {
 			case n := <-pg.SyncStatusChan:
 				// Update sync progress fields which will be displayed
 				// when the next UI invalidation occurs.
+
+				progress := progressInfo{}
 				switch t := n.ProgressReport.(type) {
 				case *sharedW.HeadersFetchProgressReport:
-					pg.stepFetchProgress = t.HeadersFetchProgress
-					pg.headersToFetchOrScan = t.TotalHeadersToFetch
-					pg.syncProgress = int(t.TotalSyncProgress)
-					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					pg.syncStep = wallet.FetchHeadersSteps
+					progress.stepFetchProgress = t.HeadersFetchProgress
+					progress.headersToFetchOrScan = t.TotalHeadersToFetch
+					progress.syncProgress = int(t.TotalSyncProgress)
+					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+					progress.syncStep = wallet.FetchHeadersSteps
 				case *sharedW.AddressDiscoveryProgressReport:
-					pg.syncProgress = int(t.TotalSyncProgress)
-					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					pg.syncStep = wallet.AddressDiscoveryStep
-					pg.stepFetchProgress = t.AddressDiscoveryProgress
+					progress.syncProgress = int(t.TotalSyncProgress)
+					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+					progress.syncStep = wallet.AddressDiscoveryStep
+					progress.stepFetchProgress = t.AddressDiscoveryProgress
 				case *sharedW.HeadersRescanProgressReport:
-					pg.headersToFetchOrScan = t.TotalHeadersToScan
-					pg.syncProgress = int(t.TotalSyncProgress)
-					pg.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					pg.syncStep = wallet.RescanHeadersStep
-					pg.stepFetchProgress = t.RescanProgress
+					progress.headersToFetchOrScan = t.TotalHeadersToScan
+					progress.syncProgress = int(t.TotalSyncProgress)
+					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+					progress.syncStep = wallet.RescanHeadersStep
+					progress.stepFetchProgress = t.RescanProgress
 				}
 
-				// We only care about sync state changes here, to
-				// refresh the window display.
-				pg.ParentWindow().Reload()
+				previousProgress := pg.fetchSyncProgress()
+				// headers to fetch cannot be less than the previously fetched.
+				// Page refresh only needed if there is new data to update the UI.
+				if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
+					currentAsset := pg.WL.SelectedWallet.Wallet
+					// set the new progress against the associated asset.
+					syncProgressInfo[currentAsset] = progress
+
+					// We only care about sync state changes here, to
+					// refresh the window display.
+					pg.ParentWindow().Reload()
+				}
 
 			case n := <-pg.TxAndBlockNotifChan():
 				switch n.Type {
