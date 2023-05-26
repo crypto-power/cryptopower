@@ -308,7 +308,6 @@ func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 	rescanProgressReport := &sharedW.HeadersRescanProgressReport{
 		CurrentRescanHeight: progress.Height,
 		TotalHeadersToScan:  allHeadersToFetch,
-		WalletID:            asset.ID,
 	}
 
 	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime.Unix()

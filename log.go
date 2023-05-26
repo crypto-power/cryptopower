@@ -16,7 +16,6 @@ import (
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
 	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/listeners"
 	"code.cryptopower.dev/group/cryptopower/logger"
@@ -36,6 +35,7 @@ import (
 	"code.cryptopower.dev/group/cryptopower/wallet"
 
 	"decred.org/dcrwallet/v2/p2p"
+	"decred.org/dcrwallet/v2/spv"
 	"decred.org/dcrwallet/v2/ticketbuyer"
 	dcrw "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/udb"
@@ -103,6 +103,7 @@ var (
 	syncLog      = dcrBackendLog.Logger("SYNC")
 	tkbyLog      = dcrBackendLog.Logger("TKBY")
 	dcrWalletLog = dcrBackendLog.Logger("WLLT")
+	dcrSpv       = dcrBackendLog.Logger("DCR-S")
 	btcNtrn      = btcBackendLog.Logger("B-NTR")
 	ltcNtrn      = btcBackendLog.Logger("L-NTR")
 	btcLog       = btcBackendLog.Logger("BTC")
@@ -146,13 +147,16 @@ func init() {
 	btcw.UseLogger(btcLog)
 	ltcw.UseLogger(ltcLog)
 	dcrw.UseLogger(dcrLog)
-	spv.UseLogger(dcrLog)
+	spv.UseLogger(dcrSpv)
 	instantswap.UseLogger(sharedWLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
 	ltcNtrn.SetLevel(btclog.LevelError)
 	btcNtrn.SetLevel(btclog.LevelError)
+
+	// Similar to BTC and LTC, excessive loggings of dcr spv has been capped to errors.
+	dcrSpv.SetLevel(slog.LevelError)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

@@ -16,7 +16,6 @@ func (asset *DCRAsset) RescanBlocks() error {
 }
 
 func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
-
 	netBackend, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return errors.E(utils.ErrNotConnected)
@@ -62,7 +61,6 @@ func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
 			rescanProgressReport := &sharedW.HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
 				TotalHeadersToScan:  asset.GetBestBlockHeight(),
-				WalletID:            asset.ID,
 			}
 
 			elapsedRescanTime := time.Now().Unix() - rescanStartTime
