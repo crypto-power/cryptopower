@@ -27,6 +27,7 @@ type SyncData struct {
 
 	synced       bool
 	syncing      bool
+	cancelCtx    context.Context
 	cancelSync   context.CancelFunc
 	cancelRescan context.CancelFunc
 	syncCanceled chan struct{}

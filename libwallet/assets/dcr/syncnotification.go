@@ -597,10 +597,12 @@ func (asset *DCRAsset) resetSyncData() {
 }
 
 func (asset *DCRAsset) syncedWallet(synced bool) {
+	ctx, _ := asset.ShutdownContextWithCancel()
+
 	indexTransactions := func() {
 		// begin indexing transactions after sync is completed,
 		// syncProgressListeners.OnSynced() will be invoked after transactions are indexed
-		var txIndexing errgroup.Group
+		txIndexing, _ := errgroup.WithContext(ctx)
 		txIndexing.Go(asset.IndexTransactions)
 
 		go func() {
