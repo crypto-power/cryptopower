@@ -13,7 +13,6 @@ import (
 	"gioui.org/unit"
 
 	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
 	"code.cryptopower.dev/group/cryptopower/ui/load"
@@ -21,6 +20,14 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/ltcsuite/ltcd/ltcutil"
+)
+
+const (
+	// MinSeedBytes is the minimum number of bytes allowed for a seed.
+	MinSeedBytes = 16
+
+	// MaxSeedBytes is the maximum number of bytes allowed for a seed.
+	MaxSeedBytes = 64
 )
 
 // done returns whether the context's Done channel was closed due to
@@ -89,11 +96,7 @@ func SeedWordsToHex(seedWords string) (string, error) {
 	}
 	seedByte = seedByte[:len(seedByte)-1]
 
-	// minSeedBytes is the minimum number of bytes allowed for a seed.
-	minSeedBytes := 16
-	// maxSeedBytes is the maximum number of bytes allowed for a seed.
-	maxSeedBytes := 64
-	if len(seedByte) < minSeedBytes || len(seedByte) > maxSeedBytes {
+	if len(seedByte) < MinSeedBytes || len(seedByte) > MaxSeedBytes {
 		return seedHex, fmt.Errorf("invalid seed bytes length")
 	}
 
@@ -144,13 +147,13 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 	var convertedAmountStr string
 
 	switch strings.ToLower(assetType) {
-	case utils.DCRWalletAsset.ToStringLower():
+	case libutils.DCRWalletAsset.ToStringLower():
 		convertedAmount, _ := dcrutil.NewAmount(amount)
 		convertedAmountStr = convertedAmount.String()
-	case utils.BTCWalletAsset.ToStringLower():
+	case libutils.BTCWalletAsset.ToStringLower():
 		convertedAmount, _ := btcutil.NewAmount(amount)
 		convertedAmountStr = convertedAmount.String()
-	case utils.LTCWalletAsset.ToStringLower():
+	case libutils.LTCWalletAsset.ToStringLower():
 		convertedAmount, _ := ltcutil.NewAmount(amount)
 		convertedAmountStr = convertedAmount.String()
 	default:

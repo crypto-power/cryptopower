@@ -136,6 +136,9 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),
 			layout.Rigid(func(gtx C) D {
+				if pg.tabIndex == 1 {
+					return D{}
+				}
 				return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
@@ -146,52 +149,65 @@ func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				if pg.toggleSeedInput.IsChecked() {
-					return layout.Inset{
-						Top: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.MatchParent,
-							Height:      cryptomaterial.MatchParent,
-							Orientation: layout.Vertical,
-							Margin:      layout.Inset{Bottom: values.MarginPadding16},
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-										layout.Rigid(func(gtx layout.Context) D {
-											return layout.Inset{
-												Left:  values.MarginPadding16,
-												Right: values.MarginPadding16,
-												Top:   values.MarginPadding30,
-											}.Layout(gtx, func(gtx C) D {
-												return pg.seedInputEditor.Layout(gtx)
-											})
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{}.Layout(gtx,
-												layout.Flexed(1, func(gtx C) D {
-													return layout.E.Layout(gtx, func(gtx C) D {
-														return layout.Inset{
-															Left:   values.MarginPadding16,
-															Right:  values.MarginPadding16,
-															Top:    values.MarginPadding16,
-															Bottom: values.MarginPadding16,
-														}.Layout(gtx, func(gtx C) D {
-															pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
-															return pg.confirmSeedButton.Layout(gtx)
-														})
-													})
-												}),
-											)
-										}),
-									)
-								})
-							}),
-						)
-					})
+				if pg.toggleSeedInput.IsChecked() || pg.tabIndex == 1 {
+					return pg.seedInputComponent(gtx)
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.indexLayout)
+			}),
+		)
+	})
+}
+
+func (pg *Restore) seedInputComponent(gtx C) D {
+	return layout.Inset{
+		Top: values.MarginPadding16,
+	}.Layout(gtx, func(gtx C) D {
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.MatchParent,
+			Orientation: layout.Vertical,
+			Margin:      layout.Inset{Bottom: values.MarginPadding16},
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) D {
+							return layout.Inset{
+								Left:  values.MarginPadding16,
+								Right: values.MarginPadding16,
+								Top:   values.MarginPadding30,
+							}.Layout(gtx, func(gtx C) D {
+								if pg.tabIndex == 0 {
+									pg.seedInputEditor.Hint = values.String(values.StrEnterWalletSeed)
+								} else {
+									pg.seedInputEditor.Hint = values.String(values.StrEnterWalletHex)
+								}
+								return pg.seedInputEditor.Layout(gtx)
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return layout.Flex{}.Layout(gtx,
+								layout.Flexed(1, func(gtx C) D {
+									return layout.E.Layout(gtx, func(gtx C) D {
+										return layout.Inset{
+											Left:   values.MarginPadding16,
+											Right:  values.MarginPadding16,
+											Top:    values.MarginPadding16,
+											Bottom: values.MarginPadding16,
+										}.Layout(gtx, func(gtx C) D {
+											if pg.tabIndex == 0 {
+												pg.confirmSeedButton.Text = values.String(values.StrValidateWalSeed)
+											} else {
+												pg.confirmSeedButton.Text = values.String(values.StrValidateWalHex)
+											}
+											return pg.confirmSeedButton.Layout(gtx)
+										})
+									})
+								}),
+							)
+						}),
+					)
+				})
 			}),
 		)
 	})
@@ -216,8 +232,6 @@ func (pg *Restore) indexLayout(gtx C) D {
 func (pg *Restore) switchTab(tabIndex int) {
 	if tabIndex == 0 {
 		pg.seedRestorePage.OnNavigatedTo()
-	} else {
-		pg.showHexRestoreModal()
 	}
 }
 
@@ -310,80 +324,6 @@ func (pg *Restore) HandleUserInteractions() {
 	}
 }
 
-func (pg *Restore) showHexRestoreModal() {
-	hexModal := modal.NewTextInputModal(pg.Load).
-		Hint(values.String(values.StrEnterHex)).
-		PositiveButtonStyle(pg.Load.Theme.Color.Primary, pg.Load.Theme.Color.InvText).
-		SetPositiveButtonCallback(func(hex string, hm *modal.TextInputModal) bool {
-			if !pg.verifyHex(hex) {
-				hm.SetError(values.String(values.StrInvalidHex))
-				hm.SetLoading(false)
-				return false
-			}
-
-			passwordModal := modal.NewCreatePasswordModal(pg.Load).
-				Title(values.String(values.StrEnterWalDetails)).
-				EnableName(false).
-				ShowWalletInfoTip(true).
-				SetParent(pg).
-				SetNegativeButtonCallback(func() {
-					pg.tabIndex = 0
-					pg.switchTab(pg.tabIndex)
-				}).
-				SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-					_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, hex, password, sharedW.PassphraseTypePass)
-					if err != nil {
-						m.SetError(err.Error())
-						m.SetLoading(false)
-						return false
-					}
-
-					successModal := modal.NewSuccessModal(pg.Load, values.String(values.StrWalletRestored), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(successModal)
-					m.Dismiss()
-					if pg.restoreComplete == nil {
-						pg.ParentNavigator().CloseCurrentPage()
-					} else {
-						pg.restoreComplete()
-					}
-					return true
-				})
-			pg.ParentWindow().ShowModal(passwordModal)
-
-			hm.Dismiss()
-			return true
-		})
-	hexModal.Title(values.String(values.StrRestoreWithHex)).
-		SetPositiveButtonText(values.String(values.StrSubmit)).
-		SetNegativeButtonCallback(func() {
-			pg.tabIndex = 0
-			pg.switchTab(pg.tabIndex)
-		})
-	pg.ParentWindow().ShowModal(hexModal)
-}
-
-func (pg *Restore) verifyHex(hex string) bool {
-	if !sharedW.VerifySeed(hex, pg.walletType) {
-		return false
-	}
-
-	// Compare with existing wallets seed. On positive match abort import
-	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, hex)
-	if err != nil {
-		log.Error(err)
-		return false
-	}
-
-	if walletWithSameSeed != -1 {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
-		pg.ParentWindow().ShowModal(errModal)
-		return false
-	}
-
-	return true
-}
-
 // KeysToHandle returns an expression that describes a set of key combinations
 // that this page wishes to capture. The HandleKeyPress() method will only be
 // called when any of these key combinations is pressed.
@@ -406,29 +346,47 @@ func (pg *Restore) HandleKeyPress(evt *key.Event) {
 
 func (pg *Restore) restoreFromSeedEditor() {
 	pg.restoreInProgress = true
-	defer func() {
+	clearEditor := func() {
 		pg.restoreInProgress = false
 		pg.seedInputEditor.Editor.SetText("")
-	}()
+	}
 
-	seed := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
-	if !sharedW.VerifySeed(seed, pg.walletType) {
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrInvalidSeedPhrase), modal.DefaultClickFunc())
+	seedOrHex := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
+	// Check if the user did input a hex or seed. If its a hex set the correct tabindex.
+	if len(seedOrHex) > components.MaxSeedBytes {
+		pg.tabIndex = 0
+	} else {
+		pg.tabIndex = 1
+	}
+
+	if !sharedW.VerifySeed(seedOrHex, pg.walletType) {
+		errMsg := values.String(values.StrInvalidHex)
+		if pg.tabIndex == 0 {
+			errMsg = values.String(values.StrInvalidSeedPhrase)
+		}
+		errModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
+		clearEditor()
 		return
 	}
 
-	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, seed)
+	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex)
 	if err != nil {
 		log.Error(err)
-		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedValidationFailed), modal.DefaultClickFunc())
+		errMsg := values.String(values.StrInvalidHex)
+		if pg.tabIndex == 0 {
+			errMsg = values.String(values.StrSeedValidationFailed)
+		}
+		errModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
+		clearEditor()
 		return
 	}
 
 	if walletWithSameSeed != -1 {
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrSeedAlreadyExist), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
+		clearEditor()
 		return
 	}
 
@@ -438,7 +396,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seed, password, sharedW.PassphraseTypePass)
+			_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass)
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libutils.ErrExist {
@@ -446,6 +404,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 				}
 				m.SetError(errString)
 				m.SetLoading(false)
+				clearEditor()
 				return false
 			}
 
@@ -457,6 +416,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 			} else {
 				pg.restoreComplete()
 			}
+			clearEditor()
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
