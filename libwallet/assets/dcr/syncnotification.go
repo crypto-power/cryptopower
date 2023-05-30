@@ -5,7 +5,7 @@ import (
 	"time"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
+	"decred.org/dcrwallet/v2/spv"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -53,7 +53,7 @@ func (asset *DCRAsset) handlePeerCountUpdate(peerCount int32) {
 
 // Fetch CFilters Callbacks
 
-func (asset *DCRAsset) fetchCFiltersStarted(walletID int) {
+func (asset *DCRAsset) fetchCFiltersStarted() {
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = CFiltersFetchSyncStage
 	asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp = time.Now().Unix()
@@ -66,7 +66,7 @@ func (asset *DCRAsset) fetchCFiltersStarted(walletID int) {
 	}
 }
 
-func (asset *DCRAsset) fetchCFiltersProgress(walletID int, startCFiltersHeight, endCFiltersHeight int32) {
+func (asset *DCRAsset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight int32) {
 	// lock the mutex before reading and writing to asset.syncData.*
 	asset.syncData.mu.Lock()
 
@@ -134,7 +134,7 @@ func (asset *DCRAsset) publishFetchCFiltersProgress() {
 	}
 }
 
-func (asset *DCRAsset) fetchCFiltersEnded(walletID int) {
+func (asset *DCRAsset) fetchCFiltersEnded() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -148,9 +148,24 @@ func (asset *DCRAsset) fetchCFiltersEnded(walletID int) {
 
 // Fetch Headers Callbacks
 
-func (asset *DCRAsset) fetchHeadersStarted(peerInitialHeight int32) {
+func (asset *DCRAsset) fetchHeadersStarted() {
 	if !asset.IsSyncing() {
 		return
+	}
+
+	// fetch all the peers information currently available
+	peers, err := asset.PeerInfoRaw()
+	if err != nil {
+		log.Errorf("fetchHeadersStarted failed: %v", err)
+		return
+	}
+
+	// pick the highest height.
+	var peerInitialHeight int32
+	for _, p := range peers {
+		if int32(p.StartingHeight) > peerInitialHeight {
+			peerInitialHeight = int32(p.StartingHeight)
+		}
 	}
 
 	asset.syncData.mu.RLock()
@@ -270,7 +285,7 @@ func (asset *DCRAsset) fetchHeadersFinished() {
 
 // Address/Account Discovery Callbacks
 
-func (asset *DCRAsset) discoverAddressesStarted(walletID int) {
+func (asset *DCRAsset) discoverAddressesStarted() {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -287,7 +302,6 @@ func (asset *DCRAsset) discoverAddressesStarted(walletID int) {
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = AddressDiscoverySyncStage
 	asset.syncData.addressDiscoveryProgress.AddressDiscoveryStartTime = time.Now().Unix()
-	asset.syncData.addressDiscoveryProgress.WalletID = walletID
 	asset.syncData.addressDiscoveryCompletedOrCanceled = make(chan bool)
 	asset.syncData.mu.Unlock()
 
@@ -395,7 +409,7 @@ func (asset *DCRAsset) publishAddressDiscoveryProgress() {
 	}
 }
 
-func (asset *DCRAsset) discoverAddressesFinished(walletID int) {
+func (asset *DCRAsset) discoverAddressesFinished() {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -415,7 +429,7 @@ func (asset *DCRAsset) stopUpdatingAddressDiscoveryProgress() {
 
 // Blocks Scan Callbacks
 
-func (asset *DCRAsset) rescanStarted(walletID int) {
+func (asset *DCRAsset) rescanStarted() {
 	asset.stopUpdatingAddressDiscoveryProgress()
 
 	asset.syncData.mu.Lock()
@@ -432,14 +446,13 @@ func (asset *DCRAsset) rescanStarted(walletID int) {
 	// retain last total progress report from address discovery phase
 	asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = asset.syncData.addressDiscoveryProgress.TotalTimeRemainingSeconds
 	asset.syncData.headersRescanProgress.TotalSyncProgress = asset.syncData.addressDiscoveryProgress.TotalSyncProgress
-	asset.syncData.headersRescanProgress.WalletID = walletID
 
 	if asset.syncData.showLogs && asset.syncData.syncing {
 		log.Info("Step 3 of 3 - Scanning block headers.")
 	}
 }
 
-func (asset *DCRAsset) rescanProgress(walletID int, rescannedThrough int32) {
+func (asset *DCRAsset) rescanProgress(rescannedThrough int32) {
 	if !asset.IsSyncing() {
 		// ignore if sync is not in progress
 		return
@@ -463,7 +476,6 @@ func (asset *DCRAsset) rescanProgress(walletID int, rescannedThrough int32) {
 	totalElapsedTime := asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent + asset.syncData.headersFetchProgress.HeadersFetchTimeSpent +
 		asset.syncData.addressDiscoveryProgress.TotalDiscoveryTimeSpent + elapsedRescanTime
 
-	asset.syncData.headersRescanProgress.WalletID = walletID
 	asset.syncData.headersRescanProgress.TotalHeadersToScan = totalHeadersToScan
 	asset.syncData.headersRescanProgress.RescanProgress = int32(math.Round(rescanRate * 100))
 	asset.syncData.headersRescanProgress.CurrentRescanHeight = rescannedThrough
@@ -512,14 +524,13 @@ func (asset *DCRAsset) publishHeadersRescanProgress() {
 	}
 }
 
-func (asset *DCRAsset) rescanFinished(walletID int) {
+func (asset *DCRAsset) rescanFinished() {
 	if !asset.IsSyncing() {
 		// ignore if sync is not in progress
 		return
 	}
 
 	asset.syncData.mu.Lock()
-	asset.syncData.headersRescanProgress.WalletID = walletID
 	asset.syncData.headersRescanProgress.TotalTimeRemainingSeconds = 0
 	asset.syncData.headersRescanProgress.TotalSyncProgress = 100
 
@@ -585,11 +596,13 @@ func (asset *DCRAsset) resetSyncData() {
 	asset.LockWallet() // lock wallet if previously unlocked to perform account discovery.
 }
 
-func (asset *DCRAsset) syncedWallet(walletID int, synced bool) {
+func (asset *DCRAsset) syncedWallet(synced bool) {
+	ctx, _ := asset.ShutdownContextWithCancel()
+
 	indexTransactions := func() {
 		// begin indexing transactions after sync is completed,
 		// syncProgressListeners.OnSynced() will be invoked after transactions are indexed
-		var txIndexing errgroup.Group
+		txIndexing, _ := errgroup.WithContext(ctx)
 		txIndexing.Go(asset.IndexTransactions)
 
 		go func() {

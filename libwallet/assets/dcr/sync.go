@@ -10,10 +10,10 @@ import (
 	"sync"
 
 	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/spv"
 	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/p2p"
+	"decred.org/dcrwallet/v2/spv"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
 )
@@ -27,6 +27,7 @@ type SyncData struct {
 
 	synced       bool
 	syncing      bool
+	cancelCtx    context.Context
 	cancelSync   context.CancelFunc
 	cancelRescan context.CancelFunc
 	syncCanceled chan struct{}
@@ -228,12 +229,10 @@ func (asset *DCRAsset) SpvSync() error {
 	// to calculate sync estimates only during sync
 	asset.initActiveSyncData()
 
-	wallets := make(map[int]*w.Wallet)
-	wallets[0] = asset.Internal().DCR
 	asset.waitingForHeaders = true
 	asset.syncing = true
 
-	syncer := spv.NewSyncer(wallets, lp)
+	syncer := spv.NewSyncer(asset.Internal().DCR, lp)
 	syncer.SetNotifications(asset.spvSyncNotificationCallbacks())
 	if len(validPeerAddresses) > 0 {
 		syncer.SetPersistentPeers(validPeerAddresses)
@@ -490,7 +489,7 @@ func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
 			asset.syncData.syncing = false
 			asset.syncData.cancelSync = nil
 			asset.syncData.mu.Unlock()
-			asset.discoverAddressesFinished(asset.ID)
+			asset.discoverAddressesFinished()
 		}()
 
 		ctx, cancel := asset.ShutdownContextWithCancel()
@@ -500,7 +499,7 @@ func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
 		asset.syncData.cancelSync = cancel
 		asset.syncData.mu.Unlock()
 
-		asset.discoverAddressesStarted(asset.ID)
+		asset.discoverAddressesStarted()
 
 		err := asset.Internal().DCR.DiscoverActiveAddresses(ctx, netBackend, &startBlock, !asset.Internal().DCR.Locked(), gapLimit)
 		if err != nil {

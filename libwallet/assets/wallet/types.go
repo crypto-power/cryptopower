@@ -265,7 +265,6 @@ type AddressDiscoveryProgressReport struct {
 	AddressDiscoveryStartTime int64
 	TotalDiscoveryTimeSpent   int64
 	AddressDiscoveryProgress  int32 `json:"addressDiscoveryProgress"`
-	WalletID                  int   `json:"walletID"`
 }
 
 type HeadersRescanProgressReport struct {
@@ -274,7 +273,6 @@ type HeadersRescanProgressReport struct {
 	CurrentRescanHeight int32 `json:"currentRescanHeight"`
 	RescanProgress      int32 `json:"rescanProgress"`
 	RescanTimeRemaining int64 `json:"rescanTimeRemaining"`
-	WalletID            int   `json:"walletID"`
 }
 
 type DebugInfo struct {
