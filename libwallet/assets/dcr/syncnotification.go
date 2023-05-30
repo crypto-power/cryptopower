@@ -129,8 +129,12 @@ func (asset *DCRAsset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHei
 }
 
 func (asset *DCRAsset) publishFetchCFiltersProgress() {
+	asset.syncData.mu.RLock()
+	cfilters := &asset.syncData.cfiltersFetchProgress
+	asset.syncData.mu.RUnlock()
+
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnCFiltersFetchProgress(&asset.syncData.cfiltersFetchProgress)
+		syncProgressListener.OnCFiltersFetchProgress(cfilters)
 	}
 }
 
@@ -251,8 +255,12 @@ func (asset *DCRAsset) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastF
 }
 
 func (asset *DCRAsset) publishFetchHeadersProgress() {
+	asset.syncData.mu.RLock()
+	headerFetch := &asset.syncData.headersFetchProgress
+	asset.syncData.mu.RUnlock()
+
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+		syncProgressListener.OnHeadersFetchProgress(headerFetch)
 	}
 }
 
@@ -519,8 +527,12 @@ func (asset *DCRAsset) rescanProgress(rescannedThrough int32) {
 }
 
 func (asset *DCRAsset) publishHeadersRescanProgress() {
+	asset.syncData.mu.RLock()
+	headersRescan := &asset.syncData.headersRescanProgress
+	asset.syncData.mu.RUnlock()
+
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
+		syncProgressListener.OnHeadersRescanProgress(headersRescan)
 	}
 }
 
