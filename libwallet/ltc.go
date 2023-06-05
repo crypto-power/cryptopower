@@ -3,12 +3,12 @@ package libwallet
 import (
 	"fmt"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	"github.com/ltcsuite/ltcwallet/waddrmgr"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/ltc"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // initializeLTCWalletParameters initializes the fields each LTC wallet is going to need to be setup

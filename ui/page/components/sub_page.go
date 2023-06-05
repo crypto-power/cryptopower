@@ -1,13 +1,13 @@
 package components
 
 import (
-	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
-	"code.cryptopower.dev/group/cryptopower/ui/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
+	"gitlab.com/cryptopower/cryptopower/app"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/modal"
+	"gitlab.com/cryptopower/cryptopower/ui/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type SubPage struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 )
 
 // TxAndBlockNotificationListener satisfies libwallet

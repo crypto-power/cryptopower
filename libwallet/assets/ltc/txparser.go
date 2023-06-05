@@ -3,11 +3,11 @@ package ltc
 import (
 	"fmt"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
 	"github.com/ltcsuite/ltcd/blockchain"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	w "github.com/ltcsuite/ltcwallet/wallet"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
 )
 
 func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary w.TransactionSummary) sharedW.Transaction {

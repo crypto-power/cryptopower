@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"sync"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/dcr"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
 	"github.com/decred/dcrd/chaincfg/v3"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader/dcr"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type DCRAsset struct {

@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet"
-	"code.cryptopower.dev/group/cryptopower/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet"
+	"gitlab.com/cryptopower/cryptopower/wallet"
 )
 
 // ProposalNotificationListener satisfies dcr

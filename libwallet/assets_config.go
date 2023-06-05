@@ -3,11 +3,11 @@ package libwallet
 import (
 	"fmt"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
 )

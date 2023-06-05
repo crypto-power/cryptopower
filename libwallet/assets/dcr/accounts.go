@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/addresshelper"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
+	"gitlab.com/cryptopower/cryptopower/libwallet/addresshelper"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 func (asset *DCRAsset) GetAccounts() (string, error) {

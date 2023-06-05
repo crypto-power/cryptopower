@@ -11,14 +11,14 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/app"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/modal"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const (

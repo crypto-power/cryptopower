@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/uniformprng"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
@@ -23,6 +22,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
 	"github.com/decred/dcrd/wire"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/uniformprng"
 )
 
 var prng lockedRand

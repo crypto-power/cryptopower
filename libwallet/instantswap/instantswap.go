@@ -5,19 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"code.cryptopower.dev/group/instantswap"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"gitlab.com/cryptopower/instantswap/instantswap"
 
 	// Initialize exchange servers.
-	_ "code.cryptopower.dev/group/instantswap/exchange/changelly"
-	_ "code.cryptopower.dev/group/instantswap/exchange/changenow"
-	_ "code.cryptopower.dev/group/instantswap/exchange/coinswitch"
-	_ "code.cryptopower.dev/group/instantswap/exchange/flypme"
-	_ "code.cryptopower.dev/group/instantswap/exchange/godex"
-	_ "code.cryptopower.dev/group/instantswap/exchange/simpleswap"
-	_ "code.cryptopower.dev/group/instantswap/exchange/swapzone"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/changelly"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/changenow"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/coinswitch"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/flypme"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/godex"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/simpleswap"
+	_ "gitlab.com/cryptopower/instantswap/instantswap/exchange/swapzone"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"decred.org/dcrwallet/v2/spv"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 	"golang.org/x/sync/errgroup"
 )
 

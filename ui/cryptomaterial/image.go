@@ -3,10 +3,10 @@ package cryptomaterial
 import (
 	"image"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 	"golang.org/x/image/draw"
 )
 

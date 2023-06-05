@@ -1,10 +1,10 @@
 package walletdata
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (query storm.Query) {

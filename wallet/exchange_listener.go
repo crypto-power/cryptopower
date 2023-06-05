@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
+	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
 )
 
 type OrderStatus int

@@ -5,13 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
 	ltcW "github.com/ltcsuite/ltcwallet/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
-	_ "code.cryptopower.dev/group/cryptopower/libwallet/badgerdb" // initialize badger driver
+	_ "gitlab.com/cryptopower/cryptopower/libwallet/badgerdb" // initialize badger driver
 )
 
 const defaultDbDriver = "bdb"

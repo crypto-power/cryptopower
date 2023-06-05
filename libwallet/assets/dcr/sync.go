@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/p2p"
 	"decred.org/dcrwallet/v2/spv"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/addrmgr/v2"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // reading/writing of properties of this struct are protected by mutex.x

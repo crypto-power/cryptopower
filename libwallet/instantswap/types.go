@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"code.cryptopower.dev/group/instantswap"
 	"github.com/asdine/storm"
+	"gitlab.com/cryptopower/instantswap/instantswap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

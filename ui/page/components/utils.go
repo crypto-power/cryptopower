@@ -12,14 +12,14 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/ltcsuite/ltcd/ltcutil"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const (

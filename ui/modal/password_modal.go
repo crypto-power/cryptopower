@@ -6,10 +6,10 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type PasswordModal struct {

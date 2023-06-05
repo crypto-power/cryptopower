@@ -4,9 +4,9 @@ import (
 	"image"
 	"image/color"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type Tooltip struct {

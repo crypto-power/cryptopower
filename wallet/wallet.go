@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/libwallet"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (
