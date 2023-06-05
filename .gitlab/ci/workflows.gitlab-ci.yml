@@ -12,6 +12,7 @@ Setup gioui:
   tags:
     - linux
   script:
+    - apt-get update && apt-get install -y pkg-config libxkbcommon-dev libwayland-dev
     - go install gioui.org/cmd/gogio@latest
 
 Install dependencies:
