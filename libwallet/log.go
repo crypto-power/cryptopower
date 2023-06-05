@@ -8,13 +8,13 @@ package libwallet
 import (
 	"os"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/politeia"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/politeia"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

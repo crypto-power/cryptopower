@@ -1,8 +1,8 @@
 package ltc
 
 import (
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"github.com/ltcsuite/ltcd/ltcutil"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 )
 
 // Amount implements the Asset amount interface for the LTC asset

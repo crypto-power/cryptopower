@@ -15,7 +15,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type Button struct {

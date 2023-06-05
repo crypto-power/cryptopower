@@ -3,11 +3,11 @@ package dcr
 import (
 	"encoding/json"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

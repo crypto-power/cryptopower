@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 )
 
 const (

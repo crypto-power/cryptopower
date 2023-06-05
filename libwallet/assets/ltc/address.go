@@ -3,9 +3,9 @@ package ltc
 import (
 	"fmt"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/ltcsuite/ltcd/ltcutil"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address.

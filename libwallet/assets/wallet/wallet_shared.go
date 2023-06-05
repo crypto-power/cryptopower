@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet/walletdata"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/asdine/storm"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet/walletdata"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type Wallet struct {

@@ -66,10 +66,6 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.15.0/go.mod h1:mjjQMoxxyGH7Jr8K5qrx6N2O0AHsczI61sMNn03GIZI=
 cloud.google.com/go/trace v1.0.0/go.mod h1:4iErSByzxkyHWzzlAj63/Gmjz0NH1ASqhJguHpGcr6A=
-code.cryptopower.dev/group/blockexplorer v0.0.0-20230309085755-e79cfca9224c h1:k8voxXtcpUaI9f4p/Jm9taelRgnGXfzAJHUTZBSJtz8=
-code.cryptopower.dev/group/blockexplorer v0.0.0-20230309085755-e79cfca9224c/go.mod h1:1tQBkXgiATxg0h3ZtWRdrHTRGNxlYYxrRX8UhDLmYhs=
-code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a h1:JiQrkoHGQoKP32yM36xwzqGNirnKMKvpUV4wrQBC+18=
-code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a/go.mod h1:IyFMDcJOQckL+VhuKjvxv6NnQyCD3rAWWsTLc69zzBI=
 code.gitea.io/sdk/gitea v0.11.3/go.mod h1:z3uwDV/b9Ls47NGukYM9XhnHtqPh/J+t40lsUrR6JDY=
 contrib.go.opencensus.io/exporter/aws v0.0.0-20181029163544-2befc13012d0/go.mod h1:uu1P0UCM/6RbsMrgPa98ll8ZcHM858i/AD06a9aLRCA=
 contrib.go.opencensus.io/exporter/ocagent v0.5.0/go.mod h1:ImxhfLRpxoYiSq891pBrLVhN+qmP8BTVvdH2YLs7Gl0=
@@ -1187,6 +1183,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.1 h1:/vn0k+RBvwlxEmP5E7SZMqNxPhfMVFEJiykr15/0XKM=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
+gitlab.com/cryptopower/instantswap v0.0.0-20230602154242-f0a2083e2009 h1:aHf7L1ASgAFX532TO0O6KxiH6oOnZPsij0AraAtVQm4=
+gitlab.com/cryptopower/instantswap v0.0.0-20230602154242-f0a2083e2009/go.mod h1:Bf0VYg42soK0NysBshC3zdWENU/I4ODzp7BqxBvSsaA=
 go.etcd.io/bbolt v1.3.0/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

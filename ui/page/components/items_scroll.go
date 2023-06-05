@@ -4,12 +4,12 @@ import (
 	"math"
 	"sync"
 
-	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gitlab.com/cryptopower/cryptopower/app"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/modal"
 )
 
 // ScrollFunc is a query function that accepts offset and pagesize parameters and

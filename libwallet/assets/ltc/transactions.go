@@ -6,10 +6,10 @@ import (
 	"sort"
 	"sync"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/txhelper"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcwallet/wallet"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // txCache helps to cache the transactions fetched.

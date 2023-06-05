@@ -9,9 +9,9 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/hdkeychain/v3"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // initializeDCRWalletParameters initializes the fields each DCR wallet is going to need to be setup

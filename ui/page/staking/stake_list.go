@@ -4,9 +4,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	"code.cryptopower.dev/group/cryptopower/listeners"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/cryptopower/cryptopower/listeners"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 func (pg *Page) initTicketList() {

@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"strings"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/vsp"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

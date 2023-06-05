@@ -7,12 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/chain"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
 	// "github.com/ltcsuite/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"

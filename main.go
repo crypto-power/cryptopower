@@ -10,11 +10,11 @@ import (
 
 	"gioui.org/app"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/logger"
-	"code.cryptopower.dev/group/cryptopower/ui"
-	_ "code.cryptopower.dev/group/cryptopower/ui/assets"
-	"code.cryptopower.dev/group/cryptopower/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/logger"
+	"gitlab.com/cryptopower/cryptopower/ui"
+	_ "gitlab.com/cryptopower/cryptopower/ui/assets"
+	"gitlab.com/cryptopower/cryptopower/wallet"
 )
 
 var (

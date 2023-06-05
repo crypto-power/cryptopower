@@ -7,10 +7,10 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcwallet/waddrmgr"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/ltc"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params, error) {

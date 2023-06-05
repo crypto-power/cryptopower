@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values/localizable"
+	"gitlab.com/cryptopower/cryptopower/ui/values/localizable"
 )
 
 var rex = regexp.MustCompile(`(?m)("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*")`) // "key"="value"

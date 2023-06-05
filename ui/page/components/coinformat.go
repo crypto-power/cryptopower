@@ -5,11 +5,11 @@ import (
 	"regexp"
 	"strings"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/unit"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const defaultScale = .7

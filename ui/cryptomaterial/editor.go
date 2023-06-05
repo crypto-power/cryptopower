@@ -11,7 +11,7 @@ import (
 	"gioui.org/widget/material"
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type RestoreEditor struct {

@@ -3,9 +3,9 @@ package btc
 import (
 	"fmt"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address.

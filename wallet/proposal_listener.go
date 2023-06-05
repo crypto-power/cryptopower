@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet"
 )
 
 type ProposalStatus int

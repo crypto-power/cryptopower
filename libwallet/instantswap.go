@@ -5,17 +5,17 @@ import (
 	"math"
 	"time"
 
-	api "code.cryptopower.dev/group/instantswap"
 	"decred.org/dcrwallet/v2/errors"
+	api "gitlab.com/cryptopower/instantswap/instantswap"
 
-	"code.cryptopower.dev/group/blockexplorer"
-	_ "code.cryptopower.dev/group/blockexplorer/btcexplorer"
-	_ "code.cryptopower.dev/group/blockexplorer/dcrexplorer"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	"code.cryptopower.dev/group/cryptopower/libwallet/ext"
-	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/cryptopower/cryptopower/libwallet/ext"
+	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/instantswap/blockexplorer"
+	_ "gitlab.com/cryptopower/instantswap/blockexplorer/btcexplorer"
+	_ "gitlab.com/cryptopower/instantswap/blockexplorer/dcrexplorer"
 )
 
 const (
@@ -219,7 +219,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 
 			log.Info("Order Scheduler: instantiate block explorer")
 			// verify that the order was completed successfully from the blockchain explorer
-			explorer, err := blockexplorer.NewExplorer(params.Order.ToCurrency, false)
+			config := blockexplorer.Config{
+				EnableOutput: false,
+				Symbol: params.Order.ToCurrency,
+			}
+			explorer, err := blockexplorer.NewExplorer(config) // TODO: Confirm if this still works as intended
 			if err != nil {
 				log.Error("error instantiating block explorer: ", err.Error())
 				return errors.E(op, err)

@@ -6,12 +6,12 @@ import (
 
 	"gioui.org/layout"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
-	api "code.cryptopower.dev/group/instantswap"
+	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
+	api "gitlab.com/cryptopower/instantswap/instantswap"
 )
 
 func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {

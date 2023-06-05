@@ -3,10 +3,10 @@ package cryptomaterial
 import (
 	"image/color"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const (

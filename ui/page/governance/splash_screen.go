@@ -4,11 +4,11 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
-	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/renderers"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/modal"
+	"gitlab.com/cryptopower/cryptopower/ui/page/components"
+	"gitlab.com/cryptopower/cryptopower/ui/renderers"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 func (pg *Page) initSplashScreenWidgets() {

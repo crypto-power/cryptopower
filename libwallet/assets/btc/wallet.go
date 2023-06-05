@@ -9,10 +9,6 @@ import (
 	"sync"
 	"time"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
@@ -24,6 +20,10 @@ import (
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader/btc"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // Asset confirm that BTC implements that shared assets interface.

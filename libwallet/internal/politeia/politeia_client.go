@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	tkv1 "github.com/decred/politeia/politeiawww/api/ticketvote/v1"
 	www "github.com/decred/politeia/politeiawww/api/www/v1"
 	"github.com/decred/politeia/politeiawww/client"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type politeiaClient struct {

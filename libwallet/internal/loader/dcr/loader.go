@@ -10,13 +10,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	"decred.org/dcrwallet/v2/wallet"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
 	_ "decred.org/dcrwallet/v2/wallet/drivers/bdb" // driver loaded during init
 )

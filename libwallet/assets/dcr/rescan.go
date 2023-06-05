@@ -5,10 +5,10 @@ import (
 	"math"
 	"time"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 func (asset *DCRAsset) RescanBlocks() error {

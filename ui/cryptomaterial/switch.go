@@ -14,7 +14,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type Switch struct {

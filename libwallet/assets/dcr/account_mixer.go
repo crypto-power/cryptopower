@@ -7,14 +7,14 @@ import (
 	"errors"
 	"net"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/certs"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/ticketbuyer"
 	w "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/certs"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

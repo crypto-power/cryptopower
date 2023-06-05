@@ -5,12 +5,12 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
-	"code.cryptopower.dev/group/cryptopower/ui/values/localizable"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/ui/values/localizable"
 )
 
 type (

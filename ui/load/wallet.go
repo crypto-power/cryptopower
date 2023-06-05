@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/btc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/dcr"
-	"code.cryptopower.dev/group/cryptopower/libwallet/assets/ltc"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
+	"gitlab.com/cryptopower/cryptopower/libwallet/assets/ltc"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/wallet"
 )
 
 type WalletItem struct {

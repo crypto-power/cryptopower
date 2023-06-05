@@ -6,8 +6,8 @@
 package dcr
 
 import (
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
 	"github.com/decred/slog"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
 )
 
 var log = slog.Disabled

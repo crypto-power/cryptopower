@@ -8,15 +8,15 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 
-	"code.cryptopower.dev/group/cryptopower/app"
-	"code.cryptopower.dev/group/cryptopower/libwallet/instantswap"
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/app"
+	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/page/components"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 
-	api "code.cryptopower.dev/group/instantswap"
+	api "gitlab.com/cryptopower/instantswap/instantswap"
 )
 
 const OrderDetailsPageID = "OrderDetailsPage"

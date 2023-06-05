@@ -1,4 +1,4 @@
-module code.cryptopower.dev/group/cryptopower
+module gitlab.com/cryptopower/cryptopower
 
 go 1.19
 
@@ -24,7 +24,7 @@ require (
 	github.com/decred/dcrd/connmgr/v3 v3.1.0
 	github.com/decred/dcrd/dcrjson/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/dcrutil/v4 v4.0.0
-	github.com/decred/dcrd/gcs/v3 v3.0.0
+	github.com/decred/dcrd/gcs/v3 v3.0.0 // indirect
 	github.com/decred/dcrd/hdkeychain/v3 v3.1.0
 	github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0
 	github.com/decred/dcrd/txscript/v4 v4.0.0
@@ -51,8 +51,8 @@ require (
 )
 
 require (
-	code.cryptopower.dev/group/blockexplorer v0.0.0-20230309085755-e79cfca9224c
-	code.cryptopower.dev/group/instantswap v0.0.0-20230220075027-3f1f40be9f2a
+	// gitlab.com/cryptopower/instantswap/blockexplorer v0.0.0-20230602154242-f0a2083e2009
+	// gitlab.com/cryptopower/instantswap/instantswap v0.0.0-20230602154242-f0a2083e2009
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
@@ -78,6 +78,8 @@ require (
 	decred.org/dcrwallet v1.7.1
 	github.com/companyzero/sntrup4591761 v0.0.0-20200131011700-2b0d299dbd22 // indirect
 )
+
+require gitlab.com/cryptopower/instantswap v0.0.0-20230602154242-f0a2083e2009
 
 require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect

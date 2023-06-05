@@ -10,10 +10,6 @@ import (
 	"sync"
 	"time"
 
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader"
-	"code.cryptopower.dev/group/cryptopower/libwallet/internal/loader/ltc"
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"decred.org/dcrwallet/v2/errors"
 	neutrino "github.com/dcrlabs/neutrino-ltc"
 	labschain "github.com/dcrlabs/neutrino-ltc/chain"
@@ -27,6 +23,10 @@ import (
 	"github.com/ltcsuite/ltcd/wire"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
+	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader/ltc"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // Asset confirm that LTC implements that shared assets interface.

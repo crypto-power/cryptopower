@@ -4,12 +4,12 @@ import (
 	"image"
 	"image/color"
 
-	"code.cryptopower.dev/group/cryptopower/libwallet/utils"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

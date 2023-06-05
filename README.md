@@ -49,7 +49,7 @@ To save a profile, you can simply use
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://code.cryptopower.dev/group/cryptopower/blob/master/.gitlab/ci/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://gitlab.com/cryptopower/cryptopower/blob/master/.gitlab/ci/CONTRIBUTING.md)
 
 ## Other
 

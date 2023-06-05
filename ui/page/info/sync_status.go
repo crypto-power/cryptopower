@@ -6,10 +6,10 @@ import (
 
 	"gioui.org/layout"
 
-	libutils "code.cryptopower.dev/group/cryptopower/libwallet/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/page/components"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 func (pg *WalletInfo) initWalletStatusWidgets() {

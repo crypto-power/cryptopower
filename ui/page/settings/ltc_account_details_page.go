@@ -8,14 +8,14 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"code.cryptopower.dev/group/cryptopower/app"
-	sharedW "code.cryptopower.dev/group/cryptopower/libwallet/assets/wallet"
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/load"
-	"code.cryptopower.dev/group/cryptopower/ui/modal"
-	"code.cryptopower.dev/group/cryptopower/ui/page/components"
-	"code.cryptopower.dev/group/cryptopower/ui/utils"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
+	"gitlab.com/cryptopower/cryptopower/app"
+	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/load"
+	"gitlab.com/cryptopower/cryptopower/ui/modal"
+	"gitlab.com/cryptopower/cryptopower/ui/page/components"
+	"gitlab.com/cryptopower/cryptopower/ui/utils"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const LTCAccountDetailsPageID = "LTCAccountDetails"

@@ -3,11 +3,11 @@ package renderers
 import (
 	"strings"
 
-	"code.cryptopower.dev/group/cryptopower/ui/cryptomaterial"
-	"code.cryptopower.dev/group/cryptopower/ui/values"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
+	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 func getLabel(lbl cryptomaterial.Label) cryptomaterial.Label {
