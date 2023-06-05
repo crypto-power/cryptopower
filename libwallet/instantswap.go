@@ -221,7 +221,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			// verify that the order was completed successfully from the blockchain explorer
 			config := blockexplorer.Config{
 				EnableOutput: false,
-				Symbol: params.Order.ToCurrency,
+				Symbol:       params.Order.ToCurrency,
 			}
 			explorer, err := blockexplorer.NewExplorer(config) // TODO: Confirm if this still works as intended
 			if err != nil {
