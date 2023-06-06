@@ -406,6 +406,7 @@ func (asset *Asset) CancelSync() {
 
 	// Call stopSync in a goroutine, stopSync's shutdown waits, block
 	// the calling thread - the UI thread - if stopsync is not called in a different routine.
+	asset.syncData.wg.Add(1)
 	go asset.stopSync()
 
 	log.Infof("(%v) SPV wallet closed", asset.GetWalletName())
@@ -415,8 +416,6 @@ func (asset *Asset) CancelSync() {
 // It does not stop the chain service which is intentionally left out since once
 // stopped it can't be restarted easily.
 func (asset *Asset) stopSync() {
-	asset.syncData.wg.Add(1)
-
 	asset.syncData.isSyncShuttingDown = true
 	loadedAsset := asset.Internal().BTC
 	if asset.WalletOpened() {
