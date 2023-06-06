@@ -18,6 +18,8 @@ import (
 	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
+type walletTypeCallbackFunc func() libutils.AssetType
+
 // FeeRateSelector represent a tx fee selector UI component.
 type FeeRateSelector struct {
 	*load.Load
@@ -39,6 +41,10 @@ type FeeRateSelector struct {
 	TxFeeUSD        string
 	showSizeAndCost bool
 
+	// selectedWalletType provides a callback function that can be used
+	// independent of the set wallet within the Load input parameter.
+	selectedWalletType walletTypeCallbackFunc
+
 	// ContainerInset should be used to set the inset for
 	// FeeRateSelector component container.
 	ContainerInset layout.Inset
@@ -55,9 +61,12 @@ type FeeRateSelector struct {
 }
 
 // NewFeeRateSelector create and return an instance of FeeRateSelector.
-func NewFeeRateSelector(l *load.Load) *FeeRateSelector {
+// Since the feeRate selector can be used before the selected wallet is set
+// a Load independent callback function is provided to help address that case scenario.
+func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateSelector {
 	fs := &FeeRateSelector{
-		Load: l,
+		Load:               l,
+		selectedWalletType: callback,
 	}
 
 	fs.feeRateText = " - "
@@ -159,7 +168,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 														if !fs.isFeerateAPIApproved() {
 															str = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
 															fs.FetchRates.SetEnabled(false)
-														} else if fs.WL.SelectedWallet.Wallet.GetAssetType() == libutils.LTCWalletAsset {
+														} else if fs.selectedWalletType() == libutils.LTCWalletAsset {
 															// TODO: Add fee rate API query for LTC
 															str = values.StringF(values.StrNotSupported, values.String(values.StrFeeRateAPI))
 															fs.FetchRates.SetEnabled(false)
@@ -321,7 +330,7 @@ func (fs *FeeRateSelector) addRatesUnits(rates int64) string {
 }
 
 func (fs *FeeRateSelector) ratesUnit() string {
-	switch fs.WL.SelectedWallet.Wallet.GetAssetType() {
+	switch fs.selectedWalletType() {
 	case libutils.LTCWalletAsset:
 		return "Lit/kvB"
 	default:
