@@ -7,19 +7,18 @@ BuildEnv="prod"
 
 build-binary:
 	#Build the binary image
-	docker build -t linux-binary-image --build-arg BUILDOS=linux --build-arg BUILDARCH=amd64 --build-arg BUILDNAME=$(BUILDNAME) --no-cache .
 	docker build -t binary-image --build-arg BUILDOS=$(BUILDOS) --build-arg BUILDARCH=$(BUILDARCH) --build-arg BUILDNAME=$(BUILDNAME) --no-cache .
 
-	#Run the linux-binary-image in a new container called linux-binary
+	#Run the binary-image in a new container called binary
 	docker run --name binary binary-image
 
-	#Copy the compiled linux binary to the host machine
-	docker cp binary:/app/$(BUILDNAME) /
+	#Copy the compiled binary to the host machine
+	docker cp binary:/app/$(BUILDNAME) .
 	
-	#Remove the linux-binary container
+	#Remove the binary container
 	docker rm binary
 
-	#Remove the linux-binary-image
+	#Remove the binary-image
 	docker image rm binary-image
 
 linux-amd64-binary: 
