@@ -113,7 +113,10 @@ func NewSendPage(l *load.Load) *Page {
 		Asset: l.WL.SelectedWallet.Wallet,
 	}
 
-	pg.feeRateSelector = components.NewFeeRateSelector(l).ShowSizeAndCost()
+	callbackFunc := func() libUtil.AssetType {
+		return pg.selectedWallet.GetAssetType()
+	}
+	pg.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
 	pg.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
 	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
 	pg.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)

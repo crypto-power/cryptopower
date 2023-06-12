@@ -87,7 +87,11 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 		},
 	}
 
-	osm.feeRateSelector = components.NewFeeRateSelector(l)
+	callbackFunc := func() libutils.AssetType {
+		return osm.orderData.fromCurrency
+	}
+
+	osm.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc)
 	osm.feeRateSelector.TitleFontWeight = text.SemiBold
 	osm.initWalletSelectors()
 
