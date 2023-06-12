@@ -1,5 +1,10 @@
 FROM golang 
 
+#Set build arguments
+ARG BUILDOS
+ARG BUILDARCH
+ARG BUILDNAME
+
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.2
 
 ENV GO111MODULE on
@@ -10,13 +15,16 @@ RUN apt-get update
 
 RUN apt-get install libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev --yes
 
-RUN go get -v github.com/onsi/ginkgo/ginkgo
+#Define the working directory in the container
+WORKDIR /app
 
-RUN go get -v github.com/onsi/gomega
-
-COPY . /src
-
-WORKDIR /src
+#Copy all files from root into the container
+COPY . ./
 
 RUN go mod download
-# ENTRYPOINT [ "go", "test"]
+
+#Use go mod tidy to handle dependencies
+RUN go mod tidy
+
+#Compile the binary
+RUN env GOOS=$BUILDOS GOARCH=$BUILDARCH go build -o $BUILDNAME -trimpath -ldflags=-buildid=
