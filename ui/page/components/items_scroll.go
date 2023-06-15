@@ -18,16 +18,21 @@ import (
 type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, isReset bool, err error)
 
 type Scroll struct {
-	load           *load.Load
-	list           *widget.List
-	listStyle      *cryptomaterial.ListStyle
+	load      *load.Load
+	list      *widget.List
+	listStyle *cryptomaterial.ListStyle
+
 	prevListOffset int
+	prevScrollView int
 
 	pageSize   int32
 	offset     int32
 	itemsCount int
 	queryFunc  ScrollFunc
 	data       interface{}
+
+	// scrollView defines the scroll view length in pixels.
+	scrollView int
 
 	isLoadingItems bool
 	loadedAllItems bool
@@ -55,9 +60,14 @@ func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
 // the function call a window reload is triggered. Returns that latest records.
 func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	// s.data is not nil when moving from details page to list page.
+	if s.data != nil {
+		s.isLoadingItems = false
+		// offset will be added back so that the earlier page is recreated.
+		s.offset -= s.pageSize
+	}
+	s.mu.Unlock()
 
-	s.resetList()
 	s.fetchScrollData(isReverse, window)
 }
 
@@ -67,51 +77,58 @@ func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
 func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
+	s.mu.Lock()
+
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
 		return
 	}
 
-	defer func() {
-		s.isLoadingItems = false
-		if isReverse {
-			s.list.Position.Offset = int(math.Abs(float64(s.list.Position.OffsetLast + 4)))
-			s.list.Position.OffsetLast = -4
-		} else {
-			s.list.Position.Offset = 4
-			s.list.Position.OffsetLast = s.list.Position.OffsetLast + 4
-		}
-	}()
-
-	s.isLoadingItems = true
-	switch isReverse {
-	case true:
+	if isReverse {
+		s.list.Position.Offset = s.scrollView*-1 + 1
+		s.list.Position.OffsetLast = 1
 		s.offset -= s.pageSize
-	default:
+	} else {
+		s.list.Position.Offset = 1
+		s.list.Position.OffsetLast = s.scrollView*-1 + 1
 		if s.data != nil {
 			s.offset += s.pageSize
 		}
 	}
 
+	s.isLoadingItems = true
+	s.itemsCount = -1 // should trigger loading icon
+	offset := s.offset
 	tempSize := s.pageSize
-	items, itemsLen, isReset, err := s.queryFunc(s.offset, tempSize*2)
+
+	s.mu.Unlock()
+
+	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
 	// Check if enough list items exists to fill the next page. If they do only query
 	// enough items to fit the current page otherwise return all the queried items.
-	if itemsLen > int(s.pageSize) && itemsLen%int(s.pageSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(s.offset, s.pageSize)
+	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
+		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
 	}
+
+	s.mu.Lock()
+
 	if err != nil {
 		errModal := modal.NewErrorModal(s.load, err.Error(), modal.DefaultClickFunc())
 		window.ShowModal(errModal)
+		s.isLoadingItems = false
+		s.mu.Unlock()
+
 		return
 	}
 
-	if itemsLen > int(s.pageSize) {
+	if itemsLen > int(tempSize) {
 		// Since this is the last page set of items, prevent further scroll down queries.
 		s.loadedAllItems = true
 	}
 
 	s.data = items
 	s.itemsCount = itemsLen
+	s.isLoadingItems = false
+	s.mu.Unlock()
 
 	if isReset {
 		// resets the values for use on the next iteration.
@@ -147,6 +164,9 @@ func (s *Scroll) List() *cryptomaterial.ListStyle {
 }
 
 func (s *Scroll) resetList() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.offset = 0
 	s.loadedAllItems = false
 }
@@ -155,49 +175,76 @@ func (s *Scroll) resetList() {
 // list view accordingly. FetchScrollData needs to be invoked first before calling
 // this function.
 func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
-	defer s.mu.Unlock()
 	s.mu.Lock()
 
-	// Ignore if the query hasn't been invoked to fetch the list items.
-	if s.itemsCount < int(s.pageSize) && s.itemsCount != -1 {
+	// Ignore if the list component on the UI hasn't been drawn.
+	if s.listStyle == nil {
+		s.mu.Unlock()
 		return
 	}
 
-	// Ignore duplicate events triggered without moving the scrollbar by checking
-	// if the current list offset matches the previously set offset.
-	if s.listStyle == nil || s.list.Position.Offset == s.prevListOffset {
+	scrollPos := s.list.Position
+	// Ignore if the query hasn't been invoked to fetch list items.
+	if s.itemsCount < int(s.pageSize) && s.itemsCount != -1 {
+		s.mu.Unlock()
 		return
 	}
+
+	// Ignore if the query is in theprocess of fetching the list items.
+	if s.itemsCount == -1 && s.isLoadingItems {
+		s.mu.Unlock()
+		return
+	}
+
+	s.scrollView = int(math.Abs(float64(scrollPos.Offset)) + math.Abs(float64(scrollPos.OffsetLast)))
 
 	// Ignore the first time OnScrollChangeListener is called. When loading the
 	// page a prexisting list of items to display already exist therefore no need
 	// to load it again.
 	if s.prevListOffset == -1 {
-		s.prevListOffset = s.list.Position.Offset
+		s.prevListOffset = scrollPos.Offset
+		s.prevScrollView = s.scrollView
+		s.mu.Unlock()
 		return
 	}
 
-	scrollPos := s.list.Position
+	// Ignore duplicate events triggered without moving the scrollbar by checking
+	// if the current list offset matches the previously set offset.
+	if scrollPos.Offset == s.prevListOffset {
+		s.mu.Unlock()
+		return
+	}
+
 	// isScrollingDown checks when to fetch the Next page items because the scrollbar
 	// has reached at the end of the current list loaded.
-	// The -50 is to load more orders before reaching the end of the list.
-	// (-50 is an arbitrary number)
-	isScrollingDown := scrollPos.Offset > s.prevListOffset && scrollPos.OffsetLast >= -50
+	isScrollingDown := scrollPos.Offset == s.scrollView && scrollPos.OffsetLast == 0 && s.prevListOffset < scrollPos.Offset && s.prevScrollView == s.scrollView
 	// isScrollingUp checks when to fetch the Previous page items because the scrollbar
 	// has reached at the beginning of the current list loaded.
-	isScrollingUp := scrollPos.Offset < s.prevListOffset && scrollPos.Offset == 0 && s.offset > 0
+	isScrollingUp := scrollPos.Offset == 0 && scrollPos.OffsetLast < 0 && s.offset > 0 && s.prevListOffset > scrollPos.Offset
 	s.prevListOffset = scrollPos.Offset
+	s.prevScrollView = s.scrollView
 
 	if isScrollingDown {
 		// Enforce the first item to be at the list top.
 		s.list.ScrollToEnd = false
+		s.list.Position.BeforeEnd = false
+
+		s.mu.Unlock()
+
 		go s.fetchScrollData(false, window)
 	}
 
 	if isScrollingUp {
 		// Enforce the first item to be at the list bottom.
 		s.list.ScrollToEnd = true
-		s.loadedAllItems = false
+		s.list.Position.BeforeEnd = true
+
+		s.mu.Unlock()
+
 		go s.fetchScrollData(true, window)
+	}
+
+	if !isScrollingUp && !isScrollingDown {
+		s.mu.Unlock()
 	}
 }
