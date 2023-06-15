@@ -580,7 +580,6 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						pg.Toast.Notify(values.String(values.StrTxHashCopied))
 					}
 					return pg.destAddressClickable.Layout(gtx, lbl.Layout)
-
 				}
 				// if transaction is transferred, show the destination account
 				// without being wrapped in a clickable
