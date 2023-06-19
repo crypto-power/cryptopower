@@ -1,19 +1,19 @@
 # This how we want to name the binary output
 BUILDNAME=cryptopower
 
-VERSION="0.0.1"
+VERSION="v1.0.0"
 # dev or prod
 BuildEnv="prod" 
 
 build-binary:
 	#Build the binary image
-	docker build -t binary-image --build-arg BUILDOS=$(BUILDOS) --build-arg BUILDARCH=$(BUILDARCH) --build-arg BUILDNAME=$(BUILDNAME) --no-cache .
+	docker build -t binary-image --build-arg BUILDOS=$(BUILDOS) --build-arg BUILDARCH=$(BUILDARCH) --build-arg BUILDNAME=$(BUILDNAME)-$(BUILDOS)-$(BUILDARCH)-$(VERSION) --no-cache .
 
 	#Run the binary-image in a new container called binary
 	docker run --name binary binary-image
 
 	#Copy the compiled binary to the host machine
-	docker cp binary:/app/$(BUILDNAME) .
+	docker cp binary:/app/$(BUILDNAME)-$(BUILDOS)-$(BUILDARCH)-$(VERSION) .
 	
 	#Remove the binary container
 	docker rm binary
