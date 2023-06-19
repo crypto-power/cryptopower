@@ -6,5 +6,7 @@ _*
 *.coverprofile
 **/.cryptopower_test*
 pkged.go
+Dockerfile
+makefile
 
 vendor
