@@ -48,5 +48,3 @@ freebsd-arm-binary:
 # Cleans our project: deletes old binaries
 clean:
 	-rm -f ${BINARY}-*
-
-.PHONY: clean darwin windows linux freebsd
