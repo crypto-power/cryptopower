@@ -12,9 +12,9 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
 	"github.com/asdine/storm"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet/walletdata"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/assets/wallet/walletdata"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 type Wallet struct {

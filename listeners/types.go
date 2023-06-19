@@ -1,6 +1,6 @@
 package listeners
 
-import sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+import sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
 type TxNotifType int
 

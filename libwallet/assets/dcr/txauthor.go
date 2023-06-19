@@ -12,14 +12,14 @@ import (
 	"decred.org/dcrwallet/v2/wallet/txauthor"
 	"decred.org/dcrwallet/v2/wallet/txrules"
 	"decred.org/dcrwallet/v2/wallet/txsizes"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	"github.com/decred/dcrd/wire"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type TxAuthor struct {

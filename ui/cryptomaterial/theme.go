@@ -17,7 +17,7 @@ import (
 
 	"gioui.org/widget/material"
 
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 

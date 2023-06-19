@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"gitlab.com/cryptopower/instantswap/instantswap"
+	"github.com/crypto-power/instantswap/instantswap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

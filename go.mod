@@ -1,4 +1,4 @@
-module gitlab.com/cryptopower/cryptopower
+module github.com/crypto-power/cryptopower
 
 go 1.19
 
@@ -51,8 +51,8 @@ require (
 )
 
 require (
-	// gitlab.com/cryptopower/instantswap/blockexplorer v0.0.0-20230602154242-f0a2083e2009
-	// gitlab.com/cryptopower/instantswap/instantswap v0.0.0-20230602154242-f0a2083e2009
+	// github.com/crypto-power/instantswap/blockexplorer v0.0.0-20230602154242-f0a2083e2009
+	// github.com/crypto-power/instantswap/instantswap v0.0.0-20230602154242-f0a2083e2009
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
@@ -79,7 +79,7 @@ require (
 	github.com/companyzero/sntrup4591761 v0.0.0-20200131011700-2b0d299dbd22 // indirect
 )
 
-require gitlab.com/cryptopower/instantswap v0.0.0-20230602154242-f0a2083e2009
+require github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf
 
 require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect

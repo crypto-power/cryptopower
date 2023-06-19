@@ -7,10 +7,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 const FrequencySelectorID = "FrequencySelectorID"

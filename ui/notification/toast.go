@@ -11,8 +11,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type (

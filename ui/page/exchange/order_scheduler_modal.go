@@ -10,15 +10,15 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/ext"
-	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/page/components"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
-	api "gitlab.com/cryptopower/instantswap/instantswap"
+	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/values"
+	api "github.com/crypto-power/instantswap/instantswap"
 )
 
 type orderSchedulerModal struct {

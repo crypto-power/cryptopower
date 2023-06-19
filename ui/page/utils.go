@@ -11,8 +11,8 @@ import (
 
 	"gioui.org/widget"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 func translateErr(err error) string {

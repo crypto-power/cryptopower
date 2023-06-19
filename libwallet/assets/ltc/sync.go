@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v2/errors"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/chaincfg"
 	ltcwire "github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/chain"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
 	// "github.com/ltcsuite/neutrino"
 	neutrino "github.com/dcrlabs/neutrino-ltc"

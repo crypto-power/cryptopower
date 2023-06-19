@@ -10,7 +10,7 @@ We achieve bootstrappability by using Docker.
 
 Note: You need to have [Docker](https://www.docker.com/) to build.
 
-in the cryptopower root directory and execute:
+execute the command below in the cryptopower root:
 
 `./reproducible_builds.sh {target}`
 

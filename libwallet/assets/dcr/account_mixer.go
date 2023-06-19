@@ -10,11 +10,11 @@ import (
 	"decred.org/dcrwallet/v2/ticketbuyer"
 	w "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/udb"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/internal/certs"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/certs"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

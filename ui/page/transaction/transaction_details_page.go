@@ -13,17 +13,17 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
-	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/modal"
-	"gitlab.com/cryptopower/cryptopower/ui/page/components"
-	"gitlab.com/cryptopower/cryptopower/ui/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 const (

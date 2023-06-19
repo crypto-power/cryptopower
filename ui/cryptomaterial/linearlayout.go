@@ -9,7 +9,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 const (

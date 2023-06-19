@@ -16,9 +16,9 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"github.com/btcsuite/btcwallet/wallet/txsizes"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 // TxAuthor holds the information required to construct a transaction that

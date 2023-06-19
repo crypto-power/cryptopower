@@ -6,11 +6,11 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/renderers"
-	"gitlab.com/cryptopower/cryptopower/ui/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/renderers"
+	"github.com/crypto-power/cryptopower/ui/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type TextInputModal struct {

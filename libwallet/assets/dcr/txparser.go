@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	w "decred.org/dcrwallet/v2/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 )
 
 func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,

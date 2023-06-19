@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/wallet"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
 func (asset *Asset) decodeTxHex(txHex string) (*wire.MsgTx, error) {

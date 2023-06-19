@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 
 	"gioui.org/widget"
 	"golang.org/x/text/message"

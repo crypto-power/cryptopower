@@ -9,11 +9,11 @@ import (
 	"sort"
 	"strings"
 
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/version"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
-	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/version"
 )
 
 const (

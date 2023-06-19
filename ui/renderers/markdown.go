@@ -8,9 +8,9 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/gomarkdown/markdown/ast"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const (

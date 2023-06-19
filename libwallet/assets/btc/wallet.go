@@ -18,12 +18,12 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcwallet/chain"
 	_ "github.com/btcsuite/btcwallet/walletdb/bdb" // bdb init() registers a driver
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader/btc"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/lightninglabs/neutrino"
 	"github.com/lightninglabs/neutrino/headerfs"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader/btc"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // Asset confirm that BTC implements that shared assets interface.

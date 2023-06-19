@@ -3,8 +3,8 @@ package walletdata
 import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (query storm.Query) {

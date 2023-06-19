@@ -1,8 +1,8 @@
 package listeners
 
 import (
-	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
-	"gitlab.com/cryptopower/cryptopower/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
+	"github.com/crypto-power/cryptopower/wallet"
 )
 
 // OrderNotificationListener satisfies libwallet OrderNotificationListener

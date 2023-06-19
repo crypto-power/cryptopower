@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/chainhash"

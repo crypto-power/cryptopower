@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 
 	"github.com/asdine/storm"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/txhelper"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/txhelper"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 const (

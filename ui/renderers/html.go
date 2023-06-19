@@ -12,8 +12,8 @@ import (
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/gomarkdown/markdown/ast"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
 )
 
 type HTMLProvider struct {

@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"decred.org/dcrwallet/v2/errors"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 const (

@@ -6,10 +6,10 @@ import (
 	"net"
 
 	"decred.org/dcrwallet/v2/wallet/udb"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
 )
 
 // DCRAmount implements the Asset amount interface for the DCR asset

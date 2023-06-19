@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"gitlab.com/cryptopower/cryptopower/ui/values/localizable"
+	"github.com/crypto-power/cryptopower/ui/values/localizable"
 )
 
 const (

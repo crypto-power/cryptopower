@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v2/errors"
-	api "gitlab.com/cryptopower/instantswap/instantswap"
+	api "github.com/crypto-power/instantswap/instantswap"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/ext"
-	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/instantswap/blockexplorer"
-	_ "gitlab.com/cryptopower/instantswap/blockexplorer/btcexplorer"
-	_ "gitlab.com/cryptopower/instantswap/blockexplorer/dcrexplorer"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/instantswap/blockexplorer"
+	_ "github.com/crypto-power/instantswap/blockexplorer/btcexplorer"
+	_ "github.com/crypto-power/instantswap/blockexplorer/dcrexplorer"
 )
 
 const (

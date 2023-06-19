@@ -14,8 +14,8 @@ import (
 	"github.com/ltcsuite/ltcwallet/wallet"
 	_ "github.com/ltcsuite/ltcwallet/walletdb/bdb" // bdb init() registers a driver
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 var log = loader.Log

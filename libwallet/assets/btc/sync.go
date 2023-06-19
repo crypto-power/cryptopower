@@ -9,9 +9,9 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcwallet/chain"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/lightninglabs/neutrino"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 	"golang.org/x/sync/errgroup"
 )
 

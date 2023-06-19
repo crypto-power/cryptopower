@@ -6,7 +6,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
-	"gitlab.com/cryptopower/instantswap/instantswap"
+	"github.com/crypto-power/instantswap/instantswap"
 )
 
 const (

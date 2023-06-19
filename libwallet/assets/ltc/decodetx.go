@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/ltcsuite/ltcd/txscript"
 	"github.com/ltcsuite/ltcd/wire"
 	"github.com/ltcsuite/ltcwallet/wallet"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
 )
 
 func (asset *Asset) decodeTxHex(txHex string) (*wire.MsgTx, error) {
