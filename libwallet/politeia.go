@@ -1,7 +1,7 @@
 package libwallet
 
 import (
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/politeia"
+	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
 )
 
 // This file exports politeia implementation in internal/politeia.

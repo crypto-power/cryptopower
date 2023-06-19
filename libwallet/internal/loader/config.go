@@ -8,10 +8,10 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	ltcW "github.com/ltcsuite/ltcwallet/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 
-	_ "gitlab.com/cryptopower/cryptopower/libwallet/badgerdb" // initialize badger driver
+	_ "github.com/crypto-power/cryptopower/libwallet/badgerdb" // initialize badger driver
 )
 
 const defaultDbDriver = "bdb"

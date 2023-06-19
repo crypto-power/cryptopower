@@ -5,10 +5,10 @@ import (
 
 	"gioui.org/layout"
 
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/page/components"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 func (pg *Page) initStakePriceWidget() *Page {

@@ -11,14 +11,14 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/modal"
-	"gitlab.com/cryptopower/cryptopower/ui/page/components"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 const CreateRestorePageID = "Restore"

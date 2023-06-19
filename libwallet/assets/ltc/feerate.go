@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"decred.org/dcrwallet/v2/errors"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/ltcutil"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // TODO: Update this file for Litecoin

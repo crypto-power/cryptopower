@@ -7,12 +7,12 @@ import (
 
 	dcrW "decred.org/dcrwallet/v2/wallet"
 	"decred.org/dcrwallet/v2/wallet/txrules"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader/dcr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/vsp"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type DCRAsset struct {

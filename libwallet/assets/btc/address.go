@@ -5,7 +5,7 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/btcsuite/btcd/btcutil"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address.

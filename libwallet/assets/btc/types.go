@@ -2,7 +2,7 @@ package btc
 
 import (
 	"github.com/btcsuite/btcd/btcutil"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
 // Amount implements the Asset amount interface for the BTC asset

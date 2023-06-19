@@ -3,11 +3,11 @@ package txhelper
 import (
 	btcchaincfg "github.com/btcsuite/btcd/chaincfg"
 	btcWire "github.com/btcsuite/btcd/wire"
+	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	dcrutil "github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcWire "github.com/ltcsuite/ltcd/wire"
-	"gitlab.com/cryptopower/cryptopower/libwallet/addresshelper"
 )
 
 func MakeTxOutput(address string, amountInAtom int64, net dcrutil.AddressParams) (output *wire.TxOut, err error) {

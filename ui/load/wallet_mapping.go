@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/ltc"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
 // WalletMapping helps to call a function quickly no matter what currency it is,

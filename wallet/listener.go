@@ -1,6 +1,6 @@
 package wallet
 
-import sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+import sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
 type RescanNotificationType int
 

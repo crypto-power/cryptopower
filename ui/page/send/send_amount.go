@@ -7,14 +7,14 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	libUtil "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 type sendAmount struct {

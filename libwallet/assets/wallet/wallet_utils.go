@@ -10,11 +10,11 @@ import (
 	"decred.org/dcrwallet/v2/walletseed"
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	dcrhdkeychain "github.com/decred/dcrd/hdkeychain/v3"
 	"github.com/kevinburke/nacl"
 	"github.com/kevinburke/nacl/secretbox"
 	ltchdkeychain "github.com/ltcsuite/ltcd/ltcutil/hdkeychain"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 	"golang.org/x/crypto/scrypt"
 )
 

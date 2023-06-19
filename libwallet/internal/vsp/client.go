@@ -9,8 +9,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type client struct {

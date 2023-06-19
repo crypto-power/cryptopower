@@ -8,17 +8,17 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	"gitlab.com/cryptopower/cryptopower/libwallet"
-	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/listeners"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/modal"
-	"gitlab.com/cryptopower/cryptopower/ui/page/components"
-	"gitlab.com/cryptopower/cryptopower/ui/page/settings"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
-	"gitlab.com/cryptopower/cryptopower/wallet"
+	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/listeners"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/settings"
+	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const (

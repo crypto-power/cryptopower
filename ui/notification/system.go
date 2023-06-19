@@ -3,9 +3,9 @@ package notification
 import (
 	"path/filepath"
 
+	"github.com/crypto-power/cryptopower/ui/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/gen2brain/beeep"
-	"gitlab.com/cryptopower/cryptopower/ui/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
 )
 
 const (

@@ -15,16 +15,16 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	libutils "gitlab.com/cryptopower/cryptopower/libwallet/utils"
-	"gitlab.com/cryptopower/cryptopower/ui/assets"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/load"
-	"gitlab.com/cryptopower/cryptopower/ui/notification"
-	"gitlab.com/cryptopower/cryptopower/ui/page"
-	"gitlab.com/cryptopower/cryptopower/ui/values"
-	"gitlab.com/cryptopower/cryptopower/wallet"
+	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/assets"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/notification"
+	"github.com/crypto-power/cryptopower/ui/page"
+	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/crypto-power/cryptopower/wallet"
 )
 
 // Window represents the app window (and UI in general). There should only be one.

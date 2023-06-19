@@ -10,16 +10,16 @@ import (
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"gitlab.com/cryptopower/cryptopower/libwallet/ext"
-	"gitlab.com/cryptopower/cryptopower/libwallet/instantswap"
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/politeia"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
+	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	bolt "go.etcd.io/bbolt"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/btc"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/dcr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/assets/ltc"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
 // Assets is a struct that holds all the assets supported by the wallet.

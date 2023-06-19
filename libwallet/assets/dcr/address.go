@@ -5,8 +5,8 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	w "decred.org/dcrwallet/v2/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address

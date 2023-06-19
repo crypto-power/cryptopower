@@ -5,8 +5,8 @@ import (
 
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 type AssetAmount interface {

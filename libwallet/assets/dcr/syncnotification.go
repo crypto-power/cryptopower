@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v2/spv"
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"golang.org/x/sync/errgroup"
 )
 

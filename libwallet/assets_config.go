@@ -5,9 +5,9 @@ import (
 
 	"decred.org/dcrwallet/v2/errors"
 	"github.com/asdine/storm"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 
-	sharedW "gitlab.com/cryptopower/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
 	"golang.org/x/crypto/bcrypt"
 )

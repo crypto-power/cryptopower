@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
-	"gitlab.com/cryptopower/cryptopower/app"
+	"github.com/crypto-power/cryptopower/app"
 )
 
 type Modal struct {

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v3"
 	apiTypes "github.com/decred/dcrdata/v7/api/types"
 	"github.com/decred/dcrdata/v7/db/dbtypes"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 var (

@@ -48,17 +48,17 @@ Only submit a MR once the intended edits are either done or nearing completion. 
 
 - Go language distribution - latest release or latest-1 (must be >=1.12). [download](https://golang.org/doc/install)
 - git client with command line support. [download](https://git-scm.com/downloads)
-- [GitLab](https://gitlab.com/) account
+- [GitLab](https://github.com/) account
 - Visual Studio Code with Go extension plus `golangci-lint`
 ### Git Workflow
 
-1. Fork the repository on GitLab.  Just click the little Fork button at https://gitlab.com/cryptopower/cryptopower
+1. Fork the repository on GitLab.  Just click the little Fork button at https://github.com/crypto-power/cryptopower
 
 
 2. Clone your newly forked cryptopower repository
 
 ```sh
-git clone git@gitlab.com:my-user-name/cryptopower.git
+git clone git@github.com:my-user-name/cryptopower.git
 ```
 
 ###### recommended
@@ -67,7 +67,7 @@ Setting your master branch to track this repository makes keeping everything up-
 The rest of this workflow guide will assume that you have completed this step.
 
 ```sh
-git remote add upstream https://gitlab.com/cryptopower/cryptopower.git
+git remote add upstream https://github.com/crypto-power/cryptopower.git
 git fetch upstream
 git branch -u upstream/master master
 ```
@@ -209,4 +209,4 @@ Read [Effective Go](https://golang.org/doc/effective_go.html).
 
 ### Further reading
 
-[Code Contribution Guidelines](https://gitlab.com/decred/dcrd/blob/master/docs/code_contribution_guidelines.md) (dcrd repo)
+[Code Contribution Guidelines](https://github.com/decred/dcrd/blob/master/docs/code_contribution_guidelines.md) (dcrd repo)

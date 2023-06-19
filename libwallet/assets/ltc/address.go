@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"decred.org/dcrwallet/v2/errors"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/ltcutil"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
 )
 
 // AddressInfo holds information about an address.

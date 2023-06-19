@@ -8,10 +8,10 @@ package load
 import (
 	"golang.org/x/text/message"
 
-	"gitlab.com/cryptopower/cryptopower/app"
-	"gitlab.com/cryptopower/cryptopower/ui/assets"
-	"gitlab.com/cryptopower/cryptopower/ui/cryptomaterial"
-	"gitlab.com/cryptopower/cryptopower/ui/notification"
+	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/ui/assets"
+	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/notification"
 )
 
 type NeedUnlockRestore func(bool)

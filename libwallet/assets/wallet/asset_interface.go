@@ -3,8 +3,8 @@ package wallet
 import (
 	"context"
 
-	"gitlab.com/cryptopower/cryptopower/libwallet/internal/loader"
-	"gitlab.com/cryptopower/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
 // Asset defines the interface each wallet must satisfy.
