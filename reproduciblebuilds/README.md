@@ -18,11 +18,11 @@ select your target from [Build Targets](https://github.com/crypto-power/cryptopo
 
 e.g `./reproducible_builds.sh linux-amd64-binary`
 
-### Verfification
+### Verification
 
 You can then verify if the binaries are reproducible using a tool like [diffoscope](https://diffoscope.org/) or [reprotest](https://salsa.debian.org/reproducible-builds/reprotest)
 
-### Using Diffoscope
+#### Using Diffoscope
 
 e.g `diffoscope binary1 binary2`
 
