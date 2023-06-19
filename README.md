@@ -57,31 +57,8 @@ Earlier experimental work with other user interface toolkits can be found at [go
 
 ## Bootstrappable Cryptopower Builds
 
-The `reproducible-builds` directory contains the files necessary to perform bootstrappable Cryptopower builds.
+The [reproduciblebuilds](https://github.com/crypto-power/cryptopower/tree/master/reproduciblebuilds) directory contains the files necessary to perform bootstrappable Cryptopower builds.
 
 Bootstrappability furthers our binary security guarantees by allowing us to audit and reproduce our toolchain instead of blindly trusting binary downloads.
 
-We achieve bootstrappability by using Guix as a functional package manager.
-
-## Private Repo Notes
-
-In order to use this repo you will need to configure git to use ssh instead of https:
-
-create ~/.gitconfig:
-```
-[user]
-    name = Nane
-    email = some@email.address
-[url "git@code.cryptopower.dev:"]
-	insteadOf = https://code.cryptopower.dev/
-```
-
-create ~/.netrc:
-```
-machine code.cryptopower.dev
-login <current shared auth username>
-password <current shared auth password>
-```
-For `go get` commands to work you will need to set the `GOPRIVATE` variable. 
-Example:
-`export GOPRIVATE="code.cryptopower.dev/group/"`
+We achieve bootstrappability by using Docker.

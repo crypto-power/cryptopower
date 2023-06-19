@@ -10,6 +10,28 @@ We achieve bootstrappability by using Docker.
 
 Note: You need to have [Docker](https://www.docker.com/) to build.
 
+in the cryptopower root directory and execute:
+
+`./reproducible_builds.sh {target}`
+
+select your target from [Build Targets](https://github.com/crypto-power/cryptopower/tree/master/reproduciblebuilds#build-targets)
+
+e.g `./reproducible_builds.sh linux-amd64-binary`
+
+### Verfification
+
+You can then verify if the binaries are reproducible using a tool like [diffoscope](https://diffoscope.org/) or [reprotest](https://salsa.debian.org/reproducible-builds/reprotest)
+
+### Using Diffoscope
+
+e.g `diffoscope binary1 binary2`
+
+The output should be clean if the binaries are reproducible (DYOR).
+
+You should get a clutter of outputs if the binaries are not reproducible
+
+## Build Targets
+
 ### Linux
 
 Linux amd64:
