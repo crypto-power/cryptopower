@@ -13,7 +13,7 @@ build-binary:
 	docker run --name binary binary-image
 
 	#Copy the compiled binary to the host machine
-	docker cp binary:/app/$(BUILDNAME)-$(BUILDOS)-$(BUILDARCH)-$(VERSION) .
+	docker cp binary:/app/$(BUILDNAME)-$(BUILDOS)-$(BUILDARCH)-$(VERSION) ./reproduciblebuilds
 	
 	#Remove the binary container
 	docker rm binary

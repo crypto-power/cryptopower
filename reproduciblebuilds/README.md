@@ -18,6 +18,8 @@ select your target from [Build Targets](https://github.com/crypto-power/cryptopo
 
 e.g `./reproducible_builds.sh linux-amd64-binary`
 
+the reproduced binary can be found in this directory
+
 ### Verification
 
 You can then verify if the binaries are reproducible using a tool like [diffoscope](https://diffoscope.org/) or [reprotest](https://salsa.debian.org/reproducible-builds/reprotest)
@@ -25,6 +27,8 @@ You can then verify if the binaries are reproducible using a tool like [diffosco
 #### Using Diffoscope
 
 e.g `diffoscope binary1 binary2`
+
+The 2 binaries should be the official cryptopower release binary which can be found on the [release page](https://github.com/crypto-power/cryptopower/releases) and the binary you reproduced which can be found in this directory
 
 The output should be clean if the binaries are reproducible (DYOR).
 
