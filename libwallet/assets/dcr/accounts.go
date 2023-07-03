@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"decred.org/dcrwallet/v2/errors"
-	w "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/v3/errors"
+	w "decred.org/dcrwallet/v3/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/addresshelper"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

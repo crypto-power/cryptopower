@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"decred.org/dcrwallet/v2/wallet/udb"
+	"decred.org/dcrwallet/v3/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/decred/dcrd/chaincfg/v3"

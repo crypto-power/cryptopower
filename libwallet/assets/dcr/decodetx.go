@@ -3,7 +3,7 @@ package dcr
 import (
 	"fmt"
 
-	w "decred.org/dcrwallet/v2/wallet"
+	w "decred.org/dcrwallet/v3/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/decred/dcrd/blockchain/stake/v4"
@@ -115,7 +115,8 @@ func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.W
 }
 
 func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
-	walletOutputs []*sharedW.WalletOutput) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
+	walletOutputs []*sharedW.WalletOutput,
+) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
 	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
 	txType := txhelpers.DetermineTxType(mtx, true)
 	mixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)

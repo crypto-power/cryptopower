@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

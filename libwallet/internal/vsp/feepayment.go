@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/txrules"
-	"decred.org/dcrwallet/v2/wallet/txsizes"
+	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v3/wallet/txrules"
+	"decred.org/dcrwallet/v3/wallet/txsizes"
 	"github.com/crypto-power/cryptopower/libwallet/internal/uniformprng"
 	"github.com/decred/dcrd/blockchain/stake/v4"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -110,7 +110,8 @@ const (
 )
 
 func parseTicket(ticket *wire.MsgTx, params *chaincfg.Params) (
-	votingAddr, commitmentAddr stdaddr.StakeAddress, err error) {
+	votingAddr, commitmentAddr stdaddr.StakeAddress, err error,
+) {
 	fail := func(err error) (_, _ stdaddr.StakeAddress, _ error) {
 		return nil, nil, err
 	}
@@ -670,7 +671,8 @@ func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*ticke
 }
 
 func (c *Client) setVoteChoices(ctx context.Context, ticketHash *chainhash.Hash,
-	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string) error {
+	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string,
+) error {
 	w := c.Wallet
 	params := w.ChainParams()
 

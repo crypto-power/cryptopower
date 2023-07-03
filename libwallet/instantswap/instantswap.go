@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/crypto-power/instantswap/instantswap"
@@ -92,7 +92,6 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 // If status is specified, only orders with that status will be returned.
 // status is made optional to the sync functionality can update all orders.
 func (instantSwap *InstantSwap) GetOrdersRaw(offset, limit int32, newestFirst bool, status ...instantswap.Status) ([]*Order, error) {
-
 	var query storm.Query
 	query = instantSwap.db.Select(
 		q.True(),
@@ -187,7 +186,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 		Status:             instantswap.OrderStatusWaitingForDeposit,
 		CreatedAt:          time.Now().Unix(),
 
-		ExtraID: res.ExtraID, //changenow.io requirement //changelly payinExtraId value
+		ExtraID: res.ExtraID, // changenow.io requirement //changelly payinExtraId value
 	}
 
 	instantSwap.saveOrder(order)

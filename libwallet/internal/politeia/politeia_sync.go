@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
+	"decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v3/wallet/udb"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -246,7 +246,6 @@ func (p *Politeia) updateProposalDetails(oldProposal, updatedProposal Proposal) 
 }
 
 func (p *Politeia) fetchAllUnfetchedProposals(tokenInventory *www.TokenInventoryReply, savedTokens []string) error {
-
 	broadcastNotification := len(savedTokens) > 0
 
 	approvedTokens, savedTokens := getUniqueTokens(tokenInventory.Approved, savedTokens)
@@ -458,8 +457,8 @@ func (p *Politeia) ProposalVoteDetailsRaw(ctx context.Context, wallet *wallet.Wa
 		castVotes[v.Ticket] = v.VoteBit
 	}
 
-	var eligibletickets = make([]*EligibleTicket, 0)
-	var votedTickets = make([]*ProposalVote, 0)
+	eligibletickets := make([]*EligibleTicket, 0)
+	votedTickets := make([]*ProposalVote, 0)
 	var yesVotes, noVotes int32
 	for i := 0; i < len(ticketHashes); i++ {
 

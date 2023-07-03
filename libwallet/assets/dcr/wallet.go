@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	dcrW "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/txrules"
+	dcrW "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v3/wallet/txrules"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"

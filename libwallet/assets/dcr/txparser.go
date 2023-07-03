@@ -3,14 +3,14 @@ package dcr
 import (
 	"fmt"
 
-	w "decred.org/dcrwallet/v2/wallet"
+	w "decred.org/dcrwallet/v3/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
 
 func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
-	blockHash *chainhash.Hash) (*sharedW.Transaction, error) {
-
+	blockHash *chainhash.Hash,
+) (*sharedW.Transaction, error) {
 	var blockHeight int32 = sharedW.UnminedTxHeight
 	if blockHash != nil {
 		blockIdentifier := w.NewBlockIdentifierFromHash(blockHash)

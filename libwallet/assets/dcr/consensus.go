@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"decred.org/dcrwallet/v2/errors"
-	w "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/v3/errors"
+	w "decred.org/dcrwallet/v3/wallet"
 
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"

@@ -3,7 +3,7 @@ package ltc
 import (
 	"encoding/binary"
 
-	"decred.org/dcrwallet/walletseed"
+	"decred.org/dcrwallet/v3/walletseed"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/ltcsuite/ltcd/chaincfg"

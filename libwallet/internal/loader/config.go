@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"decred.org/dcrwallet/v2/errors"
-	dcrW "decred.org/dcrwallet/v2/wallet"
+	"decred.org/dcrwallet/v3/errors"
+	dcrW "decred.org/dcrwallet/v3/wallet"
 	btcW "github.com/btcsuite/btcwallet/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	ltcW "github.com/ltcsuite/ltcwallet/wallet"

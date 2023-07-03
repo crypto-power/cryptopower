@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
@@ -26,7 +26,7 @@ notificationsLoop:
 				break notificationsLoop
 			}
 
-			var txToCache = make([]sharedW.Transaction, len(n.UnminedTransactions))
+			txToCache := make([]sharedW.Transaction, len(n.UnminedTransactions))
 
 			// handle txs hitting the mempool.
 			for i, tx := range n.UnminedTransactions {
@@ -92,7 +92,8 @@ notificationsLoop:
 // notification handler were to try to access such features, it would result
 // in a deadlock.
 func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener,
-	async bool, uniqueIdentifier string) error {
+	async bool, uniqueIdentifier string,
+) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 

@@ -3,7 +3,7 @@ package badgerdb
 import (
 	"bytes"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/dgraph-io/badger"
 )
 
@@ -45,7 +45,7 @@ func newBucket(tx *badger.Txn, badgerKey []byte, dbTx *transaction) (*Bucket, er
 	copy(prefix, badgerKey)
 	item, err := tx.Get(prefix)
 	if err != nil {
-		//Not Found
+		// Not Found
 		if err == badger.ErrKeyNotFound {
 			entry := badger.NewEntry(prefix, insertPrefixLength([]byte{}, len(prefix))).WithMeta(metaBucket)
 			err = tx.SetEntry(entry)
@@ -94,7 +94,7 @@ func (b *Bucket) iterator() *badger.Iterator {
 
 func (b *Bucket) badgerCursor() *Cursor {
 	reverseOptions := badger.DefaultIteratorOptions
-	//Key-only iteration for faster search. Value gets fetched when item.Value() is called.
+	// Key-only iteration for faster search. Value gets fetched when item.Value() is called.
 	reverseOptions.PrefetchValues = false
 	reverseOptions.Reverse = true
 	txn := b.dbTransaction.db.NewTransaction(false)
@@ -106,7 +106,7 @@ func (b *Bucket) badgerCursor() *Cursor {
 // Bucket returns a nested bucket which is created from the passed key
 func (b *Bucket) bucket(key []byte, errorIfExists bool) (*Bucket, error) {
 	if len(key) == 0 {
-		//Empty Key
+		// Empty Key
 		return nil, errors.E(errors.Invalid, "key is empty")
 	}
 	keyPrefix, err := addPrefix(b.prefix, key)
@@ -117,7 +117,7 @@ func (b *Bucket) bucket(key []byte, errorIfExists bool) (*Bucket, error) {
 	copy(copiedKey, keyPrefix)
 	item, err := b.txn.Get(copiedKey)
 	if err != nil {
-		//Key Not Found
+		// Key Not Found
 		entry := badger.NewEntry(copiedKey, insertPrefixLength([]byte{}, len(b.prefix))).WithMeta(metaBucket)
 		err = b.txn.SetEntry(entry)
 		if err != nil {
@@ -224,7 +224,7 @@ func (b *Bucket) get(key []byte) []byte {
 	}
 	item, err := b.txn.Get(k)
 	if err != nil {
-		//Not found
+		// Not found
 		return nil
 	}
 	val, err := item.ValueCopy(nil)
@@ -302,4 +302,19 @@ func (b *Bucket) forEach(fn func(k, v []byte) error) error {
 		}
 	}
 	return nil
+}
+
+func (b *Bucket) keyCount() (count int) {
+	txn := b.txn
+	it := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer it.Close()
+
+	prefix := b.prefix
+	it.Rewind()
+
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		count++
+	}
+
+	return
 }
