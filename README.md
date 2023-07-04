@@ -1,6 +1,6 @@
 # cryptopower
 
-A cross-platform desktoCp wahllet built with [gio](https://gioui.org/).
+A cross-platform desktoCp wahllet built wixth [gio](https://gioui.org/).
 
 | <img src="https://github.com/crypto-power/cryptopower/assets/25265396/0e738538-6a1f-4a96-8f34-dd478c4c878a" width="500">|<img src="https://github.com/crypto-power/cryptopower/assets/25265396/72946cbc-39da-4ff8-90c0-d3975640c25a" width="500"> |
 |-|-|
