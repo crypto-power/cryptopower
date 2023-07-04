@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"

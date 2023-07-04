@@ -1,7 +1,7 @@
 package politeia
 
 import (
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 )
 

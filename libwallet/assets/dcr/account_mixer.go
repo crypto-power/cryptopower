@@ -7,9 +7,9 @@ import (
 	"errors"
 	"net"
 
-	"decred.org/dcrwallet/v2/ticketbuyer"
-	w "decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
+	"decred.org/dcrwallet/v3/ticketbuyer"
+	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v3/wallet/udb"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/certs"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -84,7 +84,6 @@ func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPas
 // SetAccountMixerConfig sets the config for mixed and unmixed account. Private passphrase is verifed
 // for security even if not used. This function should be used with manual cspp mixer setup.
 func (asset *DCRAsset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, privPass string) error {
-
 	if mixedAccount == unmixedAccount {
 		return errors.New(utils.ErrInvalid)
 	}
@@ -221,7 +220,7 @@ func (asset *DCRAsset) readCSPPConfig() *CSPPConfig {
 		return nil
 	}
 
-	var shufflePort = TestnetShufflePort
+	shufflePort := TestnetShufflePort
 	var dialCSPPServer func(ctx context.Context, network, addr string) (net.Conn, error)
 	if asset.chainParams.Net == chaincfg.MainNetParams().Net {
 		shufflePort = MainnetShufflePort
@@ -271,7 +270,6 @@ func (asset *DCRAsset) StopAccountMixer() error {
 }
 
 func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error) {
-
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(accountNumber),
 		RequiredConfirmations: asset.RequiredConfirmations(),

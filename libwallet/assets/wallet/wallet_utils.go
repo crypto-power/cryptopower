@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/walletseed"
+	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v3/walletseed"
 	"github.com/asdine/storm"
 	btchdkeychain "github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/crypto-power/cryptopower/libwallet/utils"

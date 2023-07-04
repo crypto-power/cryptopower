@@ -3,32 +3,38 @@ module github.com/crypto-power/cryptopower
 go 1.19
 
 require (
-	decred.org/dcrwallet/v2 v2.0.11
+	decred.org/dcrwallet/v3 v3.0.1
 	gioui.org v0.0.0-20230118222818-e0cf570339bd
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/ararog/timeago v0.0.0-20160328174124-e9969cf18b8d
 	github.com/asdine/storm v0.0.0-20190216191021-fe89819f6282
 	github.com/btcsuite/btcd v0.23.4
+	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcwallet v0.16.5
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
+	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
-	github.com/decred/dcrd/addrmgr/v2 v2.0.1
+	github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf
+	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
+	github.com/decred/dcrd/addrmgr/v2 v2.0.2
 	github.com/decred/dcrd/blockchain/stake/v4 v4.0.0
-	github.com/decred/dcrd/blockchain/standalone/v2 v2.1.0 // indirect
-	github.com/decred/dcrd/chaincfg/chainhash v1.0.3
-	github.com/decred/dcrd/chaincfg/v3 v3.1.2-0.20230430213532-8f3e24955554
-	github.com/decred/dcrd/connmgr/v3 v3.1.0
-	github.com/decred/dcrd/dcrjson/v4 v4.0.0 // indirect
-	github.com/decred/dcrd/dcrutil/v4 v4.0.0
-	github.com/decred/dcrd/gcs/v3 v3.0.0 // indirect
-	github.com/decred/dcrd/hdkeychain/v3 v3.1.0
+	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0
+	github.com/decred/dcrd/chaincfg/chainhash v1.0.4
+	github.com/decred/dcrd/chaincfg/v3 v3.2.0
+	github.com/decred/dcrd/connmgr/v3 v3.1.1
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
+	github.com/decred/dcrd/dcrutil/v3 v3.0.0
+	github.com/decred/dcrd/dcrutil/v4 v4.0.1
+	github.com/decred/dcrd/hdkeychain/v3 v3.1.1
 	github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0
-	github.com/decred/dcrd/txscript/v4 v4.0.0
-	github.com/decred/dcrd/wire v1.5.0
+	github.com/decred/dcrd/txscript/v4 v4.1.0
+	github.com/decred/dcrd/wire v1.6.0
 	github.com/decred/dcrdata/v7 v7.0.0-20211216152310-365c9dc820eb
 	github.com/decred/politeia v1.4.0
 	github.com/decred/slog v1.2.0
@@ -38,28 +44,6 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
-	github.com/nxadm/tail v1.4.8
-	github.com/onsi/ginkgo v1.15.0
-	github.com/onsi/gomega v1.10.5
-	github.com/yeqown/go-qrcode v1.5.1
-	go.etcd.io/bbolt v1.3.7-0.20220130032806-d5db64bdbfde
-	golang.org/x/crypto v0.7.0
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
-	golang.org/x/image v0.0.0-20220722155232-062f8c9fd539
-	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.8.0
-)
-
-require (
-	// github.com/crypto-power/instantswap/blockexplorer v0.0.0-20230602154242-f0a2083e2009
-	// github.com/crypto-power/instantswap/instantswap v0.0.0-20230602154242-f0a2083e2009
-	github.com/btcsuite/btcd/btcec/v2 v2.2.2
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2
-	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
-	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
-	github.com/decred/dcrd/dcrutil/v3 v3.0.0
 	github.com/lightninglabs/neutrino v0.14.3-0.20221024182812-792af8548c14
 	github.com/ltcsuite/ltcd v0.22.1-beta.0.20230329025258-1ea035d2e665
 	github.com/ltcsuite/ltcd/btcec/v2 v2.1.0
@@ -70,18 +54,22 @@ require (
 	github.com/ltcsuite/ltcwallet/wallet/txsizes v1.1.0
 	github.com/ltcsuite/ltcwallet/walletdb v1.3.5
 	github.com/ltcsuite/ltcwallet/wtxmgr v1.5.0
+	github.com/nxadm/tail v1.4.8
+	github.com/onsi/ginkgo v1.15.0
+	github.com/onsi/gomega v1.10.5
+	github.com/yeqown/go-qrcode v1.5.1
+	go.etcd.io/bbolt v1.3.7
+	golang.org/x/crypto v0.7.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
+	golang.org/x/image v0.0.0-20220722155232-062f8c9fd539
+	golang.org/x/sync v0.1.0
+	golang.org/x/text v0.8.0
 )
 
 require (
-	decred.org/cspp/v2 v2.0.0 // indirect
-	decred.org/dcrwallet v1.7.1
-	github.com/companyzero/sntrup4591761 v0.0.0-20200131011700-2b0d299dbd22 // indirect
-)
-
-require github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf
-
-require (
+	decred.org/cspp/v2 v2.1.0 // indirect
+	decred.org/dcrwallet v1.7.0 // indirect
+	decred.org/dcrwallet/v2 v2.0.0-20211207180344-e2bce3d3b877 // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
@@ -94,23 +82,30 @@ require (
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/companyzero/sntrup4591761 v0.0.0-20220309191932-9e0f3af2f07a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
-	github.com/decred/base58 v1.0.4 // indirect
+	github.com/decred/base58 v1.0.5 // indirect
 	github.com/decred/dcrd/blockchain/stake/v3 v3.0.0 // indirect
-	github.com/decred/dcrd/certgen v1.1.1 // indirect
-	github.com/decred/dcrd/crypto/blake256 v1.0.1-0.20200921185235-6d75c7ec1199 // indirect
-	github.com/decred/dcrd/crypto/ripemd160 v1.0.1 // indirect
+	github.com/decred/dcrd/blockchain/standalone/v2 v2.2.0 // indirect
+	github.com/decred/dcrd/certgen v1.1.2 // indirect
+	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
+	github.com/decred/dcrd/crypto/ripemd160 v1.0.2 // indirect
 	github.com/decred/dcrd/database/v2 v2.0.2 // indirect
-	github.com/decred/dcrd/database/v3 v3.0.0 // indirect
-	github.com/decred/dcrd/dcrec v1.0.1-0.20200921185235-6d75c7ec1199 // indirect
-	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2 // indirect
+	github.com/decred/dcrd/database/v3 v3.0.1 // indirect
+	github.com/decred/dcrd/dcrec v1.0.1 // indirect
+	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0 // indirect
+	github.com/decred/dcrd/dcrjson/v4 v4.0.1 // indirect
 	github.com/decred/dcrd/gcs/v2 v2.1.0 // indirect
+	github.com/decred/dcrd/gcs/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/lru v1.1.1 // indirect
+	github.com/decred/dcrd/rpc/jsonrpc/types/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
+	github.com/decred/vspd/client/v2 v2.0.0 // indirect
+	github.com/decred/vspd/types/v2 v2.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
@@ -130,6 +125,7 @@ require (
 	github.com/jrick/bitset v1.0.0 // indirect
 	github.com/jrick/wsrpc/v2 v2.3.5 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightningnetwork/lnd/clock v1.0.1 // indirect
@@ -147,6 +143,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
+	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
@@ -154,6 +151,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
 // Older versions of github.com/lib/pq are required by politeia (v1.9.0)

@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"sync"
 
-	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/wallet"
-	"decred.org/dcrwallet/v2/wallet/udb"
+	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v3/wallet/udb"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
@@ -211,8 +211,8 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 // error.  The fee transaction is also recorded as unpublised in the wallet, and
 // the fee hash is associated with the ticket.
 func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx,
-	policy Policy) error {
-
+	policy Policy,
+) error {
 	vspTicket, err := c.Wallet.VSPTicketInfo(ctx, ticketHash)
 	if err != nil && !errors.Is(err, errors.NotExist) {
 		return err
@@ -285,8 +285,8 @@ func (c *Client) Process(ctx context.Context, ticketHash *chainhash.Hash, feeTx 
 // the connected VSP. The status provides the current voting preferences so we
 // can just update from there if need be.
 func (c *Client) SetVoteChoice(ctx context.Context, hash *chainhash.Hash,
-	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string) error {
-
+	choices []wallet.AgendaChoice, tspendPolicy map[string]string, treasuryPolicy map[string]string,
+) error {
 	// Retrieve current voting preferences from VSP.
 	status, err := c.status(ctx, hash)
 	if err != nil {

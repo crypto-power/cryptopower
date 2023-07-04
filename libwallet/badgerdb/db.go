@@ -10,8 +10,8 @@ import (
 	"io"
 	"os"
 
-	"decred.org/dcrwallet/v2/errors"
-	"decred.org/dcrwallet/v2/wallet/walletdb"
+	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v3/wallet/walletdb"
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 )
@@ -282,6 +282,13 @@ func (b *Bucket) Get(key []byte) []byte {
 	return b.get(key)
 }
 
+// KeyN returns the number of keys and value pairs inside a bucket.
+//
+// This function is part of the walletdb.ReadBucket interface implementation.
+func (b *Bucket) KeyN() int {
+	return b.keyCount()
+}
+
 // Delete removes the specified key from the bucket.  Deleting a key that does
 // not exist does not return an error.
 //
@@ -306,7 +313,7 @@ func (b *Bucket) ReadCursor() walletdb.ReadCursor {
 		opts := badger.DefaultIteratorOptions
 		it := txn.NewIterator(opts)
 		reverseOptions := badger.DefaultIteratorOptions
-		//Key-only iteration for faster search. Value gets fetched when item.Value() is called.
+		// Key-only iteration for faster search. Value gets fetched when item.Value() is called.
 		reverseOptions.PrefetchValues = false
 		reverseOptions.Reverse = true
 		txn = b.dbTransaction.db.NewTransaction(false)
@@ -381,7 +388,7 @@ func (c *Cursor) First() (key, value []byte) {
 		return c.ck[prefixLength:], val[1:]
 	}
 
-	//No item found
+	// No item found
 	return c.Next()
 }
 
@@ -508,7 +515,7 @@ func (c *Cursor) Prev() (key, value []byte) {
 		return c.ck[prefixLength:], val[1:]
 	}
 
-	//Item Not valid.
+	// Item Not valid.
 	return nil, nil
 }
 

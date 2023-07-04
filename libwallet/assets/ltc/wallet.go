@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v2/errors"
+	"decred.org/dcrwallet/v3/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/ltc"
