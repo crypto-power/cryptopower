@@ -219,9 +219,8 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 	// Check for all agendas from the intital stake version to the
 	// current stake version, in order to fetch legacy agendas.
 	deployments := make([]chaincfg.ConsensusDeployment, 0)
-	var i uint32
-	for i = 1; i <= voteVersion(asset.chainParams); i++ {
-		deployments = append(deployments, asset.chainParams.Deployments[i]...)
+	for _, v := range asset.chainParams.Deployments {
+		deployments = append(deployments, v...)
 	}
 
 	// Fetch high level agenda detail form dcrdata api.

@@ -23,7 +23,6 @@ require (
 	github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf
 	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/addrmgr/v2 v2.0.2
-	github.com/decred/dcrd/blockchain/stake/v4 v4.0.0
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0
 	github.com/decred/dcrd/chaincfg/chainhash v1.0.4
 	github.com/decred/dcrd/chaincfg/v3 v3.2.0
@@ -66,6 +65,7 @@ require (
 	golang.org/x/text v0.8.0
 )
 
+
 require (
 	decred.org/cspp/v2 v2.1.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
@@ -87,6 +87,7 @@ require (
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/decred/base58 v1.0.5 // indirect
 	github.com/decred/dcrd/blockchain/stake/v3 v3.0.0 // indirect
+	github.com/decred/dcrd/blockchain/stake/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/blockchain/standalone/v2 v2.2.0 // indirect
 	github.com/decred/dcrd/certgen v1.1.2 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
