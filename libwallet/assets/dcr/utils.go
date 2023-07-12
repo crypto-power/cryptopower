@@ -5,9 +5,7 @@ import (
 	"math"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
-	"github.com/decred/dcrd/wire"
 )
 
 const (
@@ -50,22 +48,4 @@ func calculateTotalTimeRemaining(timeRemainingInSeconds int64) string {
 
 func roundUp(n float64) int32 {
 	return int32(math.Round(n))
-}
-
-// voteVersion was borrowed from upstream, and needs to always be in
-// sync with the upstream method. This is the LOC to the upstream version:
-// https://github.com/decred/dcrwallet/blob/master/wallet/wallet.go#L266
-func voteVersion(params *chaincfg.Params) uint32 {
-	switch params.Net {
-	case wire.MainNet:
-		return 9
-	case 0x48e7a065: // TestNet2
-		return 6
-	case wire.TestNet3:
-		return 10
-	case wire.SimNet:
-		return 10
-	default:
-		return 1
-	}
 }

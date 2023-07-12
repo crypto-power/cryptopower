@@ -71,7 +71,7 @@ func (t *Theme) CollapsibleWithOption() *CollapsibleWithOption {
 		moreIconButton: IconButton{
 			IconButtonStyle{
 				Button: new(widget.Clickable),
-				Icon:   t.navMoreIcon,
+				Icon:   t.NavMoreIcon,
 				Size:   unit.Dp(25),
 				Inset:  layout.UniformInset(unit.Dp(0)),
 			},

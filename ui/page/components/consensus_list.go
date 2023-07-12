@@ -39,7 +39,6 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 }
 
 func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
-
 	var statusLabel cryptomaterial.Label
 	var statusIcon *cryptomaterial.Icon
 	var backgroundColor color.NRGBA
@@ -67,7 +66,7 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
 		clr := l.Theme.Color.Primary
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = clr
-		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.NavMoreIcon)
 		statusIcon.Color = clr
 		backgroundColor = l.Theme.Color.LightBlue
 	case dcr.AgendaStatusUpcoming.String():
@@ -79,7 +78,7 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
 	default:
 		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
-		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavMoreIcon)
+		statusIcon = cryptomaterial.NewIcon(l.Theme.NavMoreIcon)
 		statusIcon.Color = l.Theme.Color.Gray1
 		backgroundColor = l.Theme.Color.Gray2
 	}

@@ -6,7 +6,7 @@ import (
 	w "decred.org/dcrwallet/v3/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
-	"github.com/decred/dcrd/blockchain/stake/v4"
+	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdscript"
@@ -31,7 +31,7 @@ func (asset *DCRAsset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, net
 	ssGenVersion, lastBlockValid, voteBits, ticketSpentHash := voteInfo(msgTx)
 
 	// ticketSpentHash will be empty if this isn't a vote tx
-	if txhelpers.IsSSRtx(msgTx) {
+	if stake.IsSSRtx(msgTx) {
 		ticketSpentHash = msgTx.TxIn[0].PreviousOutPoint.Hash.String()
 		// set first tx input as amount for revoked txs
 		amount = msgTx.TxIn[0].ValueIn
@@ -118,7 +118,7 @@ func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Para
 	walletOutputs []*sharedW.WalletOutput,
 ) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
 	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
-	txType := txhelpers.DetermineTxType(mtx, true)
+	txType := stake.DetermineTxType(mtx)
 	mixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 
 	for i, txOut := range mtx.TxOut {
@@ -175,7 +175,7 @@ func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Para
 }
 
 func voteInfo(msgTx *wire.MsgTx) (ssGenVersion uint32, lastBlockValid bool, voteBits string, ticketSpentHash string) {
-	if stake.IsSSGen(msgTx, true) {
+	if stake.IsSSGen(msgTx) {
 		ssGenVersion = stake.SSGenVersion(msgTx)
 		bits := stake.SSGenVoteBits(msgTx)
 		voteBits = fmt.Sprintf("%#04x", bits)
