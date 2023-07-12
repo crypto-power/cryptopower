@@ -69,7 +69,7 @@ const (
 	HeadersRescanSyncStage    = utils.HeadersRescanSyncStage
 )
 
-func (asset *DCRAsset) initActiveSyncData() {
+func (asset *Asset) initActiveSyncData() {
 	cfiltersFetchProgress := sharedW.CFiltersFetchProgressReport{
 		GeneralSyncProgress:         &sharedW.GeneralSyncProgress{},
 		BeginFetchCFiltersTimeStamp: 0,
@@ -104,14 +104,14 @@ func (asset *DCRAsset) initActiveSyncData() {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *DCRAsset) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string) bool {
+func (asset *Asset) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string) bool {
 	asset.syncData.mu.RLock()
 	_, exists := asset.syncData.syncProgressListeners[uniqueIdentifier]
 	asset.syncData.mu.RUnlock()
 	return exists
 }
 
-func (asset *DCRAsset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
+func (asset *Asset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	if asset.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
@@ -124,13 +124,13 @@ func (asset *DCRAsset) AddSyncProgressListener(syncProgressListener sharedW.Sync
 	return asset.PublishLastSyncProgress(uniqueIdentifier)
 }
 
-func (asset *DCRAsset) RemoveSyncProgressListener(uniqueIdentifier string) {
+func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	asset.syncData.mu.Lock()
 	delete(asset.syncData.syncProgressListeners, uniqueIdentifier)
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *DCRAsset) syncProgressListeners() []sharedW.SyncProgressListener {
+func (asset *Asset) syncProgressListeners() []sharedW.SyncProgressListener {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -142,7 +142,7 @@ func (asset *DCRAsset) syncProgressListeners() []sharedW.SyncProgressListener {
 	return listeners
 }
 
-func (asset *DCRAsset) PublishLastSyncProgress(uniqueIdentifier string) error {
+func (asset *Asset) PublishLastSyncProgress(uniqueIdentifier string) error {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -165,13 +165,13 @@ func (asset *DCRAsset) PublishLastSyncProgress(uniqueIdentifier string) error {
 	return nil
 }
 
-func (asset *DCRAsset) EnableSyncLogs() {
+func (asset *Asset) EnableSyncLogs() {
 	asset.syncData.mu.Lock()
 	asset.syncData.showLogs = true
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *DCRAsset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
+func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -187,17 +187,17 @@ func (asset *DCRAsset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	}
 }
 
-func (asset *DCRAsset) SetSpecificPeer(address string) {
+func (asset *Asset) SetSpecificPeer(address string) {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, address)
 	asset.RestartSpvSync()
 }
 
-func (asset *DCRAsset) RemovePeers() {
+func (asset *Asset) RemovePeers() {
 	asset.SaveUserConfigValue(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 	asset.RestartSpvSync()
 }
 
-func (asset *DCRAsset) SpvSync() error {
+func (asset *Asset) SpvSync() error {
 	// prevent an attempt to sync when the previous syncing has not been canceled
 	if asset.IsSyncing() || asset.IsSynced() {
 		return errors.New(utils.ErrSyncAlreadyInProgress)
@@ -276,7 +276,7 @@ func (asset *DCRAsset) SpvSync() error {
 	return nil
 }
 
-func (asset *DCRAsset) RestartSpvSync() error {
+func (asset *Asset) RestartSpvSync() error {
 	asset.syncData.mu.Lock()
 	asset.syncData.restartSyncRequested = true
 	asset.syncData.mu.Unlock()
@@ -285,7 +285,7 @@ func (asset *DCRAsset) RestartSpvSync() error {
 	return asset.SpvSync()
 }
 
-func (asset *DCRAsset) CancelSync() {
+func (asset *Asset) CancelSync() {
 	asset.syncData.mu.RLock()
 	cancelSync := asset.syncData.cancelSync
 	asset.syncData.mu.RUnlock()
@@ -314,34 +314,34 @@ func (asset *DCRAsset) CancelSync() {
 	}
 }
 
-func (asset *DCRAsset) IsWaiting() bool {
+func (asset *Asset) IsWaiting() bool {
 	return asset.waitingForHeaders
 }
 
-func (asset *DCRAsset) IsSyncing() bool {
+func (asset *Asset) IsSyncing() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 	return asset.syncData.syncing
 }
 
-func (asset *DCRAsset) IsConnectedToDecredNetwork() bool {
+func (asset *Asset) IsConnectedToDecredNetwork() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 	return asset.syncData.syncing || asset.syncData.synced
 }
 
-func (asset *DCRAsset) IsSynced() bool {
+func (asset *Asset) IsSynced() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 	return asset.syncData.synced
 }
 
-func (asset *DCRAsset) IsSyncShuttingDown() bool {
+func (asset *Asset) IsSyncShuttingDown() bool {
 	// TODO: implement for DCR if synchronous shutdown takes a long time
 	return false
 }
 
-func (asset *DCRAsset) CurrentSyncStage() utils.SyncStage {
+func (asset *Asset) CurrentSyncStage() utils.SyncStage {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -351,7 +351,7 @@ func (asset *DCRAsset) CurrentSyncStage() utils.SyncStage {
 	return InvalidSyncStage
 }
 
-func (asset *DCRAsset) GeneralSyncProgress() *sharedW.GeneralSyncProgress {
+func (asset *Asset) GeneralSyncProgress() *sharedW.GeneralSyncProgress {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
@@ -371,13 +371,13 @@ func (asset *DCRAsset) GeneralSyncProgress() *sharedW.GeneralSyncProgress {
 	return nil
 }
 
-func (asset *DCRAsset) ConnectedPeers() int32 {
+func (asset *Asset) ConnectedPeers() int32 {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 	return asset.syncData.connectedPeers
 }
 
-func (asset *DCRAsset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {
+func (asset *Asset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {
 	if !asset.IsConnectedToDecredNetwork() {
 		return nil, errors.New(utils.ErrNotConnected)
 	}
@@ -407,7 +407,7 @@ func (asset *DCRAsset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {
 	return infos, nil
 }
 
-func (asset *DCRAsset) PeerInfo() (string, error) {
+func (asset *Asset) PeerInfo() (string, error) {
 	infos, err := asset.PeerInfoRaw()
 	if err != nil {
 		return "", err
@@ -417,7 +417,7 @@ func (asset *DCRAsset) PeerInfo() (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetBestBlock() *sharedW.BlockInfo {
+func (asset *Asset) GetBestBlock() *sharedW.BlockInfo {
 	blockInfo := sharedW.InvalidBlock
 	if !asset.WalletOpened() {
 		return blockInfo
@@ -431,7 +431,7 @@ func (asset *DCRAsset) GetBestBlock() *sharedW.BlockInfo {
 	return blockInfo
 }
 
-func (asset *DCRAsset) GetBestBlockHeight() int32 {
+func (asset *Asset) GetBestBlockHeight() int32 {
 	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block height without a loaded asset.")
@@ -442,7 +442,7 @@ func (asset *DCRAsset) GetBestBlockHeight() int32 {
 	return height
 }
 
-func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
+func (asset *Asset) GetBestBlockTimeStamp() int64 {
 	if !asset.WalletOpened() {
 		// This method is sometimes called after a wallet is deleted and causes crash.
 		log.Error("Attempting to read best block timestamp without a loaded asset.")
@@ -460,7 +460,7 @@ func (asset *DCRAsset) GetBestBlockTimeStamp() int64 {
 	return info.Timestamp
 }
 
-func (asset *DCRAsset) DiscoverUsage(gapLimit uint32) error {
+func (asset *Asset) DiscoverUsage(gapLimit uint32) error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}

@@ -605,7 +605,7 @@ func (db *db) BeginReadWriteTx() (walletdb.ReadWriteTx, error) {
 // start a read-only transaction to perform all operations.
 //
 // This function is part of the walletdb.DB interface implementation.
-func (db *db) Copy(w io.Writer) error {
+func (db *db) Copy(_ io.Writer) error {
 	return errors.E(errors.Invalid, "method not implemented")
 }
 

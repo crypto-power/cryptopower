@@ -278,7 +278,7 @@ func (in *InfoModal) KeysToHandle() key.Set {
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (in *InfoModal) HandleKeyPress(evt *key.Event) {
+func (in *InfoModal) HandleKeyPress(_ *key.Event) {
 	in.btnPositive.Click()
 	in.ParentWindow().Reload()
 }

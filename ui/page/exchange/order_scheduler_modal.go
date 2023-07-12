@@ -42,7 +42,7 @@ type orderSchedulerModal struct {
 	passwordEditor             cryptomaterial.Editor
 	copyRedirect               *cryptomaterial.Clickable
 
-	exchangeSelector  *ExchangeSelector
+	exchangeSelector  *ExSelector
 	frequencySelector *FrequencySelector
 
 	materialLoader material.LoaderStyle
@@ -60,7 +60,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	osm := &orderSchedulerModal{
 		Load:              l,
 		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrOrderScheduler)),
-		exchangeSelector:  NewExchangeSelector(l, instantswap.FlypMe),
+		exchangeSelector:  NewExSelector(l, instantswap.FlypMe),
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
 		copyRedirect:      l.Theme.NewClickable(false),
@@ -468,7 +468,6 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 
 		osm.Dismiss()
 		osm.orderSchedulerStarted()
-
 	}()
 }
 

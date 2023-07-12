@@ -15,7 +15,7 @@ func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary 
 	decodedTx, _ := asset.decodeTxHex(txHex)
 	txSize := decodedTx.SerializeSize()
 
-	//TODO: Check why tx fee returned is zero despite int not being zero on the explorer
+	// TODO: Check why tx fee returned is zero despite int not being zero on the explorer
 	feeRate := txsummary.Fee * 1000 / btcutil.Amount(txSize)
 
 	// BTC transactions are either coinbase or regular txs.

@@ -89,8 +89,8 @@ var (
 						IsNo:        true,
 						Count:       0,
 						Progress:    0,
-					}, {
-
+					},
+					{
 						ID:          "yes",
 						Description: "change to the new consensus rules",
 						Bits:        16,
@@ -159,28 +159,28 @@ var (
 		DcrPrice: 26.182965232480655,
 		BtcPrice: 22728.06395,
 		Exchanges: map[string]BaseState{
-			"binance": BaseState{
+			"binance": {
 				Price:      0.001152,
 				BaseVolume: 5.63390041,
 				Volume:     4856.908,
 				Change:     8e-06,
 				Stamp:      1659444742,
 			},
-			"bittrex": BaseState{
+			"bittrex": {
 				Price:      0.00114285,
 				BaseVolume: 0.74640502,
 				Volume:     651.46221106,
 				Change:     -3.898946417820641e-06,
 				Stamp:      0,
 			},
-			"dcrdex": BaseState{
+			"dcrdex": {
 				Price:      0.001157,
 				BaseVolume: 0,
 				Volume:     1160,
 				Change:     0.006988868290729958,
 				Stamp:      1659445032,
 			},
-			"huobi": BaseState{
+			"huobi": {
 				Price:      0.001165,
 				BaseVolume: 0.0206273289,
 				Volume:     17.705861716738195,
@@ -280,7 +280,6 @@ func mainnetService() *Service {
 var service = mainnetService()
 
 func TestGetBestBlock(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		server           *httptest.Server
@@ -301,13 +300,12 @@ func TestGetBestBlock(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp := service.GetBestBlock()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
 			}
-
 		})
 	}
 }
@@ -337,13 +335,12 @@ func TestGetBestBlockTimeStamp(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp := service.GetBestBlockTimeStamp()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
 			}
-
 		})
 	}
 }
@@ -376,8 +373,8 @@ func TestGetCurrentAgendaStatus(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetCurrentAgendaStatus()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -385,7 +382,6 @@ func TestGetCurrentAgendaStatus(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -413,8 +409,8 @@ func TestGetAgendas(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetAgendas()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -422,7 +418,6 @@ func TestGetAgendas(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -450,8 +445,8 @@ func TestGetTreasuryBalance(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetTreasuryBalance()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -459,7 +454,6 @@ func TestGetTreasuryBalance(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -490,8 +484,8 @@ func TestGetExchangeRate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetExchangeRate()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -499,7 +493,6 @@ func TestGetExchangeRate(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -525,8 +518,8 @@ func TestGetTicketFeeRateSummary(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetTicketFeeRateSummary()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -534,7 +527,6 @@ func TestGetTicketFeeRateSummary(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -560,8 +552,8 @@ func TestGetTicketFeeRate(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetTicketFeeRate()
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -569,7 +561,6 @@ func TestGetTicketFeeRate(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }
@@ -605,8 +596,8 @@ func TestGetAddress(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			defer tc.server.Close()
-			backendUrl["mainnet"][DcrData] = tc.server.URL + "/"
-			backendUrl["testnet3"][DcrData] = tc.server.URL + "/"
+			backendURL["mainnet"][DcrData] = tc.server.URL + "/"
+			backendURL["testnet3"][DcrData] = tc.server.URL + "/"
 			resp, err := service.GetAddress("DsTxPUVFxXeNgu5fzozr4mTR4tqqMaKcvpY")
 			if !reflect.DeepEqual(resp, tc.expectedResponse) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedResponse, resp)
@@ -614,7 +605,6 @@ func TestGetAddress(t *testing.T) {
 			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("(%v), expected (%v), got (%v)", tc.name, tc.expectedErr, err)
 			}
-
 		})
 	}
 }

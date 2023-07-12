@@ -41,7 +41,7 @@ type MarkdownProvider struct {
 	shouldRemoveBold bool
 }
 
-func RenderMarkdown(gtx C, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
+func RenderMarkdown(_ C, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
 	lbl := theme.Body1("")
 	source = strings.Replace(source, " \n*", " \n\n *", -1)
 
@@ -83,16 +83,16 @@ func (p *MarkdownProvider) Layout() ([]layout.Widget, map[string]*widget.Clickab
 	return []layout.Widget{w}, p.links
 }
 
-func (p *MarkdownProvider) prepareBlockQuote(node *ast.BlockQuote, entering bool) {
+func (p *MarkdownProvider) prepareBlockQuote(_ /*node*/ *ast.BlockQuote, entering bool) {
 	p.openOrCloseTag(blockQuoteTagName, entering)
 }
 
-func (p *MarkdownProvider) prepareCode(node *ast.Code, entering bool) {
+func (p *MarkdownProvider) prepareCode(node *ast.Code, _ /*entering*/ bool) {
 	content := string(node.Literal)
 	p.stringBuilder.WriteString(content)
 }
 
-func (p *MarkdownProvider) prepareCodeBlock(node *ast.CodeBlock, entering bool) {
+func (p *MarkdownProvider) prepareCodeBlock(node *ast.CodeBlock, _ /*entering*/ bool) {
 	content := string(node.Literal)
 	p.createNewRow()
 	wdg := func(gtx C) D {
@@ -121,19 +121,19 @@ func (p *MarkdownProvider) renderHardBreak() {
 	p.createNewRow()
 }
 
-func (p *MarkdownProvider) prepareStrong(node *ast.Strong, entering bool) {
+func (p *MarkdownProvider) prepareStrong(_ /*node*/ *ast.Strong, entering bool) {
 	p.openOrCloseTag(strongTagName, entering)
 }
 
-func (p *MarkdownProvider) prepareDel(node *ast.Del, entering bool) {
+func (p *MarkdownProvider) prepareDel(_ /*node*/ *ast.Del, entering bool) {
 	p.openOrCloseTag(blockQuoteTagName, entering)
 }
 
-func (p *MarkdownProvider) prepareEmph(node *ast.Emph, entering bool) {
+func (p *MarkdownProvider) prepareEmph(_ /*node*/ *ast.Emph, entering bool) {
 	p.openOrCloseTag(emphTagName, entering)
 }
 
-func (p *MarkdownProvider) prepareHorizontalRule(node *ast.HorizontalRule, entering bool) {
+func (p *MarkdownProvider) prepareHorizontalRule(_ /*node*/ *ast.HorizontalRule, _ /*entering*/ bool) {
 	p.drawLineRow(layout.Horizontal)
 }
 
@@ -184,11 +184,10 @@ func (p *MarkdownProvider) renderListItem(content string) {
 	p.appendToLastRow(w)
 }
 
-func (p *MarkdownProvider) prepareListItem(node *ast.ListItem, entering bool) {
-
+func (p *MarkdownProvider) prepareListItem(_ /*node*/ *ast.ListItem, _ /*entering*/ bool) {
 }
 
-func (p *MarkdownProvider) prepareParagraph(node *ast.Paragraph, entering bool) {
+func (p *MarkdownProvider) prepareParagraph(_ /*node*/ *ast.Paragraph, entering bool) {
 	if !entering {
 		p.renderBlock()
 		p.createNewRow()
@@ -210,7 +209,7 @@ func (p *MarkdownProvider) prepareHeading(node *ast.Heading, entering bool) {
 	}
 }
 
-func (p *MarkdownProvider) prepareLink(node *ast.Link, entering bool) {
+func (p *MarkdownProvider) prepareLink(_ /*node*/ *ast.Link, _ /*entering*/ bool) {
 	p.renderBlock()
 }
 
@@ -280,7 +279,7 @@ func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 			case emphTagName:
 				setStyle(&lbl, "italic")
 			case listItemTagName:
-				//p.createNewRow()
+				// p.createNewRow()
 			}
 		}
 	}
@@ -337,7 +336,7 @@ func (p *MarkdownProvider) drawLineRow(axis layout.Axis) {
 	p.appendToLastRow(l.Layout)
 }
 
-func (p *MarkdownProvider) prepareText(node *ast.Text, entering bool) {
+func (p *MarkdownProvider) prepareText(node *ast.Text, _ /*entering*/ bool) {
 	if string(node.Literal) == "\n" {
 		return
 	}
@@ -355,7 +354,7 @@ func (p *MarkdownProvider) prepareText(node *ast.Text, entering bool) {
 	p.stringBuilder.WriteString(content)
 }
 
-func (p *MarkdownProvider) prepareTable(node *ast.Table, entering bool) {
+func (p *MarkdownProvider) prepareTable(_ /*node*/ *ast.Table, entering bool) {
 	if entering {
 		p.table = newTable(p.theme)
 	} else {
@@ -365,7 +364,7 @@ func (p *MarkdownProvider) prepareTable(node *ast.Table, entering bool) {
 	}
 }
 
-func (p *MarkdownProvider) prepareTableCell(node *ast.TableCell, entering bool) {
+func (p *MarkdownProvider) prepareTableCell(node *ast.TableCell, _ /*entering*/ bool) {
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 
@@ -412,6 +411,7 @@ func (p *MarkdownProvider) openOrCloseTag(tagName string, entering bool) {
 		p.closeTag()
 	}
 }
+
 func (p *MarkdownProvider) openTag(tagName string) {
 	tag := openTagPrefix + tagName + openTagSuffix
 	p.stringBuilder.WriteString(tag)

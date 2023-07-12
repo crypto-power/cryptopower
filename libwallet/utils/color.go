@@ -9,7 +9,7 @@ type ColorScheme struct {
 	O float64 // Opacity; value range 0-1
 }
 
-type gradientColorScheme struct {
+type GradientColorScheme struct {
 	Color1 ColorScheme
 	Color2 ColorScheme
 	Blend1 float64 // percent of position along X axis where color1 blend ends.
@@ -27,8 +27,8 @@ func (c *ColorScheme) NRGBAColor() color.NRGBA {
 	}
 }
 
-func GradientColorSchemes() map[AssetType]gradientColorScheme {
-	return map[AssetType]gradientColorScheme{
+func GradientColorSchemes() map[AssetType]GradientColorScheme {
+	return map[AssetType]GradientColorScheme{
 		BTCWalletAsset: {
 			Color1: ColorScheme{R: 196, G: 203, B: 210, O: 0.3}, // rgba(196, 203, 210, 0.3)
 			Blend1: 34.76,                                       // 34.76%

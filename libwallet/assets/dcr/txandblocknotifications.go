@@ -8,7 +8,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
-func (asset *DCRAsset) listenForTransactions() {
+func (asset *Asset) listenForTransactions() {
 	go func() {
 		n := asset.Internal().DCR.NtfnServer.TransactionNotifications()
 
@@ -84,7 +84,7 @@ func (asset *DCRAsset) listenForTransactions() {
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
+func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
@@ -104,24 +104,20 @@ func (asset *DCRAsset) AddTxAndBlockNotificationListener(txAndBlockNotificationL
 	return nil
 }
 
-func (asset *DCRAsset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
+func (asset *Asset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string) {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
 	delete(asset.txAndBlockNotificationListeners, uniqueIdentifier)
 }
 
-func (asset *DCRAsset) checkWalletMixers() {
+func (asset *Asset) checkWalletMixers() {
 	if asset.IsAccountMixerActive() {
 		unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
-		hasMixableOutput, err := asset.accountHasMixableOutput(unmixedAccount)
-		if err != nil {
-			log.Errorf("Error checking for mixable outputs: %v", err)
-		}
-
+		hasMixableOutput := asset.accountHasMixableOutput(unmixedAccount)
 		if !hasMixableOutput {
 			log.Infof("[%d] unmixed account does not have a mixable output, stopping account mixer", asset.ID)
-			err = asset.StopAccountMixer()
+			err := asset.StopAccountMixer()
 			if err != nil {
 				log.Errorf("Error stopping account mixer: %v", err)
 			}
@@ -129,7 +125,7 @@ func (asset *DCRAsset) checkWalletMixers() {
 	}
 }
 
-func (asset *DCRAsset) mempoolTransactionNotification(transaction string) {
+func (asset *Asset) mempoolTransactionNotification(transaction string) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -138,7 +134,7 @@ func (asset *DCRAsset) mempoolTransactionNotification(transaction string) {
 	}
 }
 
-func (asset *DCRAsset) publishTransactionConfirmed(transactionHash string, blockHeight int32) {
+func (asset *Asset) publishTransactionConfirmed(transactionHash string, blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -147,7 +143,7 @@ func (asset *DCRAsset) publishTransactionConfirmed(transactionHash string, block
 	}
 }
 
-func (asset *DCRAsset) publishBlockAttached(blockHeight int32) {
+func (asset *Asset) publishBlockAttached(blockHeight int32) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 

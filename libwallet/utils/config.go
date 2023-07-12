@@ -67,7 +67,7 @@ const (
 
 	// UserFilePerm contains permissions for the user only. Attempting to modify
 	// more permissions require a super user permission that isn't readily available.
-	UserFilePerm = fs.FileMode(0700)
+	UserFilePerm = fs.FileMode(0o700)
 )
 
 // Stringer used in generating the directory path where the lowercase of the
@@ -101,9 +101,8 @@ func ExtractDateOrTime(timestamp int64) string {
 	utcTime := time.Unix(timestamp, 0).UTC()
 	if time.Now().UTC().Sub(utcTime).Hours() > 24 {
 		return utcTime.Format(dateOnlyFormat)
-	} else {
-		return utcTime.Format(timeOnlyformat)
 	}
+	return utcTime.Format(timeOnlyformat)
 }
 
 func FormatUTCTime(timestamp int64) string {

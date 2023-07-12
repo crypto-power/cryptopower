@@ -14,7 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/instantswap/blockexplorer"
-	_ "github.com/crypto-power/instantswap/blockexplorer/btcexplorer"
+	_ "github.com/crypto-power/instantswap/blockexplorer/btcexplorer" //nolint:revive
 	_ "github.com/crypto-power/instantswap/blockexplorer/dcrexplorer"
 )
 
@@ -271,11 +271,9 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		timeUntilNextOrder := params.Frequency - time.Since(lastOrderTime)
 		if timeUntilNextOrder <= 0 {
 			log.Info("Order Scheduler: the scheduler start time is equal to or greater than the frequency, starting next order immediately")
-			continue
 		} else {
 			log.Infof("Order Scheduler: %s until the next order is executed", timeUntilNextOrder)
 			time.Sleep(timeUntilNextOrder)
-			continue
 		}
 	}
 }

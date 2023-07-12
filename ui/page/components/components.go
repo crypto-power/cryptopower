@@ -185,7 +185,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 					txStatus.TicketStatus = dcr.TicketStatusExpired
 					txStatus.Background = l.Theme.Color.Gray4
 				} else {
-					ticketSpender, _ := wal.(*dcr.DCRAsset).TicketSpender(tx.Hash)
+					ticketSpender, _ := wal.(*dcr.Asset).TicketSpender(tx.Hash)
 					if ticketSpender != nil {
 						if ticketSpender.Type == txhelper.TxTypeVote {
 							txStatus.Title = values.String(values.StrVoted)
@@ -560,7 +560,7 @@ func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly b
 }
 
 // GetTicketPurchaseAccount returns the validly set ticket purchase account if it exists.
-func GetTicketPurchaseAccount(selectedWallet *dcr.DCRAsset) (acct *sharedW.Account, err error) {
+func GetTicketPurchaseAccount(selectedWallet *dcr.Asset) (acct *sharedW.Account, err error) {
 	tbConfig := selectedWallet.AutoTicketsBuyerConfig()
 
 	isPurchaseAccountSet := tbConfig.PurchaseAccount != -1
@@ -573,8 +573,10 @@ func GetTicketPurchaseAccount(selectedWallet *dcr.DCRAsset) (acct *sharedW.Accou
 
 		if isAccountMixerConfigSet && !isSpendUnmixedAllowed && isMixerAccountSet && err == nil {
 			// Mixer account is set and spending from unmixed account is blocked.
+			return
 		} else if isSpendUnmixedAllowed && err == nil {
 			// Spending from unmixed account is allowed. Choose the set account whether its mixed or not.
+			return
 		} else {
 			// invalid account found. Set it to nil
 			acct = nil
@@ -583,7 +585,7 @@ func GetTicketPurchaseAccount(selectedWallet *dcr.DCRAsset) (acct *sharedW.Accou
 	return
 }
 
-func CalculateMixedAccountBalance(selectedWallet *dcr.DCRAsset) (*CummulativeWalletsBalance, error) {
+func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CummulativeWalletsBalance, error) {
 	if selectedWallet == nil {
 		return nil, errors.New("mixed account only supported by DCR asset")
 	}

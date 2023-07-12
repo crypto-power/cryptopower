@@ -240,7 +240,7 @@ func (wallet *Wallet) GetAssetType() utils.AssetType {
 
 // Internal return the upstream wallet of the current asset created in the loader
 // package. Since its exported via the interface thus the need to be thread safe.
-func (wallet *Wallet) Internal() *loader.LoaderWallets {
+func (wallet *Wallet) Internal() *loader.LoadedWallets {
 	wallet.mu.RLock()
 	defer wallet.mu.RUnlock()
 	lw, _ := wallet.loader.GetLoadedWallet()
@@ -313,7 +313,7 @@ func (wallet *Wallet) SetBirthday(birthday time.Time) {
 	wallet.mu.Unlock()
 }
 
-func CreateNewWallet(pass *WalletAuthInfo, loader loader.AssetLoader,
+func CreateNewWallet(pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
 	seed, err := generateSeed(assetType)
@@ -427,7 +427,7 @@ func (wallet *Wallet) createWatchingOnlyWallet(extendedPublicKey string) error {
 	return nil
 }
 
-func RestoreWallet(seedMnemonic string, pass *WalletAuthInfo, loader loader.AssetLoader,
+func RestoreWallet(seedMnemonic string, pass *AuthInfo, loader loader.AssetLoader,
 	params *InitParams, assetType utils.AssetType,
 ) (*Wallet, error) {
 	wallet := &Wallet{

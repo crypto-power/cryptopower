@@ -147,8 +147,8 @@ func NewSendPage(l *load.Load) *Page {
 				case sendToAddress:
 					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 				case SendToWallet:
-					destinationWalletId := pg.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
-					if destinationWalletId != pg.selectedWallet.GetWalletID() {
+					destinationWalletID := pg.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
+					if destinationWalletID != pg.selectedWallet.GetWalletID() {
 						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
 					}
 				}
@@ -168,8 +168,8 @@ func NewSendPage(l *load.Load) *Page {
 		destinationWallet := pg.sendDestination.destinationAccountSelector.SelectedWallet()
 		isMixedAccount := destinationWallet.MixedAccountNumber() == account.Number
 		// Filter the sending account.
-		sourceWalletId := pg.sourceAccountSelector.SelectedAccount().WalletID
-		isSameAccount := sourceWalletId == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
+		sourceWalletID := pg.sourceAccountSelector.SelectedAccount().WalletID
+		isSameAccount := sourceWalletID == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
 		if !accountIsValid || isSameAccount || isMixedAccount {
 			return false
 		}
@@ -258,7 +258,7 @@ func (pg *Page) OnNavigatedTo() {
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
 // to enable restyling UI elements where necessary.
 // Satisfies the load.DarkModeChangeHandler interface.
-func (pg *Page) OnDarkModeChanged(isDarkModeOn bool) {
+func (pg *Page) OnDarkModeChanged(_ bool) {
 	pg.amount.styleWidgets()
 }
 
@@ -565,7 +565,7 @@ func (pg *Page) KeysToHandle() key.Set {
 // HandleKeyPress is called when one or more keys are pressed on the current
 // window that match any of the key combinations returned by KeysToHandle().
 // Satisfies the load.KeyEventHandler interface for receiving key events.
-func (pg *Page) HandleKeyPress(evt *key.Event) {}
+func (pg *Page) HandleKeyPress(_ *key.Event) {}
 
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable
@@ -579,5 +579,5 @@ func (pg *Page) OnNavigatedFrom() {
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libUtil.FeeRateHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libUtil.FeeRateHTTPAPI)
 }

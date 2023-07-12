@@ -18,7 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/wallet"
 )
 
-const SettingsPageID = "Settings"
+const SettingPageID = "Settings"
 
 type (
 	C = layout.Context
@@ -31,7 +31,7 @@ type row struct {
 	label     cryptomaterial.Label
 }
 
-type SettingsPage struct {
+type SettingPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -66,10 +66,10 @@ type SettingsPage struct {
 	isStartupPassword bool
 }
 
-func NewSettingsPage(l *load.Load) *SettingsPage {
-	pg := &SettingsPage{
+func NewSettingsPage(l *load.Load) *SettingPage {
+	pg := &SettingPage{
 		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(SettingsPageID),
+		GenericPageModal: app.NewGenericPageModal(SettingPageID),
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -104,21 +104,21 @@ func NewSettingsPage(l *load.Load) *SettingsPage {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *SettingsPage) OnNavigatedTo() {
+func (pg *SettingPage) OnNavigatedTo() {
 	pg.updateSettingOptions()
 }
 
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *SettingsPage) Layout(gtx C) D {
+func (pg *SettingPage) Layout(gtx C) D {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *SettingsPage) layoutDesktop(gtx C) D {
+func (pg *SettingPage) layoutDesktop(gtx C) D {
 	return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
@@ -129,7 +129,7 @@ func (pg *SettingsPage) layoutDesktop(gtx C) D {
 	})
 }
 
-func (pg *SettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
+func (pg *SettingPage) pageHeaderLayout(gtx C) layout.Dimensions {
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			return layout.W.Layout(gtx, func(gtx C) D {
@@ -146,7 +146,7 @@ func (pg *SettingsPage) pageHeaderLayout(gtx C) layout.Dimensions {
 	)
 }
 
-func (pg *SettingsPage) pageContentLayout(gtx C) D {
+func (pg *SettingPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.general(),
 		pg.networkSettings(),
@@ -165,17 +165,17 @@ func (pg *SettingsPage) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *SettingsPage) layoutMobile(gtx C) D {
+func (pg *SettingPage) layoutMobile(_ C) D {
 	return D{}
 }
 
-func (pg *SettingsPage) settingLine(gtx C) D {
+func (pg *SettingPage) settingLine(gtx C) D {
 	line := pg.Theme.Line(1, 0)
 	line.Color = pg.Theme.Color.Gray3
 	return line.Layout(gtx)
 }
 
-func (pg *SettingsPage) wrapSection(gtx C, title string, body layout.Widget) D {
+func (pg *SettingPage) wrapSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -235,7 +235,7 @@ func (pg *SettingsPage) wrapSection(gtx C, title string, body layout.Widget) D {
 	})
 }
 
-func (pg *SettingsPage) general() layout.Widget {
+func (pg *SettingPage) general() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrGeneral), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -255,7 +255,7 @@ func (pg *SettingsPage) general() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) networkSettings() layout.Widget {
+func (pg *SettingPage) networkSettings() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrPrivacySettings), func(gtx C) D {
 			if pg.WL.AssetsManager.IsPrivacyModeOn() {
@@ -289,7 +289,7 @@ func (pg *SettingsPage) networkSettings() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) security() layout.Widget {
+func (pg *SettingPage) security() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrSecurity), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -312,7 +312,7 @@ func (pg *SettingsPage) security() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) info() layout.Widget {
+func (pg *SettingPage) info() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrInfo), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -337,7 +337,7 @@ func (pg *SettingsPage) info() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) debug() layout.Widget {
+func (pg *SettingPage) debug() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrDebug), func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -362,7 +362,7 @@ func (pg *SettingsPage) debug() layout.Widget {
 	}
 }
 
-func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
+func (pg *SettingPage) subSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(pg.subSectionLabel(title)),
@@ -373,11 +373,11 @@ func (pg *SettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	})
 }
 
-func (pg *SettingsPage) subSectionSwitch(gtx C, title string, option *cryptomaterial.Switch) D {
+func (pg *SettingPage) subSectionSwitch(gtx C, title string, option *cryptomaterial.Switch) D {
 	return pg.subSection(gtx, title, option.Layout)
 }
 
-func (pg *SettingsPage) clickableRow(gtx C, row row) D {
+func (pg *SettingPage) clickableRow(gtx C, row row) D {
 	return row.clickable.Layout(gtx, func(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPaddingMinus5}.Layout(gtx, func(gtx C) D {
 			return pg.subSection(gtx, row.title, func(gtx C) D {
@@ -390,7 +390,7 @@ func (pg *SettingsPage) clickableRow(gtx C, row row) D {
 	})
 }
 
-func (pg *SettingsPage) subSectionLabel(title string) layout.Widget {
+func (pg *SettingPage) subSectionLabel(title string) layout.Widget {
 	return func(gtx C) D {
 		return pg.Theme.Body1(title).Layout(gtx)
 	}
@@ -401,7 +401,7 @@ func (pg *SettingsPage) subSectionLabel(title string) layout.Widget {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *SettingsPage) HandleUserInteractions() {
+func (pg *SettingPage) HandleUserInteractions() {
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
 			sharedW.LanguagePreferenceKey, values.DefaultLangauge, preference.LangOptions).
@@ -437,13 +437,13 @@ func (pg *SettingsPage) HandleUserInteractions() {
 		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 	}
 	if pg.governanceAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHttpAPI, pg.governanceAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHTTPAPI, pg.governanceAPI.IsChecked())
 	}
 	if pg.exchangeAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHttpAPI, pg.exchangeAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, pg.exchangeAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHttpAPI, pg.feeRateAPI.IsChecked())
+		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, pg.feeRateAPI.IsChecked())
 	}
 	if pg.vspAPI.Changed() {
 		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, pg.vspAPI.IsChecked())
@@ -599,12 +599,12 @@ func (pg *SettingsPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *SettingsPage) showNoticeSuccess(title string) {
+func (pg *SettingPage) showNoticeSuccess(title string) {
 	info := modal.NewSuccessModal(pg.Load, title, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(info)
 }
 
-func (pg *SettingsPage) updateSettingOptions() {
+func (pg *SettingPage) updateSettingOptions() {
 	isPassword := pg.WL.AssetsManager.IsStartupSecuritySet()
 	pg.startupPassword.SetChecked(false)
 	pg.isStartupPassword = false
@@ -616,14 +616,14 @@ func (pg *SettingsPage) updateSettingOptions() {
 	pg.updatePrivacySettings()
 }
 
-func (pg *SettingsPage) updatePrivacySettings() {
+func (pg *SettingPage) updatePrivacySettings() {
 	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
 	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI))
-		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI))
-		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.FeeRateHttpAPI))
-		pg.setInitialSwitchStatus(pg.vspAPI, pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.VspAPI))
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI))
+		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI))
+		pg.setInitialSwitchStatus(pg.vspAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI))
 	} else {
 		if pg.WL.SelectedWallet != nil {
 			go func() {
@@ -641,9 +641,9 @@ func (pg *SettingsPage) updatePrivacySettings() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *SettingsPage) OnNavigatedFrom() {}
+func (pg *SettingPage) OnNavigatedFrom() {}
 
-func (pg *SettingsPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, ischecked bool) {
+func (pg *SettingPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, ischecked bool) {
 	switchComponent.SetChecked(false)
 	if ischecked {
 		switchComponent.SetChecked(ischecked)

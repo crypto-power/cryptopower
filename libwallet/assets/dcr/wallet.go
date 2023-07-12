@@ -15,7 +15,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 )
 
-type DCRAsset struct {
+type Asset struct {
 	*sharedW.Wallet
 
 	synced            bool
@@ -43,12 +43,12 @@ type DCRAsset struct {
 }
 
 // Verify that DCR implements the shared assets interface.
-var _ sharedW.Asset = (*DCRAsset)(nil)
+var _ sharedW.Asset = (*Asset)(nil)
 
 // initWalletLoader setups the loader.
 func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver string) loader.AssetLoader {
 	// TODO: Allow users provide values to override these defaults.
-	cfg := &sharedW.WalletConfig{
+	cfg := &sharedW.WConfig{
 		GapLimit:                20,
 		AllowHighFees:           false,
 		RelayFee:                txrules.DefaultRelayFeePerKb,
@@ -99,7 +99,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 // shared wallet implemenation.
 // Immediately a new wallet is created, the function to safely cancel network sync
 // is set. There after returning the new wallet's interface.
-func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (
 		return nil, err
 	}
 
-	dcrWallet := &DCRAsset{
+	dcrWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -149,7 +149,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		return nil, err
 	}
 
-	dcrWallet := &DCRAsset{
+	dcrWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -170,7 +170,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.DCRChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sh
 		return nil, err
 	}
 
-	dcrWallet := &DCRAsset{
+	dcrWallet := &Asset{
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
@@ -212,7 +212,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	}
 
 	ldr := initWalletLoader(chainParams, params.RootDir, params.DbDriver)
-	dcrWallet := &DCRAsset{
+	dcrWallet := &Asset{
 		Wallet:      w,
 		vspClients:  make(map[string]*vsp.Client),
 		chainParams: chainParams,
@@ -237,7 +237,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 // provided legacy or SLIP0044 xpub. While both the legacy and SLIP0044 xpubs
 // will be checked for watch-only wallets, other wallets will only check the
 // xpub that matches the coin type key used by the asset.
-func (asset *DCRAsset) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
+func (asset *Asset) AccountXPubMatches(account uint32, legacyXPub, slip044XPub string) (bool, error) {
 	if !asset.WalletOpened() {
 		return false, utils.ErrDCRNotInitialized
 	}
@@ -263,22 +263,21 @@ func (asset *DCRAsset) AccountXPubMatches(account uint32, legacyXPub, slip044XPu
 
 	if cointype == asset.chainParams.LegacyCoinType {
 		return acctXPub == legacyXPub, nil
-	} else {
-		return acctXPub == slip044XPub, nil
 	}
+	return acctXPub == slip044XPub, nil
 }
 
-func (asset *DCRAsset) Synced() bool {
+func (asset *Asset) Synced() bool {
 	return asset.synced
 }
 
 // SafelyCancelSync is used to controllably disable network activity.
-func (asset *DCRAsset) SafelyCancelSync() {
+func (asset *Asset) SafelyCancelSync() {
 	if asset.IsConnectedToDecredNetwork() {
 		asset.CancelSync()
 	}
 }
 
-func (asset *DCRAsset) IsConnectedToNetwork() bool {
+func (asset *Asset) IsConnectedToNetwork() bool {
 	return asset.IsConnectedToDecredNetwork()
 }

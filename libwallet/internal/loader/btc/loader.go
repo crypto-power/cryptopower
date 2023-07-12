@@ -101,7 +101,7 @@ func (l *btcLoader) getWalletLoader(walletID string, createIfNotFound bool) (*wa
 
 // CreateNewWallet creates a new wallet using the provided walletID, public and private
 // passphrases.
-func (l *btcLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
+func (l *btcLoader) CreateNewWallet(_ context.Context, params *loader.CreateWalletParams) (*loader.LoadedWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -132,12 +132,12 @@ func (l *btcLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 
 	l.wallet = wal
 
-	return &loader.LoaderWallets{BTC: wal}, nil
+	return &loader.LoadedWallets{BTC: wal}, nil
 }
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
 // walletID, extended public key and public passphrase.
-func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
+func (l *btcLoader) CreateWatchingOnlyWallet(_ context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoadedWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -174,12 +174,12 @@ func (l *btcLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 
 	l.wallet = wal
 
-	return &loader.LoaderWallets{BTC: wal}, nil
+	return &loader.LoadedWallets{BTC: wal}, nil
 }
 
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.
-func (l *btcLoader) OpenExistingWallet(ctx context.Context, walletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
+func (l *btcLoader) OpenExistingWallet(_ context.Context, walletID string, pubPassphrase []byte) (*loader.LoadedWallets, error) {
 	defer l.mu.Unlock()
 	l.mu.Lock()
 
@@ -196,7 +196,7 @@ func (l *btcLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 
 	l.wallet = wal
 
-	return &loader.LoaderWallets{BTC: wal}, nil
+	return &loader.LoadedWallets{BTC: wal}, nil
 }
 
 // GetDbDirPath returns the Loader's database directory path
@@ -210,11 +210,11 @@ func (l *btcLoader) GetDbDirPath() string {
 // LoadedWallet returns the loaded wallet, if any, and a bool for whether the
 // wallet has been loaded or not.  If true, the wallet pointer should be safe to
 // dereference.
-func (l *btcLoader) GetLoadedWallet() (*loader.LoaderWallets, bool) {
+func (l *btcLoader) GetLoadedWallet() (*loader.LoadedWallets, bool) {
 	l.mu.RLock()
 	w := l.wallet
 	l.mu.RUnlock()
-	return &loader.LoaderWallets{BTC: w}, w != nil
+	return &loader.LoadedWallets{BTC: w}, w != nil
 }
 
 // UnloadWallet stops the loaded wallet, returns errors if the wallet has not

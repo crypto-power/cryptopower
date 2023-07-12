@@ -161,7 +161,7 @@ func (c *Client) ProcessManagedTickets(ctx context.Context, policy Policy) error
 			return nil
 		}
 
-		// Make ticketstatus api call and only continue if ticket is
+		// Make TicketStatus api call and only continue if ticket is
 		// found managed by this vsp.  The rest is the same codepath as
 		// for processing a new ticket.
 		status, err := c.status(ctx, hash)

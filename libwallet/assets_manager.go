@@ -294,7 +294,7 @@ func (mgr *AssetsManager) Shutdown() {
 	}
 
 	// Disable all active network connections
-	utils.ShutdownHttpClients()
+	utils.ShutdownHTTPClients()
 
 	if mgr.params.DB != nil {
 		if err := mgr.params.DB.Close(); err != nil {

@@ -343,7 +343,7 @@ func (pg *WalletDexServerSelector) startSyncing(wallet sharedW.Asset, unlock loa
 					log.Debugf("Error starting sync: %v", err)
 				}
 
-				if pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI) {
+				if pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
 					err := pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
 					if err != nil {
 						log.Errorf("Error syncing instant swap: %v", err)

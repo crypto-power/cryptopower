@@ -70,7 +70,6 @@ func NewAboutPage(l *load.Load) *AboutPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *AboutPage) OnNavigatedTo() {
-
 }
 
 // Layout draws the page UI components into the provided C
@@ -94,7 +93,7 @@ func (pg *AboutPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *AboutPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *AboutPage) layoutMobile(_ layout.Context) layout.Dimensions {
 	return layout.Dimensions{}
 }
 
@@ -127,7 +126,7 @@ func (pg *AboutPage) pageContentLayout(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *AboutPage) layoutRows(gtx C) D {
-	var in = layout.Inset{
+	in := layout.Inset{
 		Top:    values.MarginPadding20,
 		Bottom: values.MarginPadding20,
 		Left:   values.MarginPadding16,

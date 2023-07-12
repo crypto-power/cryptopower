@@ -320,7 +320,7 @@ func (mp *MainPage) OnNavigatedTo() {
 }
 
 func (mp *MainPage) isProposalsAPIAllowed() bool {
-	return mp.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
+	return mp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (mp *MainPage) updateExchangeSetting() {
@@ -454,7 +454,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
-				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.Asset)
 				if dcrUniqueImpl != nil {
 					if !dcrUniqueImpl.AccountMixerConfigIsSet() {
 						pg = privacy.NewSetupPrivacyPage(mp.Load)

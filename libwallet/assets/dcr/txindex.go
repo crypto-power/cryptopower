@@ -7,7 +7,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
 
-func (asset *DCRAsset) IndexTransactions() error {
+func (asset *Asset) IndexTransactions() error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}
@@ -89,7 +89,7 @@ func (asset *DCRAsset) IndexTransactions() error {
 	return asset.Internal().DCR.GetTransactions(ctx, rangeFn, startBlock, endBlock)
 }
 
-func (asset *DCRAsset) reindexTransactions() error {
+func (asset *Asset) reindexTransactions() error {
 	err := asset.GetWalletDataDb().ClearSavedTransactions(&sharedW.Transaction{})
 	if err != nil {
 		return err

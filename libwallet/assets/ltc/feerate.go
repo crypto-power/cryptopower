@@ -77,10 +77,10 @@ func (asset *Asset) fetchAPIFeeRate() ([]sharedW.FeeEstimate, error) {
 
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
-		HttpUrl: feerateURL,
+		HTTPURL: feerateURL,
 	}
 
-	if _, err := utils.HttpRequest(req, &resp); err != nil {
+	if _, err := utils.HTTPRequest(req, &resp); err != nil {
 		return nil, fmt.Errorf("fetching API fee estimates failed: %v", err)
 	}
 

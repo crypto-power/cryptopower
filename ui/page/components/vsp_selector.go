@@ -48,7 +48,7 @@ func (v *VSPSelector) Changed() bool {
 }
 
 func (v *VSPSelector) SelectVSP(vspHost string) {
-	for _, vsp := range v.WL.SelectedWallet.Wallet.(*dcr.DCRAsset).KnownVSPs() {
+	for _, vsp := range v.WL.SelectedWallet.Wallet.(*dcr.Asset).KnownVSPs() {
 		if vsp.Host == vspHost {
 			v.changed = true
 			v.selectedVSP = vsp
@@ -136,11 +136,11 @@ type vspSelectorModal struct {
 
 	vspSelectedCallback func(*dcr.VSP)
 
-	dcrImpl *dcr.DCRAsset
+	dcrImpl *dcr.Asset
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil

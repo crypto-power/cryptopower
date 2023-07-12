@@ -17,7 +17,7 @@ import (
 	"github.com/decred/dcrd/wire"
 )
 
-func (asset *DCRAsset) TotalStakingRewards() (int64, error) {
+func (asset *Asset) TotalStakingRewards() (int64, error) {
 	voteTransactions, err := asset.GetTransactionsRaw(0, 0, TxFilterVoted, true)
 	if err != nil {
 		return 0, err
@@ -31,15 +31,15 @@ func (asset *DCRAsset) TotalStakingRewards() (int64, error) {
 	return totalRewards, nil
 }
 
-func (asset *DCRAsset) TicketMaturity() int32 {
+func (asset *Asset) TicketMaturity() int32 {
 	return int32(asset.chainParams.TicketMaturity)
 }
 
-func (asset *DCRAsset) TicketExpiry() int32 {
+func (asset *Asset) TicketExpiry() int32 {
 	return int32(asset.chainParams.TicketExpiry)
 }
 
-func (asset *DCRAsset) StakingOverview() (stOverview *StakingOverview, err error) {
+func (asset *Asset) StakingOverview() (stOverview *StakingOverview, err error) {
 	stOverview = &StakingOverview{}
 
 	stOverview.Voted, err = asset.CountTransactions(TxFilterVoted)
@@ -81,7 +81,7 @@ func (asset *DCRAsset) StakingOverview() (stOverview *StakingOverview, err error
 // TicketPrice returns the price of a ticket for the next block, also known as
 // the stake difficulty. May be incorrect if blockchain sync is ongoing or if
 // blockchain is not up-to-date.
-func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
+func (asset *Asset) TicketPrice() (*TicketPriceResponse, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -102,7 +102,7 @@ func (asset *DCRAsset) TicketPrice() (*TicketPriceResponse, error) {
 
 // PurchaseTickets purchases tickets from the asset.
 // Returns a slice of hashes for tickets purchased.
-func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost, passphrase string, vspPubKey []byte) ([]*chainhash.Hash, error) {
+func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphrase string, vspPubKey []byte) ([]*chainhash.Hash, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -161,7 +161,7 @@ func (asset *DCRAsset) PurchaseTickets(account, numTickets int32, vspHost, passp
 
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
-func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
+func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -184,7 +184,7 @@ func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		FeeTxStatus: VSPFeeStatus(walletTicketInfo.FeeTxStatus),
 	}
 
-	// Cannot submit a ticketstatus api request to the VSP if
+	// Cannot submit a TicketStatus api request to the VSP if
 	// the wallet is locked. Return just the wallet info.
 	if asset.IsLocked() {
 		return ticketInfo, nil
@@ -195,7 +195,7 @@ func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		log.Warnf("unable to get vsp ticket info for %s: %v", hash, err)
 		return ticketInfo, nil
 	}
-	vspTicketStatus, err := vspClient.TicketStatus(ctx, ticketHash)
+	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
 	if err != nil {
 		log.Warnf("unable to get vsp ticket info for %s: %v", hash, err)
 		return ticketInfo, nil
@@ -235,7 +235,7 @@ func (asset *DCRAsset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 // StartTicketBuyer starts the automatic ticket buyer. The wallet
 // should already be configured with the required parameters using
 // asset.SetAutoTicketsBuyerConfig().
-func (asset *DCRAsset) StartTicketBuyer(passphrase string) error {
+func (asset *Asset) StartTicketBuyer(passphrase string) error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}
@@ -299,7 +299,7 @@ func (asset *DCRAsset) StartTicketBuyer(passphrase string) error {
 // runTicketBuyer executes the ticket buyer. If the private passphrase is
 // incorrect, or ever becomes incorrect due to a wallet passphrase change,
 // runTicketBuyer exits with an errors.Passphrase error.
-func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase string, cfg *TicketBuyerConfig) error {
+func (asset *Asset) runTicketBuyer(ctx context.Context, passphrase string, cfg *TicketBuyerConfig) error {
 	if len(passphrase) > 0 && asset.IsLocked() {
 		err := asset.UnlockWallet(passphrase)
 		if err != nil {
@@ -443,7 +443,7 @@ func (asset *DCRAsset) runTicketBuyer(ctx context.Context, passphrase string, cf
 }
 
 // buyTicket purchases one ticket with the asset.
-func (asset *DCRAsset) buyTicket(ctx context.Context, passphrase string, sdiff dcrutil.Amount, expiry int32, cfg *TicketBuyerConfig) error {
+func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcrutil.Amount, expiry int32, cfg *TicketBuyerConfig) error {
 	ctx, task := trace.NewTask(ctx, "ticketbuyer.buy")
 	defer task.End()
 
@@ -498,14 +498,14 @@ func (asset *DCRAsset) buyTicket(ctx context.Context, passphrase string, sdiff d
 }
 
 // IsAutoTicketsPurchaseActive returns true if ticket buyer is active.
-func (asset *DCRAsset) IsAutoTicketsPurchaseActive() bool {
+func (asset *Asset) IsAutoTicketsPurchaseActive() bool {
 	asset.cancelAutoTicketBuyerMu.Lock()
 	defer asset.cancelAutoTicketBuyerMu.Unlock()
 	return asset.cancelAutoTicketBuyer != nil
 }
 
 // StopAutoTicketsPurchase stops the automatic ticket buyer.
-func (asset *DCRAsset) StopAutoTicketsPurchase() error {
+func (asset *Asset) StopAutoTicketsPurchase() error {
 	asset.cancelAutoTicketBuyerMu.Lock()
 	defer asset.cancelAutoTicketBuyerMu.Unlock()
 
@@ -519,7 +519,7 @@ func (asset *DCRAsset) StopAutoTicketsPurchase() error {
 }
 
 // SetAutoTicketsBuyerConfig sets ticket buyer config for the asset.
-func (asset *DCRAsset) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount int32, amountToMaintain int64) {
+func (asset *Asset) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount int32, amountToMaintain int64) {
 	asset.SetLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, amountToMaintain)
 	asset.SetInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, purchaseAccount)
 	asset.SetStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, vspHost)
@@ -527,7 +527,7 @@ func (asset *DCRAsset) SetAutoTicketsBuyerConfig(vspHost string, purchaseAccount
 
 // AutoTicketsBuyerConfig returns the previously set ticket buyer config for
 // the asset.
-func (asset *DCRAsset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
+func (asset *Asset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 	btm := asset.ReadLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, -1)
 	accNum := asset.ReadInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1)
 	vspHost := asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "")
@@ -540,12 +540,12 @@ func (asset *DCRAsset) AutoTicketsBuyerConfig() *TicketBuyerConfig {
 }
 
 // TicketBuyerConfigIsSet checks if ticket buyer config is set for the asset.
-func (asset *DCRAsset) TicketBuyerConfigIsSet() bool {
+func (asset *Asset) TicketBuyerConfigIsSet() bool {
 	return asset.ReadStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "") != ""
 }
 
 // ClearTicketBuyerConfig clears the wallet's ticket buyer config.
-func (asset *DCRAsset) ClearTicketBuyerConfig(walletID int) error {
+func (asset *Asset) ClearTicketBuyerConfig(_ int) error {
 	asset.SetLongConfigValueForKey(sharedW.TicketBuyerATMConfigKey, -1)
 	asset.SetInt32ConfigValueForKey(sharedW.TicketBuyerAccountConfigKey, -1)
 	asset.SetStringConfigValueForKey(sharedW.TicketBuyerVSPHostConfigKey, "")
@@ -555,7 +555,7 @@ func (asset *DCRAsset) ClearTicketBuyerConfig(walletID int) error {
 
 // NextTicketPriceRemaining returns the remaning time in seconds of a ticket for the next block,
 // if secs equal 0 is imminent
-func (asset *DCRAsset) NextTicketPriceRemaining() (secs int64, err error) {
+func (asset *Asset) NextTicketPriceRemaining() (secs int64, err error) {
 	params, er := utils.DCRChainParams(asset.NetType())
 	if er != nil {
 		secs, err = -1, er
@@ -575,7 +575,7 @@ func (asset *DCRAsset) NextTicketPriceRemaining() (secs int64, err error) {
 }
 
 // UnspentUnexpiredTickets returns all Unmined, Immature and Live tickets.
-func (asset *DCRAsset) UnspentUnexpiredTickets() ([]sharedW.Transaction, error) {
+func (asset *Asset) UnspentUnexpiredTickets() ([]sharedW.Transaction, error) {
 	var tickets []sharedW.Transaction
 	for _, filter := range []int32{TxFilterUnmined, TxFilterImmature, TxFilterLive} {
 		tx, err := asset.GetTransactionsRaw(0, 0, filter, true)

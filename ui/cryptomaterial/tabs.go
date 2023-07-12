@@ -118,6 +118,7 @@ func (t *TabItem) iconText(gtx layout.Context, tabPosition Position) layout.Dime
 func NewTabItem(title string, icon *image.Image) TabItem {
 	tabItem := TabItem{
 		Title: title,
+		Icon:  *icon,
 	}
 
 	return tabItem

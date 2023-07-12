@@ -95,7 +95,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 }
 
 func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and

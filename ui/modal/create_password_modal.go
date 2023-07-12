@@ -42,12 +42,12 @@ type CreatePasswordModal struct {
 
 	customWidget layout.Widget
 
-	//positiveButtonText string
+	// positiveButtonText string
 	btnPositive cryptomaterial.Button
 	// Returns true to dismiss dialog
 	positiveButtonClicked func(walletName, password string, m *CreatePasswordModal) bool
 
-	//negativeButtonText    string
+	// negativeButtonText    string
 	btnNegative           cryptomaterial.Button
 	negativeButtonClicked func()
 }
@@ -313,7 +313,7 @@ func (cm *CreatePasswordModal) Layout(gtx C) D {
 	return cm.Modal.Layout(gtx, cm.LayoutComponents(gtx))
 }
 
-func (cm *CreatePasswordModal) LayoutComponents(gtx C) []layout.Widget {
+func (cm *CreatePasswordModal) LayoutComponents(_ C) []layout.Widget {
 	w := []layout.Widget{}
 
 	if cm.dialogTitle != "" {

@@ -279,7 +279,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.BTCWalletAsset)...)
 	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.LTCWalletAsset)...)
 
-	for k, w := range allWallets {
+	for _, w := range allWallets {
 		syncListener := listeners.NewSyncProgress()
 		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
 		if err != nil {
@@ -287,7 +287,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 			return
 		}
 
-		go func(wal sharedW.Asset, k int) {
+		go func(wal sharedW.Asset) {
 			for {
 				select {
 				case n := <-syncListener.SyncStatusChan:
@@ -302,6 +302,6 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 					return
 				}
 			}
-		}(w, k)
+		}(w)
 	}
 }

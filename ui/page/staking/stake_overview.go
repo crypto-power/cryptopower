@@ -63,11 +63,11 @@ type Page struct {
 
 	navToSettingsBtn cryptomaterial.Button
 
-	dcrImpl *dcr.DCRAsset
+	dcrImpl *dcr.Asset
 }
 
 func NewStakingPage(l *load.Load) *Page {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Error(values.ErrDCRSupportedOnly)
 		return nil
@@ -170,7 +170,7 @@ func (pg *Page) loadPageData() {
 }
 
 func (pg *Page) isTicketsPurchaseAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.VspAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI)
 }
 
 // Layout draws the page UI components into the provided layout context

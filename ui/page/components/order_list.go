@@ -116,7 +116,7 @@ func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
 func LoadOrders(l *load.Load, offset, limit int32, newestFirst bool, status ...api.Status) []*instantswap.Order {
 	var orders []*instantswap.Order
 
-	orders, err := l.WL.AssetsManager.InstantSwap.GetOrdersRaw(offset, limit, true, status...)
+	orders, err := l.WL.AssetsManager.InstantSwap.GetOrdersRaw(offset, limit, newestFirst, status...)
 	if err != nil {
 		log.Error(err)
 	}

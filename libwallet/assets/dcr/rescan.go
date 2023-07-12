@@ -11,11 +11,11 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
-func (asset *DCRAsset) RescanBlocks() error {
+func (asset *Asset) RescanBlocks() error {
 	return asset.RescanBlocksFromHeight(0)
 }
 
-func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
+func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 	netBackend, err := asset.Internal().DCR.NetworkBackend()
 	if err != nil {
 		return errors.E(utils.ErrNotConnected)
@@ -119,7 +119,7 @@ func (asset *DCRAsset) RescanBlocksFromHeight(startHeight int32) error {
 	return nil
 }
 
-func (asset *DCRAsset) CancelRescan() {
+func (asset *Asset) CancelRescan() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 	if asset.syncData.cancelRescan != nil {
@@ -130,12 +130,12 @@ func (asset *DCRAsset) CancelRescan() {
 	}
 }
 
-func (asset *DCRAsset) IsRescanning() bool {
+func (asset *Asset) IsRescanning() bool {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 	return asset.syncData.rescanning
 }
 
-func (asset *DCRAsset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
+func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }

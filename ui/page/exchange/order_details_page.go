@@ -58,12 +58,12 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		case instantswap.ChangeNow:
 			order.ExchangeServer.Server = order.Server
 			order.ExchangeServer.Config = instantswap.ExchangeConfig{
-				ApiKey: instantswap.API_KEY_CHANGENOW,
+				APIKey: instantswap.API_KEY_CHANGENOW,
 			}
 		case instantswap.GoDex:
 			order.ExchangeServer.Server = order.Server
 			order.ExchangeServer.Config = instantswap.ExchangeConfig{
-				ApiKey: instantswap.API_KEY_GODEX,
+				APIKey: instantswap.API_KEY_GODEX,
 			}
 		default:
 			order.ExchangeServer.Server = order.Server

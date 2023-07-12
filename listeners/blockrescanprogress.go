@@ -34,7 +34,7 @@ func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *sharedW
 }
 
 // OnBlocksRescanEnded is a callback func to notify the end of block rescan.
-func (br *BlocksRescanProgressListener) OnBlocksRescanEnded(walletID int, err error) {
+func (br *BlocksRescanProgressListener) OnBlocksRescanEnded(walletID int, _ error) {
 	br.UpdateNotification(wallet.RescanUpdate{
 		Stage:    wallet.RescanEnded,
 		WalletID: walletID,

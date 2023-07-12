@@ -17,7 +17,7 @@ import (
 const BlockValid = 1 << 0
 
 // DecodeTransaction uses `walletTx.Hex` to retrieve detailed information for a transaction.
-func (asset *DCRAsset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, netParams *chaincfg.Params) (*sharedW.Transaction, error) {
+func (asset *Asset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, netParams *chaincfg.Params) (*sharedW.Transaction, error) {
 	msgTx, txFee, txSize, txFeeRate, err := txhelper.MsgTxFeeSizeRate(walletTx.Hex)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (asset *DCRAsset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, net
 	}, nil
 }
 
-func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.WalletInput) (inputs []*sharedW.TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
+func (asset *Asset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.WInput) (inputs []*sharedW.TxInput, totalWalletInputs, totalWalletUnmixedInputs int64) {
 	inputs = make([]*sharedW.TxInput, len(mtx.TxIn))
 	unmixedAccountNumber := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 
@@ -114,8 +114,8 @@ func (asset *DCRAsset) decodeTxInputs(mtx *wire.MsgTx, walletInputs []*sharedW.W
 	return
 }
 
-func (asset *DCRAsset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
-	walletOutputs []*sharedW.WalletOutput,
+func (asset *Asset) decodeTxOutputs(mtx *wire.MsgTx, netParams *chaincfg.Params,
+	walletOutputs []*sharedW.WOutput,
 ) (outputs []*sharedW.TxOutput, totalWalletOutput, totalWalletMixedOutputs int64, mixedOutputsCount int32) {
 	outputs = make([]*sharedW.TxOutput, len(mtx.TxOut))
 	txType := stake.DetermineTxType(mtx)

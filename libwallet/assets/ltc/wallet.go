@@ -91,7 +91,7 @@ type neutrinoService interface {
 var _ neutrinoService = (*neutrino.ChainService)(nil)
 
 // CreateNewWallet creates a new wallet for the LTC asset.
-func CreateNewWallet(pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.LTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err
@@ -198,7 +198,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // shared wallet implemenation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
-func RestoreWallet(seedMnemonic string, pass *sharedW.WalletAuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
+func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
 	chainParams, err := utils.LTCChainParams(params.NetType)
 	if err != nil {
 		return nil, err

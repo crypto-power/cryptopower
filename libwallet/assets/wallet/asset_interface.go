@@ -45,7 +45,7 @@ type Asset interface {
 	NetType() utils.NetworkType
 	ToAmount(v int64) AssetAmount
 	GetAssetType() utils.AssetType
-	Internal() *loader.LoaderWallets
+	Internal() *loader.LoadedWallets
 	TargetTimePerBlockMinutes() float64
 	RequiredConfirmations() int32
 	ShutdownContextWithCancel() (context.Context, context.CancelFunc)

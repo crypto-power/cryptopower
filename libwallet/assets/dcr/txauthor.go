@@ -33,7 +33,7 @@ type TxAuthor struct {
 	needsConstruct bool
 }
 
-func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
+func (asset *Asset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW.UnspentOutput) error {
 	_, err := asset.GetAccount(sourceAccountNumber)
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (asset *DCRAsset) NewUnsignedTx(sourceAccountNumber int32, utxos []*sharedW
 }
 
 // ComputeTxSizeEstimation computes the estimated size of the final raw transaction.
-func (asset *DCRAsset) ComputeTxSizeEstimation(dstnAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
+func (asset *Asset) ComputeTxSizeEstimation(dstnAddress string, utxos []*sharedW.UnspentOutput) (int, error) {
 	if len(utxos) == 0 {
 		return 0, nil
 	}
@@ -79,15 +79,15 @@ func (asset *DCRAsset) ComputeTxSizeEstimation(dstnAddress string, utxos []*shar
 	return size, nil
 }
 
-func (asset *DCRAsset) GetUnsignedTx() *TxAuthor {
+func (asset *Asset) GetUnsignedTx() *TxAuthor {
 	return asset.TxAuthoredInfo
 }
 
-func (asset *DCRAsset) IsUnsignedTxExist() bool {
+func (asset *Asset) IsUnsignedTxExist() bool {
 	return asset.TxAuthoredInfo != nil
 }
 
-func (asset *DCRAsset) AddSendDestination(address string, atomAmount int64, sendMax bool) error {
+func (asset *Asset) AddSendDestination(address string, atomAmount int64, sendMax bool) error {
 	_, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return utils.TranslateError(err)
@@ -107,7 +107,7 @@ func (asset *DCRAsset) AddSendDestination(address string, atomAmount int64, send
 	return nil
 }
 
-func (asset *DCRAsset) UpdateSendDestination(index int, address string, atomAmount int64, sendMax bool) error {
+func (asset *Asset) UpdateSendDestination(index int, address string, atomAmount int64, sendMax bool) error {
 	if err := asset.validateSendAmount(sendMax, atomAmount); err != nil {
 		return err
 	}
@@ -125,31 +125,31 @@ func (asset *DCRAsset) UpdateSendDestination(index int, address string, atomAmou
 	return nil
 }
 
-func (asset *DCRAsset) RemoveSendDestination(index int) {
+func (asset *Asset) RemoveSendDestination(index int) {
 	if len(asset.TxAuthoredInfo.destinations) > index {
 		asset.TxAuthoredInfo.destinations = append(asset.TxAuthoredInfo.destinations[:index], asset.TxAuthoredInfo.destinations[index+1:]...)
 		asset.TxAuthoredInfo.needsConstruct = true
 	}
 }
 
-func (asset *DCRAsset) SendDestination(atIndex int) *sharedW.TransactionDestination {
+func (asset *Asset) SendDestination(atIndex int) *sharedW.TransactionDestination {
 	return &asset.TxAuthoredInfo.destinations[atIndex]
 }
 
-func (asset *DCRAsset) SetChangeDestination(address string) {
+func (asset *Asset) SetChangeDestination(address string) {
 	asset.TxAuthoredInfo.changeDestination = &sharedW.TransactionDestination{
 		Address: address,
 	}
 	asset.TxAuthoredInfo.needsConstruct = true
 }
 
-func (asset *DCRAsset) RemoveChangeDestination() {
+func (asset *Asset) RemoveChangeDestination() {
 	asset.TxAuthoredInfo.changeDestination = nil
 	asset.TxAuthoredInfo.needsConstruct = true
 }
 
-func (asset *DCRAsset) TotalSendAmount() *sharedW.Amount {
-	var totalSendAmountAtom int64 = 0
+func (asset *Asset) TotalSendAmount() *sharedW.Amount {
+	var totalSendAmountAtom int64
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		totalSendAmountAtom += destination.UnitAmount
 	}
@@ -160,7 +160,7 @@ func (asset *DCRAsset) TotalSendAmount() *sharedW.Amount {
 	}
 }
 
-func (asset *DCRAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
+func (asset *Asset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	unsignedTx, err := asset.unsignedTransaction()
 	if err != nil {
 		return nil, utils.TranslateError(err)
@@ -188,7 +188,7 @@ func (asset *DCRAsset) EstimateFeeAndSize() (*sharedW.TxFeeAndSize, error) {
 	}, nil
 }
 
-func (asset *DCRAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
+func (asset *Asset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	txFeeAndSize, err := asset.EstimateFeeAndSize()
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (asset *DCRAsset) EstimateMaxSendAmount() (*sharedW.Amount, error) {
 	}, nil
 }
 
-func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
+func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byte, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -292,7 +292,7 @@ func (asset *DCRAsset) Broadcast(privatePassphrase, transactionLabel string) ([]
 }
 
 // updateTxLabel saves the tx label in the local instance.
-func (asset *DCRAsset) updateTxLabel(hash *chainhash.Hash, txLabel string) error {
+func (asset *Asset) updateTxLabel(hash *chainhash.Hash, txLabel string) error {
 	tx := &sharedW.Transaction{
 		Hash:  hash.String(),
 		Label: txLabel,
@@ -301,7 +301,7 @@ func (asset *DCRAsset) updateTxLabel(hash *chainhash.Hash, txLabel string) error
 	return err
 }
 
-func (asset *DCRAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
+func (asset *Asset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 	if asset.TxAuthoredInfo.needsConstruct || asset.TxAuthoredInfo.unsignedTx == nil {
 		unsignedTx, err := asset.constructTransaction()
 		if err != nil {
@@ -315,7 +315,7 @@ func (asset *DCRAsset) unsignedTransaction() (*txauthor.AuthoredTx, error) {
 	return asset.TxAuthoredInfo.unsignedTx, nil
 }
 
-func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
+func (asset *Asset) constructTransaction() (*txauthor.AuthoredTx, error) {
 	var err error
 	outputs := make([]*wire.TxOut, 0)
 	var outputSelectionAlgorithm w.OutputSelectionAlgorithm = w.OutputSelectionAlgorithmDefault
@@ -392,7 +392,7 @@ func (asset *DCRAsset) constructTransaction() (*txauthor.AuthoredTx, error) {
 // transaction possible. It plans not to spend all the utxos available when servicing
 // the current transaction spending amount if possible. The sendMax shows that
 // all utxos must be spent without any balance(unspent utxo) left in the account.
-func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOutput) txauthor.InputSource {
+func (asset *Asset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOutput) txauthor.InputSource {
 	var (
 		sourceErr       error
 		totalInputValue dcrutil.Amount
@@ -407,7 +407,7 @@ func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOut
 			continue
 		}
 
-		if !saneOutputValue(output.Amount.(DCRAmount)) {
+		if !saneOutputValue(output.Amount.(Amount)) {
 			sourceErr = fmt.Errorf("impossible output amount `%v` in listunspent result", output.Amount)
 			break
 		}
@@ -424,7 +424,7 @@ func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOut
 			break
 		}
 
-		totalInputValue += dcrutil.Amount(output.Amount.(DCRAmount))
+		totalInputValue += dcrutil.Amount(output.Amount.(Amount))
 		pkScripts = append(pkScripts, script)
 		redeemScriptSizes = append(redeemScriptSizes, txsizes.RedeemP2PKHSigScriptSize)
 		inputs = append(inputs, wire.NewTxIn(&previousOutPoint, output.Amount.ToInt(), nil))
@@ -480,7 +480,7 @@ func (asset *DCRAsset) makeInputSource(sendMax bool, utxos []*sharedW.UnspentOut
 // for this unsigned tx, if a change address had not been previously derived.
 // The derived (or previously derived) address is used to prepare a
 // change source for receiving change from this tx back into the sharedW.
-func (asset *DCRAsset) changeSource(ctx context.Context) (txauthor.ChangeSource, error) {
+func (asset *Asset) changeSource(ctx context.Context) (txauthor.ChangeSource, error) {
 	if asset.TxAuthoredInfo.changeAddress == "" {
 		var changeAccount uint32
 
@@ -509,14 +509,14 @@ func (asset *DCRAsset) changeSource(ctx context.Context) (txauthor.ChangeSource,
 }
 
 // validateSendAmount validate the amount to send to a destination address
-func (asset *DCRAsset) validateSendAmount(sendMax bool, atomAmount int64) error {
+func (asset *Asset) validateSendAmount(sendMax bool, atomAmount int64) error {
 	if !sendMax && (atomAmount <= 0 || atomAmount > dcrutil.MaxAmount) {
 		return errors.E(errors.Invalid, "invalid amount")
 	}
 	return nil
 }
 
-func saneOutputValue(amount DCRAmount) bool {
+func saneOutputValue(amount Amount) bool {
 	return amount >= 0 && amount <= dcrutil.MaxAmount
 }
 

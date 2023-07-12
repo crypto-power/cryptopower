@@ -27,8 +27,8 @@ type Loader struct {
 	DbDriver string
 }
 
-// LoaderWallets holds all the upstream wallets managed by the loader
-type LoaderWallets struct {
+// LoadedWallets holds all the upstream wallets managed by the loader
+type LoadedWallets struct {
 	BTC *btcW.Wallet
 	DCR *dcrW.Wallet
 	LTC *ltcW.Wallet
@@ -53,11 +53,11 @@ type AssetLoader interface {
 	GetDbDirPath() string
 	SetDatabaseDriver(driver string)
 
-	OpenExistingWallet(ctx context.Context, WalletID string, pubPassphrase []byte) (*LoaderWallets, error)
-	CreateNewWallet(ctx context.Context, params *CreateWalletParams) (*LoaderWallets, error)
-	CreateWatchingOnlyWallet(ctx context.Context, params *WatchOnlyWalletParams) (*LoaderWallets, error)
+	OpenExistingWallet(ctx context.Context, WalletID string, pubPassphrase []byte) (*LoadedWallets, error)
+	CreateNewWallet(ctx context.Context, params *CreateWalletParams) (*LoadedWallets, error)
+	CreateWatchingOnlyWallet(ctx context.Context, params *WatchOnlyWalletParams) (*LoadedWallets, error)
 
-	GetLoadedWallet() (*LoaderWallets, bool)
+	GetLoadedWallet() (*LoadedWallets, bool)
 	UnloadWallet() error
 	WalletExists(WalletID string) (bool, error)
 }

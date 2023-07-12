@@ -455,8 +455,8 @@ func testWindowNavigatorCloseCurrentPage(t *testing.T, finalPageID *string, wind
 	if *finalPageID != finalPage.ID() {
 		t.Fatalf("expected final page %q but found %q", *finalPageID, finalPage.ID())
 	}
-	if finalPage, ok := finalPage.(*testPage); ok {
-		validateDisplayedPage(t, finalPage, true)
+	if page, ok := finalPage.(*testPage); ok {
+		validateDisplayedPage(t, page, true)
 	} else {
 		t.Fatalf("found final page of unexpected type %T", finalPage)
 	}
@@ -506,8 +506,8 @@ func testWindowNavigatorClosePagesAfter(t *testing.T, finalPageID string, pagesT
 		t.Fatalf("expected final page %q but found %q", finalPageID, finalPage.ID())
 	}
 	// Validate the final page.
-	if finalPage, ok := finalPage.(*testPage); ok {
-		validateDisplayedPage(t, finalPage, true)
+	if page, ok := finalPage.(*testPage); ok {
+		validateDisplayedPage(t, page, true)
 	} else {
 		t.Fatalf("found final page of unexpected type %T", finalPage)
 	}

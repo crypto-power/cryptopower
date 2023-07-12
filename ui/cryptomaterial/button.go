@@ -222,7 +222,8 @@ func (bl ButtonLayout) Layout(gtx layout.Context, w layout.Widget) layout.Dimens
 // TODO: Doesn't work, if ib.colorStyle was nil before this method is called,
 // it is temporarily changed but when ib.Layout is called, it returns to nil.
 func (ib IconButton) ChangeColorStyle(colorStyle *values.ColorStyle) {
-	// ib.colorStyle = colorStyle ? TODO SA4005: ineffective assignment to field IconButton.colorStyle lint error
+	ib.colorStyle.Background = colorStyle.Background
+	ib.colorStyle.Foreground = colorStyle.Foreground
 }
 
 func (ib IconButton) Layout(gtx layout.Context) layout.Dimensions {

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (asset *DCRAsset) spvSyncNotificationCallbacks() *spv.Notifications {
+func (asset *Asset) spvSyncNotificationCallbacks() *spv.Notifications {
 	return &spv.Notifications{
 		PeerConnected: func(peerCount int32, addr string) {
 			asset.handlePeerCountUpdate(peerCount)
@@ -32,7 +32,7 @@ func (asset *DCRAsset) spvSyncNotificationCallbacks() *spv.Notifications {
 	}
 }
 
-func (asset *DCRAsset) handlePeerCountUpdate(peerCount int32) {
+func (asset *Asset) handlePeerCountUpdate(peerCount int32) {
 	asset.syncData.mu.Lock()
 	asset.syncData.connectedPeers = peerCount
 	shouldLog := asset.syncData.showLogs && asset.syncData.syncing
@@ -53,7 +53,7 @@ func (asset *DCRAsset) handlePeerCountUpdate(peerCount int32) {
 
 // Fetch CFilters Callbacks
 
-func (asset *DCRAsset) fetchCFiltersStarted() {
+func (asset *Asset) fetchCFiltersStarted() {
 	asset.syncData.mu.Lock()
 	asset.syncData.syncStage = CFiltersFetchSyncStage
 	asset.syncData.cfiltersFetchProgress.BeginFetchCFiltersTimeStamp = time.Now().Unix()
@@ -66,7 +66,7 @@ func (asset *DCRAsset) fetchCFiltersStarted() {
 	}
 }
 
-func (asset *DCRAsset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight int32) {
+func (asset *Asset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight int32) {
 	// lock the mutex before reading and writing to asset.syncData.*
 	asset.syncData.mu.Lock()
 
@@ -128,7 +128,7 @@ func (asset *DCRAsset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHei
 	asset.publishDebugInfo(debugInfo)
 }
 
-func (asset *DCRAsset) publishFetchCFiltersProgress() {
+func (asset *Asset) publishFetchCFiltersProgress() {
 	asset.syncData.mu.RLock()
 	cfilters := &asset.syncData.cfiltersFetchProgress
 	asset.syncData.mu.RUnlock()
@@ -138,7 +138,7 @@ func (asset *DCRAsset) publishFetchCFiltersProgress() {
 	}
 }
 
-func (asset *DCRAsset) fetchCFiltersEnded() {
+func (asset *Asset) fetchCFiltersEnded() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -152,7 +152,7 @@ func (asset *DCRAsset) fetchCFiltersEnded() {
 
 // Fetch Headers Callbacks
 
-func (asset *DCRAsset) fetchHeadersStarted() {
+func (asset *Asset) fetchHeadersStarted() {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -200,7 +200,7 @@ func (asset *DCRAsset) fetchHeadersStarted() {
 	}
 }
 
-func (asset *DCRAsset) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastFetchedHeaderTime int64) {
+func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64) {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -254,7 +254,7 @@ func (asset *DCRAsset) fetchHeadersProgress(lastFetchedHeaderHeight int32, lastF
 	asset.publishDebugInfo(debugInfo)
 }
 
-func (asset *DCRAsset) publishFetchHeadersProgress() {
+func (asset *Asset) publishFetchHeadersProgress() {
 	asset.syncData.mu.RLock()
 	headerFetch := &asset.syncData.headersFetchProgress
 	asset.syncData.mu.RUnlock()
@@ -264,7 +264,7 @@ func (asset *DCRAsset) publishFetchHeadersProgress() {
 	}
 }
 
-func (asset *DCRAsset) fetchHeadersFinished() {
+func (asset *Asset) fetchHeadersFinished() {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -293,7 +293,7 @@ func (asset *DCRAsset) fetchHeadersFinished() {
 
 // Address/Account Discovery Callbacks
 
-func (asset *DCRAsset) discoverAddressesStarted() {
+func (asset *Asset) discoverAddressesStarted() {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -320,7 +320,7 @@ func (asset *DCRAsset) discoverAddressesStarted() {
 	}
 }
 
-func (asset *DCRAsset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64) {
+func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64) {
 	// use ticker to calculate and broadcast address discovery progress every second
 	everySecondTicker := time.NewTicker(1 * time.Second)
 
@@ -411,13 +411,13 @@ func (asset *DCRAsset) updateAddressDiscoveryProgress(totalHeadersFetchTime floa
 	}
 }
 
-func (asset *DCRAsset) publishAddressDiscoveryProgress() {
+func (asset *Asset) publishAddressDiscoveryProgress() {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
 	}
 }
 
-func (asset *DCRAsset) discoverAddressesFinished() {
+func (asset *Asset) discoverAddressesFinished() {
 	if !asset.IsSyncing() {
 		return
 	}
@@ -425,7 +425,7 @@ func (asset *DCRAsset) discoverAddressesFinished() {
 	asset.stopUpdatingAddressDiscoveryProgress()
 }
 
-func (asset *DCRAsset) stopUpdatingAddressDiscoveryProgress() {
+func (asset *Asset) stopUpdatingAddressDiscoveryProgress() {
 	asset.syncData.mu.Lock()
 	if asset.syncData != nil && asset.syncData.addressDiscoveryCompletedOrCanceled != nil {
 		close(asset.syncData.addressDiscoveryCompletedOrCanceled)
@@ -437,7 +437,7 @@ func (asset *DCRAsset) stopUpdatingAddressDiscoveryProgress() {
 
 // Blocks Scan Callbacks
 
-func (asset *DCRAsset) rescanStarted() {
+func (asset *Asset) rescanStarted() {
 	asset.stopUpdatingAddressDiscoveryProgress()
 
 	asset.syncData.mu.Lock()
@@ -460,7 +460,7 @@ func (asset *DCRAsset) rescanStarted() {
 	}
 }
 
-func (asset *DCRAsset) rescanProgress(rescannedThrough int32) {
+func (asset *Asset) rescanProgress(rescannedThrough int32) {
 	if !asset.IsSyncing() {
 		// ignore if sync is not in progress
 		return
@@ -526,7 +526,7 @@ func (asset *DCRAsset) rescanProgress(rescannedThrough int32) {
 	asset.syncData.mu.RUnlock()
 }
 
-func (asset *DCRAsset) publishHeadersRescanProgress() {
+func (asset *Asset) publishHeadersRescanProgress() {
 	asset.syncData.mu.RLock()
 	headersRescan := &asset.syncData.headersRescanProgress
 	asset.syncData.mu.RUnlock()
@@ -536,7 +536,7 @@ func (asset *DCRAsset) publishHeadersRescanProgress() {
 	}
 }
 
-func (asset *DCRAsset) rescanFinished() {
+func (asset *Asset) rescanFinished() {
 	if !asset.IsSyncing() {
 		// ignore if sync is not in progress
 		return
@@ -555,7 +555,7 @@ func (asset *DCRAsset) rescanFinished() {
 	asset.publishHeadersRescanProgress()
 }
 
-func (asset *DCRAsset) publishDebugInfo(debugInfo *sharedW.DebugInfo) {
+func (asset *Asset) publishDebugInfo(debugInfo *sharedW.DebugInfo) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		syncProgressListener.Debug(debugInfo)
 	}
@@ -563,7 +563,7 @@ func (asset *DCRAsset) publishDebugInfo(debugInfo *sharedW.DebugInfo) {
 
 /** Helper functions start here */
 
-func (asset *DCRAsset) estimateBlockHeadersCountAfter(lastHeaderTime int64) int32 {
+func (asset *Asset) estimateBlockHeadersCountAfter(lastHeaderTime int64) int32 {
 	// Use the difference between current time (now) and last reported block time,
 	// to estimate total headers to fetch.
 	timeDifferenceInSeconds := float64(time.Now().Unix() - lastHeaderTime)
@@ -574,13 +574,13 @@ func (asset *DCRAsset) estimateBlockHeadersCountAfter(lastHeaderTime int64) int3
 	return int32(math.Ceil(estimatedHeadersDifference))
 }
 
-func (asset *DCRAsset) notifySyncError(err error) {
+func (asset *Asset) notifySyncError(err error) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
 		syncProgressListener.OnSyncEndedWithError(err)
 	}
 }
 
-func (asset *DCRAsset) notifySyncCanceled() {
+func (asset *Asset) notifySyncCanceled() {
 	asset.syncData.mu.RLock()
 	restartSyncRequested := asset.syncData.restartSyncRequested
 	asset.syncData.mu.RUnlock()
@@ -590,7 +590,7 @@ func (asset *DCRAsset) notifySyncCanceled() {
 	}
 }
 
-func (asset *DCRAsset) resetSyncData() {
+func (asset *Asset) resetSyncData() {
 	// It's possible that sync ends or errors while address discovery is ongoing.
 	// If this happens, it's important to stop the address discovery process before
 	// resetting sync data.
@@ -608,7 +608,7 @@ func (asset *DCRAsset) resetSyncData() {
 	asset.LockWallet() // lock wallet if previously unlocked to perform account discovery.
 }
 
-func (asset *DCRAsset) syncedWallet(synced bool) {
+func (asset *Asset) syncedWallet(synced bool) {
 	ctx, _ := asset.ShutdownContextWithCancel()
 
 	indexTransactions := func() {

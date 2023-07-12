@@ -12,10 +12,10 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const ExchangeSelectorID = "ExchangeSelectorID"
+const ExSelectorID = "ExSelectorID"
 
-// ExchangeSelector models a wiget for use for selecting exchanges.
-type ExchangeSelector struct {
+// ExSelector models a widget for use for selecting exchanges.
+type ExSelector struct {
 	openSelectorDialog *cryptomaterial.Clickable
 	*exchangeModal
 	changed bool
@@ -48,10 +48,10 @@ type exchangeModal struct {
 	isCancelable      bool
 }
 
-// NewExchangeSelector creates an exchange selector component.
+// NewExSelector creates an exchange selector component.
 // It opens a modal to select a desired exchange.
-func NewExchangeSelector(l *load.Load, server ...instantswap.Server) *ExchangeSelector {
-	es := &ExchangeSelector{
+func NewExSelector(l *load.Load, server ...instantswap.Server) *ExSelector {
+	es := &ExSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 	}
 
@@ -74,7 +74,7 @@ func NewExchangeSelector(l *load.Load, server ...instantswap.Server) *ExchangeSe
 // SupportedExchanges returns a slice containing all the exchanges
 // Currently supported. If the server param is passed, it returns
 // a slice  containing the filtered server only.
-func (es *ExchangeSelector) SupportedExchanges(server ...instantswap.Server) []*Exchange {
+func (es *ExSelector) SupportedExchanges(server ...instantswap.Server) []*Exchange {
 	// check if server is not nil
 	if len(server) > 0 {
 		exchng := &Exchange{
@@ -104,7 +104,7 @@ func (es *ExchangeSelector) SupportedExchanges(server ...instantswap.Server) []*
 	return exchange
 }
 
-func (es *ExchangeSelector) setServerIcon(serverName string) *cryptomaterial.Image {
+func (es *ExSelector) setServerIcon(serverName string) *cryptomaterial.Image {
 	switch serverName {
 	case instantswap.Changelly.ToString():
 		return es.Theme.Icons.ChangellyIcon
@@ -126,23 +126,23 @@ func (es *ExchangeSelector) setServerIcon(serverName string) *cryptomaterial.Ima
 }
 
 // SelectedExchange returns the currently selected Exchange.
-func (es *ExchangeSelector) SelectedExchange() *Exchange {
+func (es *ExSelector) SelectedExchange() *Exchange {
 	return es.selectedExchange
 }
 
 // SetSelectedExchange sets exch as the current selected exchange.
-func (es *ExchangeSelector) SetSelectedExchange(exch *Exchange) {
+func (es *ExSelector) SetSelectedExchange(exch *Exchange) {
 	es.selectedExchange = exch
 }
 
 // Title Sets the title of the exchange list dialog.
-func (es *ExchangeSelector) Title(title string) *ExchangeSelector {
+func (es *ExSelector) Title(title string) *ExSelector {
 	es.dialogTitle = title
 	return es
 }
 
 // ExchangeSelected sets the callback executed when an exchange is selected.
-func (es *ExchangeSelector) ExchangeSelected(callback func(*Exchange)) *ExchangeSelector {
+func (es *ExSelector) ExchangeSelected(callback func(*Exchange)) *ExSelector {
 	es.exchangeCallback = callback
 	return es
 }
@@ -150,7 +150,7 @@ func (es *ExchangeSelector) ExchangeSelected(callback func(*Exchange)) *Exchange
 // SetSelectedExchangeName sets the exchange whose Name field is
 // equals to {name} as the current selected exchange.
 // If it can find exchange whose Name field equals name it returns silently.
-func (es *ExchangeSelector) SetSelectedExchangeName(name string) {
+func (es *ExSelector) SetSelectedExchangeName(name string) {
 	ex := es.SupportedExchanges()
 	for _, v := range ex {
 		if v.Name == name {
@@ -160,14 +160,14 @@ func (es *ExchangeSelector) SetSelectedExchangeName(name string) {
 	}
 }
 
-func (es *ExchangeSelector) Handle(window app.WindowNavigator) {
+func (es *ExSelector) Handle(window app.WindowNavigator) {
 	for es.openSelectorDialog.Clicked() {
 		es.title(es.dialogTitle)
 		window.ShowModal(es.exchangeModal)
 	}
 }
 
-func (es *ExchangeSelector) Layout(window app.WindowNavigator, gtx C) D {
+func (es *ExSelector) Layout(window app.WindowNavigator, gtx C) D {
 	es.Handle(window)
 
 	bg := es.Theme.Color.White
@@ -203,7 +203,6 @@ func (es *ExchangeSelector) Layout(window app.WindowNavigator, gtx C) D {
 				txt.Color = es.Theme.Color.Text
 			}
 			return txt.Layout(gtx)
-
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
@@ -233,7 +232,7 @@ func newExchangeModal(l *load.Load) *exchangeModal {
 	return em
 }
 
-func (es *ExchangeSelector) buildExchangeItems(server ...instantswap.Server) []*exchangeItem {
+func (es *ExSelector) buildExchangeItems(server ...instantswap.Server) []*exchangeItem {
 	exList := es.SupportedExchanges(server...)
 	exItems := make([]*exchangeItem, 0)
 	for _, v := range exList {

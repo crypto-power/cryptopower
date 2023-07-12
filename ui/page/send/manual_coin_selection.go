@@ -583,7 +583,7 @@ func (pg *ManualCoinSelectionPage) accountListItemsSection(gtx C, utxos []*UTXOI
 }
 
 func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interface{}) D {
-	getRowItem := func(gtx C, index int) layout.Widget {
+	getRowItem := func(index int) layout.Widget {
 		var widget layout.Widget
 		c := components[index]
 
@@ -638,7 +638,7 @@ func (pg *ManualCoinSelectionPage) rowItemsSection(gtx C, components ...interfac
 		gtx.Constraints.Min.X = int(max * c.weight)
 		return c.direction.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.End}.Layout(gtx,
-				layout.Rigid(getRowItem(gtx, index)),
+				layout.Rigid(getRowItem(index)),
 			)
 		})
 	})
