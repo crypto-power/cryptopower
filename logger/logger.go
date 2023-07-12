@@ -13,18 +13,18 @@ type logger struct {
 	subsystemBLoggers map[string]btclog.Logger
 }
 
-var instance *logger
-var initCtx sync.Once
+var (
+	instance *logger
+	initCtx  sync.Once
+)
 
-func New(sLoggers map[string]slog.Logger, bLoggers map[string]btclog.Logger) *logger {
+func New(sLoggers map[string]slog.Logger, bLoggers map[string]btclog.Logger) {
 	initCtx.Do(func() {
 		instance = &logger{
 			subsystemSLoggers: sLoggers,
 			subsystemBLoggers: bLoggers,
 		}
 	})
-
-	return instance
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid
@@ -86,5 +86,4 @@ func SetLogLevel(subsystemID string, logLevel string) {
 		level, _ := btclog.LevelFromString(logLevel)
 		subsystem.SetLevel(level)
 	}
-
 }

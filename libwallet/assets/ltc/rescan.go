@@ -293,12 +293,12 @@ func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 		asset.syncData.rescanStartHeight = &progress.Height
 	}
 
-	headersFetchedSoFar := progress.Height - *asset.syncData.rescanStartHeight
+	headersFetchedSoFar := float64(progress.Height - *asset.syncData.rescanStartHeight)
 	if headersFetchedSoFar < 1 {
 		headersFetchedSoFar = 1
 	}
 
-	remainingHeaders := asset.GetBestBlockHeight() - progress.Height
+	remainingHeaders := float64(asset.GetBestBlockHeight() - progress.Height)
 	if remainingHeaders < 1 {
 		remainingHeaders = 1
 	}
@@ -307,11 +307,11 @@ func (asset *Asset) updateRescanProgress(progress *chain.RescanProgress) {
 
 	rescanProgressReport := &sharedW.HeadersRescanProgressReport{
 		CurrentRescanHeight: progress.Height,
-		TotalHeadersToScan:  allHeadersToFetch,
+		TotalHeadersToScan:  int32(allHeadersToFetch),
 	}
 
 	elapsedRescanTime := time.Now().Unix() - asset.syncData.rescanStartTime.Unix()
-	rescanRate := float64(headersFetchedSoFar) / float64(rescanProgressReport.TotalHeadersToScan)
+	rescanRate := headersFetchedSoFar / float64(rescanProgressReport.TotalHeadersToScan)
 
 	rescanProgressReport.RescanProgress = int32((headersFetchedSoFar * 100) / allHeadersToFetch)
 	estimatedTotalRescanTime := int64(math.Round(float64(elapsedRescanTime) / rescanRate))

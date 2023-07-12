@@ -606,7 +606,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 }
 
 func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -835,7 +835,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			gLimit := uint32(val)
 			tm.SetLoading(true)
 
-			err = pg.WL.SelectedWallet.Wallet.(*dcr.DCRAsset).DiscoverUsage(gLimit)
+			err = pg.WL.SelectedWallet.Wallet.(*dcr.Asset).DiscoverUsage(gLimit)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)

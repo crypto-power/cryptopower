@@ -22,9 +22,10 @@ import (
 
 const (
 	// API_KEY_CHANGENOW is the changenow API key.
-	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93"
+	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93" //nolint:revive
 	// API_KEY_GODEX is the godex API key.
-	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
+	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7" + //nolint:revive
+		"RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
 )
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
@@ -77,9 +78,9 @@ func (instantSwap *InstantSwap) NewExchangeServer(exchangeServer ExchangeServer)
 
 	exchange, err := instantswap.NewExchange(exchangeServer.Server.ToString(), instantswap.ExchangeConfig{
 		Debug:       exchangeServer.Config.Debug,
-		ApiKey:      exchangeServer.Config.ApiKey,
-		ApiSecret:   exchangeServer.Config.ApiSecret,
-		AffiliateId: exchangeServer.Config.AffiliateId,
+		ApiKey:      exchangeServer.Config.APIKey,
+		ApiSecret:   exchangeServer.Config.APISecret,
+		AffiliateId: exchangeServer.Config.AffiliateID,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -239,7 +240,7 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 		{
 			ChangeNow,
 			ExchangeConfig{
-				ApiKey: API_KEY_CHANGENOW,
+				APIKey: API_KEY_CHANGENOW,
 			},
 		},
 		{
@@ -249,7 +250,7 @@ func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
 		{
 			GoDex,
 			ExchangeConfig{
-				ApiKey: API_KEY_GODEX,
+				APIKey: API_KEY_GODEX,
 			},
 		},
 	}

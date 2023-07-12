@@ -23,11 +23,11 @@ type agendaVoteModal struct {
 
 	accountSelector *components.WalletAndAccountSelector
 	accountSelected *sharedW.Account
-	dcrImpl         *dcr.DCRAsset
+	dcrImpl         *dcr.Asset
 }
 
 func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		// log.Warn(values.ErrDCRSupportedOnly)
 		return nil
@@ -81,7 +81,7 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 	return avm.Modal.Layout(gtx, w)
 }
 
-func (avm *agendaVoteModal) sendVotes(_, password string, m *modal.CreatePasswordModal) bool {
+func (avm *agendaVoteModal) sendVotes(_, password string, _ *modal.CreatePasswordModal) bool {
 	err := avm.dcrImpl.SetVoteChoice(avm.agenda.AgendaID, avm.voteChoice, "", password)
 	if err != nil {
 		avm.CreatePasswordModal.SetError(err.Error())

@@ -27,9 +27,7 @@ type HTMLProvider struct {
 	prefix        string
 }
 
-var (
-	blockEls = []string{"div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li"}
-)
+var blockEls = []string{"div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li"}
 
 const (
 	openStyleTag      = "{@@"
@@ -63,11 +61,11 @@ func (p *HTMLProvider) renderHardBreak() {
 	p.renderEmptyLine()
 }
 
-func (p *HTMLProvider) prepareBlockQuote(node *ast.BlockQuote, entering bool) {}
+func (p *HTMLProvider) prepareBlockQuote(_ /*node*/ *ast.BlockQuote, _ /*entering*/ bool) {}
 
-func (p *HTMLProvider) prepareCode(node *ast.Code, entering bool) {}
+func (p *HTMLProvider) prepareCode(_ /*node*/ *ast.Code, _ /*entering*/ bool) {}
 
-func (p *HTMLProvider) prepareCodeBlock(node *ast.CodeBlock, entering bool) {}
+func (p *HTMLProvider) prepareCodeBlock(_ /*node*/ *ast.CodeBlock, _ /*entering*/ bool) {}
 
 func (p *HTMLProvider) prepareList(node *ast.List, entering bool) {
 	if next := ast.GetNextNode(node); !entering && next != nil {
@@ -106,14 +104,14 @@ func (p *HTMLProvider) prepareListItem(node *ast.ListItem, entering bool) {
 	}
 }
 
-func (p *HTMLProvider) prepareParagraph(node *ast.Paragraph, entering bool) {
+func (p *HTMLProvider) prepareParagraph(_ /*node*/ *ast.Paragraph, entering bool) {
 	if !entering {
 		p.render(p.theme.Body2(""))
 		p.renderEmptyLine()
 	}
 }
 
-func (p *HTMLProvider) prepareHeading(node *ast.Heading, entering bool) {
+func (p *HTMLProvider) prepareHeading(node *ast.Heading, _ /*entering*/ bool) {
 	lblFunc := p.theme.H6
 
 	switch node.Level {
@@ -129,17 +127,17 @@ func (p *HTMLProvider) prepareHeading(node *ast.Heading, entering bool) {
 	p.renderEmptyLine()
 }
 
-func (p *HTMLProvider) prepareStrong(node *ast.Strong, entering bool) {
+func (p *HTMLProvider) prepareStrong(_ /*node*/ *ast.Strong, _ /*entering*/ bool) {
 	label := p.theme.Body1("")
 	label.Font.Weight = text.Bold
 	p.render(label)
 }
-func (p *HTMLProvider) prepareDel(node *ast.Del, entering bool) {}
+func (p *HTMLProvider) prepareDel(_ /*node*/ *ast.Del, _ /*entering*/ bool) {}
 
 // Will be taken care off by the render function
-func (p *HTMLProvider) prepareEmph(node *ast.Emph, entering bool) {}
+func (p *HTMLProvider) prepareEmph(_ /*node*/ *ast.Emph, _ /*entering*/ bool) {}
 
-func (p *HTMLProvider) prepareLink(node *ast.Link, entering bool) {
+func (p *HTMLProvider) prepareLink(node *ast.Link, _ /*entering*/ bool) {
 	dest := string(node.Destination)
 	text := string(ast.GetFirstChild(node).AsLeaf().Literal)
 
@@ -164,9 +162,9 @@ func (p *HTMLProvider) prepareLink(node *ast.Link, entering bool) {
 	p.stringBuilder.WriteString(word)
 }
 
-func (p *HTMLProvider) prepareHorizontalRule(node *ast.HorizontalRule, entering bool) {}
+func (p *HTMLProvider) prepareHorizontalRule(_ /*node*/ *ast.HorizontalRule, _ /*entering*/ bool) {}
 
-func (p *HTMLProvider) prepareText(node *ast.Text, entering bool) {
+func (p *HTMLProvider) prepareText(node *ast.Text, _ /*entering*/ bool) {
 	if string(node.Literal) == "\n" {
 		return
 	}
@@ -177,7 +175,8 @@ func (p *HTMLProvider) prepareText(node *ast.Text, entering bool) {
 	}
 	p.stringBuilder.WriteString(content)
 }
-func (p *HTMLProvider) prepareTable(node *ast.Table, entering bool) {
+
+func (p *HTMLProvider) prepareTable(_ /*node*/ *ast.Table, entering bool) {
 	if entering {
 		p.table = newTable(p.theme)
 	} else {
@@ -185,7 +184,8 @@ func (p *HTMLProvider) prepareTable(node *ast.Table, entering bool) {
 		p.table = nil
 	}
 }
-func (p *HTMLProvider) prepareTableCell(node *ast.TableCell, entering bool) {
+
+func (p *HTMLProvider) prepareTableCell(node *ast.TableCell, _ /*entering*/ bool) {
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 
@@ -203,6 +203,7 @@ func (p *HTMLProvider) prepareTableCell(node *ast.TableCell, entering bool) {
 		p.table.addCell(content, cellAlignCopyHeader, false)
 	}
 }
+
 func (p *HTMLProvider) prepareTableRow(node *ast.TableRow, entering bool) {
 	if _, ok := node.Parent.(*ast.TableBody); ok && entering {
 		p.table.startNextRow()
@@ -388,7 +389,7 @@ func (p *HTMLProvider) getColorFromMap(col string) color.NRGBA {
 }
 
 func (p *HTMLProvider) renderEmptyLine() {
-	var padding = -5
+	padding := -5
 
 	if p.isList {
 		padding = -10

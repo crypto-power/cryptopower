@@ -12,26 +12,26 @@ import (
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
-// DCRAmount implements the Asset amount interface for the DCR asset
-type DCRAmount dcrutil.Amount
+// Amount implements the Asset amount interface for the DCR asset
+type Amount dcrutil.Amount
 
 // ToCoin returns the float64 version of the DCR formatted asset amount.
-func (a DCRAmount) ToCoin() float64 {
+func (a Amount) ToCoin() float64 {
 	return dcrutil.Amount(a).ToCoin()
 }
 
 // String returns the string version of the DCR formatted asset amount.
-func (a DCRAmount) String() string {
+func (a Amount) String() string {
 	return dcrutil.Amount(a).String()
 }
 
-// MulF64 multiplys the DCRAmount with the provided float64 value.
-func (a DCRAmount) MulF64(f float64) sharedW.AssetAmount {
-	return DCRAmount(dcrutil.Amount(a).MulF64(f))
+// MulF64 multiplys the Amount with the provided float64 value.
+func (a Amount) MulF64(f float64) sharedW.AssetAmount {
+	return Amount(dcrutil.Amount(a).MulF64(f))
 }
 
 // ToInt return the original unformatted amount DCRs
-func (a DCRAmount) ToInt() int64 {
+func (a Amount) ToInt() int64 {
 	return int64(dcrutil.Amount(a))
 }
 
@@ -48,7 +48,7 @@ type AccountsIterator struct {
 
 type WalletsIterator struct {
 	CurrentIndex int
-	Wallets      []*DCRAsset
+	Wallets      []*Asset
 }
 
 type CSPPConfig struct {

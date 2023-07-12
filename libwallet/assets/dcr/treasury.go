@@ -18,7 +18,7 @@ import (
 // controlling the ticket. If a ticket hash isn't provided, the vote choice is
 // saved to the local wallet database and the VSPs controlling all unspent,
 // unexpired tickets are updated to use the specified vote policy.
-func (asset *DCRAsset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, passphrase string) error {
+func (asset *Asset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string, passphrase string) error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}
@@ -136,7 +136,7 @@ func (asset *DCRAsset) SetTreasuryPolicy(PiKey, newVotingPolicy, tixHash string,
 // is returned; otherwise the policies for all pi keys are returned.
 // If a ticket hash is provided, the policy(ies) for that ticket
 // is/are returned.
-func (asset *DCRAsset) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPolicy, error) {
+func (asset *Asset) TreasuryPolicies(PiKey, tixHash string) ([]*TreasuryKeyPolicy, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}

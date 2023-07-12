@@ -63,14 +63,9 @@ func (nw *nodeWalker) walk() {
 	md.Render(nw.rootNode, nw)
 }
 
-func (nw *nodeWalker) walkerFunc() {
-
-}
-
-func (nw *nodeWalker) RenderNode(w io.Writer, node ast.Node, entering bool) ast.WalkStatus {
+func (nw *nodeWalker) RenderNode(_ io.Writer, node ast.Node, entering bool) ast.WalkStatus {
 	switch node := node.(type) {
 	case *ast.Document:
-		//fmt.Println(string(node.Literal))
 	case *ast.BlockQuote:
 		nw.renderer.prepareBlockQuote(node, entering)
 	case *ast.Code:
@@ -116,6 +111,6 @@ func (nw *nodeWalker) RenderNode(w io.Writer, node ast.Node, entering bool) ast.
 	return ast.GoToNext
 }
 
-func (*nodeWalker) RenderHeader(w io.Writer, node ast.Node) {}
+func (*nodeWalker) RenderHeader(_ io.Writer, _ ast.Node) {}
 
-func (*nodeWalker) RenderFooter(w io.Writer, node ast.Node) {}
+func (*nodeWalker) RenderFooter(_ io.Writer, _ ast.Node) {}

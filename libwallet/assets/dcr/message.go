@@ -7,7 +7,7 @@ import (
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 )
 
-func (asset *DCRAsset) SignMessage(passphrase, address, message string) ([]byte, error) {
+func (asset *Asset) SignMessage(passphrase, address, message string) ([]byte, error) {
 	err := asset.UnlockWallet(passphrase)
 	if err != nil {
 		return nil, utils.TranslateError(err)
@@ -17,7 +17,7 @@ func (asset *DCRAsset) SignMessage(passphrase, address, message string) ([]byte,
 	return asset.signMessage(address, message)
 }
 
-func (asset *DCRAsset) signMessage(address, message string) ([]byte, error) {
+func (asset *Asset) signMessage(address, message string) ([]byte, error) {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return nil, utils.TranslateError(err)
@@ -41,7 +41,7 @@ func (asset *DCRAsset) signMessage(address, message string) ([]byte, error) {
 	return sig, nil
 }
 
-func (asset *DCRAsset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
+func (asset *Asset) VerifyMessage(address, message, signatureBase64 string) (bool, error) {
 	var valid bool
 
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)

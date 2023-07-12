@@ -24,7 +24,7 @@ func NewWalletMapping(asset sharedW.Asset) *WalletMapping {
 
 func (w *WalletMapping) MixedAccountNumber() int32 {
 	switch asset := w.Asset.(type) {
-	case *dcr.DCRAsset:
+	case *dcr.Asset:
 		return asset.MixedAccountNumber()
 	default:
 		return -1

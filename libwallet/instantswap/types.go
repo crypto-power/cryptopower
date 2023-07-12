@@ -19,10 +19,10 @@ type ExchangeServer struct {
 // ExchangeConfig
 type ExchangeConfig struct {
 	Debug     bool
-	ApiKey    string
-	ApiSecret string
-	// AffiliateId is used to earn refer coin from transaction
-	AffiliateId string
+	APIKey    string
+	APISecret string
+	// AffiliateID is used to earn refer coin from transaction
+	AffiliateID string
 	UserID      string
 }
 
@@ -101,10 +101,10 @@ type Order struct {
 	CreatedAt     int64              `storm:"index" json:"createdAt"`
 	LastUpdate    string             `json:"lastUpdate"` // should be timestamp (api currently returns string)
 
-	ExtraID string `json:"extraId"` //changenow.io requirement //changelly payinExtraId value
-	UserID  string `json:"userId"`  //changenow.io partner requirement
+	ExtraID string `json:"extraId"` // changenow.io requirement //changelly payinExtraId value
+	UserID  string `json:"userId"`  // changenow.io partner requirement
 
-	Signature string `json:"signature"` //evercoin requirement
+	Signature string `json:"signature"` // evercoin requirement
 }
 
 type SchedulerParams struct {

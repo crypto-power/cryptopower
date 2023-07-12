@@ -49,14 +49,14 @@ type AccountMixerPage struct {
 	unmixedBalance     sharedW.AssetAmount
 	totalWalletBalance sharedW.AssetAmount
 
-	MixerAccounts []preference.PreferenceItem
+	MixerAccounts []preference.ItemPreference
 
 	mixerCompleted bool
-	dcrImpl        *dcr.DCRAsset
+	dcrImpl        *dcr.Asset
 }
 
 func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil
@@ -107,11 +107,11 @@ func (pg *AccountMixerPage) getMixerBalance() {
 		log.Error("could not load mixer account information. Please try again.")
 	}
 
-	vm := []preference.PreferenceItem{}
+	vm := []preference.ItemPreference{}
 	for _, acct := range accounts.Accounts {
 		// add data for change accounts selection
 		if acct.Name != values.String(values.StrImported) {
-			vm = append(vm, preference.PreferenceItem{Key: acct.Name, Value: acct.Name})
+			vm = append(vm, preference.ItemPreference{Key: acct.Name, Value: acct.Name})
 		}
 
 		if acct.Number == pg.dcrImpl.MixedAccountNumber() {
@@ -133,7 +133,7 @@ func getSafeAmount(amount sharedW.AssetAmount) sharedW.AssetAmount {
 		return amount
 	}
 	defaultAmount := dcrutil.Amount(0)
-	dfAmount := dcr.DCRAmount(defaultAmount)
+	dfAmount := dcr.Amount(defaultAmount)
 	return dfAmount
 }
 
@@ -349,7 +349,7 @@ func (pg *AccountMixerPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 	})
 }
 
-func (pg *AccountMixerPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *AccountMixerPage) layoutMobile(_ layout.Context) layout.Dimensions {
 	return D{}
 }
 
@@ -472,7 +472,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 }
 
-func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.PreferenceItem {
+func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.ItemPreference {
 	filterAccountNumber := pg.dcrImpl.UnmixedAccountNumber()
 	if isFilterMixed {
 		filterAccountNumber = pg.dcrImpl.MixedAccountNumber()
@@ -483,7 +483,7 @@ func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.Pr
 		log.Error(err.Error())
 	}
 
-	mixerAcc := []preference.PreferenceItem{}
+	mixerAcc := []preference.ItemPreference{}
 	for _, item := range pg.MixerAccounts {
 		if item.Key != accountFilter {
 			mixerAcc = append(mixerAcc, item)

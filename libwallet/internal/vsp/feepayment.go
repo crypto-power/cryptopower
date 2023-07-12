@@ -605,7 +605,7 @@ func (fp *feePayment) makeFeeTx(tx *wire.MsgTx) error {
 	return nil
 }
 
-type ticketStatus struct {
+type TicketStatus struct {
 	Timestamp       int64             `json:"timestamp"`
 	TicketConfirmed bool              `json:"ticketconfirmed"`
 	FeeTxStatus     string            `json:"feetxstatus"`
@@ -616,13 +616,13 @@ type ticketStatus struct {
 	Request         []byte            `json:"request"`
 }
 
-// TicketStatus calls the VSP's ticketstatus API for the provided ticket hash
+// GetTicketStatus calls the VSP's TicketStatus API for the provided ticket hash
 // and returns the VSP's response.
-func (c *Client) TicketStatus(ctx context.Context, ticketHash *chainhash.Hash) (*ticketStatus, error) {
+func (c *Client) GetTicketStatus(ctx context.Context, ticketHash *chainhash.Hash) (*TicketStatus, error) {
 	return c.status(ctx, ticketHash)
 }
 
-func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*ticketStatus, error) {
+func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*TicketStatus, error) {
 	w := c.Wallet
 	params := w.ChainParams()
 
@@ -643,7 +643,7 @@ func (c *Client) status(ctx context.Context, ticketHash *chainhash.Hash) (*ticke
 			ticketHash, err)
 	}
 
-	var resp ticketStatus
+	var resp TicketStatus
 	requestBody, err := json.Marshal(&struct {
 		TicketHash string `json:"tickethash"`
 	}{
@@ -701,7 +701,7 @@ func (c *Client) setVoteChoices(ctx context.Context, ticketHash *chainhash.Hash,
 		agendaChoices[c.AgendaID] = c.ChoiceID
 	}
 
-	var resp ticketStatus
+	var resp TicketStatus
 	requestBody, err := json.Marshal(&struct {
 		Timestamp      int64             `json:"timestamp"`
 		TicketHash     string            `json:"tickethash"`

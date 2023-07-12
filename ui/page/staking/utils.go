@@ -33,11 +33,11 @@ type transactionItem struct {
 	daysBehindTooltip *cryptomaterial.Tooltip
 	durationTooltip   *cryptomaterial.Tooltip
 
-	dcrImpl *dcr.DCRAsset
+	dcrImpl *dcr.Asset
 }
 
 func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil, values.ErrDCRSupportedOnly
@@ -128,8 +128,8 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 
 	// bring vote and revoke tx forward
 	sort.Slice(tickets[:], func(i, j int) bool {
-		var timeStampI = tickets[i].transaction.Timestamp
-		var timeStampJ = tickets[j].transaction.Timestamp
+		timeStampI := tickets[i].transaction.Timestamp
+		timeStampJ := tickets[j].transaction.Timestamp
 
 		if tickets[i].ticketSpender != nil {
 			timeStampI = tickets[i].ticketSpender.Timestamp
@@ -148,7 +148,7 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 	return tickets, nil
 }
 
-func ticketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
+func TicketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 	date := time.Unix(tx.transaction.Timestamp, 0).Format("Jan 2, 2006")
 	timeSplit := time.Unix(tx.transaction.Timestamp, 0).Format("03:04:05 PM")
 	dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
@@ -254,7 +254,7 @@ func ticketListLayout(gtx C, l *load.Load, ticket *transactionItem) layout.Dimen
 				)
 			},
 			func(gtx C) D {
-				return ticketStatusDetails(gtx, l, ticket)
+				return TicketStatusDetails(gtx, l, ticket)
 			})
 	})
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/v3"
 )
 
-func (asset *DCRAsset) GetAccounts() (string, error) {
+func (asset *Asset) GetAccounts() (string, error) {
 	accountsResponse, err := asset.GetAccountsRaw()
 	if err != nil {
 		return "", nil
@@ -24,7 +24,7 @@ func (asset *DCRAsset) GetAccounts() (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
+func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -64,7 +64,7 @@ func (asset *DCRAsset) GetAccountsRaw() (*sharedW.Accounts, error) {
 	}, nil
 }
 
-func (asset *DCRAsset) AccountsIterator() (*AccountsIterator, error) {
+func (asset *Asset) AccountsIterator() (*AccountsIterator, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (accountsInterator *AccountsIterator) Reset() {
 	accountsInterator.currentIndex = 0
 }
 
-func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
+func (asset *Asset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 	accounts, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (asset *DCRAsset) GetAccount(accountNumber int32) (*sharedW.Account, error)
 	return nil, errors.New(utils.ErrNotExist)
 }
 
-func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
+func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -117,17 +117,17 @@ func (asset *DCRAsset) GetAccountBalance(accountNumber int32) (*sharedW.Balance,
 	}
 
 	return &sharedW.Balance{
-		Total:                   DCRAmount(balance.Total),
-		Spendable:               DCRAmount(balance.Spendable),
-		ImmatureReward:          DCRAmount(balance.ImmatureCoinbaseRewards),
-		ImmatureStakeGeneration: DCRAmount(balance.ImmatureStakeGeneration),
-		LockedByTickets:         DCRAmount(balance.LockedByTickets),
-		VotingAuthority:         DCRAmount(balance.VotingAuthority),
-		UnConfirmed:             DCRAmount(balance.Unconfirmed),
+		Total:                   Amount(balance.Total),
+		Spendable:               Amount(balance.Spendable),
+		ImmatureReward:          Amount(balance.ImmatureCoinbaseRewards),
+		ImmatureStakeGeneration: Amount(balance.ImmatureStakeGeneration),
+		LockedByTickets:         Amount(balance.LockedByTickets),
+		VotingAuthority:         Amount(balance.VotingAuthority),
+		UnConfirmed:             Amount(balance.Unconfirmed),
 	}, nil
 }
 
-func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
+func (asset *Asset) SpendableForAccount(account int32) (int64, error) {
 	if !asset.WalletOpened() {
 		return -1, utils.ErrDCRNotInitialized
 	}
@@ -141,7 +141,7 @@ func (asset *DCRAsset) SpendableForAccount(account int32) (int64, error) {
 	return int64(bals.Spendable), nil
 }
 
-func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
+func (asset *Asset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -176,7 +176,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 			TxID:          utxo.OutPoint.Hash.String(),
 			Vout:          utxo.OutPoint.Index,
 			Address:       addr,
-			Amount:        DCRAmount(utxo.Output.Value),
+			Amount:        Amount(utxo.Output.Value),
 			ScriptPubKey:  hex.EncodeToString(utxo.Output.PkScript),
 			ReceiveTime:   utxo.ReceiveTime,
 			Confirmations: confirmations,
@@ -188,7 +188,7 @@ func (asset *DCRAsset) UnspentOutputs(account int32) ([]*sharedW.UnspentOutput, 
 	return unspentOutputs, nil
 }
 
-func (asset *DCRAsset) CreateNewAccount(accountName, privPass string) (int32, error) {
+func (asset *Asset) CreateNewAccount(accountName, privPass string) (int32, error) {
 	err := asset.UnlockWallet(privPass)
 	if err != nil {
 		return -1, err
@@ -199,7 +199,7 @@ func (asset *DCRAsset) CreateNewAccount(accountName, privPass string) (int32, er
 	return asset.NextAccount(accountName)
 }
 
-func (asset *DCRAsset) NextAccount(accountName string) (int32, error) {
+func (asset *Asset) NextAccount(accountName string) (int32, error) {
 	if !asset.WalletOpened() {
 		return -1, utils.ErrDCRNotInitialized
 	}
@@ -217,7 +217,7 @@ func (asset *DCRAsset) NextAccount(accountName string) (int32, error) {
 	return int32(accountNumber), nil
 }
 
-func (asset *DCRAsset) RenameAccount(accountNumber int32, newName string) error {
+func (asset *Asset) RenameAccount(accountNumber int32, newName string) error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}
@@ -231,7 +231,7 @@ func (asset *DCRAsset) RenameAccount(accountNumber int32, newName string) error 
 	return nil
 }
 
-func (asset *DCRAsset) AccountName(accountNumber int32) (string, error) {
+func (asset *Asset) AccountName(accountNumber int32) (string, error) {
 	name, err := asset.AccountNameRaw(uint32(accountNumber))
 	if err != nil {
 		return "", utils.TranslateError(err)
@@ -239,7 +239,7 @@ func (asset *DCRAsset) AccountName(accountNumber int32) (string, error) {
 	return name, nil
 }
 
-func (asset *DCRAsset) AccountNameRaw(accountNumber uint32) (string, error) {
+func (asset *Asset) AccountNameRaw(accountNumber uint32) (string, error) {
 	if !asset.WalletOpened() {
 		return "", utils.ErrDCRNotInitialized
 	}
@@ -248,7 +248,7 @@ func (asset *DCRAsset) AccountNameRaw(accountNumber uint32) (string, error) {
 	return asset.Internal().DCR.AccountName(ctx, accountNumber)
 }
 
-func (asset *DCRAsset) AccountNumber(accountName string) (int32, error) {
+func (asset *Asset) AccountNumber(accountName string) (int32, error) {
 	if !asset.WalletOpened() {
 		return -1, utils.ErrDCRNotInitialized
 	}
@@ -258,7 +258,7 @@ func (asset *DCRAsset) AccountNumber(accountName string) (int32, error) {
 	return int32(accountNumber), utils.TranslateError(err)
 }
 
-func (asset *DCRAsset) HasAccount(accountName string) bool {
+func (asset *Asset) HasAccount(accountName string) bool {
 	if !asset.WalletOpened() {
 		return false
 	}
@@ -268,7 +268,7 @@ func (asset *DCRAsset) HasAccount(accountName string) bool {
 	return err == nil
 }
 
-func (asset *DCRAsset) HDPathForAccount(accountNumber int32) (string, error) {
+func (asset *Asset) HDPathForAccount(accountNumber int32) (string, error) {
 	if !asset.WalletOpened() {
 		return "", utils.ErrDCRNotInitialized
 	}
@@ -298,7 +298,7 @@ func (asset *DCRAsset) HDPathForAccount(accountNumber int32) (string, error) {
 	return hdPath + strconv.Itoa(int(accountNumber)), nil
 }
 
-func (asset *DCRAsset) GetExtendedPubKey(account int32) (string, error) {
+func (asset *Asset) GetExtendedPubKey(account int32) (string, error) {
 	if !asset.WalletOpened() {
 		return "", utils.ErrDCRNotInitialized
 	}

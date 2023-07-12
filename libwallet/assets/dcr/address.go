@@ -18,12 +18,12 @@ type AddressInfo struct {
 	AccountName   string
 }
 
-func (asset *DCRAsset) IsAddressValid(address string) bool {
+func (asset *Asset) IsAddressValid(address string) bool {
 	_, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	return err == nil
 }
 
-func (asset *DCRAsset) HaveAddress(address string) bool {
+func (asset *Asset) HaveAddress(address string) bool {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return false
@@ -38,7 +38,7 @@ func (asset *DCRAsset) HaveAddress(address string) bool {
 	return have
 }
 
-func (asset *DCRAsset) AccountOfAddress(address string) (string, error) {
+func (asset *Asset) AccountOfAddress(address string) (string, error) {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", utils.TranslateError(err)
@@ -53,7 +53,7 @@ func (asset *DCRAsset) AccountOfAddress(address string) (string, error) {
 	return a.AccountName(), nil
 }
 
-func (asset *DCRAsset) AddressInfo(address string) (*AddressInfo, error) {
+func (asset *Asset) AddressInfo(address string) (*AddressInfo, error) {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (asset *DCRAsset) AddressInfo(address string) (*AddressInfo, error) {
 // CurrentAddress gets the most recently requested payment address from the
 // asset. If that address has already been used to receive funds, the next
 // chained address is returned.
-func (asset *DCRAsset) CurrentAddress(account int32) (string, error) {
+func (asset *Asset) CurrentAddress(account int32) (string, error) {
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
@@ -97,7 +97,7 @@ func (asset *DCRAsset) CurrentAddress(account int32) (string, error) {
 // NextAddress returns the address immediately following the last requested
 // payment address. If that address has already been used to receive funds,
 // the next chained address is returned.
-func (asset *DCRAsset) NextAddress(account int32) (string, error) {
+func (asset *Asset) NextAddress(account int32) (string, error) {
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		return "", errors.E(utils.ErrAddressDiscoveryNotDone)
 	}
@@ -117,7 +117,7 @@ func (asset *DCRAsset) NextAddress(account int32) (string, error) {
 	return asset.CurrentAddress(account)
 }
 
-func (asset *DCRAsset) AddressPubKey(address string) (string, error) {
+func (asset *Asset) AddressPubKey(address string) (string, error) {
 	addr, err := stdaddr.DecodeAddress(address, asset.chainParams)
 	if err != nil {
 		return "", err

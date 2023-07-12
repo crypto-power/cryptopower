@@ -24,7 +24,7 @@ func initializeBTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 
 // CreateNewBTCWallet creates a new BTC wallet and returns it.
 func (mgr *AssetsManager) CreateNewBTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -63,7 +63,7 @@ func (mgr *AssetsManager) CreateNewBTCWatchOnlyWallet(walletName, extendedPublic
 
 // RestoreBTCWallet restores a BTC wallet from a seed and returns it.
 func (mgr *AssetsManager) RestoreBTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -100,7 +100,7 @@ func (mgr *AssetsManager) BTCWalletWithXPub(xpub string) (int, error) {
 			if accs.AccountNumber == btc.ImportedAccountNumber {
 				continue
 			}
-			acctXPubKey, err := wallet.Internal().BTC.AccountProperties(btc.GetScope(), uint32(accs.AccountNumber))
+			acctXPubKey, err := wallet.Internal().BTC.AccountProperties(btc.GetScope(), accs.AccountNumber)
 			if err != nil {
 				return -1, err
 			}
@@ -160,7 +160,7 @@ func (mgr *AssetsManager) BTCWalletWithSeed(seedMnemonic string) (int, error) {
 
 // RestoreLTCWallet restores a LTC wallet from a seed and returns it.
 func (mgr *AssetsManager) RestoreLTCWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,

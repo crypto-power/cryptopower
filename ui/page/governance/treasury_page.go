@@ -92,7 +92,7 @@ func (pg *TreasuryPage) OnNavigatedFrom() {
 }
 
 func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.GovernanceHttpAPI)
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -267,7 +267,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			selectedWallet := pg.WL.SelectedWallet.Wallet
 			votingPreference := treasuryItem.OptionsRadioGroup.Value
-			err := selectedWallet.(*dcr.DCRAsset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			err := selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)

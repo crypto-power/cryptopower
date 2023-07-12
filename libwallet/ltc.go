@@ -22,7 +22,7 @@ func initializeLTCWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 
 // CreateNewLTCWallet creates a new LTC wallet and returns it.
 func (mgr *AssetsManager) CreateNewLTCWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -122,7 +122,7 @@ func (mgr *AssetsManager) LTCWalletWithXPub(xpub string) (int, error) {
 			if accs.AccountNumber == ltc.ImportedAccountNumber {
 				continue
 			}
-			acctXPubKey, err := wallet.Internal().LTC.AccountProperties(ltc.GetScope(), uint32(accs.AccountNumber))
+			acctXPubKey, err := wallet.Internal().LTC.AccountProperties(ltc.GetScope(), accs.AccountNumber)
 			if err != nil {
 				return -1, err
 			}

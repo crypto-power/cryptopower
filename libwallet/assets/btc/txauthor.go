@@ -169,7 +169,7 @@ func (asset *Asset) TotalSendAmount() *sharedW.Amount {
 	asset.TxAuthoredInfo.mu.RLock()
 	defer asset.TxAuthoredInfo.mu.RUnlock()
 
-	var totalSendAmountSatoshi int64 = 0
+	var totalSendAmountSatoshi int64
 	for _, destination := range asset.TxAuthoredInfo.destinations {
 		totalSendAmountSatoshi += destination.UnitAmount
 	}

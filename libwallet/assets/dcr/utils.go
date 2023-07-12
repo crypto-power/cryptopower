@@ -25,8 +25,8 @@ const (
 )
 
 // Returns a DCR amount that implements the asset amount interface.
-func (asset *DCRAsset) ToAmount(v int64) sharedW.AssetAmount {
-	return DCRAmount(dcrutil.Amount(v))
+func (asset *Asset) ToAmount(v int64) sharedW.AssetAmount {
+	return Amount(dcrutil.Amount(v))
 }
 
 func AmountAtom(f float64) int64 {

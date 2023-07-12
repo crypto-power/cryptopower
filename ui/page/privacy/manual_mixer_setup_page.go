@@ -36,11 +36,11 @@ type ManualMixerSetupPage struct {
 	infoButton     cryptomaterial.IconButton
 	toPrivacySetup cryptomaterial.Button
 
-	dcrImpl *dcr.DCRAsset
+	dcrImpl *dcr.Asset
 }
 
 func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil
@@ -265,7 +265,6 @@ func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 		pg.unmixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum {
 		pg.toPrivacySetup.SetEnabled(false)
 	}
-
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

@@ -15,25 +15,25 @@ import (
 	"time"
 )
 
-type HttpAPIType uint8
+type HTTPAPIType uint8
 
 const (
 	// Default http client timeout in secs.
-	defaultHttpClientTimeout = 30 * time.Second
+	defaultHTTPClientTimeout = 30 * time.Second
 	// Address to look up during DNS connectivity check.
 	addressToLookUp = "www.google.com"
 
 	// Below lists the Http APIs that have a privacy control implemented on them.
-	GovernanceHttpAPI HttpAPIType = iota
-	FeeRateHttpAPI
-	ExchangeHttpAPI
+	GovernanceHTTPAPI HTTPAPIType = iota
+	FeeRateHTTPAPI
+	ExchangeHTTPAPI
 	VspAPI
 )
 
 type (
 	// Client is the base for http/https calls
 	Client struct {
-		httpClient *http.Client
+		HTTPClient *http.Client
 		cancelFunc context.CancelFunc
 		context    context.Context
 	}
@@ -43,7 +43,7 @@ type (
 		Payload interface{}
 		Cookies []*http.Cookie
 		Method  string
-		HttpUrl string
+		HTTPURL string
 		// If IsRetByte is set to true, client.Do will delegate
 		// response processing to caller.
 		IsRetByte bool
@@ -55,7 +55,7 @@ type (
 		lastUpdate   time.Time
 	}
 
-	dailer func(addr net.Addr) (net.Conn, error)
+	Dailer func(addr net.Addr) (net.Conn, error)
 )
 
 var (
@@ -67,9 +67,9 @@ var (
 // control node level tcp connections especially after a shutdown. It also
 // includes a timeout value preventing a connection waiting forever for a
 // response to be returned.
-func DialerFunc(ctx context.Context) dailer {
+func DialerFunc(ctx context.Context) Dailer {
 	d := &net.Dialer{
-		Timeout: defaultHttpClientTimeout,
+		Timeout: defaultHTTPClientTimeout,
 	}
 	return func(addr net.Addr) (net.Conn, error) {
 		return d.DialContext(ctx, addr.Network(), addr.String())
@@ -92,15 +92,15 @@ func newClient() (c *Client) {
 	return &Client{
 		context:    ctx,
 		cancelFunc: cancel,
-		httpClient: &http.Client{
-			Timeout:   defaultHttpClientTimeout,
+		HTTPClient: &http.Client{
+			Timeout:   defaultHTTPClientTimeout,
 			Transport: http.DefaultTransport.(*http.Transport).Clone(),
 		},
 	}
 }
 
-// ShutdownHttpClients shutdowns any active connection by cancelling the context.
-func ShutdownHttpClients() {
+// ShutdownHTTPClients shutdowns any active connection by cancelling the context.
+func ShutdownHTTPClients() {
 	for _, c := range activeAPIs {
 		c.cancelFunc()
 	}
@@ -142,11 +142,11 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 
 	// package request URL for GET requests.
 	if reqConfig.Method == http.MethodGet && requestBody != nil {
-		reqConfig.HttpUrl += string(requestBody)
+		reqConfig.HTTPURL += string(requestBody)
 	}
 
 	// Create http request
-	req, err := http.NewRequestWithContext(c.context, reqConfig.Method, reqConfig.HttpUrl, bytes.NewReader(requestBody))
+	req, err := http.NewRequestWithContext(c.context, reqConfig.Method, reqConfig.HTTPURL, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating http request: %v", err)
 	}
@@ -166,7 +166,7 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	}
 
 	// Send request
-	resp, err = c.httpClient.Do(req)
+	resp, err = c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -184,11 +184,11 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	return body, resp, nil
 }
 
-// HttpRequest queries the API provided in the ReqConfig object and converts
+// HTTPRequest queries the API provided in the ReqConfig object and converts
 // the returned json(Byte data) into an respObj interface.
-func HttpRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, error) {
+func HTTPRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, error) {
 	// validate the API Url address
-	urlPath, err := url.ParseRequestURI(reqConfig.HttpUrl)
+	urlPath, err := url.ParseRequestURI(reqConfig.HTTPURL)
 	if err != nil {
 		return nil, fmt.Errorf("error: url not properly constituted: %v", err)
 	}

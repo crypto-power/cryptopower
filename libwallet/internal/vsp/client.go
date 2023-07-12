@@ -49,7 +49,7 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	var sig []byte
 	reqConf := &utils.ReqConfig{
 		Method:  method,
-		HttpUrl: c.url + path,
+		HTTPURL: c.url + path,
 	}
 
 	if method == http.MethodPost {
@@ -68,7 +68,7 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 		})
 	}
 
-	reply, err := utils.HttpRequest(reqConf, &response)
+	reply, err := utils.HTTPRequest(reqConf, &response)
 	if err != nil && reply == nil {
 		// Status code errors are handled below.
 		return err

@@ -35,11 +35,11 @@ type ticketBuyerModal struct {
 	accountSelector *components.WalletAndAccountSelector
 	vspSelector     *components.VSPSelector
 
-	dcrImpl *dcr.DCRAsset
+	dcrImpl *dcr.Asset
 }
 
 func newTicketBuyerModal(l *load.Load) *ticketBuyerModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
 		return nil
@@ -202,7 +202,7 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
-				dcrImpl := tb.WL.SelectedWallet.Wallet.(*dcr.DCRAsset)
+				dcrImpl := tb.WL.SelectedWallet.Wallet.(*dcr.Asset)
 				accountIsValid = account.Number == dcrImpl.MixedAccountNumber()
 			}
 

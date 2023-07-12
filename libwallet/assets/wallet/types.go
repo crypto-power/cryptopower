@@ -20,9 +20,9 @@ type AssetAmount interface {
 	ToInt() int64
 }
 
-// WalletConfig defines options for configuring wallet behaviour.
+// WConfig defines options for configuring wallet behaviour.
 // This is a subset of the config used by dcrwallet.
-type WalletConfig struct {
+type WConfig struct {
 	// General
 	GapLimit                uint32         // Allowed unused address gap between used addresses of accounts
 	ManualTickets           bool           // Do not discover new tickets through network synchronization
@@ -45,9 +45,9 @@ type InitParams struct {
 	LogDir   string
 }
 
-// WalletAuthInfo defines the complete information required to either create a
+// AuthInfo defines the complete information required to either create a
 // new wallet or restore an old wallet.
-type WalletAuthInfo struct {
+type AuthInfo struct {
 	Name            string
 	PrivatePass     string
 	PrivatePassType int32
@@ -386,25 +386,25 @@ type TxInfoFromWallet struct {
 	Hex         string
 	Timestamp   int64
 	BlockHeight int32
-	Inputs      []*WalletInput
-	Outputs     []*WalletOutput
+	Inputs      []*WInput
+	Outputs     []*WOutput
 }
 
-type WalletInput struct {
+type WInput struct {
 	Index    int32 `json:"index"`
 	AmountIn int64 `json:"amount_in"`
-	*WalletAccount
+	*WAccount
 }
 
-type WalletOutput struct {
+type WOutput struct {
 	Index     int32  `json:"index"`
 	AmountOut int64  `json:"amount_out"`
 	Internal  bool   `json:"internal"`
 	Address   string `json:"address"`
-	*WalletAccount
+	*WAccount
 }
 
-type WalletAccount struct {
+type WAccount struct {
 	AccountNumber int32  `json:"account_number"`
 	AccountName   string `json:"account_name"`
 }

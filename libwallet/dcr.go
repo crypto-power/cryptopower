@@ -26,7 +26,7 @@ func initializeDCRWalletParameters(netType utils.NetworkType) (*chaincfg.Params,
 
 // CreateNewDCRWallet creates a new DCR wallet and returns it.
 func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,
@@ -65,7 +65,7 @@ func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublic
 
 // RestoreDCRWallet restores a DCR wallet from a seed and returns it.
 func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePassphrase string, privatePassphraseType int32) (sharedW.Asset, error) {
-	pass := &sharedW.WalletAuthInfo{
+	pass := &sharedW.AuthInfo{
 		Name:            walletName,
 		PrivatePass:     privatePassphrase,
 		PrivatePassType: privatePassphraseType,

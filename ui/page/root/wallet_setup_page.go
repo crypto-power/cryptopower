@@ -457,7 +457,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					return
 				}
 
-				dcrUniqueImpl := wal.(*dcr.DCRAsset)
+				dcrUniqueImpl := wal.(*dcr.Asset)
 				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), pg.passwordEditor.Editor.Text())
 				if err != nil {
 					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())

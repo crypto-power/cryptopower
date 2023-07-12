@@ -19,7 +19,7 @@ type politeiaClient struct {
 }
 
 const (
-	ticketVoteApi       = tkv1.APIRoute
+	ticketVoteAPI       = tkv1.APIRoute
 	proposalDetailsPath = "/proposals/"
 )
 
@@ -43,13 +43,13 @@ func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interfa
 	req := &utils.ReqConfig{
 		Payload:   body,
 		Method:    method,
-		HttpUrl:   c.host + apiRoute + path,
+		HTTPURL:   c.host + apiRoute + path,
 		IsRetByte: true,
 		Cookies:   c.cookies,
 	}
 
-	var respBytes = []byte{}
-	_, err := utils.HttpRequest(req, &respBytes)
+	respBytes := []byte{}
+	_, err := utils.HTTPRequest(req, &respBytes)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,6 @@ func (c *politeiaClient) batchProposals(tokens []string) ([]Proposal, error) {
 }
 
 func (c *politeiaClient) proposalDetails(token string) (*www.ProposalDetailsReply, error) {
-
 	route := proposalDetailsPath + token
 
 	var proposalDetailsReply www.ProposalDetailsReply
@@ -142,14 +141,13 @@ func (c *politeiaClient) tokenInventory() (*www.TokenInventoryReply, error) {
 }
 
 func (c *politeiaClient) voteDetails(token string) (*tkv1.DetailsReply, error) {
-
 	requestBody, err := json.Marshal(&tkv1.Details{Token: token})
 	if err != nil {
 		return nil, err
 	}
 
 	var dr tkv1.DetailsReply
-	err = c.makeRequest(http.MethodPost, ticketVoteApi, tkv1.RouteDetails, requestBody, &dr)
+	err = c.makeRequest(http.MethodPost, ticketVoteAPI, tkv1.RouteDetails, requestBody, &dr)
 	if err != nil {
 		return nil, err
 	}
@@ -164,14 +162,13 @@ func (c *politeiaClient) voteDetails(token string) (*tkv1.DetailsReply, error) {
 }
 
 func (c *politeiaClient) voteResults(token string) (*tkv1.ResultsReply, error) {
-
 	requestBody, err := json.Marshal(&tkv1.Results{Token: token})
 	if err != nil {
 		return nil, err
 	}
 
 	var resultReply tkv1.ResultsReply
-	err = c.makeRequest(http.MethodPost, ticketVoteApi, tkv1.RouteResults, requestBody, &resultReply)
+	err = c.makeRequest(http.MethodPost, ticketVoteAPI, tkv1.RouteResults, requestBody, &resultReply)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +207,7 @@ func (c *politeiaClient) sendVotes(votes []tkv1.CastVote) error {
 	}
 
 	var reply tkv1.CastBallotReply
-	err = c.makeRequest(http.MethodPost, ticketVoteApi, tkv1.RouteCastBallot, b, &reply)
+	err = c.makeRequest(http.MethodPost, ticketVoteAPI, tkv1.RouteCastBallot, b, &reply)
 	if err != nil {
 		return err
 	}

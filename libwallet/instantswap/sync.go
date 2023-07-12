@@ -146,12 +146,12 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 				case ChangeNow:
 					order.ExchangeServer.Server = order.Server
 					order.ExchangeServer.Config = ExchangeConfig{
-						ApiKey: API_KEY_CHANGENOW,
+						APIKey: API_KEY_CHANGENOW,
 					}
 				case GoDex:
 					order.ExchangeServer.Server = order.Server
 					order.ExchangeServer.Config = ExchangeConfig{
-						ApiKey: API_KEY_GODEX,
+						APIKey: API_KEY_GODEX,
 					}
 				default:
 					order.ExchangeServer.Server = order.Server

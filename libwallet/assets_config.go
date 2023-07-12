@@ -199,14 +199,14 @@ func (mgr *AssetsManager) IsPrivacyModeOn() bool {
 }
 
 // SetHTTPAPIPrivacyMode sets Http API the privacy mode for the wallet.
-func (mgr *AssetsManager) SetHTTPAPIPrivacyMode(apiType utils.HttpAPIType, isActive bool) {
+func (mgr *AssetsManager) SetHTTPAPIPrivacyMode(apiType utils.HTTPAPIType, isActive bool) {
 	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
 	mgr.db.SaveWalletConfigValue(dataKey, isActive)
 }
 
-// IsHttpAPIPrivacyModeOff returns true if the given API type is enabled and false
+// IsHTTPAPIPrivacyModeOff returns true if the given API type is enabled and false
 // if otherwise.
-func (mgr *AssetsManager) IsHttpAPIPrivacyModeOff(apiType utils.HttpAPIType) bool {
+func (mgr *AssetsManager) IsHTTPAPIPrivacyModeOff(apiType utils.HTTPAPIType) bool {
 	var data bool
 	dataKey := genKey(sharedW.PrivacyModeConfigKey, apiType)
 	mgr.db.ReadWalletConfigValue(dataKey, &data)

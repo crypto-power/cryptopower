@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -45,7 +44,7 @@ func main() {
 	en := make(map[string]string)
 	readIntoMap(en, localizable.EN)
 
-	fileBuff, err := ioutil.ReadFile(os.Args[1])
+	fileBuff, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		return
@@ -64,7 +63,7 @@ func main() {
 		}
 	}
 
-	err = ioutil.WriteFile("translated.txt", []byte(sb.String()), 0644)
+	err = os.WriteFile("translated.txt", []byte(sb.String()), 0o644)
 	if err != nil {
 		fmt.Println("Error writing file:", err)
 	}

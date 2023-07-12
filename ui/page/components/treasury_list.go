@@ -51,7 +51,6 @@ func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 }
 
 func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D {
-
 	statusLabel := l.Theme.Label(values.TextSize14, treasuryKeyPolicy.PiKey)
 	backgroundColor := l.Theme.Color.LightBlue
 	if l.WL.AssetsManager.IsDarkModeOn() {
@@ -80,7 +79,8 @@ func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D
 					Top:    values.MarginPadding3,
 					Bottom: values.MarginPadding3,
 					Left:   values.MarginPadding8,
-					Right:  values.MarginPadding8},
+					Right:  values.MarginPadding8,
+				},
 				Margin: layout.Inset{Left: values.MarginPadding10},
 			}.Layout2(gtx, statusLabel.Layout)
 		}),
@@ -152,7 +152,7 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 }
 
 func LoadPolicies(l *load.Load, selectedWallet sharedW.Asset, pikey string) []*TreasuryItem {
-	policies, err := selectedWallet.(*dcr.DCRAsset).TreasuryPolicies(pikey, "")
+	policies, err := selectedWallet.(*dcr.Asset).TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil
 	}

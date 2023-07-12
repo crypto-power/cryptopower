@@ -117,7 +117,7 @@ func openOrCreateDB(dbPath string) (*storm.DB, error) {
 
 // ensureTxDatabaseVersion checks the version of the existing db against `TxDbVersion`.
 // If there's a difference, the current wallet data db file is deleted and a new one created.
-func ensureTxDatabaseVersion(walletDataDB *storm.DB, dbPath string, txData interface{}) (*storm.DB, error) {
+func ensureTxDatabaseVersion(walletDataDB *storm.DB, _ string, txData interface{}) (*storm.DB, error) {
 	var currentDbVersion uint32
 	err := walletDataDB.Get(TxBucketName, KeyDbVersion, &currentDbVersion)
 	if err != nil && err != storm.ErrNotFound {

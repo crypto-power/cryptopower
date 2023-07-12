@@ -25,7 +25,7 @@ const (
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
-func (asset *DCRAsset) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
+func (asset *Asset) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
@@ -37,7 +37,7 @@ func (asset *DCRAsset) AddAccountMixerNotificationListener(accountMixerNotificat
 	return nil
 }
 
-func (asset *DCRAsset) RemoveAccountMixerNotificationListener(uniqueIdentifier string) {
+func (asset *Asset) RemoveAccountMixerNotificationListener(uniqueIdentifier string) {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
@@ -47,7 +47,7 @@ func (asset *DCRAsset) RemoveAccountMixerNotificationListener(uniqueIdentifier s
 // CreateMixerAccounts creates the two accounts needed for the account mixer. This function
 // is added to ease unlocking the wallet before creating accounts. This function should be
 // used with auto cspp mixer setup.
-func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass string) error {
+func (asset *Asset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass string) error {
 	accountMixerConfigSet := asset.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 	if accountMixerConfigSet {
 		return errors.New(utils.ErrInvalid)
@@ -83,7 +83,7 @@ func (asset *DCRAsset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPas
 
 // SetAccountMixerConfig sets the config for mixed and unmixed account. Private passphrase is verifed
 // for security even if not used. This function should be used with manual cspp mixer setup.
-func (asset *DCRAsset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, privPass string) error {
+func (asset *Asset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, privPass string) error {
 	if mixedAccount == unmixedAccount {
 		return errors.New(utils.ErrInvalid)
 	}
@@ -112,45 +112,39 @@ func (asset *DCRAsset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32,
 	return nil
 }
 
-func (asset *DCRAsset) AccountMixerMixChange() bool {
+func (asset *Asset) AccountMixerMixChange() bool {
 	return asset.ReadBoolConfigValueForKey(sharedW.AccountMixerMixTxChange, false)
 }
 
-func (asset *DCRAsset) AccountMixerConfigIsSet() bool {
+func (asset *Asset) AccountMixerConfigIsSet() bool {
 	return asset.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 }
 
-func (asset *DCRAsset) MixedAccountNumber() int32 {
+func (asset *Asset) MixedAccountNumber() int32 {
 	return asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 }
 
-func (asset *DCRAsset) UnmixedAccountNumber() int32 {
+func (asset *Asset) UnmixedAccountNumber() int32 {
 	return asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 }
 
-func (asset *DCRAsset) ClearMixerConfig() {
+func (asset *Asset) ClearMixerConfig() {
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
 }
 
-func (asset *DCRAsset) ReadyToMix(walletID int) (bool, error) {
+func (asset *Asset) ReadyToMix(_ int) (bool, error) {
 	if asset == nil {
 		return false, errors.New(utils.ErrNotExist)
 	}
 
 	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
-
-	hasMixableOutput, err := asset.accountHasMixableOutput(unmixedAccount)
-	if err != nil {
-		return false, utils.TranslateError(err)
-	}
-
-	return hasMixableOutput, nil
+	return asset.accountHasMixableOutput(unmixedAccount), nil
 }
 
 // StartAccountMixer starts the automatic account mixer
-func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
+func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 	if !asset.IsConnectedToDecredNetwork() {
 		return errors.New(utils.ErrNotConnected)
 	}
@@ -164,10 +158,8 @@ func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
 		return errors.New(utils.ErrFailedPrecondition)
 	}
 
-	hasMixableOutput, err := asset.accountHasMixableOutput(int32(cfg.ChangeAccount))
-	if err != nil {
-		return utils.TranslateError(err)
-	} else if !hasMixableOutput {
+	hasMixableOutput := asset.accountHasMixableOutput(int32(cfg.ChangeAccount))
+	if !hasMixableOutput {
 		return errors.New(utils.ErrNoMixableOutput)
 	}
 
@@ -184,7 +176,7 @@ func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
 		// c.VotingAccount = 0 // TODO: VotingAccount should be configurable.
 	})
 
-	err = asset.UnlockWallet(walletPassphrase)
+	err := asset.UnlockWallet(walletPassphrase)
 	if err != nil {
 		return utils.TranslateError(err)
 	}
@@ -211,7 +203,7 @@ func (asset *DCRAsset) StartAccountMixer(walletPassphrase string) error {
 	return nil
 }
 
-func (asset *DCRAsset) readCSPPConfig() *CSPPConfig {
+func (asset *Asset) readCSPPConfig() *CSPPConfig {
 	mixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 	unmixedAccount := asset.ReadInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 
@@ -255,7 +247,7 @@ func (asset *DCRAsset) readCSPPConfig() *CSPPConfig {
 }
 
 // StopAccountMixer stops the active account mixer
-func (asset *DCRAsset) StopAccountMixer() error {
+func (asset *Asset) StopAccountMixer() error {
 	if asset == nil {
 		return errors.New(utils.ErrNotExist)
 	}
@@ -269,7 +261,7 @@ func (asset *DCRAsset) StopAccountMixer() error {
 	return nil
 }
 
-func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error) {
+func (asset *Asset) accountHasMixableOutput(accountNumber int32) bool {
 	policy := w.OutputSelectionPolicy{
 		Account:               uint32(accountNumber),
 		RequiredConfirmations: asset.RequiredConfirmations(),
@@ -280,7 +272,7 @@ func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error
 	ctx, _ := asset.ShutdownContextWithCancel()
 	inputDetail, err := asset.Internal().DCR.SelectInputs(ctx, dcrutil.Amount(0), policy)
 	if err != nil {
-		return false, nil
+		return false
 	}
 
 	hasMixableOutput := false
@@ -294,26 +286,26 @@ func (asset *DCRAsset) accountHasMixableOutput(accountNumber int32) (bool, error
 	if !hasMixableOutput {
 		accountName, err := asset.AccountName(accountNumber)
 		if err != nil {
-			return hasMixableOutput, nil
+			return hasMixableOutput
 		}
 
 		ctx, _ := asset.ShutdownContextWithCancel()
 		lockedOutpoints, err := asset.Internal().DCR.LockedOutpoints(ctx, accountName)
 		if err != nil {
-			return hasMixableOutput, nil
+			return hasMixableOutput
 		}
 		hasMixableOutput = len(lockedOutpoints) > 0
 	}
 
-	return hasMixableOutput, nil
+	return hasMixableOutput
 }
 
 // IsAccountMixerActive returns true if account mixer is active
-func (asset *DCRAsset) IsAccountMixerActive() bool {
+func (asset *Asset) IsAccountMixerActive() bool {
 	return asset.cancelAccountMixer != nil
 }
 
-func (asset *DCRAsset) publishAccountMixerStarted(walletID int) {
+func (asset *Asset) publishAccountMixerStarted(walletID int) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
@@ -322,7 +314,7 @@ func (asset *DCRAsset) publishAccountMixerStarted(walletID int) {
 	}
 }
 
-func (asset *DCRAsset) publishAccountMixerEnded(walletID int) {
+func (asset *Asset) publishAccountMixerEnded(walletID int) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 

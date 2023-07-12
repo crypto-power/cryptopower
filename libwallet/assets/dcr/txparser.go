@@ -8,7 +8,7 @@ import (
 	"github.com/decred/dcrd/chaincfg/chainhash"
 )
 
-func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
+func (asset *Asset) decodeTransactionWithTxSummary(txSummary *w.TransactionSummary,
 	blockHash *chainhash.Hash,
 ) (*sharedW.Transaction, error) {
 	var blockHeight int32 = sharedW.UnminedTxHeight
@@ -23,7 +23,7 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 		}
 	}
 
-	walletInputs := make([]*sharedW.WalletInput, len(txSummary.MyInputs))
+	walletInputs := make([]*sharedW.WInput, len(txSummary.MyInputs))
 	for i, input := range txSummary.MyInputs {
 		accountNumber := int32(input.PreviousAccount)
 		accountName, err := asset.AccountName(accountNumber)
@@ -31,17 +31,17 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			log.Error(err)
 		}
 
-		walletInputs[i] = &sharedW.WalletInput{
+		walletInputs[i] = &sharedW.WInput{
 			Index:    int32(input.Index),
 			AmountIn: int64(input.PreviousAmount),
-			WalletAccount: &sharedW.WalletAccount{
+			WAccount: &sharedW.WAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},
 		}
 	}
 
-	walletOutputs := make([]*sharedW.WalletOutput, len(txSummary.MyOutputs))
+	walletOutputs := make([]*sharedW.WOutput, len(txSummary.MyOutputs))
 	for i, output := range txSummary.MyOutputs {
 		accountNumber := int32(output.Account)
 		accountName, err := asset.AccountName(accountNumber)
@@ -49,12 +49,12 @@ func (asset *DCRAsset) decodeTransactionWithTxSummary(txSummary *w.TransactionSu
 			log.Error(err)
 		}
 
-		walletOutputs[i] = &sharedW.WalletOutput{
+		walletOutputs[i] = &sharedW.WOutput{
 			Index:     int32(output.Index),
 			AmountOut: int64(output.Amount),
 			Internal:  output.Internal,
 			Address:   output.Address.String(),
-			WalletAccount: &sharedW.WalletAccount{
+			WAccount: &sharedW.WAccount{
 				AccountNumber: accountNumber,
 				AccountName:   accountName,
 			},

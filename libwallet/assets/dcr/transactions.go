@@ -48,7 +48,7 @@ const (
 	TicketStatusExpired        = "expired"
 )
 
-func (asset *DCRAsset) PublishUnminedTransactions() error {
+func (asset *Asset) PublishUnminedTransactions() error {
 	if !asset.WalletOpened() {
 		return utils.ErrDCRNotInitialized
 	}
@@ -63,7 +63,7 @@ func (asset *DCRAsset) PublishUnminedTransactions() error {
 	return asset.Internal().DCR.PublishUnminedTransactions(ctx, n)
 }
 
-func (asset *DCRAsset) GetTransaction(txHash string) (string, error) {
+func (asset *Asset) GetTransaction(txHash string) (string, error) {
 	transaction, err := asset.GetTransactionRaw(txHash)
 	if err != nil {
 		log.Error(err)
@@ -78,7 +78,7 @@ func (asset *DCRAsset) GetTransaction(txHash string) (string, error) {
 	return string(result), nil
 }
 
-func (asset *DCRAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
+func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -99,7 +99,7 @@ func (asset *DCRAsset) GetTransactionRaw(txHash string) (*sharedW.Transaction, e
 	return asset.decodeTransactionWithTxSummary(txSummary, blockHash)
 }
 
-func (asset *DCRAsset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
+func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
 	transactions, err := asset.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
 	if err != nil {
 		return "", err
@@ -113,16 +113,16 @@ func (asset *DCRAsset) GetTransactions(offset, limit, txFilter int32, newestFirs
 	return string(jsonEncodedTransactions), nil
 }
 
-func (asset *DCRAsset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
 	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
 	return
 }
 
-func (asset *DCRAsset) CountTransactions(txFilter int32) (int, error) {
+func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 	return asset.GetWalletDataDb().Count(txFilter, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &sharedW.Transaction{})
 }
 
-func (asset *DCRAsset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
+func (asset *Asset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) {
 	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &sharedW.Transaction{})
 	if err != nil {
 		if err == storm.ErrNotFound {
@@ -134,7 +134,7 @@ func (asset *DCRAsset) TicketHasVotedOrRevoked(ticketHash string) (bool, error) 
 	return true, nil
 }
 
-func (asset *DCRAsset) TicketSpender(ticketHash string) (*sharedW.Transaction, error) {
+func (asset *Asset) TicketSpender(ticketHash string) (*sharedW.Transaction, error) {
 	var spender sharedW.Transaction
 	err := asset.GetWalletDataDb().FindOne("TicketSpentHash", ticketHash, &spender)
 	if err != nil {
@@ -147,7 +147,7 @@ func (asset *DCRAsset) TicketSpender(ticketHash string) (*sharedW.Transaction, e
 	return &spender, nil
 }
 
-func (asset *DCRAsset) TransactionOverview() (txOverview *sharedW.TransactionOverview, err error) {
+func (asset *Asset) TransactionOverview() (txOverview *sharedW.TransactionOverview, err error) {
 	txOverview = &sharedW.TransactionOverview{}
 
 	txOverview.Sent, err = asset.CountTransactions(TxFilterSent)
@@ -186,7 +186,7 @@ func (asset *DCRAsset) TransactionOverview() (txOverview *sharedW.TransactionOve
 	return txOverview, nil
 }
 
-func (asset *DCRAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
+func (asset *Asset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) bool {
 	bestBlock := asset.GetBestBlockHeight()
 
 	// tickets with block height less than this are matured.
@@ -250,7 +250,7 @@ func (asset *DCRAsset) TxMatchesFilter(tx *sharedW.Transaction, txFilter int32) 
 	return false
 }
 
-func (asset *DCRAsset) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
+func (asset *Asset) TxMatchesFilter2(direction, blockHeight int32, txType, ticketSpender string, txFilter int32) bool {
 	tx := sharedW.Transaction{
 		Type:          txType,
 		Direction:     direction,

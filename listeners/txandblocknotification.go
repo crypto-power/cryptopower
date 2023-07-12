@@ -99,6 +99,7 @@ func (txAndBlk *TxAndBlockNotificationListener) CloseTxAndBlockChan() {
 
 	// Drain all unread channel's contents.
 	go func() {
+		// nolint:all
 		for range txAndBlk.txAndBlockNotifChan {
 		}
 	}()

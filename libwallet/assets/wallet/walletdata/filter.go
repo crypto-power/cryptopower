@@ -7,7 +7,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
-func (db *DB) prepareTxQuery(txFilter, requiredConfirmations, bestBlock int32) (query storm.Query) {
+func (db *DB) prepareTxQuery(txFilter, _ /*requiredConfirmations*/, bestBlock int32) (query storm.Query) {
 	// tickets with block height less than this are matured.
 	maturityBlock := bestBlock - db.ticketMaturity
 

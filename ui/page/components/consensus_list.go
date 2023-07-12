@@ -159,7 +159,7 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 }
 
 func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
-	dcrUniqueImpl := selectedWallet.(*dcr.DCRAsset)
+	dcrUniqueImpl := selectedWallet.(*dcr.Asset)
 	agendas, err := dcrUniqueImpl.AllVoteAgendas("", newestFirst)
 	if err != nil {
 		return nil

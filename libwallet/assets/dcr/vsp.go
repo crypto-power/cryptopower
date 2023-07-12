@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	defaultVSPsUrl = "https://api.decred.org/?c=vsp"
+	defaultVSPsURL = "https://api.decred.org/?c=vsp"
 )
 
 // VSPClient loads or creates a VSP client instance for the specified host.
-func (asset *DCRAsset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
+func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrDCRNotInitialized
 	}
@@ -48,7 +48,7 @@ func (asset *DCRAsset) VSPClient(host string, pubKey []byte) (*vsp.Client, error
 
 // KnownVSPs returns a list of known VSPs. This list may be updated by calling
 // ReloadVSPList. This method is safe for concurrent access.
-func (asset *DCRAsset) KnownVSPs() []*VSP {
+func (asset *Asset) KnownVSPs() []*VSP {
 	asset.vspMu.RLock()
 	defer asset.vspMu.RUnlock()
 	return asset.vsps // TODO: Return a copy.
@@ -56,7 +56,7 @@ func (asset *DCRAsset) KnownVSPs() []*VSP {
 
 // SaveVSP marks a VSP as known and will be susbequently included as part of
 // known VSPs.
-func (asset *DCRAsset) SaveVSP(host string) (err error) {
+func (asset *Asset) SaveVSP(host string) (err error) {
 	// check if host already exists
 	vspDbData := asset.getVSPDBData()
 	for _, savedHost := range vspDbData.SavedHosts {
@@ -88,12 +88,12 @@ func (asset *DCRAsset) SaveVSP(host string) (err error) {
 
 // LastUsedVSP returns the host of the last used VSP, as saved by the
 // SaveLastUsedVSP() method.
-func (asset *DCRAsset) LastUsedVSP() string {
+func (asset *Asset) LastUsedVSP() string {
 	return asset.getVSPDBData().LastUsedVSP
 }
 
 // SaveLastUsedVSP saves the host of the last used VSP.
-func (asset *DCRAsset) SaveLastUsedVSP(host string) {
+func (asset *Asset) SaveLastUsedVSP(host string) {
 	vspDbData := asset.getVSPDBData()
 	vspDbData.LastUsedVSP = host
 	asset.updateVSPDBData(vspDbData)
@@ -104,20 +104,20 @@ type vspDbData struct {
 	LastUsedVSP string
 }
 
-func (asset *DCRAsset) getVSPDBData() *vspDbData {
+func (asset *Asset) getVSPDBData() *vspDbData {
 	vspDbData := new(vspDbData)
 	asset.ReadUserConfigValue(sharedW.KnownVSPsConfigKey, vspDbData)
 	return vspDbData
 }
 
-func (asset *DCRAsset) updateVSPDBData(data *vspDbData) {
+func (asset *Asset) updateVSPDBData(data *vspDbData) {
 	asset.SaveUserConfigValue(sharedW.KnownVSPsConfigKey, data)
 }
 
 // ReloadVSPList reloads the list of known VSPs.
 // This method makes multiple network calls; should be called in a goroutine
 // to prevent blocking the UI thread.
-func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
+func (asset *Asset) ReloadVSPList(ctx context.Context) {
 	log.Debugf("Reloading list of known VSPs")
 	defer log.Debugf("Reloaded list of known VSPs")
 
@@ -166,12 +166,12 @@ func (asset *DCRAsset) ReloadVSPList(ctx context.Context) {
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	req := &utils.ReqConfig{
 		Method:    http.MethodGet,
-		HttpUrl:   vspHost + "/api/v3/vspinfo",
+		HTTPURL:   vspHost + "/api/v3/vspinfo",
 		IsRetByte: true,
 	}
 
 	respBytes := []byte{}
-	resp, err := utils.HttpRequest(req, &respBytes)
+	resp, err := utils.HTTPRequest(req, &respBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -199,10 +199,10 @@ func defaultVSPs(network string) ([]string, error) {
 	var vspInfoResponse map[string]*VspInfoResponse
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
-		HttpUrl: defaultVSPsUrl,
+		HTTPURL: defaultVSPsURL,
 	}
 
-	if _, err := utils.HttpRequest(req, &vspInfoResponse); err != nil {
+	if _, err := utils.HTTPRequest(req, &vspInfoResponse); err != nil {
 		return nil, err
 	}
 

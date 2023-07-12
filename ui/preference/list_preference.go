@@ -20,21 +20,21 @@ type (
 
 var (
 	// ExchOptions holds the configurable options for exchange servers.
-	ExchOptions = []PreferenceItem{
+	ExchOptions = []ItemPreference{
 		{Key: values.BinanceExchange, Value: values.StrUsdBinance},
 		{Key: values.BittrexExchange, Value: values.StrUsdBittrex},
 		{Key: values.DefaultExchangeValue, Value: values.StrNone},
 	}
 
 	// LangOptions stores the configurable language options.
-	LangOptions = []PreferenceItem{
+	LangOptions = []ItemPreference{
 		{Key: localizable.ENGLISH, Value: values.StrEnglish},
 		{Key: localizable.FRENCH, Value: values.StrFrench},
 		{Key: localizable.SPANISH, Value: values.StrSpanish},
 	}
 
 	// LogOptions are the selectable debug levels.
-	LogOptions = []PreferenceItem{
+	LogOptions = []ItemPreference{
 		{Key: libutils.LogLevelTrace, Value: values.StrLogLevelTrace},
 		{Key: libutils.LogLevelDebug, Value: values.StrLogLevelDebug},
 		{Key: libutils.LogLevelInfo, Value: values.StrLogLevelInfo},
@@ -60,19 +60,19 @@ type ListPreferenceModal struct {
 	initialValue    string
 	currentValue    string
 	isWalletAccount bool
-	preferenceItems []PreferenceItem
+	preferenceItems []ItemPreference
 
 	updateButtonClicked func(string)
 }
 
-// PreferenceItem models the options shown by the list
+// ItemPreference models the options shown by the list
 // preference modal.
-type PreferenceItem struct {
+type ItemPreference struct {
 	Key   string // option's key
 	Value string // option's value
 }
 
-func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items []PreferenceItem) *ListPreferenceModal {
+func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items []ItemPreference) *ListPreferenceModal {
 	lp := ListPreferenceModal{
 		Load:          l,
 		preferenceKey: preferenceKey,
@@ -208,7 +208,6 @@ func (lp *ListPreferenceModal) Layout(gtx C) D {
 }
 
 func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
-
 	items := make([]layout.FlexChild, 0)
 	for _, v := range lp.preferenceItems {
 		text := values.String(v.Value)
@@ -226,7 +225,7 @@ func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 // GetKeyValue return the value for a key withing a set of prefence options.
 // The key is case sensitive, `Key` != `key`.
 // Returns the empty string if the key is not found.
-func GetKeyValue(key string, options []PreferenceItem) string {
+func GetKeyValue(key string, options []ItemPreference) string {
 	for _, option := range options {
 		if option.Key == key {
 			return option.Value

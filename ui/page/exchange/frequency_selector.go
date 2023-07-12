@@ -57,7 +57,7 @@ func NewFrequencySelector(l *load.Load) *FrequencySelector {
 					fs.changed = true
 				}
 			}
-			fs.SetSelectedFrequency(fi)
+			fs.setSelectedFrequency(fi)
 			if fs.frequencyCallback != nil {
 				fs.frequencyCallback(fi)
 			}
@@ -66,43 +66,12 @@ func NewFrequencySelector(l *load.Load) *FrequencySelector {
 	return fs
 }
 
-// SelectedFrequency returns the currently selected frequency.
-func (fs *FrequencySelector) SelectedFrequency() *frequencyItem {
-	return fs.selectedFrequency
-}
-
-// SetSelectedFrequency sets fi as the current selected frequency.
-func (fs *FrequencySelector) SetSelectedFrequency(fi *frequencyItem) {
+// setSelectedFrequency sets fi as the current selected frequency.
+func (fs *FrequencySelector) setSelectedFrequency(fi *frequencyItem) {
 	fs.selectedFrequency = fi
 }
 
-// Title Sets the title of the frequency list dialog.
-func (fs *FrequencySelector) Title(title string) *FrequencySelector {
-	fs.dialogTitle = title
-	return fs
-}
-
-// FrequencySelected sets the callback executed when a frequency is selected.
-func (fs *FrequencySelector) FrequencySelected(callback func(*frequencyItem)) *FrequencySelector {
-	fs.frequencyCallback = callback
-	return fs
-}
-
-// SetSelectedFrequencyName sets the frequency whose Name field is
-// equals to {name} as the current selected frequency.
-// If it can't find the frequency whose Name field equals
-// {{name}} it returns silently.
-func (fs *FrequencySelector) SetSelectedFrequencyName(name string) {
-	ex := fs.buildFrequencyItems()
-	for _, v := range ex {
-		if v.name == name {
-			fs.SetSelectedFrequency(v)
-			return
-		}
-	}
-}
-
-func (fs *FrequencySelector) Handle(window app.WindowNavigator) {
+func (fs *FrequencySelector) handle(window app.WindowNavigator) {
 	for fs.openSelectorDialog.Clicked() {
 		fs.title(fs.dialogTitle)
 		window.ShowModal(fs.frequencyModal)
@@ -110,7 +79,7 @@ func (fs *FrequencySelector) Handle(window app.WindowNavigator) {
 }
 
 func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
-	fs.Handle(window)
+	fs.handle(window)
 
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.MatchParent,
@@ -132,7 +101,6 @@ func (fs *FrequencySelector) Layout(window app.WindowNavigator, gtx C) D {
 				txt.Color = fs.Theme.Color.Text
 			}
 			return txt.Layout(gtx)
-
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {

@@ -89,7 +89,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, isTicket bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -155,7 +155,7 @@ destinationAddrLoop:
 			// mixed account number
 			var mixedAcc int32 = -1
 			if libutils.DCRWalletAsset == pg.wallet.GetAssetType() {
-				mixedAcc = pg.wallet.(*dcr.DCRAsset).UnmixedAccountNumber()
+				mixedAcc = pg.wallet.(*dcr.Asset).UnmixedAccountNumber()
 			}
 			if pg.transaction.Type == txhelper.TxTypeMixed &&
 				output.AccountNumber == mixedAcc {
@@ -201,7 +201,7 @@ destinationAddrLoop:
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedTo() {
-	if dcrImp, ok := pg.wallet.(*dcr.DCRAsset); ok {
+	if dcrImp, ok := pg.wallet.(*dcr.Asset); ok {
 		// this tx is a vote transaction
 		if pg.transaction.TicketSpentHash != "" {
 			pg.ticketSpent, _ = pg.wallet.GetTransactionRaw(pg.transaction.TicketSpentHash)
@@ -357,58 +357,57 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 										return D{}
 									}),
 								)
-							} else {
-								// regular transaction
-								col := pg.Theme.Color.GrayText2
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										title := pg.wallet.ToAmount(pg.transaction.Amount).String()
-										switch pg.transaction.Type {
-										case txhelper.TxTypeMixed:
-											title = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
-										case txhelper.TxTypeRegular:
-											if pg.transaction.Direction == txhelper.TxDirectionSent && !strings.Contains(title, "-") {
-												title = "-" + title
-											}
-										case txhelper.TxTypeRevocation, txhelper.TxTypeVote:
-											return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
-										}
-										return components.LayoutBalanceWithUnit(gtx, pg.Load, title)
-									}),
-									layout.Rigid(func(gtx C) D {
-										date := time.Unix(pg.transaction.Timestamp, 0).Format("Jan 2, 2006")
-										timeSplit := time.Unix(pg.transaction.Timestamp, 0).Format("03:04:05 PM")
-										dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
-
-										lbl := pg.Theme.Label(values.TextSize16, dateTime)
-										lbl.Color = col
-										return layout.Inset{
-											Top:    values.MarginPadding7,
-											Bottom: values.MarginPadding7,
-										}.Layout(gtx, lbl.Layout)
-									}),
-									layout.Rigid(func(gtx C) D {
-										// immature tx section
-										if pg.transaction.Type == txhelper.TxTypeVote || pg.transaction.Type == txhelper.TxTypeRevocation {
-											title := values.String(values.StrRevoke)
-											if pg.transaction.Type == txhelper.TxTypeVote {
-												title = values.String(values.StrVote)
-											}
-
-											lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
-											lbl.Color = col
-											return lbl.Layout(gtx)
-										}
-
-										return D{}
-									}),
-								)
 							}
+							// regular transaction
+							col := pg.Theme.Color.GrayText2
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									title := pg.wallet.ToAmount(pg.transaction.Amount).String()
+									switch pg.transaction.Type {
+									case txhelper.TxTypeMixed:
+										title = pg.wallet.ToAmount(pg.transaction.MixDenomination).String()
+									case txhelper.TxTypeRegular:
+										if pg.transaction.Direction == txhelper.TxDirectionSent && !strings.Contains(title, "-") {
+											title = "-" + title
+										}
+									case txhelper.TxTypeRevocation, txhelper.TxTypeVote:
+										return pg.Theme.Label(values.TextSize20, pg.txnWidgets.txStatus.Title).Layout(gtx)
+									}
+									return components.LayoutBalanceWithUnit(gtx, pg.Load, title)
+								}),
+								layout.Rigid(func(gtx C) D {
+									date := time.Unix(pg.transaction.Timestamp, 0).Format("Jan 2, 2006")
+									timeSplit := time.Unix(pg.transaction.Timestamp, 0).Format("03:04:05 PM")
+									dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
+
+									lbl := pg.Theme.Label(values.TextSize16, dateTime)
+									lbl.Color = col
+									return layout.Inset{
+										Top:    values.MarginPadding7,
+										Bottom: values.MarginPadding7,
+									}.Layout(gtx, lbl.Layout)
+								}),
+								layout.Rigid(func(gtx C) D {
+									// immature tx section
+									if pg.transaction.Type == txhelper.TxTypeVote || pg.transaction.Type == txhelper.TxTypeRevocation {
+										title := values.String(values.StrRevoke)
+										if pg.transaction.Type == txhelper.TxTypeVote {
+											title = values.String(values.StrVote)
+										}
+
+										lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
+										lbl.Color = col
+										return lbl.Layout(gtx)
+									}
+
+									return D{}
+								}),
+							)
 						}),
 						layout.Rigid(func(gtx C) D {
 							col := pg.Theme.Color.GrayText2
 
-							if dcrImpl, ok := pg.wallet.(*dcr.DCRAsset); ok {
+							if dcrImpl, ok := pg.wallet.(*dcr.Asset); ok {
 								switch pg.txnWidgets.txStatus.TicketStatus {
 								case dcr.TicketStatusImmature:
 									maturity := dcrImpl.TicketMaturity()
@@ -499,7 +498,7 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 
 func (pg *TxDetailsPage) getTimeToMatureOrExpire() int {
 	var progress float32
-	if dcrImpl, ok := pg.wallet.(*dcr.DCRAsset); ok {
+	if dcrImpl, ok := pg.wallet.(*dcr.Asset); ok {
 		progressMax := dcrImpl.TicketMaturity()
 		if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusLive {
 			progressMax = dcrImpl.TicketExpiry()

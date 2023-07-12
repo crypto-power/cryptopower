@@ -57,19 +57,20 @@ func (sp *SyncProgressListener) OnHeadersRescanProgress(headersRescanProgress *s
 		ProgressReport: headersRescanProgress,
 	})
 }
+
 func (sp *SyncProgressListener) OnSyncCompleted() {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage: wallet.SyncCompleted,
 	})
 }
 
-func (sp *SyncProgressListener) OnSyncCanceled(willRestart bool) {
+func (sp *SyncProgressListener) OnSyncCanceled(_ /*willRestart*/ bool) {
 	sp.sendNotification(wallet.SyncStatusUpdate{
 		Stage: wallet.SyncCanceled,
 	})
 }
-func (sp *SyncProgressListener) OnSyncEndedWithError(err error)     {}
-func (sp *SyncProgressListener) Debug(debugInfo *sharedW.DebugInfo) {}
+func (sp *SyncProgressListener) OnSyncEndedWithError(_ error) {}
+func (sp *SyncProgressListener) Debug(_ *sharedW.DebugInfo)   {}
 
 func (sp *SyncProgressListener) sendNotification(signal wallet.SyncStatusUpdate) {
 	select {

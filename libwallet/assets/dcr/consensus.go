@@ -19,8 +19,8 @@ import (
 type AgendaStatusType string
 
 const (
-	dcrdataAgendasAPIMainnetUrl = "https://dcrdata.decred.org/api/agendas"
-	dcrdataAgendasAPITestnetUrl = "https://testnet.decred.org/api/agendas"
+	dcrdataAgendasAPIMainnetURL = "https://dcrdata.decred.org/api/agendas"
+	dcrdataAgendasAPITestnetURL = "https://testnet.decred.org/api/agendas"
 
 	// AgendaStatusUpcoming used to define an agenda yet to vote.
 	AgendaStatusUpcoming AgendaStatusType = "upcoming"
@@ -85,7 +85,7 @@ func AgendaStatusFromStr(status string) AgendaStatusType {
 // the ticket. If a ticket hash isn't provided, the vote choice is saved to the
 // local wallet database and the VSPs controlling all unspent, unexpired tickets
 // are updated to use the specified vote choice.
-func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) error {
+func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) error {
 	var ticketHash *chainhash.Hash
 	if hash != "" {
 		hash, err := chainhash.NewHashFromStr(hash)
@@ -196,7 +196,7 @@ func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash, passphrase string
 // network and this version of the software. Also returns any saved vote
 // preferences for the agendas of the current stake version. Vote preferences
 // for older agendas cannot currently be retrieved.
-func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
+func (asset *Asset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
 	if asset.chainParams.Deployments == nil {
 		return nil, nil // no agendas to return
 	}
@@ -225,17 +225,17 @@ func (asset *DCRAsset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda,
 
 	// Fetch high level agenda detail form dcrdata api.
 	var dcrdataAgenda []DcrdataAgenda
-	host := dcrdataAgendasAPIMainnetUrl
+	host := dcrdataAgendasAPIMainnetURL
 	if asset.chainParams.Net == wire.TestNet3 {
-		host = dcrdataAgendasAPITestnetUrl
+		host = dcrdataAgendasAPITestnetURL
 	}
 
 	req := &utils.ReqConfig{
 		Method:  http.MethodGet,
-		HttpUrl: host,
+		HTTPURL: host,
 	}
 
-	if _, err = utils.HttpRequest(req, &dcrdataAgenda); err != nil {
+	if _, err = utils.HTTPRequest(req, &dcrdataAgenda); err != nil {
 		return nil, err
 	}
 

@@ -34,7 +34,6 @@ type WalletSelector struct {
 
 // TODO: merge this into the account selector modal.
 func NewWalletSelector(l *load.Load) *WalletSelector {
-
 	return &WalletSelector{
 		Load:               l,
 		assetsManager:      l.WL.AssetsManager,
@@ -93,7 +92,6 @@ func (as *WalletSelector) SelectFirstValidWallet() error {
 }
 
 func (as *WalletSelector) setupSelectedWallet(wallet sharedW.Asset) {
-
 	totalBalance, err := as.WL.TotalWalletBalance(wallet.GetWalletID())
 	if err != nil {
 		fmt.Println(err)
@@ -218,11 +216,9 @@ func (asm *WalletSelectorModal) accountSelected(callback func(sharedW.Asset)) *W
 }
 
 func (asm *WalletSelectorModal) OnDismiss() {
-
 }
 
 func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
-
 	w := []layout.Widget{
 		func(gtx C) D {
 			title := asm.Theme.H6(asm.dialogTitle)
@@ -239,7 +235,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 					})
 				}),
 				layout.Stacked(func(gtx C) D {
-					if false { //TODO
+					if false { // TODO
 						inset := layout.Inset{
 							Top:  values.MarginPadding20,
 							Left: values.MarginPaddingMinus75,
@@ -259,7 +255,6 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet sharedW.Asset) layout.Dimensions {
-
 	walletTotalBalance, _ := asm.WL.TotalWalletBalance(wallet.GetWalletID())
 	walletSpendableBalance, _ := asm.WL.SpendableWalletBalance(wallet.GetWalletID())
 
@@ -289,7 +284,7 @@ func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet s
 							layout.Rigid(func(gtx C) D {
 								spendable := asm.Theme.Label(values.TextSize14, values.String(values.StrLabelSpendable))
 								spendable.Color = asm.Theme.Color.GrayText2
-								//TODO
+								// TODO
 								spendableBal := asm.Theme.Label(values.TextSize14, walletSpendableBalance.String())
 								spendableBal.Color = asm.Theme.Color.GrayText2
 								return components.EndToEndRow(gtx, spendable.Layout, spendableBal.Layout)

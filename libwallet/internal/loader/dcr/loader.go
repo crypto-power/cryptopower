@@ -125,7 +125,7 @@ func (l *dcrLoader) RunAfterLoad(fn func(*wallet.Wallet)) {
 
 // CreateWatchingOnlyWallet creates a new watch-only wallet using the provided
 // walletID, extended public key and public passphrase.
-func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoaderWallets, error) {
+func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader.WatchOnlyWalletParams) (*loader.LoadedWallets, error) {
 	const op errors.Op = "loader.CreateWatchingOnlyWallet"
 
 	defer l.mu.Unlock()
@@ -177,13 +177,13 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 	}
 
 	l.onLoaded(w, db)
-	return &loader.LoaderWallets{DCR: w}, nil
+	return &loader.LoadedWallets{DCR: w}, nil
 }
 
 // CreateNewWallet creates a new wallet using the provided walletID, public and private
 // passphrases.  The seed is optional.  If non-nil, addresses are derived from
 // this seed.  If nil, a secure random seed is generated.
-func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoaderWallets, error) {
+func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWalletParams) (*loader.LoadedWallets, error) {
 	const op errors.Op = "loader.CreateNewWallet"
 
 	defer l.mu.Unlock()
@@ -234,14 +234,14 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 	}
 
 	l.onLoaded(w, db)
-	return &loader.LoaderWallets{DCR: w}, nil
+	return &loader.LoadedWallets{DCR: w}, nil
 }
 
 // OpenExistingWallet opens the wallet from the loader's wallet database path
 // and the public passphrase.  If the loader is being called by a context where
 // standard input prompts may be used during wallet upgrades, setting
 // canConsolePrompt will enable these prompts.
-func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pubPassphrase []byte) (*loader.LoaderWallets, error) {
+func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pubPassphrase []byte) (*loader.LoadedWallets, error) {
 	const op errors.Op = "loader.OpenExistingWallet"
 
 	defer l.mu.Unlock()
@@ -300,7 +300,7 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 	}
 
 	l.onLoaded(w, db)
-	return &loader.LoaderWallets{DCR: w}, nil
+	return &loader.LoadedWallets{DCR: w}, nil
 }
 
 // GetDbDirPath returns the Loader's database directory path
@@ -328,11 +328,11 @@ func (l *dcrLoader) WalletExists(walletID string) (bool, error) {
 // LoadedWallet returns the loaded wallet, if any, and a bool for whether the
 // wallet has been loaded or not.  If true, the wallet pointer should be safe to
 // dereference.
-func (l *dcrLoader) GetLoadedWallet() (*loader.LoaderWallets, bool) {
+func (l *dcrLoader) GetLoadedWallet() (*loader.LoadedWallets, bool) {
 	l.mu.RLock()
 	w := l.wallet
 	l.mu.RUnlock()
-	return &loader.LoaderWallets{DCR: w}, w != nil
+	return &loader.LoadedWallets{DCR: w}, w != nil
 }
 
 // UnloadWallet stops the loaded wallet, if any, and closes the wallet database.

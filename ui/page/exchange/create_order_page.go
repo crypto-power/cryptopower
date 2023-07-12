@@ -52,7 +52,7 @@ type CreateOrderPage struct {
 
 	scroll           *components.Scroll
 	ordersList       *cryptomaterial.ClickableList
-	exchangeSelector *ExchangeSelector
+	exchangeSelector *ExSelector
 	selectedExchange *Exchange
 
 	exchangeRateInfo string
@@ -118,7 +118,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg := &CreateOrderPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(CreateOrderPageID),
-		exchangeSelector: NewExchangeSelector(l),
+		exchangeSelector: NewExSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
 		binanceRate:      -1,
@@ -552,7 +552,7 @@ func (pg *CreateOrderPage) swapCurrency() {
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	isAllowed := pg.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.ExchangeHttpAPI)
+	isAllowed := pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
 	if !isAllowed {
 		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
 	}

@@ -106,7 +106,7 @@ func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 }
 
 func (fs *FeeRateSelector) isFeerateAPIApproved() bool {
-	return fs.WL.AssetsManager.IsHttpAPIPrivacyModeOff(libutils.FeeRateHttpAPI)
+	return fs.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI)
 }
 
 // Layout draws the UI components.
