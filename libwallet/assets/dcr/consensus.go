@@ -125,7 +125,7 @@ func (asset *DCRAsset) SetVoteChoice(agendaID, choiceID, hash, passphrase string
 
 	newChoice := w.AgendaChoice{
 		AgendaID: agendaID,
-		ChoiceID: choiceID,
+		ChoiceID: strings.ToLower(choiceID),
 	}
 
 	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
