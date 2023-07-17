@@ -65,7 +65,6 @@ require (
 	golang.org/x/text v0.8.0
 )
 
-
 require (
 	decred.org/cspp/v2 v2.1.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect

@@ -54,6 +54,7 @@ type (
 	C = layout.Context
 	D = layout.Dimensions
 )
+
 type WriteClipboard struct {
 	Text string
 }
@@ -64,7 +65,12 @@ type WriteClipboard struct {
 // app.NewWindow() which does not support being called more
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
-	appTitle := giouiApp.Title(values.StringF(values.StrAppTitle, wal.Net.Display()))
+	appTitle := giouiApp.Title(values.String(values.StrAppName))
+	// Display network on the app title if its not on mainnet.
+	if wal.Net != libutils.Mainnet {
+		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, wal.Net.Display()))
+	}
+
 	giouiWindow := giouiApp.NewWindow(giouiApp.MinSize(values.AppWidth, values.AppHeight), appTitle)
 	win := &Window{
 		Window:                giouiWindow,
