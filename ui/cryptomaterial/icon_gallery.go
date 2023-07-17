@@ -37,7 +37,7 @@ type Icons struct {
 	TicketRevokedIcon,
 	TicketUnminedIcon *Image
 
-	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly *Image
+	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, DcrDex *Image
 }
 
 func (i *Icons) StandardMaterialIcons() *Icons {
@@ -139,6 +139,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.ArrowForward = NewImage(decredIcons["arrow_fwd"])
 
 	/* Start - Asset types Icons */
+	i.DcrDex = NewImage(decredIcons["logo_dcrdex"])
 	i.BTC = NewImage(decredIcons["logo_btc"])
 	i.DCR = NewImage(decredIcons["logo_dcr"])
 	i.LTC = NewImage(decredIcons["logo_ltc"])

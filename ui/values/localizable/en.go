@@ -159,6 +159,7 @@ const EN = `
 "daysToVote" = "Days to vote"
 "dcrBtcPair" = "dcr-btc"
 "dcrCaps" = "DCR"
+"dcrDex" = "DCRDEX (Coming soon!)"
 "dcrReceived" = "You have received %s DCR"
 "debug" = "Debug"
 "default" = "default"
