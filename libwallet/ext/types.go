@@ -3,7 +3,7 @@ package ext
 import (
 	"time"
 
-	"github.com/decred/dcrdata/v7/api/types"
+	"github.com/decred/dcrdata/v8/api/types"
 )
 
 type (

@@ -9,8 +9,8 @@ import (
 
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
-	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v3"
-	apiTypes "github.com/decred/dcrdata/v7/api/types"
+	chainjson "github.com/decred/dcrd/rpc/jsonrpc/types/v4"
+	apiTypes "github.com/decred/dcrdata/v8/api/types"
 )
 
 type (
