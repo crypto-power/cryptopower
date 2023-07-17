@@ -2,6 +2,7 @@
 
 A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
+**Desktop App**
 | <img src="https://github.com/crypto-power/cryptopower/assets/25265396/0e738538-6a1f-4a96-8f34-dd478c4c878a" width="500">|<img src="https://github.com/crypto-power/cryptopower/assets/25265396/72946cbc-39da-4ff8-90c0-d3975640c25a" width="500"> |
 |-|-|
 
@@ -10,6 +11,11 @@ A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 | <img src="https://github.com/crypto-power/cryptopower/assets/25265396/a1746066-ab3c-46b5-a768-f19f427f44b4" width="500">|<img src="https://github.com/crypto-power/cryptopower/assets/25265396/16decf32-7855-4b98-aac8-c55748b8e14d" width="500"> |
 |-|-|
+
+**Mobile App**
+| <img src="https://github.com/crypto-power/cryptopower/assets/25265396/0749c556-f7be-45d3-af87-bfdaf132a694" height="450">|<img src="https://github.com/crypto-power/cryptopower/assets/25265396/b155f3c1-034b-4de2-8be4-1c0d0dd79765" height="450"> |<img src="https://github.com/crypto-power/cryptopower/assets/25265396/d329012a-ae07-4e2c-a043-e5f931aec141" height="450"> |
+|-|-|-|
+
 
 
 ## Building
