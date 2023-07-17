@@ -31,10 +31,10 @@ require (
 	github.com/decred/dcrd/dcrutil/v3 v3.0.0
 	github.com/decred/dcrd/dcrutil/v4 v4.0.1
 	github.com/decred/dcrd/hdkeychain/v3 v3.1.1
-	github.com/decred/dcrd/rpc/jsonrpc/types/v3 v3.0.0
+	github.com/decred/dcrd/rpc/jsonrpc/types/v4 v4.0.0
 	github.com/decred/dcrd/txscript/v4 v4.1.0
 	github.com/decred/dcrd/wire v1.6.0
-	github.com/decred/dcrdata/v7 v7.0.0-20211216152310-365c9dc820eb
+	github.com/decred/dcrdata/v8 v8.0.0-20230617164141-fa4d8e1b4e8e
 	github.com/decred/politeia v1.4.0
 	github.com/decred/slog v1.2.0
 	github.com/dgraph-io/badger v1.6.2
@@ -68,7 +68,6 @@ require (
 require (
 	decred.org/cspp/v2 v2.1.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
-	decred.org/dcrwallet/v2 v2.0.0-20211207180344-e2bce3d3b877 // indirect
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
 	gioui.org/shader v1.0.6 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
@@ -86,7 +85,6 @@ require (
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/decred/base58 v1.0.5 // indirect
 	github.com/decred/dcrd/blockchain/stake/v3 v3.0.0 // indirect
-	github.com/decred/dcrd/blockchain/stake/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/blockchain/standalone/v2 v2.2.0 // indirect
 	github.com/decred/dcrd/certgen v1.1.2 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
@@ -100,14 +98,13 @@ require (
 	github.com/decred/dcrd/gcs/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/gcs/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/lru v1.1.1 // indirect
-	github.com/decred/dcrd/rpc/jsonrpc/types/v4 v4.0.0 // indirect
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
 	github.com/decred/vspd/client/v2 v2.0.0 // indirect
 	github.com/decred/vspd/types/v2 v2.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.1-0.20210705192016-249ff6c91207 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-text/typesetting v0.0.0-20221214153724-0399769901d5 // indirect
