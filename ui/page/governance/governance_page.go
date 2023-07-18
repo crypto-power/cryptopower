@@ -4,10 +4,10 @@ import (
 	"context"
 	"image"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -233,7 +233,7 @@ func (pg *Page) layoutPageTopNav(gtx C) D {
 				Left: values.MarginPadding20,
 			}.Layout(gtx, func(gtx C) D {
 				txt := pg.Theme.Label(values.TextSize20, values.String(values.StrGovernance))
-				txt.Font.Weight = text.SemiBold
+				txt.Font.Weight = font.SemiBold
 				return txt.Layout(gtx)
 			})
 		}),

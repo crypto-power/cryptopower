@@ -1,8 +1,8 @@
 package modal
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -46,9 +46,9 @@ func NewPasswordModal(l *load.Load) *PasswordModal {
 		isCancelable: true,
 	}
 
-	pm.btnPositve.Font.Weight = text.Medium
+	pm.btnPositve.Font.Weight = font.Medium
 
-	pm.btnNegative.Font.Weight = text.Medium
+	pm.btnNegative.Font.Weight = font.Medium
 	pm.btnNegative.Margin.Right = values.MarginPadding8
 
 	pm.password = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
@@ -64,7 +64,6 @@ func (pm *PasswordModal) OnResume() {
 }
 
 func (pm *PasswordModal) OnDismiss() {
-
 }
 
 func (pm *PasswordModal) Title(title string) *PasswordModal {
@@ -160,7 +159,7 @@ func (pm *PasswordModal) Handle() {
 func (pm *PasswordModal) Layout(gtx layout.Context) D {
 	title := func(gtx C) D {
 		t := pm.Theme.H6(pm.dialogTitle)
-		t.Font.Weight = text.SemiBold
+		t.Font.Weight = font.SemiBold
 		return t.Layout(gtx)
 	}
 

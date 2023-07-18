@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -736,7 +736,7 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 			cryptomaterial.FillMax(gtx, overlayColor, 10)
 
 			lbl := l.Theme.Label(values.TextSize20, txt)
-			lbl.Font.Weight = text.SemiBold
+			lbl.Font.Weight = font.SemiBold
 			lbl.Color = l.Theme.Color.PageNavText
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,

@@ -1,8 +1,8 @@
 package governance
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -52,7 +52,7 @@ func (pg *Page) splashScreen(gtx layout.Context) layout.Dimensions {
 						}),
 						layout.Rigid(func(gtx C) D {
 							txt := pg.Theme.Label(values.TextSize24, values.String(values.StrHowGovernanceWork))
-							txt.Font.Weight = text.SemiBold
+							txt.Font.Weight = font.SemiBold
 
 							return layout.Inset{
 								Top:    values.MarginPadding30,

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -141,7 +141,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
 
 	pg.viewAllButton = l.Theme.Button(values.String(values.StrViewAllOrders))
-	pg.viewAllButton.Font.Weight = text.SemiBold
+	pg.viewAllButton.Font.Weight = font.SemiBold
 	pg.viewAllButton.Color = l.Theme.Color.Primary
 	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
 	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().SurfaceHighlight
@@ -780,7 +780,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
-									lb.Font.Weight = text.SemiBold
+									lb.Font.Weight = font.SemiBold
 									return lb.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
@@ -804,7 +804,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}
 									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
 									lb := pg.Theme.Label(values.TextSize16, txt)
-									lb.Font.Weight = text.SemiBold
+									lb.Font.Weight = font.SemiBold
 									return lb.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
@@ -827,7 +827,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										if pg.amountErrorText != "" {
 											txt := pg.Theme.Label(values.TextSize14, pg.amountErrorText)
-											txt.Font.Weight = text.SemiBold
+											txt.Font.Weight = font.SemiBold
 											txt.Color = pg.Theme.Color.Danger
 											return txt.Layout(gtx)
 										}
@@ -844,7 +844,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 												}
 												txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
 												txt.Color = pg.Theme.Color.Gray1
-												txt.Font.Weight = text.SemiBold
+												txt.Font.Weight = font.SemiBold
 												return txt.Layout(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
@@ -869,14 +869,14 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										layout.Rigid(func(gtx C) D {
 											exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
 											txt := pg.Theme.Label(values.TextSize14, exchangeRate)
-											txt.Font.Weight = text.SemiBold
+											txt.Font.Weight = font.SemiBold
 											txt.Color = pg.Theme.Color.Gray1
 											return txt.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
 											binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
 											txt := pg.Theme.Label(values.TextSize14, binanceRate)
-											txt.Font.Weight = text.SemiBold
+											txt.Font.Weight = font.SemiBold
 											txt.Color = pg.Theme.Color.Gray1
 											return txt.Layout(gtx)
 										}),
@@ -903,7 +903,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
-										txt.Font.Weight = text.SemiBold
+										txt.Font.Weight = font.SemiBold
 										return txt.Layout(gtx)
 									}),
 									layout.Flexed(1, func(gtx C) D {

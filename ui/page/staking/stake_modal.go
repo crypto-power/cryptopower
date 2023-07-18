@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -134,7 +134,7 @@ func (tb *ticketBuyerModal) Layout(gtx layout.Context) layout.Dimensions {
 	l := []layout.Widget{
 		func(gtx C) D {
 			t := tb.Theme.H6(values.String(values.StrAutoTicketPurchase))
-			t.Font.Weight = text.SemiBold
+			t.Font.Weight = font.SemiBold
 			return t.Layout(gtx)
 		},
 		func(gtx C) D {

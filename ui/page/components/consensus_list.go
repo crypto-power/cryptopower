@@ -3,8 +3,8 @@ package components
 import (
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -28,7 +28,7 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 		layout.Rigid(layoutAgendaDetails(l, consensusItem.Agenda.Description)),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(layoutAgendaDetails(l, values.String(values.StrVotingPreference), text.SemiBold)),
+				layout.Rigid(layoutAgendaDetails(l, values.String(values.StrVotingPreference), font.SemiBold)),
 				layout.Rigid(layoutAgendaDetails(l, " "+consensusItem.Agenda.VotingPreference)),
 			)
 		}),
@@ -86,7 +86,7 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			lbl := l.Theme.Label(values.TextSize20, agenda.AgendaID)
-			lbl.Font.Weight = text.SemiBold
+			lbl.Font.Weight = font.SemiBold
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(lbl.Layout),
 			)
@@ -112,10 +112,10 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
 	)
 }
 
-func layoutAgendaDetails(l *load.Load, data string, weight ...text.Weight) layout.Widget {
+func layoutAgendaDetails(l *load.Load, data string, weight ...font.Weight) layout.Widget {
 	return func(gtx C) D {
 		lbl := l.Theme.Label(values.TextSize16, data)
-		lbl.Font.Weight = text.Light
+		lbl.Font.Weight = font.Light
 		if len(weight) > 0 {
 			lbl.Font.Weight = weight[0]
 		}

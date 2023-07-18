@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -434,7 +434,7 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	w := []layout.Widget{
 		func(gtx C) D {
 			lbl := pg.Theme.H5(proposal.Name)
-			lbl.Font.Weight = text.SemiBold
+			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		},
 		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),

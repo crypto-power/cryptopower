@@ -3,9 +3,9 @@ package components
 import (
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -258,7 +258,7 @@ func (atm *assetTypeModal) Layout(gtx C) D {
 		func(gtx C) D {
 			titleTxt := atm.Theme.Label(values.TextSize20, atm.dialogTitle)
 			titleTxt.Color = atm.Theme.Color.Text
-			titleTxt.Font.Weight = text.SemiBold
+			titleTxt.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Top: values.MarginPaddingMinus15,
 			}.Layout(gtx, titleTxt.Layout)
@@ -294,7 +294,7 @@ func (atm *assetTypeModal) modalListItemLayout(gtx C, assetTypeItem *AssetTypeIt
 		layout.Rigid(func(gtx C) D {
 			assetTypeName := atm.Theme.Label(values.TextSize18, assetTypeItem.Type.String())
 			assetTypeName.Color = atm.Theme.Color.Text
-			assetTypeName.Font.Weight = text.Normal
+			assetTypeName.Font.Weight = font.Normal
 			return assetTypeName.Layout(gtx)
 		}),
 	)

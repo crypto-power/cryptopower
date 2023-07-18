@@ -1,8 +1,8 @@
 package security
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -50,10 +50,10 @@ func NewValidateAddressPage(l *load.Load) *ValidateAddressPage {
 	pg.addressEditor.Editor.Submit = true
 
 	pg.validateBtn = l.Theme.Button(values.String(values.StrValidate))
-	pg.validateBtn.Font.Weight = text.Medium
+	pg.validateBtn.Font.Weight = font.Medium
 
 	pg.clearBtn = l.Theme.OutlineButton(values.String(values.StrClear))
-	pg.clearBtn.Font.Weight = text.Medium
+	pg.clearBtn.Font.Weight = font.Medium
 
 	pg.stateValidate = none
 

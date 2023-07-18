@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
 
@@ -194,14 +195,14 @@ func (sp *startPage) loadingSection(gtx C) D {
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
 						welcomeText.Alignment = text.Middle
-						welcomeText.Font.Weight = text.Bold
+						welcomeText.Font.Weight = font.Bold
 						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
 					netType := sp.WL.Wallet.Net.Display()
 					nType := sp.Theme.Label(values.TextSize20, netType)
-					nType.Font.Weight = text.Medium
+					nType.Font.Weight = font.Medium
 					return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {

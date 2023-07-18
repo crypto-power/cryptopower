@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"gioui.org/font"
 	"gioui.org/font/opentype"
-	"gioui.org/text"
 
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/gobolditalic"
@@ -17,11 +17,11 @@ import (
 
 var (
 	once       sync.Once
-	collection []text.FontFace
+	collection []font.FontFace
 )
 
 // FontCollection registers the fonts to used in the app
-func FontCollection() []text.FontFace {
+func FontCollection() []font.FontFace {
 	regularItalic, err := getFontByte("fonts/source_sans_pro_It.otf")
 	if err != nil {
 		regularItalic = goitalic.TTF
@@ -53,12 +53,12 @@ func FontCollection() []text.FontFace {
 	}
 
 	once.Do(func() {
-		register(text.Font{}, regular)
-		register(text.Font{Style: text.Italic}, regularItalic)
-		register(text.Font{Weight: text.Bold}, bold)
-		register(text.Font{Style: text.Italic, Weight: text.Bold}, boldItalic)
-		register(text.Font{Weight: text.Medium}, semibold)
-		register(text.Font{Weight: text.Medium, Style: text.Italic}, semiboldItalic)
+		register(font.Font{}, regular)
+		register(font.Font{Style: font.Italic}, regularItalic)
+		register(font.Font{Weight: font.Bold}, bold)
+		register(font.Font{Style: font.Italic, Weight: font.Bold}, boldItalic)
+		register(font.Font{Weight: font.Medium}, semibold)
+		register(font.Font{Weight: font.Medium, Style: font.Italic}, semiboldItalic)
 		// Ensure that any outside appends will not reuse the backing store.
 		n := len(collection)
 		collection = collection[:n:n]
@@ -66,13 +66,13 @@ func FontCollection() []text.FontFace {
 	return collection
 }
 
-func register(fnt text.Font, fontByte []byte) {
+func register(fnt font.Font, fontByte []byte) {
 	face, err := opentype.Parse(fontByte)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse font: %v", err))
 	}
 	fnt.Typeface = "Go"
-	collection = append(collection, text.FontFace{Font: fnt, Face: face})
+	collection = append(collection, font.FontFace{Font: fnt, Face: face})
 }
 
 func getFontByte(path string) ([]byte, error) {

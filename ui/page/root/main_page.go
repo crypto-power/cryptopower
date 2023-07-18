@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -1039,7 +1039,7 @@ func (mp *MainPage) showBackupInfo() {
 func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D {
 	indexLabel := theme.Label(values.TextSize16, content)
 	indexLabel.Color = theme.Color.PageNavText
-	indexLabel.Font.Weight = text.Medium
+	indexLabel.Font.Weight = font.Medium
 	return cryptomaterial.LinearLayout{
 		Width:      gtx.Dp(values.MarginPadding100),
 		Height:     gtx.Dp(values.MarginPadding22),

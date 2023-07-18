@@ -1,8 +1,8 @@
 package seedbackup
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -32,7 +32,7 @@ func NewBackupSuccessPage(l *load.Load, redirect Redirectfunc) *BackupSuccessPag
 		actionButton:     l.Theme.OutlineButton(values.String(values.StrBackToWallets)),
 		redirectCallback: redirect,
 	}
-	pg.actionButton.Font.Weight = text.Medium
+	pg.actionButton.Font.Weight = font.Medium
 
 	return pg
 }
@@ -67,7 +67,6 @@ func (pg *BackupSuccessPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) Layout(gtx C) D {
-
 	return components.UniformPadding(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,

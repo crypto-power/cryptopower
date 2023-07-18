@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -87,7 +87,7 @@ func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
 
-	pg.actionButton.Font.Weight = text.Medium
+	pg.actionButton.Font.Weight = font.Medium
 
 	return pg
 }
@@ -121,7 +121,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			row2 := wordList[11:22]
 			row3 := wordList[22:]
 
-			//for mobile
+			// for mobile
 			rowMobile1 := wordList[:17]
 			rowMobile2 := wordList[17:]
 			mobileRows := make([]saveSeedRow, 0)
@@ -155,7 +155,6 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			pg.ParentNavigator().ClosePagesAfter("Main")
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
-
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -198,7 +197,6 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
 		},
 		Body: func(gtx C) D {
-
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					label := pg.Theme.Label(values.TextSize16, values.String(values.StrWriteDownAll33Words))
@@ -340,10 +338,8 @@ func (pg *SaveSeedPage) hexLayout(gtx layout.Context) layout.Dimensions {
 								case seedWordFormat:
 									pg.hexLabel.Text = pg.seed[:117] + "..."
 								}
-
 							}
 							return pg.hexLabel.Layout(gtx)
-
 						})
 					})
 				}),
@@ -407,7 +403,7 @@ func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string)
 		layout.Rigid(func(gtx C) D {
 			indexLabel := theme.Label(values.TextSize16, fmt.Sprint(index))
 			indexLabel.Color = theme.Color.GrayText1
-			indexLabel.Font.Weight = text.Medium
+			indexLabel.Font.Weight = font.Medium
 			return cryptomaterial.LinearLayout{
 				Width:     gtx.Dp(values.MarginPadding30),
 				Height:    gtx.Dp(values.MarginPadding22),
@@ -419,7 +415,7 @@ func seedItem(theme *cryptomaterial.Theme, gtx C, width, index int, word string)
 		layout.Rigid(func(gtx C) D {
 			seedWord := theme.Label(values.TextSize16, word)
 			seedWord.Color = theme.Color.GrayText1
-			seedWord.Font.Weight = text.Medium
+			seedWord.Font.Weight = font.Medium
 			return seedWord.Layout(gtx)
 		}),
 	)
@@ -430,7 +426,7 @@ func (pg *SaveSeedPage) layoutVoteChoice() layout.Widget {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrCopySeed))
-				lbl.Font.Weight = text.SemiBold
+				lbl.Font.Weight = font.SemiBold
 				return lbl.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {

@@ -6,8 +6,8 @@ import (
 	"image/color"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
@@ -129,7 +129,7 @@ func (p *HTMLProvider) prepareHeading(node *ast.Heading, _ /*entering*/ bool) {
 
 func (p *HTMLProvider) prepareStrong(_ /*node*/ *ast.Strong, _ /*entering*/ bool) {
 	label := p.theme.Body1("")
-	label.Font.Weight = text.Bold
+	label.Font.Weight = font.Bold
 	p.render(label)
 }
 func (p *HTMLProvider) prepareDel(_ /*node*/ *ast.Del, _ /*entering*/ bool) {}
@@ -341,24 +341,24 @@ func (p *HTMLProvider) styleLabel(label cryptomaterial.Label) cryptomaterial.Lab
 
 	if fontStyle, ok := style["font-style"]; ok {
 		if fontStyle == "italic" {
-			label.Font.Style = text.Italic
+			label.Font.Style = font.Italic
 		}
 	}
 
 	return label
 }
 
-func (p *HTMLProvider) getLabelWeight(weight string) text.Weight {
+func (p *HTMLProvider) getLabelWeight(weight string) font.Weight {
 	switch weight {
 	case "normal":
-		return text.Normal
+		return font.Normal
 	case "medium":
-		return text.Medium
+		return font.Medium
 	case "bold":
-		return text.Bold
+		return font.Bold
 	}
 
-	return text.Normal
+	return font.Normal
 }
 
 func (p *HTMLProvider) getColorFromMap(col string) color.NRGBA {

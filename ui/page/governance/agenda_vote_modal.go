@@ -1,8 +1,8 @@
 package governance
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -68,7 +68,7 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
 		func(gtx C) D {
 			t := avm.Theme.H6(values.String(values.StrSettings))
-			t.Font.Weight = text.SemiBold
+			t.Font.Weight = font.SemiBold
 			return t.Layout(gtx)
 		},
 		func(gtx layout.Context) layout.Dimensions {

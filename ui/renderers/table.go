@@ -3,8 +3,8 @@ package renderers
 import (
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -65,7 +65,6 @@ func (t *table) addCell(content string, alignment cellAlign, isHeader bool) {
 // normalize ensure that the table has the same number of cells
 // in each rows, header or not.
 func (t *table) normalize() {
-
 }
 
 func (t *table) setAlignment() {
@@ -97,7 +96,7 @@ func (t *table) layoutCellLabel(gtx C, c cell, isHeader bool) D {
 
 	lbl := t.theme.Body2(c.content)
 	if isHeader {
-		lbl.Font.Weight = text.Bold
+		lbl.Font.Weight = font.Bold
 	}
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X

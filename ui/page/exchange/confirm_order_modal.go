@@ -3,8 +3,8 @@ package exchange
 import (
 	"fmt"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -48,10 +48,10 @@ func newConfirmOrderModal(l *load.Load, data *orderData) *confirmOrderModal {
 	}
 
 	com.closeConfirmationModalButton = l.Theme.OutlineButton(values.String(values.StrCancel))
-	com.closeConfirmationModalButton.Font.Weight = text.Medium
+	com.closeConfirmationModalButton.Font.Weight = font.Medium
 
 	com.confirmButton = l.Theme.Button("")
-	com.confirmButton.Font.Weight = text.Medium
+	com.confirmButton.Font.Weight = font.Medium
 	com.confirmButton.SetEnabled(false)
 
 	com.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
@@ -186,7 +186,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 										txt := com.Theme.Label(values.TextSize20, values.String(values.StrConfirmYourOrder))
-										txt.Font.Weight = text.SemiBold
+										txt.Font.Weight = font.SemiBold
 										return txt.Layout(gtx)
 									})
 								}),

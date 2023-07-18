@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -56,7 +56,6 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 	vm.walletSelector = NewWalletSelector(l).
 		Title(values.String(values.StrVotingWallet)).
 		WalletSelected(func(w sharedW.Asset) {
-
 			vm.detailsMu.Lock()
 			vm.yesVote.reset()
 			vm.noVote.reset()
@@ -96,7 +95,6 @@ func (vm *voteModal) OnResume() {
 }
 
 func (vm *voteModal) OnDismiss() {
-
 }
 
 func (vm *voteModal) eligibleVotes() int {
@@ -211,7 +209,7 @@ func (vm *voteModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
 		func(gtx C) D {
 			t := vm.Theme.H6(values.String(values.StrVote))
-			t.Font.Weight = text.SemiBold
+			t.Font.Weight = font.SemiBold
 			return t.Layout(gtx)
 		},
 		func(gtx C) D {

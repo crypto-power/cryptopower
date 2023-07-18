@@ -4,11 +4,11 @@ import (
 	"image"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -68,7 +68,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 	pg.seedInputEditor.Editor.SetText("")
 
 	pg.confirmSeedButton = l.Theme.Button("")
-	pg.confirmSeedButton.Font.Weight = text.Medium
+	pg.confirmSeedButton.Font.Weight = font.Medium
 	pg.confirmSeedButton.SetEnabled(false)
 
 	return pg

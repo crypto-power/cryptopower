@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
@@ -54,7 +54,7 @@ type FeeRateSelector struct {
 	// TitleInset sets the inset for the title label.
 	TitleInset layout.Inset
 	// TitleFontWeight sets the font weight for the title label.
-	TitleFontWeight text.Weight
+	TitleFontWeight font.Weight
 	// USDExchangeSet determines if this component will in addition
 	// to the TxFee show the USD rate of fee.
 	USDExchangeSet bool
@@ -147,7 +147,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 															return fs.ratesEditor.Layout(gtx)
 														}
 														feerateLabel := fs.Theme.Label(values.TextSize14, fs.feeRateText)
-														feerateLabel.Font.Weight = text.SemiBold
+														feerateLabel.Font.Weight = font.SemiBold
 														return feerateLabel.Layout(gtx)
 													}),
 													layout.Rigid(func(gtx C) D {
@@ -183,12 +183,12 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
 													priorityLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrPriority, " : "))
-													priorityLabel.Font.Weight = text.SemiBold
+													priorityLabel.Font.Weight = font.SemiBold
 													return priorityLabel.Layout(gtx)
 												}),
 												layout.Rigid(func(gtx C) D {
 													priorityVal := fs.Theme.Label(values.TextSize14, fs.priority)
-													priorityVal.Font.Style = text.Italic
+													priorityVal.Font.Style = font.Italic
 													return priorityVal.Layout(gtx)
 												}),
 											)
@@ -198,12 +198,12 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {
 														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : "))
-														sizeLabel.Font.Weight = text.SemiBold
+														sizeLabel.Font.Weight = font.SemiBold
 														return sizeLabel.Layout(gtx)
 													}),
 													layout.Rigid(func(gtx C) D {
 														txSize := fs.Theme.Label(values.TextSize14, fs.EstSignedSize)
-														txSize.Font.Style = text.Italic
+														txSize.Font.Style = font.Italic
 														return txSize.Layout(gtx)
 													}),
 												)
@@ -215,7 +215,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 													layout.Rigid(func(gtx C) D {
 														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrCost, " : "))
-														sizeLabel.Font.Weight = text.SemiBold
+														sizeLabel.Font.Weight = font.SemiBold
 														return sizeLabel.Layout(gtx)
 													}),
 													layout.Rigid(func(gtx C) D {
@@ -225,7 +225,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 														}
 
 														txSize := fs.Theme.Label(values.TextSize14, feeText)
-														txSize.Font.Style = text.Italic
+														txSize.Font.Style = font.Italic
 														return txSize.Layout(gtx)
 													}),
 												)

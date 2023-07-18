@@ -1,9 +1,9 @@
 package exchange
 
 import (
+	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
@@ -277,7 +277,7 @@ func (em *exchangeModal) Layout(gtx C) D {
 		func(gtx C) D {
 			titleTxt := em.Theme.Label(values.TextSize20, em.dialogTitle)
 			titleTxt.Color = em.Theme.Color.Text
-			titleTxt.Font.Weight = text.SemiBold
+			titleTxt.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Top: values.MarginPaddingMinus15,
 			}.Layout(gtx, titleTxt.Layout)
@@ -313,7 +313,7 @@ func (em *exchangeModal) modalListItemLayout(gtx C, exchangeItem *exchangeItem) 
 		layout.Rigid(func(gtx C) D {
 			exchName := em.Theme.Label(values.TextSize18, exchangeItem.item.Name)
 			exchName.Color = em.Theme.Color.Text
-			exchName.Font.Weight = text.Normal
+			exchName.Font.Weight = font.Normal
 			return exchName.Layout(gtx)
 		}),
 	)

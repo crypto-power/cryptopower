@@ -1,9 +1,9 @@
 package security
 
 import (
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -55,10 +55,10 @@ func NewVerifyMessagePage(l *load.Load) *VerifyMessagePage {
 	pg.signatureEditor.Editor.Submit = true
 
 	pg.verifyButton = l.Theme.Button(values.String(values.StrVerifyMessage))
-	pg.verifyButton.Font.Weight = text.Medium
+	pg.verifyButton.Font.Weight = font.Medium
 
 	pg.clearBtn = l.Theme.OutlineButton(values.String(values.StrClearAll))
-	pg.clearBtn.Font.Weight = text.Medium
+	pg.clearBtn.Font.Weight = font.Medium
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 

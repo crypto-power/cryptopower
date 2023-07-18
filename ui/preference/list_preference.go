@@ -1,8 +1,8 @@
 package preference
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -86,8 +86,8 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 		Modal:             l.Theme.ModalFloatTitle("list_preference"),
 	}
 
-	lp.btnSave.Font.Weight = text.Medium
-	lp.btnCancel.Font.Weight = text.Medium
+	lp.btnSave.Font.Weight = font.Medium
+	lp.btnCancel.Font.Weight = font.Medium
 
 	return &lp
 }

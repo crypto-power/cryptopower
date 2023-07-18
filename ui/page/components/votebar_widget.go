@@ -6,10 +6,10 @@ import (
 	"image/color"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -259,7 +259,7 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				lbl.Font.Weight = text.SemiBold
+				lbl.Font.Weight = font.SemiBold
 				return lbl.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {

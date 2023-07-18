@@ -3,9 +3,9 @@ package exchange
 import (
 	"context"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -65,10 +65,10 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
-	osm.cancelBtn.Font.Weight = text.Medium
+	osm.cancelBtn.Font.Weight = font.Medium
 
 	osm.saveBtn = l.Theme.Button(values.String(values.StrSave))
-	osm.saveBtn.Font.Weight = text.Medium
+	osm.saveBtn.Font.Weight = font.Medium
 	osm.saveBtn.SetEnabled(false)
 
 	osm.sourceInfoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
@@ -92,7 +92,7 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	}
 
 	osm.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc)
-	osm.feeRateSelector.TitleFontWeight = text.SemiBold
+	osm.feeRateSelector.TitleFontWeight = font.SemiBold
 	osm.initWalletSelectors()
 
 	return osm
@@ -257,7 +257,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 											Bottom: values.MarginPadding8,
 										}.Layout(gtx, func(gtx C) D {
 											txt := osm.Theme.Label(values.TextSize20, values.String(values.StrSettings))
-											txt.Font.Weight = text.SemiBold
+											txt.Font.Weight = font.SemiBold
 											return txt.Layout(gtx)
 										})
 									}),
@@ -287,7 +287,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																			layout.Rigid(func(gtx C) D {
 																				txt := osm.Theme.Label(values.TextSize16, values.String(values.StrSource))
-																				txt.Font.Weight = text.SemiBold
+																				txt.Font.Weight = font.SemiBold
 																				return txt.Layout(gtx)
 																			}),
 																			layout.Rigid(func(gtx C) D {
@@ -311,7 +311,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																	layout.Rigid(func(gtx C) D {
 																		if !osm.sourceWalletSelector.SelectedWallet().IsSynced() {
 																			txt := osm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
-																			txt.Font.Weight = text.SemiBold
+																			txt.Font.Weight = font.SemiBold
 																			txt.Color = osm.Theme.Color.Danger
 																			return txt.Layout(gtx)
 																		}
@@ -334,7 +334,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 																			layout.Rigid(func(gtx C) D {
 																				txt := osm.Theme.Label(values.TextSize16, values.String(values.StrDestination))
-																				txt.Font.Weight = text.SemiBold
+																				txt.Font.Weight = font.SemiBold
 																				return txt.Layout(gtx)
 																			}),
 																			layout.Rigid(func(gtx C) D {
@@ -392,7 +392,7 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 																		}.Layout(gtx, func(gtx C) D {
 																			if !osm.destinationWalletSelector.SelectedWallet().IsSynced() {
 																				txt := osm.Theme.Label(values.TextSize14, values.String(values.StrDestinationWalletNotSynced))
-																				txt.Font.Weight = text.SemiBold
+																				txt.Font.Weight = font.SemiBold
 																				txt.Color = osm.Theme.Color.Danger
 																				return txt.Layout(gtx)
 																			}

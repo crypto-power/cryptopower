@@ -3,6 +3,7 @@ package modal
 import (
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -114,8 +115,8 @@ func newInfoModalWithKey(l *load.Load, key string, btnPositiveType ButtonType) *
 	}
 
 	in.btnPositive = getPositiveButtonType(l, btnPositiveType)
-	in.btnPositive.Font.Weight = text.Medium
-	in.btnNegative.Font.Weight = text.Medium
+	in.btnPositive.Font.Weight = font.Medium
+	in.btnNegative.Font.Weight = font.Medium
 
 	// Set the default click functions
 	in.positiveButtonClicked = DefaultClickFunc()
@@ -393,7 +394,7 @@ func (in *InfoModal) titleLayout() layout.Widget {
 	return func(gtx C) D {
 		t := in.Theme.H6(in.dialogTitle)
 		t.Alignment = in.titleTextAlignment
-		t.Font.Weight = text.SemiBold
+		t.Font.Weight = font.SemiBold
 		return in.titleAlignment.Layout(gtx, t.Layout)
 	}
 }
