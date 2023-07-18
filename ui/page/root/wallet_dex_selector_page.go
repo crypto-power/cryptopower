@@ -53,6 +53,7 @@ type WalletDexServerSelector struct {
 	shadowBox       *cryptomaterial.Shadow
 	addWalClickable *cryptomaterial.Clickable
 	exchangeBtn     *cryptomaterial.Clickable
+	dcrdexBtn       *cryptomaterial.Clickable
 	settings        *cryptomaterial.Clickable
 
 	// wallet selector options
@@ -89,6 +90,9 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	pg.exchangeBtn = l.Theme.NewClickable(false)
 	pg.exchangeBtn.Radius = rad
+
+	pg.dcrdexBtn = l.Theme.NewClickable(false)
+	pg.dcrdexBtn.Radius = rad
 
 	pg.settings = l.Theme.NewClickable(false)
 
@@ -243,12 +247,18 @@ func (pg *WalletDexServerSelector) sectionTitle(title string) layout.Widget {
 }
 
 func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
+	// Set dcrdex button as disabled since its not yet implemented.
+	pg.dcrdexBtn.SetEnabled(false, &gtx)
+
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.walletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
+		pg.layoutAddBottomSpace(),
 		pg.sectionTitle(values.String(values.StrExchangeIntro)),
 		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
+		pg.layoutAddMoreRowSection(pg.dcrdexBtn, values.String(values.StrDcrDex), pg.Theme.Icons.DcrDex.Layout16dp),
+		pg.layoutAddBottomSpace(),
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -272,12 +282,20 @@ func (pg *WalletDexServerSelector) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
+func (pg *WalletDexServerSelector) layoutAddBottomSpace() layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{
 			Left:   values.MarginPadding5,
-			Top:    values.MarginPadding10,
 			Bottom: values.MarginPadding48,
+		}.Layout(gtx, func(gtx C) D { return D{} })
+	}
+}
+
+func (pg *WalletDexServerSelector) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
+	return func(gtx C) D {
+		return layout.Inset{
+			Left: values.MarginPadding5,
+			Top:  values.MarginPadding10,
 		}.Layout(gtx, func(gtx C) D {
 			pg.shadowBox.SetShadowRadius(14)
 			return cryptomaterial.LinearLayout{

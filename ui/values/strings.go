@@ -269,6 +269,7 @@ const (
 	StrDaysToVote                      = "daysToVote"
 	StrDcrBtcPair                      = "dcrBtcPair"
 	StrDCRCaps                         = "dcrCaps"
+	StrDcrDex                          = "dcrDex"
 	StrDcrReceived                     = "dcrReceived"
 	StrDebug                           = "debug"
 	StrDefault                         = "default"
