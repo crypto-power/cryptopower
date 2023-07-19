@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -214,7 +214,7 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return v.Modal.Layout(gtx, []layout.Widget{
 		func(gtx C) D {
 			title := v.Theme.Label(values.TextSize20, v.dialogTitle)
-			title.Font.Weight = text.SemiBold
+			title.Font.Weight = font.SemiBold
 			return title.Layout(gtx)
 		},
 		func(gtx C) D {

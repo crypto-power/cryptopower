@@ -1,8 +1,8 @@
 package governance
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -164,7 +164,7 @@ func (tsm *ticketSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return tsm.Modal.Layout(gtx, []layout.Widget{
 		func(gtx C) D {
 			title := tsm.Theme.Label(values.TextSize20, tsm.dialogTitle)
-			title.Font.Weight = text.SemiBold
+			title.Font.Weight = font.SemiBold
 			return title.Layout(gtx)
 		},
 		func(gtx C) D {

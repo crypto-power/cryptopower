@@ -3,8 +3,8 @@ package info
 import (
 	"context"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -80,7 +80,7 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 		checkBox: l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
-	pg.toBackup.Font.Weight = text.Medium
+	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = values.TextSize14
 
 	pg.redirectfunc = redirect
@@ -124,7 +124,7 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 									Left:  values.MarginPadding10,
 								}.Layout(gtx, func(gtx C) D {
 									txt := pg.Theme.Body1(pg.WL.SelectedWallet.Wallet.GetWalletName())
-									txt.Font.Weight = text.SemiBold
+									txt.Font.Weight = font.SemiBold
 									return txt.Layout(gtx)
 								})
 							}),

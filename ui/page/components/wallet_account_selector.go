@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -536,7 +536,7 @@ func (sm *selectorModal) Layout(gtx C) D {
 		func(gtx C) D {
 			title := sm.Theme.H6(sm.dialogTitle)
 			title.Color = sm.Theme.Color.Text
-			title.Font.Weight = text.SemiBold
+			title.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Top: values.MarginPaddingMinus15,
 			}.Layout(gtx, title.Layout)
@@ -663,7 +663,7 @@ func (sm *selectorModal) modalListItemLayout(gtx C, selectorItem *SelectorItem) 
 				layout.Rigid(func(gtx C) D {
 					acct := sm.Theme.Label(values.TextSize18, name)
 					acct.Color = sm.Theme.Color.Text
-					acct.Font.Weight = text.Normal
+					acct.Font.Weight = font.Normal
 					return EndToEndRow(gtx, acct.Layout, func(gtx C) D {
 						return LayoutBalance(gtx, sm.Load, totalBal)
 					})

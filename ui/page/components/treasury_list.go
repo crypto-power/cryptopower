@@ -3,8 +3,8 @@ package components
 import (
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -60,7 +60,7 @@ func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			lbl := l.Theme.Label(values.TextSize20, values.String(values.StrPiKey))
-			lbl.Font.Weight = text.SemiBold
+			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -95,7 +95,7 @@ func layoutVoteChoice(l *load.Load, treasuryItem *TreasuryItem) layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				lbl := l.Theme.Label(values.TextSize16, values.String(values.StrSetTreasuryPolicy))
-				lbl.Font.Weight = text.SemiBold
+				lbl.Font.Weight = font.SemiBold
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {

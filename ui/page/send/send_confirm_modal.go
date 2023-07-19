@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"image"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -46,10 +46,10 @@ func newSendConfirmModal(l *load.Load, data *authoredTxData, asset load.WalletMa
 	}
 
 	scm.closeConfirmationModalButton = l.Theme.OutlineButton(values.String(values.StrCancel))
-	scm.closeConfirmationModalButton.Font.Weight = text.Medium
+	scm.closeConfirmationModalButton.Font.Weight = font.Medium
 
 	scm.confirmButton = l.Theme.Button("")
-	scm.confirmButton.Font.Weight = text.Medium
+	scm.confirmButton.Font.Weight = font.Medium
 	scm.confirmButton.SetEnabled(false)
 
 	scm.passwordEditor = l.Theme.EditorPassword(new(widget.Editor), values.String(values.StrSpendingPassword))
@@ -195,7 +195,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 								return layout.Inset{}.Layout(gtx, func(gtx C) D {
 									txt := scm.Theme.Label(unit.Sp(16), sendWallet.GetWalletName())
 									txt.Color = scm.Theme.Color.Text
-									txt.Font.Weight = text.Medium
+									txt.Font.Weight = font.Medium
 									return txt.Layout(gtx)
 								})
 							}),
@@ -240,7 +240,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 													destinationWallet := scm.WL.AssetsManager.WalletWithID(scm.destinationAccount.WalletID)
 													txt := scm.Theme.Label(unit.Sp(16), destinationWallet.GetWalletName())
 													txt.Color = scm.Theme.Color.Text
-													txt.Font.Weight = text.Medium
+													txt.Font.Weight = font.Medium
 													return txt.Layout(gtx)
 												})
 											}),

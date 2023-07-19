@@ -6,10 +6,10 @@ import (
 	"image"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -150,7 +150,7 @@ func (pg *TransactionsPage) sectionNavTab(gtx C) D {
 
 func (pg *TransactionsPage) pageTitle(gtx C) D {
 	txt := pg.Theme.Label(values.TextSize20, values.String(values.StrTransactions))
-	txt.Font.Weight = text.SemiBold
+	txt.Font.Weight = font.SemiBold
 	return txt.Layout(gtx)
 }
 

@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/text"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -34,7 +35,7 @@ func newInputVoteOptions(l *load.Load, label string) *inputVoteOptionsWidgets {
 	}
 	i.max.Background = l.Theme.Color.Surface
 	i.max.Color = l.Theme.Color.GrayText1
-	i.max.Font.Weight = text.SemiBold
+	i.max.Font.Weight = font.SemiBold
 
 	i.increment.ChangeColorStyle(&values.ColorStyle{Foreground: l.Theme.Color.Text})
 	i.decrement.ChangeColorStyle(&values.ColorStyle{Foreground: l.Theme.Color.Text})

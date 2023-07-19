@@ -5,8 +5,8 @@ import (
 	"image"
 	"image/color"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -147,7 +147,7 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 
 func layoutTitle(gtx C, l *load.Load, proposal libwallet.Proposal) D {
 	lbl := l.Theme.H6(proposal.Name)
-	lbl.Font.Weight = text.SemiBold
+	lbl.Font.Weight = font.SemiBold
 	return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
 }
 

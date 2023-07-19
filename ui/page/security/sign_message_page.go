@@ -1,10 +1,10 @@
 package security
 
 import (
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -59,7 +59,7 @@ func NewSignMessagePage(l *load.Load) *SignMessagePage {
 
 	clearButton := l.Theme.OutlineButton(values.String(values.StrClearAll))
 	signButton := l.Theme.Button(values.String(values.StrSignMessage))
-	clearButton.Font.Weight, signButton.Font.Weight = text.Medium, text.Medium
+	clearButton.Font.Weight, signButton.Font.Weight = font.Medium, font.Medium
 	signButton.SetEnabled(false)
 	clearButton.SetEnabled(false)
 
@@ -105,7 +105,6 @@ func (pg *SignMessagePage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SignMessagePage) Layout(gtx C) D {
-
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -138,6 +137,7 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 	}
 	return pg.layoutDesktop(gtx, body)
 }
+
 func (pg *SignMessagePage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
 	return components.UniformPadding(gtx, body)
 }

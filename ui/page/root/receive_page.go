@@ -7,11 +7,11 @@ import (
 	"image"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -93,7 +93,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.newAddr.Background = pg.Theme.Color.Surface
 	pg.newAddr.HighlightColor = pg.Theme.Color.SurfaceHighlight
 	pg.newAddr.ButtonStyle.TextSize = values.TextSize14
-	pg.newAddr.ButtonStyle.Font.Weight = text.SemiBold
+	pg.newAddr.ButtonStyle.Font.Weight = font.SemiBold
 
 	pg.receiveAddress.MaxLines = 1
 

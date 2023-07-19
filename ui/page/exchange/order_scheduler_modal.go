@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
@@ -67,10 +68,10 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
-	osm.cancelBtn.Font.Weight = text.Medium
+	osm.cancelBtn.Font.Weight = font.Medium
 
 	osm.startBtn = l.Theme.Button(values.String(values.StrStart))
-	osm.startBtn.Font.Weight = text.Medium
+	osm.startBtn.Font.Weight = font.Medium
 	osm.startBtn.SetEnabled(false)
 
 	osm.refreshExchangeRateBtn = l.Theme.IconButton(l.Theme.Icons.NavigationRefresh)
@@ -224,7 +225,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 											Bottom: values.MarginPadding16,
 										}.Layout(gtx, func(gtx C) D {
 											txt := osm.Theme.Label(values.TextSize20, values.String(values.StrOrderScheduler))
-											txt.Font.Weight = text.SemiBold
+											txt.Font.Weight = font.SemiBold
 											return txt.Layout(gtx)
 										})
 									}),
@@ -259,7 +260,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																				if osm.rateError {
 																					txt := osm.Theme.Label(values.TextSize14, values.String(values.StrFetchRateError))
 																					txt.Color = osm.Theme.Color.Gray1
-																					txt.Font.Weight = text.SemiBold
+																					txt.Font.Weight = font.SemiBold
 																					return txt.Layout(gtx)
 																				}
 
@@ -274,14 +275,14 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																						layout.Rigid(func(gtx C) D {
 																							exchangeRate := values.StringF(values.StrServerRate, osm.exchangeSelector.SelectedExchange().Name, osm.exchangeRate)
 																							txt := osm.Theme.Label(values.TextSize14, exchangeRate)
-																							txt.Font.Weight = text.SemiBold
+																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
 																							binanceRate := values.StringF(values.StrBinanceRate, osm.binanceRate)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
-																							txt.Font.Weight = text.SemiBold
+																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
 																							return txt.Layout(gtx)
 																						}),
@@ -332,7 +333,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																	layout.Rigid(func(gtx C) D {
 																		if osm.balanceToMaintainErrorText != "" {
 																			txt := osm.Theme.Label(values.TextSize14, osm.balanceToMaintainErrorText)
-																			txt.Font.Weight = text.SemiBold
+																			txt.Font.Weight = font.SemiBold
 																			txt.Color = osm.Theme.Color.Danger
 																			return txt.Layout(gtx)
 																		}

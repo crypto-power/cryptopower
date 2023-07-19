@@ -5,10 +5,10 @@ import (
 	"image/color"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -92,10 +92,10 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	pg.optionsMenuCard.Radius = cryptomaterial.Radius(8)
 
 	pg.validateSeed = l.Theme.Button(values.String(values.StrValidateWalSeed))
-	pg.validateSeed.Font.Weight = text.Medium
+	pg.validateSeed.Font.Weight = font.Medium
 
 	pg.resetSeedFields = l.Theme.OutlineButton(values.String(values.StrClearAll))
-	pg.resetSeedFields.Font.Weight = text.Medium
+	pg.resetSeedFields.Font.Weight = font.Medium
 
 	for i := 0; i <= numberOfSeeds; i++ {
 		widgetEditor := new(widget.Editor)

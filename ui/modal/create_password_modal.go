@@ -3,9 +3,9 @@ package modal
 import (
 	"strconv"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -63,9 +63,9 @@ func NewCreatePasswordModal(l *load.Load) *CreatePasswordModal {
 		confirmPasswordEnabled: true,
 	}
 
-	cm.btnPositive.Font.Weight = text.Medium
+	cm.btnPositive.Font.Weight = font.Medium
 
-	cm.btnNegative.Font.Weight = text.Medium
+	cm.btnNegative.Font.Weight = font.Medium
 	cm.btnNegative.Margin = layout.Inset{Right: values.MarginPadding8}
 
 	cm.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrWalletName))
@@ -304,7 +304,7 @@ func (cm *CreatePasswordModal) passwordsMatch(editors ...*widget.Editor) bool {
 func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 	return func(gtx C) D {
 		t := cm.Theme.H6(cm.dialogTitle)
-		t.Font.Weight = text.SemiBold
+		t.Font.Weight = font.SemiBold
 		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, t.Layout)
 	}
 }

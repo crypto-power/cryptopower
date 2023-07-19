@@ -3,8 +3,8 @@ package renderers
 import (
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -15,28 +15,28 @@ func getLabel(lbl cryptomaterial.Label) cryptomaterial.Label {
 }
 
 func setStyle(lbl *cryptomaterial.Label, style string) {
-	var s text.Style
+	var s font.Style
 
 	switch style {
 	case "italic":
-		s = text.Italic
+		s = font.Italic
 	case "regular":
-		s = text.Regular
+		s = font.Regular
 	}
 
 	lbl.Font.Style = s
 }
 
 func setWeight(lbl *cryptomaterial.Label, weight string) {
-	var w text.Weight
+	var w font.Weight
 
 	switch weight {
 	case "normal":
-		w = text.Normal
+		w = font.Normal
 	case "medium":
-		w = text.Medium
+		w = font.Medium
 	case "bold", "strong":
-		w = text.Bold
+		w = font.Bold
 	default:
 		w = lbl.Font.Weight
 	}
@@ -63,7 +63,7 @@ func getHeading(txt string, level int, theme *cryptomaterial.Theme) cryptomateri
 	}
 
 	lbl := theme.H1(txt)
-	lbl.Font.Weight = text.Bold
+	lbl.Font.Weight = font.Bold
 	lbl.TextSize = textSize
 	return lbl
 }
@@ -128,7 +128,7 @@ func renderHorizontalLine(theme *cryptomaterial.Theme) layout.Widget {
 }
 
 func renderEmptyLine(theme *cryptomaterial.Theme, isList bool) layout.Widget {
-	var padding = -5
+	padding := -5
 
 	if isList {
 		padding = -10

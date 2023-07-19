@@ -1,8 +1,8 @@
 package seedbackup
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -52,7 +52,7 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 		redirectCallback: redirect,
 	}
 
-	bi.viewSeedBtn.Font.Weight = text.Medium
+	bi.viewSeedBtn.Font.Weight = font.Medium
 
 	bi.backButton, _ = components.SubpageHeaderButtons(l)
 	bi.backButton.Icon = l.Theme.Icons.ContentClear
@@ -79,7 +79,6 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) OnNavigatedTo() {
-
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -94,7 +93,6 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))
 		}
 	}
-
 }
 
 func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.WindowNavigator) {
@@ -189,7 +187,6 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 					layout.Rigid(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return actionBtn.Layout(gtx)
-
 					}))
 			}),
 		)

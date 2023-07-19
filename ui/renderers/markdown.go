@@ -4,8 +4,8 @@ import (
 	"strings"
 	"unicode"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -162,7 +162,7 @@ func (p *MarkdownProvider) renderListItem(content string) {
 	w := func(gtx C) D {
 		lbl := p.getLabel()
 		strongLabel := p.getLabel()
-		strongLabel.Font.Weight = text.Bold
+		strongLabel.Font.Weight = font.Bold
 
 		return layout.Flex{}.Layout(gtx,
 			layout.Flexed(0.02, func(gtx C) D {

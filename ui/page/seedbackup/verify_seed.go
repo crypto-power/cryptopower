@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -69,7 +69,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 		},
 	}
 
-	pg.actionButton.Font.Weight = text.Medium
+	pg.actionButton.Font.Weight = font.Medium
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 	pg.backButton.Icon = l.Theme.Icons.ContentClear
@@ -79,7 +79,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 	pg.seedInputEditor.Editor.SetText("")
 
 	pg.verifySeedButton = l.Theme.Button("")
-	pg.verifySeedButton.Font.Weight = text.Medium
+	pg.verifySeedButton.Font.Weight = font.Medium
 	pg.verifySeedButton.SetEnabled(false)
 
 	return pg
@@ -301,7 +301,8 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 												return layout.Inset{
 													Left:  values.MarginPadding16,
 													Right: values.MarginPadding16,
-													Top:   values.MarginPadding30}.Layout(gtx, func(gtx C) D {
+													Top:   values.MarginPadding30,
+												}.Layout(gtx, func(gtx C) D {
 													return pg.seedInputEditor.Layout(gtx)
 												})
 											}),
@@ -313,7 +314,8 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 																Left:   values.MarginPadding16,
 																Right:  values.MarginPadding16,
 																Top:    values.MarginPadding16,
-																Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+																Bottom: values.MarginPadding16,
+															}.Layout(gtx, func(gtx C) D {
 																pg.verifySeedButton.Text = values.String(values.StrVerify)
 																return pg.verifySeedButton.Layout(gtx)
 															})
@@ -322,7 +324,6 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 												)
 											}),
 										)
-
 									})
 								}),
 							)
@@ -432,7 +433,6 @@ func (pg *VerifySeedPage) seedButton(gtx C, index int, multiSeed shuffledSeedWor
 	}
 
 	return multiSeed.clickables[index].Layout(gtx, func(gtx C) D {
-
 		return cryptomaterial.LinearLayout{
 			Width:      gtx.Dp(values.MarginPadding100),
 			Height:     gtx.Dp(values.MarginPadding40),

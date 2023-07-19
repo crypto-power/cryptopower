@@ -3,9 +3,9 @@ package exchange
 import (
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/layout"
-	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -193,7 +193,7 @@ func (fm *frequencyModal) Layout(gtx C) D {
 		func(gtx C) D {
 			titleTxt := fm.Theme.Label(values.TextSize20, fm.dialogTitle)
 			titleTxt.Color = fm.Theme.Color.Text
-			titleTxt.Font.Weight = text.SemiBold
+			titleTxt.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Top: values.MarginPaddingMinus15,
 			}.Layout(gtx, titleTxt.Layout)
@@ -224,7 +224,7 @@ func (fm *frequencyModal) modalListItemLayout(gtx C, frequencyItem *frequencyIte
 		layout.Rigid(func(gtx C) D {
 			exchName := fm.Theme.Label(values.TextSize18, frequencyItem.name)
 			exchName.Color = fm.Theme.Color.Text
-			exchName.Font.Weight = text.Normal
+			exchName.Font.Weight = font.Normal
 			return exchName.Layout(gtx)
 		}),
 	)

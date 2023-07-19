@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -124,8 +124,8 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		sendPage:    sendPage,
 	}
 
-	pg.actionButton.Font.Weight = text.SemiBold
-	pg.clearButton.Font.Weight = text.SemiBold
+	pg.actionButton.Font.Weight = font.SemiBold
+	pg.clearButton.Font.Weight = font.SemiBold
 	pg.clearButton.Color = l.Theme.Color.Danger
 	pg.clearButton.Inset = layout.UniformInset(values.MarginPadding4)
 	pg.clearButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.Danger)
@@ -134,9 +134,9 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.totalAmount = pg.Theme.Label(values.TextSize14, "--")
 	pg.selectedUTXOs = pg.Theme.Label(values.TextSize14, "--")
 
-	pg.txSize.Font.Weight = text.SemiBold
-	pg.totalAmount.Font.Weight = text.SemiBold
-	pg.selectedUTXOs.Font.Weight = text.SemiBold
+	pg.txSize.Font.Weight = font.SemiBold
+	pg.totalAmount.Font.Weight = font.SemiBold
+	pg.selectedUTXOs.Font.Weight = font.SemiBold
 
 	pg.fromCoinSelection = pg.Theme.NewClickable(false)
 
@@ -428,7 +428,7 @@ func (pg *ManualCoinSelectionPage) summarySection(gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 							textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrSummary))
-							textLabel.Font.Weight = text.SemiBold
+							textLabel.Font.Weight = font.SemiBold
 							return textLabel.Layout(gtx)
 						})
 					}),
@@ -474,7 +474,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrAccountList))
-					textLabel.Font.Weight = text.SemiBold
+					textLabel.Font.Weight = font.SemiBold
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(textLabel.Layout),
 						layout.Flexed(1, func(gtx C) D {
@@ -485,7 +485,7 @@ func (pg *ManualCoinSelectionPage) accountListSection(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					collapsibleHeader := func(gtx C) D {
 						t := pg.Theme.Label(values.TextSize16, pg.accountUTXOs.Account)
-						t.Font.Weight = text.SemiBold
+						t.Font.Weight = font.SemiBold
 						return t.Layout(gtx)
 					}
 
@@ -524,7 +524,7 @@ func (pg *ManualCoinSelectionPage) generateLabel(txt interface{}, clickable *cry
 	}
 
 	if clickable != nil {
-		lb.Font.Weight = text.Bold
+		lb.Font.Weight = font.Bold
 		lb.Color = pg.Theme.Color.Gray3
 	}
 

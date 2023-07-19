@@ -1,9 +1,9 @@
 package modal
 
 import (
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -45,9 +45,9 @@ func NewCreateWatchOnlyModal(l *load.Load) *CreateWatchOnlyModal {
 		isCancelable: true,
 	}
 
-	cm.btnPositve.Font.Weight = text.Medium
+	cm.btnPositve.Font.Weight = font.Medium
 
-	cm.btnNegative.Font.Weight = text.Medium
+	cm.btnNegative.Font.Weight = font.Medium
 	cm.btnNegative.Margin = layout.Inset{Right: values.MarginPadding8}
 
 	cm.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrWalletName))
@@ -184,7 +184,7 @@ func (cm *CreateWatchOnlyModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
 		func(gtx C) D {
 			t := cm.Theme.H6(values.String(values.StrImportWatchingOnlyWallet))
-			t.Font.Weight = text.SemiBold
+			t.Font.Weight = font.SemiBold
 			return t.Layout(gtx)
 		},
 		func(gtx C) D {
