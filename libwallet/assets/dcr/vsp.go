@@ -165,13 +165,15 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	req := &utils.ReqConfig{
-		Method:    http.MethodGet,
-		HTTPURL:   vspHost + "/api/v3/vspinfo",
-		IsRetByte: true,
+		Method:       http.MethodGet,
+		HTTPURL:      vspHost + "/api/v3/vspinfo",
+		IsRetByte:    true,
+		KeepReqAlive: true, // defers closure of the request body.
 	}
 
 	respBytes := []byte{}
 	resp, err := utils.HTTPRequest(req, &respBytes)
+	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}

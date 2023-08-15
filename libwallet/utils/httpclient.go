@@ -47,6 +47,9 @@ type (
 		// If IsRetByte is set to true, client.Do will delegate
 		// response processing to caller.
 		IsRetByte bool
+		// If KeepReqAlive is set to true, the request body closure will be
+		// delegated to the caller that need to read more data from the request.
+		KeepReqAlive bool
 	}
 
 	monitorNetwork struct {
@@ -171,7 +174,11 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 		return nil, nil, err
 	}
 
-	defer resp.Body.Close()
+	if !reqConfig.KeepReqAlive {
+		// Upstream doesn't require extra request data thus the request body
+		// can be closed after reading its contents here.
+		defer resp.Body.Close()
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err

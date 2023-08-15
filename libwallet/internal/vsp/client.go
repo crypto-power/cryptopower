@@ -48,8 +48,9 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	var err error
 	var sig []byte
 	reqConf := &utils.ReqConfig{
-		Method:  method,
-		HTTPURL: c.url + path,
+		Method:       method,
+		HTTPURL:      c.url + path,
+		KeepReqAlive: true, // defers closure of the request body.
 	}
 
 	if method == http.MethodPost {
@@ -69,6 +70,7 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	}
 
 	reply, err := utils.HTTPRequest(reqConf, &response)
+	defer reply.Body.Close()
 	if err != nil && reply == nil {
 		// Status code errors are handled below.
 		return err
