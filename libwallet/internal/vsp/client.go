@@ -70,11 +70,12 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	}
 
 	reply, err := utils.HTTPRequest(reqConf, &response)
-	defer reply.Body.Close()
 	if err != nil && reply == nil {
 		// Status code errors are handled below.
 		return err
 	}
+
+	defer reply.Body.Close()
 
 	status := reply.StatusCode
 	is200 := status == 200

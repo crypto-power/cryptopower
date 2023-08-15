@@ -173,10 +173,11 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 
 	respBytes := []byte{}
 	resp, err := utils.HTTPRequest(req, &respBytes)
-	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
+
+	defer resp.Body.Close()
 
 	vspInfoResponse := new(VspInfoResponse)
 	if err := json.Unmarshal(respBytes, vspInfoResponse); err != nil {
