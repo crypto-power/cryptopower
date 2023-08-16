@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -48,8 +47,10 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	var err error
 	var sig []byte
 	reqConf := &utils.ReqConfig{
-		Method:  method,
-		HTTPURL: c.url + path,
+		Method:    method,
+		HTTPURL:   c.url + path,
+		IsRetByte: true,
+		Headers:   make(http.Header),
 	}
 
 	if method == http.MethodPost {
@@ -62,13 +63,11 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 
 	// Add cookies.
 	if sig != nil {
-		reqConf.Cookies = append(reqConf.Cookies, &http.Cookie{
-			Name:  "VSP-Client-Signature",
-			Value: base64.StdEncoding.EncodeToString(sig),
-		})
+		reqConf.Headers.Add("VSP-Client-Signature", base64.StdEncoding.EncodeToString(sig))
 	}
 
-	reply, err := utils.HTTPRequest(reqConf, &response)
+	respBytes := []byte{}
+	reply, err := utils.HTTPRequest(reqConf, &respBytes)
 	if err != nil && reply == nil {
 		// Status code errors are handled below.
 		return err
@@ -80,35 +79,27 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 	if !(is200 || is4xx) {
 		return err
 	}
-	sigBase64 := reply.Header.Get("VSP-Server-Signature")
-	if sigBase64 == "" {
-		return fmt.Errorf("cannot authenticate server: no signature")
+
+	if err = json.Unmarshal(respBytes, response); err != nil {
+		return fmt.Errorf("could not pack response data: %w", err)
 	}
+
+	sigBase64 := reply.Header.Get("VSP-Server-Signature")
 	sig, err = base64.StdEncoding.DecodeString(sigBase64)
 	if err != nil {
 		return fmt.Errorf("cannot authenticate server: %w", err)
 	}
-	respBody, err := io.ReadAll(reply.Body)
-	if err != nil {
-		return fmt.Errorf("read response body: %w", err)
-	}
-	if !ed25519.Verify(c.pub, respBody, sig) {
+
+	if !ed25519.Verify(c.pub, respBytes, sig) {
 		return fmt.Errorf("cannot authenticate server: invalid signature")
 	}
+
 	var apiError *BadRequestError
 	if is4xx {
 		apiError = new(BadRequestError)
-		response = apiError
-	}
-	if response != nil {
-		err = json.Unmarshal(respBody, response)
-		if err != nil {
-			return fmt.Errorf("unmarshal respose body: %w", err)
-		}
-	}
-	if apiError != nil {
 		apiError.HTTPStatus = status
 		return apiError
 	}
+
 	return nil
 }

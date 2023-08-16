@@ -42,6 +42,7 @@ type (
 	ReqConfig struct {
 		Payload interface{}
 		Cookies []*http.Cookie
+		Headers http.Header
 		Method  string
 		HTTPURL string
 		// If IsRetByte is set to true, client.Do will delegate
@@ -165,6 +166,9 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 		req.AddCookie(cookie)
 	}
 
+	// assign the headers.
+	req.Header = reqConfig.Headers
+
 	// Send request
 	resp, err = c.HTTPClient.Do(req)
 	if err != nil {
@@ -186,6 +190,8 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 
 // HTTPRequest queries the API provided in the ReqConfig object and converts
 // the returned json(Byte data) into an respObj interface.
+// Returned http response body is usually empty because the http stream
+// cannot be read twice.
 func HTTPRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, error) {
 	// validate the API Url address
 	urlPath, err := url.ParseRequestURI(reqConfig.HTTPURL)

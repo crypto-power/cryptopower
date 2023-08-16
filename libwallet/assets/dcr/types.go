@@ -129,10 +129,12 @@ type VSPTicketInfo struct {
 	VSP         string
 	FeeTxHash   string
 	FeeTxStatus VSPFeeStatus
+	// Client defines the vsp client needed to process more tickets requests.
+	Client *vsp.Client
 	// ConfirmedByVSP is nil if the ticket status could not be obtained
 	// from the VSP, false if the VSP hasn't confirmed the fee and true
 	// if the VSP has fully registered the ticket.
-	ConfirmedByVSP *bool
+	ConfirmedByVSP bool
 	// VoteChoices is only set if the ticket status was obtained from the
 	// VSP.
 	VoteChoices map[string]string

@@ -123,20 +123,13 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	}
 	defer asset.LockWallet()
 
-	// Use the user-specified instructions for processing fee payments
-	// for this ticket, rather than some default policy.
-	vspPolicy := vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(account),
-		ChangeAcct: uint32(account),
-	}
 	request := &w.PurchaseTicketsRequest{
 		Count:         int(numTickets),
 		SourceAccount: uint32(account),
 		MinConf:       asset.RequiredConfirmations(),
 		VSPFeeProcess: vspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
+			return vspClient.Process(ctx, ticketHash, feeTx, asset.GetvspPolicy(account))
 		},
 	}
 
@@ -159,6 +152,17 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	return ticketsResponse.TicketHashes, err
 }
 
+// GetvspPolicy creates the VSP policy using the account number provided.
+// Uses the user-specified instructions for processing fee payments
+// on a ticket, rather than some default policy.
+func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
+	return vsp.Policy{
+		MaxFee:     0.2e8,
+		FeeAcct:    uint32(account),
+		ChangeAcct: uint32(account),
+	}
+}
+
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
 // if the ticket is not yet assigned to a VSP.
 func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
@@ -175,6 +179,7 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 	ctx, _ := asset.ShutdownContextWithCancel()
 	walletTicketInfo, err := asset.Internal().DCR.VSPTicketInfo(ctx, ticketHash)
 	if err != nil {
+		log.Warnf("unable to getWallet info using ticket: %s Error: %v", hash, err)
 		return nil, err
 	}
 
@@ -187,47 +192,32 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 	// Cannot submit a TicketStatus api request to the VSP if
 	// the wallet is locked. Return just the wallet info.
 	if asset.IsLocked() {
+		log.Warnf("cannot submit a ticket status request when wallet is locked")
 		return ticketInfo, nil
 	}
 
 	vspClient, err := asset.VSPClient(walletTicketInfo.Host, walletTicketInfo.PubKey)
 	if err != nil {
-		log.Warnf("unable to get vsp ticket info for %s: %v", hash, err)
-		return ticketInfo, nil
-	}
-	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
-	if err != nil {
-		log.Warnf("unable to get vsp ticket info for %s: %v", hash, err)
+		log.Warnf("unable to connect to host: %s Error: %v", walletTicketInfo.Host, err)
 		return ticketInfo, nil
 	}
 
-	// Parse the fee status returned by the vsp.
-	var vspFeeStatus VSPFeeStatus
-	switch vspTicketStatus.FeeTxStatus {
-	case "received": // received but not broadcast
-		vspFeeStatus = VSPFeeProcessStarted
-	case "broadcast": // broadcast but not confirmed
-		vspFeeStatus = VSPFeeProcessPaid
-	case "confirmed": // broadcast and confirmed
-		vspFeeStatus = VSPFeeProcessConfirmed
-	case "error":
-		vspFeeStatus = VSPFeeProcessErrored
-	default:
-		vspFeeStatus = VSPFeeProcessErrored
-		log.Warnf("VSP responded with %v for %v", vspTicketStatus.FeeTxStatus, ticketHash)
+	ticketInfo.Client = vspClient
+
+	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
+	if err != nil {
+		log.Warnf("unable to get vsp ticket: %s Error: %v", hash, err)
+		return ticketInfo, nil
 	}
 
 	// Sanity check and log any observed discrepancies.
 	if ticketInfo.FeeTxHash != vspTicketStatus.FeeTxHash {
 		log.Warnf("wallet fee tx hash %s differs from vsp fee tx hash %s for ticket %s",
 			ticketInfo.FeeTxHash, vspTicketStatus.FeeTxHash, ticketHash)
-		ticketInfo.FeeTxHash = vspTicketStatus.FeeTxHash
 	}
-	if ticketInfo.FeeTxStatus != vspFeeStatus {
-		log.Warnf("wallet fee status %q differs from vsp fee status %q for ticket %s",
-			ticketInfo.FeeTxStatus, vspFeeStatus, ticketHash)
-		ticketInfo.FeeTxStatus = vspFeeStatus
-	}
+
+	ticketInfo.FeeTxHash = vspTicketStatus.FeeTxHash
+	ticketInfo.ConfirmedByVSP = vspTicketStatus.TicketConfirmed
 
 	return ticketInfo, nil
 }

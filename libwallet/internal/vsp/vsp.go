@@ -2,7 +2,6 @@ package vsp
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -38,8 +37,8 @@ type Config struct {
 	// URL specifies the base URL of the VSP
 	URL string
 
-	// PubKey specifies the VSP's base64 encoded public key
-	PubKey string
+	// PubKey specifies the VSP public key in bytes.
+	PubKey []byte
 
 	// Dialer specifies an optional dialer when connecting to the VSP.
 	Dialer DialFunc
@@ -53,15 +52,12 @@ func New(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	pubKey, err := base64.StdEncoding.DecodeString(cfg.PubKey)
-	if err != nil {
-		return nil, err
-	}
+
 	if cfg.Wallet == nil {
 		return nil, fmt.Errorf("wallet option not set")
 	}
 
-	client := newClient(u.String(), pubKey, cfg.Wallet)
+	client := newClient(u.String(), cfg.PubKey, cfg.Wallet)
 	client.Transport = &http.Transport{
 		DialContext: cfg.Dialer,
 	}

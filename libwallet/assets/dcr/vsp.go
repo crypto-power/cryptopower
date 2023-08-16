@@ -34,7 +34,7 @@ func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 
 	cfg := vsp.Config{
 		URL:    host,
-		PubKey: base64.StdEncoding.EncodeToString(pubKey),
+		PubKey: pubKey,
 		Dialer: nil, // optional, but consider providing a value
 		Wallet: asset.Internal().DCR,
 	}
