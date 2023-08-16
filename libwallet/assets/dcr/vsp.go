@@ -34,7 +34,7 @@ func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 
 	cfg := vsp.Config{
 		URL:    host,
-		PubKey: base64.StdEncoding.EncodeToString(pubKey),
+		PubKey: pubKey,
 		Dialer: nil, // optional, but consider providing a value
 		Wallet: asset.Internal().DCR,
 	}
@@ -165,10 +165,9 @@ func (asset *Asset) ReloadVSPList(ctx context.Context) {
 
 func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	req := &utils.ReqConfig{
-		Method:       http.MethodGet,
-		HTTPURL:      vspHost + "/api/v3/vspinfo",
-		IsRetByte:    true,
-		KeepReqAlive: true, // defers closure of the request body.
+		Method:    http.MethodGet,
+		HTTPURL:   vspHost + "/api/v3/vspinfo",
+		IsRetByte: true,
 	}
 
 	respBytes := []byte{}
@@ -176,8 +175,6 @@ func vspInfo(vspHost string) (*VspInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close()
 
 	vspInfoResponse := new(VspInfoResponse)
 	if err := json.Unmarshal(respBytes, vspInfoResponse); err != nil {
