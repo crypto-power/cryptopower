@@ -85,6 +85,7 @@ type TxDetailsPage struct {
 	txDestinationAddress                  string
 	title                                 string
 	vspHost                               string
+	vspHostFees                           string
 
 	moreOptionIsOpen bool
 }
@@ -215,12 +216,18 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 			go func() {
 				info, err := dcrImp.VSPTicketInfo(pg.transaction.Hash)
 				if err != nil {
-					log.Errorf("VSPTicketInfo error: %v\n", err)
+					log.Errorf("VSPTicketInfo error: %v", err)
 				}
 
 				pg.vspHost = values.String(values.StrNotAvailable)
 				if info != nil {
 					pg.vspHost = info.VSP
+				}
+
+				pg.vspHostFees = values.String(values.StrNotAvailable)
+				feeTx, _ := pg.wallet.GetTransactionRaw(info.FeeTxHash)
+				if feeTx != nil {
+					pg.vspHostFees = pg.wallet.ToAmount(feeTx.Amount).String()
 				}
 			}()
 		}
@@ -726,7 +733,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 					return pg.keyValue(gtx, values.String(values.StrVsp), pg.Theme.Label(values.TextSize14, pg.vspHost).Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.keyValue(gtx, values.String(values.StrVspFee), pg.Theme.Label(values.TextSize14, values.String(values.StrNotAvailable)).Layout)
+					return pg.keyValue(gtx, values.String(values.StrVspFee), pg.Theme.Label(values.TextSize14, pg.vspHostFees).Layout)
 				}),
 			)
 		}),

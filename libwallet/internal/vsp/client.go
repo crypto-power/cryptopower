@@ -50,6 +50,7 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 		Method:    method,
 		HTTPURL:   c.url + path,
 		IsRetByte: true,
+		Headers:   make(http.Header),
 	}
 
 	if method == http.MethodPost {
@@ -62,10 +63,7 @@ func (c *client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 
 	// Add cookies.
 	if sig != nil {
-		reqConf.Cookies = append(reqConf.Cookies, &http.Cookie{
-			Name:  "VSP-Client-Signature",
-			Value: base64.StdEncoding.EncodeToString(sig),
-		})
+		reqConf.Headers.Add("VSP-Client-Signature", base64.StdEncoding.EncodeToString(sig))
 	}
 
 	respBytes := []byte{}

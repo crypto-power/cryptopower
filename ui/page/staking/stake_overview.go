@@ -3,6 +3,7 @@ package staking
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"gioui.org/layout"
 	"gioui.org/text"
@@ -20,6 +21,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	tpage "github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
@@ -62,6 +64,7 @@ type Page struct {
 	showMaterialLoader bool
 
 	navToSettingsBtn cryptomaterial.Button
+	processingTicket uint32
 
 	dcrImpl *dcr.Asset
 }
@@ -328,18 +331,36 @@ func (pg *Page) HandleUserInteractions() {
 		// but where it is necessary to display vsp-stored info, the
 		// wallet passphrase should be requested and used to unlock
 		// the wallet before calling this method.
-		// TODO: Use log.Errorf and log.Warnf instead of fmt.Printf.
 		ticketInfo, err := pg.dcrImpl.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
-			log.Errorf("VSPTicketInfo error: %v\n", err)
+			log.Errorf("VSPTicketInfo error: %v", err)
 		} else {
-			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed {
-				log.Errorf("[WARN] Ticket %s has unconfirmed fee tx %s with status %q, vsp %s \n",
-					ticketTx.Hash, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
+			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessConfirmed || !ticketInfo.ConfirmedByVSP {
+				log.Warnf("Ticket %s has unconfirmed fee tx with status %q, vsp %s",
+					ticketTx.Hash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
-			if ticketInfo.ConfirmedByVSP == nil || !*ticketInfo.ConfirmedByVSP {
-				log.Errorf("[WARN] Ticket %s is not confirmed by VSP %s. Fee tx %s, status %q \n",
-					ticketTx.Hash, ticketInfo.VSP, ticketInfo.FeeTxHash, ticketInfo.FeeTxStatus.String())
+
+			// Confirm that fee hasn't been paid, sender account exists, the wallet
+			// is unlocked and no previous ticket processing instance is running.
+			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessPaid && len(ticketTx.Inputs) == 1 &&
+				ticketInfo.Client != nil && atomic.CompareAndSwapUint32(&pg.processingTicket, 0, 1) {
+
+				log.Infof("Attempting to process the unconfirmed VSP fee for tx: %v", ticketTx.Hash)
+
+				txHash, err := chainhash.NewHashFromStr(ticketTx.Hash)
+				if err != nil {
+					log.Errorf("convert hex to hash failed: %v", ticketTx.Hash)
+					return
+				}
+
+				account := ticketTx.Inputs[0].AccountNumber
+				err = ticketInfo.Client.ProcessTicket(pg.ctx, txHash, pg.dcrImpl.GetvspPolicy(account))
+				if err != nil {
+					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
+				}
+
+				// Reset the processing
+				atomic.StoreUint32(&pg.processingTicket, 0)
 			}
 		}
 	}

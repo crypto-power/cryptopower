@@ -42,6 +42,7 @@ type (
 	ReqConfig struct {
 		Payload interface{}
 		Cookies []*http.Cookie
+		Headers http.Header
 		Method  string
 		HTTPURL string
 		// If IsRetByte is set to true, client.Do will delegate
@@ -164,6 +165,9 @@ func (c *Client) query(reqConfig *ReqConfig) (rawData []byte, resp *http.Respons
 	for _, cookie := range reqConfig.Cookies {
 		req.AddCookie(cookie)
 	}
+
+	// assign the headers.
+	req.Header = reqConfig.Headers
 
 	// Send request
 	resp, err = c.HTTPClient.Do(req)
