@@ -3,7 +3,7 @@ module github.com/crypto-power/cryptopower
 go 1.19
 
 require (
-	decred.org/dcrwallet/v3 v3.0.1
+	decred.org/dcrwallet/v4 v4.0.0-20230809150859-a87fa843495e
 	gioui.org v0.1.0
 	github.com/JohannesKaufmann/html-to-markdown v1.2.1
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -37,6 +37,8 @@ require (
 	github.com/decred/dcrdata/v8 v8.0.0-20230617164141-fa4d8e1b4e8e
 	github.com/decred/politeia v1.4.0
 	github.com/decred/slog v1.2.0
+	github.com/decred/vspd/client/v2 v2.0.0
+	github.com/decred/vspd/types/v2 v2.0.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
 	github.com/gomarkdown/markdown v0.0.0-20220817224203-2206187d3406
@@ -100,8 +102,6 @@ require (
 	github.com/decred/dcrd/txscript/v3 v3.0.0 // indirect
 	github.com/decred/dcrtime v0.0.0-20191018193024-8d8b4ef0458e // indirect
 	github.com/decred/go-socks v1.1.0 // indirect
-	github.com/decred/vspd/client/v2 v2.0.0 // indirect
-	github.com/decred/vspd/types/v2 v2.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.0.2 // indirect
 	github.com/dustin/go-humanize v1.0.1-0.20210705192016-249ff6c91207 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect

@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"decred.org/dcrwallet/v3/wallet"
-	"decred.org/dcrwallet/v3/wallet/udb"
+	"decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v4/wallet/udb"
 	"github.com/asdine/storm"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"

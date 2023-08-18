@@ -10,15 +10,15 @@ import (
 	"path/filepath"
 	"sync"
 
-	"decred.org/dcrwallet/v3/errors"
-	"decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	"decred.org/dcrwallet/v4/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 
-	_ "decred.org/dcrwallet/v3/wallet/drivers/bdb" // driver loaded during init
+	_ "decred.org/dcrwallet/v4/wallet/drivers/bdb" // driver loaded during init
 )
 
 const walletDbName = "wallet.db"
@@ -48,6 +48,7 @@ type dcrLoader struct {
 	manualTickets           bool
 	relayFee                dcrutil.Amount
 	mixSplitLimit           int
+	watchLast               uint32
 
 	mu sync.RWMutex
 }
@@ -55,7 +56,6 @@ type dcrLoader struct {
 // StakeOptions contains the various options necessary for stake mining.
 type StakeOptions struct {
 	VotingEnabled       bool
-	AddressReuse        bool
 	VotingAddress       stdaddr.StakeAddress
 	PoolAddress         stdaddr.StakeAddress
 	PoolFees            float64
@@ -77,6 +77,7 @@ type LoaderConf struct {
 	ManualTickets           bool
 	AccountGapLimit         int
 	MixSplitLimit           int
+	WatchLast               uint32
 }
 
 // NewLoader constructs a DCR Loader.
@@ -91,6 +92,7 @@ func NewLoader(cfg *LoaderConf) loader.AssetLoader {
 		manualTickets:           cfg.ManualTickets,
 		relayFee:                cfg.RelayFee,
 		mixSplitLimit:           cfg.MixSplitLimit,
+		watchLast:               cfg.WatchLast,
 
 		Loader: loader.NewLoader(cfg.DBDirPath),
 	}
@@ -157,7 +159,7 @@ func (l *dcrLoader) CreateWatchingOnlyWallet(ctx context.Context, params *loader
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		AddressReuse:            so.AddressReuse,
+		WatchLast:               l.watchLast,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,
@@ -215,7 +217,7 @@ func (l *dcrLoader) CreateNewWallet(ctx context.Context, params *loader.CreateWa
 		DB:                      db,
 		PubPassphrase:           params.PubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		AddressReuse:            so.AddressReuse,
+		WatchLast:               l.watchLast,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,
@@ -280,7 +282,7 @@ func (l *dcrLoader) OpenExistingWallet(ctx context.Context, walletID string, pub
 		DB:                      db,
 		PubPassphrase:           pubPassphrase,
 		VotingEnabled:           so.VotingEnabled,
-		AddressReuse:            so.AddressReuse,
+		WatchLast:               l.watchLast,
 		VotingAddress:           so.VotingAddress,
 		PoolAddress:             so.PoolAddress,
 		PoolFees:                so.PoolFees,

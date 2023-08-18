@@ -353,8 +353,7 @@ func (pg *Page) HandleUserInteractions() {
 					return
 				}
 
-				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(pg.ctx, txHash, pg.dcrImpl.GetvspPolicy(account))
+				err = ticketInfo.Client.Process(pg.ctx, txHash, nil)
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}

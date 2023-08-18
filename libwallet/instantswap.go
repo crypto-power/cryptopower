@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	api "github.com/crypto-power/instantswap/instantswap"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"

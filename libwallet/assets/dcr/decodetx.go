@@ -3,7 +3,7 @@ package dcr
 import (
 	"fmt"
 
-	w "decred.org/dcrwallet/v3/wallet"
+	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/decred/dcrd/blockchain/stake/v5"

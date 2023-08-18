@@ -3,8 +3,8 @@ package libwallet
 import (
 	"context"
 
-	"decred.org/dcrwallet/v3/errors"
-	"decred.org/dcrwallet/v3/walletseed"
+	"decred.org/dcrwallet/v4/errors"
+	"decred.org/dcrwallet/v4/walletseed"
 
 	"github.com/decred/dcrd/chaincfg/v3"
 	"github.com/decred/dcrd/hdkeychain/v3"

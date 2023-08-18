@@ -6,8 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
 
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
@@ -111,22 +110,19 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 		return err
 	}
 
-	currentChoice := w.AgendaChoice{
-		AgendaID: agendaID,
-		ChoiceID: "abstain", // default to abstain as current choice if not found in wallet
+	choice, ok := choices[agendaID]
+	if ok && choice == strings.ToLower(choiceID) {
+		// Do not set the same choice again
+		return nil
 	}
 
-	for i := range choices {
-		if choices[i].AgendaID == agendaID {
-			currentChoice.ChoiceID = choices[i].ChoiceID
-			break
-		}
+	if !ok {
+		// Default to abstain if no previous choice existed
+		choice = "abstain"
 	}
 
-	newChoice := w.AgendaChoice{
-		AgendaID: agendaID,
-		ChoiceID: strings.ToLower(choiceID),
-	}
+	currentChoice := map[string]string{agendaID: choice}
+	newChoice := map[string]string{agendaID: strings.ToLower(choiceID)}
 
 	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
 	if err != nil {
@@ -181,7 +177,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, []w.AgendaChoice{newChoice}, nil, nil)
+		err = vspClient.SetVoteChoice(ctx, tHash, newChoice, nil, nil)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
@@ -245,9 +241,9 @@ func (asset *Asset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, er
 		d := &deployments[i]
 
 		votingPreference := "abstain" // assume abstain, if we have the saved pref, it'll be updated below
-		for c := range choices {
-			if choices[c].AgendaID == d.Vote.Id {
-				votingPreference = choices[c].ChoiceID
+		for agendaID, choiceID := range choices {
+			if agendaID == d.Vote.Id {
+				votingPreference = choiceID
 				break
 			}
 		}
