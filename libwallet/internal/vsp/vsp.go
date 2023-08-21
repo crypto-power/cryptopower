@@ -62,12 +62,20 @@ func New(cfg Config) (*Client, error) {
 		return nil, err
 	}
 
+	if len(cfg.PubKey) == 0 {
+		return nil, errors.New("pubkey option not set")
+	}
+
 	if cfg.Wallet == nil {
-		return nil, fmt.Errorf("wallet option not set")
+		return nil, errors.New("wallet option not set")
 	}
 
 	if cfg.Params == nil {
-		return nil, fmt.Errorf("params option not set")
+		return nil, errors.New("params option not set")
+	}
+
+	if cfg.Policy == nil {
+		return nil, errors.New("policy option not set")
 	}
 
 	client := &vspd.Client{
@@ -88,6 +96,12 @@ func New(cfg Config) (*Client, error) {
 		params: cfg.Params,
 	}
 	return v, nil
+}
+
+// SetAccountInfo set the account purchase information
+func (c *Client) SetAccountInfo(feeAcc, changeAcc int32) {
+	c.policy.FeeAcct = uint32(feeAcc)
+	c.policy.ChangeAcct = uint32(changeAcc)
 }
 
 func (c *Client) FeePercentage(ctx context.Context) (float64, error) {

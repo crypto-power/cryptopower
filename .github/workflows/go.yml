@@ -24,7 +24,7 @@ jobs:
         id: cache
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-v2
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-v3
           restore-keys: |
             ${{ runner.os }}-go-
 

@@ -124,6 +124,9 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	}
 	defer asset.LockWallet()
 
+	log.Info("Setting the ticket(s) purchasing account info")
+	vspClient.SetAccountInfo(account, account)
+
 	request := &w.PurchaseTicketsRequest{
 		Count:         int(numTickets),
 		SourceAccount: uint32(account),
@@ -453,6 +456,9 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	if err != nil {
 		return err
 	}
+
+	log.Info("Setting the ticket(s) purchasing account info")
+	cfg.VspClient.SetAccountInfo(cfg.PurchaseAccount, cfg.PurchaseAccount)
 
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the
