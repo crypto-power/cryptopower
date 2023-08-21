@@ -49,6 +49,7 @@ type VerifySeedPage struct {
 	toggleSeedInput  *cryptomaterial.Switch
 	seedInputEditor  cryptomaterial.Editor
 	verifySeedButton cryptomaterial.Button
+	random           *rand.Rand
 }
 
 func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
@@ -68,7 +69,7 @@ func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect
 			Axis: layout.Vertical,
 		},
 	}
-
+	pg.random = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pg.actionButton.Font.Weight = font.Medium
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -95,7 +96,6 @@ func (pg *VerifySeedPage) OnNavigatedTo() {
 	listGroupSeed := make([]*layout.List, 0)
 	multiSeedList := make([]shuffledSeedWords, 0)
 	seedWords := strings.Split(pg.seed, " ")
-	rand.Seed(time.Now().UnixNano())
 	for _, word := range seedWords {
 		listGroupSeed = append(listGroupSeed, &layout.List{Axis: layout.Horizontal})
 		index := seedPosition(word, allSeeds)
@@ -126,14 +126,14 @@ func (pg *VerifySeedPage) getMultiSeed(realSeedIndex int, allSeeds []string) shu
 	allSeeds = removeSeed(allSeeds, realSeedIndex)
 
 	for i := 0; i < 3; i++ {
-		randomSeed := rand.Intn(len(allSeeds))
+		randomSeed := pg.random.Intn(len(allSeeds))
 
 		shuffledSeed.words = append(shuffledSeed.words, allSeeds[randomSeed])
 		shuffledSeed.clickables = append(shuffledSeed.clickables, clickable())
 		allSeeds = removeSeed(allSeeds, randomSeed)
 	}
 
-	rand.Shuffle(len(shuffledSeed.words), func(i, j int) {
+	pg.random.Shuffle(len(shuffledSeed.words), func(i, j int) {
 		shuffledSeed.words[i], shuffledSeed.words[j] = shuffledSeed.words[j], shuffledSeed.words[i]
 	})
 
