@@ -621,6 +621,9 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
+				Padding: layout.Inset{
+					Top: values.MarginPadding24,
+				},
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
