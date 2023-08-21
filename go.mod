@@ -1,6 +1,6 @@
 module github.com/crypto-power/cryptopower
 
-go 1.19
+go 1.20
 
 require (
 	decred.org/dcrwallet/v4 v4.0.0-20230809150859-a87fa843495e
