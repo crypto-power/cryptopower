@@ -409,6 +409,9 @@ func (asset *Asset) runTicketBuyer(ctx context.Context, passphrase string, cfg *
 				continue
 			}
 
+			log.Info("Setting the ticket(s) purchasing account info")
+			cfg.VspClient.SetAccountInfo(cfg.PurchaseAccount, cfg.PurchaseAccount)
+
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
 			buyTicket := func() {
@@ -456,9 +459,6 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	if err != nil {
 		return err
 	}
-
-	log.Info("Setting the ticket(s) purchasing account info")
-	cfg.VspClient.SetAccountInfo(cfg.PurchaseAccount, cfg.PurchaseAccount)
 
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the

@@ -110,21 +110,21 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 		return err
 	}
 
-	choice, ok := choices[agendaID]
-	if ok && choice == strings.ToLower(choiceID) {
+	currentChoice, ok := choices[agendaID]
+	if ok && currentChoice == strings.ToLower(choiceID) {
 		// Do not set the same choice again
 		return nil
 	}
 
 	if !ok {
 		// Default to abstain if no previous choice existed
-		choice = "abstain"
+		currentChoice = "abstain"
 	}
 
-	currentChoice := map[string]string{agendaID: choice}
-	newChoice := map[string]string{agendaID: strings.ToLower(choiceID)}
+	currentChoiceMap := map[string]string{agendaID: currentChoice}
+	newChoiceMap := map[string]string{agendaID: strings.ToLower(choiceID)}
 
-	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoice)
+	_, err = asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, newChoiceMap)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 		if !vspPreferenceUpdateSuccess {
 			// Updating the agenda voting preference with the vsp failed,
 			// revert the locally saved voting preference for the agenda.
-			_, revertError := asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, currentChoice)
+			_, revertError := asset.Internal().DCR.SetAgendaChoices(ctx, ticketHash, currentChoiceMap)
 			if revertError != nil {
 				log.Errorf("unable to revert locally saved voting preference: %v", revertError)
 			}
@@ -177,7 +177,7 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 			firstErr = err
 			continue // try next tHash
 		}
-		err = vspClient.SetVoteChoice(ctx, tHash, newChoice, nil, nil)
+		err = vspClient.SetVoteChoice(ctx, tHash, newChoiceMap, nil, nil)
 		if err != nil && firstErr == nil {
 			firstErr = err
 			continue // try next tHash
