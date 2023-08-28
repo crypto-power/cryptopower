@@ -65,16 +65,24 @@ type ProposalVote struct {
 	politeia.ProposalVote
 }
 
-func ConvertVotes(votes []*ProposalVote) []*politeia.ProposalVote {
-	var eligibleTickets = make([]*politeia.ProposalVote, len(votes))
-	for i, value := range votes {
-		eligibleTickets[i] = &politeia.ProposalVote{
-			Bit: value.Bit,
+// WrapVote, wraps vote type of politeia.ProposalVote into libwallet.ProposalVote
+func WrapVote(hash, address, bit string) *ProposalVote {
+	return &ProposalVote{
+		ProposalVote: politeia.ProposalVote{
+			Bit: bit,
 			Ticket: &politeia.EligibleTicket{
-				Hash:    value.Ticket.Hash,
-				Address: value.Ticket.Address,
+				Hash:    hash,
+				Address: address,
 			},
-		}
+		},
+	}
+}
+
+func ConvertVotes(votes []*ProposalVote) []*politeia.ProposalVote {
+	eligibleTickets := make([]*politeia.ProposalVote, len(votes))
+	for i, value := range votes {
+		eligibleTickets[i] = &WrapVote(value.Ticket.Hash,
+			value.Ticket.Address, value.Bit).ProposalVote
 	}
 	return eligibleTickets
 }

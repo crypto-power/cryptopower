@@ -129,16 +129,7 @@ func (vm *voteModal) sendVotes() {
 	votes := make([]*libwallet.ProposalVote, 0)
 	addVotes := func(bit string, count int) {
 		for i := 0; i < count; i++ {
-
-			// get and pop
-			tickets = tickets[1:]
-
-			vote := &libwallet.ProposalVote{}
-			vote.Ticket.Hash = tickets[0].Hash
-			vote.Ticket.Address = tickets[0].Address
-			vote.Bit = bit
-
-			votes = append(votes, vote)
+			votes = append(votes, libwallet.WrapVote(tickets[i].Hash, tickets[i].Address, bit))
 		}
 	}
 
@@ -159,7 +150,7 @@ func (vm *voteModal) sendVotes() {
 				pm.SetLoading(false)
 				return false
 			}
-			pm.Dismiss()
+			vm.Dismiss()
 			infoModal := modal.NewSuccessModal(vm.Load, values.String(values.StrVoteSent), modal.DefaultClickFunc())
 			vm.ParentWindow().ShowModal(infoModal)
 			go vm.WL.AssetsManager.Politeia.Sync(ctx)
