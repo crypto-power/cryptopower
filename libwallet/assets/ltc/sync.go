@@ -308,16 +308,9 @@ notificationsLoop:
 					asset.updateAssetBirthday()
 					asset.MarkWalletAsDiscoveredAccounts()
 				}
-				asset.syncData.mu.Lock()
-				forcedRescanActive := asset.syncData.forcedRescanActive
-				asset.syncData.mu.Unlock()
-				if forcedRescanActive {
-					asset.updateAssetBirthday()
-				}
 
 				asset.syncData.mu.Lock()
 				asset.syncData.isRescan = false
-				asset.syncData.forcedRescanActive = false
 				asset.syncData.mu.Unlock()
 
 				if asset.blocksRescanProgressListener != nil {
