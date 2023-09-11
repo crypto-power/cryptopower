@@ -202,7 +202,21 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 		return nil, err
 	}
 
-	commitmentAddr, err := stake.AddrFromSStxPkScrCommitment(txs[0].TxOut[1].PkScript, asset.chainParams)
+	if len(txs) == 0 {
+		return nil, fmt.Errorf("%v is not a ticket", ticketHash)
+	}
+
+	ticketTx := txs[0]
+
+	if len(ticketTx.TxOut) != 3 {
+		return nil, fmt.Errorf("ticket %v has multiple commitments", ticketHash)
+	}
+
+	if !stake.IsSStx(ticketTx) {
+		return nil, fmt.Errorf("%v is not a ticket", ticketHash)
+	}
+
+	commitmentAddr, err := stake.AddrFromSStxPkScrCommitment(ticketTx.TxOut[1].PkScript, asset.chainParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract commitment address from %v: %w",
 			ticketHash, err)

@@ -38,7 +38,7 @@ func randInt63() int64 {
 // It panics if n <= 0.
 func randInt63n(n int64) int64 {
 	if n <= 0 {
-		panic("invalid argument to int63n")
+		panic("invalid argument to randInt63n")
 	}
 	n--
 	mask := int64(^uint64(0) >> bits.LeadingZeros64(uint64(n)))
