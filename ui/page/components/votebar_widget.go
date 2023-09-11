@@ -28,7 +28,7 @@ type VoteBar struct {
 	yesVotes           float32
 	noVotes            float32
 	eligibleVotes      float32
-	totalVotes         float32
+	totalVotes         int
 	requiredPercentage float32
 	passPercentage     float32
 
@@ -70,7 +70,7 @@ func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes float32) *VoteBar {
 	v.yesVotes = yesVotes
 	v.noVotes = noVotes
 
-	v.totalVotes = yesVotes + noVotes
+	v.totalVotes = int(yesVotes + noVotes)
 
 	return v
 }
@@ -140,8 +140,9 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 	}
 
 	if yesWidth > progressBarWidth || noWidth > progressBarWidth || (yesWidth+noWidth) > progressBarWidth {
-		yes := (v.yesVotes / v.totalVotes) * 100
-		no := (v.noVotes / v.totalVotes) * 100
+		totalVotes := float32(v.totalVotes)
+		yes := (v.yesVotes / totalVotes) * 100
+		no := (v.noVotes / totalVotes) * 100
 		noWidth = int((float32(progressBarWidth) / 100) * no)
 		yesWidth = int((float32(progressBarWidth) / 100) * yes)
 		rE = r
@@ -235,7 +236,7 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 }
 
 func (v *VoteBar) infoButtonModal() *modal.InfoModal {
-	text1 := values.StringF(values.StrTotalVotes, int(v.totalVotes))
+	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
 	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
 	text3 := values.StringF(values.StrDiscussions, v.numComment)
 	text4 := values.StringF(values.StrPublished, utils.FormatUTCTime(v.publishedAt))
@@ -279,7 +280,7 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 
 func (v *VoteBar) layoutInfo(window app.WindowNavigator, gtx C) D {
 	dims := layout.Flex{}.Layout(gtx,
-		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, int(v.totalVotes))).Layout),
+		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, v.totalVotes)).Layout),
 		layout.Rigid(func(gtx C) D {
 			if v.infoButton.Button.Clicked() {
 				window.ShowModal(v.infoButtonModal())
