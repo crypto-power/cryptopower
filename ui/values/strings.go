@@ -845,4 +845,5 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
+	StrTotalValue                      = "totalValue"
 )
