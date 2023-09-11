@@ -96,6 +96,7 @@ var (
 	TextSize22   = unit.Sp(22)
 	TextSize24   = unit.Sp(24)
 	TextSize28   = unit.Sp(28)
+	TextSize30   = unit.Sp(30)
 	TextSize34   = unit.Sp(34)
 	TextSize32   = unit.Sp(32)
 	TextSize60   = unit.Sp(60)

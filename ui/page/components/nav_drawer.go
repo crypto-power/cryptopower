@@ -112,46 +112,46 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context, navItems []NavHandler) 
 	)
 }
 
-func (nd *NavDrawer) LayoutTopBar(gtx layout.Context) layout.Dimensions {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.E.Layout(gtx, func(gtx C) D {
-		return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-			list := layout.List{Axis: layout.Horizontal}
-			return list.Layout(gtx, len(nd.AppBarNavItems), func(gtx C, i int) D {
-				background := nd.Theme.Color.Surface
-				if nd.AppBarNavItems[i].PageID == nd.CurrentPage {
-					background = nd.Theme.Color.Gray5
-				}
-				return cryptomaterial.LinearLayout{
-					Width:       cryptomaterial.WrapContent,
-					Height:      cryptomaterial.WrapContent,
-					Orientation: layout.Horizontal,
-					Background:  background,
-					Padding:     layout.UniformInset(values.MarginPadding16),
-					Clickable:   nd.AppBarNavItems[i].Clickable,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding8}.Layout(gtx,
-							func(gtx C) D {
-								return layout.Center.Layout(gtx, func(gtx C) D {
-									return nd.AppBarNavItems[i].Image.Layout24dp(gtx)
-								})
-							})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Left: values.MarginPadding0,
-						}.Layout(gtx, func(gtx C) D {
-							return layout.Center.Layout(gtx, func(gtx C) D {
-								return nd.Theme.Body1(nd.AppBarNavItems[i].Title).Layout(gtx)
-							})
-						})
-					}),
-				)
-			})
-		})
-	})
-}
+// func (nd *NavDrawer) LayoutTopBar(gtx layout.Context) layout.Dimensions {
+// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 	return layout.E.Layout(gtx, func(gtx C) D {
+// 		return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+// 			list := layout.List{Axis: layout.Horizontal}
+// 			return list.Layout(gtx, len(nd.AppBarNavItems), func(gtx C, i int) D {
+// 				background := nd.Theme.Color.Surface
+// 				if nd.AppBarNavItems[i].PageID == nd.CurrentPage {
+// 					background = nd.Theme.Color.Gray5
+// 				}
+// 				return cryptomaterial.LinearLayout{
+// 					Width:       cryptomaterial.WrapContent,
+// 					Height:      cryptomaterial.WrapContent,
+// 					Orientation: layout.Horizontal,
+// 					Background:  background,
+// 					Padding:     layout.UniformInset(values.MarginPadding16),
+// 					Clickable:   nd.AppBarNavItems[i].Clickable,
+// 				}.Layout(gtx,
+// 					layout.Rigid(func(gtx C) D {
+// 						return layout.Inset{Right: values.MarginPadding8}.Layout(gtx,
+// 							func(gtx C) D {
+// 								return layout.Center.Layout(gtx, func(gtx C) D {
+// 									return nd.AppBarNavItems[i].Image.Layout24dp(gtx)
+// 								})
+// 							})
+// 					}),
+// 					layout.Rigid(func(gtx C) D {
+// 						return layout.Inset{
+// 							Left: values.MarginPadding0,
+// 						}.Layout(gtx, func(gtx C) D {
+// 							return layout.Center.Layout(gtx, func(gtx C) D {
+// 								return nd.Theme.Body1(nd.AppBarNavItems[i].Title).Layout(gtx)
+// 							})
+// 						})
+// 					}),
+// 				)
+// 			})
+// 		})
+// 	})
+// }
 
 func (nd *NavDrawer) DrawerToggled(min bool) {
 	if min {

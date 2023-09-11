@@ -503,4 +503,5 @@ const FR = `
 "selectAcc" = "Sélectionnez un compte"
 "mixedAccHidden" = "Le compte mixte est caché"
 "mixedAccDisabled" = "La réception sur un compte mixte est désactivée par les paramètres StakeShuffle pour protéger votre vie privée"
+"totalValue" = "Total Value" //TODO
 `

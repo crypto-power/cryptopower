@@ -36,6 +36,10 @@ func (img *Image) Layout24dp(gtx C) D {
 	return img.LayoutSize(gtx, values.MarginPadding24)
 }
 
+func (img *Image) Layout30dp(gtx C) D {
+	return img.LayoutSize(gtx, values.MarginPadding30)
+}
+
 func (img *Image) Layout36dp(gtx C) D {
 	return img.LayoutSize(gtx, values.MarginPadding36)
 }

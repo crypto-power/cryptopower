@@ -21,7 +21,7 @@ type Icons struct {
 	Next, SettingsIcon, SecurityIcon, HelpIcon, AboutIcon, DebugIcon, VerifyMessageIcon, LocationPinIcon, SignMessageIcon,
 	HeaderSettingsIcon, AlertGray, ArrowDownIcon, WatchOnlyWalletIcon, CurrencySwapIcon, SyncingIcon, TransactionFingerprint,
 	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, EllipseVert,
-	GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast,
+	GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast, Notification,
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
@@ -40,6 +40,7 @@ type Icons struct {
 	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, DcrDex *Image
 }
 
+// TODO: Deprecate some of these standard icons eg ActionInfo
 func (i *Icons) StandardMaterialIcons() *Icons {
 	i.ContentAdd = MustIcon(widget.NewIcon(icons.ContentAdd))
 	i.NavigationCheck = MustIcon(widget.NewIcon(icons.NavigationCheck))
@@ -171,6 +172,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.AddIcon = NewImage(decredIcons["addIcon"])
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
+	i.Notification = NewImage(decredIcons["notification"])
 
 	/* Start exchange icons */
 	i.FlypMeIcon = NewImage(decredIcons["flypme"])
