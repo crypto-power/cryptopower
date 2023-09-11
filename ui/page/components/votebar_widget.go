@@ -25,10 +25,10 @@ import (
 type VoteBar struct {
 	*load.Load
 
-	yesVotes           int
-	noVotes            int
+	yesVotes           float32
+	noVotes            float32
 	eligibleVotes      float32
-	totalVotes         int
+	totalVotes         float32
 	requiredPercentage float32
 	passPercentage     float32
 
@@ -66,7 +66,7 @@ func NewVoteBar(l *load.Load) *VoteBar {
 	return vb
 }
 
-func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes int) *VoteBar {
+func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes float32) *VoteBar {
 	v.yesVotes = yesVotes
 	v.noVotes = noVotes
 
@@ -100,8 +100,8 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 	yesVotes := 0
 	noVotes := 0
 	if quorumRequirement > 0 {
-		yesVotes = (v.yesVotes / int(quorumRequirement)) * 100
-		noVotes = (v.noVotes / int(quorumRequirement)) * 100
+		yesVotes = int((v.yesVotes / quorumRequirement) * 100)
+		noVotes = int((v.noVotes / quorumRequirement) * 100)
 	}
 
 	yesWidth := (progressBarWidth / 100) * yesVotes
@@ -142,8 +142,8 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 	if yesWidth > progressBarWidth || noWidth > progressBarWidth || (yesWidth+noWidth) > progressBarWidth {
 		yes := (v.yesVotes / v.totalVotes) * 100
 		no := (v.noVotes / v.totalVotes) * 100
-		noWidth = (progressBarWidth / 100) * no
-		yesWidth = (progressBarWidth / 100) * yes
+		noWidth = int((float32(progressBarWidth) / 100) * no)
+		yesWidth = int((float32(progressBarWidth) / 100) * yes)
 		rE = r
 	} else if yesWidth < 0 {
 		yesWidth, noWidth = 0, 0
@@ -212,11 +212,11 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								yesLabel := v.Theme.Body1(values.String(values.StrYes) + values.String(values.StrColon))
-								return v.layoutIconAndText(gtx, yesLabel, v.yesVotes, v.yesColor)
+								return v.layoutIconAndText(gtx, yesLabel, int(v.yesVotes), v.yesColor)
 							}),
 							layout.Rigid(func(gtx C) D {
 								noLabel := v.Theme.Body1(values.String(values.StrNo) + values.String(values.StrColon))
-								return v.layoutIconAndText(gtx, noLabel, v.noVotes, v.noColor)
+								return v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
 							}),
 							layout.Flexed(1, func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
@@ -235,7 +235,7 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 }
 
 func (v *VoteBar) infoButtonModal() *modal.InfoModal {
-	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
+	text1 := values.StringF(values.StrTotalVotes, int(v.totalVotes))
 	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
 	text3 := values.StringF(values.StrDiscussions, v.numComment)
 	text4 := values.StringF(values.StrPublished, utils.FormatUTCTime(v.publishedAt))
@@ -279,7 +279,7 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 
 func (v *VoteBar) layoutInfo(window app.WindowNavigator, gtx C) D {
 	dims := layout.Flex{}.Layout(gtx,
-		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, v.totalVotes)).Layout),
+		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, int(v.totalVotes))).Layout),
 		layout.Rigid(func(gtx C) D {
 			if v.infoButton.Button.Clicked() {
 				window.ShowModal(v.infoButtonModal())

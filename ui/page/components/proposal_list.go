@@ -153,8 +153,8 @@ func layoutTitle(gtx C, l *load.Load, proposal libwallet.Proposal) D {
 
 func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem) D {
 	proposal := item.Proposal
-	yes := int(proposal.YesVotes)
-	no := int(proposal.NoVotes)
+	yes := float32(proposal.YesVotes)
+	no := float32(proposal.NoVotes)
 	quorumPercent := float32(proposal.QuorumPercentage)
 	passPercentage := float32(proposal.PassPercentage)
 	eligibleTickets := float32(proposal.EligibleTickets)
