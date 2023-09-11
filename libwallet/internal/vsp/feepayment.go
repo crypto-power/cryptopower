@@ -89,7 +89,7 @@ type feePayment struct {
 	feeAddr       stdaddr.Address
 	feeHash       chainhash.Hash
 	feeTx         *wire.MsgTx
-	state         State
+	state         state
 	err           error
 
 	timerMu sync.Mutex
@@ -98,10 +98,10 @@ type feePayment struct {
 	params *chaincfg.Params
 }
 
-type State uint32
+type state uint32
 
 const (
-	_ State = iota
+	_ state = iota
 	Unprocessed
 	FeePublished
 	_ // ...

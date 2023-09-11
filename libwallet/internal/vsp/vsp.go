@@ -349,7 +349,7 @@ type TicketInfo struct {
 	TicketHash     chainhash.Hash
 	CommitmentAddr stdaddr.StakeAddress
 	VotingAddr     stdaddr.StakeAddress
-	State          State
+	State          state
 	Fee            dcrutil.Amount
 	FeeHash        chainhash.Hash
 
