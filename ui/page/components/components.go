@@ -539,18 +539,18 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 
 // CoinImageBySymbol returns image widget for supported asset coins.
 func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly bool) *cryptomaterial.Image {
-	switch assetType {
-	case libutils.BTCWalletAsset:
+	switch assetType.ToStringLower() {
+	case libutils.BTCWalletAsset.ToStringLower():
 		if isWatchOnly {
 			return l.Theme.Icons.BtcWatchOnly
 		}
 		return l.Theme.Icons.BTC
-	case libutils.DCRWalletAsset:
+	case libutils.DCRWalletAsset.ToStringLower():
 		if isWatchOnly {
 			return l.Theme.Icons.DcrWatchOnly
 		}
 		return l.Theme.Icons.DCR
-	case libutils.LTCWalletAsset:
+	case libutils.LTCWalletAsset.ToStringLower():
 		if isWatchOnly {
 			return l.Theme.Icons.LtcWatchOnly
 		}
