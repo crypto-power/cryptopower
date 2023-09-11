@@ -234,8 +234,8 @@ func (pg *ProposalDetails) OnNavigatedFrom() {
 func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 	proposal := pg.proposal
 
-	yes := int(proposal.YesVotes)
-	no := int(proposal.NoVotes)
+	yes := float32(proposal.YesVotes)
+	no := float32(proposal.NoVotes)
 	quorumPercent := float32(proposal.QuorumPercentage)
 	passPercentage := float32(proposal.PassPercentage)
 	eligibleTickets := float32(proposal.EligibleTickets)
