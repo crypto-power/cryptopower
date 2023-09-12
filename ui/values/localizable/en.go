@@ -735,5 +735,7 @@ const EN = `
 "yourAddress" = "Your Address"
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
+
 "totalValue" = "Total Value"
+"trade" = "Trade"
 `
