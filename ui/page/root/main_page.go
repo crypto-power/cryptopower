@@ -45,6 +45,7 @@ type MainPage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
+	navigationTab          *cryptomaterial.Tab_Nav
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
 	hideBalanceButton      *cryptomaterial.Clickable
@@ -63,6 +64,12 @@ type MainPage struct {
 	totalBalanceUSD string
 }
 
+var navigationTabTitles = []string{
+	values.String(values.StrOverview),
+	values.String(values.StrWallets),
+	values.String(values.StrTrade),
+}
+
 func NewMainPage(l *load.Load) *MainPage {
 	mp := &MainPage{
 		Load:       l,
@@ -73,6 +80,8 @@ func NewMainPage(l *load.Load) *MainPage {
 	mp.hideBalanceButton = mp.Theme.NewClickable(false)
 	mp.appLevelSettingsButton = mp.Theme.NewClickable(false)
 	mp.appNotificationButton = mp.Theme.NewClickable(false)
+
+	mp.navigationTab = l.Theme.Tab_Nav(layout.Horizontal, false)
 
 	_, mp.infoButton = components.SubpageHeaderButtons(l)
 	mp.infoButton.Size = values.MarginPadding20
@@ -308,6 +317,19 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Left: values.MarginPadding20,
+					}.Layout(gtx, func(gtx C) D {
+						return mp.navigationTab.Layout(gtx, navigationTabTitles)
+					})
+				}),
+				layout.Rigid(mp.Theme.Separator().Layout),
+				// layout.Flexed(1, func(gtx C) D {
+				// 	return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				// 		return mp.CurrentPage().Layout(gtx)
+				// 	})
+				// }),
 			)
 		}),
 	)
@@ -335,30 +357,21 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 // }
 
 func (mp *MainPage) LayoutTopBar(gtx C) D {
+	v := values.MarginPadding20
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Vertical,
+		Orientation: layout.Horizontal,
+		Alignment:   layout.Middle,
+		Padding: layout.Inset{
+			Right:  v,
+			Left:   v,
+			Top:    values.MarginPadding10,
+			Bottom: v,
+		},
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			v := values.MarginPadding20
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.WrapContent,
-				Orientation: layout.Horizontal,
-				Alignment:   layout.Middle,
-				Padding: layout.Inset{
-					Right:  v,
-					Left:   v,
-					Top:    values.MarginPadding10,
-					Bottom: v,
-				},
-			}.Layout(gtx,
-				layout.Rigid(mp.totalBalanceLayout),
-				layout.Rigid(mp.notificationSettingsLayout),
-			)
-		}),
-		layout.Rigid(mp.Theme.Separator().Layout),
+		layout.Rigid(mp.totalBalanceLayout),
+		layout.Rigid(mp.notificationSettingsLayout),
 	)
 }
 

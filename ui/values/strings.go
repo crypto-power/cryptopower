@@ -846,4 +846,5 @@ const (
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
 	StrTotalValue                      = "totalValue"
+	StrTrade                           = "trade"
 )
