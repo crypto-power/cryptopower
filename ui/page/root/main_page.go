@@ -436,11 +436,11 @@ func (mp *MainPage) notificationSettingsLayout(gtx C) D {
 						return layout.Inset{
 							Right: values.MarginPadding10,
 						}.Layout(gtx, func(gtx C) D {
-							return mp.appNotificationButton.Layout(gtx, mp.Theme.Icons.Notification.Layout30dp)
+							return mp.appNotificationButton.Layout(gtx, mp.Theme.Icons.Notification.Layout24dp)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return mp.appLevelSettingsButton.Layout(gtx, mp.Theme.Icons.SettingsIcon.Layout30dp)
+						return mp.appLevelSettingsButton.Layout(gtx, mp.Theme.Icons.SettingsIcon.Layout24dp)
 					}),
 				)
 			})
