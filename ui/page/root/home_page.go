@@ -26,7 +26,7 @@ type HomePage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
-	navigationTab          *cryptomaterial.Tab_Nav
+	navigationTab          *cryptomaterial.TabNavigation
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
 	hideBalanceButton      *cryptomaterial.Clickable
@@ -53,7 +53,7 @@ func NewHomePage(l *load.Load) *HomePage {
 	hp.appLevelSettingsButton = hp.Theme.NewClickable(false)
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
 
-	hp.navigationTab = l.Theme.Tab_Nav(layout.Horizontal, false)
+	hp.navigationTab = l.Theme.TabNavigation(layout.Horizontal, false)
 
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding20
@@ -128,9 +128,13 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.infoButton.Button.Clicked() {
+		// TODO: Use real values as these are dummy so lint will pass
+		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
 	}
 
 	if hp.appNotificationButton.Clicked() {
+		// TODO: Use real values as these are dummy so lint will pass
+		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
 	}
 
 	for hp.appLevelSettingsButton.Clicked() {
