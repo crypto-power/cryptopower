@@ -17,7 +17,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
-	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -54,7 +53,6 @@ type WalletDexServerSelector struct {
 	addWalClickable *cryptomaterial.Clickable
 	exchangeBtn     *cryptomaterial.Clickable
 	dcrdexBtn       *cryptomaterial.Clickable
-	settings        *cryptomaterial.Clickable
 
 	// wallet selector options
 	listLock       sync.RWMutex
@@ -93,8 +91,6 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 
 	pg.dcrdexBtn = l.Theme.NewClickable(false)
 	pg.dcrdexBtn.Radius = rad
-
-	pg.settings = l.Theme.NewClickable(false)
 
 	go func() {
 		pg.isConnected = libutils.IsOnline()
@@ -177,10 +173,6 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 	if pg.exchangeBtn.Clicked() {
 		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
 	}
-
-	if pg.settings.Clicked() {
-		pg.ParentNavigator().Display(settings.NewSettingsPage(pg.Load))
-	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -206,38 +198,11 @@ func (pg *WalletDexServerSelector) Layout(gtx C) D {
 }
 
 func (pg *WalletDexServerSelector) layoutDesktop(gtx C) D {
-	return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.pageHeaderLayout),
-			layout.Rigid(func(gtx C) D {
-				return pg.pageContentLayout(gtx)
-			}),
-		)
-	})
+	return layout.UniformInset(values.MarginPadding20).Layout(gtx, pg.pageContentLayout)
 }
 
 func (pg *WalletDexServerSelector) layoutMobile(gtx C) D {
-	return components.UniformMobile(gtx, false, false, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.pageHeaderLayout),
-			layout.Rigid(pg.pageContentLayout),
-		)
-	})
-}
-
-func (pg *WalletDexServerSelector) pageHeaderLayout(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Inset{
-					Right:  values.MarginPadding15,
-					Bottom: values.MarginPadding30,
-				}.Layout(gtx, func(gtx C) D {
-					return pg.settings.Layout(gtx, pg.Theme.Icons.SettingsIcon.Layout24dp)
-				})
-			})
-		}),
-	)
+	return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
 }
 
 func (pg *WalletDexServerSelector) sectionTitle(title string) layout.Widget {
