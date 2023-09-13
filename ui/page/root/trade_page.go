@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	OverviewPageID = "Overview"
+	TradePageID = "Trade"
 )
 
-type OverviewPage struct {
+type TradePage struct {
 	*app.GenericPageModal
 	*load.Load
 
@@ -23,28 +23,28 @@ type OverviewPage struct {
 	ctxCancel context.CancelFunc
 }
 
-func NewOverviewPage(l *load.Load) *OverviewPage {
-	op := &OverviewPage{
+func NewTradePage(l *load.Load) *TradePage {
+	tp := &TradePage{
 		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
+		GenericPageModal: app.NewGenericPageModal(TradePageID),
 	}
 
-	return op
+	return tp
 }
 
 // ID is a unique string that identifies the page and may be used
 // to differentiate this page from other pages.
 // Part of the load.Page interface.
-func (op *OverviewPage) ID() string {
-	return OverviewPageID
+func (tp *TradePage) ID() string {
+	return TradePageID
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (op *OverviewPage) OnNavigatedTo() {
-	op.ctx, op.ctxCancel = context.WithCancel(context.TODO())
+func (tp *TradePage) OnNavigatedTo() {
+	tp.ctx, tp.ctxCancel = context.WithCancel(context.TODO())
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -52,7 +52,7 @@ func (op *OverviewPage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (op *OverviewPage) HandleUserInteractions() {
+func (tp *TradePage) HandleUserInteractions() {
 
 }
 
@@ -63,30 +63,30 @@ func (op *OverviewPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (op *OverviewPage) OnNavigatedFrom() {
-	op.ctxCancel()
+func (tp *TradePage) OnNavigatedFrom() {
+	tp.ctxCancel()
 }
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (op *OverviewPage) Layout(gtx C) D {
-	op.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if op.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-		return op.layoutMobile(gtx)
+func (tp *TradePage) Layout(gtx C) D {
+	tp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
+	if tp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		return tp.layoutMobile(gtx)
 	}
-	return op.layoutDesktop(gtx)
+	return tp.layoutDesktop(gtx)
 }
 
-func (op *OverviewPage) layoutDesktop(gtx C) D {
-	return op.comingSoonLayout(gtx)
+func (tp *TradePage) layoutDesktop(gtx C) D {
+	return tp.comingSoonLayout(gtx)
 }
 
-func (op *OverviewPage) layoutMobile(gtx C) D {
-	return op.comingSoonLayout(gtx)
+func (tp *TradePage) layoutMobile(gtx C) D {
+	return tp.comingSoonLayout(gtx)
 }
 
-func (op *OverviewPage) comingSoonLayout(gtx C) D {
+func (tp *TradePage) comingSoonLayout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.MatchParent,
@@ -95,8 +95,8 @@ func (op *OverviewPage) comingSoonLayout(gtx C) D {
 		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lblText := op.Theme.H4("Overview Page Coming soon.....")
-			lblText.Color = op.Theme.Color.PageNavText
+			lblText := tp.Theme.H4("Trade Page Coming soon.....")
+			lblText.Color = tp.Theme.Color.PageNavText
 			return lblText.Layout(gtx)
 		}),
 	)
