@@ -1045,5 +1045,5 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 }
 
 func redirect(l *load.Load, pg app.WindowNavigator) {
-	pg.Display(NewWalletDexServerSelector(l))
+	pg.Display(NewWalletDexServerSelectorPage(l))
 }

@@ -66,12 +66,16 @@ type WriteClipboard struct {
 // than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
+	// appSize overwrites gioui's default app size of 'Size(800, 600)'
+	appSize := giouiApp.Size(values.AppWidth, values.AppHeight)
+	// appMinSize is the minimum size the app.
+	appMinSize := giouiApp.MinSize(values.AppWidth, values.AppHeight)
 	// Display network on the app title if its not on mainnet.
 	if wal.Net != libutils.Mainnet {
 		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, wal.Net.Display()))
 	}
 
-	giouiWindow := giouiApp.NewWindow(giouiApp.MinSize(values.AppWidth, values.AppHeight), appTitle)
+	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
 	win := &Window{
 		Window:                giouiWindow,
 		navigator:             app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
