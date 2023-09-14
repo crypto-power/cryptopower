@@ -14,11 +14,11 @@ import (
 	"github.com/crypto-power/cryptopower/wallet"
 )
 
-func (pg *WalletDexServerSelector) initWalletSelectorOptions() {
+func (pg *WalletDexServerSelectorPage) initWalletSelectorOptions() {
 	pg.walletComponents = pg.Theme.NewClickableList(layout.Vertical)
 }
 
-func (pg *WalletDexServerSelector) loadWallets() {
+func (pg *WalletDexServerSelectorPage) loadWallets() {
 	wallets := pg.WL.AllSortedWalletList()
 	walletsList := make([]*load.WalletItem, 0, len(wallets))
 
@@ -46,7 +46,7 @@ func (pg *WalletDexServerSelector) loadWallets() {
 	pg.listLock.Unlock()
 }
 
-func (pg *WalletDexServerSelector) loadBadWallets() {
+func (pg *WalletDexServerSelectorPage) loadBadWallets() {
 	dcrBadWallets := pg.WL.AssetsManager.DCRBadWallets()
 	btcBadWallets := pg.WL.AssetsManager.BTCBadWallets()
 	ltcBadWallets := pg.WL.AssetsManager.LTCBadWallets()
@@ -69,7 +69,7 @@ func (pg *WalletDexServerSelector) loadBadWallets() {
 	populatebadWallets(ltcBadWallets) // ltc bad wallets
 }
 
-func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
+func (pg *WalletDexServerSelectorPage) deleteBadWallet(badWalletID int) {
 	warningModal := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrRemoveWallet)).
 		Body(values.String(values.StrWalletRestoreMsg)).
@@ -92,7 +92,7 @@ func (pg *WalletDexServerSelector) deleteBadWallet(badWalletID int) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
-func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet sharedW.Asset) D {
+func (pg *WalletDexServerSelectorPage) syncStatusIcon(gtx C, wallet sharedW.Asset) D {
 	var (
 		syncStatusIcon *cryptomaterial.Image
 		syncStatus     string
@@ -120,7 +120,7 @@ func (pg *WalletDexServerSelector) syncStatusIcon(gtx C, wallet sharedW.Asset) D
 	)
 }
 
-func (pg *WalletDexServerSelector) walletListLayout(gtx C) D {
+func (pg *WalletDexServerSelectorPage) walletListLayout(gtx C) D {
 	walletSections := []func(gtx C) D{}
 	if len(pg.walletsList) > 0 {
 		walletSections = append(walletSections, pg.walletSection)
@@ -136,7 +136,7 @@ func (pg *WalletDexServerSelector) walletListLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletDexServerSelector) walletSection(gtx C) D {
+func (pg *WalletDexServerSelectorPage) walletSection(gtx C) D {
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 	mainWalletList := pg.walletsList
@@ -147,14 +147,14 @@ func (pg *WalletDexServerSelector) walletSection(gtx C) D {
 	})
 }
 
-func (pg *WalletDexServerSelector) badWalletSection(gtx C) D {
+func (pg *WalletDexServerSelectorPage) badWalletSection(gtx C) D {
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 
 	return pg.badWalletsWrapper(gtx, pg.badWalletsList)
 }
 
-func (pg *WalletDexServerSelector) badWalletsWrapper(gtx C, badWalletsList []*badWalletListItem) D {
+func (pg *WalletDexServerSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWalletListItem) D {
 	m20 := values.MarginPadding20
 	m10 := values.MarginPadding10
 
@@ -209,7 +209,7 @@ func (pg *WalletDexServerSelector) badWalletsWrapper(gtx C, badWalletsList []*ba
 	})
 }
 
-func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem) D {
+func (pg *WalletDexServerSelectorPage) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem) D {
 	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
@@ -267,7 +267,7 @@ func (pg *WalletDexServerSelector) walletWrapper(gtx C, wType libutils.AssetType
 }
 
 // start sync listener
-func (pg *WalletDexServerSelector) listenForNotifications() {
+func (pg *WalletDexServerSelectorPage) listenForNotifications() {
 	if pg.isListenerAdded {
 		return
 	}
@@ -281,7 +281,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 
 	for _, w := range allWallets {
 		syncListener := listeners.NewSyncProgress()
-		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorID)
+		err := w.AddSyncProgressListener(syncListener, WalletDexServerSelectorPageID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
@@ -295,7 +295,7 @@ func (pg *WalletDexServerSelector) listenForNotifications() {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
-					wal.RemoveSyncProgressListener(WalletDexServerSelectorID)
+					wal.RemoveSyncProgressListener(WalletDexServerSelectorPageID)
 					close(syncListener.SyncStatusChan)
 					syncListener = nil
 					pg.isListenerAdded = false

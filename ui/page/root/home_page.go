@@ -111,7 +111,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load)
 		case values.String(values.StrWallets):
-			pg = NewWalletDexServerSelector(hp.Load)
+			pg = NewWalletDexServerSelectorPage(hp.Load)
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
 		}
@@ -207,9 +207,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 					}.Layout(gtx, hp.navigationTab.Layout)
 				}),
 				layout.Rigid(hp.Theme.Separator().Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, hp.CurrentPage().Layout)
-				}),
+				layout.Flexed(1, hp.CurrentPage().Layout),
 			)
 		}),
 	)

@@ -66,7 +66,7 @@ func (tn *Tab) Layout(gtx C) D {
 				defer clip.RRect{Rect: tabRect, SE: 0, SW: 0, NW: 10, NE: 10}.Push(gtx.Ops).Pop()
 
 				return layout.Inset{
-					Bottom: values.MarginPaddingMinus22,
+					Bottom: values.MarginPaddingMinus24,
 				}.Layout(gtx, func(gtx C) D {
 					paint.FillShape(gtx.Ops, tn.theme.Color.Primary, clip.Rect(tabRect).Op())
 					return layout.Dimensions{
