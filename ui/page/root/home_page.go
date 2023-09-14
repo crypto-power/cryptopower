@@ -287,7 +287,7 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 					icon = hp.Theme.Icons.ConcealIcon
 				}
 				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-					return hp.hideBalanceButton.Layout(gtx, icon.Layout24dp)
+					return hp.hideBalanceButton.Layout(gtx, icon.Layout20dp)
 				})
 			}),
 		)
@@ -337,11 +337,11 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 						return layout.Inset{
 							Right: values.MarginPadding10,
 						}.Layout(gtx, func(gtx C) D {
-							return hp.appNotificationButton.Layout(gtx, hp.Theme.Icons.Notification.Layout24dp)
+							return hp.appNotificationButton.Layout(gtx, hp.Theme.Icons.Notification.Layout20dp)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return hp.appLevelSettingsButton.Layout(gtx, hp.Theme.Icons.SettingsIcon.Layout24dp)
+						return hp.appLevelSettingsButton.Layout(gtx, hp.Theme.Icons.SettingsIcon.Layout20dp)
 					}),
 				)
 			})
