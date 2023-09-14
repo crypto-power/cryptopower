@@ -10,7 +10,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-type TabNavigation struct {
+type Tab struct {
 	theme *Theme
 	list  *ClickableList
 
@@ -19,17 +19,17 @@ type TabNavigation struct {
 	tabItems      []string
 }
 
-func (t *Theme) TabNavigation(axis layout.Axis, isHoverable bool, tabItems []string) *TabNavigation {
+func (t *Theme) Tab(axis layout.Axis, isHoverable bool, tabItems []string) *Tab {
 	list := t.NewClickableList(axis)
 	list.IsHoverable = isHoverable
-	return &TabNavigation{
+	return &Tab{
 		list:     list,
 		theme:    t,
 		tabItems: tabItems,
 	}
 }
 
-func (tn *TabNavigation) Layout(gtx C) D {
+func (tn *Tab) Layout(gtx C) D {
 	tn.handleEvents()
 	var selectedTabDims D
 
@@ -78,7 +78,7 @@ func (tn *TabNavigation) Layout(gtx C) D {
 	})
 }
 
-func (tn *TabNavigation) handleEvents() {
+func (tn *Tab) handleEvents() {
 	if tabItemClicked, clickedTabIndex := tn.list.ItemClicked(); tabItemClicked {
 		if tn.selectedIndex != clickedTabIndex {
 			tn.changed = true
@@ -87,15 +87,15 @@ func (tn *TabNavigation) handleEvents() {
 	}
 }
 
-func (tn *TabNavigation) SelectedIndex() int {
+func (tn *Tab) SelectedIndex() int {
 	return tn.selectedIndex
 }
 
-func (tn *TabNavigation) SelectedTab() string {
+func (tn *Tab) SelectedTab() string {
 	return tn.tabItems[tn.selectedIndex]
 }
 
-func (tn *TabNavigation) Changed() bool {
+func (tn *Tab) Changed() bool {
 	changed := tn.changed
 	tn.changed = false
 	return changed
