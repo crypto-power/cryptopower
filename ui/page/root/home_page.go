@@ -53,7 +53,7 @@ func NewHomePage(l *load.Load) *HomePage {
 	hp.appLevelSettingsButton = hp.Theme.NewClickable(false)
 	hp.appNotificationButton = hp.Theme.NewClickable(false)
 
-	hp.navigationTab = l.Theme.TabNavigation(layout.Horizontal, false)
+	hp.navigationTab = l.Theme.TabNavigation(layout.Horizontal, false, navigationTabTitles)
 
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding20
@@ -75,11 +75,11 @@ func (hp *HomePage) ID() string {
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
-	if activeTab := hp.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedTo()
-	} else {
+	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
 	}
+
+	hp.CurrentPage().OnNavigatedTo()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -93,8 +93,6 @@ func (hp *HomePage) OnDarkModeChanged(isDarkModeOn bool) {
 	if currentPage, ok := hp.CurrentPage().(load.AppSettingsChangeHandler); ok {
 		currentPage.OnDarkModeChanged(isDarkModeOn)
 	}
-
-	// hp.bottomNavigationBar.OnViewCreated()
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -103,27 +101,21 @@ func (hp *HomePage) OnDarkModeChanged(isDarkModeOn bool) {
 // displayed.
 // Part of the load.Page interface.
 func (hp *HomePage) HandleUserInteractions() {
-	if activeTab := hp.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
+	if hp.CurrentPage() != nil {
+		hp.CurrentPage().HandleUserInteractions()
 	}
 
-	var pg app.Page
-	switch hp.navigationTab.SelectedIndex() {
-	case 0:
-		pg = NewOverviewPage(hp.Load)
-	case 1:
-		onWalSelected := func() {
-			hp.ParentNavigator().Display(NewMainPage(hp.Load))
+	if hp.navigationTab.Changed() {
+		var pg app.Page
+		switch hp.navigationTab.SelectedTab() {
+		case values.String(values.StrOverview):
+			pg = NewOverviewPage(hp.Load)
+		case values.String(values.StrWallets):
+			pg = NewWalletDexServerSelector(hp.Load)
+		case values.String(values.StrTrade):
+			pg = NewTradePage(hp.Load)
 		}
-		onDexServerSelected := func(server string) {
-			log.Info("Not implemented yet...", server)
-		}
-		pg = NewWalletDexServerSelector(hp.Load, onWalSelected, onDexServerSelected)
-	case 2:
-		pg = NewTradePage(hp.Load)
-	}
 
-	if pg != nil && hp.ID() != hp.CurrentPageID() {
 		hp.Display(pg)
 	}
 
@@ -142,6 +134,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for hp.hideBalanceButton.Clicked() {
+		// TODO: these comments are still needed. They will be updated in my next PR
 		// hp.isBalanceHidden = hp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
 		hp.isBalanceHidden = !hp.isBalanceHidden
 		// hp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, hp.isBalanceHidden)
@@ -180,7 +173,7 @@ func (hp *HomePage) HandleKeyPress(evt *key.Event) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedFrom() {
-	// Also disappear all child pages.
+	// Also remove all child pages.
 	if activeTab := hp.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedFrom()
 	}
@@ -211,9 +204,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Left: values.MarginPadding20,
-					}.Layout(gtx, func(gtx C) D {
-						return hp.navigationTab.Layout(gtx, navigationTabTitles)
-					})
+					}.Layout(gtx, hp.navigationTab.Layout)
 				}),
 				layout.Rigid(hp.Theme.Separator().Layout),
 				layout.Flexed(1, func(gtx C) D {
@@ -236,9 +227,7 @@ func (hp *HomePage) layoutMobile(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Left: values.MarginPadding20,
-					}.Layout(gtx, func(gtx C) D {
-						return hp.navigationTab.Layout(gtx, navigationTabTitles)
-					})
+					}.Layout(gtx, hp.navigationTab.Layout)
 				}),
 				layout.Rigid(hp.Theme.Separator().Layout),
 				layout.Flexed(1, func(gtx C) D {

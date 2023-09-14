@@ -412,13 +412,7 @@ func (mp *MainPage) HandleUserInteractions() {
 	}
 
 	for mp.openWalletSelector.Clicked() {
-		onWalSelected := func() {
-			mp.ParentNavigator().ClearStackAndDisplay(NewMainPage(mp.Load))
-		}
-		onDexServerSelected := func(server string) {
-			log.Info("Not implemented yet...", server)
-		}
-		mp.ParentWindow().Display(NewWalletDexServerSelector(mp.Load, onWalSelected, onDexServerSelected))
+		mp.ParentNavigator().CloseCurrentPage()
 	}
 
 	mp.drawerNav.CurrentPage = mp.CurrentPageID()
@@ -1051,11 +1045,5 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 }
 
 func redirect(l *load.Load, pg app.WindowNavigator) {
-	onWalSelected := func() {
-		pg.ClearStackAndDisplay(NewMainPage(l))
-	}
-	onDexServerSelected := func(server string) {
-		log.Info("Not implemented yet...", server)
-	}
-	pg.Display(NewWalletDexServerSelector(l, onWalSelected, onDexServerSelected))
+	pg.Display(NewWalletDexServerSelector(l))
 }

@@ -627,11 +627,5 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 }
 
 func (pg *CreateWallet) handlerWalletDexServerSelectorCallBacks() {
-	onWalSelected := func() {
-		pg.ParentNavigator().ClearStackAndDisplay(NewMainPage(pg.Load))
-	}
-	onDexServerSelected := func(server string) {
-		log.Info("Not implemented yet...", server)
-	}
-	pg.ParentNavigator().ClearStackAndDisplay(NewWalletDexServerSelector(pg.Load, onWalSelected, onDexServerSelected))
+	pg.ParentNavigator().ClearStackAndDisplay(NewWalletDexServerSelector(pg.Load))
 }
