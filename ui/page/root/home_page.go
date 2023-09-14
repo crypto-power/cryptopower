@@ -9,6 +9,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -120,8 +121,13 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.infoButton.Button.Clicked() {
-		// TODO: Use real values as these are dummy so lint will pass
-		hp.ParentNavigator().Display(settings.NewSettingsPage(hp.Load))
+		infoModal := modal.NewCustomModal(hp.Load).
+			Title(values.String(values.StrTotalValue)).
+			SetupWithTemplate(modal.TotalValueInfoTemplate).
+			SetCancelable(true).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			SetPositiveButtonText(values.String(values.StrOk))
+		hp.ParentWindow().ShowModal(infoModal)
 	}
 
 	if hp.appNotificationButton.Clicked() {

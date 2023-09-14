@@ -22,6 +22,7 @@ const (
 	RemoveWalletInfoTemplate       = "RemoveWalletInfo"
 	SetGapLimitTemplate            = "SetGapLimit"
 	SourceModalInfoTemplate        = "SourceModalInfo"
+	TotalValueInfoTemplate         = "TotalValueInfo"
 )
 
 func verifyMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
@@ -109,6 +110,13 @@ func setGapLimitText(l *load.Load) []layout.Widget {
 
 func sourceModalInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrSourceModalInfo, `<br><br>`)
+	return []layout.Widget{
+		renderers.RenderHTML(text, th).Layout,
+	}
+}
+
+func totalValueInfo(th *cryptomaterial.Theme) []layout.Widget {
+	text := values.StringF(values.StrTotalValueMsg, `<br />`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}

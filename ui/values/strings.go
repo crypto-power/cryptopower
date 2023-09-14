@@ -706,7 +706,9 @@ const (
 	StrTotalAmount                     = "totalAmount"
 	StrTotalBalance                    = "totalBalance"
 	StrTotalCost                       = "totalCost"
+	StrTotalValue                      = "totalValue"
 	StrTotalVotes                      = "totalVotes"
+	StrTotalValueMsg                   = "totalValueMsg"
 	StrTotalVotesReverse               = "totalVotesReverse"
 	StrTransactionDetails              = "transactionDetails"
 	StrTransactionID                   = "transactionId"
@@ -845,6 +847,5 @@ const (
 	StrYourAddress                     = "yourAddress"
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
-	StrTotalValue                      = "totalValue"
 	StrTrade                           = "trade"
 )
