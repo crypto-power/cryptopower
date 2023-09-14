@@ -627,5 +627,5 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 }
 
 func (pg *CreateWallet) handlerWalletDexServerSelectorPageCallBacks() {
-	pg.ParentNavigator().ClearStackAndDisplay(NewWalletDexServerSelectorPage(pg.Load))
+	pg.ParentNavigator().ClearStackAndDisplay(NewWalletSelectorPage(pg.Load))
 }

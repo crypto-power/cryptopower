@@ -111,7 +111,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load)
 		case values.String(values.StrWallets):
-			pg = NewWalletDexServerSelectorPage(hp.Load)
+			pg = NewWalletSelectorPage(hp.Load)
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
 		}

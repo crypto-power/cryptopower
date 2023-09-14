@@ -16,11 +16,10 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const WalletDexServerSelectorPageID = "wallet_dex_server_selector"
+const WalletSelectorPageID = "wallet__selector"
 
 type (
 	C = layout.Context
@@ -32,7 +31,7 @@ type badWalletListItem struct {
 	deleteBtn cryptomaterial.Button
 }
 
-type WalletDexServerSelectorPage struct {
+type WalletSelectorPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -51,8 +50,6 @@ type WalletDexServerSelectorPage struct {
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow
 	addWalClickable *cryptomaterial.Clickable
-	exchangeBtn     *cryptomaterial.Clickable
-	dcrdexBtn       *cryptomaterial.Clickable
 
 	// wallet selector options
 	listLock       sync.RWMutex
@@ -62,9 +59,9 @@ type WalletDexServerSelectorPage struct {
 	walletComponents *cryptomaterial.ClickableList
 }
 
-func NewWalletDexServerSelectorPage(l *load.Load) *WalletDexServerSelectorPage {
-	pg := &WalletDexServerSelectorPage{
-		GenericPageModal: app.NewGenericPageModal(WalletDexServerSelectorPageID),
+func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
+	pg := &WalletSelectorPage{
+		GenericPageModal: app.NewGenericPageModal(WalletSelectorPageID),
 		scrollContainer: &widget.List{
 			List: layout.List{
 				Axis:      layout.Vertical,
@@ -75,15 +72,8 @@ func NewWalletDexServerSelectorPage(l *load.Load) *WalletDexServerSelectorPage {
 		shadowBox: l.Theme.Shadow(),
 	}
 
-	rad := cryptomaterial.Radius(14)
 	pg.addWalClickable = l.Theme.NewClickable(false)
-	pg.addWalClickable.Radius = rad
-
-	pg.exchangeBtn = l.Theme.NewClickable(false)
-	pg.exchangeBtn.Radius = rad
-
-	pg.dcrdexBtn = l.Theme.NewClickable(false)
-	pg.dcrdexBtn.Radius = rad
+	pg.addWalClickable.Radius = cryptomaterial.Radius(14)
 
 	go func() {
 		pg.isConnected = libutils.IsOnline()
@@ -109,7 +99,7 @@ func NewWalletDexServerSelectorPage(l *load.Load) *WalletDexServerSelectorPage {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *WalletDexServerSelectorPage) OnNavigatedTo() {
+func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForNotifications()
@@ -143,7 +133,7 @@ func (pg *WalletDexServerSelectorPage) OnNavigatedTo() {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *WalletDexServerSelectorPage) HandleUserInteractions() {
+func (pg *WalletSelectorPage) HandleUserInteractions() {
 	pg.listLock.Lock()
 	defer pg.listLock.Unlock()
 
@@ -162,10 +152,6 @@ func (pg *WalletDexServerSelectorPage) HandleUserInteractions() {
 	if pg.addWalClickable.Clicked() {
 		pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
 	}
-
-	if pg.exchangeBtn.Clicked() {
-		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
-	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -175,14 +161,14 @@ func (pg *WalletDexServerSelectorPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *WalletDexServerSelectorPage) OnNavigatedFrom() {
+func (pg *WalletSelectorPage) OnNavigatedFrom() {
 	pg.ctxCancel()
 }
 
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *WalletDexServerSelectorPage) Layout(gtx C) D {
+func (pg *WalletSelectorPage) Layout(gtx C) D {
 	pg.SetCurrentAppWidth(gtx.Constraints.Max.X)
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
@@ -190,33 +176,25 @@ func (pg *WalletDexServerSelectorPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *WalletDexServerSelectorPage) layoutDesktop(gtx C) D {
+func (pg *WalletSelectorPage) layoutDesktop(gtx C) D {
 	return layout.UniformInset(values.MarginPadding20).Layout(gtx, pg.pageContentLayout)
 }
 
-func (pg *WalletDexServerSelectorPage) layoutMobile(gtx C) D {
+func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 	return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
 }
 
-func (pg *WalletDexServerSelectorPage) sectionTitle(title string) layout.Widget {
+func (pg *WalletSelectorPage) sectionTitle(title string) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize20, title).Layout)
 	}
 }
 
-func (pg *WalletDexServerSelectorPage) pageContentLayout(gtx C) D {
-	// Set dcrdex button as disabled since its not yet implemented.
-	pg.dcrdexBtn.SetEnabled(false, &gtx)
-
+func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		pg.walletListLayout,
 		pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout24dp),
-		pg.layoutAddBottomSpace(),
-		pg.sectionTitle(values.String(values.StrExchangeIntro)),
-		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
-		pg.layoutAddMoreRowSection(pg.dcrdexBtn, values.String(values.StrDcrDex), pg.Theme.Icons.DcrDex.Layout16dp),
-		pg.layoutAddBottomSpace(),
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -233,14 +211,15 @@ func (pg *WalletDexServerSelectorPage) pageContentLayout(gtx C) D {
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return layout.Inset{
-					Right: values.MarginPadding48,
+					Right:  values.MarginPadding48,
+					Bottom: values.MarginPadding4,
 				}.Layout(gtx, pageContent[i])
 			})
 		})
 	})
 }
 
-func (pg *WalletDexServerSelectorPage) layoutAddBottomSpace() layout.Widget {
+func (pg *WalletSelectorPage) layoutAddBottomSpace() layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{
 			Left:   values.MarginPadding5,
@@ -249,7 +228,7 @@ func (pg *WalletDexServerSelectorPage) layoutAddBottomSpace() layout.Widget {
 	}
 }
 
-func (pg *WalletDexServerSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
+func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
 	return func(gtx C) D {
 		return layout.Inset{
 			Left: values.MarginPadding5,
@@ -278,7 +257,7 @@ func (pg *WalletDexServerSelectorPage) layoutAddMoreRowSection(clk *cryptomateri
 	}
 }
 
-func (pg *WalletDexServerSelectorPage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
+func (pg *WalletSelectorPage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
 	// Watchonly wallets do not have any password neithers need one.
 	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() && !wallet.IsWatchingOnlyWallet() {
 		pg.unlockWalletForSyncing(wallet, unlock)
@@ -353,7 +332,7 @@ func (pg *WalletDexServerSelectorPage) startSyncing(wallet sharedW.Asset, unlock
 	}()
 }
 
-func (pg *WalletDexServerSelectorPage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
+func (pg *WalletSelectorPage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
 	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
