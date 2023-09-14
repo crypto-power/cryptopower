@@ -463,13 +463,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
 					m.Dismiss()
 					pg.ParentNavigator().CloseCurrentPage()
-					onWalSelected := func() {
-						pg.ParentWindow().CloseCurrentPage()
-					}
-					onDexServerSelected := func(server string) {
-						log.Info("Not implemented yet...", server)
-					}
-					pg.ParentWindow().Display(NewWalletDexServerSelector(pg.Load, onWalSelected, onDexServerSelected))
+					pg.ParentWindow().Display(NewWalletDexServerSelector(pg.Load))
 				} else {
 					m.Dismiss()
 					pg.ParentWindow().CloseAllPages()

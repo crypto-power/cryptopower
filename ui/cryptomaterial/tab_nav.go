@@ -11,25 +11,29 @@ import (
 )
 
 type TabNavigation struct {
-	list          *ClickableList
+	theme *Theme
+	list  *ClickableList
+
 	selectedIndex int
-	theme         *Theme
+	changed       bool
+	tabItems      []string
 }
 
-func (t *Theme) TabNavigation(axis layout.Axis, isHoverable bool) *TabNavigation {
+func (t *Theme) TabNavigation(axis layout.Axis, isHoverable bool, tabItems []string) *TabNavigation {
 	list := t.NewClickableList(axis)
 	list.IsHoverable = isHoverable
 	return &TabNavigation{
-		list:  list,
-		theme: t,
+		list:     list,
+		theme:    t,
+		tabItems: tabItems,
 	}
 }
 
-func (tn *TabNavigation) Layout(gtx C, tabItems []string) D {
+func (tn *TabNavigation) Layout(gtx C) D {
 	tn.handleEvents()
 	var selectedTabDims D
 
-	return tn.list.Layout(gtx, len(tabItems), func(gtx C, i int) D {
+	return tn.list.Layout(gtx, len(tn.tabItems), func(gtx C, i int) D {
 		isSelectedTab := tn.SelectedIndex() == i
 		padding := values.MarginPadding24
 		return layout.Stack{Alignment: layout.Center}.Layout(gtx,
@@ -40,7 +44,7 @@ func (tn *TabNavigation) Layout(gtx C, tabItems []string) D {
 					Bottom: values.MarginPadding8,
 				}.Layout(gtx, func(gtx C) D {
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						lbl := tn.theme.Label(values.TextSize16, tabItems[i])
+						lbl := tn.theme.Label(values.TextSize16, tn.tabItems[i])
 						lbl.Color = tn.theme.Color.GrayText1
 						if isSelectedTab {
 							lbl.Color = tn.theme.Color.Primary
@@ -76,10 +80,23 @@ func (tn *TabNavigation) Layout(gtx C, tabItems []string) D {
 
 func (tn *TabNavigation) handleEvents() {
 	if tabItemClicked, clickedTabIndex := tn.list.ItemClicked(); tabItemClicked {
+		if tn.selectedIndex != clickedTabIndex {
+			tn.changed = true
+		}
 		tn.selectedIndex = clickedTabIndex
 	}
 }
 
 func (tn *TabNavigation) SelectedIndex() int {
 	return tn.selectedIndex
+}
+
+func (tn *TabNavigation) SelectedTab() string {
+	return tn.tabItems[tn.selectedIndex]
+}
+
+func (tn *TabNavigation) Changed() bool {
+	changed := tn.changed
+	tn.changed = false
+	return changed
 }

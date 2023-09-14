@@ -60,13 +60,9 @@ type WalletDexServerSelector struct {
 	badWalletsList []*badWalletListItem
 
 	walletComponents *cryptomaterial.ClickableList
-	walletSelected   func()
-
-	// dex selector options
-	dexServerSelected func(server string)
 }
 
-func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServerSelected func(server string)) *WalletDexServerSelector {
+func NewWalletDexServerSelector(l *load.Load) *WalletDexServerSelector {
 	pg := &WalletDexServerSelector{
 		GenericPageModal: app.NewGenericPageModal(WalletDexServerSelectorID),
 		scrollContainer: &widget.List{
@@ -77,9 +73,6 @@ func NewWalletDexServerSelector(l *load.Load, onWalletSelected func(), onDexServ
 		},
 		Load:      l,
 		shadowBox: l.Theme.Shadow(),
-
-		walletSelected:    onWalletSelected,
-		dexServerSelected: onDexServerSelected,
 	}
 
 	rad := cryptomaterial.Radius(14)
@@ -156,7 +149,7 @@ func (pg *WalletDexServerSelector) HandleUserInteractions() {
 
 	if ok, selectedItem := pg.walletComponents.ItemClicked(); ok {
 		pg.WL.SelectedWallet = pg.walletsList[selectedItem]
-		pg.walletSelected()
+		pg.ParentNavigator().Display(NewMainPage(pg.Load))
 	}
 
 	for _, badWallet := range pg.badWalletsList {
