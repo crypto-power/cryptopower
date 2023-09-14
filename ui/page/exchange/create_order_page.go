@@ -611,372 +611,354 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
-	container := func(gtx C) D {
-		sp := components.SubPage{
-			Load:       pg.Load,
-			Title:      values.String(values.StrCreateOrder),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				overlay := layout.Stacked(func(gtx C) D { return D{} })
-				if overlaySet {
-					gtxCopy := gtx
-					overlay = layout.Stacked(func(gtx C) D {
-						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
-					})
-					// Disable main page from recieving events
-					gtx = gtx.Disabled()
-				}
-				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
-			},
-		}
-
-		return cryptomaterial.LinearLayout{
-			Width:     cryptomaterial.MatchParent,
-			Height:    cryptomaterial.MatchParent,
-			Direction: layout.Center,
-		}.Layout2(gtx, func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:     gtx.Dp(values.MarginPadding550),
-				Height:    cryptomaterial.MatchParent,
-				Alignment: layout.Middle,
-			}.Layout2(gtx, func(gtx C) D {
-				return sp.Layout(pg.ParentWindow(), gtx)
-			})
-		})
+	sp := components.SubPage{
+		Load:       pg.Load,
+		Title:      values.String(values.StrCreateOrder),
+		BackButton: pg.backButton,
+		Back: func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		},
+		Body: func(gtx C) D {
+			overlay := layout.Stacked(func(gtx C) D { return D{} })
+			if overlaySet {
+				gtxCopy := gtx
+				overlay = layout.Stacked(func(gtx C) D {
+					return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
+				})
+				// Disable main page from recieving events
+				gtx = gtx.Disabled()
+			}
+			return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
+		},
 	}
 
-	return components.UniformPadding(gtx, container)
-}
-
-func (pg *CreateOrderPage) layout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
-			Width:  gtx.Dp(values.MarginPadding550),
-			Height: cryptomaterial.MatchParent,
-			Margin: layout.Inset{
-				Bottom: values.MarginPadding30,
-			},
+			Width:     gtx.Dp(values.MarginPadding550),
+			Height:    cryptomaterial.MatchParent,
+			Alignment: layout.Middle,
 		}.Layout2(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Flexed(0.65, func(gtx C) D {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									return layout.Flex{
-										Axis:      layout.Horizontal,
-										Alignment: layout.Middle,
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Right: values.MarginPadding10,
-											}.Layout(gtx, func(gtx C) D {
-												return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														txt := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
-														return txt.Layout(gtx)
-													}),
-													layout.Rigid(func(gtx C) D {
-														return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
-													}),
-												)
-											})
-										}),
-									)
-								})
-							}),
-							layout.Flexed(0.35, func(gtx C) D {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									return layout.Flex{
-										Axis:      layout.Horizontal,
-										Alignment: layout.Middle,
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{
-												Axis: layout.Vertical,
-											}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													title := pg.Theme.Label(values.TextSize16, values.String(values.StrScheduler))
-													title.Color = pg.Theme.Color.GrayText2
-													return title.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
-														return layout.Flex{
-															Axis: layout.Horizontal,
-														}.Layout(gtx,
-															layout.Rigid(func(gtx C) D {
-																return layout.Inset{
-																	Top:   values.MarginPadding5,
-																	Right: values.MarginPadding2,
-																}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
-															}),
-															layout.Rigid(func(gtx C) D {
-																title := pg.Theme.Label(values.TextSize16, pg.WL.AssetsManager.GetShedulerRuntime())
-																title.Color = pg.Theme.Color.GrayText2
-																return title.Layout(gtx)
-															}),
-														)
-													}
+			return sp.Layout(pg.ParentWindow(), gtx)
+		})
+	})
+}
 
-													return D{}
-												}),
-											)
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Left: values.MarginPadding4,
-											}.Layout(gtx, pg.scheduler.Layout)
-										}),
-										layout.Rigid(func(gtx C) D {
-											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
-												return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
-													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
-													gtx.Constraints.Min.X = gtx.Constraints.Max.X
-													loader := material.Loader(pg.Theme.Base)
-													loader.Color = pg.Theme.Color.Gray1
-													return loader.Layout(gtx)
-												})
-											}
-											return D{}
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												Right: values.MarginPadding10,
-												Left:  values.MarginPadding10,
-											}.Layout(gtx, pg.infoButton.Layout)
-										}),
-										layout.Rigid(pg.settingsButton.Layout),
-									)
-								})
-							}),
-						)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{
-						Axis:      layout.Horizontal,
-						Alignment: layout.Middle,
-					}.Layout(gtx,
-						layout.Flexed(0.45, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+func (pg *CreateOrderPage) layout(gtx C) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Bottom: values.MarginPadding16,
+			}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Flexed(0.65, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return layout.Flex{
+								Axis:      layout.Horizontal,
+								Alignment: layout.Middle,
+							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									walletName := "----"
-									if pg.sourceWalletSelector != nil && pg.sourceWalletSelector.SelectedWallet() != nil {
-										walletName = pg.sourceWalletSelector.SelectedWallet().GetWalletName()
-									}
-									accountName := "----"
-									if pg.sourceAccountSelector != nil && pg.sourceAccountSelector.SelectedAccount() != nil {
-										accountName = pg.sourceAccountSelector.SelectedAccount().Name
-									}
-									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
-									lb := pg.Theme.Label(values.TextSize16, txt)
-									lb.Font.Weight = font.SemiBold
-									return lb.Layout(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
-								}),
-							)
-						}),
-						layout.Flexed(0.1, func(gtx C) D {
-							return layout.Center.Layout(gtx, pg.swapButton.Layout)
-						}),
-						layout.Flexed(0.45, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									walletName := "----"
-									if pg.destinationWalletSelector != nil && pg.destinationWalletSelector.SelectedWallet() != nil {
-										walletName = pg.destinationWalletSelector.SelectedWallet().GetWalletName()
-									}
-									accountName := "----"
-									if pg.destinationAccountSelector != nil && pg.destinationAccountSelector.SelectedAccount() != nil {
-										accountName = pg.destinationAccountSelector.SelectedAccount().Name
-									}
-									txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
-									lb := pg.Theme.Label(values.TextSize16, txt)
-									lb.Font.Weight = font.SemiBold
-									return lb.Layout(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
-								}),
-							)
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{
-							Axis:      layout.Horizontal,
-							Alignment: layout.Middle,
-						}.Layout(gtx,
-							layout.Flexed(0.55, func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										if pg.amountErrorText != "" {
-											txt := pg.Theme.Label(values.TextSize14, pg.amountErrorText)
-											txt.Font.Weight = font.SemiBold
-											txt.Color = pg.Theme.Color.Danger
-											return txt.Layout(gtx)
-										}
-
-										return D{}
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+									return layout.Inset{
+										Right: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												if pg.fetchingRate {
-													gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
-													gtx.Constraints.Min.X = gtx.Constraints.Max.X
-													return pg.materialLoader.Layout(gtx)
-												}
-												txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
-												txt.Color = pg.Theme.Color.Gray1
-												txt.Font.Weight = font.SemiBold
+												txt := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
 												return txt.Layout(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
-												if !pg.fetchingRate && pg.rateError {
-													return pg.refreshExchangeRateBtn.Layout(gtx)
-												}
-												return D{}
+												return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
 											}),
 										)
-									}),
-								)
-							}),
-							layout.Flexed(0.45, func(gtx C) D {
-								if pg.fetchingRate {
-									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.materialLoader.Layout(gtx)
-								}
-
-								if pg.exchangeRate != -1 {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									})
+								}),
+							)
+						})
+					}),
+					layout.Flexed(0.35, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return layout.Flex{
+								Axis:      layout.Horizontal,
+								Alignment: layout.Middle,
+							}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Flex{
+										Axis: layout.Vertical,
+									}.Layout(gtx,
 										layout.Rigid(func(gtx C) D {
-											exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
-											txt := pg.Theme.Label(values.TextSize14, exchangeRate)
-											txt.Font.Weight = font.SemiBold
-											txt.Color = pg.Theme.Color.Gray1
-											return txt.Layout(gtx)
+											title := pg.Theme.Label(values.TextSize16, values.String(values.StrScheduler))
+											title.Color = pg.Theme.Color.GrayText2
+											return title.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
-											binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
-											txt := pg.Theme.Label(values.TextSize14, binanceRate)
-											txt.Font.Weight = font.SemiBold
-											txt.Color = pg.Theme.Color.Gray1
-											return txt.Layout(gtx)
+											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+												return layout.Flex{
+													Axis: layout.Horizontal,
+												}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														return layout.Inset{
+															Top:   values.MarginPadding5,
+															Right: values.MarginPadding2,
+														}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
+													}),
+													layout.Rigid(func(gtx C) D {
+														title := pg.Theme.Label(values.TextSize16, pg.WL.AssetsManager.GetShedulerRuntime())
+														title.Color = pg.Theme.Color.GrayText2
+														return title.Layout(gtx)
+													}),
+												)
+											}
+
+											return D{}
 										}),
 									)
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Left: values.MarginPadding4,
+									}.Layout(gtx, pg.scheduler.Layout)
+								}),
+								layout.Rigid(func(gtx C) D {
+									if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+										return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
+											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
+											loader := material.Loader(pg.Theme.Base)
+											loader.Color = pg.Theme.Color.Gray1
+											return loader.Layout(gtx)
+										})
+									}
+									return D{}
+								}),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Right: values.MarginPadding10,
+										Left:  values.MarginPadding10,
+									}.Layout(gtx, pg.infoButton.Layout)
+								}),
+								layout.Rigid(pg.settingsButton.Layout),
+							)
+						})
+					}),
+				)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{
+				Axis:      layout.Horizontal,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Flexed(0.45, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							walletName := "----"
+							if pg.sourceWalletSelector != nil && pg.sourceWalletSelector.SelectedWallet() != nil {
+								walletName = pg.sourceWalletSelector.SelectedWallet().GetWalletName()
+							}
+							accountName := "----"
+							if pg.sourceAccountSelector != nil && pg.sourceAccountSelector.SelectedAccount() != nil {
+								accountName = pg.sourceAccountSelector.SelectedAccount().Name
+							}
+							txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
+							lb := pg.Theme.Label(values.TextSize16, txt)
+							lb.Font.Weight = font.SemiBold
+							return lb.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
+						}),
+					)
+				}),
+				layout.Flexed(0.1, func(gtx C) D {
+					return layout.Center.Layout(gtx, pg.swapButton.Layout)
+				}),
+				layout.Flexed(0.45, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							walletName := "----"
+							if pg.destinationWalletSelector != nil && pg.destinationWalletSelector.SelectedWallet() != nil {
+								walletName = pg.destinationWalletSelector.SelectedWallet().GetWalletName()
+							}
+							accountName := "----"
+							if pg.destinationAccountSelector != nil && pg.destinationAccountSelector.SelectedAccount() != nil {
+								accountName = pg.destinationAccountSelector.SelectedAccount().Name
+							}
+							txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
+							lb := pg.Theme.Label(values.TextSize16, txt)
+							lb.Font.Weight = font.SemiBold
+							return lb.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
+						}),
+					)
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Bottom: values.MarginPadding16,
+			}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{
+					Axis:      layout.Horizontal,
+					Alignment: layout.Middle,
+				}.Layout(gtx,
+					layout.Flexed(0.55, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if pg.amountErrorText != "" {
+									txt := pg.Theme.Label(values.TextSize14, pg.amountErrorText)
+									txt.Font.Weight = font.SemiBold
+									txt.Color = pg.Theme.Color.Danger
+									return txt.Layout(gtx)
 								}
+
 								return D{}
 							}),
-						)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding16,
-						}.Layout(gtx, pg.createOrderBtn.Layout)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top: values.MarginPadding24,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
+										if pg.fetchingRate {
+											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+											gtx.Constraints.Min.X = gtx.Constraints.Max.X
+											return pg.materialLoader.Layout(gtx)
+										}
+										txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
+										txt.Color = pg.Theme.Color.Gray1
 										txt.Font.Weight = font.SemiBold
 										return txt.Layout(gtx)
 									}),
-									layout.Flexed(1, func(gtx C) D {
-										body := func(gtx C) D {
-											return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
-
-												layout.Rigid(func(gtx C) D {
-													return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-														layout.Rigid(func(gtx C) D {
-															var text string
-															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-																text = values.String(values.StrSyncingState)
-															} else {
-																text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
-
-																if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
-																	text = values.String(values.StrNeverSynced)
-																}
-															}
-
-															lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
-															lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-															return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
-														}),
-														layout.Rigid(func(gtx C) D {
-															return cryptomaterial.LinearLayout{
-																Width:     cryptomaterial.WrapContent,
-																Height:    cryptomaterial.WrapContent,
-																Clickable: pg.refreshClickable,
-																Direction: layout.Center,
-																Alignment: layout.Middle,
-																Margin:    layout.Inset{Left: values.MarginPadding10},
-															}.Layout(gtx,
-																layout.Rigid(func(gtx C) D {
-																	if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
-																		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																		return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
-																	}
-																	return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-																		return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
-																	})
-																}),
-															)
-														}),
-													)
-												}),
-												layout.Rigid(func(gtx C) D {
-													return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-														return layout.E.Layout(gtx, pg.viewAllButton.Layout)
-													})
-												}),
-											)
+									layout.Rigid(func(gtx C) D {
+										if !pg.fetchingRate && pg.rateError {
+											return pg.refreshExchangeRateBtn.Layout(gtx)
 										}
-										return layout.E.Layout(gtx, body)
+										return D{}
 									}),
 								)
 							}),
+						)
+					}),
+					layout.Flexed(0.45, func(gtx C) D {
+						if pg.fetchingRate {
+							gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return pg.materialLoader.Layout(gtx)
+						}
+
+						if pg.exchangeRate != -1 {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
+									txt := pg.Theme.Label(values.TextSize14, exchangeRate)
+									txt.Font.Weight = font.SemiBold
+									txt.Color = pg.Theme.Color.Gray1
+									return txt.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
+									txt := pg.Theme.Label(values.TextSize14, binanceRate)
+									txt.Font.Weight = font.SemiBold
+									txt.Color = pg.Theme.Color.Gray1
+									return txt.Layout(gtx)
+								}),
+							)
+						}
+						return D{}
+					}),
+				)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Inset{
+					Top: values.MarginPadding16,
+				}.Layout(gtx, pg.createOrderBtn.Layout)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Top: values.MarginPadding24,
+			}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
+								txt.Font.Weight = font.SemiBold
+								return txt.Layout(gtx)
+							}),
 							layout.Flexed(1, func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-									return layout.Stack{}.Layout(gtx,
-										layout.Expanded(func(gtx C) D {
-											return layout.Inset{}.Layout(gtx, pg.layoutHistory)
+								body := func(gtx C) D {
+									return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
+
+										layout.Rigid(func(gtx C) D {
+											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													var text string
+													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+														text = values.String(values.StrSyncingState)
+													} else {
+														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+
+														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+															text = values.String(values.StrNeverSynced)
+														}
+													}
+
+													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+												}),
+												layout.Rigid(func(gtx C) D {
+													return cryptomaterial.LinearLayout{
+														Width:     cryptomaterial.WrapContent,
+														Height:    cryptomaterial.WrapContent,
+														Clickable: pg.refreshClickable,
+														Direction: layout.Center,
+														Alignment: layout.Middle,
+														Margin:    layout.Inset{Left: values.MarginPadding10},
+													}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+															}
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+															})
+														}),
+													)
+												}),
+											)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+												return layout.E.Layout(gtx, pg.viewAllButton.Layout)
+											})
 										}),
 									)
-								})
+								}
+								return layout.E.Layout(gtx, body)
 							}),
 						)
-					})
-				}),
-			)
-		})
-	})
+					}),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return layout.Stack{}.Layout(gtx,
+								layout.Expanded(func(gtx C) D {
+									return layout.Inset{}.Layout(gtx, pg.layoutHistory)
+								}),
+							)
+						})
+					}),
+				)
+			})
+		}),
+	)
 }
 
 func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
