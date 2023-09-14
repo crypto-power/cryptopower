@@ -255,6 +255,8 @@ func (in *InfoModal) SetupWithTemplate(template string) *InfoModal {
 		customTemplate = securityToolsInfo(in.Theme)
 	case SourceModalInfoTemplate:
 		customTemplate = sourceModalInfo(in.Theme)
+	case TotalValueInfoTemplate:
+		customTemplate = totalValueInfo(in.Theme)
 	}
 
 	in.dialogTitle = title

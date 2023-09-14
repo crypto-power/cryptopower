@@ -597,6 +597,8 @@ const EN = `
 "totalBalance" = "Total Balance"
 "totalCost" = "Total cost"
 "totalVotes" = "Total votes:  %6.0d"
+"totalValue" = "Total Value"
+"totalValueMsg" = "Total value is the valuation of all the wallets you have at the USD market price.%v Your total balance may not be up to date due to some wallets not being fully synced. To obtain a more accurate balance, please proceed to the specific wallet page"
 "totalVotesReverse" = "%d Total votes"
 "transactionDetails" = "Transaction details"
 "transactionId" = "Transaction ID"
@@ -735,7 +737,5 @@ const EN = `
 "yourAddress" = "Your Address"
 "yourSeedWord" = "Your 33-word seed phrase"
 "yourself" = "Yourself"
-
-"totalValue" = "Total Value"
 "trade" = "Trade"
 `
