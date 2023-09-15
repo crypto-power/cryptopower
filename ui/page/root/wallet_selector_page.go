@@ -19,7 +19,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const WalletSelectorPageID = "wallet__selector"
+const WalletSelectorPageID = "wallet_selector"
 
 type (
 	C = layout.Context
