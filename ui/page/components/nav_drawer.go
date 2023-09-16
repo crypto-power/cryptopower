@@ -25,7 +25,7 @@ type NavHandler struct {
 type NavDrawer struct {
 	*load.Load
 
-	AppBarNavItems    []NavHandler
+	AppNavBarItems    []NavHandler
 	DCRDrawerNavItems []NavHandler
 	BTCDrawerNavItems []NavHandler
 	CurrentPage       string
@@ -76,11 +76,9 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context, navItems []NavHandler) 
 				}.Layout(mGtx,
 					layout.Rigid(func(gtx C) D {
 						img := navItems[i].ImageInactive
-
 						if navItems[i].PageID == nd.CurrentPage {
 							img = navItems[i].Image
 						}
-
 						return img.Layout24dp(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -110,6 +108,57 @@ func (nd *NavDrawer) LayoutNavDrawer(gtx layout.Context, navItems []NavHandler) 
 			})
 		}),
 	)
+}
+
+func (nd *NavDrawer) LayoutTopBar(gtx layout.Context) layout.Dimensions {
+	card := nd.Theme.Card()
+	card.Radius = cryptomaterial.Radius(20)
+	card.Color = nd.Theme.Color.Gray2
+	padding8 := values.MarginPadding8
+	padding20 := values.MarginPadding20
+	return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+		return card.Layout(gtx, func(gtx C) D {
+			list := layout.List{Axis: layout.Horizontal}
+			return list.Layout(gtx, len(nd.AppNavBarItems), func(gtx C, i int) D {
+				return cryptomaterial.LinearLayout{
+					Width:       cryptomaterial.WrapContent,
+					Height:      cryptomaterial.WrapContent,
+					Orientation: layout.Horizontal,
+					Clickable:   nd.AppNavBarItems[i].Clickable,
+					Alignment:   layout.Middle,
+				}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Top:    padding8,
+							Bottom: padding8,
+							Left:   padding20,
+							Right:  padding8,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Center.Layout(gtx, nd.AppNavBarItems[i].Image.Layout24dp)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Top:    padding8,
+							Bottom: padding8,
+							Right:  padding20,
+							Left:   values.MarginPadding0,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Center.Layout(gtx, nd.Theme.Body1(nd.AppNavBarItems[i].Title).Layout)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						if i+1 == len(nd.AppNavBarItems) {
+							return D{}
+						}
+						verticalSeparator := nd.Theme.SeparatorVertical(int(gtx.Metric.PxPerDp*20.0), 2)
+						verticalSeparator.Color = nd.Theme.Color.DeepBlue
+						return verticalSeparator.Layout(gtx)
+					}),
+				)
+			})
+		})
+	})
 }
 
 func (nd *NavDrawer) DrawerToggled(min bool) {
