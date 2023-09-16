@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -11,6 +12,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -26,6 +28,7 @@ type HomePage struct {
 
 	ctx       context.Context
 	ctxCancel context.CancelFunc
+	drawerNav components.NavDrawer
 
 	totalUSDValueSwitch    *cryptomaterial.Switch
 	navigationTab          *cryptomaterial.Tab
@@ -61,6 +64,25 @@ func NewHomePage(l *load.Load) *HomePage {
 	hp.infoButton.Size = values.MarginPadding15
 
 	hp.totalUSDValueSwitch = hp.Theme.Switch()
+
+	hp.drawerNav = components.NavDrawer{
+		Load:        hp.Load,
+		CurrentPage: hp.CurrentPageID(),
+		AppNavBarItems: []components.NavHandler{
+			{
+				Clickable: hp.Theme.NewClickable(true),
+				Image:     hp.Theme.Icons.SendIcon,
+				Title:     values.String(values.StrSend),
+				PageID:    send.SendPageID,
+			},
+			{
+				Clickable: hp.Theme.NewClickable(true),
+				Image:     hp.Theme.Icons.ReceiveIcon,
+				Title:     values.String(values.StrReceive),
+				PageID:    ReceivePageID,
+			},
+		},
+	}
 
 	return hp
 }
@@ -123,6 +145,13 @@ func (hp *HomePage) HandleUserInteractions() {
 		}
 
 		hp.Display(pg)
+	}	
+
+	for _, item := range hp.drawerNav.AppNavBarItems {
+		for item.Clickable.Clicked() {
+			// TODO: Implement click functionality
+			fmt.Println(item.PageID, "clicked") 
+		}
 	}
 
 	if hp.infoButton.Button.Clicked() {
@@ -288,7 +317,6 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 
 func (hp *HomePage) balanceLayout(gtx C) D {
 	if hp.totalUSDValueSwitch.IsChecked() {
-		// return layout.E.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -301,7 +329,6 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 				})
 			}),
 		)
-		// })
 	}
 
 	lblText := hp.Theme.Label(values.TextSize30, "--")
@@ -344,16 +371,19 @@ func (hp *HomePage) totalBalanceTextAndIconButtonLayout(gtx C) D {
 }
 
 func (hp *HomePage) notificationSettingsLayout(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+	return layout.Flex{}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return cryptomaterial.LinearLayout{
 					Width:       cryptomaterial.WrapContent,
 					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Horizontal,
+					Alignment:   layout.Middle,
 				}.Layout(gtx,
+					layout.Rigid(hp.drawerNav.LayoutTopBar),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
+							Left:  values.MarginPadding10,
 							Right: values.MarginPadding10,
 						}.Layout(gtx, func(gtx C) D {
 							return hp.appNotificationButton.Layout(gtx, hp.Theme.Icons.Notification.Layout20dp)
