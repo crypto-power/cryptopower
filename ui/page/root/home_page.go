@@ -27,6 +27,7 @@ type HomePage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
+	totalUSDValueSwitch    *cryptomaterial.Switch
 	navigationTab          *cryptomaterial.Tab
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
@@ -57,7 +58,9 @@ func NewHomePage(l *load.Load) *HomePage {
 	hp.navigationTab = l.Theme.Tab(layout.Horizontal, false, navigationTabTitles)
 
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
-	hp.infoButton.Size = values.MarginPadding20
+	hp.infoButton.Size = values.MarginPadding15
+
+	hp.totalUSDValueSwitch = hp.Theme.Switch()
 
 	return hp
 }
@@ -79,6 +82,8 @@ func (hp *HomePage) OnNavigatedTo() {
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
 	}
+
+	hp.totalUSDValueSwitch.SetChecked(true)
 
 	hp.CurrentPage().OnNavigatedTo()
 }
@@ -140,10 +145,13 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for hp.hideBalanceButton.Clicked() {
-		// TODO: these comments are still needed. They will be updated in my next PR
-		// hp.isBalanceHidden = hp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
+		// TODO use assetManager config settings
 		hp.isBalanceHidden = !hp.isBalanceHidden
-		// hp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, hp.isBalanceHidden)
+	}
+
+	if hp.totalUSDValueSwitch.Changed() {
+		// TODO use assetManager config settings
+		hp.totalUSDValueSwitch.SetChecked(hp.totalUSDValueSwitch.IsChecked())
 	}
 }
 
@@ -245,17 +253,19 @@ func (hp *HomePage) layoutMobile(gtx C) D {
 }
 
 func (hp *HomePage) LayoutTopBar(gtx C) D {
-	v := values.MarginPadding20
+	padding20 := values.MarginPadding20
+	padding10 := values.MarginPadding10
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
 		Padding: layout.Inset{
-			Right:  v,
-			Left:   v,
-			Top:    values.MarginPadding10,
-			Bottom: v,
+			Right:  padding20,
+			Left:   padding20,
+			Top:    padding10,
+			Bottom: padding10,
 		},
 	}.Layout(gtx,
 		layout.Rigid(hp.totalBalanceLayout),
@@ -269,7 +279,6 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			Width:       cryptomaterial.WrapContent,
 			Height:      cryptomaterial.WrapContent,
 			Orientation: layout.Vertical,
-			// Alignment:   layout.Middle,
 		}.Layout(gtx,
 			layout.Rigid(hp.totalBalanceTextAndIconButtonLayout),
 			layout.Rigid(hp.balanceLayout),
@@ -278,7 +287,8 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	return layout.E.Layout(gtx, func(gtx C) D {
+	if hp.totalUSDValueSwitch.IsChecked() {
+		// return layout.E.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -291,7 +301,12 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 				})
 			}),
 		)
-	})
+		// })
+	}
+
+	lblText := hp.Theme.Label(values.TextSize30, "--")
+	lblText.Color = hp.Theme.Color.PageNavText
+	return lblText.Layout(gtx)
 }
 
 // TODO: use real values
@@ -316,11 +331,15 @@ func (hp *HomePage) totalBalanceTextAndIconButtonLayout(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			lbl := hp.Theme.Label(values.TextSize14, values.String(values.StrTotalValue))
 			lbl.Color = hp.Theme.Color.PageNavText
-			return layout.Inset{
-				Right: values.MarginPadding5,
-			}.Layout(gtx, lbl.Layout)
+			return lbl.Layout(gtx)
 		}),
-		layout.Rigid(hp.infoButton.Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Left:  values.MarginPadding5,
+				Right: values.MarginPadding10,
+			}.Layout(gtx, hp.infoButton.Layout)
+		}),
+		layout.Rigid(hp.totalUSDValueSwitch.Layout),
 	)
 }
 
