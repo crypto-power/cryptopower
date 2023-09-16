@@ -223,6 +223,9 @@ func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
 				}.Layout(gtx, pg.Theme.Separator().Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
+				if !pg.toggleMixer.IsChecked() {
+					return D{}
+				}
 				return layout.UniformInset(values.MarginPadding22).Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
