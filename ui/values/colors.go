@@ -1,6 +1,15 @@
 package values
 
-import "image/color"
+import (
+	"image/color"
+
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+)
+
+const (
+	TransparentBlack = "black"
+	TransparentWhite = "white"
+)
 
 type Color struct {
 	Primary          color.NRGBA
@@ -141,4 +150,15 @@ func rgb(c uint32) color.NRGBA {
 
 func argb(c uint32) color.NRGBA {
 	return color.NRGBA{A: uint8(c >> 24), R: uint8(c >> 16), G: uint8(c >> 8), B: uint8(c)}
+}
+
+func TransparentColor(colorType string, opacity float64) color.NRGBA {
+	var scheme utils.ColorScheme
+	switch colorType {
+	case TransparentBlack:
+		scheme = utils.ColorScheme{R: 0, G: 0, B: 0, O: opacity}
+	case TransparentWhite:
+		scheme = utils.ColorScheme{R: 255, G: 255, B: 255, O: opacity}
+	}
+	return color.NRGBAModel.Convert(scheme.NRGBAColor()).(color.NRGBA)
 }

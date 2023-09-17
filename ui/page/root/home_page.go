@@ -145,12 +145,12 @@ func (hp *HomePage) HandleUserInteractions() {
 		}
 
 		hp.Display(pg)
-	}	
+	}
 
 	for _, item := range hp.drawerNav.AppNavBarItems {
 		for item.Clickable.Clicked() {
 			// TODO: Implement click functionality
-			fmt.Println(item.PageID, "clicked") 
+			fmt.Println(item.PageID, "clicked")
 		}
 	}
 
