@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-	// "github.com/crypto-power/cryptopower/ui/page/components"
 )
 
 const (
@@ -29,43 +30,31 @@ type OverviewPage struct {
 	scrollContainer *widget.List
 }
 
+type supportedCoinSliderItem struct {
+	Title    string
+	MainText string
+	SubText  string
+
+	Image           *cryptomaterial.Image
+	BackgroundImage *cryptomaterial.Image
+}
+
 func NewOverviewPage(l *load.Load) *OverviewPage {
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
 		pageContainer: layout.List{
-			Axis: layout.Vertical,
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
 		},
 		scrollContainer: &widget.List{
-			List: layout.List{Axis: layout.Vertical},
+			List: layout.List{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			},
 		},
+		slider: l.Theme.Slider(),
 	}
-
-	sliderItems := []cryptomaterial.SliderItem{
-		{
-			Title:           "DECRED",
-			MainText:        "20000.199",
-			SubText:         "$1000",
-			Image:           pg.Theme.Icons.DCRGroupIcon,
-			BackgroundImage: pg.Theme.Icons.DCRBackground,
-		},
-		{
-			Title:           "Litecoin",
-			MainText:        "50000.199",
-			SubText:         "$9000",
-			Image:           pg.Theme.Icons.LTGroupIcon,
-			BackgroundImage: pg.Theme.Icons.LTBackground,
-		},
-		{
-			Title:           "Bitcoin",
-			MainText:        "100000.199",
-			SubText:         "$89000",
-			Image:           pg.Theme.Icons.BTCGroupIcon,
-			BackgroundImage: pg.Theme.Icons.BTCBackground,
-		},
-	}
-
-	pg.slider = l.Theme.Slider(sliderItems, values.MarginPadding368, values.MarginPadding221)
 
 	return pg
 }
@@ -124,11 +113,21 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		pg.recentTrades,
 		pg.recentProposal,
 	}
-
-	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-			return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				return pageContent[i](gtx)
+	m10 := values.MarginPadding10
+	m20 := values.MarginPadding20
+	return layout.Inset{
+		Right:  m20,
+		Left:   m20,
+		Top:    m10,
+		Bottom: m10,
+	}.Layout(gtx, func(gtx C) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+					return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+						return pageContent[i](gtx)
+					})
+				})
 			})
 		})
 	})
@@ -143,21 +142,57 @@ func (pg *OverviewPage) topSection(gtx C) D {
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Rigid(pg.slider.Layout),
+		layout.Rigid(pg.supportedCoinLayout),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
-				Left: values.MarginPadding20,
-			}.Layout(gtx, func(gtx C) D {
-				return pg.slider.Layout(gtx)
-			})
+				Left: values.MarginPadding10,
+			}.Layout(gtx, pg.supportedCoinLayout)
 		}),
 	)
 }
 
+func (pg *OverviewPage) supportedCoinLayout(gtx C) D {
+	dcr := supportedCoinSliderItem{
+		Title:           "DECRED",
+		MainText:        "20000.199 DCR",
+		SubText:         "$1000",
+		Image:           pg.Theme.Icons.DCRGroupIcon,
+		BackgroundImage: pg.Theme.Icons.DCRBackground,
+	}
+	ltc := supportedCoinSliderItem{
+		Title:           "Litecoin",
+		MainText:        "50000.199 LTC",
+		SubText:         "$9000",
+		Image:           pg.Theme.Icons.LTGroupIcon,
+		BackgroundImage: pg.Theme.Icons.LTBackground,
+	}
+	btc := supportedCoinSliderItem{
+		Title:           "Bitcoin",
+		MainText:        "100000.199 BTC",
+		SubText:         "$89000",
+		Image:           pg.Theme.Icons.BTCGroupIcon,
+		BackgroundImage: pg.Theme.Icons.BTCBackground,
+	}
+
+	sliderWidget := []layout.Widget{
+		func(gtx C) D {
+			return pg.supportedCoinItemLayout(gtx, dcr)
+		},
+		func(gtx C) D {
+			return pg.supportedCoinItemLayout(gtx, ltc)
+		},
+		func(gtx C) D {
+			return pg.supportedCoinItemLayout(gtx, btc)
+		},
+	}
+	return pg.slider.Layout(gtx, sliderWidget)
+}
+
 func (pg *OverviewPage) marketOverview(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Market Overview", func(gtx C) D {
-		return pg.slider.Layout(gtx)
+		return pg.supportedCoinLayout(gtx)
 	})
 }
 
@@ -166,15 +201,16 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-				return pg.slider.Layout(gtx)
+				return pg.supportedCoinLayout(gtx)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
-				return pg.slider.Layout(gtx)
+				return pg.supportedCoinLayout(gtx)
 			})
 		}),
 	)
@@ -182,13 +218,13 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Trade", func(gtx C) D {
-		return pg.slider.Layout(gtx)
+		return pg.supportedCoinLayout(gtx)
 	})
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-		return pg.slider.Layout(gtx)
+		return pg.supportedCoinLayout(gtx)
 	})
 }
 
@@ -201,4 +237,63 @@ func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layo
 			return pg.Theme.Card().Layout(gtx, body)
 		}),
 	)
+}
+
+func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) D {
+	return layout.Stack{}.Layout(gtx,
+		layout.Stacked(func(gtx C) D {
+			return item.BackgroundImage.LayoutSize2(gtx, values.MarginPadding368, values.MarginPadding221)
+		}),
+		layout.Expanded(func(gtx C) D {
+			col := pg.Theme.Color.InvText
+			return layout.Flex{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					lbl := pg.Theme.Body1(item.Title)
+					lbl.Color = col
+					return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+						return item.Image.LayoutSize(gtx, values.MarginPadding65)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+						return components.LayoutBalanceColor(gtx, pg.Load, item.MainText, col)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					card := pg.Theme.Card()
+					card.Radius = cryptomaterial.Radius(12)
+					card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
+						return card.Layout(gtx, func(gtx C) D {
+							return layout.Inset{
+								Top:    values.MarginPadding4,
+								Bottom: values.MarginPadding4,
+								Right:  values.MarginPadding8,
+								Left:   values.MarginPadding8,
+							}.Layout(gtx, func(gtx C) D {
+								lbl := pg.Theme.Body2(item.SubText)
+								lbl.Color = col
+								return lbl.Layout(gtx)
+							})
+						})
+					})
+				}),
+			)
+		}),
+	)
+}
+
+func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.Widget) D {
+	return layout.Center.Layout(gtx, func(gtx C) D {
+		return layout.Inset{
+			Top:    top,
+			Bottom: bottom,
+		}.Layout(gtx, content)
+	})
 }

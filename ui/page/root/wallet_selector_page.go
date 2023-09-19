@@ -177,7 +177,7 @@ func (pg *WalletSelectorPage) Layout(gtx C) D {
 }
 
 func (pg *WalletSelectorPage) layoutDesktop(gtx C) D {
-	return layout.UniformInset(values.MarginPadding20).Layout(gtx, pg.pageContentLayout)
+	return pg.pageContentLayout(gtx)
 }
 
 func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
@@ -201,6 +201,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
+		Padding:   layout.UniformInset(values.MarginPadding20),
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:  gtx.Dp(values.MarginPadding550),
