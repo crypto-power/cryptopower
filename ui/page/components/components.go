@@ -36,8 +36,6 @@ const (
 	WalletsPageID = "Wallets"
 )
 
-var MaxWidth = unit.Dp(800)
-
 type (
 	C              = layout.Context
 	D              = layout.Dimensions
@@ -89,8 +87,8 @@ func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
 
 	padding := values.MarginPadding24
 
-	if (width - 2*gtx.Dp(padding)) > gtx.Dp(MaxWidth) {
-		paddingValue := float32(width-gtx.Dp(MaxWidth)) / 2
+	if (width - 2*gtx.Dp(padding)) > gtx.Dp(values.AppWidth) {
+		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 3
 		padding = unit.Dp(paddingValue)
 	}
 
@@ -107,8 +105,8 @@ func UniformHorizontalPadding(gtx layout.Context, body layout.Widget) layout.Dim
 
 	padding := values.MarginPadding24
 
-	if (width - 2*gtx.Dp(padding)) > gtx.Dp(MaxWidth) {
-		paddingValue := float32(width-gtx.Dp(MaxWidth)) / 3
+	if (width - 2*gtx.Dp(padding)) > gtx.Dp(values.AppWidth) {
+		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 3
 		padding = unit.Dp(paddingValue)
 	}
 
