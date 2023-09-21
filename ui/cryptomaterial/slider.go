@@ -3,6 +3,8 @@
 package cryptomaterial
 
 import (
+	"image/color"
+
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -13,11 +15,15 @@ type Slider struct {
 
 	nextButton *Clickable
 	prevButton *Clickable
-
-	card  Card
-	items []layout.Widget
+	card       Card
+	items      []layout.Widget
 
 	selected int
+
+	// colors of the indicator and navigation button
+	ButtonBackgroundColor    color.NRGBA
+	IndicatorBackgroundColor color.NRGBA
+	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
 }
 
 var m4 = values.MarginPadding4
@@ -27,8 +33,11 @@ func (t *Theme) Slider() *Slider {
 		t:     t,
 		items: make([]layout.Widget, 0),
 
-		nextButton: t.NewClickable(false),
-		prevButton: t.NewClickable(false),
+		nextButton:               t.NewClickable(false),
+		prevButton:               t.NewClickable(false),
+		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
+		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
+		SelectedIndicatorColor:   t.Color.White,
 	}
 
 	sl.card = sl.t.Card()
@@ -53,8 +62,10 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 				return layout.Flex{
 					Axis: layout.Horizontal,
 				}.Layout(gtx,
-					layout.Flexed(1, s.selectedItemIndicatorLayout),
-					layout.Rigid(s.buttonLayout),
+					layout.Rigid(s.selectedItemIndicatorLayout),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.E.Layout(gtx, s.buttonLayout)
+					}),
 				)
 			})
 		}),
@@ -63,7 +74,7 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 
 func (s *Slider) buttonLayout(gtx C) D {
 	s.card.Radius = Radius(10)
-	s.card.Color = values.TransparentColor(values.TransparentWhite, 0.2)
+	s.card.Color = s.ButtonBackgroundColor
 	return s.containerLayout(gtx, func(gtx C) D {
 		return layout.Inset{
 			Right: m4,
@@ -88,7 +99,7 @@ func (s *Slider) buttonLayout(gtx C) D {
 func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 	m4 := values.MarginPadding4
 	s.card.Radius = Radius(10)
-	s.card.Color = values.TransparentColor(values.TransparentWhite, 0.2)
+	s.card.Color = s.IndicatorBackgroundColor
 	return s.containerLayout(gtx, func(gtx C) D {
 		return layout.Inset{
 			Right: m4,
@@ -99,7 +110,7 @@ func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 				ic := NewIcon(s.t.Icons.ImageBrightness1)
 				ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
 				if i == s.selected {
-					ic.Color = s.t.Color.Surface
+					ic.Color = s.SelectedIndicatorColor
 				}
 				return layout.Inset{
 					Top:    m4,
@@ -123,7 +134,7 @@ func (s *Slider) centerLayout(gtx C, content layout.Widget) D {
 }
 
 func (s *Slider) handleClickEvent() {
-	l := len(s.items)
+	l := len(s.items) - 1 // index starts at 0
 	if s.nextButton.Clicked() {
 		if s.selected == l {
 			s.selected = 0

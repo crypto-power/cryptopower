@@ -14,7 +14,7 @@ type Icons struct {
 	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon,
 	ActionSettings, ActionSwapHoriz, NavigationRefresh, ContentCopy *widget.Icon
 
-	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert,
+	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert, Alert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
 	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer,
@@ -139,6 +139,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.LockinInactiveIcon = NewImage(decredIcons["lockin_inactive"])
 	i.TransactionFingerprint = NewImage(decredIcons["transaction_fingerprint"])
 	i.ArrowForward = NewImage(decredIcons["arrow_fwd"])
+	i.Alert = NewImage(decredIcons["alert"])
 
 	/* Start - Asset types Icons */
 	i.DcrDex = NewImage(decredIcons["logo_dcrdex"])
