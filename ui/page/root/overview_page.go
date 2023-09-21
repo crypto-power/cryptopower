@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -25,9 +26,14 @@ type OverviewPage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
-	slider          *cryptomaterial.Slider
 	pageContainer   layout.List
 	scrollContainer *widget.List
+
+	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
+	coinSlider                *cryptomaterial.Slider
+	mixerSlider               *cryptomaterial.Slider
+
+	card cryptomaterial.Card
 }
 
 type supportedCoinSliderItem struct {
@@ -53,8 +59,18 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				Alignment: layout.Middle,
 			},
 		},
-		slider: l.Theme.Slider(),
+		coinSlider: l.Theme.Slider(),
+		card:       l.Theme.Card(),
 	}
+
+	pg.mixerSlider = l.Theme.Slider()
+	pg.mixerSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
+	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
+	pg.mixerSlider.SelectedIndicatorColor = pg.Theme.Color.DeepBlue
+
+	pg.forwardButton, pg.infoButton = components.SubpageHeaderButtons(l)
+	pg.forwardButton.Icon = pg.Theme.Icons.NavigationArrowForward
+	pg.forwardButton.Size = values.MarginPadding20
 
 	return pg
 }
@@ -107,7 +123,7 @@ func (pg *OverviewPage) Layout(gtx C) D {
 
 func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	pageContent := []func(gtx C) D{
-		pg.topSection,
+		pg.sliderLayout,
 		pg.marketOverview,
 		pg.txStakingSection,
 		pg.recentTrades,
@@ -137,23 +153,22 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 	return D{}
 }
 
-func (pg *OverviewPage) topSection(gtx C) D {
+func (pg *OverviewPage) sliderLayout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Rigid(pg.supportedCoinLayout),
+		layout.Rigid(pg.supportedCoinSliderLayout),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Left: values.MarginPadding10,
-			}.Layout(gtx, pg.supportedCoinLayout)
+			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 		}),
 	)
 }
 
-func (pg *OverviewPage) supportedCoinLayout(gtx C) D {
+func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
+	// TODO use real data
 	dcr := supportedCoinSliderItem{
 		Title:           "DECRED",
 		MainText:        "20000.199 DCR",
@@ -187,56 +202,14 @@ func (pg *OverviewPage) supportedCoinLayout(gtx C) D {
 			return pg.supportedCoinItemLayout(gtx, btc)
 		},
 	}
-	return pg.slider.Layout(gtx, sliderWidget)
+	return pg.coinSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) marketOverview(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Market Overview", func(gtx C) D {
-		return pg.supportedCoinLayout(gtx)
-	})
-}
-
-func (pg *OverviewPage) txStakingSection(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Direction:   layout.Center,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-				return pg.supportedCoinLayout(gtx)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
-				return pg.supportedCoinLayout(gtx)
-			})
-		}),
-	)
-}
-
-func (pg *OverviewPage) recentTrades(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Trade", func(gtx C) D {
-		return pg.supportedCoinLayout(gtx)
-	})
-}
-
-func (pg *OverviewPage) recentProposal(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-		return pg.supportedCoinLayout(gtx)
-	})
-}
-
-func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Body2(sectionTitle).Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Card().Layout(gtx, body)
-		}),
-	)
+func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
+	sliderWidget := []layout.Widget{
+		pg.mixerLayout,
+	}
+	return pg.mixerSlider.Layout(gtx, sliderWidget)
 }
 
 func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) D {
@@ -285,6 +258,172 @@ func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderI
 					})
 				}),
 			)
+		}),
+	)
+}
+
+func (pg *OverviewPage) mixerLayout(gtx C) D {
+	r := 8
+	return cryptomaterial.LinearLayout{
+		Width:       gtx.Dp(values.MarginPadding368),
+		Height:      gtx.Dp(values.MarginPadding221),
+		Orientation: layout.Vertical,
+		Padding:     layout.UniformInset(values.MarginPadding15),
+		Background:  pg.Theme.Color.Surface,
+		Border: cryptomaterial.Border{
+			Radius: cryptomaterial.CornerRadius{
+				TopLeft:     r,
+				TopRight:    r,
+				BottomRight: r,
+				BottomLeft:  r,
+			},
+		},
+	}.Layout(gtx,
+		layout.Rigid(pg.topMixerLayout),
+		layout.Rigid(pg.middleMixerLayout),
+		layout.Rigid(pg.bottomMixerLayout),
+	)
+}
+
+func (pg *OverviewPage) topMixerLayout(gtx C) D {
+	return layout.Flex{
+		Axis:      layout.Horizontal,
+		Alignment: layout.Middle,
+	}.Layout(gtx,
+		layout.Rigid(pg.Theme.Icons.Mixer.Layout24dp),
+		layout.Rigid(func(gtx C) D {
+			lbl := pg.Theme.Body1("Mixer is Running...") // TODO
+			lbl.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left:  values.MarginPadding8,
+				Right: values.MarginPadding8,
+			}.Layout(gtx, lbl.Layout)
+		}),
+		layout.Rigid(pg.infoButton.Layout),
+		layout.Flexed(1, func(gtx C) D {
+			return layout.E.Layout(gtx, pg.forwardButton.Layout)
+		}),
+	)
+}
+
+func (pg *OverviewPage) middleMixerLayout(gtx C) D {
+	r := gtx.Dp(7)
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Padding: layout.Inset{
+			Left:   values.MarginPadding10,
+			Right:  values.MarginPadding10,
+			Top:    values.MarginPadding4,
+			Bottom: values.MarginPadding4,
+		},
+		Margin: layout.Inset{
+			Top:    values.MarginPadding10,
+			Bottom: values.MarginPadding10,
+		},
+		Background: pg.Theme.Color.LightBlue7,
+		Alignment:  layout.Middle,
+		Border: cryptomaterial.Border{
+			Radius: cryptomaterial.CornerRadius{
+				TopLeft:     r,
+				TopRight:    r,
+				BottomRight: r,
+				BottomLeft:  r,
+			},
+		},
+	}.Layout(gtx,
+		layout.Rigid(pg.Theme.Icons.Alert.Layout20dp),
+		layout.Rigid(func(gtc C) D {
+			lbl := pg.Theme.Body2("Keep app open")
+			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
+		}),
+	)
+}
+
+func (pg *OverviewPage) bottomMixerLayout(gtx C) D {
+	r := 8
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Vertical,
+		Padding:     layout.UniformInset(values.MarginPadding15),
+		Background:  pg.Theme.Color.Gray4,
+		Border: cryptomaterial.Border{
+			Radius: cryptomaterial.CornerRadius{
+				TopLeft:     r,
+				TopRight:    r,
+				BottomRight: r,
+				BottomLeft:  r,
+			},
+		},
+	}.Layout(gtx,
+		layout.Rigid(func(gtc C) D {
+			lbl := pg.Theme.Body2("myWallet")
+			lbl.Font.Weight = font.SemiBold
+			return lbl.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{
+				Axis:      layout.Horizontal,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Rigid(pg.Theme.Body1("Unmixed balance").Layout), // TODO
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return components.LayoutBalance(gtx, pg.Load, "100.67 DCR")
+					})
+				}),
+			)
+		}),
+	)
+}
+
+func (pg *OverviewPage) marketOverview(gtx C) D {
+	return pg.pageContentWrapper(gtx, "Market Overview", func(gtx C) D {
+		return pg.supportedCoinSliderLayout(gtx)
+	})
+}
+
+func (pg *OverviewPage) txStakingSection(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
+				return pg.supportedCoinSliderLayout(gtx)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+				return pg.supportedCoinSliderLayout(gtx)
+			})
+		}),
+	)
+}
+
+func (pg *OverviewPage) recentTrades(gtx C) D {
+	return pg.pageContentWrapper(gtx, "Recent Trade", func(gtx C) D {
+		return pg.supportedCoinSliderLayout(gtx)
+	})
+}
+
+func (pg *OverviewPage) recentProposal(gtx C) D {
+	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
+		return pg.supportedCoinSliderLayout(gtx)
+	})
+}
+
+func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return pg.Theme.Body2(sectionTitle).Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.Theme.Card().Layout(gtx, body)
 		}),
 	)
 }

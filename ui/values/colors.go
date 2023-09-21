@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	TransparentBlack = "black"
-	TransparentWhite = "white"
+	TransparentBlack    = "black"
+	TransparentWhite    = "white"
+	TransparentDeepBlue = "deepBlue"
 )
 
 type Color struct {
@@ -39,6 +40,7 @@ type Color struct {
 	LightBlue4       color.NRGBA
 	LightBlue5       color.NRGBA
 	LightBlue6       color.NRGBA
+	LightBlue7       color.NRGBA
 	Gray1            color.NRGBA
 	Gray2            color.NRGBA
 	Gray3            color.NRGBA
@@ -115,6 +117,7 @@ func (c *Color) DefaultThemeColors() *Color {
 		LightBlue4:       rgb(0xBBDEFF),
 		LightBlue5:       rgb(0x70CBFF),
 		LightBlue6:       rgb(0x4B91D8),
+		LightBlue7:       rgb(0xF0F3FF),
 		Gray1:            rgb(0x3d5873), // darkest gray #3D5873 (icon color),
 		Gray2:            rgb(0xe6eaed), // light 0xe6eaed
 		Gray3:            rgb(0xc4cbd2), // InactiveGray #C4CBD2
@@ -159,6 +162,8 @@ func TransparentColor(colorType string, opacity float64) color.NRGBA {
 		scheme = utils.ColorScheme{R: 0, G: 0, B: 0, O: opacity}
 	case TransparentWhite:
 		scheme = utils.ColorScheme{R: 255, G: 255, B: 255, O: opacity}
+	case TransparentDeepBlue:
+		scheme = utils.ColorScheme{R: 9, G: 20, B: 64, O: opacity}
 	}
 	return color.NRGBAModel.Convert(scheme.NRGBAColor()).(color.NRGBA)
 }
