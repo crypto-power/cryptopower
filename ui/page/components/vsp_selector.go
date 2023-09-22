@@ -247,10 +247,10 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 				layout.Rigid(func(gtx C) D {
 					// if VSP(s) are being loaded, show loading UI.
 					if v.isLoadingVSP {
-						return layout.Inset{Top: values.MarginPadding120,
-							Right:  values.MarginPadding120,
-							Bottom: values.MarginPadding120,
-							Left:   values.MarginPadding120}.Layout(gtx, v.materialLoader.Layout)
+						return layout.Inset{Top: values.MarginPadding140,
+							Right:  values.MarginPadding140,
+							Bottom: values.MarginPadding140,
+							Left:   values.MarginPadding140}.Layout(gtx, v.materialLoader.Layout)
 					}
 
 					// if no vsp loaded, display a no vsp text
