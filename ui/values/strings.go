@@ -416,6 +416,7 @@ const (
 	StrLiveTickets                     = "liveTickets"
 	StrLoading                         = "loading"
 	StrLoadingPrice                    = "loadingPrice"
+	StrLoadingVSP                      = "loadingVSP"
 	StrLocked                          = "locked"
 	StrLockedByTickets                 = "lockedByTickets"
 	StrLockedIn                        = "lockedin"

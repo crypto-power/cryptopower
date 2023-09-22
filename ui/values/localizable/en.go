@@ -308,6 +308,7 @@ const EN = `
 "liveTickets" = "Live Tickets"
 "loading" = "Loading..."
 "loadingPrice" = "Loading price"
+"loadingVSP" = "Loading voting service provider"
 "locked" = "Locked"
 "lockedByTickets" = "Locked By Tickets"
 "lockedin" = "Locked In"
