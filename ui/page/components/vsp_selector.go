@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -137,6 +138,9 @@ type vspSelectorModal struct {
 	vspSelectedCallback func(*dcr.VSP)
 
 	dcrImpl *dcr.Asset
+
+	materialLoader material.LoaderStyle
+	isLoadingVSP   bool
 }
 
 func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
@@ -150,10 +154,11 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("VSPSelectorModal"),
 
-		inputVSP: l.Theme.Editor(new(widget.Editor), values.String(values.StrAddVSP)),
-		addVSP:   l.Theme.Button(values.String(values.StrSave)),
-		vspList:  l.Theme.NewClickableList(layout.Vertical),
-		dcrImpl:  impl,
+		inputVSP:       l.Theme.Editor(new(widget.Editor), values.String(values.StrAddVSP)),
+		addVSP:         l.Theme.Button(values.String(values.StrSave)),
+		vspList:        l.Theme.NewClickableList(layout.Vertical),
+		dcrImpl:        impl,
+		materialLoader: material.Loader(l.Theme.Base),
 	}
 	v.inputVSP.Editor.SingleLine = true
 
@@ -165,7 +170,11 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 func (v *vspSelectorModal) OnResume() {
 	if len(v.dcrImpl.KnownVSPs()) == 0 {
 		go func() {
+			v.isLoadingVSP = true // This is used to set the UI to loading VSP state.
 			v.dcrImpl.ReloadVSPList(context.TODO())
+			// set isLoadingVSP to false, this indicates to the UI that we are done
+			// loading vsp(s)
+			v.isLoadingVSP = false
 			v.ParentWindow().Reload()
 		}()
 	}
@@ -214,12 +223,21 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 	return v.Modal.Layout(gtx, []layout.Widget{
 		func(gtx C) D {
 			title := v.Theme.Label(values.TextSize20, v.dialogTitle)
+			// Override title when VSP is loading.
+			if v.isLoadingVSP {
+				title = v.Theme.Label(values.TextSize20, values.String(values.StrLoadingVSP))
+			}
 			title.Font.Weight = font.SemiBold
 			return title.Layout(gtx)
 		},
 		func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
+					// Return 0 dimension if VSP is loading.
+					if v.isLoadingVSP {
+						return D{}
+					}
+
 					txt := v.Theme.Label(values.TextSize14, values.String(values.StrAddress))
 					txt.Color = v.Theme.Color.GrayText2
 					txtFee := v.Theme.Label(values.TextSize14, values.String(values.StrFee))
@@ -227,9 +245,17 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 					return EndToEndRow(gtx, txt.Layout, txtFee.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
+					// if VSP(s) are being loaded, show loading UI.
+					if v.isLoadingVSP {
+						return layout.Inset{Top: values.MarginPadding100,
+							Right:  values.MarginPadding100,
+							Bottom: values.MarginPadding100,
+							Left:   values.MarginPadding100}.Layout(gtx, v.materialLoader.Layout)
+					}
+
 					// if no vsp loaded, display a no vsp text
 					vsps := v.dcrImpl.KnownVSPs()
-					if len(vsps) == 0 {
+					if len(vsps) == 0 && !v.isLoadingVSP {
 						noVsp := v.Theme.Label(values.TextSize14, values.String(values.StrNoVSPLoaded))
 						noVsp.Color = v.Theme.Color.GrayText2
 						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, noVsp.Layout)
@@ -257,6 +283,11 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 			)
 		},
 		func(gtx C) D {
+			// Return 0 dimension if VSP is loading.
+			if v.isLoadingVSP {
+				return D{}
+			}
+
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, v.inputVSP.Layout),
 				layout.Rigid(v.addVSP.Layout),
