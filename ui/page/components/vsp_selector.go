@@ -247,10 +247,10 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 				layout.Rigid(func(gtx C) D {
 					// if VSP(s) are being loaded, show loading UI.
 					if v.isLoadingVSP {
-						return layout.Inset{Top: values.MarginPadding100,
-							Right:  values.MarginPadding100,
-							Bottom: values.MarginPadding100,
-							Left:   values.MarginPadding100}.Layout(gtx, v.materialLoader.Layout)
+						return layout.Inset{Top: values.MarginPadding120,
+							Right:  values.MarginPadding120,
+							Bottom: values.MarginPadding120,
+							Left:   values.MarginPadding120}.Layout(gtx, v.materialLoader.Layout)
 					}
 
 					// if no vsp loaded, display a no vsp text
@@ -262,6 +262,8 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 					}
 
 					return v.vspList.Layout(gtx, len(vsps), func(gtx C, i int) D {
+						// Show scrollbar on VSP selector modal
+						v.Modal.ShowScrollbar(true)
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 							layout.Flexed(0.8, func(gtx C) D {
 								return layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
