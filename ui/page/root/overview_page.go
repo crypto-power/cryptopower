@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -9,6 +10,8 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -26,12 +29,15 @@ type OverviewPage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
-	pageContainer   layout.List
+	pageContainer      layout.List
+	marketOverviewList layout.List
+
 	scrollContainer *widget.List
 
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 	coinSlider                *cryptomaterial.Slider
 	mixerSlider               *cryptomaterial.Slider
+	// transactionList  *cryptomaterial.ClickableList
 
 	card cryptomaterial.Card
 }
@@ -45,11 +51,24 @@ type supportedCoinSliderItem struct {
 	BackgroundImage *cryptomaterial.Image
 }
 
+type assetMarketData struct {
+	title            string
+	subText          string
+	price            string
+	idChange         string
+	isChangePositive bool
+	image            *cryptomaterial.Image
+}
+
 func NewOverviewPage(l *load.Load) *OverviewPage {
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
 		pageContainer: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+		marketOverviewList: layout.List{
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
@@ -129,14 +148,8 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		pg.recentTrades,
 		pg.recentProposal,
 	}
-	m10 := values.MarginPadding10
-	m20 := values.MarginPadding20
-	return layout.Inset{
-		Right:  m20,
-		Left:   m20,
-		Top:    m10,
-		Bottom: m10,
-	}.Layout(gtx, func(gtx C) D {
+
+	return components.UniformPadding(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
@@ -381,8 +394,137 @@ func (pg *OverviewPage) bottomMixerLayout(gtx C) D {
 
 func (pg *OverviewPage) marketOverview(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Market Overview", func(gtx C) D {
-		return pg.supportedCoinSliderLayout(gtx)
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
+			Orientation: layout.Vertical,
+		}.Layout(gtx,
+			layout.Rigid(pg.marketTableHeader),
+			layout.Rigid(func(gtx C) D {
+				// TODO use real asset data
+				mktValues := []assetMarketData{
+					{
+						title:            "Decred",
+						subText:          "DCR",
+						price:            "$1000",
+						idChange:         "-0.56%",
+						isChangePositive: false,
+						image:            pg.Theme.Icons.DCR,
+					},
+					{
+						title:            "Litecoin",
+						subText:          "LTC",
+						price:            "$100",
+						idChange:         "0.56%",
+						isChangePositive: true,
+						image:            pg.Theme.Icons.LTC,
+					},
+					{
+						title:            "Bitcoin",
+						subText:          "BTC",
+						price:            "$21000",
+						idChange:         "-0.56%",
+						isChangePositive: false,
+						image:            pg.Theme.Icons.BTC,
+					}}
+
+				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+					return pg.marketOverviewList.Layout(gtx, len(mktValues), func(gtx C, i int) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return pg.marketTableRows(gtx, mktValues[i])
+							}),
+							layout.Rigid(func(gtx C) D {
+								// No divider for last row
+								if i == len(mktValues)-1 {
+									return layout.Dimensions{}
+								}
+
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								separator := pg.Theme.Separator()
+								return layout.E.Layout(gtx, func(gtx C) D {
+									// Show bottom divider for all rows except last
+									return layout.Inset{
+										Left:   values.MarginPadding33,
+										Top:    values.MarginPadding10,
+										Bottom: values.MarginPadding15,
+									}.Layout(gtx, separator.Layout)
+								})
+							}),
+						)
+					})
+				})
+			}),
+		)
 	})
+}
+
+func (pg *OverviewPage) marketTableHeader(gtx C) D {
+	col := pg.Theme.Color.GrayText3
+
+	leftWidget := func(gtx C) D {
+		return layout.Inset{
+			Left: values.MarginPadding33,
+		}.Layout(gtx, pg.assetTableLabel("Name", col))
+	}
+
+	rightWidget := func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Horizontal,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Flexed(.8, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.assetTableLabel("Price", col))
+			}),
+			layout.Flexed(.2, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.assetTableLabel("ID Change", col))
+			}),
+		)
+	}
+	return components.EndToEndRow(gtx, leftWidget, rightWidget)
+}
+
+func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData) D {
+	leftWidget := func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Horizontal,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(asset.image.Layout24dp),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Left:  values.MarginPadding8,
+					Right: values.MarginPadding4,
+				}.Layout(gtx, pg.assetTableLabel(asset.title, pg.Theme.Color.Text))
+			}),
+			layout.Rigid(pg.assetTableLabel(asset.subText, pg.Theme.Color.GrayText3)),
+		)
+	}
+
+	rightWidget := func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Horizontal,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Flexed(.785, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.assetTableLabel(asset.price, pg.Theme.Color.Text))
+			}),
+			layout.Flexed(.215, func(gtx C) D {
+				col := pg.Theme.Color.Success
+				if !asset.isChangePositive {
+					col = pg.Theme.Color.Danger
+				}
+				return layout.E.Layout(gtx, pg.assetTableLabel(asset.idChange, col))
+			}),
+		)
+	}
+	return components.EndToEndRow(gtx, leftWidget, rightWidget)
+}
+
+func (pg *OverviewPage) assetTableLabel(title string, col color.NRGBA) layout.Widget {
+	lbl := pg.Theme.Body1(title)
+	lbl.Color = col
+	return lbl.Layout
 }
 
 func (pg *OverviewPage) txStakingSection(gtx C) D {
@@ -411,6 +553,15 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 	})
 }
 
+// func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
+// 	wal := pg.WL.SelectedWallet.Wallet
+// 	tempTxs, err := wal.GetTransactionsRaw(0, 3, libutils.TxFilterAll, true)
+// 	if err != nil {
+// 		err = fmt.Errorf("Error loading transactions: %v", err)
+// 	}
+// 	return tempTxs, len(tempTxs), isReset, err
+// }
+
 func (pg *OverviewPage) recentProposal(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
 		return pg.supportedCoinSliderLayout(gtx)
@@ -419,11 +570,28 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 
 func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(pg.Theme.Body2(sectionTitle).Layout),
 		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Body2(sectionTitle).Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Card().Layout(gtx, body)
+			r := 8
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Vertical,
+				Padding:     layout.UniformInset(values.MarginPadding15),
+				Margin: layout.Inset{
+					Top:    values.MarginPadding8,
+					Bottom: values.MarginPadding20,
+				},
+				Background: pg.Theme.Color.Surface,
+				Border: cryptomaterial.Border{
+					Radius: cryptomaterial.CornerRadius{
+						TopLeft:     r,
+						TopRight:    r,
+						BottomRight: r,
+						BottomLeft:  r,
+					},
+				},
+			}.Layout2(gtx, body)
 		}),
 	)
 }

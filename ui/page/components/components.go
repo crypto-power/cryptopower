@@ -88,7 +88,7 @@ func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
 	padding := values.MarginPadding24
 
 	if (width - 2*gtx.Dp(padding)) > gtx.Dp(values.AppWidth) {
-		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 3
+		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 4
 		padding = unit.Dp(paddingValue)
 	}
 
