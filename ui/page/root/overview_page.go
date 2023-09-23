@@ -12,8 +12,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 
-	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	// libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -45,7 +43,6 @@ type OverviewPage struct {
 
 	proposalItems []*components.ProposalItem
 	orders        []*instantswap.Order
-	// transactionList  *cryptomaterial.ClickableList
 
 	card cryptomaterial.Card
 }
@@ -178,7 +175,7 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *OverviewPage) layoutMobile(gtx C) D {
+func (pg *OverviewPage) layoutMobile(_ C) D {
 	return D{}
 }
 
@@ -188,9 +185,10 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Direction:   layout.Center,
+		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
-		layout.Rigid(pg.supportedCoinSliderLayout),
-		layout.Rigid(func(gtx C) D {
+		layout.Flexed(.5, pg.supportedCoinSliderLayout),
+		layout.Flexed(.5, func(gtx C) D {
 			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 		}),
 	)
@@ -234,17 +232,10 @@ func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
 	return pg.coinSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
-	sliderWidget := []layout.Widget{
-		pg.mixerLayout,
-	}
-	return pg.mixerSlider.Layout(gtx, sliderWidget)
-}
-
 func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
-			return item.BackgroundImage.LayoutSize2(gtx, values.MarginPadding368, values.MarginPadding221)
+			return item.BackgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
 		}),
 		layout.Expanded(func(gtx C) D {
 			col := pg.Theme.Color.InvText
@@ -291,10 +282,17 @@ func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderI
 	)
 }
 
+func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
+	sliderWidget := []layout.Widget{
+		pg.mixerLayout,
+	}
+	return pg.mixerSlider.Layout(gtx, sliderWidget)
+}
+
 func (pg *OverviewPage) mixerLayout(gtx C) D {
 	r := 8
 	return cryptomaterial.LinearLayout{
-		Width:       gtx.Dp(values.MarginPadding368),
+		Width:       gtx.Constraints.Max.X,
 		Height:      gtx.Dp(values.MarginPadding221),
 		Orientation: layout.Vertical,
 		Padding:     layout.UniformInset(values.MarginPadding15),
@@ -550,16 +548,21 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Orientation: layout.Horizontal,
 		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-					return pg.Theme.Body1("No recent transaction").Layout(gtx)
+		layout.Flexed(.5, func(gtx C) D {
+			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+					return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return pg.Theme.Body1("No recent transaction").Layout(gtx)
+					})
 				})
 			})
 		}),
-		layout.Rigid(func(gtx C) D {
+		layout.Flexed(.5, func(gtx C) D {
 			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
 				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
 					return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
 				})
 			})
@@ -592,15 +595,6 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 		})
 	})
 }
-
-// func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
-// 	wal := pg.WL.SelectedWallet.Wallet
-// 	tempTxs, err := wal.GetTransactionsRaw(0, 3, libutils.TxFilterAll, true)
-// 	if err != nil {
-// 		err = fmt.Errorf("Error loading transactions: %v", err)
-// 	}
-// 	return tempTxs, len(tempTxs), isReset, err
-// }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
