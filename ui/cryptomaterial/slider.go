@@ -139,7 +139,7 @@ func (s *Slider) handleClickEvent() {
 		if s.selected == l {
 			s.selected = 0
 		} else {
-			s.selected += 1
+			s.selected++
 		}
 	}
 
@@ -147,7 +147,7 @@ func (s *Slider) handleClickEvent() {
 		if s.selected == 0 {
 			s.selected = l
 		} else {
-			s.selected -= 1
+			s.selected--
 		}
 	}
 }
