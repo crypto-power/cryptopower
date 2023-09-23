@@ -10,8 +10,11 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet"
+
+	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	// libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -31,12 +34,17 @@ type OverviewPage struct {
 
 	pageContainer      layout.List
 	marketOverviewList layout.List
+	recentProposalList layout.List
+	recentTradeList    layout.List
 
 	scrollContainer *widget.List
 
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 	coinSlider                *cryptomaterial.Slider
 	mixerSlider               *cryptomaterial.Slider
+
+	proposalItems []*components.ProposalItem
+	orders        []*instantswap.Order
 	// transactionList  *cryptomaterial.ClickableList
 
 	card cryptomaterial.Card
@@ -69,6 +77,10 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 			Alignment: layout.Middle,
 		},
 		marketOverviewList: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+		recentProposalList: layout.List{
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
@@ -107,6 +119,10 @@ func (pg *OverviewPage) ID() string {
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+
+	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
+	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
+
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -536,12 +552,16 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-				return pg.supportedCoinSliderLayout(gtx)
+				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+					return pg.Theme.Body1("No recent transaction").Layout(gtx)
+				})
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
-				return pg.supportedCoinSliderLayout(gtx)
+				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+					return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+				})
 			})
 		}),
 	)
@@ -549,7 +569,27 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Trade", func(gtx C) D {
-		return pg.supportedCoinSliderLayout(gtx)
+		if len(pg.orders) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+				return pg.Theme.Body1("No recent trades").Layout(gtx)
+			})
+		}
+
+		return pg.recentTradeList.Layout(gtx, len(pg.orders), func(gtx C, i int) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
+				}),
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if i == len(pg.orders)-1 {
+						return layout.Dimensions{}
+					}
+					return pg.Theme.Separator().Layout(gtx)
+				}),
+			)
+		})
 	})
 }
 
@@ -564,7 +604,27 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
 	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
-		return pg.supportedCoinSliderLayout(gtx)
+		if len(pg.proposalItems) == 0 {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+				return pg.Theme.Body1("No proposals").Layout(gtx)
+			})
+		}
+
+		return pg.recentProposalList.Layout(gtx, len(pg.proposalItems), func(gtx C, i int) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.ProposalsList(pg.ParentWindow(), gtx, pg.Load, pg.proposalItems[i])
+				}),
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if i == len(pg.proposalItems)-1 {
+						return layout.Dimensions{}
+					}
+					return pg.Theme.Separator().Layout(gtx)
+				}),
+			)
+		})
 	})
 }
 
