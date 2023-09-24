@@ -99,6 +99,7 @@ func NewMainPage(l *load.Load) *MainPage {
 		mp.drawerNav.DrawerToggled(mp.drawerNav.IsNavExpanded)
 	}
 
+	mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
 	mp.bottomNavigationBar.OnViewCreated()
 	mp.initNavItems()
 
@@ -544,7 +545,6 @@ func (mp *MainPage) HandleUserInteractions() {
 	}
 
 	for mp.hideBalanceButton.Clicked() {
-		mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
 		mp.isBalanceHidden = !mp.isBalanceHidden
 		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, mp.isBalanceHidden)
 	}
