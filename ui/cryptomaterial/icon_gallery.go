@@ -27,7 +27,7 @@ type Icons struct {
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
-	LTBackground, LTGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon *Image
+	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -152,8 +152,8 @@ func (i *Icons) DefaultIcons() *Icons {
 
 	i.DCRBackground = NewImage(decredIcons["dcrBkgImage"])
 	i.DCRGroupIcon = NewImage(decredIcons["dcrGroupImage"])
-	i.LTBackground = NewImage(decredIcons["ltBkgImage"])
-	i.LTGroupIcon = NewImage(decredIcons["ltGroupImage"])
+	i.LTCBackground = NewImage(decredIcons["ltBkgImage"])
+	i.LTCGroupIcon = NewImage(decredIcons["ltGroupImage"])
 	i.BTCBackground = NewImage(decredIcons["btcBkgImage"])
 	i.BTCGroupIcon = NewImage(decredIcons["btcGroupIcon"])
 	/* End - Asset types Icons */
