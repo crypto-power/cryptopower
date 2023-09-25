@@ -207,8 +207,8 @@ func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
 		Title:           "Litecoin",
 		MainText:        "50000.199 LTC",
 		SubText:         "$9000",
-		Image:           pg.Theme.Icons.LTGroupIcon,
-		BackgroundImage: pg.Theme.Icons.LTBackground,
+		Image:           pg.Theme.Icons.LTCGroupIcon,
+		BackgroundImage: pg.Theme.Icons.LTCBackground,
 	}
 	btc := supportedCoinSliderItem{
 		Title:           "Bitcoin",
