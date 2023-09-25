@@ -91,6 +91,14 @@ func (db *DB) prepareTxQuery(txFilter, _ /*requiredConfirmations*/, bestBlock in
 		query = db.walletDataDB.Select(
 			q.Eq(utils.TypeFilter, txhelper.TxTypeTicketPurchase),
 		)
+	case utils.TxFilterAllTx:
+		query = db.walletDataDB.Select(
+			q.Or(
+				q.Eq(utils.TypeFilter, txhelper.TxTypeRegular),
+				q.Eq(utils.TypeFilter, txhelper.TxTypeMixed),
+				q.Eq(utils.TypeFilter, txhelper.TxTypeCoinBase),
+			),
+		)
 	default:
 		query = db.walletDataDB.Select(
 			q.True(),
