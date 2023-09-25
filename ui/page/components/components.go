@@ -504,12 +504,11 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 	case wType == libutils.DCRWalletAsset && tabIndex == 0:
 		// DCR Transactions Activities dropdown fields.
 		mapInfo = map[string]int32{
-			values.String(values.StrAll):         libutils.TxFilterAll,
+			values.String(values.StrAll):         libutils.TxFilterAllTx,
 			values.String(values.StrSent):        libutils.TxFilterSent,
 			values.String(values.StrReceived):    libutils.TxFilterReceived,
 			values.String(values.StrTransferred): libutils.TxFilterTransferred,
 			values.String(values.StrMixed):       libutils.TxFilterMixed,
-			values.String(values.StrStaking):     libutils.TxFilterStaking,
 		}
 		keysInfo = []string{
 			values.String(values.StrAll),
@@ -517,14 +516,13 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 			values.String(values.StrReceived),
 			values.String(values.StrTransferred),
 			values.String(values.StrMixed),
-			values.String(values.StrStaking),
 		}
 	case wType == libutils.DCRWalletAsset && tabIndex == 1:
 		// DCR staking Activities dropdown fields.
 		mapInfo = map[string]int32{
-			values.String(values.StrAll):        libutils.TxFilterVoted,
-			values.String(values.StrVote):       libutils.TxFilterRevoked,
-			values.String(values.StrRevocation): libutils.TxFilterStaking,
+			values.String(values.StrAll):        libutils.TxFilterStaking,
+			values.String(values.StrVote):       libutils.TxFilterVoted,
+			values.String(values.StrRevocation): libutils.TxFilterRevoked,
 		}
 		keysInfo = []string{
 			values.String(values.StrAll),

@@ -50,6 +50,7 @@ const (
 	TxFilterUnmined     int32 = 12
 	TxFilterExpired     int32 = 13
 	TxFilterTickets     int32 = 14
+	TxFilterAllTx       int32 = 15
 
 	TypeFilter          = "Type"
 	DirectionFilter     = "Direction"
