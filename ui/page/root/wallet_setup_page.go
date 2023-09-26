@@ -493,7 +493,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				}
 			}
 
-			pg.handlerWalletDexServerSelectorPageCallBacks()
+			pg.walletCreationSuccessCallback()
 		}()
 	}
 
@@ -501,7 +501,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 	if pg.restoreBtn.Clicked() && pg.validRestoreWalletInputs() {
 		afterRestore := func() {
 			// todo setup mixer for restored accounts automatically
-			pg.handlerWalletDexServerSelectorPageCallBacks()
+			pg.walletCreationSuccessCallback()
 		}
 		ast := pg.assetTypeSelector.SelectedAssetType()
 		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
@@ -548,7 +548,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 				pg.showLoader = false
 				return
 			}
-			pg.handlerWalletDexServerSelectorPageCallBacks()
+			pg.walletCreationSuccessCallback()
 		}()
 	}
 }
@@ -626,6 +626,6 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 	return true
 }
 
-func (pg *CreateWallet) handlerWalletDexServerSelectorPageCallBacks() {
-	pg.ParentNavigator().ClearStackAndDisplay(NewWalletSelectorPage(pg.Load))
+func (pg *CreateWallet) walletCreationSuccessCallback() {
+	pg.ParentNavigator().Display(NewHomePage(pg.Load))
 }
