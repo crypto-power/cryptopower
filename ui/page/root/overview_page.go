@@ -77,6 +77,10 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
+		recentTradeList: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
 		recentProposalList: layout.List{
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
@@ -585,11 +589,15 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
 				}),
 				layout.Rigid(func(gtx C) D {
-					// No divider for last row
+					// Show bottom divider for all rows except the last row.
 					if i == len(pg.orders)-1 {
 						return layout.Dimensions{}
 					}
-					return pg.Theme.Separator().Layout(gtx)
+
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return layout.Inset{Left: values.MarginPadding50}.Layout(gtx, pg.Theme.Separator().Layout)
+					})
 				}),
 			)
 		})

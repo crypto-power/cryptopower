@@ -22,6 +22,10 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 		Background: l.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+		Margin: layout.Inset{
+			Top:    values.MarginPadding8,
+			Bottom: values.MarginPadding10,
+		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -68,12 +72,23 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{
-								Right: values.MarginPadding10,
+								Right: values.MarginPadding50,
 							}.Layout(gtx, func(gtx C) D {
 								return D{}
 							})
 						}),
-						layout.Rigid(l.Theme.Label(values.TextSize16, orderItem.Status.String()).Layout),
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(l.Theme.Label(values.TextSize16, orderItem.Status.String()).Layout),
+								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									statusLayout := statusIcon(l, orderItem.Status)
+									if statusLayout == nil {
+										return layout.Dimensions{}
+									}
+									return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, statusLayout)
+								}),
+							)
+						}),
 						layout.Flexed(1, func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return layout.Flex{
@@ -96,6 +111,16 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 			)
 		}),
 	)
+}
+
+func statusIcon(l *load.Load, status api.Status) func(gtx C) layout.Dimensions {
+	switch status {
+	case api.OrderStatusCompleted:
+		return l.Theme.Icons.ConfirmIcon.Layout16dp
+	case api.OrderStatusCanceled, api.OrderStatusExpired, api.OrderStatusFailed:
+		return l.Theme.Icons.FailedIcon.Layout16dp
+	}
+	return nil
 }
 
 func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
