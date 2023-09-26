@@ -66,7 +66,7 @@ To save a profile, you can simply use
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/crypto-power/cryptopower/blob/master/.gitlab/ci/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/crypto-power/cryptopower/blob/master/.github/CONTRIBUTING.md)
 
 ## Other
 
