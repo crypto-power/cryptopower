@@ -141,6 +141,10 @@ func (pg *Page) dataRows(title string, count int) layout.FlexChild {
 }
 
 func (pg *Page) CalculateTotalTicketsCanBuy() int {
+	if !pg.dcrImpl.Synced() {
+		return 0
+	}
+
 	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrImpl)
 	if err != nil {
 		log.Debugf("missing set mixed account error: %v", err)
