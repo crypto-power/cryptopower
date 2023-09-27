@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"image/color"
+	"sort"
 	"strings"
 
 	"gioui.org/font"
@@ -62,7 +63,8 @@ type OverviewPage struct {
 	usdExchangeRate    float64
 
 	*listeners.AccountMixerNotificationListener
-	mixerSliderData map[int]*mixerData
+	mixerSliderData      map[int]*mixerData
+	sortedMixerSlideKeys []int
 }
 
 type assetBalanceSliderItem struct {
@@ -114,10 +116,11 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				Alignment: layout.Middle,
 			},
 		},
-		assetBalanceSlider: l.Theme.Slider(),
-		card:               l.Theme.Card(),
-		sliderRedirectBtn:  l.Theme.NewClickable(false),
-		mixerSliderData:    make(map[int]*mixerData),
+		assetBalanceSlider:   l.Theme.Slider(),
+		card:                 l.Theme.Card(),
+		sliderRedirectBtn:    l.Theme.NewClickable(false),
+		mixerSliderData:      make(map[int]*mixerData),
+		sortedMixerSlideKeys: make([]int, 0),
 	}
 
 	pg.mixerSlider = l.Theme.Slider()
@@ -154,7 +157,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
-	pg.listenForMixerNotifications()
+	go pg.listenForMixerNotifications()
 
 }
 
@@ -311,15 +314,17 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 }
 
 func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
-	sliderWidget := []layout.Widget{}
-
-	for _, data := range pg.mixerSliderData {
-		widget := pg.mixerLayout(gtx, data)
-		sliderWidget = append(sliderWidget,
-			func(C) D {
-				return widget
+	sliderWidget := make([]layout.Widget, 0)
+	for _, key := range pg.sortedMixerSlideKeys {
+		// Append the mixer slide widgets in an ananymouse function. This stops the
+		// the fuction literal from capturing only the final key {key} value.
+		func(k int) {
+			sliderWidget = append(sliderWidget, func(gtx C) D {
+				return pg.mixerLayout(gtx, pg.mixerSliderData[k])
 			})
+		}(key)
 	}
+
 	return pg.mixerSlider.Layout(gtx, sliderWidget)
 }
 
@@ -830,6 +835,12 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					Asset: w,
 				}
 				pg.setUnMixedBalance(w.ID)
+				// Store the slide keys in a slice to maitain a consistence slide sequence.
+				// since ranging over a map doesn't guarantee an order.
+				pg.sortedMixerSlideKeys = append(pg.sortedMixerSlideKeys, w.ID)
+				// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
+				// on wallet list.
+				sort.Ints(pg.sortedMixerSlideKeys)
 			}
 		}
 	}
