@@ -18,8 +18,8 @@ type Slider struct {
 	card       Card
 	items      []layout.Widget
 
-	selected int
-
+	selected         int
+	isSliderItemsSet bool
 	// colors of the indicator and navigation button
 	ButtonBackgroundColor    color.NRGBA
 	IndicatorBackgroundColor color.NRGBA
@@ -47,7 +47,11 @@ func (t *Theme) Slider() *Slider {
 }
 
 func (s *Slider) Layout(gtx C, items []layout.Widget) D {
-	s.items = items
+	// set slider items once since layout is drawn multiple times per sec.
+	if !s.isSliderItemsSet {
+		s.items = items
+		s.isSliderItemsSet = true
+	}
 	s.handleClickEvent()
 
 	gtx.Constraints.Max = s.items[s.selected](gtx).Size
