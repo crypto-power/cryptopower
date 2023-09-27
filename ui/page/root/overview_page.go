@@ -56,6 +56,8 @@ type OverviewPage struct {
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
 	usdExchangeRate    float64
+
+	mixerRunning bool
 }
 
 type assetBalanceSliderItem struct {
@@ -215,6 +217,10 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Flexed(.5, pg.assetBalanceSliderLayout),
 		layout.Flexed(.5, func(gtx C) D {
+			// Only show mixer slider if mixer is running
+			if !pg.mixerRunning {
+				return D{}
+			}
 			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 		}),
 	)
