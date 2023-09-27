@@ -63,6 +63,7 @@ type OverviewPage struct {
 	usdExchangeRate    float64
 
 	*listeners.AccountMixerNotificationListener
+	*listeners.TxAndBlockNotificationListener
 	mixerSliderData      map[int]*mixerData
 	sortedMixerSlideKeys []int
 }
@@ -319,9 +320,11 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 		// Append the mixer slide widgets in an ananymouse function. This stops the
 		// the fuction literal from capturing only the final key {key} value.
 		func(k int) {
-			sliderWidget = append(sliderWidget, func(gtx C) D {
-				return pg.mixerLayout(gtx, pg.mixerSliderData[k])
-			})
+			if slideData, ok := pg.mixerSliderData[k]; ok {
+				sliderWidget = append(sliderWidget, func(gtx C) D {
+					return pg.mixerLayout(gtx, slideData)
+				})
+			}
 		}(key)
 	}
 
@@ -438,7 +441,7 @@ func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
 				Axis:      layout.Horizontal,
 				Alignment: layout.Middle,
 			}.Layout(gtx,
-				layout.Rigid(pg.Theme.Body1("Unmixed balance").Layout), // TODO
+				layout.Rigid(pg.Theme.Body1(values.String(values.StrUnmixedBalance)).Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						return components.LayoutBalance(gtx, pg.Load, data.unmixedBalance.String())
@@ -810,6 +813,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 
 	if pg.AccountMixerNotificationListener == nil {
 		pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
+		pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
 		for _, wal := range dcrWallets {
 			w := wal.(*dcr.Asset)
 			if w == nil {
@@ -822,15 +826,20 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 				continue
 			}
 
-		}
+			err = w.AddTxAndBlockNotificationListener(pg, true, OverviewPageID)
+			if err != nil {
+				log.Errorf("Error adding tx and block notification listener: %v", err)
+				continue
+			}
 
+		}
 	}
 
 	for _, wal := range dcrWallets {
 		w := wal.(*dcr.Asset)
 
 		if w.IsAccountMixerActive() {
-			if asset := pg.mixerSliderData[w.ID]; asset == nil {
+			if _, ok := pg.mixerSliderData[w.ID]; !ok {
 				pg.mixerSliderData[w.ID] = &mixerData{
 					Asset: w,
 				}
@@ -858,10 +867,20 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					delete(pg.mixerSliderData, n.WalletID)
 					pg.ParentWindow().Reload()
 				}
+			case n := <-pg.TxAndBlockNotifChan():
+				// Reload wallets unmixed balance and reload UI on
+				// new blocks.
+				if n.Type == listeners.BlockAttached {
+					go func() {
+						pg.reloadBalances()
+						pg.ParentWindow().Reload()
+					}()
+				}
 			case <-pg.ctx.Done():
 				for _, wal := range dcrWallets {
 					w := wal.(*dcr.Asset)
 					w.RemoveAccountMixerNotificationListener(OverviewPageID)
+					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				}
 
 				return
@@ -874,17 +893,33 @@ func (pg *OverviewPage) setUnMixedBalance(id int) {
 	accounts, err := pg.mixerSliderData[id].GetAccountsRaw()
 	if err != nil {
 		log.Error("error loading mixer account.")
+		return
 	}
 
 	for _, acct := range accounts.Accounts {
 		if acct.Number == pg.mixerSliderData[id].UnmixedAccountNumber() {
-			asset := pg.mixerSliderData[id]
 			bal := acct.Balance.Total
 			// to prevent NPE set default amount 0 if asset amount is nil
 			if bal == nil {
 				bal = dcr.Amount(dcrutil.Amount(0))
 			}
-			asset.unmixedBalance = bal
+			pg.mixerSliderData[id].unmixedBalance = bal
+		}
+	}
+}
+
+func (pg *OverviewPage) reloadBalances() {
+	for _, wal := range pg.mixerSliderData {
+		accounts, _ := wal.GetAccountsRaw()
+		for _, acct := range accounts.Accounts {
+			if acct.Number == wal.UnmixedAccountNumber() {
+				bal := acct.Balance.Total
+				// to prevent NPE set default amount 0 if asset amount is nil
+				if bal == nil {
+					bal = dcr.Amount(dcrutil.Amount(0))
+				}
+				wal.unmixedBalance = bal
+			}
 		}
 	}
 }
