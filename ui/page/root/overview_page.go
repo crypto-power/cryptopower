@@ -362,7 +362,7 @@ func (pg *OverviewPage) topMixerLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.Theme.Icons.Mixer.Layout24dp),
 		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Body1("Mixer is Running...") // TODO
+			lbl := pg.Theme.Body1(values.String(values.StrMixerRunning))
 			lbl.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Left:  values.MarginPadding8,
@@ -405,7 +405,7 @@ func (pg *OverviewPage) middleMixerLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.Theme.Icons.Alert.Layout20dp),
 		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2("Keep app open")
+			lbl := pg.Theme.Body2(values.String(values.StrKeepAppOpen))
 			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
 		}),
 	)
