@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"gioui.org/app"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/version"
 	"github.com/decred/dcrd/dcrutil/v4"
@@ -21,12 +22,6 @@ const (
 	defaultConfigFileName = "cryptopower.conf"
 	defaultLogFilename    = "cryptopower.log"
 	defaultLogDirname     = "logs"
-)
-
-var (
-	defaultHomeDir        = dcrutil.AppDataDir("cryptopower", false)
-	defaultConfigFilename = filepath.Join(defaultHomeDir, defaultConfigFileName)
-	defaultLogDir         = filepath.Join(defaultHomeDir, defaultLogDirname)
 )
 
 type config struct {
@@ -42,11 +37,13 @@ type config struct {
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
 }
 
-var defaultConfig = config{
-	Network:    defaultNetwork,
-	HomeDir:    defaultHomeDir,
-	ConfigFile: defaultConfigFilename,
-	LogDir:     defaultLogDir,
+func defaultConfig(defaultHomeDir string) config {
+	return config{
+		Network:    defaultNetwork,
+		HomeDir:    defaultHomeDir,
+		ConfigFile: filepath.Join(defaultHomeDir, defaultConfigFileName),
+		LogDir:     filepath.Join(defaultHomeDir, defaultLogDirname),
+	}
 }
 
 // validLogLevel returns whether or not logLevel is a valid debug log level.
@@ -99,9 +96,18 @@ func loadConfig() (*config, error) {
 		return nil, err
 	}
 
-	// // Default config
-	cfg := defaultConfig
-	defaultConfigNow := defaultConfig
+	// Default config
+	defaultHomeDir := dcrutil.AppDataDir("cryptopower", false)
+	if isAndroidOS {
+		homeDir, err := app.DataDir()
+		if err != nil {
+			return nil, fmt.Errorf("unable to get android home dir: %v", err)
+		}
+		defaultHomeDir = homeDir // something like /data/user/0/com.github.cryptopower/files
+	}
+
+	cfg := defaultConfig(defaultHomeDir)
+	defaultCfg := defaultConfig(defaultHomeDir)
 
 	// Pre-parse the command line options to see if an alternative config file
 	// or the version flag was specified. Override any environment variables
@@ -135,11 +141,11 @@ func loadConfig() (*config, error) {
 	// should be under the non-default appdata directory. However, if the config
 	// file was specified on the command line, it should be used regardless of
 	// the appdata directory.
-	if defaultHomeDir != cfg.HomeDir && defaultConfigNow.ConfigFile == cfg.ConfigFile {
-		cfg.ConfigFile = filepath.Join(cfg.HomeDir, defaultConfigFilename)
+	if defaultCfg.HomeDir != cfg.HomeDir && defaultCfg.ConfigFile == cfg.ConfigFile {
+		cfg.ConfigFile = filepath.Join(cfg.HomeDir, defaultConfigFileName)
 		// Update the defaultConfig to avoid an error if the config file in this
 		// "new default" location does not exist.
-		defaultConfigNow.ConfigFile = cfg.ConfigFile
+		defaultCfg.ConfigFile = cfg.ConfigFile
 	}
 
 	// Load additional config from file.
@@ -151,7 +157,7 @@ func loadConfig() (*config, error) {
 	// Do not error default config file is missing.
 	if _, err := os.Stat(cfg.ConfigFile); os.IsNotExist(err) {
 		// Non-default config file must exist
-		if defaultConfigNow.ConfigFile != cfg.ConfigFile {
+		if defaultCfg.ConfigFile != cfg.ConfigFile {
 			fmt.Fprintln(os.Stderr, err)
 			return loadConfigError(err)
 		}
@@ -202,8 +208,8 @@ func loadConfig() (*config, error) {
 
 	// If a non-default appdata folder is specified, it may be necessary to
 	// adjust the LogDir.
-	if defaultHomeDir != cfg.HomeDir {
-		if defaultLogDir == cfg.LogDir {
+	if defaultCfg.HomeDir != cfg.HomeDir {
+		if defaultCfg.LogDir == cfg.LogDir {
 			cfg.LogDir = filepath.Join(cfg.HomeDir, defaultLogDirname)
 		}
 	}
