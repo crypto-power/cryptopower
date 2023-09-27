@@ -102,6 +102,11 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	if hp.CurrentPage() == nil {
+		// start wallet sync
+		pg := NewWalletSelectorPage(hp.Load)
+		pg.OnNavigatedTo()
+		pg.OnNavigatedFrom()
+
 		hp.Display(NewOverviewPage(hp.Load))
 	}
 
