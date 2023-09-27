@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"image/color"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -17,6 +18,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/utils"
 )
 
 const (
@@ -40,21 +44,28 @@ type OverviewPage struct {
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 	coinSlider                *cryptomaterial.Slider
 	mixerSlider               *cryptomaterial.Slider
-
 	proposalItems []*components.ProposalItem
 	orders        []*instantswap.Order
 
 	card cryptomaterial.Card
+
+	dcr *supportedCoinSliderItem
+	btc *supportedCoinSliderItem
+	ltc *supportedCoinSliderItem
+
+	usdExchangeRate       float64
 }
 
 type supportedCoinSliderItem struct {
-	Title    string
-	MainText string
-	SubText  string
+	assetType    string
+	totalBalance sharedW.AssetAmount
+	totalBalanceUSD  string
 
-	Image           *cryptomaterial.Image
-	BackgroundImage *cryptomaterial.Image
+	image           *cryptomaterial.Image
+	backgroundImage *cryptomaterial.Image
 }
+
+
 
 type assetMarketData struct {
 	title            string
@@ -121,9 +132,10 @@ func (pg *OverviewPage) ID() string {
 func (pg *OverviewPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
+	pg.updateSliders()
+
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
-
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -199,47 +211,26 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 }
 
 func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
-	// TODO use real data
-	dcr := supportedCoinSliderItem{
-		Title:           "DECRED",
-		MainText:        "20000.199 DCR",
-		SubText:         "$1000",
-		Image:           pg.Theme.Icons.DCRGroupIcon,
-		BackgroundImage: pg.Theme.Icons.DCRBackground,
+	var sliderWidget []layout.Widget
+
+	if pg.dcr != nil {
+		sliderWidget = append(sliderWidget,  pg.supportedCoinItemLayout(gtx, *pg.dcr))
 	}
-	ltc := supportedCoinSliderItem{
-		Title:           "Litecoin",
-		MainText:        "50000.199 LTC",
-		SubText:         "$9000",
-		Image:           pg.Theme.Icons.LTCGroupIcon,
-		BackgroundImage: pg.Theme.Icons.LTCBackground,
+	if pg.btc != nil {
+		sliderWidget = append(sliderWidget,  pg.supportedCoinItemLayout(gtx, *pg.btc))
 	}
-	btc := supportedCoinSliderItem{
-		Title:           "Bitcoin",
-		MainText:        "100000.199 BTC",
-		SubText:         "$89000",
-		Image:           pg.Theme.Icons.BTCGroupIcon,
-		BackgroundImage: pg.Theme.Icons.BTCBackground,
+	if pg.ltc != nil {
+		sliderWidget = append(sliderWidget,   pg.supportedCoinItemLayout(gtx, *pg.ltc))
 	}
 
-	sliderWidget := []layout.Widget{
-		func(gtx C) D {
-			return pg.supportedCoinItemLayout(gtx, dcr)
-		},
-		func(gtx C) D {
-			return pg.supportedCoinItemLayout(gtx, ltc)
-		},
-		func(gtx C) D {
-			return pg.supportedCoinItemLayout(gtx, btc)
-		},
-	}
 	return pg.coinSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) D {
+func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) layout.Widget {
+	return func(gtx C)D{
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
-			return item.BackgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
+			return item.backgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
 		}),
 		layout.Expanded(func(gtx C) D {
 			col := pg.Theme.Color.InvText
@@ -248,18 +239,18 @@ func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderI
 				Alignment: layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					lbl := pg.Theme.Body1(item.Title)
+					lbl := pg.Theme.Body1(item.assetType)
 					lbl.Color = col
 					return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-						return item.Image.LayoutSize(gtx, values.MarginPadding65)
+						return item.image.LayoutSize(gtx, values.MarginPadding65)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-						return components.LayoutBalanceColor(gtx, pg.Load, item.MainText, col)
+						return components.LayoutBalanceColor(gtx, pg.Load, item.totalBalance.String(), col)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
@@ -274,7 +265,7 @@ func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderI
 								Right:  values.MarginPadding8,
 								Left:   values.MarginPadding8,
 							}.Layout(gtx, func(gtx C) D {
-								lbl := pg.Theme.Body2(item.SubText)
+								lbl := pg.Theme.Body2(item.totalBalanceUSD)
 								lbl.Color = col
 								return lbl.Layout(gtx)
 							})
@@ -284,6 +275,7 @@ func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderI
 			)
 		}),
 	)
+}
 }
 
 func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
@@ -629,6 +621,118 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		})
 	})
 }
+
+func (pg *OverviewPage) calculateTotalAssetBalance() (map[libutils.AssetType]int64, error){
+		wallets := pg.WL.AssetsManager.AllWallets()
+	assetsTotalBalance := make(map[libutils.AssetType]int64)
+
+	for _, wal := range wallets {
+		if wal.IsWatchingOnlyWallet() { 
+			continue
+		}
+
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, account := range accountsResult.Accounts {
+			assetsTotalBalance[wal.GetAssetType()] += account.Balance.Total.ToInt()
+		}
+	}
+
+	return assetsTotalBalance, nil
+}
+
+// func (pg *OverviewPage) updateExchangeSetting() {
+// 	pg.usdExchangeSet = false
+// 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+// 		pg.currencyExchangeValue = pg.WL.AssetsManager.GetCurrencyConversionExchange()
+// 		go pg.fetchExchangeRate()
+// 	}
+// }
+
+// func (pg *OverviewPage) fetchExchangeRate(assetType utils.AssetType) {
+// 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+// 		preferredExchange := pg.WL.AssetsManager.GetCurrencyConversionExchange()
+// 	// if pg.isFetchingExchangeRate {
+// 	// 	return
+// 	// }
+
+// 	// pg.isFetchingExchangeRate = true
+// 	var market string
+// 	switch assetType {
+// 	case libutils.DCRWalletAsset:
+// 		market = values.DCRUSDTMarket
+// 	case libutils.BTCWalletAsset:
+// 		market = values.BTCUSDTMarket
+// 	case libutils.LTCWalletAsset:
+// 		market = values.LTCUSDTMarket
+// 	default:
+// 		log.Errorf("Unsupported asset type: %s", assetType)
+// 		// pg.isFetchingExchangeRate = false
+// 		return
+// 	}
+
+// 	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, market)
+// 	if err != nil {
+// 		log.Error(err)
+// 		// pg.isFetchingExchangeRate = false
+// 		return
+// 	}
+
+// 	pg.usdExchangeRate = rate.LastTradePrice
+// 	pg.updateBalance()
+// 	pg.usdExchangeSet = true
+// 	pg.ParentWindow().Reload()
+// 	pg.isFetchingExchangeRate = false
+// }
+// }
+
+func (pg *OverviewPage) updateSliders() {
+	assetItem, err := pg.calculateTotalAssetBalance()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	sliderItem := func(totalBalance sharedW.AssetAmount, totalBalanceUSD, assetFullName string,
+	 icon, bkgImage *cryptomaterial.Image) *supportedCoinSliderItem {
+	  	return  &supportedCoinSliderItem{
+				assetType:           assetFullName,
+				totalBalance:        totalBalance,
+				totalBalanceUSD: totalBalanceUSD,
+				image:           icon,
+				backgroundImage: bkgImage,
+			}
+	  }
+
+	  usdBalance := func(bal sharedW.AssetAmount) string{
+	  	balanceInUSD := bal.MulF64(pg.usdExchangeRate).ToCoin()
+		return utils.FormatUSDBalance(pg.Printer, balanceInUSD)
+	  }
+
+	for assetType, totalBalance := range assetItem {
+		
+		
+		assetFullName:=  strings.ToUpper(assetType.ToFull())
+
+		switch assetType {
+		case libutils.BTCWalletAsset:
+			balance := pg.WL.AssetsManager.AllBTCWallets()[0].ToAmount(totalBalance)
+			pg.btc = sliderItem(balance, usdBalance(balance), assetFullName, pg.Theme.Icons.BTCGroupIcon, pg.Theme.Icons.BTCBackground)
+		case libutils.DCRWalletAsset:
+			balance := pg.WL.AssetsManager.AllDCRWallets()[0].ToAmount(totalBalance)
+			pg.dcr = sliderItem(balance, usdBalance(balance), assetFullName, pg.Theme.Icons.DCRGroupIcon, pg.Theme.Icons.DCRBackground)
+		case libutils.LTCWalletAsset:
+			balance := pg.WL.AssetsManager.AllLTCWallets()[0].ToAmount(totalBalance)
+			pg.ltc = sliderItem(balance, usdBalance(balance), assetFullName, pg.Theme.Icons.LTCGroupIcon, pg.Theme.Icons.LTCBackground)
+		default:
+
+	}
+	}
+}
+
 
 func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
