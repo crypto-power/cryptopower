@@ -147,6 +147,14 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.Display(pg)
 	}
 
+	// set the page to the active nav, especially when navigating from over pages
+	// like the overview page slider.
+	if hp.CurrentPageID() == WalletSelectorPageID && hp.navigationTab.SelectedTab() != values.String(values.StrWallets) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrWallets))
+	} else if hp.CurrentPageID() == TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
+	}
+
 	for _, item := range hp.drawerNav.AppNavBarItems {
 		for item.Clickable.Clicked() {
 			// TODO: Implement click functionality
