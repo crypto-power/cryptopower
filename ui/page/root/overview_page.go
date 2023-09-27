@@ -216,19 +216,19 @@ func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(gtx, *pg.dcr))
+		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.dcr))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(gtx, *pg.btc))
+		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.btc))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(gtx, *pg.ltc))
+		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.ltc))
 	}
 
 	return pg.coinSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) supportedCoinItemLayout(gtx C, item supportedCoinSliderItem) layout.Widget {
+func (pg *OverviewPage) supportedCoinItemLayout(item supportedCoinSliderItem) layout.Widget {
 	return func(gtx C) D {
 		return layout.Stack{}.Layout(gtx,
 			layout.Stacked(func(gtx C) D {
@@ -671,6 +671,7 @@ func (pg *OverviewPage) fetchExchangeRate() {
 			}
 		}
 
+		pg.coinSlider.RefreshItems()
 		pg.ParentWindow().Reload()
 	}
 }

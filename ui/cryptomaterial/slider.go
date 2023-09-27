@@ -137,6 +137,10 @@ func (s *Slider) centerLayout(gtx C, content layout.Widget) D {
 	return layout.Center.Layout(gtx, content)
 }
 
+func (s *Slider) RefreshItems() {
+	s.isSliderItemsSet = false
+}
+
 func (s *Slider) handleClickEvent() {
 	l := len(s.items) - 1 // index starts at 0
 	if s.nextButton.Clicked() {
