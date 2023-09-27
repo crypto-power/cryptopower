@@ -46,18 +46,19 @@ type OverviewPage struct {
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
+	sliderRedirectBtn         *cryptomaterial.Clickable
 
 	card cryptomaterial.Card
 
-	dcr *supportedCoinSliderItem
-	btc *supportedCoinSliderItem
-	ltc *supportedCoinSliderItem
+	dcr *assetSliderItem
+	btc *assetSliderItem
+	ltc *assetSliderItem
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
 	usdExchangeRate    float64
 }
 
-type supportedCoinSliderItem struct {
+type assetSliderItem struct {
 	assetType       string
 	totalBalance    sharedW.AssetAmount
 	totalBalanceUSD string
@@ -97,8 +98,9 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				Alignment: layout.Middle,
 			},
 		},
-		coinSlider: l.Theme.Slider(),
-		card:       l.Theme.Card(),
+		coinSlider:        l.Theme.Slider(),
+		card:              l.Theme.Card(),
+		sliderRedirectBtn: l.Theme.NewClickable(false),
 	}
 
 	pg.mixerSlider = l.Theme.Slider()
@@ -142,7 +144,9 @@ func (pg *OverviewPage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *OverviewPage) HandleUserInteractions() {
-
+	for pg.sliderRedirectBtn.Clicked() {
+		pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -228,55 +232,57 @@ func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
 	return pg.coinSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) supportedCoinItemLayout(item supportedCoinSliderItem) layout.Widget {
+func (pg *OverviewPage) supportedCoinItemLayout(item assetSliderItem) layout.Widget {
 	return func(gtx C) D {
-		return layout.Stack{}.Layout(gtx,
-			layout.Stacked(func(gtx C) D {
-				return item.backgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
-			}),
-			layout.Expanded(func(gtx C) D {
-				col := pg.Theme.Color.InvText
-				return layout.Flex{
-					Axis:      layout.Vertical,
-					Alignment: layout.Middle,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						lbl := pg.Theme.Body1(item.assetType)
-						lbl.Color = col
-						return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-							return item.image.LayoutSize(gtx, values.MarginPadding65)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-							return components.LayoutBalanceColor(gtx, pg.Load, item.totalBalance.String(), col)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						card := pg.Theme.Card()
-						card.Radius = cryptomaterial.Radius(12)
-						card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
-						return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
-							return card.Layout(gtx, func(gtx C) D {
-								return layout.Inset{
-									Top:    values.MarginPadding4,
-									Bottom: values.MarginPadding4,
-									Right:  values.MarginPadding8,
-									Left:   values.MarginPadding8,
-								}.Layout(gtx, func(gtx C) D {
-									lbl := pg.Theme.Body2(item.totalBalanceUSD)
-									lbl.Color = col
-									return lbl.Layout(gtx)
+		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
+			return layout.Stack{}.Layout(gtx,
+				layout.Stacked(func(gtx C) D {
+					return item.backgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
+				}),
+				layout.Expanded(func(gtx C) D {
+					col := pg.Theme.Color.InvText
+					return layout.Flex{
+						Axis:      layout.Vertical,
+						Alignment: layout.Middle,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							lbl := pg.Theme.Body1(item.assetType)
+							lbl.Color = col
+							return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
+						}),
+						layout.Rigid(func(gtx C) D {
+							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+								return item.image.LayoutSize(gtx, values.MarginPadding65)
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+								return components.LayoutBalanceColor(gtx, pg.Load, item.totalBalance.String(), col)
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							card := pg.Theme.Card()
+							card.Radius = cryptomaterial.Radius(12)
+							card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
+							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
+								return card.Layout(gtx, func(gtx C) D {
+									return layout.Inset{
+										Top:    values.MarginPadding4,
+										Bottom: values.MarginPadding4,
+										Right:  values.MarginPadding8,
+										Left:   values.MarginPadding8,
+									}.Layout(gtx, func(gtx C) D {
+										lbl := pg.Theme.Body2(item.totalBalanceUSD)
+										lbl.Color = col
+										return lbl.Layout(gtx)
+									})
 								})
 							})
-						})
-					}),
-				)
-			}),
-		)
+						}),
+					)
+				}),
+			)
+		})
 	}
 }
 
@@ -650,7 +656,7 @@ func (pg *OverviewPage) fetchExchangeRate() {
 			rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, market)
 			if err != nil {
 				log.Error(err)
-				return "$----"
+				return "$--"
 			}
 
 			balanceInUSD := bal.MulF64(rate.LastTradePrice).ToCoin()
@@ -683,11 +689,11 @@ func (pg *OverviewPage) updateSliders() {
 		return
 	}
 
-	sliderItem := func(totalBalance sharedW.AssetAmount, assetFullName string, icon, bkgImage *cryptomaterial.Image) *supportedCoinSliderItem {
-		return &supportedCoinSliderItem{
+	sliderItem := func(totalBalance sharedW.AssetAmount, assetFullName string, icon, bkgImage *cryptomaterial.Image) *assetSliderItem {
+		return &assetSliderItem{
 			assetType:       assetFullName,
 			totalBalance:    totalBalance,
-			totalBalanceUSD: "$----",
+			totalBalanceUSD: "$--",
 			image:           icon,
 			backgroundImage: bkgImage,
 		}
