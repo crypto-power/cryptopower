@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"sort"
 	"strings"
@@ -158,7 +159,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
-	go pg.listenForMixerNotifications()
+	pg.listenForMixerNotifications()
 
 }
 
@@ -882,6 +883,11 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					w.RemoveAccountMixerNotificationListener(OverviewPageID)
 					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				}
+				fmt.Printf("Block and notif listener:%v \n", pg.AccountMixerNotificationListener)
+				close(pg.MixerChan)
+				pg.CloseTxAndBlockChan()
+				pg.AccountMixerNotificationListener = nil
+				pg.TxAndBlockNotificationListener = nil
 
 				return
 			}

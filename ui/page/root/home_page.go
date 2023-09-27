@@ -106,8 +106,6 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	hp.totalUSDValueSwitch.SetChecked(true)
-
-	hp.CurrentPage().OnNavigatedTo()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
