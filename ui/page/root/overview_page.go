@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"image/color"
 	"sort"
 	"strings"
@@ -25,6 +24,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -171,6 +171,19 @@ func (pg *OverviewPage) OnNavigatedTo() {
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
 		pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+	}
+
+	// Navigate to mixer page when wallet mixer slider forward button is clicked.
+	if pg.forwardButton.Button.Clicked() {
+		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
+		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
+		pg.WL.SelectedWallet = &load.WalletItem{
+			Wallet: mixerData.Asset,
+		}
+
+		mp := NewMainPage(pg.Load)
+		pg.ParentNavigator().Display(mp)
+		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
 	}
 }
 
@@ -883,7 +896,6 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					w.RemoveAccountMixerNotificationListener(OverviewPageID)
 					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				}
-				fmt.Printf("Block and notif listener:%v \n", pg.AccountMixerNotificationListener)
 				close(pg.MixerChan)
 				pg.CloseTxAndBlockChan()
 				pg.AccountMixerNotificationListener = nil

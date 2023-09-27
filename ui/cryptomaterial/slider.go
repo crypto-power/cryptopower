@@ -46,6 +46,11 @@ func (t *Theme) Slider() *Slider {
 	return sl
 }
 
+// GetSelectedIndex returns the index of the current slider item.
+func (s *Slider) GetSelectedIndex() int {
+	return s.selected
+}
+
 func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	// set slider items once since layout is drawn multiple times per sec.
 	if !s.isSliderItemsSet {
