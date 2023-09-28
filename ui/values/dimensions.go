@@ -118,6 +118,4 @@ var (
 	MobileAppHeight = unit.Dp(780)
 
 	StartMobileView = unit.Dp(600)
-
-	Length1000 = 1000
 )
