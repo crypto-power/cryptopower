@@ -42,7 +42,7 @@ type OverviewPage struct {
 	scrollContainer *widget.List
 
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
-	coinSlider                *cryptomaterial.Slider
+	assetBalanceSlider        *cryptomaterial.Slider
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
@@ -50,15 +50,15 @@ type OverviewPage struct {
 
 	card cryptomaterial.Card
 
-	dcr *assetSliderItem
-	btc *assetSliderItem
-	ltc *assetSliderItem
+	dcr *assetBalanceSliderItem
+	btc *assetBalanceSliderItem
+	ltc *assetBalanceSliderItem
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
 	usdExchangeRate    float64
 }
 
-type assetSliderItem struct {
+type assetBalanceSliderItem struct {
 	assetType       string
 	totalBalance    sharedW.AssetAmount
 	totalBalanceUSD string
@@ -102,9 +102,9 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				Alignment: layout.Middle,
 			},
 		},
-		coinSlider:        l.Theme.Slider(),
-		card:              l.Theme.Card(),
-		sliderRedirectBtn: l.Theme.NewClickable(false),
+		assetBalanceSlider: l.Theme.Slider(),
+		card:               l.Theme.Card(),
+		sliderRedirectBtn:  l.Theme.NewClickable(false),
 	}
 
 	pg.mixerSlider = l.Theme.Slider()
@@ -213,30 +213,30 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 		Direction:   layout.Center,
 		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
-		layout.Flexed(.5, pg.supportedCoinSliderLayout),
+		layout.Flexed(.5, pg.assetBalanceSliderLayout),
 		layout.Flexed(.5, func(gtx C) D {
 			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 		}),
 	)
 }
 
-func (pg *OverviewPage) supportedCoinSliderLayout(gtx C) D {
+func (pg *OverviewPage) assetBalanceSliderLayout(gtx C) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.dcr))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.dcr))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.btc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.btc))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.supportedCoinItemLayout(*pg.ltc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.ltc))
 	}
 
-	return pg.coinSlider.Layout(gtx, sliderWidget)
+	return pg.assetBalanceSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) supportedCoinItemLayout(item assetSliderItem) layout.Widget {
+func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layout.Widget {
 	return func(gtx C) D {
 		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			return layout.Stack{}.Layout(gtx,
@@ -685,7 +685,7 @@ func (pg *OverviewPage) fetchExchangeRate() {
 			}
 		}
 
-		pg.coinSlider.RefreshItems()
+		pg.assetBalanceSlider.RefreshItems()
 		pg.ParentWindow().Reload()
 	}
 }
@@ -697,8 +697,8 @@ func (pg *OverviewPage) updateSliders() {
 		return
 	}
 
-	sliderItem := func(totalBalance sharedW.AssetAmount, assetFullName string, icon, bkgImage *cryptomaterial.Image) *assetSliderItem {
-		return &assetSliderItem{
+	sliderItem := func(totalBalance sharedW.AssetAmount, assetFullName string, icon, bkgImage *cryptomaterial.Image) *assetBalanceSliderItem {
+		return &assetBalanceSliderItem{
 			assetType:       assetFullName,
 			totalBalance:    totalBalance,
 			totalBalanceUSD: "$--",
