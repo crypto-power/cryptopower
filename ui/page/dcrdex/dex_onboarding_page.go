@@ -123,7 +123,7 @@ func (do *DEXOnboarding) Layout(gtx C) D {
 			// TODO: Add Step Select Server and Step Registration Fee
 			return do.Theme.List(do.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				gtx.Constraints.Max = image.Point{
-					X: int(cryptomaterial.MaxWidth),
+					X: gtx.Dp(values.MarginPadding450),
 					Y: gtx.Constraints.Max.Y,
 				}
 				return do.stepSetPassword(gtx)
@@ -156,8 +156,8 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 				layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 					u30 := values.MarginPadding30
 					sep := do.Theme.Separator()
-					sep.Width = values.Length1000
-					sep.Height = int(values.MarginPadding5)
+					sep.Width = gtx.Dp(values.MarginPadding500)
+					sep.Height = gtx.Dp(values.MarginPadding5)
 					return layout.Inset{Bottom: values.MarginPadding35, Right: u30, Left: u30}.Layout(gtx, sep.Layout)
 				}),
 				layout.Expanded(func(gtx layout.Context) layout.Dimensions {
@@ -197,7 +197,7 @@ func (do *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			u100 := int(values.MarginPadding100)
+			u100 := gtx.Dp(values.MarginPadding50)
 			return cryptomaterial.LinearLayout{
 				Width:       u100,
 				Height:      u100,
