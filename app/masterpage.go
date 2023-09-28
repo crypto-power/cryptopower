@@ -7,7 +7,7 @@ package app
 // WindowNavigator or a PageNavigator.
 // MasterPage must be embedded by pages that want to display subpages. Those
 // pages must satisfy the other methods of the Page interface that are not
-// already satisifed by MasterPage.
+// already satisfied by MasterPage.
 type MasterPage struct {
 	*GenericPageModal
 	subPages *PageStack
