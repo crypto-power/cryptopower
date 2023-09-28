@@ -370,7 +370,7 @@ func (pg *OverviewPage) mixerLayout(gtx C, data *mixerData) D {
 		layout.Rigid(pg.topMixerLayout),
 		layout.Rigid(pg.middleMixerLayout),
 		layout.Rigid(
-			func(C) D {
+			func(gtx C) D {
 				return pg.bottomMixerLayout(gtx, data)
 			},
 		),
@@ -436,7 +436,7 @@ func (pg *OverviewPage) middleMixerLayout(gtx C) D {
 func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
 	r := 8
 	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
+		Width:       cryptomaterial.WrapContent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Padding:     layout.UniformInset(values.MarginPadding15),
