@@ -3,18 +3,14 @@ package root
 import (
 	"context"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -75,22 +71,7 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 	pg.addWalClickable = l.Theme.NewClickable(false)
 	pg.addWalClickable.Radius = cryptomaterial.Radius(14)
 
-	go func() {
-		pg.isConnected = libutils.IsOnline()
-	}()
-
 	pg.initWalletSelectorOptions()
-
-	// init shared page functions
-	toggleSync := func(unlock load.NeedUnlockRestore) {
-		if pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
-			go pg.WL.SelectedWallet.Wallet.CancelSync()
-			unlock(false)
-		} else {
-			pg.startSyncing(pg.WL.SelectedWallet.Wallet, unlock)
-		}
-	}
-	l.ToggleSync = toggleSync
 
 	return pg
 }
@@ -105,27 +86,6 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.listenForNotifications()
 	pg.loadWallets()
 	pg.loadBadWallets()
-
-	// Initiate the auto sync for all the DCR wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.DCRWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	// Initiate the auto sync for all the BTC wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.BTCWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	// Initiate the auto sync for all the LTC wallets with set autosync.
-	for _, wallet := range pg.WL.SortedWalletList(libutils.LTCWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			pg.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -256,105 +216,4 @@ func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clicka
 			)
 		})
 	}
-}
-
-func (pg *WalletSelectorPage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
-	// Watchonly wallets do not have any password neithers need one.
-	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() && !wallet.IsWatchingOnlyWallet() {
-		pg.unlockWalletForSyncing(wallet, unlock)
-		return
-	}
-	unlock(true)
-
-	if pg.isConnected {
-		// once network connection has been established proceed to
-		// start the wallet sync.
-		if err := wallet.SpvSync(); err != nil {
-			log.Debugf("Error starting sync: %v", err)
-		}
-		return
-	}
-
-	if !atomic.CompareAndSwapUint32(&pg.startSpvSync, 0, 1) {
-		// internet connection checking goroutine is already running.
-		return
-	}
-
-	// Since internet connectivity isn't available, the goroutine will keep
-	// checking for the internet connectivity. on every 5th poll it will keep
-	// increasing the wait duration by 5 seconds till the internet connectivity
-	// is restored or the app is shutdown.
-	go func() {
-		count := 0
-		counter := 5
-		duration := time.Second * 10
-		ticker := time.NewTicker(duration)
-
-		for range ticker.C {
-			if pg.isConnected {
-				log.Info("Internet connection has been established")
-				// once network connection has been established proceed to
-				// start the wallet sync.
-				if err := wallet.SpvSync(); err != nil {
-					log.Debugf("Error starting sync: %v", err)
-				}
-
-				if pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
-					err := pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
-					if err != nil {
-						log.Errorf("Error syncing instant swap: %v", err)
-					}
-				}
-
-				// Trigger UI update
-				pg.ParentWindow().Reload()
-
-				ticker.Stop()
-				return
-			}
-
-			// At the 5th ticker count, increase the duration interval by 5 seconds.
-			if count%counter == 0 && count > 0 {
-				duration += time.Second * 5
-				// reset ticker
-				ticker.Reset(duration)
-			}
-			// Increase the counter
-			count++
-			log.Debugf("Attempting to check for internet connection in %s", duration.String())
-
-			go func() {
-				pg.isConnected = libutils.IsOnline()
-			}()
-		}
-
-		// Allow another goroutine to be spun up later on if need be.
-		atomic.StoreUint32(&pg.startSpvSync, 0)
-	}()
-}
-
-func (pg *WalletSelectorPage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
-	spendingPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-		EnableName(false).
-		EnableConfirmPassword(false).
-		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
-		PasswordHint(values.String(values.StrSpendingPassword)).
-		SetPositiveButtonText(values.String(values.StrUnlock)).
-		SetCancelable(false).
-		SetNegativeButtonCallback(func() {
-			unlock(false)
-		}).
-		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			err := wal.UnlockWallet(password)
-			if err != nil {
-				pm.SetError(err.Error())
-				pm.SetLoading(false)
-				return false
-			}
-			unlock(true)
-			pm.Dismiss()
-			pg.startSyncing(wal, unlock)
-			return true
-		})
-	pg.ParentWindow().ShowModal(spendingPasswordModal)
 }
