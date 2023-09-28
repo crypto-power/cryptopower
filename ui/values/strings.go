@@ -849,4 +849,12 @@ const (
 	StrYourSeedWords                   = "yourSeedWord"
 	StrYourself                        = "yourself"
 	StrTrade                           = "trade"
+	StrSetTradePassword                = "setTradePassword"
+	StrSetTradePasswordDesc            = "setTradePasswordDesc"
+	StrNewPassword                     = "newPassword"
+	StrConfirmPassword                 = "confirmPassword"
+	StrSelectServer                    = "selectServer"
+	StrSetPassword                     = "setPassword"
+	StrPostBond                        = "postBond"
+	StrDCRDEXWelcomeMessage            = "dcrdexWelcomeMessage"
 )
