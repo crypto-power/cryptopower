@@ -247,13 +247,18 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 		Direction:   layout.Center,
 		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
-		layout.Flexed(.5, pg.assetBalanceSliderLayout),
-		layout.Flexed(.5, func(gtx C) D {
+		layout.Rigid(func(gtx C) D {
 			// Only show mixer slider if mixer is running
 			if len(pg.mixerSliderData) == 0 {
-				return D{}
+				return pg.assetBalanceSliderLayout(gtx)
 			}
-			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+
+			return layout.Flex{}.Layout(gtx,
+				layout.Flexed(.5, pg.assetBalanceSliderLayout),
+				layout.Flexed(.5, func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+				}),
+			)
 		}),
 	)
 }
@@ -431,7 +436,7 @@ func (pg *OverviewPage) middleMixerLayout(gtx C) D {
 func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
 	r := 8
 	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.WrapContent,
+		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Vertical,
 		Padding:     layout.UniformInset(values.MarginPadding15),
