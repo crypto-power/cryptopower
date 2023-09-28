@@ -17,7 +17,7 @@ type (
 	D = layout.Dimensions
 )
 
-type DCRDEXPage struct {
+type DEXPage struct {
 	*app.MasterPage
 
 	*load.Load
@@ -29,8 +29,8 @@ type DCRDEXPage struct {
 	inited            bool // TODO: Set value
 }
 
-func NewDCRDEXPage(l *load.Load) *DCRDEXPage {
-	dp := &DCRDEXPage{
+func NewDEXPage(l *load.Load) *DEXPage {
+	dp := &DEXPage{
 		Load:              l,
 		MasterPage:        app.NewMasterPage(DCRDEXID),
 		openTradeMainPage: l.Theme.NewClickable(false),
@@ -41,7 +41,7 @@ func NewDCRDEXPage(l *load.Load) *DCRDEXPage {
 // ID is a unique string that identifies the page and may be used to
 // differentiate this page from other pages.
 // Part of the load.Page interface.
-func (dp *DCRDEXPage) ID() string {
+func (dp *DEXPage) ID() string {
 	return DCRDEXID
 }
 
@@ -49,15 +49,12 @@ func (dp *DCRDEXPage) ID() string {
 // used to initialize page features that are only relevant when the page is
 // displayed.
 // Part of the load.Page interface.
-func (dp *DCRDEXPage) OnNavigatedTo() {
+func (dp *DEXPage) OnNavigatedTo() {
 	dp.ctx, dp.ctxCancel = context.WithCancel(context.TODO())
 
 	if dp.CurrentPage() == nil {
-		if dp.inited {
-			// Show Market Page
-		} else {
-			dp.Display(NewDEXOnboarding(dp.Load))
-		}
+		// TODO: Handle dp.inited
+		dp.Display(NewDEXOnboarding(dp.Load))
 	}
 
 	dp.CurrentPage().OnNavigatedTo()
@@ -66,7 +63,7 @@ func (dp *DCRDEXPage) OnNavigatedTo() {
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
-func (dp *DCRDEXPage) Layout(gtx layout.Context) layout.Dimensions {
+func (dp *DEXPage) Layout(gtx layout.Context) layout.Dimensions {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -81,7 +78,7 @@ func (dp *DCRDEXPage) Layout(gtx layout.Context) layout.Dimensions {
 	)
 }
 
-func (dp *DCRDEXPage) topBar(gtx C) D {
+func (dp *DEXPage) topBar(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -105,7 +102,7 @@ func (dp *DCRDEXPage) topBar(gtx C) D {
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (dp *DCRDEXPage) HandleUserInteractions() {
+func (dp *DEXPage) HandleUserInteractions() {
 	if dp.openTradeMainPage.Clicked() {
 		dp.ParentNavigator().CloseCurrentPage()
 	}
@@ -121,4 +118,4 @@ func (dp *DCRDEXPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (dp *DCRDEXPage) OnNavigatedFrom() {}
+func (dp *DEXPage) OnNavigatedFrom() {}

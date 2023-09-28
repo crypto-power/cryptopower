@@ -82,7 +82,7 @@ func (pg *TradePage) HandleUserInteractions() {
 		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
 	}
 	if pg.dcrdexBtn.Clicked() {
-		pg.ParentNavigator().Display(dcrdex.NewDCRDEXPage(pg.Load))
+		pg.ParentNavigator().Display(dcrdex.NewDEXPage(pg.Load))
 	}
 }
 
