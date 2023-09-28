@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
@@ -159,6 +160,10 @@ func (hp *HomePage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			// TODO: Implement click functionality
 			fmt.Println(item.PageID, "clicked")
+			if strings.ToLower(item.PageID) == values.StrReceive {
+				receiveModal := components.NewReceiveModal(hp.Load)
+				hp.ParentWindow().ShowModal(receiveModal)
+			}
 		}
 	}
 
