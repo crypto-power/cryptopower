@@ -345,14 +345,12 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 	}
 
 	lblText := hp.Theme.Label(values.TextSize30, "--")
-	lblText.Color = hp.Theme.Color.PageNavText
 	return lblText.Layout(gtx)
 }
 
 // TODO: use real values
 func (hp *HomePage) LayoutUSDBalance(gtx C) D {
 	lblText := hp.Theme.Label(values.TextSize30, "$0.00")
-	lblText.Color = hp.Theme.Color.PageNavText
 
 	if hp.isBalanceHidden {
 		lblText = hp.Theme.Label(values.TextSize24, "********")
@@ -370,7 +368,6 @@ func (hp *HomePage) totalBalanceTextAndIconButtonLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			lbl := hp.Theme.Label(values.TextSize14, values.String(values.StrTotalValue))
-			lbl.Color = hp.Theme.Color.PageNavText
 			return lbl.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {

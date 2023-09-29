@@ -120,12 +120,22 @@ func (nd *NavDrawer) LayoutTopBar(gtx layout.Context) layout.Dimensions {
 		return card.Layout(gtx, func(gtx C) D {
 			list := layout.List{Axis: layout.Horizontal}
 			return list.Layout(gtx, len(nd.AppNavBarItems), func(gtx C, i int) D {
+				// The parent card has all border radius (tl, tr, bl, br) set to
+				// 20. This requires setting it's children border so they
+				// respects the parent border.
+				radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20}
+				if i+1 == len(nd.AppNavBarItems) {
+					radius = cryptomaterial.CornerRadius{TopRight: 20, BottomRight: 20}
+				}
 				return cryptomaterial.LinearLayout{
 					Width:       cryptomaterial.WrapContent,
 					Height:      cryptomaterial.WrapContent,
 					Orientation: layout.Horizontal,
 					Clickable:   nd.AppNavBarItems[i].Clickable,
 					Alignment:   layout.Middle,
+					Border: cryptomaterial.Border{
+						Radius: radius,
+					},
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
