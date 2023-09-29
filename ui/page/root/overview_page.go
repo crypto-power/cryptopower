@@ -335,7 +335,7 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 	sliderWidget := make([]layout.Widget, 0)
 	for _, key := range pg.sortedMixerSlideKeys {
-		// Append the mixer slide widgets in an ananymouse function. This stops the
+		// Append the mixer slide widgets in an anonymouse function. This stops the
 		// the fuction literal from capturing only the final key {key} value.
 		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
@@ -825,7 +825,7 @@ func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.
 }
 
 func (pg *OverviewPage) listenForMixerNotifications() {
-	// Get all DCR wallets, and suscribe to the individual wallet's mixer channel.
+	// Get all DCR wallets, and subscribe to the individual wallet's mixer channel.
 	// We are only interested in DCR wallets since mixing support
 	// is limited to DCR at this point.
 	dcrWallets := pg.WL.AssetsManager.AllDCRWallets()
@@ -863,7 +863,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					Asset: w,
 				}
 				pg.setUnMixedBalance(w.ID)
-				// Store the slide keys in a slice to maintain a consistence slide sequence.
+				// Store the slide keys in a slice to maintain a consistent slide sequence.
 				// since ranging over a map doesn't guarantee an order.
 				pg.sortedMixerSlideKeys = append(pg.sortedMixerSlideKeys, w.ID)
 				// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
