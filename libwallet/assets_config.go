@@ -252,6 +252,18 @@ func (mgr *AssetsManager) ClearExchangeConfig() {
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey)
 }
 
+// IsTotalAssetBalanceOn checks if the total usd balance is set.
+func (mgr *AssetsManager) IsTotalAssetBalanceOn() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.TotalUSDBalanceConfigKey, &data)
+	return data
+}
+
+// SetTransactionsNotifications sets the transaction notifications for the wallet.
+func (mgr *AssetsManager) SetTotalAssetBalanceState(data bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.TotalUSDBalanceConfigKey, data)
+}
+
 func genKey(prefix, identifier interface{}) string {
 	return fmt.Sprintf("%v-%v", prefix, identifier)
 }
