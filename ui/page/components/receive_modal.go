@@ -38,13 +38,13 @@ type ReceiveModal struct {
 	sourceAccountSelector *WalletAndAccountSelector
 	sourceWalletSelector  *WalletAndAccountSelector
 
-	isNewAddr, isInfo        bool
-	currentAddress           string
-	qrImage                  *image.Image
-	newAddr                  cryptomaterial.Button
-	info, more               cryptomaterial.IconButton
-	receiveAddress           cryptomaterial.Label
-	generateNewAddressButton cryptomaterial.Button
+	isNewAddr, isInfo bool
+	currentAddress    string
+	qrImage           *image.Image
+	newAddr           cryptomaterial.Button
+	info, more        cryptomaterial.IconButton
+	receiveAddress    cryptomaterial.Label
+	// generateNewAddressButton cryptomaterial.Button
 }
 
 func NewReceiveModal(l *load.Load) *ReceiveModal {
@@ -61,13 +61,6 @@ func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm.okBtn = l.Theme.Button(values.String(values.StrOK))
 	rm.okBtn.Font.Weight = font.Medium
 
-	rm.generateNewAddressButton = l.Theme.Button(values.String(values.StrGenerateAddress))
-	rm.generateNewAddressButton.Font.Weight = font.SemiBold
-	rm.generateNewAddressButton.Color = l.Theme.Color.Primary
-	rm.generateNewAddressButton.Inset = layout.UniformInset(values.MarginPadding4)
-	rm.generateNewAddressButton.Background = l.Theme.Color.DefaultThemeColors().SurfaceHighlight
-	rm.generateNewAddressButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.GrayText4)
-
 	rm.addressEditor = l.Theme.IconEditor(new(widget.Editor), "", l.Theme.Icons.ContentCopy, true)
 	rm.addressEditor.Editor.SingleLine = true
 
@@ -76,7 +69,7 @@ func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm.newAddr.Inset = layout.UniformInset(values.MarginPadding10)
 	rm.newAddr.Color = rm.Theme.Color.Text
 	rm.newAddr.Background = rm.Theme.Color.Surface
-	rm.newAddr.HighlightColor = rm.Theme.Color.SurfaceHighlight
+	rm.newAddr.HighlightColor = rm.Theme.Color.Gray4
 	rm.newAddr.ButtonStyle.TextSize = values.TextSize14
 	rm.newAddr.ButtonStyle.Font.Weight = font.SemiBold
 
@@ -111,11 +104,6 @@ func (rm *ReceiveModal) Handle() {
 		rm.Dismiss()
 	}
 
-	if rm.generateNewAddressButton.Button.Clicked() {
-		rm.generateNewAddress()
-		rm.generateQRForAddress()
-	}
-
 	if rm.more.Button.Clicked() {
 		rm.isNewAddr = !rm.isNewAddr
 		if rm.isInfo {
@@ -126,7 +114,7 @@ func (rm *ReceiveModal) Handle() {
 	if rm.newAddr.Clicked() {
 		newAddr, err := rm.generateNewAddress()
 		if err != nil {
-			log.Debug("Error generating new address" + err.Error())
+			log.Debug("Error generating new address: " + err.Error())
 			return
 		}
 
@@ -142,13 +130,6 @@ func (rm *ReceiveModal) Handle() {
 			Body(values.String(values.StrReceiveInfo)).
 			SetContentAlignment(layout.NW, layout.W, layout.Center)
 		rm.ParentWindow().ShowModal(info)
-	}
-}
-
-func (rm *ReceiveModal) handleCopyEvent(gtx C) {
-	rm.addressEditor.EditorIconButtonEvent = func() {
-		clipboard.WriteOp{Text: rm.addressEditor.Editor.Text()}.Add(gtx.Ops)
-		rm.Toast.Notify(values.String(values.StrCopied))
 	}
 }
 
@@ -180,7 +161,7 @@ func (rm *ReceiveModal) generateQRForAddress() {
 
 	decodeImg, _, err := image.Decode(bytes.NewReader(buffer.Bytes()))
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("Error decoding image: " + err.Error())
 		return
 	}
 
@@ -189,14 +170,9 @@ func (rm *ReceiveModal) generateQRForAddress() {
 
 func (rm *ReceiveModal) generateNewAddress() (string, error) {
 
-generateAddress:
 	newAddr, err := rm.sourceWalletSelector.selectedWallet.NextAddress(rm.sourceAccountSelector.selectedAccount.Number)
 	if err != nil {
 		return "", err
-	}
-
-	if newAddr == rm.currentAddress {
-		goto generateAddress
 	}
 
 	rm.currentAddress = newAddr
@@ -216,7 +192,6 @@ func (rm *ReceiveModal) generateCurrentAddress() error {
 }
 
 func (rm *ReceiveModal) Layout(gtx layout.Context) D {
-	rm.handleCopyEvent(gtx)
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
