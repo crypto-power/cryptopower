@@ -57,7 +57,7 @@ func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
 }
 
 func (img *Image) LayoutSize2(gtx C, width, height unit.Dp) D {
-	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: int(width * 2), Y: int(height * 2)}})
+	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: int(width), Y: int(height * 2)}})
 	draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
 
 	i := widget.Image{Src: paint.NewImageOp(dst)}

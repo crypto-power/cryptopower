@@ -15,6 +15,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -41,6 +42,7 @@ type HomePage struct {
 
 	// page state variables
 	isBalanceHidden bool
+	totalBalanceUSD string
 }
 
 var navigationTabTitles = []string{
@@ -102,11 +104,11 @@ func (hp *HomePage) ID() string {
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
+	go hp.CalculateAssetsUSDBalance()
+
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
 	}
-
-	hp.totalUSDValueSwitch.SetChecked(true)
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -190,8 +192,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.totalUSDValueSwitch.Changed() {
-		// TODO use assetManager config settings
-		hp.totalUSDValueSwitch.SetChecked(hp.totalUSDValueSwitch.IsChecked())
+		hp.WL.AssetsManager.SetTotalAssetBalanceState(hp.totalUSDValueSwitch.IsChecked())
 	}
 }
 
@@ -327,7 +328,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	if hp.totalUSDValueSwitch.IsChecked() {
+	if hp.totalUSDValueSwitch.IsChecked() && hp.totalBalanceUSD != "" {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -348,10 +349,10 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 
 // TODO: use real values
 func (hp *HomePage) LayoutUSDBalance(gtx C) D {
-	lblText := hp.Theme.Label(values.TextSize30, "$0.00")
+	lblText := hp.Theme.Label(values.TextSize30, hp.totalBalanceUSD)
 
 	if hp.isBalanceHidden {
-		lblText = hp.Theme.Label(values.TextSize24, "********")
+		lblText = hp.Theme.Label(values.TextSize24, "******")
 	}
 	inset := layout.Inset{Right: values.MarginPadding8}
 	return inset.Layout(gtx, lblText.Layout)
@@ -404,4 +405,28 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 			})
 		}),
 	)
+}
+
+func (hp *HomePage) CalculateAssetsUSDBalance() {
+	if components.IsFetchExchangeRateAPIAllowed(hp.WL) {
+		assetsBalance, err := components.CalculateTotalAssetsBalance(hp.Load)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(hp.Load, assetsBalance)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		var totalBalance float64
+		for _, balance := range assetsTotalUSDBalance {
+			totalBalance += balance
+		}
+
+		hp.totalBalanceUSD = utils.FormatUSDBalance(hp.Printer, totalBalance)
+		hp.ParentWindow().Reload()
+	}
 }
