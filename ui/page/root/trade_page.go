@@ -10,6 +10,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/dcrdex"
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -50,7 +51,7 @@ func NewTradePage(l *load.Load) *TradePage {
 	pg.exchangeBtn = l.Theme.NewClickable(false)
 	pg.exchangeBtn.Radius = rad
 
-	pg.dcrdexBtn = l.Theme.NewClickable(false)
+	pg.dcrdexBtn = l.Theme.NewClickable(true)
 	pg.dcrdexBtn.Radius = rad
 
 	return pg
@@ -79,6 +80,9 @@ func (pg *TradePage) OnNavigatedTo() {
 func (pg *TradePage) HandleUserInteractions() {
 	if pg.exchangeBtn.Clicked() {
 		pg.ParentNavigator().Display(exchange.NewCreateOrderPage(pg.Load))
+	}
+	if pg.dcrdexBtn.Clicked() {
+		pg.ParentNavigator().Display(dcrdex.NewDEXPage(pg.Load))
 	}
 }
 
@@ -113,8 +117,7 @@ func (pg *TradePage) layoutMobile(gtx C) D {
 }
 
 func (pg *TradePage) pageContentLayout(gtx C) D {
-	// Set dcrdex button as disabled since its not yet implemented.
-	pg.dcrdexBtn.SetEnabled(false, &gtx)
+	pg.dcrdexBtn.SetEnabled(true, &gtx)
 
 	pageContent := []func(gtx C) D{
 		pg.sectionTitle(values.String(values.StrExchangeIntro)),

@@ -100,3 +100,11 @@ func (tn *Tab) Changed() bool {
 	tn.changed = false
 	return changed
 }
+
+func (tn *Tab) SetSelectedTab(tab string) {
+	for i, item := range tn.tabItems {
+		if item == tab {
+			tn.selectedIndex = i
+		}
+	}
+}

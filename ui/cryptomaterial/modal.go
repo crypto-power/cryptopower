@@ -88,7 +88,7 @@ func (m *Modal) IsShown() bool {
 
 // Layout renders the modal widget to screen. The modal assumes the size of
 // its content plus padding.
-func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget) layout.Dimensions {
+func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...float32) layout.Dimensions {
 	mGtx := gtx
 	if m.isDisabled {
 		mGtx = gtx.Disabled()
@@ -115,7 +115,11 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget) layout.Dimen
 				widgetFuncs = append(widgetFuncs, widgets...)
 			}
 
-			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(360))
+			maxWidth := float32(360)
+			if len(width) > 0 {
+				maxWidth = width[0]
+			}
+			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(maxWidth))
 			inset := layout.Inset{
 				Top:    unit.Dp(30),
 				Bottom: unit.Dp(30),

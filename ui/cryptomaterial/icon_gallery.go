@@ -240,5 +240,6 @@ func (i *Icons) DarkModeIcons() *Icons {
 	i.TransactionFingerprint = NewImage(decredIcons["dm_transaction_fingerprint"])
 	i.ArrowForward = NewImage(decredIcons["dm_arrow_fwd"])
 	i.ChevronLeft = NewImage(decredIcons["chevron_left"])
+	i.Notification = NewImage(decredIcons["dm_notification"])
 	return i
 }
