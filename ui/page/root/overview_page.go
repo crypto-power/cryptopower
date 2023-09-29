@@ -61,7 +61,6 @@ type OverviewPage struct {
 	ltc *assetBalanceSliderItem
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
-	usdExchangeRate    float64
 
 	*listeners.AccountMixerNotificationListener
 	*listeners.TxAndBlockNotificationListener
@@ -338,13 +337,14 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 	for _, key := range pg.sortedMixerSlideKeys {
 		// Append the mixer slide widgets in an ananymouse function. This stops the
 		// the fuction literal from capturing only the final key {key} value.
-		func(k int) {
+		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
 				sliderWidget = append(sliderWidget, func(gtx C) D {
 					return pg.mixerLayout(gtx, slideData)
 				})
 			}
-		}(key)
+		}
+		addMixerSlideWidget(key)
 	}
 
 	return pg.mixerSlider.Layout(gtx, sliderWidget)
@@ -863,7 +863,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 					Asset: w,
 				}
 				pg.setUnMixedBalance(w.ID)
-				// Store the slide keys in a slice to maitain a consistence slide sequence.
+				// Store the slide keys in a slice to maintain a consistence slide sequence.
 				// since ranging over a map doesn't guarantee an order.
 				pg.sortedMixerSlideKeys = append(pg.sortedMixerSlideKeys, w.ID)
 				// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
@@ -905,6 +905,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 				pg.CloseTxAndBlockChan()
 				pg.AccountMixerNotificationListener = nil
 				pg.TxAndBlockNotificationListener = nil
+				pg.clearMixerSliderData()
 
 				return
 			}
@@ -913,20 +914,21 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {
-	accounts, err := pg.mixerSliderData[id].GetAccountsRaw()
+	mixerSliderData := pg.mixerSliderData[id]
+	accounts, err := mixerSliderData.GetAccountsRaw()
 	if err != nil {
-		log.Error("error loading mixer account.")
+		log.Errorf("error loading mixer account. %s", err)
 		return
 	}
 
 	for _, acct := range accounts.Accounts {
-		if acct.Number == pg.mixerSliderData[id].UnmixedAccountNumber() {
+		if acct.Number == mixerSliderData.UnmixedAccountNumber() {
 			bal := acct.Balance.Total
 			// to prevent NPE set default amount 0 if asset amount is nil
 			if bal == nil {
 				bal = dcr.Amount(dcrutil.Amount(0))
 			}
-			pg.mixerSliderData[id].unmixedBalance = bal
+			mixerSliderData.unmixedBalance = bal
 		}
 	}
 }
@@ -945,4 +947,9 @@ func (pg *OverviewPage) reloadBalances() {
 			}
 		}
 	}
+}
+
+func (pg *OverviewPage) clearMixerSliderData() {
+	pg.sortedMixerSlideKeys = nil
+	pg.mixerSliderData = nil
 }
