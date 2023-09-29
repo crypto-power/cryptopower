@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -61,6 +62,7 @@ type (
 
 var (
 	netC       monitorNetwork
+	apiMtx     sync.Mutex
 	activeAPIs map[string]*Client
 )
 
@@ -102,6 +104,8 @@ func newClient() (c *Client) {
 
 // ShutdownHTTPClients shutdowns any active connection by cancelling the context.
 func ShutdownHTTPClients() {
+	apiMtx.Lock()
+	defer apiMtx.Unlock()
 	for _, c := range activeAPIs {
 		c.cancelFunc()
 	}
@@ -200,10 +204,12 @@ func HTTPRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 	}
 
 	// Reuse the same client for requests that share a host.
+	apiMtx.Lock()
 	client, ok := activeAPIs[urlPath.Host]
 	if !ok {
 		client = newClient()
 	}
+	apiMtx.Unlock()
 
 	body, httpResp, err := client.query(reqConfig)
 	if err != nil {
@@ -211,7 +217,9 @@ func HTTPRequest(reqConfig *ReqConfig, respObj interface{}) (*http.Response, err
 	}
 
 	// cache a new client connection since it was successful
+	apiMtx.Lock()
 	activeAPIs[urlPath.Host] = client
+	apiMtx.Unlock()
 
 	// if IsRetByte is option is true. Response from the resource queried
 	// is not in json format, don't unmarshal return response byte slice to
