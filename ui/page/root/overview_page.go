@@ -117,11 +117,9 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				Alignment: layout.Middle,
 			},
 		},
-		assetBalanceSlider:   l.Theme.Slider(),
-		card:                 l.Theme.Card(),
-		sliderRedirectBtn:    l.Theme.NewClickable(false),
-		mixerSliderData:      make(map[int]*mixerData),
-		sortedMixerSlideKeys: make([]int, 0),
+		assetBalanceSlider: l.Theme.Slider(),
+		card:               l.Theme.Card(),
+		sliderRedirectBtn:  l.Theme.NewClickable(false),
 	}
 
 	pg.mixerSlider = l.Theme.Slider()
@@ -854,6 +852,8 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 		}
 	}
 
+	pg.sortedMixerSlideKeys = make([]int, 0)
+	pg.mixerSliderData = make(map[int]*mixerData)
 	for _, wal := range dcrWallets {
 		w := wal.(*dcr.Asset)
 
@@ -866,12 +866,14 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 				// Store the slide keys in a slice to maintain a consistent slide sequence.
 				// since ranging over a map doesn't guarantee an order.
 				pg.sortedMixerSlideKeys = append(pg.sortedMixerSlideKeys, w.ID)
-				// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
-				// on wallet list.
-				sort.Ints(pg.sortedMixerSlideKeys)
 			}
 		}
 	}
+	// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
+	// on wallet list.
+	sort.Ints(pg.sortedMixerSlideKeys)
+	// Reload mixer slider items
+	pg.mixerSlider.RefreshItems()
 
 	go func() {
 		for {
@@ -884,6 +886,8 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 
 				if n.RunStatus == wallet.MixerEnded {
 					delete(pg.mixerSliderData, n.WalletID)
+					// Reload mixer slider items
+					pg.mixerSlider.RefreshItems()
 					pg.ParentWindow().Reload()
 				}
 			case n := <-pg.TxAndBlockNotifChan():
@@ -905,7 +909,6 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 				pg.CloseTxAndBlockChan()
 				pg.AccountMixerNotificationListener = nil
 				pg.TxAndBlockNotificationListener = nil
-				pg.clearMixerSliderData()
 
 				return
 			}
@@ -947,9 +950,4 @@ func (pg *OverviewPage) reloadBalances() {
 			}
 		}
 	}
-}
-
-func (pg *OverviewPage) clearMixerSliderData() {
-	pg.sortedMixerSlideKeys = nil
-	pg.mixerSliderData = nil
 }
