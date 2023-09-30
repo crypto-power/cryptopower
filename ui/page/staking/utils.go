@@ -66,8 +66,8 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 			continue
 		}
 
-		// This fixes a libwallet bug where live tickets transactions
-		// do not have updated data of Stake spender.
+		// This fixes a libwallet bug where live tickets transactions do not
+		// have updated data of Stake spender.
 		if hasFilter(dcr.TxFilterLive) && ticketSpender != nil {
 			continue
 		}

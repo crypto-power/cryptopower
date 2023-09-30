@@ -22,9 +22,8 @@ type Modal struct {
 	background   color.NRGBA
 	list         *widget.List
 	button       *widget.Clickable
-	// overlayBlinder sits between the overlay and modal widget
-	// it acts to intercept and prevent clicks on widget from getting
-	// to the overlay.
+	// overlayBlinder sits between the overlay and modal widget it acts to
+	// intercept and prevent clicks on widget from getting to the overlay.
 	overlayBlinder *widget.Clickable
 	card           Card
 	scroll         ListStyle
@@ -64,11 +63,11 @@ func (t *Theme) Modal(id string) *Modal {
 	return m
 }
 
-// Dismiss removes the modal from the window. Does nothing if the modal was
-// not previously pushed into a window.
+// Dismiss removes the modal from the window. Does nothing if the modal was not
+// previously pushed into a window.
 func (m *Modal) Dismiss() {
-	// ParentWindow will only be accessible if this modal has been
-	// pushed into display by a WindowNavigator.
+	// ParentWindow will only be accessible if this modal has been pushed into
+	// display by a WindowNavigator.
 	if parentWindow := m.ParentWindow(); parentWindow != nil {
 		parentWindow.DismissModal(m.ID())
 	} else {
@@ -86,8 +85,8 @@ func (m *Modal) IsShown() bool {
 	return false
 }
 
-// Layout renders the modal widget to screen. The modal assumes the size of
-// its content plus padding.
+// Layout renders the modal widget to screen. The modal assumes the size of its
+// content plus padding.
 func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...float32) layout.Dimensions {
 	mGtx := gtx
 	if m.isDisabled {

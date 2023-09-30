@@ -127,7 +127,8 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 	})
 }
 
-// syncContent lays out sync status content when the wallet is syncing, synced, not connected
+// syncContent lays out sync status content when the wallet is syncing, synced,
+// not connected
 func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 	isBtcAsset := pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset
 	isLtcAsset := pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.LTCWalletAsset
@@ -332,7 +333,8 @@ func (pg *WalletInfo) fetchSyncProgress() progressInfo {
 	return pgrss
 }
 
-// deleteSyncProgress removes the map entry after the data persisted is no longer necessary.
+// deleteSyncProgress removes the map entry after the data persisted is no
+// longer necessary.
 func (pg *WalletInfo) deleteSyncProgress() {
 	wal := pg.WL.SelectedWallet.Wallet
 	if wal.IsSynced() {

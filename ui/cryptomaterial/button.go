@@ -35,9 +35,9 @@ type ButtonLayout struct {
 	material.ButtonLayoutStyle
 }
 
-// IconButtonStyle is similar to material.IconButtonStyle but excluding
-// the color fields. This ensures that the IconButton colors are only
-// set using the IconButton.colorStyle field.
+// IconButtonStyle is similar to material.IconButtonStyle but excluding the
+// color fields. This ensures that the IconButton colors are only set using the
+// IconButton.colorStyle field.
 type IconButtonStyle struct {
 	Icon   *widget.Icon
 	Size   unit.Dp
@@ -93,7 +93,7 @@ func (t *Theme) DangerButton(text string) Button {
 }
 
 func GenHighlightColor(c color.NRGBA) color.NRGBA {
-	// 127 is transluscent level
+	// 127 is translucent level
 	return color.NRGBA{c.R, c.G, c.B, uint8(127)}
 }
 
@@ -219,8 +219,8 @@ func (bl ButtonLayout) Layout(gtx layout.Context, w layout.Widget) layout.Dimens
 }
 
 // TODO: Test to ensure this works!
-// TODO: Doesn't work, if ib.colorStyle was nil before this method is called,
-// it is temporarily changed but when ib.Layout is called, it returns to nil.
+// TODO: Doesn't work, if ib.colorStyle was nil before this method is called, it
+// is temporarily changed but when ib.Layout is called, it returns to nil.
 func (ib IconButton) ChangeColorStyle(colorStyle *values.ColorStyle) {
 	ib.colorStyle.Background = colorStyle.Background
 	ib.colorStyle.Foreground = colorStyle.Foreground

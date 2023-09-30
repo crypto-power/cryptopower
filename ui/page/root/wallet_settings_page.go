@@ -103,9 +103,9 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) OnNavigatedTo() {
 	// set switch button state on page load
@@ -160,8 +160,8 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 	pg.accounts = walletAccounts
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
@@ -589,9 +589,9 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 		PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
 		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-			// TODO: Check if deletion happened successfully
-			// Since only one peer is available at time, the single peer key can
-			// be set to empty string to delete its entry..
+			// TODO: Check if deletion happened successfully Since only one peer
+			// is available at time, the single peer key can be set to empty
+			// string to delete its entry..
 			pg.WL.SelectedWallet.Wallet.RemovePeers()
 			pg.peerAddr = ""
 			return true
@@ -603,10 +603,9 @@ func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) HandleUserInteractions() {
 	for pg.changePass.Clicked() {
@@ -667,7 +666,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 		if pg.fetchProposal.IsChecked() {
 			if !pg.WL.AssetsManager.Politeia.IsSyncing() {
 				go pg.WL.AssetsManager.Politeia.Sync(context.Background())
-				// set proposal notification config when proposal fetching is enabled
+				// set proposal notification config when proposal fetching is
+				// enabled
 				pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
 				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
 			} else {
@@ -689,7 +689,8 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 					}
 
 					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, false)
-					// set proposal notification config when proposal fetching is disabled
+					// set proposal notification config when proposal fetching
+					// is disabled
 					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.ProposalNotificationConfigKey, false)
 					return true
 				})
@@ -847,9 +848,9 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 	pg.ParentWindow().ShowModal(textModal)
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

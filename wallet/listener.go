@@ -16,7 +16,8 @@ const (
 	RescanEnded
 )
 
-// SyncNotificationType represents the spv sync stage at which the assetsManager is currently
+// SyncNotificationType represents the spv sync stage at which the assetsManager
+// is currently.
 type SyncNotificationType int
 
 const (
@@ -87,7 +88,8 @@ const (
 const TotalSyncSteps = 3
 
 type (
-	// SyncStatusUpdate represents information about the status of the assetsManager spv sync
+	// SyncStatusUpdate represents information about the status of the
+	// assetsManager spv sync
 	SyncStatusUpdate struct {
 		Stage          SyncNotificationType
 		ProgressReport interface{}

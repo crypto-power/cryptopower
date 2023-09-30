@@ -72,25 +72,25 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 	return do
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (do *DEXOnboarding) OnNavigatedTo() {
 	do.showLoader = false
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (do *DEXOnboarding) OnNavigatedFrom() {}
 
-// Layout draws the page UI components into the provided C
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided C to be eventually
+// drawn on screen.
 // Part of the load.Page interface.
 func (do *DEXOnboarding) Layout(gtx C) D {
 	r := 8

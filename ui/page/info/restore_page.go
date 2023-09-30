@@ -74,9 +74,9 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *Restore) OnNavigatedTo() {
 	pg.toggleSeedInput.SetChecked(false)
@@ -84,8 +84,8 @@ func (pg *Restore) OnNavigatedTo() {
 	pg.seedRestorePage.SetParentNav(pg.ParentWindow())
 }
 
-// Layout draws the page UI components into the provided C
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided C to be eventually
+// drawn on screen.
 // Part of the load.Page interface.
 func (pg *Restore) Layout(gtx C) D {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -281,9 +281,9 @@ func (pg *Restore) tabLayout(gtx C) D {
 	})
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
@@ -292,10 +292,9 @@ func (pg *Restore) OnNavigatedFrom() {
 	pg.seedRestorePage.OnNavigatedFrom()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *Restore) HandleUserInteractions() {
 	if clicked, selectedItem := pg.tabList.ItemClicked(); clicked {
@@ -326,8 +325,8 @@ func (pg *Restore) HandleUserInteractions() {
 
 // KeysToHandle returns an expression that describes a set of key combinations
 // that this page wishes to capture. The HandleKeyPress() method will only be
-// called when any of these key combinations is pressed.
-// Satisfies the load.KeyEventHandler interface for receiving key events.
+// called when any of these key combinations is pressed. Satisfies the
+// load.KeyEventHandler interface for receiving key events.
 func (pg *Restore) KeysToHandle() key.Set {
 	if pg.tabIndex == 0 {
 		return pg.seedRestorePage.KeysToHandle()
@@ -352,7 +351,8 @@ func (pg *Restore) restoreFromSeedEditor() {
 	}
 
 	seedOrHex := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
-	// Check if the user did input a hex or seed. If its a hex set the correct tabindex.
+	// Check if the user did input a hex or seed. If its a hex set the correct
+	// tabindex.
 	if len(seedOrHex) > components.MaxSeedBytes {
 		pg.tabIndex = 0
 	} else {

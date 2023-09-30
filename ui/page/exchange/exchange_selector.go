@@ -71,9 +71,9 @@ func NewExSelector(l *load.Load, server ...instantswap.Server) *ExSelector {
 	return es
 }
 
-// SupportedExchanges returns a slice containing all the exchanges
-// Currently supported. If the server param is passed, it returns
-// a slice  containing the filtered server only.
+// SupportedExchanges returns a slice containing all the exchanges Currently
+// supported. If the server param is passed, it returns a slice  containing the
+// filtered server only.
 func (es *ExSelector) SupportedExchanges(server ...instantswap.Server) []*Exchange {
 	// check if server is not nil
 	if len(server) > 0 {
@@ -147,9 +147,9 @@ func (es *ExSelector) ExchangeSelected(callback func(*Exchange)) *ExSelector {
 	return es
 }
 
-// SetSelectedExchangeName sets the exchange whose Name field is
-// equals to {name} as the current selected exchange.
-// If it can find exchange whose Name field equals name it returns silently.
+// SetSelectedExchangeName sets the exchange whose Name field is equals to
+// {name} as the current selected exchange. If it can find exchange whose Name
+// field equals name it returns silently.
 func (es *ExSelector) SetSelectedExchangeName(name string) {
 	ex := es.SupportedExchanges()
 	for _, v := range ex {

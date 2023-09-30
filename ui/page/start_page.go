@@ -261,7 +261,7 @@ func (sp *startPage) layoutMobile(gtx C) D {
 func (sp *startPage) setLanguageSetting() {
 	langPre := sp.WL.AssetsManager.GetLanguagePreference()
 	if langPre == "" {
-		sp.WL.AssetsManager.SetLanguagePreference(values.DefaultLangauge)
+		sp.WL.AssetsManager.SetLanguagePreference(values.DefaultLanguage)
 	}
 	values.SetUserLanguage(langPre)
 }

@@ -20,7 +20,7 @@ var (
 	collection []font.FontFace
 )
 
-// FontCollection registers the fonts to used in the app
+// FontCollection registers the fonts to used in the app.
 func FontCollection() []font.FontFace {
 	regularItalic, err := getFontByte("fonts/source_sans_pro_It.otf")
 	if err != nil {

@@ -18,11 +18,12 @@ import (
 )
 
 var (
-	// Version is the application version. It is set using the -ldflags
+	// Version is the application version. It is set using the -ldflags.
 	Version = "1.7.0"
-	// BuildDate is the date the application was built. It is set using the -ldflags
+	// BuildDate is the date the application was built. It is set using the
+	// -ldflags.
 	BuildDate string
-	// BuildEnv is the build environment. It is set using the -ldflags
+	// BuildEnv is the build environment. It is set using the -ldflags.
 	BuildEnv = wallet.DevBuild
 )
 
@@ -33,8 +34,8 @@ func main() {
 		return
 	}
 
-	// before the asset manager is initialized use command line debuglevel option if passed or
-	// default to log level info for startup logs.
+	// before the asset manager is initialized use command line debuglevel
+	// option if passed or default to log level info for startup logs.
 	if cfg.DebugLevel == "" {
 		logger.SetLogLevels(utils.LogLevelInfo)
 	} else {
@@ -80,7 +81,7 @@ func main() {
 		return
 	}
 
-	// if debuglevel is passed at commandLine persist the option.
+	// if debug level is passed at commandLine persist the option.
 	if cfg.DebugLevel != "" && wal.GetAssetsManager().IsAssetManagerDB() {
 		wal.GetAssetsManager().SetLogLevels(cfg.DebugLevel)
 	}

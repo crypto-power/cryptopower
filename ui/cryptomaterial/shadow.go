@@ -20,7 +20,7 @@ type Shadow struct {
 func (t *Theme) Shadow() *Shadow {
 	return &Shadow{
 		surface:         t.Color.Surface,
-		shadowRadius:    8, // raduis of the shadow
+		shadowRadius:    8, // radius of the shadow
 		shadowElevation: 7, // height/spread of the shadow
 	}
 }

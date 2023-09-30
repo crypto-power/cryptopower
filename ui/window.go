@@ -27,9 +27,9 @@ import (
 	"github.com/crypto-power/cryptopower/wallet"
 )
 
-// Window represents the app window (and UI in general). There should only be one.
-// Window maintains an internal state of variables to determine what to display at
-// any point in time.
+// Window represents the app window (and UI in general). There should only be
+// one. Window maintains an internal state of variables to determine what to
+// display at any point in time.
 type Window struct {
 	*giouiApp.Window
 	navigator app.WindowNavigator
@@ -45,8 +45,8 @@ type Window struct {
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
 	Quit chan struct{}
-	// IsShutdown channel is used to report that backgound processes have completed
-	// shutting down, therefore the UI processes can finally stop.
+	// IsShutdown channel is used to report that background processes have
+	// completed shutting down, therefore the UI processes can finally stop.
 	IsShutdown chan struct{}
 }
 
@@ -59,11 +59,9 @@ type WriteClipboard struct {
 	Text string
 }
 
-// CreateWindow creates and initializes a new window with start
-// as the first page displayed.
-// Should never be called more than once as it calls
-// app.NewWindow() which does not support being called more
-// than once.
+// CreateWindow creates and initializes a new window with start as the first
+// page displayed. Should never be called more than once as it calls
+// app.NewWindow() which does not support being called more than once.
 func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
@@ -108,7 +106,8 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	// Set the user-configured theme colors on app load.
 	var isDarkModeOn bool
 	if mw.LoadedWalletsCount() > 0 {
-		// A valid DB interface must have been set. Otherwise no valid wallet exists.
+		// A valid DB interface must have been set. Otherwise no valid wallet
+		// exists.
 		isDarkModeOn = mw.IsDarkModeOn()
 	}
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
@@ -130,8 +129,8 @@ func (win *Window) NewLoad() (*load.Load, error) {
 		Printer: message.NewPrinter(language.English),
 	}
 
-	// DarkModeSettingChanged checks if any page or any
-	// modal implements the AppSettingsChangeHandler
+	// DarkModeSettingChanged checks if any page or any modal implements the
+	// AppSettingsChangeHandler
 	l.DarkModeSettingChanged = func(isDarkModeOn bool) {
 		if page, ok := win.navigator.CurrentPage().(load.AppSettingsChangeHandler); ok {
 			page.OnDarkModeChanged(isDarkModeOn)
@@ -215,8 +214,8 @@ func (win *Window) HandleEvents() {
 
 // handleFrameEvent is called when a FrameEvent is received by the active
 // window. It expects a new frame in the form of a list of operations that
-// describes what to display and how to handle input. This operations list
-// is returned to the caller for displaying on screen.
+// describes what to display and how to handle input. This operations list is
+// returned to the caller for displaying on screen.
 func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 	switch {
 	case win.navigator.CurrentPage() == nil:
@@ -328,8 +327,8 @@ func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
 		op.Defer(ops, m.Stop())
 	}
 
-	// Request key events on the top modal, if necessary.
-	// Only request key events on the current page if no modal is displayed.
+	// Request key events on the top modal, if necessary. Only request key
+	// events on the current page if no modal is displayed.
 	if modal := win.navigator.TopModal(); modal != nil {
 		if handler, ok := modal.(load.KeyEventHandler); ok {
 			requestKeyEvents(modal.ID(), handler.KeysToHandle())

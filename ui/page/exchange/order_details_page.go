@@ -49,9 +49,9 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 		orderInfo:        order,
 	}
 
-	// if the order was created before the ExchangeServer field was added
-	// to the Order struct update it here. This prevents a crash when
-	// attempting to open legacy orders
+	// if the order was created before the ExchangeServer field was added to the
+	// Order struct update it here. This prevents a crash when attempting to
+	// open legacy orders
 	nilExchangeServer := instantswap.ExchangeServer{}
 	if order.ExchangeServer == nilExchangeServer {
 		switch order.Server {

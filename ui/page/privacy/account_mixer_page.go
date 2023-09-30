@@ -80,9 +80,9 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -126,8 +126,8 @@ func (pg *AccountMixerPage) getMixerBalance() {
 	pg.MixerAccounts = vm
 }
 
-// This function return dcr amount default is 0 if amount passed is nil
-// it help ui show the amount without problem
+// This function return dcr amount default is 0 if amount passed is nil it help
+// ui show the amount without problem
 func getSafeAmount(amount sharedW.AssetAmount) sharedW.AssetAmount {
 	if amount != nil {
 		return amount
@@ -332,8 +332,8 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 	})
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -358,10 +358,9 @@ func (pg *AccountMixerPage) layoutMobile(_ layout.Context) layout.Dimensions {
 	return D{}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) HandleUserInteractions() {
 	if pg.toggleMixer.Changed() {

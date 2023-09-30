@@ -67,8 +67,8 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 	)
 }
 
-// getIndexUnit returns index of unit currency in amount and
-// helps to break out the unit part from the amount string.
+// getIndexUnit returns index of unit currency in amount and helps to break out
+// the unit part from the amount string.
 func getIndexUnit(amount string) int {
 	if strings.Contains(amount, string(utils.BTCWalletAsset)) {
 		return strings.Index(amount, " "+string(utils.BTCWalletAsset))
@@ -81,8 +81,8 @@ func getIndexUnit(amount string) int {
 	}
 }
 
-// LayoutBalance aligns the main and sub DCR balances horizontally, putting the sub
-// balance at the baseline of the row.
+// LayoutBalance aligns the main and sub DCR balances horizontally, putting the
+// sub balance at the baseline of the row.
 func LayoutBalance(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
 	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, l.Theme.Color.Text, false)
 }

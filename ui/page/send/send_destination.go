@@ -61,8 +61,8 @@ func newSendDestination(l *load.Load) *destination {
 	return dst
 }
 
-// destinationAddress validates the destination address obtained from the provided
-// raw address or the selected account address.
+// destinationAddress validates the destination address obtained from the
+// provided raw address or the selected account address.
 func (dst *destination) destinationAddress() (string, error) {
 	if dst.sendToAddress {
 		return dst.validateDestinationAddress()

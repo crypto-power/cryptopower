@@ -147,7 +147,6 @@ func SplitXPUB(text string, index1, index2 int) string {
 	first := text[0 : len(text)-index1]
 	second := text[len(text)-index1 : len(text)-index2]
 	third := text[len(text)-index2:]
-
 	return fmt.Sprintf("%s %s %s", first, second, third)
 }
 
@@ -157,6 +156,5 @@ func StringNotEmpty(texts ...string) bool {
 			return false
 		}
 	}
-
 	return true
 }

@@ -65,8 +65,7 @@ type ListPreferenceModal struct {
 	updateButtonClicked func(string)
 }
 
-// ItemPreference models the options shown by the list
-// preference modal.
+// ItemPreference models the options shown by the list preference modal.
 type ItemPreference struct {
 	Key   string // option's key
 	Value string // option's value
@@ -222,9 +221,9 @@ func (lp *ListPreferenceModal) layoutItems() []layout.FlexChild {
 	return items
 }
 
-// GetKeyValue return the value for a key withing a set of prefence options.
-// The key is case sensitive, `Key` != `key`.
-// Returns the empty string if the key is not found.
+// GetKeyValue return the value for a key withing a set of preference options.
+// The key is case sensitive, `Key` != `key`. Returns the empty string if the
+// key is not found.
 func GetKeyValue(key string, options []ItemPreference) string {
 	for _, option := range options {
 		if option.Key == key {

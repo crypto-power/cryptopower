@@ -106,8 +106,8 @@ func NewMainPage(l *load.Load) *MainPage {
 	return mp
 }
 
-// ID is a unique string that identifies the page and may be used
-// to differentiate this page from other pages.
+// ID is a unique string that identifies the page and may be used to
+// differentiate this page from other pages.
 // Part of the load.Page interface.
 func (mp *MainPage) ID() string {
 	return MainPageID
@@ -273,21 +273,21 @@ func (mp *MainPage) initNavItems() {
 	mp.floatingActionButton.FloatingActionButton[1].Clickable.Hoverable = false
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (mp *MainPage) OnNavigatedTo() {
 	mp.setNavExpanded()
 
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-	// load wallet account balance first before rendering page contents.
-	// It loads balance for the current selected wallet.
+	// load wallet account balance first before rendering page contents. It
+	// loads balance for the current selected wallet.
 	mp.updateBalance()
 	// updateExchangeSetting also calls updateBalance() but because of the API
-	// call it may take a while before the balance and USD conversion is updated.
-	// updateBalance() is called above first to prevent crash when balance value
-	// is required before updateExchangeSetting() returns.
+	// call it may take a while before the balance and USD conversion is
+	// updated. updateBalance() is called above first to prevent crash when
+	// balance value is required before updateExchangeSetting() returns.
 	mp.updateExchangeSetting()
 
 	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
@@ -377,12 +377,12 @@ func (mp *MainPage) updateBalance() {
 	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
 }
 
-// OnDarkModeChanged is triggered whenever the dark mode setting is changed
-// to enable restyling UI elements where necessary.
+// OnDarkModeChanged is triggered whenever the dark mode setting is changed to
+// enable restyling UI elements where necessary.
 // Satisfies the load.AppSettingsChangeHandler interface.
 func (mp *MainPage) OnDarkModeChanged(isDarkModeOn bool) {
-	// TODO: currentPage will likely be the Settings page when this method
-	// is called. If that page implements the AppSettingsChangeHandler interface,
+	// TODO: currentPage will likely be the Settings page when this method is
+	// called. If that page implements the AppSettingsChangeHandler interface,
 	// the following code will trigger the OnDarkModeChanged method of that
 	// page.
 	if currentPage, ok := mp.CurrentPage().(load.AppSettingsChangeHandler); ok {
@@ -398,10 +398,9 @@ func (mp *MainPage) OnCurrencyChanged() {
 	mp.updateExchangeSetting()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (mp *MainPage) HandleUserInteractions() {
 	if mp.CurrentPage() != nil {
@@ -574,9 +573,9 @@ func (mp *MainPage) HandleKeyPress(evt *key.Event) {
 	}
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
@@ -587,9 +586,10 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.CurrentPage().OnNavigatedFrom()
 	}
 
-	// The encrypted seed exists by default and is cleared after wallet is backed up.
-	// Activate the modal requesting the user to backup their current wallet on
-	// every wallet open request until the encrypted seed is cleared (backup happens).
+	// The encrypted seed exists by default and is cleared after wallet is
+	// backed up. Activate the modal requesting the user to backup their current
+	// wallet on every wallet open request until the encrypted seed is cleared
+	// (backup happens).
 	if mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != "" {
 		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
@@ -597,8 +597,8 @@ func (mp *MainPage) OnNavigatedFrom() {
 	mp.ctxCancel()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (mp *MainPage) Layout(gtx C) D {
 	mp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
@@ -896,8 +896,8 @@ func initializeBeepNotification(n string) {
 	}
 }
 
-// listenForNotifications starts a goroutine to watch for notifications
-// and update the UI accordingly.
+// listenForNotifications starts a goroutine to watch for notifications and
+// update the UI accordingly.
 func (mp *MainPage) listenForNotifications() {
 	// Return if any of the listener is not nil.
 	switch {

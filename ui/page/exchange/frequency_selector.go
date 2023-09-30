@@ -43,8 +43,8 @@ type frequencyModal struct {
 	isCancelable       bool
 }
 
-// NewFrequencySelector creates an frequency selector component.
-// It opens a modal to select a desired frequency.
+// NewFrequencySelector creates an frequency selector component. It opens a
+// modal to select a desired frequency.
 func NewFrequencySelector(l *load.Load) *FrequencySelector {
 	fs := &FrequencySelector{
 		openSelectorDialog: l.Theme.NewClickable(true),

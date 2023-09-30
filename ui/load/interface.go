@@ -4,8 +4,8 @@ import (
 	"gioui.org/io/key"
 )
 
-// AppSettingsChangeHandler defines a method that can be implemented by pages and
-// modals to watch for real-time changes to the dark mode setting and modify
+// AppSettingsChangeHandler defines a method that can be implemented by pages
+// and modals to watch for real-time changes to the dark mode setting and modify
 // widget appearance accordingly.
 type AppSettingsChangeHandler interface {
 	// OnDarkModeChanged is triggered whenever the dark mode setting is changed

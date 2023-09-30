@@ -37,8 +37,8 @@ func (wl *WalletLoad) AllSortedWalletList() []sharedW.Asset {
 	return wallets
 }
 
-// SortedWalletList can return sorted wallets based on the current selected wallet
-// type of on the basis of the provided asset type variadic variable.
+// SortedWalletList can return sorted wallets based on the current selected
+// wallet type of on the basis of the provided asset type variadic variable.
 func (wl *WalletLoad) SortedWalletList(assetType ...utils.AssetType) []sharedW.Asset {
 	var wallets []sharedW.Asset
 	if len(assetType) > 0 {
@@ -71,7 +71,7 @@ func (wl *WalletLoad) TotalWalletsBalance() (sharedW.AssetAmount, error) {
 		if err != nil {
 			return wl.nilAmount(), err
 		}
-		totalBalance += wl.getAssetTotalbalance(accountsResult).ToInt()
+		totalBalance += wl.getAssetTotalBalance(accountsResult).ToInt()
 	}
 	return wl.SelectedWallet.Wallet.ToAmount(totalBalance), nil
 }
@@ -108,7 +108,7 @@ func (wl *WalletLoad) TotalWalletBalance(walletID int) (sharedW.AssetAmount, err
 		return wl.nilAmount(), err
 	}
 
-	return wl.getAssetTotalbalance(accountsResult), nil
+	return wl.getAssetTotalBalance(accountsResult), nil
 }
 
 func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount, error) {
@@ -121,7 +121,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount,
 	if err != nil {
 		return wl.nilAmount(), err
 	}
-	return wl.getAssetSpendablebalance(accountsResult), nil
+	return wl.getAssetSpendableBalance(accountsResult), nil
 }
 
 func (wl *WalletLoad) DCRHDPrefix() string {
@@ -174,7 +174,7 @@ func (wl *WalletLoad) nilAmount() sharedW.AssetAmount {
 	return wl.SelectedWallet.Wallet.ToAmount(-1)
 }
 
-func (wl *WalletLoad) getAssetTotalbalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
+func (wl *WalletLoad) getAssetTotalBalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
 	var totalBalance int64
 	for _, account := range accountsResult.Accounts {
 		totalBalance += account.Balance.Total.ToInt()
@@ -182,7 +182,7 @@ func (wl *WalletLoad) getAssetTotalbalance(accountsResult *sharedW.Accounts) sha
 	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
 }
 
-func (wl *WalletLoad) getAssetSpendablebalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
+func (wl *WalletLoad) getAssetSpendableBalance(accountsResult *sharedW.Accounts) sharedW.AssetAmount {
 	var totalBalance int64
 	for _, account := range accountsResult.Accounts {
 		totalBalance += account.Balance.Spendable.ToInt()

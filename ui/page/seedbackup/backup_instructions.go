@@ -74,22 +74,22 @@ func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redi
 	return bi
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) OnNavigatedTo() {
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) HandleUserInteractions() {
 	for pg.viewSeedBtn.Clicked() {
 		if pg.verifyCheckBoxes() {
-			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
+			// TODO: Will repeat the paint cycle, just queue the next fragment
+			// to be displayed.
 			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))
 		}
 	}
@@ -108,17 +108,17 @@ func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.W
 	window.ShowModal(infoModal)
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) OnNavigatedFrom() {}
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 	sp := components.SubPage{

@@ -33,7 +33,8 @@ type (
 const (
 	OverviewPageID = "staking"
 
-	// pageSize define the maximum number of items fetched for the list scroll view.
+	// pageSize define the maximum number of items fetched for the list scroll
+	// view.
 	pageSize int32 = 20
 )
 
@@ -93,16 +94,16 @@ func NewStakingPage(l *load.Load) *Page {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
-	// pg.ctx is used to load known vsps in background and
-	// canceled in OnNavigatedFrom().
+	// pg.ctx is used to load known vsps in background and canceled in
+	// OnNavigatedFrom().
 
-	// If staking is disabled no startup func should be called
-	// Layout will draw an overlay to show that stacking is disabled.
+	// If staking is disabled no startup func should be called Layout will draw
+	// an overlay to show that stacking is disabled.
 
 	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	if pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
@@ -176,8 +177,8 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI)
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
 	// If Tickets Purcahse API is not allowed, display the overlay with the message.
@@ -189,7 +190,7 @@ func (pg *Page) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events.
 		gtx = gtx.Disabled()
 	}
 
@@ -256,10 +257,9 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	pg.setStakingButtonsState()
@@ -271,10 +271,11 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.stake.Changed() {
 		if pg.stake.IsChecked() {
 			if pg.dcrImpl.TicketBuyerConfigIsSet() {
-				// get ticket buyer config to check if the saved wallet account is mixed
-				// check if mixer is set, if yes check if allow spend from unmixed account
-				// if not set, check if the saved account is mixed before opening modal
-				// if it is not, open stake config modal
+				// get ticket buyer config to check if the saved wallet account
+				// is mixed check if mixer is set, if yes check if allow spend
+				// from unmixed account if not set, check if the saved account
+				// is mixed before opening modal if it is not, open stake config
+				// modal
 				tbConfig := pg.dcrImpl.AutoTicketsBuyerConfig()
 				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
@@ -323,14 +324,13 @@ func (pg *Page) HandleUserInteractions() {
 		ticketTx := tickets[selectedItem].transaction
 		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
 
-		// Check if this ticket is fully registered with a VSP
-		// and log any discrepancies.
-		// NOTE: Wallet needs to be unlocked to get the ticket status
-		// from the vsp. Otherwise, only the wallet-stored info will
-		// be retrieved. This is fine because we're only just logging
-		// but where it is necessary to display vsp-stored info, the
-		// wallet passphrase should be requested and used to unlock
-		// the wallet before calling this method.
+		// Check if this ticket is fully registered with a VSP and log any
+		// discrepancies.
+		// NOTE: Wallet needs to be unlocked to get the ticket status from the
+		// vsp. Otherwise, only the wallet-stored info will be retrieved. This
+		// is fine because we're only just logging but where it is necessary to
+		// display vsp-stored info, the wallet passphrase should be requested
+		// and used to unlock the wallet before calling this method.
 		ticketInfo, err := pg.dcrImpl.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v", err)
@@ -340,8 +340,9 @@ func (pg *Page) HandleUserInteractions() {
 					ticketTx.Hash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
 
-			// Confirm that fee hasn't been paid, sender account exists, the wallet
-			// is unlocked and no previous ticket processing instance is running.
+			// Confirm that fee hasn't been paid, sender account exists, the
+			// wallet is unlocked and no previous ticket processing instance is
+			// running.
 			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessPaid && len(ticketTx.Inputs) == 1 &&
 				ticketInfo.Client != nil && atomic.CompareAndSwapUint32(&pg.processingTicket, 0, 1) {
 
@@ -466,16 +467,16 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 	pg.ParentWindow().ShowModal(walletPasswordModal)
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	// There are cases where context was never created in the first place
-	// for instance if VSP is disabled will not be created, so context cancellation
+	// There are cases where context was never created in the first place for
+	// instance if VSP is disabled will not be created, so context cancellation
 	// should be ignored.
 	if pg.ctxCancel != nil {
 		pg.ctxCancel()

@@ -13,8 +13,8 @@ type RadioButton struct {
 	material.RadioButtonStyle
 }
 
-// RadioButton returns a RadioButton with a label. The key specifies
-// the value for the Enum.
+// RadioButton returns a RadioButton with a label. The key specifies the value
+// for the Enum.
 func (t *Theme) RadioButton(group *widget.Enum, key, label string, color, icon color.NRGBA) RadioButton {
 	rb := RadioButton{material.RadioButton(t.Base, group, key, label)}
 	rb.Color = color

@@ -80,8 +80,8 @@ func (sa *sendAmount) setExchangeRate(exchangeRate float64) {
 }
 
 func (sa *sendAmount) setAmount(amount int64) {
-	// TODO: this workaround ignores the change events from the
-	// amount input to avoid construct tx cycle.
+	// TODO: this workaround ignores the change events from the amount input to
+	// avoid construct tx cycle.
 	sa.sendMaxChangeEvent = sa.SendMax
 	amountSet := dcrutil.Amount(amount).ToCoin()
 	if sa.Load.WL.SelectedWallet.Wallet.GetAssetType() == libUtil.BTCWalletAsset {

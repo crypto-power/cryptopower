@@ -26,7 +26,8 @@ const (
 	MaxAddressLen = 16
 )
 
-// UTXOInfo defines a utxo record associated with a specific row in the table view.
+// UTXOInfo defines a utxo record associated with a specific row in the table
+// view.
 type UTXOInfo struct {
 	*sharedW.UnspentOutput
 	checkbox    cryptomaterial.CheckBoxStyle
@@ -170,7 +171,8 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 		{direction: layout.E, weight: 0.22},     // Component 5
 	}
 
-	// clickables defines the event handlers mapped to an individual title field.
+	// clickables defines the event handlers mapped to an individual title
+	// field.
 	pg.clickables = []*cryptomaterial.Clickable{
 		pg.amountClickable,        // Component 2
 		pg.addressClickable,       // Component 3
@@ -193,9 +195,9 @@ func (pg *ManualCoinSelectionPage) initializeFields() {
 	pg.totalAmount.Text = "0 " + pg.strAssetType
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -218,7 +220,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 	}
 
 	previousUTXOs := make(map[string]struct{}, 0)
-	// Use the previous Selection of UTXO if same acccount source has been used.
+	// Use the previous Selection of UTXO if same account source has been used.
 	if account == pg.sendPage.selectedUTXOs.sourceAccount {
 		for _, utxo := range pg.sendPage.selectedUTXOs.selectedUTXOs {
 			previousUTXOs[utxo.TxID] = struct{}{}
@@ -254,10 +256,9 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 	return nil
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
@@ -336,7 +337,8 @@ func (pg *ManualCoinSelectionPage) updateSummaryInfo() {
 func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 	wallet := pg.WL.SelectedWallet.Wallet
 
-	// Access to coin selection page is restricted unless destination address is selected.
+	// Access to coin selection page is restricted unless destination address is
+	// selected.
 	destination, _ := pg.sendPage.sendDestination.destinationAddress()
 	feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
 	if err != nil {
@@ -345,9 +347,9 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 	return fmt.Sprintf("%d bytes", feeNSize)
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
@@ -356,8 +358,8 @@ func (pg *ManualCoinSelectionPage) OnNavigatedFrom() {
 	pg.ctxCancel()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
 	return layout.Stack{Alignment: layout.S}.Layout(gtx,

@@ -114,16 +114,16 @@ func NewSeedRestorePage(l *load.Load, walletName string, walletType libutils.Ass
 	return pg
 }
 
-// ID is a unique string that identifies the page and may be used
-// to differentiate this page from other pages.
+// ID is a unique string that identifies the page and may be used to
+// differentiate this page from other pages.
 // Part of the load.Page interface.
 func (pg *SeedRestore) ID() string {
 	return CreateRestorePageID
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *SeedRestore) OnNavigatedTo() {
 	pg.setEditorFocus()
@@ -138,8 +138,8 @@ func (pg *SeedRestore) setEditorFocus() {
 	pg.seedEditors.editors[0].Edit.Editor.Focus()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SeedRestore) Layout(gtx C) D {
 	var body D
@@ -516,8 +516,8 @@ func (pg *SeedRestore) resetSeeds() {
 }
 
 // switchSeedEditors sets focus on the next seed phrase after moving the
-// provided steps either forward or backwards. One the focus get to the last cell
-// it start for the initial cell.
+// provided steps either forward or backwards. One the focus get to the last
+// cell it start for the initial cell.
 func switchSeedEditors(editors []cryptomaterial.RestoreEditor, steps int) {
 	for i := 0; i < len(editors); i++ {
 		if editors[i].Edit.Editor.Focused() {
@@ -537,10 +537,9 @@ func switchSeedEditors(editors []cryptomaterial.RestoreEditor, steps int) {
 	}
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *SeedRestore) HandleUserInteractions() {
 	focus := pg.seedEditors.focusIndex
@@ -621,8 +620,8 @@ func (pg *SeedRestore) KeysToHandle() key.Set {
 	if pg.isRestoring {
 		return "" // don't capture keys while restoring, problematic?
 	}
-	// Once user starts editing any of the input boxes, the arrow up, down
-	// and enter key signals are no longer received.
+	// Once user starts editing any of the input boxes, the arrow up, down and
+	// enter key signals are no longer received.
 	keySet1 := cryptomaterial.AnyKeyWithOptionalModifier(key.ModShift, key.NameTab)
 	keySet2 := cryptomaterial.AnyKey(key.NameUpArrow, key.NameDownArrow,
 		key.NameLeftArrow, key.NameRightArrow)
@@ -644,8 +643,8 @@ func (pg *SeedRestore) HandleKeyPress(evt *key.Event) {
 		switchSeedEditors(pg.seedEditors.editors, 1)
 	}
 
-	// If seed suggestion list is opened and tab key is pressed select
-	// the highlighted option and move the cusor to the next next seed editor.
+	// If seed suggestion list is opened and tab key is pressed select the
+	// highlighted option and move the cursor to the next next seed editor.
 	if evt.Name == key.NameTab && evt.State == key.Press && pg.openPopupIndex != -1 && len(pg.suggestions) != 0 {
 		if pg.seedEditors.focusIndex == -1 && len(pg.suggestions) == 1 {
 			return

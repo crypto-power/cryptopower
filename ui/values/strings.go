@@ -10,14 +10,14 @@ import (
 )
 
 const (
-	DefaultLangauge = localizable.ENGLISH
+	DefaultLanguage = localizable.ENGLISH
 	commentPrefix   = "/"
 )
 
 var (
 	rex           = regexp.MustCompile(`(?m)("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*")`) // "key"="value"
 	Languages     = []string{localizable.ENGLISH, localizable.CHINESE, localizable.FRENCH, localizable.SPANISH}
-	UserLanguages = []string{DefaultLangauge} // order of preference
+	UserLanguages = []string{DefaultLanguage} // order of preference
 )
 
 var languageStrings map[string]map[string]string
@@ -77,8 +77,8 @@ func hasLanguage(language string) bool {
 func SetUserLanguage(lang string) {
 	if hasLanguage(lang) {
 		languages := []string{lang}
-		if lang != DefaultLangauge {
-			languages = append(languages, DefaultLangauge)
+		if lang != DefaultLanguage {
+			languages = append(languages, DefaultLanguage)
 		}
 
 		UserLanguages = languages
@@ -195,7 +195,7 @@ const (
 	StrChangeStartupPassword           = "changeStartupPassword"
 	StrChangeUserAgent                 = "changeUserAgent"
 	StrChangeWalletName                = "changeWalletName"
-	StrCheckGovernace                  = "checkGovernace"
+	StrcheckGovernance                 = "checkGovernance"
 	StrCheckMixerStatus                = "checkMixerStatus"
 	StrCheckStatistics                 = "checkStatistics"
 	StrCheckWalletLog                  = "checkWalletLog"
@@ -220,7 +220,7 @@ const (
 	StrConfirmShowSeed                 = "confirmToShowSeed"
 	StrConfirmSpendingPassword         = "confirmSpendingPassword"
 	StrConfirmStartupPass              = "confirmStartupPass"
-	StrConfirmToCreateAccs             = "confirmtoCreateAccs"
+	StrconfirmToCreateAccs             = "confirmToCreateAccs"
 	StrConfirmToMixAccount             = "confirmToMixAcc"
 	StrConfirmToRemove                 = "confirmToRemove"
 	StrConfirmToSetMixer               = "confirmToSetMixer"

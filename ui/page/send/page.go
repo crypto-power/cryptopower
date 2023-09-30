@@ -126,11 +126,11 @@ func NewSendPage(l *load.Load) *Page {
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
 			// this resets the selected destination account based on the
-			// selected source account. This is done to prevent sending to
-			// an account that is invalid either because the destination
-			// account is the same as the source account or because the
-			// destination account needs to change based on if the selected
-			// wallet has privacy enabled.
+			// selected source account. This is done to prevent sending to an
+			// account that is invalid either because the destination account is
+			// the same as the source account or because the destination account
+			// needs to change based on if the selected wallet has privacy
+			// enabled.
 			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
 				pg.sendDestination.destinationWalletSelector.SelectedWallet())
 			pg.validateAndConstructTx()
@@ -140,9 +140,10 @@ func NewSendPage(l *load.Load) *Page {
 
 			if pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 				!pg.selectedWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
-				// Spending unmixed fund isn't permitted for the selected wallet
+				// Spending unmixed fund isn't permitted for the selected wallet.
 
-				// only mixed accounts can send to address/wallets for wallet with privacy setup
+				// Only mixed accounts can send to address/wallets for wallet
+				// with privacy setup.
 				switch pg.sendDestination.accountSwitch.SelectedIndex() {
 				case sendToAddress:
 					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
@@ -219,9 +220,9 @@ func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
 	}
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
 	pg.RestyleWidgets()
@@ -233,8 +234,8 @@ func (pg *Page) OnNavigatedTo() {
 	}
 
 	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	// destinationAccountSelector does not have a default value,
-	// so assign it an initial value here
+	// destinationAccountSelector does not have a default value, so assign it an
+	// initial value here
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
@@ -255,8 +256,8 @@ func (pg *Page) OnNavigatedTo() {
 	}
 }
 
-// OnDarkModeChanged is triggered whenever the dark mode setting is changed
-// to enable restyling UI elements where necessary.
+// OnDarkModeChanged is triggered whenever the dark mode setting is changed to
+// enable restyling UI elements where necessary.
 // Satisfies the load.DarkModeChangeHandler interface.
 func (pg *Page) OnDarkModeChanged(_ bool) {
 	pg.amount.styleWidgets()
@@ -305,7 +306,7 @@ func (pg *Page) validateAndConstructTx() {
 		pg.constructTx()
 	} else {
 		pg.clearEstimates()
-		pg.showBalaceAfterSend()
+		pg.showBalanceAfterSend()
 	}
 }
 
@@ -324,8 +325,7 @@ func (pg *Page) validate() bool {
 	addressIsValid := pg.sendDestination.validate()
 
 	// No need for checking the err message since it is as result of amount and
-	// address validation.
-	// validForSending
+	// address validation. validForSending
 	return amountIsValid && addressIsValid
 }
 
@@ -399,8 +399,8 @@ func (pg *Page) constructTx() {
 	pg.sourceAccount = sourceAccount
 
 	if SendMax {
-		// TODO: this workaround ignores the change events from the
-		// amount input to avoid construct tx cycle.
+		// TODO: this workaround ignores the change events from the amount input
+		// to avoid construct tx cycle.
 		pg.amount.setAmount(amountAtom)
 	}
 
@@ -416,7 +416,7 @@ func (pg *Page) constructTx() {
 	}
 }
 
-func (pg *Page) showBalaceAfterSend() {
+func (pg *Page) showBalanceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		if sourceAccount.Balance == nil {
@@ -459,10 +459,9 @@ func (pg *Page) resetFields() {
 	pg.amount.resetFields()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	if pg.feeRateSelector.FetchRates.Clicked() {
@@ -567,9 +566,9 @@ func (pg *Page) KeysToHandle() key.Set {
 // Satisfies the load.KeyEventHandler interface for receiving key events.
 func (pg *Page) HandleKeyPress(_ *key.Event) {}
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

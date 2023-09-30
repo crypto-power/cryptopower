@@ -29,8 +29,8 @@ type Wallet struct {
 	Net           libutils.NetworkType
 }
 
-// NewWallet initializies an new Wallet instance.
-// The Wallet is not loaded until LoadWallets is called.
+// NewWallet initializes an new Wallet instance. The Wallet is not loaded until
+// LoadWallets is called.
 func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wallet, error) {
 	if root == "" {
 		return nil, fmt.Errorf("root directory cannot be empty")
@@ -38,7 +38,7 @@ func NewWallet(root, net, version, logFolder string, buildDate time.Time) (*Wall
 
 	resolvedNetType := libutils.ToNetworkType(net)
 	if resolvedNetType == libutils.Unknown {
-		return nil, fmt.Errorf("network type is not supportted: %s", net)
+		return nil, fmt.Errorf("network type is not supported: %s", net)
 	}
 
 	wal := &Wallet{
@@ -87,15 +87,15 @@ func (wal *Wallet) InitAssetsManager() error {
 	return nil
 }
 
-// Shutdown shutsdown the assetsManager
+// Shutdown stops the assetsManager
 func (wal *Wallet) Shutdown() {
 	if wal.assetsManager != nil {
 		wal.assetsManager.Shutdown()
 	}
 }
 
-// GetDCRBlockExplorerURL accept transaction hash,
-// return the block explorer URL with respect to the network
+// GetDCRBlockExplorerURL accept transaction hash, returns the block explorer URL
+// with respect to the network.
 func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
 	case libwallet.Testnet:
@@ -107,8 +107,8 @@ func (wal *Wallet) GetDCRBlockExplorerURL(txnHash string) string {
 	}
 }
 
-// GetBTCBlockExplorerURL accept transaction hash,
-// return the block explorer URL with respect to the network
+// GetBTCBlockExplorerURL accept transaction hash, returns the block explorer URL
+// with respect to the network.
 func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
 	case libwallet.Testnet:
@@ -120,8 +120,8 @@ func (wal *Wallet) GetBTCBlockExplorerURL(txnHash string) string {
 	}
 }
 
-// GetLTCBlockExplorerURL accepts transaction hash,
-// return the block explorer URL with respect to the network
+// GetLTCBlockExplorerURL accepts transaction hash, returns the block explorer
+// URL with respect to the network.
 func (wal *Wallet) GetLTCBlockExplorerURL(txnHash string) string {
 	switch wal.Net {
 	case libwallet.Testnet:

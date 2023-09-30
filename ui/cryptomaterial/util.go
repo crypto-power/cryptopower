@@ -18,9 +18,8 @@ import (
 )
 
 func drawInk(gtx layout.Context, c widget.Press, highlightColor color.NRGBA) {
-	// duration is the number of seconds for the
-	// completed animation: expand while fading in, then
-	// out.
+	// duration is the number of seconds for the completed animation: expand
+	// while fading in, then out.
 	const (
 		expandDuration = float32(0.5)
 		fadeDuration   = float32(0.9)
@@ -43,9 +42,8 @@ func drawInk(gtx layout.Context, c widget.Press, highlightColor color.NRGBA) {
 	{
 		var haste float32
 		if c.Cancelled {
-			// If the press was cancelled before the inkwell
-			// was fully faded in, fast forward the animation
-			// to match the fade-out.
+			// If the press was cancelled before the inkwell was fully faded in,
+			// fast forward the animation to match the fade-out.
 			if h := 0.5 - endt/fadeDuration; h > 0 {
 				haste = h
 			}
@@ -121,16 +119,16 @@ func GenerateRandomNumber() int {
 	return rand.New(rand.NewSource(time.Now().UnixNano())).Int()
 }
 
-// AnyKey returns a key.Set that will match any of the provided keys.
-// See the doc on key.Set for more.
+// AnyKey returns a key.Set that will match any of the provided keys. See the
+// doc on key.Set for more.
 func AnyKey(keys ...string) key.Set {
 	keysCombined := strings.Join(keys, "|")
 	return key.Set(keysCombined)
 }
 
 // AnyKeyWithOptionalModifier returns a key.Set that will match any of the
-// provided keys whether or not they are pressed with provided modifier.
-// See the doc on key.Set for more.
+// provided keys whether or not they are pressed with provided modifier. See the
+// doc on key.Set for more.
 func AnyKeyWithOptionalModifier(modifier key.Modifiers, keys ...string) key.Set {
 	keysCombined := strings.Join(keys, ",")
 	keysWithModifier := fmt.Sprintf("(%s)-[%s]", modifier, keysCombined)

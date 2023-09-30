@@ -65,7 +65,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 				unmixedAccNo = unmixedAcc.Number
 			}
 
-			// Imported, watch only and default wallet accounts are invalid to use as a mixed account
+			// Imported, watch only and default wallet accounts are invalid to
+			// use as a mixed account
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
 
 			if !accountIsValid || account.Number == unmixedAccNo {
@@ -88,7 +89,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 				mixedAccNo = mixedAcc.Number
 			}
 
-			// Imported, watch only and default wallet accounts are invalid to use as an unmixed account
+			// Imported, watch only and default wallet accounts are invalid to
+			// use as an unmixed account
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
 
 			// Account is invalid if already selected by mixed account selector.
@@ -106,9 +108,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -118,8 +120,8 @@ func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) Layout(gtx layout.Context) layout.Dimensions {
 	body := func(gtx C) D {
@@ -244,10 +246,9 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 	if pg.toPrivacySetup.Clicked() {
@@ -260,7 +261,8 @@ func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 		pg.toPrivacySetup.SetEnabled(true)
 	}
 
-	// Disable set up button if either mixed or unmixed account is the default account.
+	// Disable set up button if either mixed or unmixed account is the default
+	// account.
 	if pg.mixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum ||
 		pg.unmixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum {
 		pg.toPrivacySetup.SetEnabled(false)

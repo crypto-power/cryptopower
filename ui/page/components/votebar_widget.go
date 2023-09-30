@@ -20,8 +20,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-// VoteBar widget implements voting stat for proposals.
-// VoteBar shows the range/percentage of the yes votes and no votes against the total required.
+// VoteBar widget implements voting stat for proposals. It shows the
+// range/percentage of the yes votes and no votes against the total required.
 type VoteBar struct {
 	*load.Load
 

@@ -10,13 +10,12 @@ type (
 	D = layout.Dimensions
 )
 
-// log is a logger that is initialized with no output filters.  This
-// means the package will not perform any logging by default until the caller
-// requests it.
+// log is a logger that is initialized with no output filters.  This means the
+// package will not perform any logging by default until the caller requests it.
 var log = slog.Disabled
 
-// DisableLog disables all library log output.  Logging output is disabled
-// by default until UseLogger is called.
+// DisableLog disables all library log output.  Logging output is disabled by
+// default until UseLogger is called.
 func DisableLog() {
 	log = slog.Disabled
 }

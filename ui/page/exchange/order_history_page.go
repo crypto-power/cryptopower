@@ -297,7 +297,7 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
 	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, OrderHistoryPageID)
 	if err != nil {
-		log.Errorf("Error adding instanswap notification listener: %v", err)
+		log.Errorf("Error adding instantSwap notification listener: %v", err)
 		return
 	}
 

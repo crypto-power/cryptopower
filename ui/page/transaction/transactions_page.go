@@ -84,9 +84,9 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -191,14 +191,14 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 
 func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
 	wal := pg.WL.SelectedWallet.Wallet
-	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
-	if len(mapinfo) < 1 {
+	mapInfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+	if len(mapInfo) < 1 {
 		err := fmt.Errorf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
 		return nil, -1, false, err
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
-	txFilter, ok := mapinfo[selectedVal]
+	txFilter, ok := mapInfo[selectedVal]
 	if !ok {
 		err := fmt.Errorf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)
@@ -219,8 +219,8 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{
 	return tempTxs, len(tempTxs), isReset, err
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
@@ -233,7 +233,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	return components.UniformPadding(gtx, func(gtx C) D {
-		txlisingView := layout.Flexed(1, func(gtx C) D {
+		txListingView := layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
 				return layout.Stack{Alignment: layout.N}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
@@ -250,7 +250,8 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 											})
 										}
 
-										// return "No transactions yet" text if there are no transactions
+										// return "No transactions yet" text if
+										// there are no transactions
 										if pg.scroll.ItemsCount() == 0 {
 											padding := values.MarginPadding16
 											txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
@@ -281,7 +282,9 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 													gtx.Constraints.Min.X = gtx.Constraints.Max.X
 													separator := pg.Theme.Separator()
 													return layout.E.Layout(gtx, func(gtx C) D {
-														// Show bottom divider for all rows except last
+														// Show bottom divider
+														// for all rows except
+														// last
 														return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
 													})
 												}),
@@ -301,13 +304,13 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 
 		items := []layout.FlexChild{layout.Rigid(pg.pageTitle)}
 		if pg.WL.SelectedWallet.Wallet.GetAssetType() == utils.DCRWalletAsset {
-			// Layouts only supportted by DCR
+			// Layouts only supported by DCR
 			line := pg.Theme.Separator()
 			line.Color = pg.Theme.Color.Gray3
 			items = append(items, layout.Rigid(line.Layout))
 			items = append(items, layout.Rigid(pg.sectionNavTab))
 		}
-		items = append(items, txlisingView)
+		items = append(items, txListingView)
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
 }
@@ -375,10 +378,9 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 	return components.UniformMobile(gtx, false, true, container)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
@@ -429,9 +431,9 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 	}()
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

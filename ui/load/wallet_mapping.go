@@ -31,8 +31,8 @@ func (w *WalletMapping) MixedAccountNumber() int32 {
 	}
 }
 
-// SetAPIFeeRate validates the string input its a number before sending it upstream.
-// It returns the string convert to int amount.
+// SetAPIFeeRate validates the string input its a number before sending it
+// upstream. It returns the string convert to int amount.
 func (w *WalletMapping) SetAPIFeeRate(feerate string) (int64, error) {
 	var amount sharedW.AssetAmount
 	var setUserFeeRate func(feeRatePerkvB sharedW.AssetAmount) error

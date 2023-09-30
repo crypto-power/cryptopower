@@ -74,10 +74,10 @@ func supportedSubsystems() []string {
 // the levels accordingly.  An appropriate error is returned if anything is
 // invalid.
 func parseAndSetDebugLevels(debugLevel string) error {
-	// When the specified string doesn't have any delimiters, treat it as
-	// the log level for all subsystems.
-	debugLeveSet := debugLevel != ""
-	if debugLeveSet && !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
+	// When the specified string doesn't have any delimiters, treat it as the
+	// log level for all subsystems.
+	debugLevelSet := debugLevel != ""
+	if debugLevelSet && !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
 		// Validate debug log level.
 		if !validLogLevel(debugLevel) {
 			str := "the specified debug level [%v] is invalid"

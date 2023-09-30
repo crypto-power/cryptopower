@@ -130,9 +130,9 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -142,7 +142,7 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	}
 
 	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
+	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection every time this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
@@ -178,8 +178,8 @@ func (pg *ReceivePage) generateQRForAddress() {
 	pg.qrImage = &imgdec
 }
 
-// Layout draws the page UI components into the provided C
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided C to be eventually
+// drawn on screen.
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
 	pg.handleCopyEvent(gtx)
@@ -348,8 +348,9 @@ func (pg *ReceivePage) pageSections(gtx layout.Context, body layout.Widget) layo
 	})
 }
 
-// pageBackdropLayout layout of background overlay when the popup button generate new address is show,
-// click outside of the generate new address button to hide the button
+// pageBackdropLayout layout of background overlay when the popup button
+// generate new address is show, click outside of the generate new address
+// button to hide the button
 func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 	if pg.isNewAddr {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -433,10 +434,9 @@ func (pg *ReceivePage) addressLayout(gtx C) D {
 	})
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) HandleUserInteractions() {
 	if pg.backdrop.Clicked() {
@@ -510,9 +510,9 @@ func (pg *ReceivePage) handleCopyEvent(gtx C) {
 	}
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

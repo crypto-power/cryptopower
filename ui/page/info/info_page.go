@@ -107,10 +107,9 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	pg.listenForNotifications()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen. It lays out the widgets for the main wallets pg.
 // Part of the load.Page interface.
-// Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 	body := func(gtx C) D {
 		return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
@@ -158,10 +157,9 @@ func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
 	return components.UniformPadding(gtx, body)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) HandleUserInteractions() {
 	// As long as the internet connection hasn't been established keep checking.
@@ -190,12 +188,12 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 }
 
-// listenForNotifications starts a goroutine to watch for sync updates
-// and update the UI accordingly. To prevent UI lags, this method does not
-// refresh the window display everytime a sync update is received. During
-// active blocks sync, rescan or proposals sync, the Layout method auto
-// refreshes the display every set interval. Other sync updates that affect
-// the UI but occur outside of an active sync requires a display refresh.
+// listenForNotifications starts a goroutine to watch for sync updates and
+// update the UI accordingly. To prevent UI lags, this method does not refresh
+// the window display every time a sync update is received. During active blocks
+// sync, rescan or proposals sync, the Layout method auto refreshes the display
+// every set interval. Other sync updates that affect the UI but occur outside
+// of an active sync requires a display refresh.
 func (pg *WalletInfo) listenForNotifications() {
 	switch {
 	case pg.SyncProgressListener != nil:
@@ -255,7 +253,8 @@ func (pg *WalletInfo) listenForNotifications() {
 
 				previousProgress := pg.fetchSyncProgress()
 				// headers to fetch cannot be less than the previously fetched.
-				// Page refresh only needed if there is new data to update the UI.
+				// Page refresh only needed if there is new data to update the
+				// UI.
 				if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
 					currentAsset := pg.WL.SelectedWallet.Wallet
 					// set the new progress against the associated asset.
@@ -297,9 +296,9 @@ func (pg *WalletInfo) listenForNotifications() {
 	}()
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

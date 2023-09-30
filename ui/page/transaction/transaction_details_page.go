@@ -197,9 +197,9 @@ destinationAddrLoop:
 	}
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedTo() {
 	if dcrImp, ok := pg.wallet.(*dcr.Asset); ok {
@@ -252,8 +252,8 @@ func (pg *TxDetailsPage) getMoreItem() []moreItem {
 	}
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
@@ -559,7 +559,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			// hide section for recieved transactions
+			// hide section for received transactions
 			if pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction == txhelper.TxDirectionReceived {
 				return D{}
 			}
@@ -591,10 +591,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				// without being wrapped in a clickable
 				if pg.transaction.Direction == txhelper.TxDirectionTransferred {
 					dim = func(gtx C) D {
-						// var lbl cryptomaterial.Label
-
 						lbl := pg.Theme.Label(values.TextSize14, pg.txDestinationAccount)
-						// }
 						return lbl.Layout(gtx)
 					}
 				}
@@ -666,8 +663,8 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 				return pg.keyValue(gtx, values.String(values.StrExpiredOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
 			}
 
-			// TODO vote transaction progress bar (V2 UI missing)
-			// missed tickets currently not implemented on libwallet
+			// TODO: vote transaction progress bar (V2 UI missing) missed tickets
+			// currently not implemented on libwallet
 			return pg.keyValue(gtx, values.String(values.StrPurchasedOn), pg.Theme.Label(values.TextSize14, timeString(pg.transaction.Timestamp)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -753,8 +750,8 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			if len(pg.transaction.Label) != 0 {
-				txlabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
-				return pg.keyValue(gtx, values.String(values.StrDescriptionNote), txlabel.Layout)
+				txLabel := pg.Theme.Label(values.TextSize14, pg.transaction.Label)
+				return pg.keyValue(gtx, values.String(values.StrDescriptionNote), txLabel.Layout)
 			}
 			return D{}
 		}),
@@ -853,7 +850,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 	})
 }
 
-func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clickable) {
+func (pg *TxDetailsPage) showBrowserURLModal(copyRedirect *cryptomaterial.Clickable) {
 	var redirectURL string
 
 	switch pg.wallet.GetAssetType() {
@@ -870,7 +867,7 @@ func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clicka
 		Body(values.String(values.StrCopyLink)).
 		SetCancelable(true).
 		UseCustomWidget(func(gtx C) D {
-			return components.BrowserURLWidget(gtx, pg.Load, redirectURL, copyredirect)
+			return components.BrowserURLWidget(gtx, pg.Load, redirectURL, copyRedirect)
 		}).
 		SetPositiveButtonText(values.String(values.StrGotIt))
 
@@ -898,7 +895,7 @@ func (pg *TxDetailsPage) layoutOptionsMenu(gtx C) {
 									if pg.moreItems[i].button.Clicked() {
 										switch pg.moreItems[i].id {
 										case viewBlockID: // redirect to browser
-											pg.showbrowserURLModal(pg.moreItems[i].button)
+											pg.showBrowserURLModal(pg.moreItems[i].button)
 											pg.moreOptionIsOpen = false
 										default:
 										}
@@ -925,10 +922,9 @@ func (pg *TxDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	}.Layout(gtx, body)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) HandleUserInteractions() {
 	if pg.moreOption.Clicked() {
@@ -949,7 +945,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
 			if !pg.wallet.IsConnectedToNetwork() {
-				// if user is not conected to the network, notify the user
+				// if user is not connected to the network, notify the user
 				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)
 				if !pg.rebroadcastClickable.Enabled() {
@@ -975,9 +971,9 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 	}
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.

@@ -4,8 +4,8 @@ import (
 	"image/color"
 )
 
-// SwitchStyle defines display properties that may be used to style a
-// Switch widget.
+// SwitchStyle defines display properties that may be used to style a Switch
+// widget.
 type SwitchStyle struct {
 	ActiveColor       color.NRGBA
 	InactiveColor     color.NRGBA
@@ -14,8 +14,8 @@ type SwitchStyle struct {
 	InactiveTextColor color.NRGBA
 }
 
-// ColorStyle defines backgorund and foreground colors that may be used to
-// style a widget that requires either or both colors.
+// ColorStyle defines background and foreground colors that may be used to style
+// a widget that requires either or both colors.
 type ColorStyle struct {
 	Background color.NRGBA
 	Foreground color.NRGBA

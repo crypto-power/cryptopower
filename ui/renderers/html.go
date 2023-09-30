@@ -149,7 +149,8 @@ func (p *HTMLProvider) prepareLink(node *ast.Link, _ /*entering*/ bool) {
 		p.links[dest] = new(widget.Clickable)
 	}
 
-	// fix a bug that causes the link to be written to the builder before this is called
+	// fix a bug that causes the link to be written to the builder before this
+	// is called
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 	parts := strings.Split(content, " ")

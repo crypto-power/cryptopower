@@ -45,24 +45,24 @@ type FeeRateSelector struct {
 	// independent of the set wallet within the Load input parameter.
 	selectedWalletType walletTypeCallbackFunc
 
-	// ContainerInset should be used to set the inset for
-	// FeeRateSelector component container.
+	// ContainerInset should be used to set the inset for FeeRateSelector
+	// component container.
 	ContainerInset layout.Inset
-	// WrapperInset should be used to set the inset for
-	// for the wrapper container.
+	// WrapperInset should be used to set the inset for for the wrapper
+	// container.
 	WrapperInset layout.Inset
 	// TitleInset sets the inset for the title label.
 	TitleInset layout.Inset
 	// TitleFontWeight sets the font weight for the title label.
 	TitleFontWeight font.Weight
-	// USDExchangeSet determines if this component will in addition
-	// to the TxFee show the USD rate of fee.
+	// USDExchangeSet determines if this component will in addition to the TxFee
+	// show the USD rate of fee.
 	USDExchangeSet bool
 }
 
-// NewFeeRateSelector create and return an instance of FeeRateSelector.
-// Since the feeRate selector can be used before the selected wallet is set
-// a Load independent callback function is provided to help address that case scenario.
+// NewFeeRateSelector create and return an instance of FeeRateSelector. Since
+// the feeRate selector can be used before the selected wallet is set a Load
+// independent callback function is provided to help address that case scenario.
 func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateSelector {
 	fs := &FeeRateSelector{
 		Load:               l,
@@ -97,9 +97,8 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 	return fs
 }
 
-// ShowSizeAndCost turns the showSizeAndCost Field to true
-// the component will show the estimated size and Fee when
-// showSizeAndCost is true.
+// ShowSizeAndCost turns the showSizeAndCost Field to true the component will
+// show the estimated size and Fee when showSizeAndCost is true.
 func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 	fs.showSizeAndCost = true
 	return fs
@@ -308,7 +307,7 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 	fs.EditRates.SetEnabled(true)
 }
 
-// OnEditRateCliked is called when the edit feerate button is clicked.
+// OnEditRateClicked is called when the edit feerate button is clicked.
 func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet *load.WalletMapping) {
 	fs.rateEditMode = !fs.rateEditMode
 	if fs.rateEditMode {

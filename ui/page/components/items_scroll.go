@@ -12,9 +12,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 )
 
-// ScrollFunc is a query function that accepts offset and pagesize parameters and
-// returns data interface, count of the items in the data interface, isReset and an error.
-// isReset is used to reset the offset value.
+// ScrollFunc is a query function that accepts offset and pagesize parameters
+// and returns data interface, count of the items in the data interface, isReset
+// and an error. isReset is used to reset the offset value.
 type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, isReset bool, err error)
 
 type Scroll struct {
@@ -71,11 +71,11 @@ func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.fetchScrollData(isReverse, window)
 }
 
-// fetchScrollData fetchs the scroll data and manages data returned depending on
-// on the up or downwards scrollbar movement. Unless the data fetched is less than
-// the page, all the old data is replaced by the new fetched data making it
-// easier and smoother to scroll on the UI. At the end of the function call
-// a window reload is triggered.
+// fetchScrollData fetches the scroll data and manages data returned depending
+// on on the up or downwards scrollbar movement. Unless the data fetched is less
+// than the page, all the old data is replaced by the new fetched data making it
+// easier and smoother to scroll on the UI. At the end of the function call a
+// window reload is triggered.
 func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Lock()
 
@@ -103,8 +103,9 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Unlock()
 
 	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
+	// Check if enough list items exists to fill the next page. If they do only
+	// query enough items to fit the current page otherwise return all the
+	// queried items.
 	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
 		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
 	}
@@ -121,7 +122,8 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	}
 
 	if itemsLen > int(tempSize) {
-		// Since this is the last page set of items, prevent further scroll down queries.
+		// Since this is the last page set of items, prevent further scroll down
+		// queries.
 		s.loadedAllItems = true
 	}
 
@@ -150,8 +152,8 @@ func (s *Scroll) ItemsCount() int {
 	return s.itemsCount
 }
 
-// List returns the list theme already in existence or newly created.
-// Multiple list instances shouldn't exist for a given scroll component.
+// List returns the list theme already in existence or newly created. Multiple
+// list instances shouldn't exist for a given scroll component.
 func (s *Scroll) List() *cryptomaterial.ListStyle {
 	defer s.mu.RUnlock()
 	s.mu.RLock()
@@ -171,9 +173,9 @@ func (s *Scroll) resetList() {
 	s.loadedAllItems = false
 }
 
-// OnScrollChangeListener listens for the scroll bar movement and update the items
-// list view accordingly. FetchScrollData needs to be invoked first before calling
-// this function.
+// OnScrollChangeListener listens for the scroll bar movement and update the
+// items list view accordingly. FetchScrollData needs to be invoked first before
+// calling this function.
 func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 	s.mu.Lock()
 
@@ -190,7 +192,7 @@ func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 		return
 	}
 
-	// Ignore if the query is in theprocess of fetching the list items.
+	// Ignore if the query is in the process of fetching the list items.
 	if s.itemsCount == -1 && s.isLoadingItems {
 		s.mu.Unlock()
 		return
@@ -199,8 +201,8 @@ func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 	s.scrollView = int(math.Abs(float64(scrollPos.Offset)) + math.Abs(float64(scrollPos.OffsetLast)))
 
 	// Ignore the first time OnScrollChangeListener is called. When loading the
-	// page a prexisting list of items to display already exist therefore no need
-	// to load it again.
+	// page a preexisting list of items to display already exist therefore no
+	// need to load it again.
 	if s.prevListOffset == -1 {
 		s.prevListOffset = scrollPos.Offset
 		s.prevScrollView = s.scrollView
@@ -208,18 +210,18 @@ func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
 		return
 	}
 
-	// Ignore duplicate events triggered without moving the scrollbar by checking
-	// if the current list offset matches the previously set offset.
+	// Ignore duplicate events triggered without moving the scrollbar by
+	// checking if the current list offset matches the previously set offset.
 	if scrollPos.Offset == s.prevListOffset {
 		s.mu.Unlock()
 		return
 	}
 
-	// isScrollingDown checks when to fetch the Next page items because the scrollbar
-	// has reached at the end of the current list loaded.
+	// isScrollingDown checks when to fetch the Next page items because the
+	// scrollbar has reached at the end of the current list loaded.
 	isScrollingDown := scrollPos.Offset == s.scrollView && scrollPos.OffsetLast == 0 && s.prevListOffset < scrollPos.Offset && s.prevScrollView == s.scrollView
-	// isScrollingUp checks when to fetch the Previous page items because the scrollbar
-	// has reached at the beginning of the current list loaded.
+	// isScrollingUp checks when to fetch the Previous page items because the
+	// scrollbar has reached at the beginning of the current list loaded.
 	isScrollingUp := scrollPos.Offset == 0 && scrollPos.OffsetLast < 0 && s.offset > 0 && s.prevListOffset > scrollPos.Offset
 	s.prevListOffset = scrollPos.Offset
 	s.prevScrollView = s.scrollView

@@ -13,8 +13,8 @@ const inf = 1e6
 // GridElement lays out the ith element of a Grid.
 type GridElement func(gtx layout.Context, i int) layout.Dimensions
 
-// Grid lays out at most Num elements along the main axis.
-// The number of cross axis elements depend on the total number of elements.
+// Grid lays out at most Num elements along the main axis. The number of cross
+// axis elements depend on the total number of elements.
 type Grid struct {
 	Num       int
 	Axis      layout.Axis
@@ -22,8 +22,8 @@ type Grid struct {
 	list      layout.List
 }
 
-// GridWrap lays out as many elements as possible along the main axis
-// before wrapping to the cross axis.
+// GridWrap lays out as many elements as possible along the main axis before
+// wrapping to the cross axis.
 type GridWrap struct {
 	Axis      layout.Axis
 	Alignment layout.Alignment

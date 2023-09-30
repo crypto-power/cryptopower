@@ -13,7 +13,7 @@ import (
 )
 
 type agendaVoteModal struct {
-	// This modal inherits most of the CreatePasswordModal implementation
+	// This modal inherits most of the CreatePasswordModal implementation.
 	*modal.CreatePasswordModal
 
 	agenda     *dcr.Agenda

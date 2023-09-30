@@ -237,8 +237,8 @@ func (hp *HomePage) OnNavigatedFrom() {
 	hp.ctxCancel()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (hp *HomePage) Layout(gtx C) D {
 	hp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)

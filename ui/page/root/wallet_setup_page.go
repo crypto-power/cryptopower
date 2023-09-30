@@ -116,9 +116,9 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *CreateWallet) OnNavigatedTo() {
 	pg.showLoader = false
@@ -159,17 +159,17 @@ func (pg *CreateWallet) initPageItems() {
 	pg.walletActions = walletActions
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *CreateWallet) OnNavigatedFrom() {}
 
-// Layout draws the page UI components into the provided C
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided C to be eventually
+// drawn on screen.
 // Part of the load.Page interface.
 func (pg *CreateWallet) Layout(gtx C) D {
 	return cryptomaterial.LinearLayout{
@@ -407,10 +407,9 @@ func (pg *CreateWallet) restoreWallet(gtx C) D {
 	)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *CreateWallet) HandleUserInteractions() {
 	// back button action

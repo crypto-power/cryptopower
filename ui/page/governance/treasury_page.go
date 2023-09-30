@@ -148,8 +148,8 @@ func (pg *TreasuryPage) FetchPolicies() {
 
 	pg.isPolicyFetchInProgress = true
 
-	// Fetch (or re-fetch) treasury policies in background as this makes
-	// a network call. Refresh the window once the call completes.
+	// Fetch (or re-fetch) treasury policies in background as this makes a
+	// network call. Refresh the window once the call completes.
 	key := hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
 	go func() {
 		pg.treasuryItems = components.LoadPolicies(pg.Load, selectedWallet, key)
@@ -157,8 +157,8 @@ func (pg *TreasuryPage) FetchPolicies() {
 		pg.ParentWindow().Reload()
 	}()
 
-	// Refresh the window now to signify that the syncing
-	// has started with pg.isSyncing set to true above.
+	// Refresh the window now to signify that the syncing has started with
+	// pg.isSyncing set to true above.
 	pg.ParentWindow().Reload()
 }
 
@@ -171,7 +171,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 

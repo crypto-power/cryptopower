@@ -220,8 +220,8 @@ func (t *Theme) closeAllDropdownMenus(group uint) {
 	}
 }
 
-// isOpenDropdownGroup iterate over Dropdowns registered as a member
-// of {group}, returns true if any of the drop down state is open.
+// isOpenDropdownGroup iterate over Dropdowns registered as a member of {group},
+// returns true if any of the drop down state is open.
 func (t *Theme) isOpenDropdownGroup(group uint) bool {
 	for _, dropDown := range t.dropDownMenus {
 		if dropDown.group == group {
@@ -233,9 +233,9 @@ func (t *Theme) isOpenDropdownGroup(group uint) bool {
 	return false
 }
 
-// Disabled blends color towards the luminance and multiplies alpha.
-// Blending towards luminance will desaturate the color.
-// Multiplying alpha blends the color together more with the background.
+// Disabled blends color towards the luminance and multiplies alpha. Blending
+// towards luminance will desaturate the color. Multiplying alpha blends the
+// color together more with the background.
 func Disabled(c color.NRGBA) (d color.NRGBA) {
 	const r = 80 // blend ratio
 	lum := approxLuminance(c)

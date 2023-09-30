@@ -79,7 +79,7 @@ func (tb *ticketBuyerModal) SetError(err string) {
 
 func (tb *ticketBuyerModal) OnResume() {
 	if tb.dcrImpl == nil {
-		log.Error("Only DCR implementation is supportted")
+		log.Error("Only DCR implementation is supported")
 		return
 	}
 
@@ -94,9 +94,9 @@ func (tb *ticketBuyerModal) OnResume() {
 
 	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
 
-	// loop through all available wallets and select the one with ticket buyer config.
-	// if non, set the selected wallet to the first.
-	// temporary work around for only one wallet.
+	// loop through all available wallets and select the one with ticket buyer
+	// config. if non, set the selected wallet to the first. temporary work
+	// around for only one wallet.
 	if tb.dcrImpl.TicketBuyerConfigIsSet() {
 		tbConfig := tb.dcrImpl.AutoTicketsBuyerConfig()
 
@@ -109,7 +109,8 @@ func (tb *ticketBuyerModal) OnResume() {
 		if account != nil {
 			tb.accountSelector.SetSelectedAccount(account)
 		} else {
-			// If a valid account is not set, choose one from available the valid accounts.
+			// If a valid account is not set, choose one from available the
+			// valid accounts.
 			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
@@ -201,7 +202,8 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 
 			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
 				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
-				// Spending from unmixed accounts is disabled for the selected wallet
+				// Spending from unmixed accounts is disabled for the selected
+				// wallet
 				dcrImpl := tb.WL.SelectedWallet.Wallet.(*dcr.Asset)
 				accountIsValid = account.Number == dcrImpl.MixedAccountNumber()
 			}

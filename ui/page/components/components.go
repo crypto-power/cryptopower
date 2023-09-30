@@ -1,5 +1,5 @@
-// components contain layout code that are shared by multiple pages but aren't widely used enough to be defined as
-// widgets
+// components contain layout code that are shared by multiple pages but aren't
+// widely used enough to be defined as widgets
 
 package components
 
@@ -56,8 +56,9 @@ type (
 		Background         color.NRGBA
 	}
 
-	// CummulativeWalletsBalance defines total balance for all available wallets.
-	CummulativeWalletsBalance struct {
+	// CumulativeWalletsBalance defines total balance for all available
+	// wallets.
+	CumulativeWalletsBalance struct {
 		Total                   sharedW.AssetAmount
 		Spendable               sharedW.AssetAmount
 		ImmatureReward          sharedW.AssetAmount
@@ -72,8 +73,9 @@ type (
 	}
 )
 
-// Container is simply a wrapper for the Inset type. Its purpose is to differentiate the use of an inset as a padding or
-// margin, making it easier to visualize the structure of a layout when reading UI code.
+// Container is simply a wrapper for the Inset type. Its purpose is to
+// differentiate the use of an inset as a padding or margin, making it easier to
+// visualize the structure of a layout when reading UI code.
 type Container struct {
 	Padding layout.Inset
 }
@@ -230,8 +232,8 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	return &txStatus
 }
 
-// transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
-// direction, balance, status.
+// transactionRow is a single transaction row on the transactions and overview
+// page. It lays out a transaction's direction, balance, status.
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
@@ -472,8 +474,8 @@ func TimeFormat(secs int, long bool) string {
 }
 
 // TxPageDropDownFields returns the fields for the required drop down with the
-// transactions view page. Since maps access of items order is always random
-// an array of keys is provided guarrantee the dropdown order will always be
+// transactions view page. Since maps access of items order is always random an
+// array of keys is provided guarantee the dropdown order will always be
 // maintained.
 func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[string]int32, keysInfo []string) {
 	switch {
@@ -555,7 +557,8 @@ func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly b
 	return nil
 }
 
-// GetTicketPurchaseAccount returns the validly set ticket purchase account if it exists.
+// GetTicketPurchaseAccount returns the validly set ticket purchase account if
+// it exists.
 func GetTicketPurchaseAccount(selectedWallet *dcr.Asset) (acct *sharedW.Account, err error) {
 	tbConfig := selectedWallet.AutoTicketsBuyerConfig()
 
@@ -581,13 +584,14 @@ func GetTicketPurchaseAccount(selectedWallet *dcr.Asset) (acct *sharedW.Account,
 	return
 }
 
-func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CummulativeWalletsBalance, error) {
+func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CumulativeWalletsBalance, error) {
 	if selectedWallet == nil {
 		return nil, errors.New("mixed account only supported by DCR asset")
 	}
 
-	// ignore the returned because an invalid purchase account was set previously.
-	// Proceed to go and select a valid account if one wasn't provided.
+	// ignore the returned because an invalid purchase account was set
+	// previously. Proceed to go and select a valid account if one wasn't
+	// provided.
 	account, _ := GetTicketPurchaseAccount(selectedWallet)
 
 	var err error
@@ -599,7 +603,7 @@ func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CummulativeWallet
 		}
 	}
 
-	return &CummulativeWalletsBalance{
+	return &CumulativeWalletsBalance{
 		Total:                   account.Balance.Total,
 		Spendable:               account.Balance.Spendable,
 		ImmatureReward:          account.Balance.ImmatureReward,
@@ -610,8 +614,8 @@ func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CummulativeWallet
 	}, nil
 }
 
-func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, error) {
-	var totalBalance, spandableBalance, immatureReward, votingAuthority,
+func CalculateTotalWalletsBalance(l *load.Load) (*CumulativeWalletsBalance, error) {
+	var totalBalance, spendableBalance, immatureReward, votingAuthority,
 		immatureStakeGeneration, lockedByTickets, unConfirmed int64
 
 	accountsResult, err := l.WL.SelectedWallet.Wallet.GetAccountsRaw()
@@ -621,7 +625,7 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 
 	for _, account := range accountsResult.Accounts {
 		totalBalance += account.Balance.Total.ToInt()
-		spandableBalance += account.Balance.Spendable.ToInt()
+		spendableBalance += account.Balance.Spendable.ToInt()
 		immatureReward += account.Balance.ImmatureReward.ToInt()
 
 		if l.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset {
@@ -637,9 +641,9 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		return l.WL.SelectedWallet.Wallet.ToAmount(v)
 	}
 
-	cumm := &CummulativeWalletsBalance{
+	cumBal := &CumulativeWalletsBalance{
 		Total:                   toAmount(totalBalance),
-		Spendable:               toAmount(spandableBalance),
+		Spendable:               toAmount(spendableBalance),
 		ImmatureReward:          toAmount(immatureReward),
 		ImmatureStakeGeneration: toAmount(immatureStakeGeneration),
 		LockedByTickets:         toAmount(lockedByTickets),
@@ -647,10 +651,11 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		UnConfirmed:             toAmount(unConfirmed),
 	}
 
-	return cumm, nil
+	return cumBal, nil
 }
 
-// SecondsToDays takes time in seconds and returns its string equivalent in the format ddhhmm.
+// SecondsToDays takes time in seconds and returns its string equivalent in the
+// format ddhhmm.
 func SecondsToDays(totalTimeLeft int64) string {
 	q, r := divMod(totalTimeLeft, 24*60*60)
 	timeLeft := time.Duration(r) * time.Second
@@ -660,7 +665,8 @@ func SecondsToDays(totalTimeLeft int64) string {
 	return timeLeft.String()
 }
 
-// divMod divides a numerator by a denominator and returns its quotient and remainder.
+// divMod divides a numerator by a denominator and returns its quotient and
+// remainder.
 func divMod(numerator, denominator int64) (quotient, remainder int64) {
 	quotient = numerator / denominator // integer division, decimals are truncated
 	remainder = numerator % denominator
@@ -712,9 +718,9 @@ func IsFetchExchangeRateAPIAllowed(wl *load.WalletLoad) bool {
 		!wl.AssetsManager.IsPrivacyModeOn()
 }
 
-// DisablePageWithOverlay disables the provided page by highlighting a message why
-// the page is disabled and adding a background color overlay that blocks any
-// page event being triggered.
+// DisablePageWithOverlay disables the provided page by highlighting a message
+// why the page is disabled and adding a background color overlay that blocks
+// any page event being triggered.
 func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt string, actionButton *cryptomaterial.Button) D {
 	return layout.Stack{Alignment: layout.N}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {

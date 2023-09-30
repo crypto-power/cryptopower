@@ -7,9 +7,10 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
-// This files holds implementation to translate errors into user friendly messages.
+// This files holds implementation to translate errors into user friendly
+// messages.
 
-var ErrDCRSupportedOnly = errors.New("only DCR implementation is currenty supported")
+var ErrDCRSupportedOnly = errors.New("only DCR implementation is currently supported")
 
 // TranslateErr translates all server errors to user friendly messages.
 func TranslateErr(errStr string) string {

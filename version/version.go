@@ -48,19 +48,19 @@ func Version() string {
 	// Start with the major, minor, and patch versions.
 	version := fmt.Sprintf("%d.%d.%d", AppMajor, AppMinor, AppPatch)
 
-	// Append pre-release version if there is one.  The hyphen called for
-	// by the semantic versioning spec is automatically appended and should
-	// not be contained in the pre-release string.  The pre-release version
-	// is not appended if it contains invalid characters.
+	// Append pre-release version if there is one.  The hyphen called for by the
+	// semantic versioning spec is automatically appended and should not be
+	// contained in the pre-release string.  The pre-release version is not
+	// appended if it contains invalid characters.
 	preRelease := normalizePreRelString(appPreRelease)
 	if preRelease != "" {
 		version = fmt.Sprintf("%s-%s", version, preRelease)
 	}
 
-	// Append build metadata if there is any.  The plus called for
-	// by the semantic versioning spec is automatically appended and should
-	// not be contained in the build metadata string.  The build metadata
-	// string is not appended if it contains invalid characters.
+	// Append build metadata if there is any.  The plus called for by the
+	// semantic versioning spec is automatically appended and should not be
+	// contained in the build metadata string.  The build metadata string is not
+	// appended if it contains invalid characters.
 	build := normalizeBuildString(appBuild)
 	if build != "" {
 		version = fmt.Sprintf("%s+%s", version, build)
@@ -69,8 +69,8 @@ func Version() string {
 	return version
 }
 
-// normalizeSemString returns the passed string stripped of all characters
-// which are not valid according to the provided semantic versioning alphabet.
+// normalizeSemString returns the passed string stripped of all characters which
+// are not valid according to the provided semantic versioning alphabet.
 func normalizeSemString(str, alphabet string) string {
 	var result bytes.Buffer
 	for _, r := range str {

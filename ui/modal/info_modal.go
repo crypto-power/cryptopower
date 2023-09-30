@@ -49,9 +49,9 @@ type InfoModal struct {
 // ButtonType is the type of button in modal.
 type ButtonType uint8
 
-// ClickFunc defines the positive button click method signature.
-// Adding the InfoModal parameter allow reference of the parent info modal
-// qualities inside the positive button function call.
+// ClickFunc defines the positive button click method signature. Adding the
+// InfoModal parameter allow reference of the parent info modal qualities inside
+// the positive button function call.
 type ClickFunc func(isChecked bool, im *InfoModal) bool
 
 const (
@@ -231,7 +231,7 @@ func (in *InfoModal) NegativeButtonStyle(background, text color.NRGBA) *InfoModa
 	return in
 }
 
-// for backwards compatibilty
+// for backwards compatibility
 func (in *InfoModal) SetupWithTemplate(template string) *InfoModal {
 	title := in.dialogTitle
 	subtitle := in.subtitle

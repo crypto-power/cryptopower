@@ -17,7 +17,7 @@ import (
 
 const AssetTypeSelectorID = "AssetTypeSelectorID"
 
-// AssetTypeSelector models a wiget for use for selecting asset types.
+// AssetTypeSelector models a widget for use for selecting asset types.
 type AssetTypeSelector struct {
 	openSelectorDialog *cryptomaterial.Clickable
 	*assetTypeModal
@@ -49,8 +49,8 @@ type assetTypeModal struct {
 	isCancelable       bool
 }
 
-// NewAssetTypeSelector creates an assetType selector component.
-// It opens a modal to select a desired assetType.
+// NewAssetTypeSelector creates an assetType selector component. It opens a
+// modal to select a desired assetType.
 func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 	ats := &AssetTypeSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
@@ -73,8 +73,8 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 	return ats
 }
 
-// SupportedAssetTypes returns a slice containing all the asset types
-// Currently supported.
+// SupportedAssetTypes returns a slice containing all the asset types Currently
+// supported.
 func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
 	assetTypes := ats.WL.AssetsManager.AllAssetTypes()
 
@@ -99,13 +99,13 @@ func (ats *AssetTypeSelector) setAssetTypeIcon(assetType libutils.AssetType) *cr
 	return ats.Theme.Icons.AddExchange
 }
 
-// SetBackground sets the asset background colour
+// SetBackground sets the asset background colour.
 func (ats *AssetTypeSelector) SetBackground(background color.NRGBA) *AssetTypeSelector {
 	ats.background = background
 	return ats
 }
 
-// SetHint sets hint for selector
+// SetHint sets hint for selector.
 func (ats *AssetTypeSelector) SetHint(hint string) *AssetTypeSelector {
 	ats.hint = hint
 	return ats

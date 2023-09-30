@@ -98,11 +98,11 @@ func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed. Once proposals update is complete fetchProposals() is
+// automatically called.
 // Part of the load.Page interface.
-// Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	if pg.isProposalsAPIAllowed() {
@@ -154,10 +154,9 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 	return listItems, len(listItems), isReset, nil
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	if pg.statusDropDown.Changed() {
@@ -206,9 +205,9 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
@@ -217,8 +216,9 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
+
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.

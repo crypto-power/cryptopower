@@ -121,16 +121,16 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 	return pg
 }
 
-// ID is a unique string that identifies the page and may be used
-// to differentiate this page from other pages.
+// ID is a unique string that identifies the page and may be used to
+// differentiate this page from other pages.
 // Part of the load.Page interface.
 func (pg *OverviewPage) ID() string {
 	return OverviewPageID
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
@@ -142,10 +142,9 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
@@ -153,9 +152,9 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 }
 
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
+// OnNavigatedFrom is called when the page is about to be removed from the
+// displayed window. This method should ideally be used to disable features that
+// are irrelevant when the page is NOT displayed.
 // NOTE: The page may be re-displayed on the app's window, in which case
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
@@ -168,8 +167,8 @@ func (pg *OverviewPage) OnCurrencyChanged() {
 	go pg.fetchExchangeRate()
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *OverviewPage) Layout(gtx C) D {
 	pg.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)

@@ -68,7 +68,7 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, movefundsChecked bool) {
 	passwordModal := modal.NewCreatePasswordModal(conf.Load).
 		EnableName(false).
 		EnableConfirmPassword(false).
-		Title(values.String(values.StrConfirmToCreateAccs)).
+		Title(values.String(values.StrconfirmToCreateAccs)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			dcrUniqueImpl := conf.WL.SelectedWallet.Wallet.(*dcr.Asset)
 			err := dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)

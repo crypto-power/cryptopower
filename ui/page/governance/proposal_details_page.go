@@ -103,19 +103,18 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 	return pg
 }
 
-// OnNavigatedTo is called when the page is about to be displayed and
-// may be used to initialize page features that are only relevant when
-// the page is displayed.
+// OnNavigatedTo is called when the page is about to be displayed and may be
+// used to initialize page features that are only relevant when the page is
+// displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
 }
 
-// HandleUserInteractions is called just before Layout() to determine
-// if any user interaction recently occurred on the page and may be
-// used to update the page's UI components shortly before they are
-// displayed.
+// HandleUserInteractions is called just before Layout() to determine if any
+// user interaction recently occurred on the page and may be used to update the
+// page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) HandleUserInteractions() {
 	for token := range pg.proposalItems {
@@ -342,7 +341,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 	case libwallet.ProposalCategoryActive:
 		label = pg.Theme.Body2(values.String(values.StrVotingInProgress))
 	}
-	timeagoLabel := pg.Theme.Body2(components.TimeAgo(proposal.Timestamp))
+	timeAgoLabel := pg.Theme.Body2(components.TimeAgo(proposal.Timestamp))
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -372,7 +371,7 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 								}
 								return D{}
 							}),
-							layout.Rigid(timeagoLabel.Layout),
+							layout.Rigid(timeAgoLabel.Layout),
 						)
 					})
 				}),
@@ -515,8 +514,8 @@ func (pg *ProposalDetails) lineSeparator(inset layout.Inset) layout.Widget {
 	}
 }
 
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
+// Layout draws the page UI components into the provided layout context to be
+// eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) Layout(gtx C) D {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {

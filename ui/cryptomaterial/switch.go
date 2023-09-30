@@ -118,9 +118,8 @@ func (s *Switch) Layout(gtx layout.Context) layout.Dimensions {
 		return clip.Ellipse(b).Op(dGtx.Ops)
 	}
 
-	// Draw thumb shadow, a translucent disc slightly larger than the
-	// thumb itself.
-	// Center shadow horizontally and slightly adjust its Y.
+	// Draw thumb shadow, a translucent disc slightly larger than the thumb
+	// itself. Center shadow horizontally and slightly adjust its Y.
 	paint.FillShape(dGtx.Ops, col, circle(thumbRadius, thumbRadius+dGtx.Dp(.25), thumbRadius+1))
 
 	// Draw thumb.

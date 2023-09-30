@@ -33,7 +33,7 @@ type ProgressBarItem struct {
 	Label Label
 }
 
-// MultiLayerProgressBar shows the percentage of the mutiple progress layer
+// MultiLayerProgressBar shows the percentage of the multiple progress layer
 // against the total/expected progress.
 type MultiLayerProgressBar struct {
 	t *Theme
