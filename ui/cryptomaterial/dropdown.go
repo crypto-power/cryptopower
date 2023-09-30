@@ -159,6 +159,10 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 		width = gtx.Dp(values.MarginPadding140)
 	}
 
+	if d.Width > 0 {
+		width = d.Width
+	}
+
 	radius := Radius(0)
 	clickable := item.clickable
 	if !d.isOpen {
@@ -188,6 +192,9 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(115))
 			if d.revs {
 				gtx.Constraints.Max.X = gtx.Dp(unit.Dp(100))
+			}
+			if d.Width > 0 {
+				gtx.Constraints.Max.X = d.Width - gtx.Dp(unit.Dp(40)) // give some space for the dropdown Icon
 			}
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Inset{

@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"image"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/utils"
@@ -20,15 +22,39 @@ const (
 	DEXAccountOnboardingID = "dex_account_onboarding"
 )
 
+var (
+	// knownDEXServers is a map of know DEX servers for supported networks.
+	knownDEXServers = map[libutils.NetworkType][]cryptomaterial.DropDownItem{
+		libutils.Mainnet: {{
+			Text: decredDEXServerMainnet,
+		}},
+		libutils.Testnet: {{
+			Text: decredDEXServerTestnet,
+		}},
+	}
+
+	// formWidth is the maximum width for form elements on the onboarding DEX
+	// page.
+	formWidth = values.MarginPadding450
+)
+
 // onboardingStep is each step of the flow required for a user to create a DEX
 // account with a new DEX server.
 type onboardingStep int
 
 const (
-	onboardingStep1 onboardingStep = iota + 1
-	onboardingStep2
-	onboardingStep3
+	onboardingSetPassword onboardingStep = iota + 1
+	onboardingChooseServer
+	onboardingPostBond
+
+	// These are sub steps.
+	onBoardingStepAddServer
 )
+
+type dexOnboardingStep struct {
+	parentStep /* optional */, stepN onboardingStep
+	stepFn                           func(gtx C) D
+}
 
 type DEXOnboarding struct {
 	*load.Load
@@ -40,18 +66,30 @@ type DEXOnboarding struct {
 
 	scrollContainer *widget.List
 
+	currentStep *dexOnboardingStep
+
+	// Step Set Password
 	passwordEditor        cryptomaterial.Editor
 	confirmPasswordEditor cryptomaterial.Editor
-	materialLoader        material.LoaderStyle
+
+	// Step: Choose Server
+	serverDropDown *cryptomaterial.DropDown
+	addServerBtn   *cryptomaterial.Clickable
+
+	// Sub Step: Add Server
+	serverURLEditor  cryptomaterial.Editor
+	serverCertEditor cryptomaterial.Editor
+	// TODO: add a file selector to choose server cert.
 
 	nextBtn cryptomaterial.Button
 
-	currentStep onboardingStep
-	showLoader  bool
-	isLoading   bool
+	materialLoader material.LoaderStyle
+	showLoader     bool
+	isLoading      bool
 }
 
 func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
+	th := l.Theme
 	do := &DEXOnboarding{
 		GenericPageModal: app.NewGenericPageModal(DEXAccountOnboardingID),
 		scrollContainer: &widget.List{
@@ -62,11 +100,19 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		},
 
 		Load:                  l,
-		nextBtn:               l.Theme.Button(values.String(values.StrNext)),
-		passwordEditor:        newPasswordEditor(l.Theme, values.String(values.StrNewPassword)),
-		confirmPasswordEditor: newPasswordEditor(l.Theme, values.String(values.StrConfirmPassword)),
-		materialLoader:        material.Loader(l.Theme.Base),
-		currentStep:           onboardingStep1,
+		nextBtn:               th.Button(values.String(values.StrNext)),
+		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
+		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
+		addServerBtn:          th.NewClickable(false),
+		serverDropDown:        th.DropDown(knownDEXServers[l.WL.Wallet.Net], values.DEXServerDropdownGroup, 0),
+		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
+		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
+		materialLoader:        material.Loader(th.Base),
+	}
+
+	do.currentStep = &dexOnboardingStep{
+		stepN:  onboardingSetPassword,
+		stepFn: do.stepSetPassword,
 	}
 
 	return do
@@ -123,10 +169,10 @@ func (do *DEXOnboarding) Layout(gtx C) D {
 			// TODO: Add Step Select Server and Step Registration Fee
 			return do.Theme.List(do.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				gtx.Constraints.Max = image.Point{
-					X: gtx.Dp(values.MarginPadding450),
+					X: gtx.Dp(formWidth),
 					Y: gtx.Constraints.Max.Y,
 				}
-				return do.stepSetPassword(gtx)
+				return do.currentStep.stepFn(gtx)
 			})
 		}),
 	)
@@ -167,13 +213,13 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 						Alignment: layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingStep1, values.String(values.StrSetPassword))
+							return do.onBoardingStep(gtx, onboardingSetPassword, values.String(values.StrSetPassword))
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingStep2, values.String(values.StrSelectServer))
+							return do.onBoardingStep(gtx, onboardingChooseServer, values.String(values.StrSelectServer))
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingStep3, values.String(values.StrPostBond))
+							return do.onBoardingStep(gtx, onboardingPostBond, values.String(values.StrPostBond))
 						}),
 					)
 				}),
@@ -185,7 +231,7 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 func (do *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc string) D {
 	color := do.Theme.Color.LightBlue4
 	textColor := do.Theme.Color.Black
-	if do.currentStep == step {
+	if do.currentStep.stepN == step || do.currentStep.parentStep == step {
 		color = do.Theme.Color.Primary
 		textColor = do.Theme.Color.White
 	}
@@ -240,7 +286,86 @@ func (do *DEXOnboarding) stepSetPassword(gtx C) D {
 			return layout.Inset{Top: u16}.Layout(gtx, do.confirmPasswordEditor.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextBtn.Layout)
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
+		}),
+	)
+
+	return layoutFlex
+}
+
+// stepChooseServer returns the a dropdown to select known servers.
+func (do *DEXOnboarding) stepChooseServer(gtx C) D {
+	u16 := values.MarginPadding16
+	u20 := values.MarginPadding20
+	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return do.centerLayout(gtx, u20, values.MarginPadding12, do.Theme.H6(values.String(values.StrSelectServer)).Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrSelectDEXServerDesc)).Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			l := do.Theme.Label(values.TextSize16, values.String(values.StrServer))
+			l.Font.Weight = font.Bold
+			return layout.Inset{Top: u20}.Layout(gtx, l.Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			do.serverDropDown.Width = gtx.Dp(formWidth)
+			return do.serverDropDown.Layout(gtx, 0, false)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					color := do.Theme.Color.Primary
+					return cryptomaterial.LinearLayout{
+						Width:       gtx.Dp(values.MarginPadding110),
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Margin:      layout.Inset{Top: u16},
+						Direction:   layout.W,
+						Alignment:   layout.Middle,
+						Clickable:   do.addServerBtn,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							icon := do.Theme.Icons.ContentAdd
+							return icon.Layout(gtx, color)
+						}),
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							label := do.Theme.Label(values.TextSize16, values.String(values.StrAddServer))
+							label.Color = color
+							label.Font.Weight = font.SemiBold
+							return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, label.Layout)
+						}),
+					)
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
+		}),
+	)
+
+	return layoutFlex
+}
+
+// subStepAddServer returns a for to add a server.
+func (do *DEXOnboarding) subStepAddServer(gtx C) D {
+	u16 := values.MarginPadding16
+	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return do.centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, do.Theme.H6(values.String(values.StrAddServer)).Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrAddServerDesc)).Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: u16}.Layout(gtx, do.serverURLEditor.Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: u16}.Layout(gtx, do.serverCertEditor.Layout)
+		}),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
 		}),
 	)
 
@@ -252,29 +377,99 @@ func (do *DEXOnboarding) stepSetPassword(gtx C) D {
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (do *DEXOnboarding) HandleUserInteractions() {
+	if do.addServerBtn.Clicked() {
+		do.currentStep = &dexOnboardingStep{
+			parentStep: onboardingChooseServer,
+			stepN:      onBoardingStepAddServer,
+			stepFn:     do.subStepAddServer,
+		}
+	}
+
+	// TODO: Add and listen to back btn on the DEX onboarding page, especially
+	// for choose server -> add server navigation and the user wants to go back
+	// to choose server. This feature is blocked by design feedback from
+	// @joyce_ofoche. Either we have a back button on the same line with the
+	// next button or have a Chevron Left icon for going back to the previous
+	// step.
+
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(do.passwordEditor.Editor, do.confirmPasswordEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(do.passwordEditor.Editor, do.confirmPasswordEditor.Editor, do.serverURLEditor.Editor, do.serverCertEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
 		do.passwordEditor.SetError("")
 		do.confirmPasswordEditor.SetError("")
+		do.serverURLEditor.SetError("")
+		do.serverCertEditor.SetError("")
 	}
 
 	if do.nextBtn.Clicked() || isSubmit {
-		switch do.currentStep {
-		case onboardingStep1:
+		step := do.currentStep.stepN
+		switch step {
+		case onboardingSetPassword:
 			ok := do.validPasswordInputs()
 			if !ok {
 				return
 			}
-			do.currentStep = onboardingStep2
-		case onboardingStep2:
-			// TODO: Validate the DEX server and connect.
-			do.currentStep = onboardingStep3
-		case onboardingStep3:
+
+			do.currentStep = &dexOnboardingStep{
+				parentStep: onboardingChooseServer,
+				stepN:      onBoardingStepAddServer,
+				stepFn:     do.subStepAddServer,
+			}
+
+			knownServers, ok := knownDEXServers[do.WL.Wallet.Net]
+			if ok && len(knownServers) > 0 {
+				do.currentStep = &dexOnboardingStep{
+					parentStep: onboardingChooseServer,
+					stepN:      onboardingChooseServer,
+					stepFn:     do.stepChooseServer,
+				}
+			}
+		case onboardingChooseServer, onBoardingStepAddServer:
+			var serverURL string
+			var serverCert []byte
+			if step == onboardingChooseServer {
+				serverURL = do.serverDropDown.Selected()
+				cert, ok := CertStore[serverURL]
+				if !ok {
+					log.Errorf("Selected DEX server's (%s) cert is missing", serverURL)
+					return
+				}
+				serverCert = cert
+			} else if step == onBoardingStepAddServer {
+				if utils.EditorsNotEmpty(do.serverURLEditor.Editor) {
+					serverURL = do.serverURLEditor.Editor.Text()
+					serverCert = []byte(do.serverCertEditor.Editor.Text())
+				} else {
+					do.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
+					return
+				}
+			}
+
+			// TODO: Validate server is reachable and connect.
+			_ = serverURL
+			_ = serverCert
+
+			do.currentStep = &dexOnboardingStep{
+				stepN:  onboardingPostBond,
+				stepFn: do.subStepAddServer, // TODO: Add post bond step
+			}
+		case onboardingPostBond:
 			// TODO: Post bond and redirect to Markets page
 		}
 	}
+}
+
+// nextStepBtn is a convenience function that changes the nextStep button text
+// based on the current step. TODO: If the designs changes the text for
+// onBoardingStepAddServer, remove this function and use do.nextBtn directly.
+func (do *DEXOnboarding) nextStepBtn(gtx C) D {
+	if do.currentStep.stepN == onBoardingStepAddServer {
+		do.nextBtn.Text = values.String(values.StrAdd)
+	} else {
+		do.nextBtn.Text = values.String(values.StrNext)
+	}
+	return do.nextBtn.Layout(gtx)
 }
 
 func (do *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {
@@ -309,4 +504,12 @@ func newPasswordEditor(th *cryptomaterial.Theme, title string) cryptomaterial.Ed
 	passE.Editor.SingleLine, passE.Editor.Submit = true, true
 	passE.Hint = title
 	return passE
+}
+
+func newTextEditor(th *cryptomaterial.Theme, title string, hint string, multiLine bool) cryptomaterial.Editor {
+	e := th.Editor(new(widget.Editor), title)
+	e.Editor.SingleLine = !multiLine
+	e.Editor.Submit = true
+	e.Hint = hint
+	return e
 }

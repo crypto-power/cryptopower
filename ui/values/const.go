@@ -6,4 +6,5 @@ const (
 	ProposalDropdownGroup
 	ConsensusDropdownGroup
 	OrderStatusDropdownGroup
+	DEXServerDropdownGroup
 )
