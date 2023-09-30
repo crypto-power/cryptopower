@@ -92,13 +92,11 @@ func NewHomePage(l *load.Load) *HomePage {
 		},
 	}
 
-	go func() {
-		hp.isConnected = libutils.IsOnline()
-	}()
+	hp.isConnected = libutils.IsOnline()
 
 	// init shared page functions
 	toggleSync := func(unlock load.NeedUnlockRestore) {
-		if hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
+		if !hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			go hp.WL.SelectedWallet.Wallet.CancelSync()
 			unlock(false)
 		} else {
