@@ -214,20 +214,30 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 
 		if pg.wallet.TxMatchesFilter(pg.transaction, libutils.TxFilterStaking) {
 			go func() {
-				info, err := dcrImp.VSPTicketInfo(pg.transaction.Hash)
-				if err != nil {
-					log.Errorf("VSPTicketInfo error: %v", err)
-				}
-
 				pg.vspHost = values.String(values.StrNotAvailable)
+				pg.vspHostFees = values.String(values.StrNotAvailable)
+
+				var feeTxHash string
+				info, err := dcrImp.VSPTicketInfo(pg.transaction.Hash)
 				if info != nil {
 					pg.vspHost = info.VSP
+					feeTxHash = info.FeeTxHash
+				}
+				if err != nil {
+					log.Errorf("VSPTicketInfo error: %v", err)
+					return
 				}
 
-				pg.vspHostFees = values.String(values.StrNotAvailable)
-				feeTx, _ := pg.wallet.GetTransactionRaw(info.FeeTxHash)
+				if feeTxHash == "" {
+					return
+				}
+
+				feeTx, err := pg.wallet.GetTransactionRaw(feeTxHash)
 				if feeTx != nil {
 					pg.vspHostFees = pg.wallet.ToAmount(feeTx.Amount).String()
+				}
+				if err != nil {
+					log.Errorf("GetTransactionRaw error: %v", err)
 				}
 			}()
 		}
