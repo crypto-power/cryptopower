@@ -77,8 +77,10 @@ type DEXOnboarding struct {
 	addServerBtn   *cryptomaterial.Clickable
 
 	// Sub Step: Add Server
-	serverURLEditor  cryptomaterial.Editor
-	serverCertEditor cryptomaterial.Editor
+	addBackToChooseServerIcon bool
+	serverURLEditor           cryptomaterial.Editor
+	serverCertEditor          cryptomaterial.Editor
+	goBackToChooseServer      *cryptomaterial.Clickable
 	// TODO: add a file selector to choose server cert.
 
 	nextBtn cryptomaterial.Button
@@ -107,6 +109,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		serverDropDown:        th.DropDown(knownDEXServers[l.WL.Wallet.Net], values.DEXServerDropdownGroup, 0),
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
 		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
+		goBackToChooseServer:  th.NewClickable(false),
 		materialLoader:        material.Loader(th.Base),
 	}
 
@@ -351,9 +354,41 @@ func (do *DEXOnboarding) stepChooseServer(gtx C) D {
 // subStepAddServer returns a for to add a server.
 func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 	u16 := values.MarginPadding16
-	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+	width := gtx.Dp(formWidth)
+	if do.addBackToChooseServerIcon {
+		width = gtx.Dp(formWidth + values.MarginPadding100)
+	}
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, do.Theme.H6(values.String(values.StrAddServer)).Layout)
+			return cryptomaterial.LinearLayout{
+				Width:       width,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Horizontal,
+				Margin:      layout.Inset{Top: values.MarginPadding20, Bottom: u16},
+				Alignment:   layout.Middle,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					if !do.addBackToChooseServerIcon {
+						return D{}
+					}
+
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Clickable:   do.goBackToChooseServer,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							return do.Theme.Icons.NavigationArrowBack.Layout(gtx, do.Theme.Color.Gray1)
+						}),
+					)
+				}),
+				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						return do.Theme.H6(values.String(values.StrAddServer)).Layout(gtx)
+					})
+				}),
+			)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrAddServerDesc)).Layout)
@@ -368,8 +403,6 @@ func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
 		}),
 	)
-
-	return layoutFlex
 }
 
 // HandleUserInteractions is called just before Layout() to determine if any
@@ -378,6 +411,9 @@ func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 // Part of the load.Page interface.
 func (do *DEXOnboarding) HandleUserInteractions() {
 	if do.addServerBtn.Clicked() {
+		if do.currentStep.stepN == onboardingChooseServer {
+			do.addBackToChooseServerIcon = true
+		}
 		do.currentStep = &dexOnboardingStep{
 			parentStep: onboardingChooseServer,
 			stepN:      onBoardingStepAddServer,
@@ -385,12 +421,15 @@ func (do *DEXOnboarding) HandleUserInteractions() {
 		}
 	}
 
-	// TODO: Add and listen to back btn on the DEX onboarding page, especially
-	// for choose server -> add server navigation and the user wants to go back
-	// to choose server. This feature is blocked by design feedback from
-	// @joyce_ofoche. Either we have a back button on the same line with the
-	// next button or have a Chevron Left icon for going back to the previous
-	// step.
+	if do.goBackToChooseServer.Clicked() {
+		do.addBackToChooseServerIcon = false
+		do.serverURLEditor.SetError("")
+		do.serverCertEditor.SetError("")
+		do.currentStep = &dexOnboardingStep{
+			stepN:  onboardingChooseServer,
+			stepFn: do.stepChooseServer,
+		}
+	}
 
 	// editor event listener
 	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(do.passwordEditor.Editor, do.confirmPasswordEditor.Editor, do.serverURLEditor.Editor, do.serverCertEditor.Editor)
