@@ -23,7 +23,7 @@ type Icons struct {
 	Restore, DocumentationIcon, TimerIcon, StakeIcon, StakeIconInactive, StakeyIcon, EllipseVert,
 	GovernanceActiveIcon, GovernanceInactiveIcon, LogoDarkMode, TimerDarkMode, Rebroadcast, Notification,
 	SettingsActiveIcon, SettingsInactiveIcon, ActivatedActiveIcon, ActivatedInactiveIcon, LockinActiveIcon,
-	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
+	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon, TradeExchange,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
@@ -132,6 +132,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.ConcealIcon = NewImage(decredIcons["reveal"])
 	i.RevealIcon = NewImage(decredIcons["hide"])
 	i.AddExchange = NewImage(decredIcons["add_exchange"])
+	i.TradeExchange = NewImage(decredIcons["ri_exchange-line"])
 
 	i.SettingsActiveIcon = NewImage(decredIcons["settings_active"])
 	i.SettingsInactiveIcon = NewImage(decredIcons["settings_inactive"])

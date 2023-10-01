@@ -177,15 +177,15 @@ func (pg *TradePage) pageContentLayout(gtx C) D {
 									Orientation: layout.Vertical,
 									Direction:   layout.Center,
 									Alignment:   layout.Middle,
-									Padding:     layout.UniformInset(30),
+									Padding:     layout.UniformInset(20),
 									Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 									Background:  pg.Theme.Color.Surface,
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return pg.Theme.Icons.AddExchange.Layout48dp(gtx)
+										return pg.Theme.Icons.TradeExchange.LayoutSize(gtx, 160)
 									}),
 									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.TradePStrDex1)).Layout)
+										return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.TradePStrDex1)).Layout)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Bottom: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.TradePStrDex2)).Layout)
@@ -201,7 +201,7 @@ func (pg *TradePage) pageContentLayout(gtx C) D {
 										Orientation: layout.Vertical,
 										Direction:   layout.Center,
 										Alignment:   layout.Middle,
-										Padding:     layout.UniformInset(30),
+										Padding:     layout.UniformInset(20),
 										Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 										Background:  pg.Theme.Color.Surface,
 									}.Layout(gtx,
