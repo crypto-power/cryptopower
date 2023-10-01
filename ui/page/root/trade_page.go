@@ -119,65 +119,108 @@ func (pg *TradePage) layoutMobile(gtx C) D {
 func (pg *TradePage) pageContentLayout(gtx C) D {
 	pg.dcrdexBtn.SetEnabled(true, &gtx)
 
-	pageContent := []func(gtx C) D{
-		pg.sectionTitle(values.String(values.StrExchangeIntro)),
-		pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
-		pg.layoutAddMoreRowSection(pg.dcrdexBtn, values.String(values.StrDcrDex), pg.Theme.Icons.DcrDex.Layout16dp),
-	}
+	// pageContent := []func(gtx C) D{
+	// 	pg.sectionTitle(values.String(values.StrExchangeIntro)),
+	// 	pg.layoutAddMoreRowSection(pg.exchangeBtn, values.String(values.StrExchange), pg.Theme.Icons.AddExchange.Layout16dp),
+	// 	pg.layoutAddMoreRowSection(pg.dcrdexBtn, values.String(values.StrDcrDex), pg.Theme.Icons.DcrDex.Layout16dp),
+	// }
 
 	return cryptomaterial.LinearLayout{
-		Width:     cryptomaterial.MatchParent,
-		Height:    cryptomaterial.MatchParent,
-		Direction: layout.Center,
+		Width:  cryptomaterial.MatchParent,
+		Height: cryptomaterial.MatchParent,
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
-			Width:  gtx.Dp(values.MarginPadding550),
+			Width:  cryptomaterial.MatchParent,
 			Height: cryptomaterial.MatchParent,
+
 			Margin: layout.Inset{
-				Bottom: values.MarginPadding30,
+				Top:    values.MarginPadding8,
+				Bottom: values.MarginPadding80,
 			},
+			Orientation: layout.Vertical,
 		}.Layout2(gtx, func(gtx C) D {
-			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				return layout.Inset{
-					Right:  values.MarginPadding48,
-					Bottom: values.MarginPadding4,
-				}.Layout(gtx, pageContent[i])
-			})
-		})
-	})
-}
-
-func (pg *TradePage) sectionTitle(title string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize20, title).Layout)
-	}
-}
-
-func (pg *TradePage) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{
-			Left: values.MarginPadding5,
-			Top:  values.MarginPadding10,
-		}.Layout(gtx, func(gtx C) D {
-			pg.shadowBox.SetShadowRadius(14)
 			return cryptomaterial.LinearLayout{
-				Width:      cryptomaterial.WrapContent,
-				Height:     cryptomaterial.WrapContent,
-				Padding:    layout.UniformInset(values.MarginPadding12),
-				Background: pg.Theme.Color.Surface,
-				Clickable:  clk,
-				Shadow:     pg.shadowBox,
-				Border:     cryptomaterial.Border{Radius: clk.Radius},
-				Alignment:  layout.Middle,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.MatchParent,
+				Orientation: layout.Vertical,
+				Alignment:   layout.Middle,
+				Direction:   layout.Center,
 			}.Layout(gtx,
-				layout.Rigid(ic),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Left: values.MarginPadding4,
-						Top:  values.MarginPadding2,
-					}.Layout(gtx, pg.Theme.Body2(buttonText).Layout)
+					return layout.Inset{Bottom: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.StrExchangeIntro)).Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.StrExchangeIntroPt2)).Layout)
+				}),
+
+				layout.Rigid(func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Vertical,
+						Direction:   layout.Center,
+						Alignment:   layout.Middle,
+						Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+						Padding: layout.Inset{
+							Top:    values.MarginPadding75,
+							Bottom: values.MarginPadding75,
+							Left:   values.MarginPadding180,
+							Right:  values.MarginPadding180,
+						},
+						Background: pg.Theme.Color.Gray3,
+					}.Layout2(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return cryptomaterial.LinearLayout{
+									Width:       160,
+									Height:      180,
+									Orientation: layout.Vertical,
+									Direction:   layout.Center,
+									Alignment:   layout.Middle,
+									Padding:     layout.UniformInset(30),
+									Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+									Background:  pg.Theme.Color.Surface,
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return pg.Theme.Icons.AddExchange.Layout48dp(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.TradePStrDex1)).Layout)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Bottom: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.TradePStrDex2)).Layout)
+									}),
+								)
+
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Left: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+									return cryptomaterial.LinearLayout{
+										Width:       160,
+										Height:      180,
+										Orientation: layout.Vertical,
+										Direction:   layout.Center,
+										Alignment:   layout.Middle,
+										Padding:     layout.UniformInset(30),
+										Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+										Background:  pg.Theme.Color.Surface,
+									}.Layout(gtx,
+
+										layout.Rigid(func(gtx C) D {
+											return pg.Theme.Icons.DcrDex.Layout48dp(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.StrExchange)).Layout)
+										}),
+									)
+								})
+
+							}),
+						)
+					})
+
 				}),
 			)
 		})
-	}
+	})
 }

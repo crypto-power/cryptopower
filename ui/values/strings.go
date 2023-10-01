@@ -317,6 +317,7 @@ const (
 	StrExchange                        = "exchange"
 	StrExchangeAPI                     = "exchangeAPI"
 	StrExchangeIntro                   = "exchangeIntro"
+	StrExchangeIntroPt2                = "exchangeIntroPt2"
 	StrExchangeRate                    = "exchangeRate"
 	StrExistingWalletName              = "existingWalletName"
 	StrExit                            = "exit"
