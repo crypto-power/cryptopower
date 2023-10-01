@@ -123,8 +123,10 @@ func (pg *TradePage) pageContentLayout(gtx C) D {
 			Height:    cryptomaterial.MatchParent,
 			Direction: layout.Center,
 			Margin: layout.Inset{
-				Bottom: values.MarginPadding30,
+				Top:    values.MarginPadding8,
+				Bottom: values.MarginPadding80,
 			},
+			Orientation: layout.Vertical,
 		}.Layout2(gtx, func(gtx C) D {
 			return cryptomaterial.LinearLayout{
 				Width:  cryptomaterial.WrapContent,
@@ -189,7 +191,6 @@ func (pg *TradePage) layoutAddMoreButton(clk *cryptomaterial.Clickable, buttonTe
 				Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 				Background: pg.Theme.Color.Surface,
 			}.Layout(gtx,
-				layout.Rigid(ic),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.Theme.Label(values.TextSize16, buttonText1).Layout)
 				}),
