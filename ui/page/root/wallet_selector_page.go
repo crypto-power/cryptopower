@@ -40,9 +40,6 @@ type WalletSelectorPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	startSpvSync uint32
-	isConnected  bool
-
 	scrollContainer *widget.List
 	shadowBox       *cryptomaterial.Shadow
 	addWalClickable *cryptomaterial.Clickable
@@ -178,15 +175,6 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			})
 		})
 	})
-}
-
-func (pg *WalletSelectorPage) layoutAddBottomSpace() layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{
-			Left:   values.MarginPadding5,
-			Bottom: values.MarginPadding48,
-		}.Layout(gtx, func(gtx C) D { return D{} })
-	}
 }
 
 func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {

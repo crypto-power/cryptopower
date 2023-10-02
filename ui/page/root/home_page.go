@@ -151,7 +151,6 @@ func (hp *HomePage) OnNavigatedTo() {
 		}
 	}
 
-	hp.CurrentPage().OnNavigatedTo()
 	hp.isBalanceHidden = hp.WL.AssetsManager.IsTotalBalanceVisible()
 }
 
