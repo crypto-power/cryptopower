@@ -650,6 +650,79 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 	return cumm, nil
 }
 
+func calculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]int64, error) {
+	wallets := l.WL.AssetsManager.AllWallets()
+	assetsTotalBalance := make(map[libutils.AssetType]int64)
+
+	for _, wal := range wallets {
+		if wal.IsWatchingOnlyWallet() {
+			continue
+		}
+
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, account := range accountsResult.Accounts {
+			assetsTotalBalance[wal.GetAssetType()] += account.Balance.Total.ToInt()
+		}
+	}
+
+	return assetsTotalBalance, nil
+}
+
+func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.AssetAmount, error) {
+	balances, err := calculateTotalAssetsBalance(l)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsTotalBalance := make(map[libutils.AssetType]sharedW.AssetAmount)
+	for assetType, balance := range balances {
+		switch assetType {
+		case libutils.BTCWalletAsset:
+			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllBTCWallets()[0].ToAmount(balance)
+		case libutils.DCRWalletAsset:
+			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllDCRWallets()[0].ToAmount(balance)
+		case libutils.LTCWalletAsset:
+			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllLTCWallets()[0].ToAmount(balance)
+		default:
+			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+		}
+	}
+
+	return assetsTotalBalance, nil
+}
+
+func CalculateAssetsUSDBalance(l *load.Load, assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount) (map[libutils.AssetType]float64, error) {
+	preferredExchange := l.WL.AssetsManager.GetCurrencyConversionExchange()
+
+	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
+		rate, err := l.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, market)
+		if err != nil {
+			return 0, err
+		}
+
+		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil
+	}
+
+	assetsTotalUSDBalance := make(map[libutils.AssetType]float64)
+	for assetType, balance := range assetsTotalBalance {
+		marketValue, exist := values.AssetExchangeMarketValue[assetType]
+		if !exist {
+			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+		}
+		usdBal, err := usdBalance(balance, marketValue)
+		if err != nil {
+			return nil, err
+		}
+		assetsTotalUSDBalance[assetType] = usdBal
+	}
+
+	return assetsTotalUSDBalance, nil
+}
+
 // SecondsToDays takes time in seconds and returns its string equivalent in the format ddhhmm.
 func SecondsToDays(totalTimeLeft int64) string {
 	q, r := divMod(totalTimeLeft, 24*60*60)

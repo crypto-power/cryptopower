@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"image/color"
+	"sort"
 	"strings"
 
 	"gioui.org/font"
@@ -12,13 +13,18 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/listeners"
+	"github.com/crypto-power/cryptopower/wallet"
+	"github.com/decred/dcrd/dcrutil/v3"
 
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -55,7 +61,11 @@ type OverviewPage struct {
 	ltc *assetBalanceSliderItem
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
-	usdExchangeRate    float64
+
+	*listeners.AccountMixerNotificationListener
+	*listeners.TxAndBlockNotificationListener
+	mixerSliderData      map[int]*mixerData
+	sortedMixerSlideKeys []int
 }
 
 type assetBalanceSliderItem struct {
@@ -74,6 +84,11 @@ type assetMarketData struct {
 	idChange         string
 	isChangePositive bool
 	image            *cryptomaterial.Image
+}
+
+type mixerData struct {
+	*dcr.Asset
+	unmixedBalance sharedW.AssetAmount
 }
 
 func NewOverviewPage(l *load.Load) *OverviewPage {
@@ -135,11 +150,14 @@ func (pg *OverviewPage) ID() string {
 func (pg *OverviewPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	pg.updateSliders()
-	go pg.fetchExchangeRate()
+	pg.updateAssetsSliders()
+	go pg.updateAssetsUSDBalance()
 
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
+
+	pg.listenForMixerNotifications()
+
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -150,6 +168,19 @@ func (pg *OverviewPage) OnNavigatedTo() {
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
 		pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+	}
+
+	// Navigate to mixer page when wallet mixer slider forward button is clicked.
+	if pg.forwardButton.Button.Clicked() {
+		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
+		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
+		pg.WL.SelectedWallet = &load.WalletItem{
+			Wallet: mixerData.Asset,
+		}
+
+		mp := NewMainPage(pg.Load)
+		pg.ParentNavigator().Display(mp)
+		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
 	}
 }
 
@@ -165,7 +196,7 @@ func (pg *OverviewPage) OnNavigatedFrom() {
 }
 
 func (pg *OverviewPage) OnCurrencyChanged() {
-	go pg.fetchExchangeRate()
+	go pg.updateAssetsUSDBalance()
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -213,9 +244,18 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 		Direction:   layout.Center,
 		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
-		layout.Flexed(.5, pg.assetBalanceSliderLayout),
-		layout.Flexed(.5, func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+		layout.Rigid(func(gtx C) D {
+			// Only show mixer slider if mixer is running
+			if len(pg.mixerSliderData) == 0 {
+				return pg.assetBalanceSliderLayout(gtx)
+			}
+
+			return layout.Flex{}.Layout(gtx,
+				layout.Flexed(.5, pg.assetBalanceSliderLayout),
+				layout.Flexed(.5, func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+				}),
+			)
 		}),
 	)
 }
@@ -291,13 +331,24 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 }
 
 func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
-	sliderWidget := []layout.Widget{
-		pg.mixerLayout,
+	sliderWidget := make([]layout.Widget, 0)
+	for _, key := range pg.sortedMixerSlideKeys {
+		// Append the mixer slide widgets in an anonymouse function. This stops the
+		// the fuction literal from capturing only the final key {key} value.
+		addMixerSlideWidget := func(k int) {
+			if slideData, ok := pg.mixerSliderData[k]; ok {
+				sliderWidget = append(sliderWidget, func(gtx C) D {
+					return pg.mixerLayout(gtx, slideData)
+				})
+			}
+		}
+		addMixerSlideWidget(key)
 	}
+
 	return pg.mixerSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) mixerLayout(gtx C) D {
+func (pg *OverviewPage) mixerLayout(gtx C, data *mixerData) D {
 	r := 8
 	return cryptomaterial.LinearLayout{
 		Width:       gtx.Constraints.Max.X,
@@ -316,7 +367,11 @@ func (pg *OverviewPage) mixerLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.topMixerLayout),
 		layout.Rigid(pg.middleMixerLayout),
-		layout.Rigid(pg.bottomMixerLayout),
+		layout.Rigid(
+			func(gtx C) D {
+				return pg.bottomMixerLayout(gtx, data)
+			},
+		),
 	)
 }
 
@@ -327,7 +382,7 @@ func (pg *OverviewPage) topMixerLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.Theme.Icons.Mixer.Layout24dp),
 		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Body1("Mixer is Running...") // TODO
+			lbl := pg.Theme.Body1(values.String(values.StrMixerRunning))
 			lbl.Font.Weight = font.SemiBold
 			return layout.Inset{
 				Left:  values.MarginPadding8,
@@ -370,13 +425,13 @@ func (pg *OverviewPage) middleMixerLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.Theme.Icons.Alert.Layout20dp),
 		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2("Keep app open")
+			lbl := pg.Theme.Body2(values.String(values.StrKeepAppOpen))
 			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
 		}),
 	)
 }
 
-func (pg *OverviewPage) bottomMixerLayout(gtx C) D {
+func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
 	r := 8
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.WrapContent,
@@ -394,7 +449,7 @@ func (pg *OverviewPage) bottomMixerLayout(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2("myWallet")
+			lbl := pg.Theme.Body2(data.GetWalletName())
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		}),
@@ -403,10 +458,10 @@ func (pg *OverviewPage) bottomMixerLayout(gtx C) D {
 				Axis:      layout.Horizontal,
 				Alignment: layout.Middle,
 			}.Layout(gtx,
-				layout.Rigid(pg.Theme.Body1("Unmixed balance").Layout), // TODO
+				layout.Rigid(pg.Theme.Body1(values.String(values.StrUnmixedBalance)).Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
-						return components.LayoutBalance(gtx, pg.Load, "100.67 DCR")
+						return components.LayoutBalance(gtx, pg.Load, data.unmixedBalance.String())
 					})
 				}),
 			)
@@ -634,51 +689,26 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 	})
 }
 
-func (pg *OverviewPage) calculateTotalAssetBalance() (map[libutils.AssetType]int64, error) {
-	wallets := pg.WL.AssetsManager.AllWallets()
-	assetsTotalBalance := make(map[libutils.AssetType]int64)
-
-	for _, wal := range wallets {
-		if wal.IsWatchingOnlyWallet() {
-			continue
-		}
-
-		accountsResult, err := wal.GetAccountsRaw()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, account := range accountsResult.Accounts {
-			assetsTotalBalance[wal.GetAssetType()] += account.Balance.Total.ToInt()
-		}
-	}
-
-	return assetsTotalBalance, nil
-}
-
-func (pg *OverviewPage) fetchExchangeRate() {
+func (pg *OverviewPage) updateAssetsUSDBalance() {
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		preferredExchange := pg.WL.AssetsManager.GetCurrencyConversionExchange()
-
-		usdBalance := func(bal sharedW.AssetAmount, market string) string {
-			rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, market)
-			if err != nil {
-				log.Error(err)
-				return "$--"
-			}
-
-			balanceInUSD := bal.MulF64(rate.LastTradePrice).ToCoin()
-			return utils.FormatUSDBalance(pg.Printer, balanceInUSD)
+		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(pg.Load, pg.assetsTotalBalance)
+		if err != nil {
+			log.Error(err)
+			return
 		}
 
-		for assetType, balance := range pg.assetsTotalBalance {
+		toUSDString := func(balance float64) string {
+			return utils.FormatUSDBalance(pg.Printer, balance)
+		}
+
+		for assetType, balance := range assetsTotalUSDBalance {
 			switch assetType {
 			case libutils.DCRWalletAsset:
-				pg.dcr.totalBalanceUSD = usdBalance(balance, values.DCRUSDTMarket)
+				pg.dcr.totalBalanceUSD = toUSDString(balance)
 			case libutils.BTCWalletAsset:
-				pg.btc.totalBalanceUSD = usdBalance(balance, values.BTCUSDTMarket)
+				pg.btc.totalBalanceUSD = toUSDString(balance)
 			case libutils.LTCWalletAsset:
-				pg.ltc.totalBalanceUSD = usdBalance(balance, values.LTCUSDTMarket)
+				pg.ltc.totalBalanceUSD = toUSDString(balance)
 			default:
 				log.Errorf("Unsupported asset type: %s", assetType)
 				return
@@ -690,12 +720,13 @@ func (pg *OverviewPage) fetchExchangeRate() {
 	}
 }
 
-func (pg *OverviewPage) updateSliders() {
-	assetItems, err := pg.calculateTotalAssetBalance()
+func (pg *OverviewPage) updateAssetsSliders() {
+	assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
 	if err != nil {
 		log.Error(err)
 		return
 	}
+	pg.assetsTotalBalance = assetsBalance
 
 	sliderItem := func(totalBalance sharedW.AssetAmount, assetFullName string, icon, bkgImage *cryptomaterial.Image) *assetBalanceSliderItem {
 		return &assetBalanceSliderItem{
@@ -707,22 +738,16 @@ func (pg *OverviewPage) updateSliders() {
 		}
 	}
 
-	for assetType, totalBalance := range assetItems {
+	for assetType, balance := range assetsBalance {
 		assetFullName := strings.ToUpper(assetType.ToFull())
 
 		switch assetType {
 		case libutils.BTCWalletAsset:
-			balance := pg.WL.AssetsManager.AllBTCWallets()[0].ToAmount(totalBalance)
 			pg.btc = sliderItem(balance, assetFullName, pg.Theme.Icons.BTCGroupIcon, pg.Theme.Icons.BTCBackground)
-			pg.assetsTotalBalance[assetType] = balance
 		case libutils.DCRWalletAsset:
-			balance := pg.WL.AssetsManager.AllDCRWallets()[0].ToAmount(totalBalance)
 			pg.dcr = sliderItem(balance, assetFullName, pg.Theme.Icons.DCRGroupIcon, pg.Theme.Icons.DCRBackground)
-			pg.assetsTotalBalance[assetType] = balance
 		case libutils.LTCWalletAsset:
-			balance := pg.WL.AssetsManager.AllLTCWallets()[0].ToAmount(totalBalance)
 			pg.ltc = sliderItem(balance, assetFullName, pg.Theme.Icons.LTCGroupIcon, pg.Theme.Icons.LTCBackground)
-			pg.assetsTotalBalance[assetType] = balance
 		default:
 			log.Errorf("Unsupported asset type: %s", assetType)
 			return
@@ -765,4 +790,134 @@ func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.
 			Bottom: bottom,
 		}.Layout(gtx, content)
 	})
+}
+
+func (pg *OverviewPage) listenForMixerNotifications() {
+	// Get all DCR wallets, and subscribe to the individual wallet's mixer channel.
+	// We are only interested in DCR wallets since mixing support
+	// is limited to DCR at this point.
+	dcrWallets := pg.WL.AssetsManager.AllDCRWallets()
+
+	if pg.AccountMixerNotificationListener == nil {
+		pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
+		pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
+		for _, wal := range dcrWallets {
+			w := wal.(*dcr.Asset)
+			if w == nil {
+				log.Warn(values.ErrDCRSupportedOnly)
+				continue
+			}
+			err := w.AddAccountMixerNotificationListener(pg, OverviewPageID)
+			if err != nil {
+				log.Errorf("Error adding account mixer notification listener: %+v", err)
+				continue
+			}
+
+			err = w.AddTxAndBlockNotificationListener(pg, true, OverviewPageID)
+			if err != nil {
+				log.Errorf("Error adding tx and block notification listener: %v", err)
+				continue
+			}
+
+		}
+	}
+
+	pg.sortedMixerSlideKeys = make([]int, 0)
+	pg.mixerSliderData = make(map[int]*mixerData)
+	for _, wal := range dcrWallets {
+		w := wal.(*dcr.Asset)
+
+		if w.IsAccountMixerActive() {
+			if _, ok := pg.mixerSliderData[w.ID]; !ok {
+				pg.mixerSliderData[w.ID] = &mixerData{
+					Asset: w,
+				}
+				pg.setUnMixedBalance(w.ID)
+				// Store the slide keys in a slice to maintain a consistent slide sequence.
+				// since ranging over a map doesn't guarantee an order.
+				pg.sortedMixerSlideKeys = append(pg.sortedMixerSlideKeys, w.ID)
+			}
+		}
+	}
+	// Sort the mixer slide keys so that the slides are drawn in the order of the wallets
+	// on wallet list.
+	sort.Ints(pg.sortedMixerSlideKeys)
+	// Reload mixer slider items
+	pg.mixerSlider.RefreshItems()
+
+	go func() {
+		for {
+			select {
+			case n := <-pg.MixerChan:
+				if n.RunStatus == wallet.MixerStarted {
+					pg.setUnMixedBalance(n.WalletID)
+					pg.ParentWindow().Reload()
+				}
+
+				if n.RunStatus == wallet.MixerEnded {
+					delete(pg.mixerSliderData, n.WalletID)
+					// Reload mixer slider items
+					pg.mixerSlider.RefreshItems()
+					pg.ParentWindow().Reload()
+				}
+			case n := <-pg.TxAndBlockNotifChan():
+				// Reload wallets unmixed balance and reload UI on
+				// new blocks.
+				if n.Type == listeners.BlockAttached {
+					go func() {
+						pg.reloadBalances()
+						pg.ParentWindow().Reload()
+					}()
+				}
+			case <-pg.ctx.Done():
+				for _, wal := range dcrWallets {
+					w := wal.(*dcr.Asset)
+					w.RemoveAccountMixerNotificationListener(OverviewPageID)
+					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
+				}
+				close(pg.MixerChan)
+				pg.CloseTxAndBlockChan()
+				pg.AccountMixerNotificationListener = nil
+				pg.TxAndBlockNotificationListener = nil
+
+				return
+			}
+		}
+	}()
+}
+
+func (pg *OverviewPage) setUnMixedBalance(id int) {
+	mixerSliderData := pg.mixerSliderData[id]
+	accounts, err := mixerSliderData.GetAccountsRaw()
+	if err != nil {
+		log.Errorf("error loading mixer account. %s", err)
+		return
+	}
+
+	for _, acct := range accounts.Accounts {
+		if acct.Number == mixerSliderData.UnmixedAccountNumber() {
+			bal := acct.Balance.Total
+			// to prevent NPE set default amount 0 if asset amount is nil
+			if bal == nil {
+				bal = dcr.Amount(dcrutil.Amount(0))
+			}
+			mixerSliderData.unmixedBalance = bal
+		}
+	}
+}
+
+func (pg *OverviewPage) reloadBalances() {
+	for _, wal := range pg.mixerSliderData {
+		accounts, _ := wal.GetAccountsRaw()
+		for _, acct := range accounts.Accounts {
+			if acct.Number == wal.UnmixedAccountNumber() {
+				bal := acct.Balance.Total
+				// to prevent NPE set default amount 0 if asset amount is nil
+				if bal == nil {
+					bal = dcr.Amount(dcrutil.Amount(0))
+				}
+				wal.unmixedBalance = bal
+			}
+		}
+	}
 }

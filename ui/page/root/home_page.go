@@ -19,6 +19,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -35,7 +36,6 @@ type HomePage struct {
 	ctxCancel context.CancelFunc
 	drawerNav components.NavDrawer
 
-	totalUSDValueSwitch    *cryptomaterial.Switch
 	navigationTab          *cryptomaterial.Tab
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
@@ -48,6 +48,8 @@ type HomePage struct {
 	isConnected     bool
 
 	startSpvSync uint32
+
+	totalBalanceUSD string
 }
 
 var navigationTabTitles = []string{
@@ -70,8 +72,6 @@ func NewHomePage(l *load.Load) *HomePage {
 
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
-
-	hp.totalUSDValueSwitch = hp.Theme.Switch()
 
 	hp.drawerNav = components.NavDrawer{
 		Load:        hp.Load,
@@ -124,11 +124,11 @@ func (hp *HomePage) ID() string {
 func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
+	go hp.CalculateAssetsUSDBalance()
+
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
 	}
-
-	hp.totalUSDValueSwitch.SetChecked(true)
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
 	for _, wallet := range hp.WL.SortedWalletList(libutils.DCRWalletAsset) {
@@ -152,6 +152,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	}
 
 	hp.CurrentPage().OnNavigatedTo()
+	hp.isBalanceHidden = hp.WL.AssetsManager.IsTotalBalanceVisible()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -230,13 +231,8 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for hp.hideBalanceButton.Clicked() {
-		// TODO use assetManager config settings
 		hp.isBalanceHidden = !hp.isBalanceHidden
-	}
-
-	if hp.totalUSDValueSwitch.Changed() {
-		// TODO use assetManager config settings
-		hp.totalUSDValueSwitch.SetChecked(hp.totalUSDValueSwitch.IsChecked())
+		hp.WL.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
 }
 
@@ -262,6 +258,10 @@ func (hp *HomePage) HandleKeyPress(evt *key.Event) {
 			keyEvtHandler.HandleKeyPress(evt)
 		}
 	}
+}
+
+func (hp *HomePage) OnCurrencyChanged() {
+	go hp.CalculateAssetsUSDBalance()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -372,7 +372,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	if hp.totalUSDValueSwitch.IsChecked() {
+	if components.IsFetchExchangeRateAPIAllowed(hp.WL) && hp.totalBalanceUSD != "" {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -393,10 +393,10 @@ func (hp *HomePage) balanceLayout(gtx C) D {
 
 // TODO: use real values
 func (hp *HomePage) LayoutUSDBalance(gtx C) D {
-	lblText := hp.Theme.Label(values.TextSize30, "$0.00")
+	lblText := hp.Theme.Label(values.TextSize30, hp.totalBalanceUSD)
 
 	if hp.isBalanceHidden {
-		lblText = hp.Theme.Label(values.TextSize24, "********")
+		lblText = hp.Theme.Label(values.TextSize24, "******")
 	}
 	inset := layout.Inset{Right: values.MarginPadding8}
 	return inset.Layout(gtx, lblText.Layout)
@@ -419,7 +419,6 @@ func (hp *HomePage) totalBalanceTextAndIconButtonLayout(gtx C) D {
 				Right: values.MarginPadding10,
 			}.Layout(gtx, hp.infoButton.Layout)
 		}),
-		layout.Rigid(hp.totalUSDValueSwitch.Layout),
 	)
 }
 
@@ -552,4 +551,28 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 			return true
 		})
 	hp.ParentWindow().ShowModal(spendingPasswordModal)
+}
+
+func (hp *HomePage) CalculateAssetsUSDBalance() {
+	if components.IsFetchExchangeRateAPIAllowed(hp.WL) {
+		assetsBalance, err := components.CalculateTotalAssetsBalance(hp.Load)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(hp.Load, assetsBalance)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		var totalBalance float64
+		for _, balance := range assetsTotalUSDBalance {
+			totalBalance += balance
+		}
+
+		hp.totalBalanceUSD = utils.FormatUSDBalance(hp.Printer, totalBalance)
+		hp.ParentWindow().Reload()
+	}
 }

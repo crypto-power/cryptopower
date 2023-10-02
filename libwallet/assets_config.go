@@ -252,6 +252,18 @@ func (mgr *AssetsManager) ClearExchangeConfig() {
 	mgr.db.DeleteWalletConfigValue(sharedW.ExchangeSourceDstnTypeConfigKey)
 }
 
+// IsTotalBalanceVisible checks if the total balance visibility is set.
+func (mgr *AssetsManager) IsTotalBalanceVisible() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.HideTotalBalanceConfigKey, &data)
+	return data
+}
+
+// SetTotalBalanceVisibility sets the transaction notifications for the wallet.
+func (mgr *AssetsManager) SetTotalBalanceVisibility(data bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.HideTotalBalanceConfigKey, data)
+}
+
 func genKey(prefix, identifier interface{}) string {
 	return fmt.Sprintf("%v-%v", prefix, identifier)
 }
