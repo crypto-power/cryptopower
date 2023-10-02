@@ -41,7 +41,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 // ID is a unique string that identifies the page and may be used to
 // differentiate this page from other pages.
 // Part of the load.Page interface.
-func (dp *DEXPage) ID() string {
+func (pg *DEXPage) ID() string {
 	return DCRDEXID
 }
 
@@ -49,21 +49,21 @@ func (dp *DEXPage) ID() string {
 // used to initialize page features that are only relevant when the page is
 // displayed.
 // Part of the load.Page interface.
-func (dp *DEXPage) OnNavigatedTo() {
-	dp.ctx, dp.ctxCancel = context.WithCancel(context.TODO())
+func (pg *DEXPage) OnNavigatedTo() {
+	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	if dp.CurrentPage() == nil {
-		// TODO: Handle dp.inited
-		dp.Display(NewDEXOnboarding(dp.Load))
+	if pg.CurrentPage() == nil {
+		// TODO: Handle pg.inited
+		pg.Display(NewDEXOnboarding(pg.Load))
 	}
 
-	dp.CurrentPage().OnNavigatedTo()
+	pg.CurrentPage().OnNavigatedTo()
 }
 
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
-func (dp *DEXPage) Layout(gtx layout.Context) layout.Dimensions {
+func (pg *DEXPage) Layout(gtx layout.Context) layout.Dimensions {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -71,28 +71,28 @@ func (dp *DEXPage) Layout(gtx layout.Context) layout.Dimensions {
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
-				layout.Rigid(dp.topBar),
-				layout.Flexed(1, dp.CurrentPage().Layout),
+				layout.Rigid(pg.topBar),
+				layout.Flexed(1, pg.CurrentPage().Layout),
 			)
 		}),
 	)
 }
 
-func (dp *DEXPage) topBar(gtx C) D {
+func (pg *DEXPage) topBar(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
-		Clickable:   dp.openTradeMainPage,
+		Clickable:   pg.openTradeMainPage,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return dp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
+			return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			txt := dp.Theme.Label(values.TextSize16, values.String(values.StrDcrDex))
-			txt.Color = dp.Theme.Color.Gray1
+			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrDcrDex))
+			txt.Color = pg.Theme.Color.Gray1
 			return txt.Layout(gtx)
 		}),
 	)
@@ -102,12 +102,12 @@ func (dp *DEXPage) topBar(gtx C) D {
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (dp *DEXPage) HandleUserInteractions() {
-	if dp.openTradeMainPage.Clicked() {
-		dp.ParentNavigator().CloseCurrentPage()
+func (pg *DEXPage) HandleUserInteractions() {
+	if pg.openTradeMainPage.Clicked() {
+		pg.ParentNavigator().CloseCurrentPage()
 	}
-	if dp.CurrentPage() != nil {
-		dp.CurrentPage().HandleUserInteractions()
+	if pg.CurrentPage() != nil {
+		pg.CurrentPage().HandleUserInteractions()
 	}
 }
 
@@ -118,4 +118,4 @@ func (dp *DEXPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (dp *DEXPage) OnNavigatedFrom() {}
+func (pg *DEXPage) OnNavigatedFrom() {}
