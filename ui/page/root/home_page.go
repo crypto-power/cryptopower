@@ -106,6 +106,8 @@ func (hp *HomePage) OnNavigatedTo() {
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
 	}
+
+	hp.isBalanceHidden = hp.WL.AssetsManager.IsTotalBalanceVisible()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -184,8 +186,8 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	for hp.hideBalanceButton.Clicked() {
-		// TODO use assetManager config settings
 		hp.isBalanceHidden = !hp.isBalanceHidden
+		hp.WL.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
 }
 

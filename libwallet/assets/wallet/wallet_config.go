@@ -55,7 +55,7 @@ const (
 	KnownDexServersConfigKey         = "known_dex_servers"
 	LanguagePreferenceKey            = "app_language"
 	DarkModeConfigKey                = "dark_mode"
-	TotalUSDBalanceConfigKey         = "totalUSDBalance"
+	HideTotalBalanceConfigKey        = "hideTotalUSDBalance"
 
 	PassphraseTypePin  int32 = 0
 	PassphraseTypePass int32 = 1
