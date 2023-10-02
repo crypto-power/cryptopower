@@ -32,7 +32,6 @@ type HomePage struct {
 	ctxCancel context.CancelFunc
 	drawerNav components.NavDrawer
 
-	totalUSDValueSwitch    *cryptomaterial.Switch
 	navigationTab          *cryptomaterial.Tab
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
@@ -65,8 +64,6 @@ func NewHomePage(l *load.Load) *HomePage {
 
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
-
-	hp.totalUSDValueSwitch = hp.Theme.Switch()
 
 	hp.drawerNav = components.NavDrawer{
 		Load:        hp.Load,
@@ -190,10 +187,6 @@ func (hp *HomePage) HandleUserInteractions() {
 		// TODO use assetManager config settings
 		hp.isBalanceHidden = !hp.isBalanceHidden
 	}
-
-	if hp.totalUSDValueSwitch.Changed() {
-		hp.WL.AssetsManager.SetTotalAssetBalanceState(hp.totalUSDValueSwitch.IsChecked())
-	}
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations
@@ -218,6 +211,10 @@ func (hp *HomePage) HandleKeyPress(evt *key.Event) {
 			keyEvtHandler.HandleKeyPress(evt)
 		}
 	}
+}
+
+func (hp *HomePage) OnCurrencyChanged() {
+	go hp.CalculateAssetsUSDBalance()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -328,7 +325,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	if hp.totalUSDValueSwitch.IsChecked() && hp.totalBalanceUSD != "" {
+	if components.IsFetchExchangeRateAPIAllowed(hp.WL) && hp.totalBalanceUSD != "" {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -375,7 +372,6 @@ func (hp *HomePage) totalBalanceTextAndIconButtonLayout(gtx C) D {
 				Right: values.MarginPadding10,
 			}.Layout(gtx, hp.infoButton.Layout)
 		}),
-		layout.Rigid(hp.totalUSDValueSwitch.Layout),
 	)
 }
 

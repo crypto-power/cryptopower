@@ -116,7 +116,7 @@ func sourceModalInfo(th *cryptomaterial.Theme) []layout.Widget {
 }
 
 func totalValueInfo(th *cryptomaterial.Theme) []layout.Widget {
-	text := values.StringF(values.StrTotalValueMsg, `<br />`)
+	text := values.StringF(values.StrTotalValueMsg, `<br />`, `<br />`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}
