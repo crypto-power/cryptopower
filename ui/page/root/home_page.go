@@ -92,7 +92,9 @@ func NewHomePage(l *load.Load) *HomePage {
 		},
 	}
 
-	hp.isConnected = libutils.IsOnline()
+	go func() {
+		hp.isConnected = libutils.IsOnline()
+	}()
 
 	// init shared page functions
 	toggleSync := func(unlock load.NeedUnlockRestore) {
@@ -488,12 +490,14 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 				// start the wallet sync.
 				if err := wallet.SpvSync(); err != nil {
 					log.Debugf("Error starting sync: %v", err)
+					continue
 				}
 
 				if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
 					err := hp.WL.AssetsManager.InstantSwap.Sync(hp.ctx)
 					if err != nil {
 						log.Errorf("Error syncing instant swap: %v", err)
+						continue
 					}
 				}
 
