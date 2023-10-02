@@ -188,6 +188,7 @@ const (
 	StrCancel                          = "cancel"
 	StrCanceling                       = "canceling"
 	StrCancelMixer                     = "cancelMixer"
+	StrCentralized                     = "centralized"
 	StrChange                          = "change"
 	StrChangeAccount                   = "changeAccount"
 	StrChangeSpecificPeer              = "changeSpecificPeer"
@@ -858,6 +859,7 @@ const (
 	StrSetPassword                     = "setPassword"
 	StrPostBond                        = "postBond"
 	StrDCRDEXWelcomeMessage            = "dcrdexWelcomeMessage"
+<<<<<<< HEAD
 	StrAddServer                       = "addServer"
 	StrAddServerDesc                   = "addServerDesc"
 	StrServerURL                       = "serverURL"
@@ -868,4 +870,6 @@ const (
 	StrAdd                             = "add"
 	StrTradeDex1                       = "tDcrDex1"
 	StrTradeDex2                       = "tDcrDex2"
+=======
+>>>>>>> cb748c21 (Make requested changes)
 )
