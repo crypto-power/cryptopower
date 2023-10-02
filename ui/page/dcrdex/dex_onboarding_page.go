@@ -92,7 +92,7 @@ type DEXOnboarding struct {
 
 func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 	th := l.Theme
-	do := &DEXOnboarding{
+	pg := &DEXOnboarding{
 		GenericPageModal: app.NewGenericPageModal(DEXAccountOnboardingID),
 		scrollContainer: &widget.List{
 			List: layout.List{
@@ -113,20 +113,20 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		materialLoader:        material.Loader(th.Base),
 	}
 
-	do.currentStep = &dexOnboardingStep{
+	pg.currentStep = &dexOnboardingStep{
 		stepN:  onboardingSetPassword,
-		stepFn: do.stepSetPassword,
+		stepFn: pg.stepSetPassword,
 	}
 
-	return do
+	return pg
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (do *DEXOnboarding) OnNavigatedTo() {
-	do.showLoader = false
+func (pg *DEXOnboarding) OnNavigatedTo() {
+	pg.showLoader = false
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -136,19 +136,19 @@ func (do *DEXOnboarding) OnNavigatedTo() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (do *DEXOnboarding) OnNavigatedFrom() {}
+func (pg *DEXOnboarding) OnNavigatedFrom() {}
 
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (do *DEXOnboarding) Layout(gtx C) D {
+func (pg *DEXOnboarding) Layout(gtx C) D {
 	r := 8
 	u20 := values.MarginPadding20
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.MatchParent,
 		Orientation: layout.Vertical,
-		Background:  do.Theme.Color.Surface,
+		Background:  pg.Theme.Color.Surface,
 		Margin: layout.Inset{
 			Bottom: values.MarginPadding50,
 			Right:  u20,
@@ -159,29 +159,29 @@ func (do *DEXOnboarding) Layout(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.UniformInset(values.MarginPadding16).Layout(gtx, do.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage)).Layout)
+			return layout.UniformInset(values.MarginPadding16).Layout(gtx, pg.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.onBoardingStepRow(gtx)
+			return pg.onBoardingStepRow(gtx)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			return do.Theme.Separator().Layout(gtx)
+			return pg.Theme.Separator().Layout(gtx)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			// TODO: Add Step Select Server and Step Registration Fee
-			return do.Theme.List(do.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 				gtx.Constraints.Max = image.Point{
 					X: gtx.Dp(formWidth),
 					Y: gtx.Constraints.Max.Y,
 				}
-				return do.currentStep.stepFn(gtx)
+				return pg.currentStep.stepFn(gtx)
 			})
 		}),
 	)
 }
 
-func (do *DEXOnboarding) centerLayout(gtx C, top, bottom unit.Dp, content layout.Widget) D {
+func (pg *DEXOnboarding) centerLayout(gtx C, top, bottom unit.Dp, content layout.Widget) D {
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Inset{
 			Top:    top,
@@ -190,7 +190,7 @@ func (do *DEXOnboarding) centerLayout(gtx C, top, bottom unit.Dp, content layout
 	})
 }
 
-func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
+func (pg *DEXOnboarding) onBoardingStepRow(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -204,7 +204,7 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 			return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 				layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 					u30 := values.MarginPadding30
-					sep := do.Theme.Separator()
+					sep := pg.Theme.Separator()
 					sep.Width = gtx.Dp(values.MarginPadding500)
 					sep.Height = gtx.Dp(values.MarginPadding5)
 					return layout.Inset{Bottom: values.MarginPadding35, Right: u30, Left: u30}.Layout(gtx, sep.Layout)
@@ -216,13 +216,13 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 						Alignment: layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingSetPassword, values.String(values.StrSetPassword))
+							return pg.onBoardingStep(gtx, onboardingSetPassword, values.String(values.StrSetPassword))
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingChooseServer, values.String(values.StrSelectServer))
+							return pg.onBoardingStep(gtx, onboardingChooseServer, values.String(values.StrSelectServer))
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.onBoardingStep(gtx, onboardingPostBond, values.String(values.StrPostBond))
+							return pg.onBoardingStep(gtx, onboardingPostBond, values.String(values.StrPostBond))
 						}),
 					)
 				}),
@@ -231,12 +231,12 @@ func (do *DEXOnboarding) onBoardingStepRow(gtx C) D {
 	)
 }
 
-func (do *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc string) D {
-	color := do.Theme.Color.LightBlue4
-	textColor := do.Theme.Color.Black
-	if do.currentStep.stepN == step || do.currentStep.parentStep == step {
-		color = do.Theme.Color.Primary
-		textColor = do.Theme.Color.White
+func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc string) D {
+	color := pg.Theme.Color.LightBlue4
+	textColor := pg.Theme.Color.Black
+	if pg.currentStep.stepN == step || pg.currentStep.parentStep == step {
+		color = pg.Theme.Color.Primary
+		textColor = pg.Theme.Color.White
 	}
 
 	u10 := values.MarginPadding10
@@ -258,14 +258,14 @@ func (do *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 				},
 			}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					lb := do.Theme.Label(values.TextSize20, fmt.Sprintf("%d", step))
+					lb := pg.Theme.Label(values.TextSize20, fmt.Sprintf("%d", step))
 					lb.Color = textColor
 					return layout.Inset{Top: u10, Bottom: u10}.Layout(gtx, lb.Layout)
 				}),
 			)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u10, Bottom: u10}.Layout(gtx, do.Theme.Body1(stepDesc).Layout)
+			return layout.Inset{Top: u10, Bottom: u10}.Layout(gtx, pg.Theme.Body1(stepDesc).Layout)
 		}),
 	)
 
@@ -273,23 +273,23 @@ func (do *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 }
 
 // stepSetPassword returns the "Set Password" form.
-func (do *DEXOnboarding) stepSetPassword(gtx C) D {
+func (pg *DEXOnboarding) stepSetPassword(gtx C) D {
 	u16 := values.MarginPadding16
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, do.Theme.H6(values.String(values.StrSetTradePassword)).Layout)
+			return pg.centerLayout(gtx, values.MarginPadding20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrSetTradePassword)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrSetTradePasswordDesc)).Layout)
+			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSetTradePasswordDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16}.Layout(gtx, do.passwordEditor.Layout)
+			return layout.Inset{Top: u16}.Layout(gtx, pg.passwordEditor.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16}.Layout(gtx, do.confirmPasswordEditor.Layout)
+			return layout.Inset{Top: u16}.Layout(gtx, pg.confirmPasswordEditor.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, pg.nextStepBtn)
 		}),
 	)
 
@@ -297,29 +297,29 @@ func (do *DEXOnboarding) stepSetPassword(gtx C) D {
 }
 
 // stepChooseServer returns the a dropdown to select known servers.
-func (do *DEXOnboarding) stepChooseServer(gtx C) D {
+func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 	u16 := values.MarginPadding16
 	u20 := values.MarginPadding20
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, u20, values.MarginPadding12, do.Theme.H6(values.String(values.StrSelectServer)).Layout)
+			return pg.centerLayout(gtx, u20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrSelectServer)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrSelectDEXServerDesc)).Layout)
+			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSelectDEXServerDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			l := do.Theme.Label(values.TextSize16, values.String(values.StrServer))
+			l := pg.Theme.Label(values.TextSize16, values.String(values.StrServer))
 			l.Font.Weight = font.Bold
 			return layout.Inset{Top: u20}.Layout(gtx, l.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			do.serverDropDown.Width = gtx.Dp(formWidth)
-			return do.serverDropDown.Layout(gtx, 0, false)
+			pg.serverDropDown.Width = gtx.Dp(formWidth)
+			return pg.serverDropDown.Layout(gtx, 0, false)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					color := do.Theme.Color.Primary
+					color := pg.Theme.Color.Primary
 					return cryptomaterial.LinearLayout{
 						Width:       gtx.Dp(values.MarginPadding110),
 						Height:      cryptomaterial.WrapContent,
@@ -327,14 +327,14 @@ func (do *DEXOnboarding) stepChooseServer(gtx C) D {
 						Margin:      layout.Inset{Top: u16},
 						Direction:   layout.W,
 						Alignment:   layout.Middle,
-						Clickable:   do.addServerBtn,
+						Clickable:   pg.addServerBtn,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							icon := do.Theme.Icons.ContentAdd
+							icon := pg.Theme.Icons.ContentAdd
 							return icon.Layout(gtx, color)
 						}),
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							label := do.Theme.Label(values.TextSize16, values.String(values.StrAddServer))
+							label := pg.Theme.Label(values.TextSize16, values.String(values.StrAddServer))
 							label.Color = color
 							label.Font.Weight = font.SemiBold
 							return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, label.Layout)
@@ -344,7 +344,7 @@ func (do *DEXOnboarding) stepChooseServer(gtx C) D {
 			)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, pg.nextStepBtn)
 		}),
 	)
 
@@ -352,10 +352,10 @@ func (do *DEXOnboarding) stepChooseServer(gtx C) D {
 }
 
 // subStepAddServer returns a for to add a server.
-func (do *DEXOnboarding) subStepAddServer(gtx C) D {
+func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 	u16 := values.MarginPadding16
 	width := gtx.Dp(formWidth)
-	if do.addBackToChooseServerIcon {
+	if pg.addBackToChooseServerIcon {
 		width = gtx.Dp(formWidth + values.MarginPadding100)
 	}
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
@@ -368,7 +368,7 @@ func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 				Alignment:   layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					if !do.addBackToChooseServerIcon {
+					if !pg.addBackToChooseServerIcon {
 						return D{}
 					}
 
@@ -376,31 +376,31 @@ func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 						Width:       cryptomaterial.WrapContent,
 						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Horizontal,
-						Clickable:   do.goBackToChooseServer,
+						Clickable:   pg.goBackToChooseServer,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-							return do.Theme.Icons.NavigationArrowBack.Layout(gtx, do.Theme.Color.Gray1)
+							return pg.Theme.Icons.NavigationArrowBack.Layout(gtx, pg.Theme.Color.Gray1)
 						}),
 					)
 				}),
 				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 					return layout.Center.Layout(gtx, func(gtx C) D {
-						return do.Theme.H6(values.String(values.StrAddServer)).Layout(gtx)
+						return pg.Theme.H6(values.String(values.StrAddServer)).Layout(gtx)
 					})
 				}),
 			)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return do.centerLayout(gtx, 0, 0, do.Theme.Body1(values.String(values.StrAddServerDesc)).Layout)
+			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrAddServerDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16}.Layout(gtx, do.serverURLEditor.Layout)
+			return layout.Inset{Top: u16}.Layout(gtx, pg.serverURLEditor.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16}.Layout(gtx, do.serverCertEditor.Layout)
+			return layout.Inset{Top: u16}.Layout(gtx, pg.serverCertEditor.Layout)
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, do.nextStepBtn)
+			return layout.Inset{Top: u16, Bottom: u16}.Layout(gtx, pg.nextStepBtn)
 		}),
 	)
 }
@@ -409,66 +409,66 @@ func (do *DEXOnboarding) subStepAddServer(gtx C) D {
 // user interaction recently occurred on the page and may be used to update the
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
-func (do *DEXOnboarding) HandleUserInteractions() {
-	if do.addServerBtn.Clicked() {
-		if do.currentStep.stepN == onboardingChooseServer {
-			do.addBackToChooseServerIcon = true
+func (pg *DEXOnboarding) HandleUserInteractions() {
+	if pg.addServerBtn.Clicked() {
+		if pg.currentStep.stepN == onboardingChooseServer {
+			pg.addBackToChooseServerIcon = true
 		}
-		do.currentStep = &dexOnboardingStep{
+		pg.currentStep = &dexOnboardingStep{
 			parentStep: onboardingChooseServer,
 			stepN:      onBoardingStepAddServer,
-			stepFn:     do.subStepAddServer,
+			stepFn:     pg.subStepAddServer,
 		}
 	}
 
-	if do.goBackToChooseServer.Clicked() {
-		do.addBackToChooseServerIcon = false
-		do.serverURLEditor.SetError("")
-		do.serverCertEditor.SetError("")
-		do.currentStep = &dexOnboardingStep{
+	if pg.goBackToChooseServer.Clicked() {
+		pg.addBackToChooseServerIcon = false
+		pg.serverURLEditor.SetError("")
+		pg.serverCertEditor.SetError("")
+		pg.currentStep = &dexOnboardingStep{
 			stepN:  onboardingChooseServer,
-			stepFn: do.stepChooseServer,
+			stepFn: pg.stepChooseServer,
 		}
 	}
 
 	// editor event listener
-	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(do.passwordEditor.Editor, do.confirmPasswordEditor.Editor, do.serverURLEditor.Editor, do.serverCertEditor.Editor)
+	isSubmit, isChanged := cryptomaterial.HandleEditorEvents(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor, pg.serverURLEditor.Editor, pg.serverCertEditor.Editor)
 	if isChanged {
 		// reset error when any editor is modified
-		do.passwordEditor.SetError("")
-		do.confirmPasswordEditor.SetError("")
-		do.serverURLEditor.SetError("")
-		do.serverCertEditor.SetError("")
+		pg.passwordEditor.SetError("")
+		pg.confirmPasswordEditor.SetError("")
+		pg.serverURLEditor.SetError("")
+		pg.serverCertEditor.SetError("")
 	}
 
-	if do.nextBtn.Clicked() || isSubmit {
-		step := do.currentStep.stepN
+	if pg.nextBtn.Clicked() || isSubmit {
+		step := pg.currentStep.stepN
 		switch step {
 		case onboardingSetPassword:
-			ok := do.validPasswordInputs()
+			ok := pg.validPasswordInputs()
 			if !ok {
 				return
 			}
 
-			do.currentStep = &dexOnboardingStep{
+			pg.currentStep = &dexOnboardingStep{
 				parentStep: onboardingChooseServer,
 				stepN:      onBoardingStepAddServer,
-				stepFn:     do.subStepAddServer,
+				stepFn:     pg.subStepAddServer,
 			}
 
-			knownServers, ok := knownDEXServers[do.WL.Wallet.Net]
+			knownServers, ok := knownDEXServers[pg.WL.Wallet.Net]
 			if ok && len(knownServers) > 0 {
-				do.currentStep = &dexOnboardingStep{
+				pg.currentStep = &dexOnboardingStep{
 					parentStep: onboardingChooseServer,
 					stepN:      onboardingChooseServer,
-					stepFn:     do.stepChooseServer,
+					stepFn:     pg.stepChooseServer,
 				}
 			}
 		case onboardingChooseServer, onBoardingStepAddServer:
 			var serverURL string
 			var serverCert []byte
 			if step == onboardingChooseServer {
-				serverURL = do.serverDropDown.Selected()
+				serverURL = pg.serverDropDown.Selected()
 				cert, ok := CertStore[serverURL]
 				if !ok {
 					log.Errorf("Selected DEX server's (%s) cert is missing", serverURL)
@@ -476,11 +476,11 @@ func (do *DEXOnboarding) HandleUserInteractions() {
 				}
 				serverCert = cert
 			} else if step == onBoardingStepAddServer {
-				if utils.EditorsNotEmpty(do.serverURLEditor.Editor) {
-					serverURL = do.serverURLEditor.Editor.Text()
-					serverCert = []byte(do.serverCertEditor.Editor.Text())
+				if utils.EditorsNotEmpty(pg.serverURLEditor.Editor) {
+					serverURL = pg.serverURLEditor.Editor.Text()
+					serverCert = []byte(pg.serverCertEditor.Editor.Text())
 				} else {
-					do.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
+					pg.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
 					return
 				}
 			}
@@ -489,9 +489,9 @@ func (do *DEXOnboarding) HandleUserInteractions() {
 			_ = serverURL
 			_ = serverCert
 
-			do.currentStep = &dexOnboardingStep{
+			pg.currentStep = &dexOnboardingStep{
 				stepN:  onboardingPostBond,
-				stepFn: do.subStepAddServer, // TODO: Add post bond step
+				stepFn: pg.subStepAddServer, // TODO: Add post bond step
 			}
 		case onboardingPostBond:
 			// TODO: Post bond and redirect to Markets page
@@ -501,17 +501,17 @@ func (do *DEXOnboarding) HandleUserInteractions() {
 
 // nextStepBtn is a convenience function that changes the nextStep button text
 // based on the current step. TODO: If the designs changes the text for
-// onBoardingStepAddServer, remove this function and use do.nextBtn directly.
-func (do *DEXOnboarding) nextStepBtn(gtx C) D {
-	if do.currentStep.stepN == onBoardingStepAddServer {
-		do.nextBtn.Text = values.String(values.StrAdd)
+// onBoardingStepAddServer, remove this function and use pg.nextBtn directly.
+func (pg *DEXOnboarding) nextStepBtn(gtx C) D {
+	if pg.currentStep.stepN == onBoardingStepAddServer {
+		pg.nextBtn.Text = values.String(values.StrAdd)
 	} else {
-		do.nextBtn.Text = values.String(values.StrNext)
+		pg.nextBtn.Text = values.String(values.StrNext)
 	}
-	return do.nextBtn.Layout(gtx)
+	return pg.nextBtn.Layout(gtx)
 }
 
-func (do *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {
+func (pg *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {
 	if len(editors) != 2 {
 		return false
 	}
@@ -520,21 +520,21 @@ func (do *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {
 	matching := editors[1]
 
 	if password.Text() != matching.Text() {
-		do.confirmPasswordEditor.SetError(values.String(values.StrPasswordNotMatch))
+		pg.confirmPasswordEditor.SetError(values.String(values.StrPasswordNotMatch))
 		return false
 	}
 
-	do.confirmPasswordEditor.SetError("")
+	pg.confirmPasswordEditor.SetError("")
 	return true
 }
 
-func (do *DEXOnboarding) validPasswordInputs() bool {
-	validPassword := utils.EditorsNotEmpty(do.confirmPasswordEditor.Editor)
+func (pg *DEXOnboarding) validPasswordInputs() bool {
+	validPassword := utils.EditorsNotEmpty(pg.confirmPasswordEditor.Editor)
 	if !validPassword {
 		return false
 	}
 
-	passwordsMatch := do.passwordsMatch(do.passwordEditor.Editor, do.confirmPasswordEditor.Editor)
+	passwordsMatch := pg.passwordsMatch(pg.passwordEditor.Editor, pg.confirmPasswordEditor.Editor)
 	return validPassword && passwordsMatch
 }
 
