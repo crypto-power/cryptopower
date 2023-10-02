@@ -351,7 +351,7 @@ func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 	return layoutFlex
 }
 
-// subStepAddServer returns a for to add a server.
+// subStepAddServer returns a form to add a server.
 func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 	u16 := values.MarginPadding16
 	width := gtx.Dp(formWidth)
