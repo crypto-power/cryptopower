@@ -866,4 +866,6 @@ const (
 	StrInputCertificate                = "inputCertificate"
 	StrDEXServerAddrWarning            = "DEXServerAddrWarning"
 	StrAdd                             = "add"
+	StrTradeDex1                       = "tDcrDex1"
+	StrTradeDex2                       = "tDcrDex2"
 )
