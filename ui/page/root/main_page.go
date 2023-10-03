@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 
 	"gioui.org/font"
 	"gioui.org/io/key"
@@ -60,6 +61,8 @@ type MainPage struct {
 	*listeners.TxAndBlockNotificationListener
 	*listeners.ProposalNotificationListener
 	*listeners.OrderNotificationListener
+
+	listenersStarted atomic.Bool
 
 	ctx                  context.Context
 	ctxCancel            context.CancelFunc
@@ -899,51 +902,52 @@ func initializeBeepNotification(n string) {
 // listenForNotifications starts a goroutine to watch for notifications
 // and update the UI accordingly.
 func (mp *MainPage) listenForNotifications() {
-	// Return if any of the listener is not nil.
-	switch {
-	case mp.SyncProgressListener != nil:
-		return
-	case mp.TxAndBlockNotificationListener != nil:
-		return
-	case mp.ProposalNotificationListener != nil:
-		return
-	case mp.OrderNotificationListener != nil:
-		return
-	}
-
 	selectedWallet := mp.WL.SelectedWallet.Wallet
+	var err error
+	switch {
+	case mp.SyncProgressListener == nil:
+		selectedWallet.RemoveSyncProgressListener(MainPageID)
+		mp.SyncProgressListener = listeners.NewSyncProgress()
+		if err = selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID); err != nil {
+			log.Errorf("Error adding sync progress listener: %v", err)
+		}
 
-	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding sync progress listener: %v", err)
-		return
-	}
+		fallthrough
+	case mp.TxAndBlockNotificationListener == nil:
+		selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
+		mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
+		if err = selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID); err != nil {
+			log.Errorf("Error adding tx and block notification listener: %v", err)
+		}
 
-	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding tx and block notification listener: %v", err)
-		return
-	}
+		fallthrough
+	case mp.ProposalNotificationListener == nil:
+		mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
+		mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
+		if mp.isProposalsAPIAllowed() {
+			if err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID); err != nil {
+				log.Errorf("Error adding politeia notification listener: %v", err)
+			}
+		}
 
-	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	if mp.isProposalsAPIAllowed() {
-		err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
-		if err != nil {
-			log.Errorf("Error adding politeia notification listener: %v", err)
-			return
+		fallthrough
+	case mp.OrderNotificationListener == nil:
+		mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
+		mp.OrderNotificationListener = listeners.NewOrderNotificationListener()
+		if err = mp.WL.AssetsManager.InstantSwap.AddNotificationListener(mp.OrderNotificationListener, MainPageID); err != nil {
+			log.Errorf("Error adding instantswap notification listener: %v", err)
 		}
 	}
 
-	mp.OrderNotificationListener = listeners.NewOrderNotificationListener()
-	err = mp.WL.AssetsManager.InstantSwap.AddNotificationListener(mp.OrderNotificationListener, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding instantswap notification listener: %v", err)
-		return
+	hasMissingListener := mp.SyncProgressListener == nil || mp.TxAndBlockNotificationListener == nil || mp.ProposalNotificationListener == nil || mp.OrderNotificationListener == nil
+	if mp.listenersStarted.Load() || hasMissingListener {
+		return // goroutine already started or missing a listener.
 	}
 
+	mp.listenersStarted.Store(true)
 	go func() {
+		defer mp.listenersStarted.Store(false)
+
 		for {
 			select {
 			case n := <-mp.TxAndBlockNotifChan():

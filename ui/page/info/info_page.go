@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"sync/atomic"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -38,8 +39,9 @@ type WalletInfo struct {
 	*listeners.SyncProgressListener
 	*listeners.BlocksRescanProgressListener
 	*listeners.TxAndBlockNotificationListener
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
+	listenersStarted atomic.Bool
+	ctx              context.Context // page context
+	ctxCancel        context.CancelFunc
 
 	assetsManager *libwallet.AssetsManager
 	rescanUpdate  *wallet.RescanUpdate
@@ -190,42 +192,47 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 }
 
-// listenForNotifications starts a goroutine to watch for sync updates
-// and update the UI accordingly. To prevent UI lags, this method does not
-// refresh the window display everytime a sync update is received. During
-// active blocks sync, rescan or proposals sync, the Layout method auto
-// refreshes the display every set interval. Other sync updates that affect
-// the UI but occur outside of an active sync requires a display refresh.
+// listenForNotifications starts a goroutine to watch for sync updates and
+// update the UI accordingly. To prevent UI lags, this method does not refresh
+// the window display every time a sync update is received. During active blocks
+// sync, rescan or proposals sync, the Layout method auto refreshes the display
+// every set interval. Other sync updates that affect the UI but occur outside
+// of an active sync requires a display refresh.
 func (pg *WalletInfo) listenForNotifications() {
-	switch {
-	case pg.SyncProgressListener != nil:
-		return
-	case pg.TxAndBlockNotificationListener != nil:
-		return
-	case pg.BlocksRescanProgressListener != nil:
-		return
-	}
-
 	selectedWallet := pg.WL.SelectedWallet.Wallet
+	var err error
+	switch {
+	case pg.SyncProgressListener == nil:
+		selectedWallet.RemoveSyncProgressListener(InfoID)
+		pg.SyncProgressListener = listeners.NewSyncProgress()
+		if err = selectedWallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID); err != nil {
+			log.Errorf("Error adding sync progress listener: %v", err)
+		}
 
-	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := selectedWallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
-	if err != nil {
-		log.Errorf("Error adding sync progress listener: %v", err)
-		return
+		fallthrough
+	case pg.TxAndBlockNotificationListener == nil:
+		selectedWallet.RemoveTxAndBlockNotificationListener(InfoID)
+		pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
+		if err = selectedWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID); err != nil {
+			log.Errorf("Error adding tx and block notification listener: %v", err)
+		}
+
+		fallthrough
+	case pg.BlocksRescanProgressListener == nil:
+		selectedWallet.SetBlocksRescanProgressListener(nil)
+		pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
+		selectedWallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
 	}
 
-	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = selectedWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
-	if err != nil {
-		log.Errorf("Error adding tx and block notification listener: %v", err)
-		return
+	hasMissingListener := pg.SyncProgressListener == nil || pg.TxAndBlockNotificationListener == nil || pg.BlocksRescanProgressListener == nil
+	if pg.listenersStarted.Load() || hasMissingListener {
+		return // goroutine already started or nothing to listen for.
 	}
 
-	pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
-	selectedWallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
-
+	pg.listenersStarted.Store(true)
 	go func() {
+		defer pg.listenersStarted.Store(false)
+
 		for {
 			select {
 			case n := <-pg.SyncStatusChan:
