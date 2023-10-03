@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -41,6 +45,10 @@ type HomePage struct {
 
 	// page state variables
 	isBalanceHidden bool
+	isConnected     bool
+
+	startSpvSync uint32
+
 	totalBalanceUSD string
 }
 
@@ -84,6 +92,21 @@ func NewHomePage(l *load.Load) *HomePage {
 		},
 	}
 
+	go func() {
+		hp.isConnected = libutils.IsOnline()
+	}()
+
+	// init shared page functions
+	toggleSync := func(unlock load.NeedUnlockRestore) {
+		if !hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
+			go hp.WL.SelectedWallet.Wallet.CancelSync()
+			unlock(false)
+		} else {
+			hp.startSyncing(hp.WL.SelectedWallet.Wallet, unlock)
+		}
+	}
+	l.ToggleSync = toggleSync
+
 	return hp
 }
 
@@ -105,6 +128,27 @@ func (hp *HomePage) OnNavigatedTo() {
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
+	}
+
+	// Initiate the auto sync for all the DCR wallets with set autosync.
+	for _, wallet := range hp.WL.SortedWalletList(libutils.DCRWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			hp.startSyncing(wallet, func(isUnlock bool) {})
+		}
+	}
+
+	// Initiate the auto sync for all the BTC wallets with set autosync.
+	for _, wallet := range hp.WL.SortedWalletList(libutils.BTCWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			hp.startSyncing(wallet, func(isUnlock bool) {})
+		}
+	}
+
+	// Initiate the auto sync for all the LTC wallets with set autosync.
+	for _, wallet := range hp.WL.SortedWalletList(libutils.LTCWalletAsset) {
+		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
+			hp.startSyncing(wallet, func(isUnlock bool) {})
+		}
 	}
 
 	hp.isBalanceHidden = hp.WL.AssetsManager.IsTotalBalanceVisible()
@@ -403,6 +447,108 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 			})
 		}),
 	)
+}
+
+func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
+	// Watchonly wallets do not have any password neither need one.
+	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() && !wallet.IsWatchingOnlyWallet() {
+		hp.unlockWalletForSyncing(wallet, unlock)
+		return
+	}
+	unlock(true)
+
+	if hp.isConnected {
+		// once network connection has been established proceed to
+		// start the wallet sync.
+		if err := wallet.SpvSync(); err != nil {
+			log.Debugf("Error starting sync: %v", err)
+		}
+	}
+
+	if !atomic.CompareAndSwapUint32(&hp.startSpvSync, 0, 1) {
+		// internet connection checking goroutine is already running.
+		return
+	}
+
+	// Since internet connectivity isn't available, the goroutine will keep
+	// checking for the internet connectivity. on every 5th poll it will keep
+	// increasing the wait duration by 5 seconds till the internet connectivity
+	// is restored or the app is shutdown.
+	go func() {
+		count := 0
+		counter := 5
+		duration := time.Second * 10
+		ticker := time.NewTicker(duration)
+
+		for range ticker.C {
+			if hp.isConnected {
+				log.Info("Internet connection has been established")
+				// once network connection has been established proceed to
+				// start the wallet sync.
+				if err := wallet.SpvSync(); err != nil {
+					log.Debugf("Error starting sync: %v", err)
+					continue
+				}
+
+				if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
+					err := hp.WL.AssetsManager.InstantSwap.Sync(hp.ctx)
+					if err != nil {
+						log.Errorf("Error syncing instant swap: %v", err)
+						continue
+					}
+				}
+
+				// Trigger UI update
+				hp.ParentWindow().Reload()
+
+				ticker.Stop()
+				return
+			}
+
+			// At the 5th ticker count, increase the duration interval by 5 seconds.
+			if count%counter == 0 && count > 0 {
+				duration += time.Second * 5
+				// reset ticker
+				ticker.Reset(duration)
+			}
+			// Increase the counter
+			count++
+			log.Debugf("Attempting to check for internet connection in %s", duration.String())
+
+			go func() {
+				hp.isConnected = libutils.IsOnline()
+			}()
+		}
+
+		// Allow another goroutine to be spun up later on if need be.
+		atomic.StoreUint32(&hp.startSpvSync, 0)
+	}()
+}
+
+func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUnlockRestore) {
+	spendingPasswordModal := modal.NewCreatePasswordModal(hp.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrResumeAccountDiscoveryTitle)).
+		PasswordHint(values.String(values.StrSpendingPassword)).
+		SetPositiveButtonText(values.String(values.StrUnlock)).
+		SetCancelable(false).
+		SetNegativeButtonCallback(func() {
+			unlock(false)
+		}).
+		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			err := wal.UnlockWallet(password)
+			if err != nil {
+				pm.SetError(err.Error())
+				pm.SetLoading(false)
+				return false
+			}
+			unlock(true)
+			pm.Dismiss()
+			hp.startSyncing(wal, unlock)
+			return true
+		})
+	hp.ParentWindow().ShowModal(spendingPasswordModal)
 }
 
 func (hp *HomePage) CalculateAssetsUSDBalance() {

@@ -274,11 +274,7 @@ func (pg *WalletSelectorPage) listenForNotifications() {
 
 	pg.isListenerAdded = true
 
-	allWallets := make([]sharedW.Asset, 0)
-	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.DCRWalletAsset)...)
-	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.BTCWalletAsset)...)
-	allWallets = append(allWallets, pg.WL.SortedWalletList(libutils.LTCWalletAsset)...)
-
+	allWallets := pg.WL.AllSortedWalletList()
 	for _, w := range allWallets {
 		syncListener := listeners.NewSyncProgress()
 		err := w.AddSyncProgressListener(syncListener, WalletSelectorPageID)
