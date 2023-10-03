@@ -450,7 +450,7 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 }
 
 func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
-	// Watchonly wallets do not have any password neithers need one.
+	// Watchonly wallets do not have any password neither need one.
 	if !wallet.ContainsDiscoveredAccounts() && wallet.IsLocked() && !wallet.IsWatchingOnlyWallet() {
 		hp.unlockWalletForSyncing(wallet, unlock)
 		return
@@ -463,7 +463,6 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 		if err := wallet.SpvSync(); err != nil {
 			log.Debugf("Error starting sync: %v", err)
 		}
-		return
 	}
 
 	if !atomic.CompareAndSwapUint32(&hp.startSpvSync, 0, 1) {
