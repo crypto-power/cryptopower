@@ -55,7 +55,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 						}
 						return cryptomaterial.LinearLayout{
 							Orientation: bottomNavigationbar.axis,
-							Width:       (bottomNavigationbar.Load.GetCurrentAppWidth() * 100 / len(bottomNavigationbar.BottomNaigationItems)) / 100, // Divide each cell equally
+							Width:       bottomNavigationbar.Load.GetCurrentAppWidth() / len(bottomNavigationbar.BottomNaigationItems), // Divide each cell equally
 							Height:      cryptomaterial.WrapContent,
 							Padding:     layout.UniformInset(values.MarginPadding10),
 							Alignment:   bottomNavigationbar.alignment,
@@ -78,7 +78,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 								}.Layout(gtx, func(gtx C) D {
 									textColor := bottomNavigationbar.Theme.Color.GrayText1
 									if bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
-										textColor = bottomNavigationbar.Theme.Color.DeepBlue
+										textColor = bottomNavigationbar.Theme.Color.DefaultThemeColors().Primary
 									}
 									txt := bottomNavigationbar.Theme.Label(bottomNavigationbar.textSize, bottomNavigationbar.BottomNaigationItems[i].Title)
 									txt.Color = textColor
@@ -95,7 +95,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 
 func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "Transactions" {
+	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "wallets" {
 		return layout.S.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {

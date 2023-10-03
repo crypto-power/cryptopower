@@ -17,6 +17,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/utils"
@@ -42,6 +43,8 @@ type HomePage struct {
 	hideBalanceButton      *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
 	infoButton             cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
+
+	bottomNavigationBar components.BottomNavigationBar
 
 	// page state variables
 	isBalanceHidden bool
@@ -106,6 +109,9 @@ func NewHomePage(l *load.Load) *HomePage {
 		}
 	}
 	l.ToggleSync = toggleSync
+
+	hp.initBottomNavItems()
+	hp.bottomNavigationBar.OnViewCreated()
 
 	return hp
 }
@@ -233,6 +239,29 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.isBalanceHidden = !hp.isBalanceHidden
 		hp.WL.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
+
+	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
+
+	for _, item := range hp.bottomNavigationBar.BottomNaigationItems {
+		for item.Clickable.Clicked() {
+			var pg app.Page
+			switch item.Title {
+			case values.String(values.StrOverview):
+				pg = NewOverviewPage(hp.Load)
+			case values.String(values.StrWallets):
+				pg = NewWalletSelectorPage(hp.Load)
+			case values.String(values.StrTrade):
+				pg = NewTradePage(hp.Load)
+			}
+
+			if pg == nil || hp.ID() == hp.CurrentPageID() {
+				continue
+			}
+
+			// clear stack
+			hp.Display(pg)
+		}
+	}
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations
@@ -312,27 +341,21 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 }
 
 func (hp *HomePage) layoutMobile(gtx C) D {
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.MatchParent,
-				Orientation: layout.Vertical,
-			}.Layout(gtx,
-				layout.Rigid(hp.LayoutTopBar),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Left: values.MarginPadding20,
-					}.Layout(gtx, hp.navigationTab.Layout)
-				}),
-				layout.Rigid(hp.Theme.Separator().Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-						return hp.CurrentPage().Layout(gtx)
-					})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(hp.LayoutTopBar),
+		layout.Rigid(hp.Theme.Separator().Layout),
+		layout.Flexed(1, func(gtx C) D {
+			return layout.Stack{Alignment: layout.N}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					currentPage := hp.CurrentPage()
+					if currentPage == nil {
+						return D{}
+					}
+					return hp.CurrentPage().Layout(gtx)
 				}),
 			)
 		}),
+		layout.Rigid(hp.bottomNavigationBar.LayoutBottomNavigationBar),
 	)
 }
 
@@ -355,6 +378,43 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 		layout.Rigid(hp.totalBalanceLayout),
 		layout.Rigid(hp.notificationSettingsLayout),
 	)
+}
+
+func (hp *HomePage) initBottomNavItems() {
+	hp.bottomNavigationBar = components.BottomNavigationBar{
+		Load:        hp.Load,
+		CurrentPage: hp.CurrentPageID(),
+		BottomNaigationItems: []components.BottomNavigationBarHandler{
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.OverviewIcon,
+				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
+				Title:         values.String(values.StrOverview),
+				PageID:        OverviewPageID,
+			},
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.WalletIcon,
+				ImageInactive: hp.Theme.Icons.WalletIconInactive,
+				Title:         values.String(values.StrWallets),
+				PageID:        WalletSelectorPageID,
+			},
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.TradeIconActive,
+				ImageInactive: hp.Theme.Icons.TradeIconInactive,
+				Title:         values.String(values.StrTrade),
+				PageID:        TradePageID,
+			},
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.GovernanceActiveIcon,
+				ImageInactive: hp.Theme.Icons.GovernanceInactiveIcon,
+				Title:         values.String(values.StrGovernance),
+				PageID:        governance.GovernancePageID,
+			},
+		},
+	}
 }
 
 func (hp *HomePage) totalBalanceLayout(gtx C) D {
@@ -431,7 +491,12 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 					Orientation: layout.Horizontal,
 					Alignment:   layout.Middle,
 				}.Layout(gtx,
-					layout.Rigid(hp.drawerNav.LayoutTopBar),
+					layout.Rigid(func(gtx C) D {
+						if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+							return D{}
+						}
+						return hp.drawerNav.LayoutTopBar(gtx)
+					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
 							Left:  values.MarginPadding10,
