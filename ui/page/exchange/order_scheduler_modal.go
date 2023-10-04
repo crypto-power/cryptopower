@@ -275,7 +275,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																				fromCur := osm.fromCurrency.String()
 																				toCur := osm.toCurrency.String()
 																				missingAsset := fromCur == "" || toCur == ""
-																				if osm.exchangeSelector.SelectedExchange() != nil && osm.exchangeRate != -1 && !missingAsset {
+																				if osm.exchangeSelector.SelectedExchange() != nil && osm.exchangeRate > 0 && !missingAsset {
 																					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 																						layout.Rigid(func(gtx C) D {
 																							exName := osm.exchangeSelector.SelectedExchange().Name
@@ -286,6 +286,10 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
+																							if osm.binanceRate <= 0 {
+																								return D{}
+																							}
+																							
 																							binanceRate := values.StringF(values.StrBinanceRate, fromCur, osm.binanceRate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = font.SemiBold

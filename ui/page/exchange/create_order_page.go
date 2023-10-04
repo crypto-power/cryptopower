@@ -864,7 +864,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.binanceRate == -1 {
+									if pg.binanceRate <= 0 {
 										return D{}
 									}
 

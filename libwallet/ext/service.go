@@ -317,7 +317,7 @@ func (s *Service) GetXpub(xPub string) (xPubBalAndTxs *XpubBalAndTxs, err error)
 func (s *Service) GetTicker(exchange string, market string) (ticker *Ticker, err error) {
 	switch exchange {
 	case Binance:
-		// Return early for dcr-ltc markets ad binance does not support this
+		// Return early for dcr-ltc markets as binance does not support this
 		// atm.
 		if strings.EqualFold(market, "ltc-dcr") {
 			return &Ticker{}, nil

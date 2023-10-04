@@ -14,6 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/crypto-power/instantswap/blockexplorer"
 	_ "github.com/crypto-power/instantswap/blockexplorer/btcexplorer" //nolint:revive
 	_ "github.com/crypto-power/instantswap/blockexplorer/dcrexplorer"
@@ -120,8 +121,10 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			binanceRate = 1 / ticker.LastTradePrice
 		}
 
-		log.Info(params.Order.ExchangeServer.Server+" rate: 1 %s ~= %f %s", fromCur, exchangeServerRate, toCur)
-		log.Info(ext.Binance+" rate: 1 %s ~= %f %s", fromCur, binanceRate, toCur)
+		serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
+		log.Info(serverRateStr)
+		binanceRateStr := values.StringF(values.StrBinanceRate, fromCur, binanceRate, toCur)
+		log.Info(binanceRateStr)
 
 		// check if the server rate deviates from the market rate by ± 5%
 		// exit if true
