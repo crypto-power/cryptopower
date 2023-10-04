@@ -289,7 +289,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							if osm.binanceRate <= 0 {
 																								return D{}
 																							}
-																							
+
 																							binanceRate := values.StringF(values.StrBinanceRate, fromCur, osm.binanceRate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = font.SemiBold
