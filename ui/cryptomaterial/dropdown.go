@@ -1,6 +1,7 @@
 package cryptomaterial
 
 import (
+	// "fmt"
 	"image/color"
 
 	"gioui.org/layout"
@@ -284,8 +285,6 @@ func (d *DropDown) closedLayout(gtx C, iLeft int, iRight int) D {
 				layout.Rigid(func(gtx C) D {
 					return d.layoutOption(gtx, d.selectedIndex)
 				}))
-			w := (lay.Size.X * 800) / gtx.Dp(MaxWidth)
-			d.Width = w + 10
 			return lay
 		})
 	})

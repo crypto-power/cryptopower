@@ -15,7 +15,7 @@ import (
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
 // returns data interface, count of the items in the data interface, isReset and an error.
 // isReset is used to reset the offset value.
-type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, isReset bool, err error)
+type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, err error)
 
 type Scroll struct {
 	load      *load.Load
@@ -58,7 +58,7 @@ func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll) FetchScrollData(isReverse, isReset bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -67,6 +67,11 @@ func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 		s.offset -= s.pageSize
 	}
 	s.mu.Unlock()
+
+	if isReset {
+		// resets the values for use on the next iteration.
+		s.resetList()
+	}
 
 	s.fetchScrollData(isReverse, window)
 }
@@ -102,11 +107,12 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 
 	s.mu.Unlock()
 
-	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
+	items, itemsLen, err := s.queryFunc(offset, tempSize*2)
+
 	// Check if enough list items exists to fill the next page. If they do only query
 	// enough items to fit the current page otherwise return all the queried items.
 	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
+		items, itemsLen, err = s.queryFunc(offset, tempSize)
 	}
 
 	s.mu.Lock()
@@ -129,11 +135,6 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
 	s.mu.Unlock()
-
-	if isReset {
-		// resets the values for use on the next iteration.
-		s.resetList()
-	}
 }
 
 // FetchedData returns the latest queried data.
@@ -168,6 +169,7 @@ func (s *Scroll) resetList() {
 	defer s.mu.Unlock()
 
 	s.offset = 0
+	s.list.Position.First = 0
 	s.loadedAllItems = false
 }
 

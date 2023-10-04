@@ -119,7 +119,8 @@ func (pg *Page) OnNavigatedTo() {
 		pg.listenForTxNotifications()
 		go func() {
 			pg.showMaterialLoader = true
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			// page just loaded no need for offset reset.
+			pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 			pg.showMaterialLoader = false
 		}()
 	}

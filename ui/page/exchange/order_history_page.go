@@ -84,7 +84,8 @@ func (pg *OrderHistoryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForSyncNotifications()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	// no need to reset offset as reset is triggered on filter change.
+	go pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 }
 
 func (pg *OrderHistoryPage) OnNavigatedFrom() {
@@ -95,7 +96,8 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
 	if pg.statusDropdown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// Reset so offset=0 for newly selected filter
+		pg.scroll.FetchScrollData(false, true, pg.ParentWindow())
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
@@ -229,7 +231,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 	})
 }
 
-func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) (interface{}, int, error) {
 	selectedStatus := pg.statusDropdown.Selected()
 	var statusFilter api.Status
 	switch selectedStatus {
@@ -249,15 +251,8 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) (interface{}, in
 		statusFilter = api.OrderStatusUnknown
 	}
 
-	isReset := pg.previousStatus != statusFilter
-	if isReset {
-		// Since the status has changed we need to reset the offset.
-		offset = 0
-		pg.previousStatus = statusFilter
-	}
-
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
-	return orders, len(orders), isReset, nil
+	return orders, len(orders), nil
 }
 
 func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
@@ -306,7 +301,8 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 			select {
 			case n := <-pg.OrderNotifChan:
 				if n.OrderStatus == wallet.OrderStatusSynced {
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					// no need to reset offset as reset is triggered on filter change.
+					pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():

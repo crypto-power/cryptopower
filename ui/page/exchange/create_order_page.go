@@ -221,7 +221,8 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 		pg.listenForSyncNotifications()
 		pg.loadOrderConfig()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// no need to reset offset as reset is triggered on filter change.
+		go pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 	}
 }
 
@@ -961,9 +962,9 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	)
 }
 
-func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, error) {
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
-	return orders, len(orders), false, nil
+	return orders, len(orders), nil
 }
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
@@ -1015,7 +1016,8 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			// no need to reset offset as reset is triggered on filter change.
+			pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1243,7 +1245,8 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 			case n := <-pg.OrderNotifChan:
 				switch n.OrderStatus {
 				case wallet.OrderStatusSynced, wallet.OrderCreated:
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					// no need to reset offset as reset is triggered on filter change.
+					pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 					pg.ParentWindow().Reload()
 				case wallet.OrderSchedulerStarted:
 					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())

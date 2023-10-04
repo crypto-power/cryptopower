@@ -46,7 +46,6 @@ type ProposalsPage struct {
 	ctxCancel      context.CancelFunc
 	assetsManager  *libwallet.AssetsManager
 	scroll         *components.Scroll
-	previousFilter int32
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
 	syncButton     *widget.Clickable
@@ -108,14 +107,15 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 	if pg.isProposalsAPIAllowed() {
 		// Only proceed if allowed make Proposals API call.
 		pg.listenForSyncNotifications()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// no need to reset offset as reset is triggered on filter change.
+		go pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 		pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
 	}
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
 // UI update with the new proposals list.
-func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, int, error) {
 	var proposalFilter int32
 	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
@@ -127,13 +127,6 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 		proposalFilter = libwallet.ProposalCategoryAbandoned
 	default:
 		proposalFilter = libwallet.ProposalCategoryAll
-	}
-
-	isReset := pg.previousFilter != proposalFilter
-	if isReset {
-		// reset the offset to zero
-		offset = 0
-		pg.previousFilter = proposalFilter
 	}
 
 	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true)
@@ -151,7 +144,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 		listItems = proposalItems
 	}
 
-	return listItems, len(listItems), isReset, nil
+	return listItems, len(listItems), nil
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -161,7 +154,8 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	if pg.statusDropDown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// Reset so offset=0 for the selected status filter.
+		pg.scroll.FetchScrollData(false, true, pg.ParentWindow())
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
@@ -400,8 +394,8 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 				if n.ProposalStatus == wallet.Synced {
 					pg.syncCompleted = true
 					pg.isSyncing = false
-
-					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					// no need to reset offset as reset is triggered on filter change.
+					go pg.scroll.FetchScrollData(false, false, pg.ParentWindow())
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
