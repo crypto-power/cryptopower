@@ -3,6 +3,7 @@ package libwallet
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -87,9 +88,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			return errors.E(op, "source wallet balance is less than or equals the set balance to maintain") // stop scheduling if the source wallet balance is less than or equals the set balance to maintain
 		}
 
+		fromCur := params.Order.FromCurrency
+		toCur := params.Order.ToCurrency
 		rateRequestParams := api.ExchangeRateRequest{
-			From:   params.Order.FromCurrency,
-			To:     params.Order.ToCurrency,
+			From:   fromCur,
+			To:     toCur,
 			Amount: DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 		}
 		log.Info("Order Scheduler: getting exchange rate info")
@@ -103,17 +106,22 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			params.MaxDeviationRate = DefaultMarketDeviation // default 5%
 		}
 
-		market := params.Order.FromCurrency + "-" + params.Order.ToCurrency
-		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, market)
+		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, MarketName(fromCur, toCur))
 		if err != nil {
 			log.Error("unable to get market rate from binance")
 			return errors.E(op, err)
 		}
 
-		exchangeServerRate := 1 / res.ExchangeRate
+		exchangeServerRate := res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 		binanceRate := ticker.LastTradePrice
-		log.Info(params.Order.ExchangeServer.Server+" rate: ", exchangeServerRate)
-		log.Info(ext.Binance+" rate: ", binanceRate)
+		/// Binance always returns ticker.LastTradePrice in's the quote asset
+		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
+		if strings.EqualFold(fromCur, "btc") {
+			binanceRate = 1 / ticker.LastTradePrice
+		}
+
+		log.Info(params.Order.ExchangeServer.Server+" rate: 1 %s ~= %f %s", fromCur, exchangeServerRate, toCur)
+		log.Info(ext.Binance+" rate: 1 %s ~= %f %s", fromCur, binanceRate, toCur)
 
 		// check if the server rate deviates from the market rate by ± 5%
 		// exit if true
@@ -299,4 +307,16 @@ func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
 // GetShedulerRuntime returns the duration the order scheduler has been running.
 func (mgr *AssetsManager) GetShedulerRuntime() string {
 	return time.Since(mgr.InstantSwap.SchedulerStartTime).Round(time.Second).String()
+}
+
+// MarketName is a convenience function that returns a proper market name for
+// the from and to currencies used when fetching ticker data from binance.
+func MarketName(fromCur, toCur string) string {
+	dcrToLtc := strings.EqualFold(fromCur, "dcr") && strings.EqualFold(toCur, "ltc")
+	btcToOthersExceptUsdt := strings.EqualFold(fromCur, "btc") && !strings.EqualFold(toCur, "usdt")
+	if dcrToLtc || btcToOthersExceptUsdt {
+		return toCur + "-" + fromCur // e.g DCR/BTC, LTC/BTC and not BTC/LTC or BTC/DCR
+	}
+
+	return fromCur + "-" + toCur
 }
