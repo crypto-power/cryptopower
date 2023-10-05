@@ -65,6 +65,8 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
 		copyRedirect:      l.Theme.NewClickable(false),
+		binanceRate:       -1,
+		exchangeRate:      -1,
 	}
 
 	osm.cancelBtn = l.Theme.OutlineButton(values.String(values.StrCancel))
@@ -270,17 +272,25 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																					return osm.materialLoader.Layout(gtx)
 																				}
 
-																				if osm.exchangeSelector.SelectedExchange() != nil && osm.exchangeRate != -1 {
+																				fromCur := osm.fromCurrency.String()
+																				toCur := osm.toCurrency.String()
+																				missingAsset := fromCur == "" || toCur == ""
+																				if osm.exchangeSelector.SelectedExchange() != nil && osm.exchangeRate > 0 && !missingAsset {
 																					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 																						layout.Rigid(func(gtx C) D {
-																							exchangeRate := values.StringF(values.StrServerRate, osm.exchangeSelector.SelectedExchange().Name, osm.exchangeRate)
+																							exName := osm.exchangeSelector.SelectedExchange().Name
+																							exchangeRate := values.StringF(values.StrServerRate, exName, fromCur, osm.exchangeRate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, exchangeRate)
 																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							binanceRate := values.StringF(values.StrBinanceRate, osm.binanceRate)
+																							if osm.binanceRate <= 0 {
+																								return D{}
+																							}
+
+																							binanceRate := values.StringF(values.StrBinanceRate, fromCur, osm.binanceRate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
@@ -473,11 +483,15 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 }
 
 func (osm *orderSchedulerModal) getExchangeRateInfo() error {
+	osm.binanceRate = -1
+	osm.exchangeRate = -1
 	osm.fetchingRate = true
 	osm.rateError = false
+	fromCur := osm.fromCurrency.String()
+	toCur := osm.toCurrency.String()
 	params := api.ExchangeRateRequest{
-		From:   osm.fromCurrency.String(),
-		To:     osm.toCurrency.String(),
+		From:   fromCur,
+		To:     toCur,
 		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := osm.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
@@ -487,24 +501,23 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 		return err
 	}
 
-	ticker, err := osm.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
+	ticker, err := osm.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, libwallet.MarketName(fromCur, toCur))
 	if err != nil {
 		osm.rateError = true
 		osm.fetchingRate = false
 		return err
 	}
 
-	var binanceRate float64
-	switch osm.fromCurrency {
-	case utils.DCRWalletAsset:
-		binanceRate = ticker.LastTradePrice
-	case utils.BTCWalletAsset:
-		binanceRate = 1 / ticker.LastTradePrice
+	if ticker != nil && ticker.LastTradePrice > 0 {
+		osm.binanceRate = ticker.LastTradePrice
+		/// Binance always returns ticker.LastTradePrice in's the quote asset
+		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
+		if osm.fromCurrency == utils.BTCWalletAsset {
+			osm.binanceRate = 1 / ticker.LastTradePrice
+		}
 	}
 
-	osm.exchangeRate = 1 / res.ExchangeRate
-	osm.binanceRate = binanceRate
-
+	osm.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	osm.fetchingRate = false
 	osm.rateError = false
 

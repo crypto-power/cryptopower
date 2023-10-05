@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -296,7 +297,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
 				if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
-					f, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
+					fromAmt, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 					if err != nil {
 						// empty usd input
 						pg.toAmountEditor.Edit.Editor.SetText("")
@@ -307,7 +308,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 					}
 					pg.amountErrorText = ""
 					if pg.exchangeRate != -1 {
-						value := f / pg.exchangeRate
+						value := fromAmt * pg.exchangeRate
 						v := strconv.FormatFloat(value, 'f', 8, 64)
 						pg.amountErrorText = ""
 						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
@@ -396,7 +397,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 func (pg *CreateOrderPage) updateAmount() {
 	if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
-		f, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
+		fromAmt, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
 		if err != nil {
 			pg.toAmountEditor.Edit.Editor.SetText("")
 			pg.amountErrorText = values.String(values.StrInvalidAmount)
@@ -406,7 +407,7 @@ func (pg *CreateOrderPage) updateAmount() {
 		}
 		pg.amountErrorText = ""
 		if pg.exchangeRate != -1 {
-			value := f / pg.exchangeRate
+			value := fromAmt * pg.exchangeRate
 			v := strconv.FormatFloat(value, 'f', 8, 64)
 			pg.amountErrorText = ""
 			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
@@ -559,9 +560,9 @@ func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
 	return isAllowed
 }
 
-// isMultipleAssetTypeWalletAvailable checks if multiple asset types are available
-// for exchange funtionality to run smoothly. Otherwise exchange functionality is
-// disable till different asset type wallets are created.
+// isMultipleAssetTypeWalletAvailable checks if multiple asset types are
+// available for exchange functionality to run smoothly. Otherwise exchange
+// functionality is disable till different asset type wallets are created.
 func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 	pg.errMsg = values.String(values.StrMinimumAssetType)
 	allWallets := len(pg.WL.AssetsManager.AllWallets())
@@ -625,7 +626,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 				overlay = layout.Stacked(func(gtx C) D {
 					return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
 				})
-				// Disable main page from recieving events
+				// Disable main page from receiving events.
 				gtx = gtx.Disabled()
 			}
 			return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
@@ -638,9 +639,10 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
-			Width:     gtx.Dp(values.MarginPadding550),
+			Width:     gtx.Dp(values.MarginPadding600),
 			Height:    cryptomaterial.MatchParent,
 			Alignment: layout.Middle,
+			Padding:   layout.Inset{Top: values.MarginPadding20},
 		}.Layout2(gtx, func(gtx C) D {
 			return sp.Layout(pg.ParentWindow(), gtx)
 		})
@@ -848,17 +850,25 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 							return pg.materialLoader.Layout(gtx)
 						}
 
-						if pg.exchangeRate != -1 {
+						fromCur := strings.ToUpper(pg.fromCurrency.String())
+						toCur := strings.ToUpper(pg.toCurrency.String())
+						missingAsset := fromCur == "" || toCur == ""
+						if pg.exchangeRate > 0 && !missingAsset {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									exchangeRate := values.StringF(values.StrServerRate, pg.exchangeSelector.SelectedExchange().Name, pg.exchangeRate)
+									serverName := pg.exchangeSelector.SelectedExchange().Name
+									exchangeRate := values.StringF(values.StrServerRate, serverName, fromCur, pg.exchangeRate, toCur)
 									txt := pg.Theme.Label(values.TextSize14, exchangeRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									binanceRate := values.StringF(values.StrBinanceRate, pg.binanceRate)
+									if pg.binanceRate <= 0 {
+										return D{}
+									}
+
+									binanceRate := values.StringF(values.StrBinanceRate, fromCur, pg.binanceRate, toCur)
 									txt := pg.Theme.Label(values.TextSize14, binanceRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
@@ -1050,10 +1060,14 @@ func (pg *CreateOrderPage) updateExchangeRate() {
 }
 
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
+	pg.exchangeRate = -1
+	pg.binanceRate = -1
 	pg.fetchingRate = true
+	fromCur := pg.fromCurrency.String()
+	toCur := pg.toCurrency.String()
 	params := api.ExchangeRateRequest{
-		From:   pg.fromCurrency.String(),
-		To:     pg.toCurrency.String(),
+		From:   fromCur,
+		To:     toCur,
 		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
@@ -1064,24 +1078,22 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
-	var binanceRate float64
-	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, values.String(values.StrDcrBtcPair))
+	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, libwallet.MarketName(fromCur, toCur))
 	if err != nil {
 		log.Error(err)
 	}
-	if ticker != nil {
-		switch pg.fromCurrency {
-		case libutils.DCRWalletAsset:
-			binanceRate = 1 / ticker.LastTradePrice
-		case libutils.BTCWalletAsset:
-			binanceRate = ticker.LastTradePrice
+	if ticker != nil && ticker.LastTradePrice > 0 {
+		pg.binanceRate = ticker.LastTradePrice
+		/// Binance always returns ticker.LastTradePrice in's the quote asset
+		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
+		if pg.fromCurrency == libutils.BTCWalletAsset {
+			pg.binanceRate = 1 / ticker.LastTradePrice
 		}
 	}
 
+	pg.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	pg.min = res.Min
 	pg.max = res.Max
-	pg.exchangeRate = res.ExchangeRate
-	pg.binanceRate = binanceRate
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.updateAmount()
@@ -1092,8 +1104,8 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	return nil
 }
 
-// loadOrderConfig loads the existing exchange configuration or creates a
-// new one if none existed before.
+// loadOrderConfig loads the existing exchange configuration or creates a new
+// one if none existed before.
 func (pg *CreateOrderPage) loadOrderConfig() {
 	sourceAccount, destinationAccount := int32(-1), int32(-1)
 	var sourceWallet, destinationWallet *load.WalletMapping
@@ -1118,13 +1130,13 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		sourceAccount = exchangeConfig.SourceAccountNumber
 		destinationAccount = exchangeConfig.DestinationAccountNumber
 	} else {
-		// New exchange configuration will be generated using the set asset types
-		// since none existed before.
-		// It two distinct asset type wallet don't exist execution does get here.
-		wals := pg.WL.AssetsManager.AllWallets()
-		pg.fromCurrency = wals[0].GetAssetType()
+		// New exchange configuration will be generated using the set asset
+		// types since none existed before. It two distinct asset type wallet
+		// don't exist execution does get here.
+		wallets := pg.WL.AssetsManager.AllWallets()
+		pg.fromCurrency = wallets[0].GetAssetType()
 
-		for _, w := range wals {
+		for _, w := range wallets {
 			if w.GetAssetType() != pg.fromCurrency {
 				pg.toCurrency = w.GetAssetType()
 				break
@@ -1212,7 +1224,8 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
 }
 
-// updateExchangeConfig Updates the newly created or modified exchange configuration.
+// updateExchangeConfig Updates the newly created or modified exchange
+// configuration.
 func (pg *CreateOrderPage) updateExchangeConfig() {
 	configInfo := sharedW.ExchangeConfig{
 		SourceAsset:              pg.fromCurrency,
@@ -1233,7 +1246,7 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
 	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
 	if err != nil {
-		log.Errorf("Error adding instanswap notification listener: %v", err)
+		log.Errorf("Error adding instantswap notification listener: %v", err)
 		return
 	}
 

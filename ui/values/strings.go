@@ -267,7 +267,6 @@ const (
 	StrDaysAgo                         = "daysAgo"
 	StrDaysToMiss                      = "daysToMiss"
 	StrDaysToVote                      = "daysToVote"
-	StrDcrBtcPair                      = "dcrBtcPair"
 	StrDCRCaps                         = "dcrCaps"
 	StrDcrDex                          = "dcrDex"
 	StrDcrReceived                     = "dcrReceived"
