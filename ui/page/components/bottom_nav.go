@@ -117,7 +117,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 
 func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "wallets" {
+	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "Transactions" {
 		return layout.S.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
