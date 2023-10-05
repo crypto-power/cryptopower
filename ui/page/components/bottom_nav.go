@@ -1,7 +1,11 @@
 package components
 
 import (
+	"image"
+
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -48,36 +52,54 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 				layout.Rigid(func(gtx C) D {
 					list := layout.List{Axis: layout.Horizontal}
 					return list.Layout(gtx, len(bottomNavigationbar.BottomNaigationItems), func(gtx C, i int) D {
-
-						background := bottomNavigationbar.Theme.Color.Surface
-						if bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
-							background = bottomNavigationbar.Theme.Color.Gray5
-						}
 						return cryptomaterial.LinearLayout{
 							Orientation: bottomNavigationbar.axis,
 							Width:       bottomNavigationbar.Load.GetCurrentAppWidth() / len(bottomNavigationbar.BottomNaigationItems), // Divide each cell equally
 							Height:      cryptomaterial.WrapContent,
-							Padding:     layout.UniformInset(values.MarginPadding10),
+							Padding:     layout.Inset{Bottom: values.MarginPadding10},
 							Alignment:   bottomNavigationbar.alignment,
 							Direction:   bottomNavigationbar.direction,
-							Background:  background,
+							Background:  bottomNavigationbar.Theme.Color.Surface,
 							Clickable:   bottomNavigationbar.BottomNaigationItems[i].Clickable,
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								img := bottomNavigationbar.BottomNaigationItems[i].ImageInactive
+								return layout.Stack{Alignment: layout.N}.Layout(gtx,
+									layout.Stacked(func(gtx C) D {
+										if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+											tabHeight := gtx.Dp(values.MarginPadding4)
+											selectedTabDimsWidth := bottomNavigationbar.Load.GetCurrentAppWidth() / (len(bottomNavigationbar.BottomNaigationItems) * 8)
+											tabRect := image.Rect(0, 0, 100+selectedTabDimsWidth, tabHeight)
+											defer clip.RRect{Rect: tabRect, SE: 10, SW: 10, NW: 0, NE: 0}.Push(gtx.Ops).Pop()
 
-								if bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
-									img = bottomNavigationbar.BottomNaigationItems[i].Image
-								}
+											paint.FillShape(gtx.Ops, bottomNavigationbar.Theme.Color.Primary, clip.Rect(tabRect).Op())
+											return layout.Dimensions{
+												Size: image.Point{X: 100 + selectedTabDimsWidth, Y: tabHeight},
+											}
+										}
 
-								return img.Layout24dp(gtx)
+										return D{}
+									}),
+								)
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Top: values.MarginPadding8,
+								}.Layout(gtx, func(gtx C) D {
+									img := bottomNavigationbar.BottomNaigationItems[i].ImageInactive
+
+									if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+										img = bottomNavigationbar.BottomNaigationItems[i].Image
+									}
+
+									return img.Layout24dp(gtx)
+								})
 							}),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
 									Bottom: bottomNavigationbar.bottomInset,
 								}.Layout(gtx, func(gtx C) D {
 									textColor := bottomNavigationbar.Theme.Color.GrayText1
-									if bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+									if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
 										textColor = bottomNavigationbar.Theme.Color.DefaultThemeColors().Primary
 									}
 									txt := bottomNavigationbar.Theme.Label(bottomNavigationbar.textSize, bottomNavigationbar.BottomNaigationItems[i].Title)
@@ -95,7 +117,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 
 func (bottomNavigationbar *BottomNavigationBar) LayoutSendReceive(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "wallets" {
+	if bottomNavigationbar.CurrentPage == "Overview" || bottomNavigationbar.CurrentPage == "Transactions" {
 		return layout.S.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
