@@ -2,6 +2,7 @@ package cryptomaterial
 
 import (
 	"image"
+	"sync"
 
 	"gioui.org/op/paint"
 	"gioui.org/unit"
@@ -12,6 +13,15 @@ import (
 
 type Image struct {
 	image.Image
+
+	// Keep a cache for scaled images to reduce resource use.
+	layoutSizeMtx sync.Mutex
+	layoutSizeDp  unit.Dp
+	layoutSizeImg *image.RGBA
+
+	layoutSize2Mtx                 sync.Mutex
+	layoutSize2DpX, layoutSize2DpY unit.Dp
+	layoutSize2Img                 *image.RGBA
 }
 
 func NewImage(src image.Image) *Image {
@@ -48,8 +58,17 @@ func (img *Image) Layout48dp(gtx C) D {
 }
 
 func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
-	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: int(size * 2), Y: int(size * 2)}})
-	draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
+	var dst *image.RGBA
+	img.layoutSizeMtx.Lock()
+	if img.layoutSizeDp == size {
+		dst = img.layoutSizeImg
+	} else {
+		dst = image.NewRGBA(image.Rectangle{Max: image.Point{X: int(size * 2), Y: int(size * 2)}})
+		img.layoutSizeImg = dst
+		img.layoutSizeDp = size
+		draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
+	}
+	img.layoutSizeMtx.Unlock()
 
 	i := widget.Image{Src: paint.NewImageOp(dst)}
 	i.Scale = .5 // reduced the original scale of 1 by half to fix blurry images
@@ -57,8 +76,18 @@ func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
 }
 
 func (img *Image) LayoutSize2(gtx C, width, height unit.Dp) D {
-	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: int(width * 2), Y: int(height * 2)}})
-	draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
+	var dst *image.RGBA
+	img.layoutSize2Mtx.Lock()
+	if img.layoutSize2DpX == width && img.layoutSize2DpY == height {
+		dst = img.layoutSize2Img
+	} else {
+		dst = image.NewRGBA(image.Rectangle{Max: image.Point{X: int(width * 2), Y: int(height * 2)}})
+		img.layoutSize2Img = dst
+		img.layoutSize2DpX = width
+		img.layoutSize2DpY = height
+		draw.BiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Src, nil)
+	}
+	img.layoutSize2Mtx.Unlock()
 
 	i := widget.Image{Src: paint.NewImageOp(dst)}
 	i.Scale = .5 // reduced the original scale of 1 by half to fix blurry images
