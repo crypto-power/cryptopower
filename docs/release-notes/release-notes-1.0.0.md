@@ -1,5 +1,7 @@
-Cryptopower is a self-custodial multi-coin wallet application designed for both desktop and mobile platforms. It offers support for creating wallets not only for Decred but also for other cryptocurrencies such as Bitcoin and Litecoin. The app is built using [Gio](https://gioui.org/), a Golang library for the implementation of cross-platform user interfaces. 
+Cryptopower is a self-custodial multi-coin wallet application designed for both desktop and mobile platforms. It offers support for creating wallets not only for Decred but also for other cryptocurrencies such as Bitcoin and Litecoin. The app is built using [Gio](https://gioui.org/), a Golang library for the implementation of cross-platform user interfaces.
+
 ## Available Features
+
 - Multi-Coin support - Native SPV wallets for Decred, Bitcoin and Litecoin.
  - Coin Control - It allows users to select exact addresses and outputs to be used in a transaction.
 - CoinShuffle++ - CoinShuffle++ (CSPP) is a mixing protocol used to create Decred CoinJoin transactions.
@@ -70,6 +72,7 @@ $ gpg --import < key.txt
 ```
 
 Example output:
+
 ```
 gpg: key D05AC74F68976E52: "Cryptopower <release@cryptopower.dev>" imported
 gpg: Total number processed: 1
@@ -91,9 +94,11 @@ gpg:                using RSA key 5C26BFEC6C2466A528D5551CD05AC74F68976E52
 gpg:                issuer "release@cryptopower.dev"
 gpg: Good signature from "Cryptopower <release@cryptopower.dev>" [ultimate]
 ```
+
 That will verify the signature of the manifest file, which ensures integrity and authenticity of the archive you've downloaded locally containing the binaries. Next, depending on your operating system, you should then re-compute the `sha256` hash of the archive with `sha256sum <filename>`, compare it with the corresponding one in the manifest file, and ensure they match exactly.
 
 ## Code Contributors (alphabetical order):
+
 - Amos Ezeme (@crux25)
 - Kennedy Izuegbu (@dreacot)
 - Migwi Ndung’u (@dmigwi)
