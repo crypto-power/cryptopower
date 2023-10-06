@@ -40,12 +40,14 @@ type OverviewPage struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
-	pageContainer      layout.List
-	marketOverviewList layout.List
-	recentProposalList layout.List
-	recentTradeList    layout.List
+	pageContainer            layout.List
+	marketOverviewList       layout.List
+	mobileMarketOverviewList layout.List
+	recentProposalList       layout.List
+	recentTradeList          layout.List
 
-	scrollContainer *widget.List
+	scrollContainer               *widget.List
+	mobileMarketOverviewContainer *widget.List
 
 	infoButton, forwardButton cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 	assetBalanceSlider        *cryptomaterial.Slider
@@ -53,6 +55,7 @@ type OverviewPage struct {
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
 	sliderRedirectBtn         *cryptomaterial.Clickable
+	mktValues                 []assetMarketData
 
 	card cryptomaterial.Card
 
@@ -103,6 +106,16 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
+		mobileMarketOverviewList: layout.List{
+			Axis:      layout.Horizontal,
+			Alignment: layout.Start,
+		},
+		mobileMarketOverviewContainer: &widget.List{
+			List: layout.List{
+				Axis:      layout.Horizontal,
+				Alignment: layout.Start,
+			},
+		},
 		recentTradeList: layout.List{
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
@@ -115,6 +128,32 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 			List: layout.List{
 				Axis:      layout.Vertical,
 				Alignment: layout.Middle,
+			},
+		},
+		mktValues: []assetMarketData{
+			{
+				title:            "Decred",
+				subText:          "DCR",
+				price:            "$13.36",
+				idChange:         "0.56%",
+				isChangePositive: true,
+				image:            l.Theme.Icons.DCRBlue,
+			},
+			{
+				title:            "Bitcoin",
+				subText:          "BTC",
+				price:            "$27,500",
+				idChange:         "-0.56%",
+				isChangePositive: false,
+				image:            l.Theme.Icons.BTC,
+			},
+			{
+				title:            "Litecoin",
+				subText:          "LTC",
+				price:            "$64.56",
+				idChange:         "0.56%",
+				isChangePositive: true,
+				image:            l.Theme.Icons.LTC,
 			},
 		},
 		assetBalanceSlider: l.Theme.Slider(),
@@ -232,15 +271,34 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *OverviewPage) layoutMobile(_ C) D {
-	return D{}
+func (pg *OverviewPage) layoutMobile(gtx C) D {
+	pageContent := []func(gtx C) D{
+		pg.sliderLayout,
+		pg.mobileMarketOverview,
+		pg.txStakingSection,
+		pg.recentTrades,
+		pg.recentProposal,
+	}
+
+	return components.UniformPadding(gtx, func(gtx C) D {
+		return layout.Center.Layout(gtx, func(gtx C) D {
+			return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+				return pageContent[i](gtx)
+			})
+		})
+	})
 }
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {
+	axis := layout.Horizontal
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		axis = layout.Vertical
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
+		Orientation: axis,
 		Direction:   layout.Center,
 		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
@@ -248,6 +306,15 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 			// Only show mixer slider if mixer is running
 			if len(pg.mixerSliderData) == 0 {
 				return pg.assetBalanceSliderLayout(gtx)
+			}
+
+			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				return layout.Flex{Axis: axis}.Layout(gtx,
+					layout.Rigid(pg.assetBalanceSliderLayout),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+					}),
+				)
 			}
 
 			return layout.Flex{}.Layout(gtx,
@@ -478,42 +545,15 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 		}.Layout(gtx,
 			layout.Rigid(pg.marketTableHeader),
 			layout.Rigid(func(gtx C) D {
-				// TODO use real asset data
-				mktValues := []assetMarketData{
-					{
-						title:            "Decred",
-						subText:          "DCR",
-						price:            "$1000",
-						idChange:         "-0.56%",
-						isChangePositive: false,
-						image:            pg.Theme.Icons.DCR,
-					},
-					{
-						title:            "Litecoin",
-						subText:          "LTC",
-						price:            "$100",
-						idChange:         "0.56%",
-						isChangePositive: true,
-						image:            pg.Theme.Icons.LTC,
-					},
-					{
-						title:            "Bitcoin",
-						subText:          "BTC",
-						price:            "$21000",
-						idChange:         "-0.56%",
-						isChangePositive: false,
-						image:            pg.Theme.Icons.BTC,
-					}}
-
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-					return pg.marketOverviewList.Layout(gtx, len(mktValues), func(gtx C, i int) D {
+					return pg.marketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return pg.marketTableRows(gtx, mktValues[i])
+								return pg.marketTableRows(gtx, pg.mktValues[i])
 							}),
 							layout.Rigid(func(gtx C) D {
 								// No divider for last row
-								if i == len(mktValues)-1 {
+								if i == len(pg.mktValues)-1 {
 									return layout.Dimensions{}
 								}
 
@@ -534,6 +574,119 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 			}),
 		)
 	})
+}
+
+func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Background:  pg.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.WrapContent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Vertical,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					txt := pg.Theme.Label(values.TextSize18, "Market Overview")
+					txt.Color = pg.Theme.Color.Text
+					return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, txt.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.mobileMarketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
+						card := pg.Theme.Card()
+						radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
+						card.Radius = cryptomaterial.Radius(8)
+						card.Color = pg.Theme.Color.DefaultThemeColors().White
+						return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+							return card.Layout(gtx, func(gtx C) D {
+								return cryptomaterial.LinearLayout{
+									Width:       gtx.Dp(values.MarginPadding150),
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Vertical,
+									Alignment:   layout.Middle,
+
+									Border: cryptomaterial.Border{
+										Radius: radius,
+									},
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, pg.mktValues[i].image.Layout48dp)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													txt := pg.Theme.Label(values.TextSize16, pg.mktValues[i].title)
+													txt.Color = pg.Theme.Color.Text
+													return txt.Layout(gtx)
+												}),
+												layout.Rigid(func(gtx C) D {
+													txt := pg.Theme.Label(values.TextSize12, pg.mktValues[i].subText)
+													txt.Color = pg.Theme.Color.GrayText3
+													return layout.Inset{Left: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
+												}),
+											)
+										})
+
+									}),
+									layout.Rigid(func(gtx C) D {
+										gtx.Constraints.Min.X = gtx.Dp(50)
+										separator := pg.Theme.Separator()
+										return layout.E.Layout(gtx, func(gtx C) D {
+											// Show bottom divider for all rows except last
+											return layout.Inset{
+												Left:   values.MarginPadding50,
+												Right:  values.MarginPadding50,
+												Top:    values.MarginPadding12,
+												Bottom: values.MarginPadding8,
+											}.Layout(gtx, separator.Layout)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+											txt := pg.Theme.Label(values.TextSize16, pg.mktValues[i].price)
+											txt.Color = pg.Theme.Color.Text
+											return txt.Layout(gtx)
+										})
+									}),
+									layout.Rigid(func(gtx C) D {
+										card := pg.Theme.Card()
+										card.Radius = cryptomaterial.Radius(12)
+										card.Color = pg.Theme.Color.DefaultThemeColors().Green50
+										if !pg.mktValues[i].isChangePositive {
+											card.Color = pg.Theme.Color.DefaultThemeColors().Orange3
+										}
+										return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+											return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
+												return card.Layout(gtx, func(gtx C) D {
+													return layout.Inset{
+														Top:    values.MarginPadding4,
+														Bottom: values.MarginPadding4,
+														Right:  values.MarginPadding12,
+														Left:   values.MarginPadding12,
+													}.Layout(gtx, func(gtx C) D {
+														lbl := pg.Theme.Body2(pg.mktValues[i].idChange)
+														lbl.Color = pg.Theme.Color.DefaultThemeColors().Green500
+														if !pg.mktValues[i].isChangePositive {
+															lbl.Color = pg.Theme.Color.DefaultThemeColors().OrangeRipple
+														}
+														return lbl.Layout(gtx)
+													})
+												})
+											})
+										})
+									}),
+								)
+							})
+						})
+					})
+				}),
+			)
+		}),
+	)
 }
 
 func (pg *OverviewPage) marketTableHeader(gtx C) D {
@@ -605,30 +758,66 @@ func (pg *OverviewPage) assetTableLabel(title string, col color.NRGBA) layout.Wi
 }
 
 func (pg *OverviewPage) txStakingSection(gtx C) D {
+	axis := layout.Horizontal
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		axis = layout.Vertical
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
+		Orientation: axis,
 		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Flexed(.5, func(gtx C) D {
-			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
-					return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return pg.Theme.Body1("No recent transaction").Layout(gtx)
-					})
-				})
-			})
-		}),
-		layout.Flexed(.5, func(gtx C) D {
-			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
-				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		layout.Rigid(func(gtx C) D {
 
-					return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
-				})
-			})
+			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				return layout.Flex{Axis: axis}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.Theme.Body1("No recent transaction").Layout(gtx)
+								})
+							})
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+									return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+								})
+							})
+						})
+					}),
+				)
+			}
+
+			return layout.Flex{}.Layout(gtx,
+				layout.Flexed(.5, func(gtx C) D {
+					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return pg.Theme.Body1("No recent transaction").Layout(gtx)
+							})
+						})
+					})
+				}),
+				layout.Flexed(.5, func(gtx C) D {
+					return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+						return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+							return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+						})
+					})
+				}),
+			)
 		}),
 	)
 }
