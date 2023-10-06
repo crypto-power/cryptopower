@@ -232,15 +232,38 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *OverviewPage) layoutMobile(_ C) D {
-	return D{}
+func (pg *OverviewPage) layoutMobile(gtx C) D {
+	pageContent := []func(gtx C) D{
+		pg.sliderLayout,
+		pg.marketOverview,
+		pg.txStakingSection,
+		pg.recentTrades,
+		pg.recentProposal,
+	}
+
+	return components.UniformMobile(gtx, false, false, func(gtx C) D {
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+					return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+						return pageContent[i](gtx)
+					})
+				})
+			})
+		})
+	})
 }
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {
+	axis := layout.Horizontal
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		axis = layout.Vertical
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
+		Orientation: axis,
 		Direction:   layout.Center,
 		Margin:      layout.Inset{Bottom: values.MarginPadding20},
 	}.Layout(gtx,
@@ -250,9 +273,20 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 				return pg.assetBalanceSliderLayout(gtx)
 			}
 
+			weight := 1.0
+			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				return layout.Flex{Axis: axis}.Layout(gtx,
+					layout.Rigid(pg.assetBalanceSliderLayout),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+					}),
+				)
+			}
+
+			weight = .5
 			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(.5, pg.assetBalanceSliderLayout),
-				layout.Flexed(.5, func(gtx C) D {
+				layout.Flexed(float32(weight), pg.assetBalanceSliderLayout),
+				layout.Flexed(float32(weight), func(gtx C) D {
 					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 				}),
 			)
@@ -605,30 +639,68 @@ func (pg *OverviewPage) assetTableLabel(title string, col color.NRGBA) layout.Wi
 }
 
 func (pg *OverviewPage) txStakingSection(gtx C) D {
+	axis := layout.Horizontal
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		axis = layout.Vertical
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
+		Orientation: axis,
 		Direction:   layout.Center,
 	}.Layout(gtx,
-		layout.Flexed(.5, func(gtx C) D {
-			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
-					return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return pg.Theme.Body1("No recent transaction").Layout(gtx)
-					})
-				})
-			})
-		}),
-		layout.Flexed(.5, func(gtx C) D {
-			return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
-				return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		layout.Rigid(func(gtx C) D {
 
-					return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
-				})
-			})
+			weight := 1.0
+			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				return layout.Flex{Axis: axis}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.Theme.Body1("No recent transaction").Layout(gtx)
+								})
+							})
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+									return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+								})
+							})
+						})
+					}),
+				)
+			}
+
+			weight = .5
+			return layout.Flex{}.Layout(gtx,
+				layout.Flexed(float32(weight), func(gtx C) D {
+					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return pg.Theme.Body1("No recent transaction").Layout(gtx)
+							})
+						})
+					})
+				}),
+				layout.Flexed(float32(weight), func(gtx C) D {
+					return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+						return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+
+							return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+						})
+					})
+				}),
+			)
 		}),
 	)
 }
