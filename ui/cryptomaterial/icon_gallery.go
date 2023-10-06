@@ -14,7 +14,7 @@ type Icons struct {
 	ImageBrightness1, ContentClear, DropDownIcon, Cached, ContentRemove, SearchIcon, PlayIcon,
 	ActionSettings, ActionSwapHoriz, NavigationRefresh, ContentCopy *widget.Icon
 
-	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, MixerInactive, RedAlert, Alert,
+	OverviewIcon, OverviewIconInactive, WalletIcon, WalletIconInactive, TradeIconActive, TradeIconInactive, MixerInactive, RedAlert, Alert,
 	ReceiveIcon, Transferred, TransactionsIcon, TransactionsIconInactive, SendIcon, MoreIcon, MoreIconInactive,
 	PendingIcon, Logo, RedirectIcon, ConfirmIcon, NewWalletIcon, WalletAlertIcon, ArrowForward, EllipseHoriz,
 	ImportedAccountIcon, AccountIcon, EditIcon, expandIcon, CopyIcon, MixedTx, Mixer,
@@ -113,6 +113,8 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.Restore = NewImage(decredIcons["restore"])
 	i.TimerIcon = NewImage(decredIcons["timerIcon"])
 	i.WalletIcon = NewImage(decredIcons["wallet"])
+	i.TradeIconActive = NewImage(decredIcons["trade_active"])
+	i.TradeIconInactive = NewImage(decredIcons["trade_inactive"])
 	i.StakeIcon = NewImage(decredIcons["stake"])
 	i.StakeIconInactive = NewImage(decredIcons["stake_inactive"])
 	i.StakeyIcon = NewImage(decredIcons["stakey"])

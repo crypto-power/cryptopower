@@ -165,8 +165,15 @@ func (pg *SettingPage) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *SettingPage) layoutMobile(_ C) D {
-	return D{}
+func (pg *SettingPage) layoutMobile(gtx C) D {
+	return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(pg.pageHeaderLayout),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.pageContentLayout)
+			}),
+		)
+	})
 }
 
 func (pg *SettingPage) settingLine(gtx C) D {
