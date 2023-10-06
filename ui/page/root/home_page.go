@@ -49,7 +49,7 @@ type HomePage struct {
 
 	// page state variables
 	isBalanceHidden bool
-	isConnected     bool
+	isConnected     *atomic.Bool
 
 	startSpvSync uint32
 
@@ -64,8 +64,9 @@ var navigationTabTitles = []string{
 
 func NewHomePage(l *load.Load) *HomePage {
 	hp := &HomePage{
-		Load:       l,
-		MasterPage: app.NewMasterPage(HomePageID),
+		Load:        l,
+		MasterPage:  app.NewMasterPage(HomePageID),
+		isConnected: new(atomic.Bool),
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -97,12 +98,12 @@ func NewHomePage(l *load.Load) *HomePage {
 	}
 
 	go func() {
-		hp.isConnected = libutils.IsOnline()
+		hp.isConnected.Store(libutils.IsOnline())
 	}()
 
 	// init shared page functions
 	toggleSync := func(unlock load.NeedUnlockRestore) {
-		if !hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
+		if hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
 			go hp.WL.SelectedWallet.Wallet.CancelSync()
 			unlock(false)
 		} else {
@@ -654,7 +655,7 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 	}
 	unlock(true)
 
-	if hp.isConnected {
+	if hp.isConnected.Load() {
 		// once network connection has been established proceed to
 		// start the wallet sync.
 		if err := wallet.SpvSync(); err != nil {
@@ -673,52 +674,46 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 	// is restored or the app is shutdown.
 	go func() {
 		count := 0
-		counter := 5
-		duration := time.Second * 10
-		ticker := time.NewTicker(duration)
+		duration := time.Second * 5
 
-		for range ticker.C {
-			if hp.isConnected {
-				log.Info("Internet connection has been established")
-				// once network connection has been established proceed to
-				// start the wallet sync.
-				if err := wallet.SpvSync(); err != nil {
-					log.Debugf("Error starting sync: %v", err)
-					continue
-				}
-
-				if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
-					err := hp.WL.AssetsManager.InstantSwap.Sync(hp.ctx)
-					if err != nil {
-						log.Errorf("Error syncing instant swap: %v", err)
-						continue
-					}
-				}
-
-				// Trigger UI update
-				hp.ParentWindow().Reload()
-
-				ticker.Stop()
+		for {
+			select {
+			case <-hp.ctx.Done():
 				return
-			}
+			case <-time.After(duration):
+				if libutils.IsOnline() {
+					log.Info("Internet connection has been established")
+					// once network connection has been established proceed to
+					// start the wallet sync.
+					if err := wallet.SpvSync(); err != nil {
+						log.Debugf("Error starting sync: %v", err)
+					}
 
-			// At the 5th ticker count, increase the duration interval by 5 seconds.
-			if count%counter == 0 && count > 0 {
-				duration += time.Second * 5
-				// reset ticker
-				ticker.Reset(duration)
-			}
-			// Increase the counter
-			count++
-			log.Debugf("Attempting to check for internet connection in %s", duration.String())
+					if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
+						err := hp.WL.AssetsManager.InstantSwap.Sync(hp.ctx)
+						if err != nil {
+							log.Errorf("Error syncing instant swap: %v", err)
+						}
+					}
 
-			go func() {
-				hp.isConnected = libutils.IsOnline()
-			}()
+					// Trigger UI update
+					hp.ParentWindow().Reload()
+
+					hp.isConnected.Store(true)
+					// Allow another goroutine to be spun up later on if need be.
+					atomic.StoreUint32(&hp.startSpvSync, 0)
+					return
+				}
+
+				// At the 5th ticker count, increase the duration interval
+				// by 5 seconds up to thirty seconds.
+				if count%5 == 0 && count > 0 && duration < time.Second*30 {
+					duration += time.Second * 5
+				}
+				count++
+				log.Debugf("Attempting to check for internet connection in %s", duration)
+			}
 		}
-
-		// Allow another goroutine to be spun up later on if need be.
-		atomic.StoreUint32(&hp.startSpvSync, 0)
 	}()
 }
 
