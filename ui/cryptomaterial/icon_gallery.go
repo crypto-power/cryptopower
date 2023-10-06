@@ -38,7 +38,7 @@ type Icons struct {
 	TicketRevokedIcon,
 	TicketUnminedIcon *Image
 
-	BTC, DCR, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, DcrDex *Image
+	BTC, DCR, DCRBlue, LTC, DcrWatchOnly, BtcWatchOnly, LtcWatchOnly, DcrDex *Image
 }
 
 // TODO: Deprecate some of these standard icons eg ActionInfo
@@ -147,6 +147,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.DcrDex = NewImage(decredIcons["logo_dcrdex"])
 	i.BTC = NewImage(decredIcons["logo_btc"])
 	i.DCR = NewImage(decredIcons["logo_dcr"])
+	i.DCRBlue = NewImage(decredIcons["logo_dcr_blue"])
 	i.LTC = NewImage(decredIcons["logo_ltc"])
 	i.DcrWatchOnly = NewImage(decredIcons["logo_dcr_watch_only"])
 	i.BtcWatchOnly = NewImage(decredIcons["logo_btc_watch_only"])
