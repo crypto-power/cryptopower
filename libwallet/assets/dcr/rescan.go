@@ -61,6 +61,7 @@ func (asset *Asset) RescanBlocksFromHeight(startHeight int32) error {
 			rescanProgressReport := &sharedW.HeadersRescanProgressReport{
 				CurrentRescanHeight: p.ScannedThrough,
 				TotalHeadersToScan:  asset.GetBestBlockHeight(),
+				WalletID:            asset.ID,
 			}
 
 			elapsedRescanTime := time.Now().Unix() - rescanStartTime

@@ -30,6 +30,7 @@ func (br *BlocksRescanProgressListener) OnBlocksRescanProgress(progress *sharedW
 	br.UpdateNotification(wallet.RescanUpdate{
 		Stage:          wallet.RescanProgress,
 		ProgressReport: progress,
+		WalletID:       progress.WalletID,
 	})
 }
 
