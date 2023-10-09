@@ -929,11 +929,11 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(.5, func(gtx C) D {
 					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
+						return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 							if len(pg.transactions) == 0 {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1("No recent transaction").Layout(gtx)
+									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
 								})
 							}
 
@@ -966,12 +966,12 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					})
 				}),
 				layout.Flexed(.5, func(gtx C) D {
-					return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
+					return pg.pageContentWrapper(gtx, values.StrStakingActivity, nil, func(gtx C) D {
 						if len(pg.stakes) == 0 {
 							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
-								return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+								return pg.Theme.Body1(values.StrNoStaking).Layout(gtx)
 							})
 						}
 
