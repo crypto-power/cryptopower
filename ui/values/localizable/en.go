@@ -375,6 +375,7 @@ const EN = `
 "noPoliciesYet" = "No policies yet"
 "noProposal" = "No proposals %v"
 "noReward" = "Stakey sees no rewards"
+"noStaking" = "No recent Staking Activity"
 "notAllowed" = "%s API not allowed by current network settings."
 "notApplicable" = "N/A"
 "notAvailable" = "Not available"
