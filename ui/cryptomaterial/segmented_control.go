@@ -1,108 +1,78 @@
 package cryptomaterial
 
 import (
-	"sync"
+	"image"
 
-	"gioui.org/font"
 	"gioui.org/layout"
-
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type SegmentedControl struct {
 	theme *Theme
-	list  *ClickableList
+	btns  []*widget.Clickable
 
 	selectedIndex int
-	segmentTitles []string
-
-	changed bool
-	mu      sync.Mutex
+	items         []string
 }
 
-func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
-	list := t.NewClickableList(layout.Horizontal)
-	list.IsHoverable = false
-
+func (t *Theme) SegmentedControl(items []string) *SegmentedControl {
+	btns := make([]*widget.Clickable, len(items))
+	for i := range btns {
+		btns[i] = new(widget.Clickable)
+	}
 	return &SegmentedControl{
-		list:          list,
-		theme:         t,
-		segmentTitles: segmentTitles,
+		theme: t,
+		btns:  btns,
+		items: items,
 	}
 }
 
-func (sc *SegmentedControl) Layout(gtx C) D {
-	sc.handleEvents()
-
-	return LinearLayout{
-		Width:      WrapContent,
-		Height:     WrapContent,
-		Background: sc.theme.Color.Background,
-		Border:     Border{Radius: Radius(8)},
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
-				isSelectedSegment := sc.SelectedIndex() == i
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					bg := sc.theme.Color.SurfaceHighlight
-					txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
-					border := Border{Radius: Radius(0)}
-					if isSelectedSegment {
-						bg = sc.theme.Color.Surface
-						txt.Color = sc.theme.Color.Text
-						border = Border{Radius: Radius(8)}
+func (sc *SegmentedControl) Layout(gtx layout.Context) layout.Dimensions {
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+			// Draw background here if needed
+			return layout.Dimensions{}
+		}),
+		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					dims := layout.Dimensions{}
+					for i := range sc.btns {
+						btn := sc.btns[i]
+						item := sc.items[i]
+						inset := layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8, Left: values.MarginPadding16, Right: values.MarginPadding16}
+						dims = inset.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							for btn.Clicked() {
+								sc.selectedIndex = i
+							}
+							lbl := sc.theme.Label(values.TextSize16, item)
+							if i == sc.selectedIndex {
+								lbl.Color = sc.theme.Color.Primary
+								paint.FillShape(gtx.Ops, sc.theme.Color.Primary, clip.Rect{Min: image.Point{}, Max: gtx.Constraints.Max}.Op())
+							}
+							return lbl.Layout(gtx)
+						})
 					}
-					return LinearLayout{
-						Width:      WrapContent,
-						Height:     WrapContent,
-						Padding:    layout.UniformInset(values.MarginPadding8),
-						Background: bg,
-						Margin:     layout.UniformInset(values.MarginPadding5),
-						Border:     border,
-					}.Layout2(gtx, txt.Layout)
-				})
-			})
+					return dims
+				}),
+			)
 		}),
 	)
 }
 
-func (sc *SegmentedControl) handleEvents() {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	if segmentItemClicked, clickedSegmentIndex := sc.list.ItemClicked(); segmentItemClicked {
-		if sc.selectedIndex != clickedSegmentIndex {
-			sc.changed = true
-		}
-		sc.selectedIndex = clickedSegmentIndex
-	}
-}
-
 func (sc *SegmentedControl) SelectedIndex() int {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
 	return sc.selectedIndex
 }
 
-func (sc *SegmentedControl) SelectedSegment() string {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	return sc.segmentTitles[sc.selectedIndex]
-}
-func (sc *SegmentedControl) Changed() bool {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	changed := sc.changed
-	sc.changed = false
-	return changed
+func (sc *SegmentedControl) SetSelectedIndex(index int) {
+	if index >= 0 && index < len(sc.items) {
+		sc.selectedIndex = index
+	}
 }
 
-func (sc *SegmentedControl) SetSelectedSegment(segment string) {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	for i, item := range sc.segmentTitles {
-		if item == segment {
-			sc.selectedIndex = i
-			break
-		}
-	}
+func (sc *SegmentedControl) SelectedItem() string {
+	return sc.items[sc.selectedIndex]
 }
