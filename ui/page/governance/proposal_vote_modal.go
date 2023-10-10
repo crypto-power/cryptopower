@@ -78,7 +78,9 @@ func newVoteModal(l *load.Load, proposal *libwallet.Proposal) *voteModal {
 				voteDetails, err := vm.WL.AssetsManager.Politeia.ProposalVoteDetailsRaw(ctx, w.Internal().DCR, vm.proposal.Token)
 				vm.detailsMu.Lock()
 				if !components.ContextDone(ctx) {
-					vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
+					if voteDetails != nil {
+						vm.voteDetails = &libwallet.ProposalVoteDetails{ProposalVoteDetails: *voteDetails}
+					}
 					vm.voteDetailsErr = err
 				}
 				vm.detailsMu.Unlock()
