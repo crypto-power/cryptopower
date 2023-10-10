@@ -19,7 +19,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const GovernancePageID = "Governance"
+const (
+	GovernancePageID = "Governance"
+)
 
 type Page struct {
 	*load.Load
@@ -52,6 +54,10 @@ func NewGovernancePage(l *load.Load) *Page {
 	return pg
 }
 
+func (pg *Page) ID() string {
+	return GovernancePageID
+}
+
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -65,7 +71,7 @@ func (pg *Page) OnNavigatedTo() {
 }
 
 func (pg *Page) isGovernanceFeatureEnabled() bool {
-	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false)
+	return true
 }
 
 func (pg *Page) isProposalsAPIAllowed() bool {

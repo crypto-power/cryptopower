@@ -41,7 +41,6 @@ type HomePage struct {
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
 	hideBalanceButton      *cryptomaterial.Clickable
-	checkBox               cryptomaterial.CheckBoxStyle
 	infoButton             cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 
 	bottomNavigationBar  components.BottomNavigationBar
@@ -60,6 +59,7 @@ var navigationTabTitles = []string{
 	values.String(values.StrOverview),
 	values.String(values.StrWallets),
 	values.String(values.StrTrade),
+	values.String(values.StrGovernance),
 }
 
 func NewHomePage(l *load.Load) *HomePage {
@@ -194,6 +194,8 @@ func (hp *HomePage) HandleUserInteractions() {
 			pg = NewWalletSelectorPage(hp.Load)
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
+		case values.String(values.StrGovernance):
+			pg = governance.NewGovernancePage(hp.Load)
 		}
 
 		hp.Display(pg)
@@ -205,6 +207,8 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrWallets))
 	} else if hp.CurrentPageID() == TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
+	} else if hp.CurrentPageID() == governance.GovernancePageID && hp.navigationTab.SelectedTab() != values.String(values.StrGovernance) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrGovernance))
 	}
 
 	for _, item := range hp.drawerNav.AppNavBarItems {

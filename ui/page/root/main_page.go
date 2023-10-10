@@ -22,7 +22,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
@@ -159,13 +158,6 @@ func (mp *MainPage) initNavItems() {
 				ImageInactive: mp.Theme.Icons.StakeIconInactive,
 				Title:         values.String(values.StrStaking),
 				PageID:        staking.OverviewPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.GovernanceActiveIcon,
-				ImageInactive: mp.Theme.Icons.GovernanceInactiveIcon,
-				Title:         values.String(values.StrVoting),
-				PageID:        governance.GovernancePageID,
 			},
 			{
 				Clickable:     mp.Theme.NewClickable(true),
@@ -459,8 +451,6 @@ func (mp *MainPage) HandleUserInteractions() {
 				}
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
-			case governance.GovernancePageID:
-				pg = governance.NewGovernancePage(mp.Load)
 			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			}
