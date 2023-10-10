@@ -191,6 +191,7 @@ func (pg *TradePage) layoutAddMoreButton(clk *cryptomaterial.Clickable, buttonTe
 				Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
 				Background: pg.Theme.Color.Surface,
 			}.Layout(gtx,
+				layout.Rigid(ic),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.Theme.Label(values.TextSize16, buttonText1).Layout)
 				}),
