@@ -48,7 +48,7 @@ func NewTradePage(l *load.Load) *TradePage {
 	}
 
 	rad := cryptomaterial.Radius(14)
-	pg.exchangeBtn = l.Theme.NewClickable(false)
+	pg.exchangeBtn = l.Theme.NewClickable(true)
 	pg.exchangeBtn.Radius = rad
 
 	pg.dcrdexBtn = l.Theme.NewClickable(true)
@@ -135,8 +135,8 @@ func (pg *TradePage) pageContentLayout(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-						layout.Rigid(pg.titleContent(values.String(values.StrExchangeIntro))),
-						layout.Rigid(pg.titleContent(values.String(values.StrExchangeIntroPt2))),
+						layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrExchangeIntro)).Layout),
+						layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrExchangeIntroPt2)).Layout),
 						layout.Rigid(pg.boxContentLayout),
 					)
 				}),
@@ -144,12 +144,6 @@ func (pg *TradePage) pageContentLayout(gtx C) D {
 
 		})
 	})
-}
-
-func (pg *TradePage) titleContent(title string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize16, title).Layout)
-	}
 }
 
 func (pg *TradePage) boxContentLayout(gtx C) D {
@@ -166,11 +160,12 @@ func (pg *TradePage) boxContentLayout(gtx C) D {
 			Left:   values.MarginPadding124,
 			Right:  values.MarginPadding124,
 		},
-		Background: values.TransparentColor(values.TransparentBlack, 0.05),
+		Margin:     layout.Inset{Top: values.MarginPadding20},
+		Background: pg.Theme.Color.Gray2,
 	}.Layout2(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-			layout.Rigid(pg.layoutAddMoreButton(pg.exchangeBtn, values.String(values.StrCentralized), values.String(values.StrExchange), pg.Theme.Icons.TradeExchange.Layout48dp)),
-			layout.Rigid(pg.layoutAddMoreButton(pg.dcrdexBtn, values.String(values.StrDcrDex), "", pg.Theme.Icons.DcrDex.Layout48dp)),
+			layout.Rigid(pg.layoutAddMoreButton(pg.exchangeBtn, values.String(values.StrCentralized), values.String(values.StrExchange), pg.Theme.Icons.TradeExchange.Layout24dp)),
+			layout.Rigid(pg.layoutAddMoreButton(pg.dcrdexBtn, values.String(values.StrDcrDex), "", pg.Theme.Icons.DcrDex.Layout24dp)),
 		)
 	})
 }
@@ -180,22 +175,25 @@ func (pg *TradePage) layoutAddMoreButton(clk *cryptomaterial.Clickable, buttonTe
 		return layout.Inset{Left: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
 			return cryptomaterial.LinearLayout{
 				Width:       gtx.Dp(130),
-				Height:      gtx.Dp(150),
+				Height:      gtx.Dp(130),
 				Orientation: layout.Vertical,
 				Direction:   layout.Center,
 				Alignment:   layout.Middle,
 				Clickable:   clk,
-				Padding:     layout.UniformInset(20),
-				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
-				Background:  pg.Theme.Color.Surface,
+				Padding: layout.Inset{
+					Top:    values.MarginPadding30,
+					Bottom: values.MarginPadding10,
+					Left:   values.MarginPadding20,
+					Right:  values.MarginPadding20,
+				},
+				Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
+				Background: pg.Theme.Color.Surface,
 			}.Layout(gtx,
 				layout.Rigid(ic),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize16, buttonText1).Layout)
+					return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, pg.Theme.Label(values.TextSize16, buttonText1).Layout)
 				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, pg.Theme.Label(values.TextSize16, buttonText2).Layout)
-				}),
+				layout.Rigid(pg.Theme.Label(values.TextSize16, buttonText2).Layout),
 			)
 		})
 	}
