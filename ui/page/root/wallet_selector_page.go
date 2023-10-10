@@ -51,6 +51,7 @@ type WalletSelectorPage struct {
 	assetDropdownContainer *widget.List
 	shadowBox              *cryptomaterial.Shadow
 	addWalClickable        *cryptomaterial.Clickable
+	SegmentedControl       *cryptomaterial.SegmentedControl
 
 	// wallet selector options
 	listLock       sync.RWMutex
@@ -60,6 +61,11 @@ type WalletSelectorPage struct {
 
 	walletComponents  *cryptomaterial.WalletClickableList
 	assetCollapsibles map[libutils.AssetType]*cryptomaterial.Collapsible
+}
+
+var segmentedControlTitles = []string{
+	values.String(values.StrWallets),
+	values.String(values.StrRecentTransactions),
 }
 
 func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
@@ -81,6 +87,7 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 		shadowBox: l.Theme.Shadow(),
 	}
 
+	pg.SegmentedControl = l.Theme.SegmentedControl(segmentedControlTitles)
 	pg.assetCollapsibles = make(map[libutils.AssetType]*cryptomaterial.Collapsible)
 	pg.walletsList = make(map[libutils.AssetType][]*load.WalletItem)
 	pg.indexMapping = make(map[int]walletIndexTuple)
@@ -180,7 +187,11 @@ func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 
 func (pg *WalletSelectorPage) sectionTitle(title string) layout.Widget {
 	return func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.Theme.Label(values.TextSize20, title).Layout)
+		return layout.Inset{
+			Left: values.MarginPadding20,
+		}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return layout.Center.Layout(gtx, pg.SegmentedControl.Layout)
+		})
 	}
 }
 
@@ -204,7 +215,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		// return pg.walletComponents.Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 		supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
-			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(gtx, pg.Load, supportedAssets[i]))
+			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(pg.Load, supportedAssets[i]))
 		})
 	}
 
@@ -236,7 +247,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletSelectorPage) assetDropdown(gtx C, l *load.Load, asset libutils.AssetType) layout.Widget {
+func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetType) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

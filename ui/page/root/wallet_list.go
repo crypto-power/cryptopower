@@ -168,7 +168,7 @@ func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.Wallet
 	return pg.walletComponents.Layout(gtx, itemIDs, func(gtx C, i int) D {
 		clickedItem := itemIDs[i]
 		wallet := mainWalletList[clickedItem.Index]
-		return pg.walletWrapper(gtx, wallet.Wallet.GetAssetType(), wallet)
+		return pg.walletWrapper(gtx, wallet)
 	})
 }
 
@@ -208,13 +208,6 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 		})
 	}
 
-	card := pg.Theme.Card()
-	card.Color = pg.Theme.Color.Surface
-	card.Radius = cryptomaterial.Radius(10)
-
-	sectionTitleLabel := pg.Theme.Body1("Bad Wallets") // TODO: localize string
-	sectionTitleLabel.Color = pg.Theme.Color.GrayText2
-
 	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
@@ -223,7 +216,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 		Background: pg.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     pg.shadowBox,
-		Margin:     layout.Inset{Top: values.MarginPadding8, Left: values.MarginPadding16, Right: values.MarginPadding16},
+		Margin:     layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding2, Left: values.MarginPadding16, Right: values.MarginPadding16},
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -232,7 +225,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 					layout.Rigid(func(gtx C) D {
 						txt := pg.Theme.Label(values.TextSize16, "Bad Wallets")
 						txt.Color = pg.Theme.Color.Text
-						txt.Font.Weight = font.Bold
+						txt.Font.Weight = font.SemiBold
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -251,7 +244,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 	)
 }
 
-func (pg *WalletSelectorPage) walletWrapper(gtx C, wType libutils.AssetType, item *load.WalletItem) D {
+func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
@@ -260,7 +253,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, wType libutils.AssetType, ite
 		Background: pg.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     pg.shadowBox,
-		Margin:     layout.Inset{Top: values.MarginPadding8, Left: values.MarginPadding16, Right: values.MarginPadding16},
+		Margin:     layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding4, Left: values.MarginPadding16, Right: values.MarginPadding16},
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
