@@ -1,11 +1,11 @@
-Cryptopower is a self-custodial multi-coin wallet application designed for both desktop and mobile platforms. It offers support for creating wallets not only for Decred but also for other cryptocurrencies such as Bitcoin and Litecoin. The app is built using [Gio](https://gioui.org/), a Golang library for the implementation of cross-platform user interfaces.
+Cryptopower is a self-custodial multi-coin wallet application designed for both desktop and mobile platforms. It offers support for creating wallets not only for Decred, but also for other cryptocurrencies such as Bitcoin and Litecoin. The app is built using [Gio](https://gioui.org/), a Golang library for the implementation of cross-platform user interfaces.
 
 ## Available Features
 
 - Multi-Coin support - Native SPV wallets for Decred, Bitcoin and Litecoin.
- - Coin Control - It allows users to select exact addresses and outputs to be used in a transaction.
+- Coin Control - It allows users to select exact addresses and outputs to be used in a transaction.
 - CoinShuffle++ - CoinShuffle++ (CSPP) is a mixing protocol used to create Decred CoinJoin transactions.
-- Staking -  This allows users to purchase tickets via DCR’s [PoS (Proof-Of-Stake) consensus](https://docs.decred.org/proof-of-stake/overview/) implementation.
+- Staking - This allows users to purchase tickets via DCR’s [PoS (Proof-Of-Stake) consensus](https://docs.decred.org/proof-of-stake/overview/) implementation.
 - Governance - This allows users to vote on Decred Proposals, Consensus changes and Treasury Spendings.
 - Set gap limit - Users can choose a custom gap limit for use with address discovery.
 - Instant Exchange - Instant exchanging between assets using (Flyp.me, Godex, Changenow).
@@ -60,9 +60,9 @@ pawty5DgDQwzHHdhqGlT7Dnb/R9QMEyPvK12HaQ=
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
-Simply copy that entire text, save it as key.txt, and open a terminal.
+Simply copy that entire text, save it as `key.txt`, and open a terminal.
 
-In the terminal, use the cd command to navigate to the directory path where you’ve saved key.txt. Then use the `gpg --import` command.
+In the terminal, use the cd command to navigate to the directory path where you’ve saved `key.txt`. Then use the `gpg --import` command.
 
 (Note that Windows uses \ for directory paths, but Linux/macOS use /)
 
