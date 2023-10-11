@@ -91,7 +91,6 @@ func (rm *ReceiveModal) OnResume() {
 	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
-
 }
 
 func (rm *ReceiveModal) OnDismiss() {
@@ -169,7 +168,6 @@ func (rm *ReceiveModal) generateQRForAddress() {
 }
 
 func (rm *ReceiveModal) generateNewAddress() (string, error) {
-
 	newAddr, err := rm.sourceWalletSelector.selectedWallet.NextAddress(rm.sourceAccountSelector.selectedAccount.Number)
 	if err != nil {
 		return "", err
@@ -400,24 +398,17 @@ func (rm *ReceiveModal) initWalletSelectors() {
 
 	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-		err := rm.generateCurrentAddress()
-		if err != nil {
-			log.Error("Error getting current address: " + err.Error())
-			return
-		}
-		rm.generateQRForAddress()
+		rm.generateAddressAndQRCode()
 	})
 
 	rm.sourceAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-		err := rm.generateCurrentAddress()
-		if err != nil {
-			log.Error("Error getting current address: " + err.Error())
-			return
-		}
-		rm.generateQRForAddress()
-
+		rm.generateAddressAndQRCode()
 	})
 
+	rm.generateAddressAndQRCode()
+}
+
+func (rm *ReceiveModal) generateAddressAndQRCode() {
 	err := rm.generateCurrentAddress()
 	if err != nil {
 		log.Error("Error getting current address: " + err.Error())

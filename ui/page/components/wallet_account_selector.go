@@ -376,7 +376,7 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 	}()
 }
 
-// SelectorItem models a wallet or an account a long with it's clickable.
+// SelectorItem models a wallet or an account along with it's clickable.
 type SelectorItem struct {
 	item      interface{} // Item can either be a wallet or an account.
 	clickable *cryptomaterial.Clickable

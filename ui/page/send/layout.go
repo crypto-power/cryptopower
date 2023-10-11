@@ -6,6 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/crypto-power/cryptopower/app"
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -54,7 +55,7 @@ func (pg *Page) initLayoutWidgets() {
 	pg.toCoinSelection = pg.Theme.NewClickable(false)
 }
 
-func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
+func (pg *Page) topNav(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -74,18 +75,36 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
+func (pg *Page) Layout(gtx C) D {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
-	return pg.layoutDesktop(gtx)
+	return pg.layoutDesktop(pg.ParentWindow(), nil, gtx)
 }
 
-func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *Page) layoutDesktop(window app.WindowNavigator, walletSelector layout.Widget, gtx C) D {
+	// set the parent window this is needed for the send modal
+	// on the home page.
+	if pg.parentWindow == nil {
+		pg.parentWindow = window
+	}
+
 	pageContent := []func(gtx C) D{
 		func(gtx C) D {
 			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
-				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if walletSelector != nil {
+							return layout.Inset{
+								Bottom: values.MarginPadding16,
+							}.Layout(gtx, walletSelector)
+						}
+						return D{}
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.sourceAccountSelector.Layout(pg.parentWindow, gtx)
+					}),
+				)
 			})
 		},
 		pg.toSection,
@@ -139,11 +158,11 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	return dims
 }
 
-func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *Page) layoutMobile(gtx C) D {
 	pageContent := []func(gtx C) D{
 		func(gtx C) D {
 			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
-				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+				return pg.sourceAccountSelector.Layout(pg.parentWindow, gtx)
 			})
 		},
 		func(gtx C) D {
@@ -190,7 +209,7 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 	return dims
 }
 
-func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch bool, body layout.Widget) layout.Dimensions {
+func (pg *Page) pageSections(gtx C, title string, showAccountSwitch bool, body layout.Widget) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -214,7 +233,7 @@ func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch
 									return inset.Layout(gtx, pg.sendDestination.accountSwitch.Layout)
 								})
 							}
-							return layout.Dimensions{}
+							return D{}
 						}),
 					)
 				}),
@@ -224,7 +243,7 @@ func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch
 	})
 }
 
-func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
+func (pg *Page) toSection(gtx C) D {
 	return pg.pageSections(gtx, values.String(values.StrTo), true, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -242,11 +261,11 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 								return layout.Inset{
 									Bottom: values.MarginPadding16,
 								}.Layout(gtx, func(gtx C) D {
-									return pg.sendDestination.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
+									return pg.sendDestination.destinationWalletSelector.Layout(pg.parentWindow, gtx)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
-								return pg.sendDestination.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)
+								return pg.sendDestination.destinationAccountSelector.Layout(pg.parentWindow, gtx)
 							}),
 						)
 					}
@@ -277,7 +296,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.exchangeRateMessage == "" {
-					return layout.Dimensions{}
+					return D{}
 				}
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
@@ -299,7 +318,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 							}),
 							layout.Rigid(func(gtx C) D {
 								if pg.isFetchingExchangeRate {
-									return layout.Dimensions{}
+									return D{}
 								}
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
 								return layout.E.Layout(gtx, pg.retryExchange.Layout)
@@ -312,7 +331,7 @@ func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *Page) coinSelectionSection(gtx layout.Context) D {
+func (pg *Page) coinSelectionSection(gtx C) D {
 	selectedOption := automaticCoinSelection
 	sourceAcc := pg.sourceAccountSelector.SelectedAccount()
 	if len(pg.selectedUTXOs.selectedUTXOs) > 0 && pg.selectedUTXOs.sourceAccount == sourceAcc {
@@ -344,7 +363,7 @@ func (pg *Page) coinSelectionSection(gtx layout.Context) D {
 	})
 }
 
-func (pg *Page) txLabelSection(gtx layout.Context) D {
+func (pg *Page) txLabelSection(gtx C) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		topContainer := layout.UniformInset(values.MarginPadding15)
 		return topContainer.Layout(gtx, func(gtx C) D {
@@ -378,7 +397,7 @@ func (pg *Page) txLabelSection(gtx layout.Context) D {
 	})
 }
 
-func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
+func (pg *Page) balanceSection(gtx C) D {
 	c := pg.Theme.Card()
 	c.Radius = cryptomaterial.Radius(0)
 	return c.Layout(gtx, func(gtx C) D {
@@ -421,7 +440,7 @@ func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *Page) contentRow(gtx layout.Context, leftValue, rightValue string) layout.Dimensions {
+func (pg *Page) contentRow(gtx C, leftValue, rightValue string) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Body2(leftValue)

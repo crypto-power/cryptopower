@@ -41,6 +41,8 @@ type Page struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	parentWindow app.WindowNavigator
+
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
@@ -121,8 +123,31 @@ func NewSendPage(l *load.Load) *Page {
 	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
 	pg.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
+	pg.initializeAccountSelectors()
+
+	pg.sendDestination.addressChanged = func() {
+		pg.validateAndConstructTx()
+	}
+
+	pg.amount.amountChanged = func() {
+		pg.validateAndConstructTxAmountOnly()
+	}
+
+	pg.initLayoutWidgets()
+
+	return pg
+}
+
+// RestyleWidgets restyles select widgets to match the current theme. This is
+// especially necessary when the dark mode setting is changed.
+func (pg *Page) RestyleWidgets() {
+	pg.amount.styleWidgets()
+	pg.sendDestination.styleWidgets()
+}
+
+func (pg *Page) initializeAccountSelectors() {
 	// Source account picker
-	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
+	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
 			// this resets the selected destination account based on the
@@ -186,25 +211,6 @@ func NewSendPage(l *load.Load) *Page {
 			pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		}
 	})
-
-	pg.sendDestination.addressChanged = func() {
-		pg.validateAndConstructTx()
-	}
-
-	pg.amount.amountChanged = func() {
-		pg.validateAndConstructTxAmountOnly()
-	}
-
-	pg.initLayoutWidgets()
-
-	return pg
-}
-
-// RestyleWidgets restyles select widgets to match the current theme. This is
-// especially necessary when the dark mode setting is changed.
-func (pg *Page) RestyleWidgets() {
-	pg.amount.styleWidgets()
-	pg.sendDestination.styleWidgets()
 }
 
 func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
@@ -293,7 +299,7 @@ func (pg *Page) fetchExchangeRate() {
 	pg.validateAndConstructTx() // convert estimates to usd
 
 	pg.isFetchingExchangeRate = false
-	pg.ParentWindow().Reload()
+	pg.parentWindow.Reload()
 }
 
 func (pg *Page) validateAndConstructTx() {
@@ -310,7 +316,7 @@ func (pg *Page) validateAndConstructTx() {
 }
 
 func (pg *Page) validateAndConstructTxAmountOnly() {
-	defer pg.RefreshTheme(pg.ParentWindow())
+	defer pg.RefreshTheme(pg.parentWindow)
 
 	if !pg.sendDestination.validate() && pg.amount.amountIsValid() {
 		pg.constructTx()
@@ -466,7 +472,7 @@ func (pg *Page) resetFields() {
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
 	if pg.feeRateSelector.FetchRates.Clicked() {
-		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
+		go pg.feeRateSelector.FetchFeeRate(pg.parentWindow, pg.selectedWallet)
 	}
 
 	if pg.feeRateSelector.EditRates.Clicked() {
@@ -483,7 +489,7 @@ func (pg *Page) HandleUserInteractions() {
 			Title(textWithUnit).
 			Body(values.String(values.StrSendInfo)).
 			SetPositiveButtonText(values.String(values.StrGotIt))
-		pg.ParentWindow().ShowModal(info)
+		pg.parentWindow.ShowModal(info)
 	}
 
 	if pg.retryExchange.Clicked() {
@@ -496,7 +502,7 @@ func (pg *Page) HandleUserInteractions() {
 			pg.addressValidationError(err.Error())
 			pg.sendDestination.destinationAddressEditor.Editor.Focus()
 		} else {
-			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+			pg.parentWindow.Display(NewManualCoinSelectionPage(pg.Load, pg))
 		}
 	}
 
@@ -511,7 +517,7 @@ func (pg *Page) HandleUserInteractions() {
 				pg.clearEstimates()
 			}
 
-			pg.ParentWindow().ShowModal(pg.confirmTxModal)
+			pg.parentWindow.ShowModal(pg.confirmTxModal)
 		}
 	}
 

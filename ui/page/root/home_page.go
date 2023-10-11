@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -209,11 +208,11 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	for _, item := range hp.drawerNav.AppNavBarItems {
 		for item.Clickable.Clicked() {
-			// TODO: Implement click functionality
-			fmt.Println(item.PageID, "clicked")
-			if strings.ToLower(item.PageID) == values.StrReceive {
-				receiveModal := components.NewReceiveModal(hp.Load)
-				hp.ParentWindow().ShowModal(receiveModal)
+			switch strings.ToLower(item.PageID) {
+			case values.StrReceive:
+				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
+			case values.StrSend:
+				hp.ParentWindow().ShowModal(send.NewPageModal(hp.Load))
 			}
 		}
 	}

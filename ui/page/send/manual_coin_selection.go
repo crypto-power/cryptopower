@@ -262,11 +262,11 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
 		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
-		pg.ParentNavigator().Display(pg.sendPage)
+		pg.ParentNavigator().CloseCurrentPage()
 	}
 
 	if pg.fromCoinSelection.Clicked() {
-		pg.ParentNavigator().Display(pg.sendPage)
+		pg.ParentNavigator().CloseCurrentPage()
 	}
 
 	if pg.clearButton.Clicked() {
