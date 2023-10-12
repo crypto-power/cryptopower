@@ -67,7 +67,7 @@ const EN = `
 "bestBlockAge" = "Best block age"
 "bestBlocks" = "Best block"
 "bestBlockTimestamp" = "Best block timestamp"
-"binanceRate" = "Binance rate: 1 %s ~= %f %s"
+"currencyConverterRate" = "%s rate: 1 %s ~= %f %s"
 "blockHeaderFetched" = "Block header fetched"
 "blockHeaderFetchedCount" = "%d of %d"
 "blocksLeft" = "%d blocks left"
@@ -763,4 +763,8 @@ const EN = `
 "inputCertificate" = "Input Certificate"
 "DEXServerAddrWarning" = "Enter a valid DEX server address"
 "add" = "Add"
+"marketOverview" = "Market Overview"
+"name" = "Name"
+"price" = "Price"
+"refreshState" = "Refreshing..."
 `

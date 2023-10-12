@@ -67,7 +67,6 @@ type Page struct {
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
-	currencyExchange    string
 
 	txLabelInputEditor cryptomaterial.Editor
 
@@ -276,8 +275,7 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
-		pg.usdExchangeSet = true
+		pg.usdExchangeSet = pg.WL.AssetsManager.RateSource.Ready()
 		go pg.fetchExchangeRate()
 	} else {
 		// If exchange rate is not supported, validate and construct the TX.
@@ -317,9 +315,8 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 
-	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
-	if err != nil {
-		log.Error(err)
+	rate := pg.WL.AssetsManager.RateSource.GetTicker(market)
+	if rate == nil || rate.LastTradePrice <= 0 {
 		pg.isFetchingExchangeRate = false
 		return
 	}
@@ -341,7 +338,7 @@ func (pg *Page) validateAndConstructTx() {
 		pg.constructTx()
 	} else {
 		pg.clearEstimates()
-		pg.showBalaceAfterSend()
+		pg.showBalanceAfterSend()
 	}
 }
 
@@ -452,7 +449,7 @@ func (pg *Page) constructTx() {
 	}
 }
 
-func (pg *Page) showBalaceAfterSend() {
+func (pg *Page) showBalanceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		if sourceAccount.Balance == nil {

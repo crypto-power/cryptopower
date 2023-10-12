@@ -274,7 +274,7 @@ func mainnetService() *Service {
 		return nil
 	}
 
-	return NewService(chainParams)
+	return NewService(chainParams.Name)
 }
 
 var service = mainnetService()

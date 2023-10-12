@@ -6,6 +6,7 @@ import (
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 
@@ -139,14 +140,25 @@ func (mgr *AssetsManager) GetCurrencyConversionExchange() string {
 	var key string
 	mgr.db.ReadWalletConfigValue(sharedW.CurrencyConversionConfigKey, &key)
 	if key == "" {
-		return "none" // default exchange value
+		return values.DefaultExchangeValue // default exchange value
 	}
 	return key
 }
 
 // SetCurrencyConversionExchange sets the currency conversion exchange.
-func (mgr *AssetsManager) SetCurrencyConversionExchange(data string) {
-	mgr.db.SaveWalletConfigValue(sharedW.CurrencyConversionConfigKey, data)
+func (mgr *AssetsManager) SetCurrencyConversionExchange(xc string) {
+	mgr.db.SaveWalletConfigValue(sharedW.CurrencyConversionConfigKey, xc)
+	go func() {
+		err := mgr.RateSource.ToggleSource(xc)
+		if err != nil {
+			log.Errorf("Failed to toggle rate source: %v", err)
+			return
+		}
+
+		if xc != values.DefaultExchangeValue {
+			mgr.RateSource.Refresh(true)
+		}
+	}()
 }
 
 // GetLanguagePreference returns the language preference.
@@ -188,6 +200,10 @@ func (mgr *AssetsManager) SetTransactionsNotifications(data bool) {
 // SetPrivacyMode sets the privacy mode for the wallet.
 func (mgr *AssetsManager) SetPrivacyMode(isActive bool) {
 	mgr.db.SaveWalletConfigValue(sharedW.PrivacyModeConfigKey, isActive)
+	mgr.RateSource.ToggleStatus(isActive)
+	if !isActive && mgr.GetCurrencyConversionExchange() != values.DefaultExchangeValue {
+		go mgr.RateSource.Refresh(true)
+	}
 }
 
 // IsPrivacyModeOn checks if the privacy mode is set.

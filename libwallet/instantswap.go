@@ -2,6 +2,7 @@ package libwallet
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -107,28 +107,30 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			params.MaxDeviationRate = DefaultMarketDeviation // default 5%
 		}
 
-		ticker, err := mgr.ExternalService.GetTicker(ext.Binance, MarketName(fromCur, toCur))
-		if err != nil {
-			log.Error("unable to get market rate from binance")
-			return errors.E(op, err)
+		market := fromCur + "-" + toCur
+		source := mgr.RateSource.Name()
+		ticker := mgr.RateSource.GetTicker(market) // TODO: (@ukane-philemon) Can we proceed if there is no rate information from rate source? I think we should.
+		if ticker == nil {
+			return errors.E(op, fmt.Errorf("unable to get market rate from %s", source))
 		}
 
 		exchangeServerRate := res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
-		binanceRate := ticker.LastTradePrice
-		/// Binance always returns ticker.LastTradePrice in's the quote asset
-		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
+		rateSourceRate := ticker.LastTradePrice
+		// Current rate source supported Binance and Bittrex always returns
+		// ticker.LastTradePrice in's the quote asset unit e.g DCR-BTC, LTC-BTC.
+		// We will also do this when and if USDT is supported.
 		if strings.EqualFold(fromCur, "btc") {
-			binanceRate = 1 / ticker.LastTradePrice
+			rateSourceRate = 1 / ticker.LastTradePrice
 		}
 
 		serverRateStr := values.StringF(values.StrServerRate, params.Order.ExchangeServer.Server, fromCur, exchangeServerRate, toCur)
 		log.Info(serverRateStr)
-		binanceRateStr := values.StringF(values.StrBinanceRate, fromCur, binanceRate, toCur)
+		binanceRateStr := values.StringF(values.StrCurrencyConverterRate, source, fromCur, rateSourceRate, toCur)
 		log.Info(binanceRateStr)
 
 		// check if the server rate deviates from the market rate by ± 5%
 		// exit if true
-		percentageDiff := math.Abs((exchangeServerRate-binanceRate)/((exchangeServerRate+binanceRate)/2)) * 100
+		percentageDiff := math.Abs((exchangeServerRate-rateSourceRate)/((exchangeServerRate+rateSourceRate)/2)) * 100
 		if percentageDiff > params.MaxDeviationRate {
 			log.Error("exchange rate deviates from the market rate by more than 5%")
 			return errors.E(op, "exchange rate deviates from the market rate by more than 5%")
@@ -310,16 +312,4 @@ func (mgr *AssetsManager) IsOrderSchedulerRunning() bool {
 // GetShedulerRuntime returns the duration the order scheduler has been running.
 func (mgr *AssetsManager) GetShedulerRuntime() string {
 	return time.Since(mgr.InstantSwap.SchedulerStartTime).Round(time.Second).String()
-}
-
-// MarketName is a convenience function that returns a proper market name for
-// the from and to currencies used when fetching ticker data from binance.
-func MarketName(fromCur, toCur string) string {
-	dcrToLtc := strings.EqualFold(fromCur, "dcr") && strings.EqualFold(toCur, "ltc")
-	btcToOthersExceptUsdt := strings.EqualFold(fromCur, "btc") && !strings.EqualFold(toCur, "usdt")
-	if dcrToLtc || btcToOthersExceptUsdt {
-		return toCur + "-" + fromCur // e.g DCR/BTC, LTC/BTC and not BTC/LTC or BTC/DCR
-	}
-
-	return fromCur + "-" + toCur
 }

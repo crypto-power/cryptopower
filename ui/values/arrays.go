@@ -7,8 +7,10 @@ const (
 	DCRUSDTMarket        = "DCR-USDT"
 	BTCUSDTMarket        = "BTC-USDT"
 	LTCUSDTMarket        = "LTC-USDT"
-	BittrexExchange      = "bittrex"
-	BinanceExchange      = "binance"
+	DCRBTCMarket         = "DCR-BTC"
+	LTCBTCMarket         = "LTC-BTC"
+	BittrexExchange      = "Bittrex"
+	BinanceExchange      = "Binance"
 )
 
 // initialize an asset market value map

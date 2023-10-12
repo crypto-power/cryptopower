@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
@@ -53,6 +54,7 @@ type AssetsManager struct {
 	Politeia        *politeia.Politeia
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
+	RateSource      ext.RateSource
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -153,19 +155,24 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	mgr.Politeia = politeia
 	mgr.InstantSwap = instantSwap
 
-	// initialize the ExternalService. ExternalService provides assetsManager with
-	// the functionalities to retrieve data from 3rd party services. e.g Binance, Bittrex.
-	mgr.ExternalService = ext.NewService(mgr.chainsParams.DCR)
+	// initialize the ExternalService. ExternalService provides assetsManager
+	// with the functionalities to retrieve data from some 3rd party services.
+	mgr.ExternalService = ext.NewService(string(netType))
 
 	// clean all deleted wallet if exist
 	mgr.cleanDeletedWallets()
 
-	// Load existing wallets.
+	// Load existing wallets and init mgr.db.
 	if err := mgr.prepareExistingWallets(); err != nil {
 		return nil, err
 	}
 
 	log.Infof("Loaded %d wallets", mgr.LoadedWalletsCount())
+
+	err = mgr.initRateSource()
+	if err != nil {
+		return nil, err
+	}
 
 	// Attempt to set the log levels if a valid db interface was found.
 	if mgr.IsAssetManagerDB() {
@@ -175,6 +182,45 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	mgr.listenForShutdown()
 
 	return mgr, nil
+}
+
+// initRateSource initializes the user's rate source and starts a loop to
+// refresh the rates.
+func (mgr *AssetsManager) initRateSource() (err error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	mgr.cancelFuncs = append(mgr.cancelFuncs, cancel)
+
+	rateSource := mgr.GetCurrencyConversionExchange()
+	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource)
+	if err != nil {
+		return fmt.Errorf("ext.NewCommonRateSource error: %w", err)
+	}
+
+	disabled := mgr.IsPrivacyModeOn()
+	mgr.RateSource.ToggleStatus(disabled)
+
+	// Start the refresh goroutine even if rate source is disabled.
+	go func() {
+		mgr.RateSource.Refresh(false)
+
+		ticker := time.NewTicker(ext.RateRefreshDuration)
+		defer ticker.Stop()
+
+		for {
+			if ctx.Err() != nil {
+				return
+			}
+
+			select {
+			case <-ticker.C:
+				mgr.RateSource.Refresh(false)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return nil
 }
 
 // prepareExistingWallets loads all the valid and bad wallets. It also attempts

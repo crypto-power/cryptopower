@@ -177,7 +177,7 @@ const (
 	StrBestBlockAge                    = "bestBlockAge"
 	StrBestBlocks                      = "bestBlocks"
 	StrBestBlockTimestamp              = "bestBlockTimestamp"
-	StrBinanceRate                     = "binanceRate"
+	StrCurrencyConverterRate           = "currencyConverterRate"
 	StrBlockHeaderFetched              = "blockHeaderFetched"
 	StrBlockHeaderFetchedCount         = "blockHeaderFetchedCount"
 	StrBlocksLeft                      = "blocksLeft"
@@ -873,4 +873,8 @@ const (
 	StrInputCertificate                = "inputCertificate"
 	StrDEXServerAddrWarning            = "DEXServerAddrWarning"
 	StrAdd                             = "add"
+	StrMarketOverview                  = "marketOverview"
+	StrName                            = "name"
+	StrPrice                           = "price"
+	StrRefreshState                    = "refreshState"
 )

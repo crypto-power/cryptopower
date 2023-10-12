@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"sort"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -67,6 +70,11 @@ type OverviewPage struct {
 
 	*listeners.AccountMixerNotificationListener
 	*listeners.TxAndBlockNotificationListener
+	*ext.RateListener
+
+	materialLoader    material.LoaderStyle
+	forceRefreshRates *cryptomaterial.Clickable
+
 	mixerSliderData      map[int]*mixerData
 	sortedMixerSlideKeys []int
 }
@@ -81,12 +89,10 @@ type assetBalanceSliderItem struct {
 }
 
 type assetMarketData struct {
-	title            string
-	subText          string
-	price            string
-	idChange         string
-	isChangePositive bool
-	image            *cryptomaterial.Image
+	title   string
+	subText string
+	market  string
+	image   *cryptomaterial.Image
 }
 
 type mixerData struct {
@@ -95,6 +101,7 @@ type mixerData struct {
 }
 
 func NewOverviewPage(l *load.Load) *OverviewPage {
+	dcr, ltc, btc := libutils.DCRWalletAsset, libutils.LTCWalletAsset, libutils.BTCWalletAsset
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
@@ -132,35 +139,31 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 		},
 		mktValues: []assetMarketData{
 			{
-				title:            "Decred",
-				subText:          "DCR",
-				price:            "$13.36",
-				idChange:         "0.56%",
-				isChangePositive: true,
-				image:            l.Theme.Icons.DCRBlue,
+				title:   dcr.ToFull(),
+				subText: dcr.String(),
+				market:  values.DCRUSDTMarket,
+				image:   l.Theme.Icons.DCRBlue,
 			},
 			{
-				title:            "Bitcoin",
-				subText:          "BTC",
-				price:            "$27,500",
-				idChange:         "-0.56%",
-				isChangePositive: false,
-				image:            l.Theme.Icons.BTC,
+				title:   btc.ToFull(),
+				subText: btc.String(),
+				market:  values.BTCUSDTMarket,
+				image:   l.Theme.Icons.BTC,
 			},
 			{
-				title:            "Litecoin",
-				subText:          "LTC",
-				price:            "$64.56",
-				idChange:         "0.56%",
-				isChangePositive: true,
-				image:            l.Theme.Icons.LTC,
+				title:   ltc.ToFull(),
+				subText: ltc.String(),
+				market:  values.LTCUSDTMarket,
+				image:   l.Theme.Icons.LTC,
 			},
 		},
 		assetBalanceSlider: l.Theme.Slider(),
 		card:               l.Theme.Card(),
 		sliderRedirectBtn:  l.Theme.NewClickable(false),
+		forceRefreshRates:  l.Theme.NewClickable(false),
 	}
 
+	pg.materialLoader = material.Loader(l.Theme.Base)
 	pg.mixerSlider = l.Theme.Slider()
 	pg.mixerSlider.ButtonBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
 	pg.mixerSlider.IndicatorBackgroundColor = values.TransparentColor(values.TransparentDeepBlue, 0.02)
@@ -195,6 +198,10 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
+	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+		 go pg.WL.AssetsManager.RateSource.Refresh(false)
+	}
+
 	pg.listenForMixerNotifications()
 
 }
@@ -207,6 +214,10 @@ func (pg *OverviewPage) OnNavigatedTo() {
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
 		pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+	}
+
+	if pg.forceRefreshRates.Clicked() {
+		go pg.WL.AssetsManager.RateSource.Refresh(true)
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
@@ -400,8 +411,9 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 	sliderWidget := make([]layout.Widget, 0)
 	for _, key := range pg.sortedMixerSlideKeys {
-		// Append the mixer slide widgets in an anonymouse function. This stops the
-		// the fuction literal from capturing only the final key {key} value.
+		// Append the mixer slide widgets in an anonymous function. This stops
+		// the the function literal from capturing only the final key {key}
+		// value.
 		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
 				sliderWidget = append(sliderWidget, func(gtx C) D {
@@ -537,7 +549,28 @@ func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
 }
 
 func (pg *OverviewPage) marketOverview(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Market Overview", func(gtx C) D {
+	rates := pg.marketRates()
+	if len(rates) == 0 {
+		return D{}
+	}
+
+	titleLayout := func(gtx layout.Context) layout.Dimensions {
+		return cryptomaterial.LinearLayout{
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
+			Orientation: layout.Horizontal,
+			Spacing:     layout.SpaceBetween,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return pg.Theme.Body2(values.String(values.StrMarketOverview)).Layout(gtx)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.ratesRefreshComponent())
+			}),
+		)
+	}
+
+	return pg.pageContentWrapper(gtx, values.String(values.StrMarketOverview), titleLayout, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
 			Height:      cryptomaterial.WrapContent,
@@ -547,9 +580,15 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 					return pg.marketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
+						asset := pg.mktValues[i]
+						rate, ok := rates[asset.market]
+						if !ok {
+							return D{}
+						}
+
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return pg.marketTableRows(gtx, pg.mktValues[i])
+								return pg.marketTableRows(gtx, asset, rate)
 							}),
 							layout.Rigid(func(gtx C) D {
 								// No divider for last row
@@ -577,6 +616,11 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 }
 
 func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
+	rates := pg.marketRates()
+	if len(rates) == 0 {
+		return D{}
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.WrapContent,
 		Height:      cryptomaterial.WrapContent,
@@ -590,12 +634,44 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					txt := pg.Theme.Label(values.TextSize18, "Market Overview")
-					txt.Color = pg.Theme.Color.Text
-					return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, txt.Layout)
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Spacing:     layout.SpaceBetween,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							txt := pg.Theme.Label(values.TextSize18, values.String(values.StrMarketOverview))
+							txt.Color = pg.Theme.Color.Text
+							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, txt.Layout)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, pg.ratesRefreshComponent())
+						}),
+					)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.mobileMarketOverviewList.Layout(gtx, len(pg.mktValues), func(gtx C, i int) D {
+						asset := pg.mktValues[i]
+						rate, ok := rates[asset.market]
+						if !ok {
+							return D{}
+						}
+						changeStr := "----"
+						var isPositiveChange *bool
+						if rate.PriceChangePercent != nil {
+							change := *rate.PriceChangePercent
+							if change < 0 {
+								no := false
+								isPositiveChange = &no
+							}
+							if change > 0 {
+								yes := false
+								isPositiveChange = &yes
+							}
+							changeStr = fmt.Sprintf("%.2f", change) + "%"
+						}
+
 						card := pg.Theme.Card()
 						radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
 						card.Radius = cryptomaterial.Radius(8)
@@ -613,18 +689,18 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 									},
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, pg.mktValues[i].image.Layout48dp)
+										return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, asset.image.Layout48dp)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize16, pg.mktValues[i].title)
+													txt := pg.Theme.Label(values.TextSize16, asset.title)
 													txt.Color = pg.Theme.Color.Text
 													return txt.Layout(gtx)
 												}),
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize12, pg.mktValues[i].subText)
+													txt := pg.Theme.Label(values.TextSize12, asset.subText)
 													txt.Color = pg.Theme.Color.GrayText3
 													return layout.Inset{Left: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
 												}),
@@ -647,7 +723,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-											txt := pg.Theme.Label(values.TextSize16, pg.mktValues[i].price)
+											txt := pg.Theme.Label(values.TextSize16, fmt.Sprintf("$%.2f", rate.LastTradePrice))
 											txt.Color = pg.Theme.Color.Text
 											return txt.Layout(gtx)
 										})
@@ -655,9 +731,13 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										card := pg.Theme.Card()
 										card.Radius = cryptomaterial.Radius(12)
-										card.Color = pg.Theme.Color.DefaultThemeColors().Green50
-										if !pg.mktValues[i].isChangePositive {
-											card.Color = pg.Theme.Color.DefaultThemeColors().Orange3
+										card.Color = pg.Theme.Color.DefaultThemeColors().Gray3
+										if isPositiveChange != nil {
+											if *isPositiveChange {
+												card.Color = pg.Theme.Color.DefaultThemeColors().Green50
+											} else {
+												card.Color = pg.Theme.Color.DefaultThemeColors().Orange3
+											}
 										}
 										return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 											return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
@@ -668,10 +748,14 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 														Right:  values.MarginPadding12,
 														Left:   values.MarginPadding12,
 													}.Layout(gtx, func(gtx C) D {
-														lbl := pg.Theme.Body2(pg.mktValues[i].idChange)
-														lbl.Color = pg.Theme.Color.DefaultThemeColors().Green500
-														if !pg.mktValues[i].isChangePositive {
-															lbl.Color = pg.Theme.Color.DefaultThemeColors().OrangeRipple
+														lbl := pg.Theme.Body2(changeStr)
+														lbl.Color = pg.Theme.Color.DefaultThemeColors().Gray1
+														if isPositiveChange != nil {
+															if *isPositiveChange {
+																lbl.Color = pg.Theme.Color.DefaultThemeColors().Green500
+															} else {
+																lbl.Color = pg.Theme.Color.DefaultThemeColors().OrangeRipple
+															}
 														}
 														return lbl.Layout(gtx)
 													})
@@ -689,13 +773,32 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 	)
 }
 
+func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
+	marketRates := make(map[string]*ext.Ticker)
+
+	if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+		return marketRates
+	}
+
+	for i := range pg.mktValues {
+		asset := pg.mktValues[i]
+		rate := pg.WL.AssetsManager.RateSource.GetTicker(asset.market)
+		if rate == nil || rate.LastTradePrice <= 0 {
+			continue
+		}
+		marketRates[asset.market] = rate
+	}
+
+	return marketRates
+}
+
 func (pg *OverviewPage) marketTableHeader(gtx C) D {
 	col := pg.Theme.Color.GrayText3
 
 	leftWidget := func(gtx C) D {
 		return layout.Inset{
 			Left: values.MarginPadding33,
-		}.Layout(gtx, pg.assetTableLabel("Name", col))
+		}.Layout(gtx, pg.assetTableLabel(values.String(values.StrName), col))
 	}
 
 	rightWidget := func(gtx C) D {
@@ -704,17 +807,17 @@ func (pg *OverviewPage) marketTableHeader(gtx C) D {
 			Alignment: layout.Middle,
 		}.Layout(gtx,
 			layout.Flexed(.8, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel("Price", col))
+				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.StrPrice), col))
 			}),
 			layout.Flexed(.2, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel("ID Change", col))
+				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.StrChange), col))
 			}),
 		)
 	}
 	return components.EndToEndRow(gtx, leftWidget, rightWidget)
 }
 
-func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData) D {
+func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData, rate *ext.Ticker) D {
 	leftWidget := func(gtx C) D {
 		return layout.Flex{
 			Axis:      layout.Horizontal,
@@ -737,14 +840,24 @@ func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData) D {
 			Alignment: layout.Middle,
 		}.Layout(gtx,
 			layout.Flexed(.785, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel(asset.price, pg.Theme.Color.Text))
+				return layout.E.Layout(gtx, pg.assetTableLabel(fmt.Sprintf("$%.2f", rate.LastTradePrice), pg.Theme.Color.Text))
 			}),
 			layout.Flexed(.215, func(gtx C) D {
-				col := pg.Theme.Color.Success
-				if !asset.isChangePositive {
-					col = pg.Theme.Color.Danger
+				hasRateChange := rate.PriceChangePercent != nil
+				changeStr := "----"
+				col := pg.Theme.Color.GrayText4
+				if hasRateChange {
+					change := *rate.PriceChangePercent
+					if change < 0 {
+						col = pg.Theme.Color.Danger
+					}
+					if change > 0 {
+						col = pg.Theme.Color.Success
+					}
+					changeStr = fmt.Sprintf("%.2f", change) + "%"
 				}
-				return layout.E.Layout(gtx, pg.assetTableLabel(asset.idChange, col))
+
+				return layout.E.Layout(gtx, pg.assetTableLabel(changeStr, col))
 			}),
 		)
 	}
@@ -775,7 +888,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return pg.Theme.Body1("No recent transaction").Layout(gtx)
@@ -785,7 +898,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+							return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
@@ -800,7 +913,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(.5, func(gtx C) D {
 					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						return pg.pageContentWrapper(gtx, "Recent Transactions", func(gtx C) D {
+						return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
 							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
 								return pg.Theme.Body1("No recent transaction").Layout(gtx)
@@ -809,7 +922,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					})
 				}),
 				layout.Flexed(.5, func(gtx C) D {
-					return pg.pageContentWrapper(gtx, "Staking Activity", func(gtx C) D {
+					return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
 						return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
@@ -823,7 +936,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Trade", func(gtx C) D {
+	return pg.pageContentWrapper(gtx, "Recent Trade", nil, func(gtx C) D {
 		if len(pg.orders) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -853,7 +966,7 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Proposals", func(gtx C) D {
+	return pg.pageContentWrapper(gtx, "Recent Proposals", nil, func(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
@@ -944,9 +1057,13 @@ func (pg *OverviewPage) updateAssetsSliders() {
 	}
 }
 
-func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
+func (pg *OverviewPage) pageContentWrapper(gtx C, sectionTitle string, altTitleLayout func(gtx C) D, body layout.Widget) D {
+	titleLayout := pg.Theme.Body2(sectionTitle).Layout
+	if altTitleLayout != nil {
+		titleLayout = altTitleLayout
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(pg.Theme.Body2(sectionTitle).Layout),
+		layout.Rigid(titleLayout),
 		layout.Rigid(func(gtx C) D {
 			r := 8
 			return cryptomaterial.LinearLayout{
@@ -1007,8 +1124,13 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 				log.Errorf("Error adding tx and block notification listener: %v", err)
 				continue
 			}
-
 		}
+	}
+
+	pg.RateListener = ext.NewRateListener()
+	err := pg.WL.AssetsManager.RateSource.AddRateListener(pg.RateListener, OverviewPageID)
+	if err != nil {
+		log.Error("RateSource.AddRateListener error: %v", err)
 	}
 
 	pg.sortedMixerSlideKeys = make([]int, 0)
@@ -1058,16 +1180,21 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 						pg.ParentWindow().Reload()
 					}()
 				}
+			case <-pg.RateUpdateChan:
+				pg.ParentWindow().Reload()
 			case <-pg.ctx.Done():
 				for _, wal := range dcrWallets {
 					w := wal.(*dcr.Asset)
 					w.RemoveAccountMixerNotificationListener(OverviewPageID)
 					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
 				}
+				pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 				close(pg.MixerChan)
 				pg.CloseTxAndBlockChan()
+				close(pg.RateUpdateChan)
 				pg.AccountMixerNotificationListener = nil
 				pg.TxAndBlockNotificationListener = nil
+				pg.RateListener = nil
 
 				return
 			}
@@ -1108,5 +1235,44 @@ func (pg *OverviewPage) reloadBalances() {
 				wal.unmixedBalance = bal
 			}
 		}
+	}
+}
+
+func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
+	return func(gtx layout.Context) layout.Dimensions {
+		refreshing := pg.WL.AssetsManager.RateSource.Refreshing()
+		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				var text string
+				if refreshing {
+					text = values.String(values.StrRefreshState)
+				} else {
+					lastUpdatedTimestamp := pg.WL.AssetsManager.RateSource.LastUpdate().Unix()
+					text = values.String(values.StrUpdated) + " " + components.TimeAgo(lastUpdatedTimestamp)
+				}
+				lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+				lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+				return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+			}),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return cryptomaterial.LinearLayout{
+					Width:     cryptomaterial.WrapContent,
+					Height:    cryptomaterial.WrapContent,
+					Direction: layout.E,
+					Alignment: layout.End,
+					Margin:    layout.Inset{Left: values.MarginPadding8},
+					Clickable: pg.forceRefreshRates,
+				}.Layout2(gtx, func(gtx layout.Context) layout.Dimensions {
+					if refreshing {
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
+					}
+					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						return pg.Theme.Icons.Restore.LayoutSize(gtx, values.MarginPadding18)
+					})
+				})
+			}),
+		)
 	}
 }

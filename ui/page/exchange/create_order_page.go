@@ -47,6 +47,7 @@ type CreateOrderPage struct {
 	*app.GenericPageModal
 
 	*listeners.OrderNotificationListener
+	*ext.RateListener
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -80,9 +81,9 @@ type CreateOrderPage struct {
 	viewAllButton          cryptomaterial.Button
 	navToSettingsBtn       cryptomaterial.Button
 
-	min                       float64
-	max                       float64
-	exchangeRate, binanceRate float64
+	min          float64
+	max          float64
+	exchangeRate float64
 
 	errMsg string
 
@@ -123,7 +124,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		exchangeSelector: NewExSelector(l),
 		orderData:        &orderData{},
 		exchangeRate:     -1,
-		binanceRate:      -1,
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
@@ -229,7 +229,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 func (pg *CreateOrderPage) initPage() {
 	pg.inited = true
 	pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
-	pg.listenForSyncNotifications()
+	pg.listenForNotifications()
 	pg.loadOrderConfig()
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
@@ -875,11 +875,22 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.binanceRate <= 0 {
+									ticker := pg.WL.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+									if ticker == nil || ticker.LastTradePrice <= 0 {
 										return D{}
 									}
 
-									binanceRate := values.StringF(values.StrBinanceRate, fromCur, pg.binanceRate, toCur)
+									rate := ticker.LastTradePrice
+									//  Binance and Bittrex always returns
+									// ticker.LastTradePrice in's the quote
+									// asset unit e.g DCR-BTC, LTC-BTC. We will
+									// also do this when and if USDT is
+									// supported.
+									if pg.fromCurrency == libutils.BTCWalletAsset {
+										rate = 1 / ticker.LastTradePrice
+									}
+
+									binanceRate := values.StringF(values.StrCurrencyConverterRate, pg.WL.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
 									txt := pg.Theme.Label(values.TextSize14, binanceRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
@@ -1072,7 +1083,6 @@ func (pg *CreateOrderPage) updateExchangeRate() {
 
 func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	pg.exchangeRate = -1
-	pg.binanceRate = -1
 	pg.fetchingRate = true
 	fromCur := pg.fromCurrency.String()
 	toCur := pg.toCurrency.String()
@@ -1089,19 +1099,6 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		return err
 	}
 
-	ticker, err := pg.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, libwallet.MarketName(fromCur, toCur))
-	if err != nil {
-		log.Error(err)
-	}
-	if ticker != nil && ticker.LastTradePrice > 0 {
-		pg.binanceRate = ticker.LastTradePrice
-		/// Binance always returns ticker.LastTradePrice in's the quote asset
-		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
-		if pg.fromCurrency == libutils.BTCWalletAsset {
-			pg.binanceRate = 1 / ticker.LastTradePrice
-		}
-	}
-
 	pg.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	pg.min = res.Min
 	pg.max = res.Max
@@ -1111,7 +1108,6 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 
 	pg.fetchingRate = false
 	pg.rateError = false
-
 	return nil
 }
 
@@ -1250,14 +1246,24 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 	pg.WL.AssetsManager.SetExchangeConfig(configInfo)
 }
 
-func (pg *CreateOrderPage) listenForSyncNotifications() {
-	if pg.OrderNotificationListener != nil {
+func (pg *CreateOrderPage) listenForNotifications() {
+	if pg.OrderNotificationListener != nil && pg.RateListener != nil {
 		return
 	}
+
+	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID) // clear if any
 	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
 	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
 	if err != nil {
 		log.Errorf("Error adding instantswap notification listener: %v", err)
+		return
+	}
+
+	pg.WL.AssetsManager.RateSource.RemoveRateListener(CreateOrderPageID) // clear if any
+	pg.RateListener = ext.NewRateListener()
+	err = pg.WL.AssetsManager.RateSource.AddRateListener(pg.RateListener, CreateOrderPageID)
+	if err != nil {
+		log.Errorf("Error adding rate notification listener: %v", err)
 		return
 	}
 
@@ -1274,9 +1280,14 @@ func (pg *CreateOrderPage) listenForSyncNotifications() {
 				case wallet.OrderSchedulerEnded:
 					pg.scheduler.SetChecked(false)
 				}
+			case <-pg.RateUpdateChan:
+				pg.ParentWindow().Reload()
 			case <-pg.ctx.Done():
+				pg.WL.AssetsManager.RateSource.RemoveRateListener(CreateOrderPageID)
 				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 				close(pg.OrderNotifChan)
+				close(pg.RateUpdateChan)
+				pg.RateListener = nil
 				pg.OrderNotificationListener = nil
 
 				return
