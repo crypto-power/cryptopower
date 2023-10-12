@@ -50,7 +50,7 @@ type ReceiveModal struct {
 func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm := &ReceiveModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
+		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrReceive)),
 		copyRedirect:   l.Theme.NewClickable(false),
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		more:           l.Theme.IconButton(l.Theme.Icons.NavigationMore),

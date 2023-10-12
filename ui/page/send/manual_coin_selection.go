@@ -261,7 +261,7 @@ func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 // Part of the load.Page interface.
 func (pg *ManualCoinSelectionPage) HandleUserInteractions() {
 	if pg.actionButton.Clicked() {
-		pg.sendPage.UpdateSelectedUTXOs(pg.selectedUTXOrows)
+		pg.sendPage.updateSelectedUTXOs(pg.selectedUTXOrows)
 		pg.ParentNavigator().CloseCurrentPage()
 	}
 

@@ -22,6 +22,7 @@ const (
 type destination struct {
 	*load.Load
 
+	selectedWallet             sharedW.Asset
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
 	destinationAccountSelector *components.WalletAndAccountSelector
@@ -33,7 +34,7 @@ type destination struct {
 	selectedIndex int
 }
 
-func newSendDestination(l *load.Load) *destination {
+func newSendDestination(l *load.Load, selectedWallet sharedW.Asset) *destination {
 	dst := &destination{
 		Load: l,
 	}
@@ -47,8 +48,14 @@ func newSendDestination(l *load.Load) *destination {
 		{Text: values.String(values.StrWallets)},
 	})
 
+	dst.initDestinationWalletSelector(selectedWallet)
+
+	return dst
+}
+
+func (dst *destination) initDestinationWalletSelector(selectedWallet sharedW.Asset) {
 	// Destination wallet picker
-	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, l.WL.SelectedWallet.Wallet.GetAssetType()).
+	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, selectedWallet.GetAssetType()).
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrTo))
 
@@ -57,8 +64,7 @@ func newSendDestination(l *load.Load) *destination {
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
 	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
-
-	return dst
+	dst.selectedWallet = selectedWallet
 }
 
 // destinationAddress validates the destination address obtained from the provided
@@ -95,7 +101,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
-	if dst.WL.SelectedWallet.Wallet.IsAddressValid(address) {
+	if dst.selectedWallet.IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return address, nil
 	}

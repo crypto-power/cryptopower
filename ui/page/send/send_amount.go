@@ -11,15 +11,15 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
-	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 type sendAmount struct {
-	*load.Load
+	theme *cryptomaterial.Theme
 
+	assetType       libUtil.AssetType
 	amountEditor    cryptomaterial.Editor
 	usdAmountEditor cryptomaterial.Editor
 
@@ -33,14 +33,15 @@ type sendAmount struct {
 	exchangeRate float64
 }
 
-func newSendAmount(l *load.Load) *sendAmount {
+func newSendAmount(theme *cryptomaterial.Theme, assetType libUtil.AssetType) *sendAmount {
 	sa := &sendAmount{
-		Load:         l,
+		theme:        theme,
 		exchangeRate: -1,
+		assetType:    assetType,
 	}
 
-	hit := fmt.Sprintf("%s (%s)", values.String(values.StrAmount), string(l.WL.SelectedWallet.Wallet.GetAssetType()))
-	sa.amountEditor = l.Theme.Editor(new(widget.Editor), hit)
+	hit := fmt.Sprintf("%s (%s)", values.String(values.StrAmount), string(assetType))
+	sa.amountEditor = theme.Editor(new(widget.Editor), hit)
 	sa.amountEditor.Editor.SetText("")
 	sa.amountEditor.HasCustomButton = true
 	sa.amountEditor.Editor.SingleLine = true
@@ -49,7 +50,7 @@ func newSendAmount(l *load.Load) *sendAmount {
 	sa.amountEditor.CustomButton.Text = values.String(values.StrMax)
 	sa.amountEditor.CustomButton.CornerRadius = values.MarginPadding0
 
-	sa.usdAmountEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (USD)")
+	sa.usdAmountEditor = theme.Editor(new(widget.Editor), values.String(values.StrAmount)+" (USD)")
 	sa.usdAmountEditor.Editor.SetText("")
 	sa.usdAmountEditor.HasCustomButton = true
 	sa.usdAmountEditor.Editor.SingleLine = true
@@ -65,13 +66,13 @@ func newSendAmount(l *load.Load) *sendAmount {
 
 // styleWidgets sets the appropriate colors for the amount widgets.
 func (sa *sendAmount) styleWidgets() {
-	sa.amountEditor.CustomButton.Background = sa.Theme.Color.Gray1
-	sa.amountEditor.CustomButton.Color = sa.Theme.Color.Surface
-	sa.amountEditor.EditorStyle.Color = sa.Theme.Color.Text
+	sa.amountEditor.CustomButton.Background = sa.theme.Color.Gray1
+	sa.amountEditor.CustomButton.Color = sa.theme.Color.Surface
+	sa.amountEditor.EditorStyle.Color = sa.theme.Color.Text
 
-	sa.usdAmountEditor.CustomButton.Background = sa.Theme.Color.Gray1
-	sa.usdAmountEditor.CustomButton.Color = sa.Theme.Color.Surface
-	sa.usdAmountEditor.EditorStyle.Color = sa.Theme.Color.Text
+	sa.usdAmountEditor.CustomButton.Background = sa.theme.Color.Gray1
+	sa.usdAmountEditor.CustomButton.Color = sa.theme.Color.Surface
+	sa.usdAmountEditor.EditorStyle.Color = sa.theme.Color.Text
 }
 
 func (sa *sendAmount) setExchangeRate(exchangeRate float64) {
@@ -84,7 +85,7 @@ func (sa *sendAmount) setAmount(amount int64) {
 	// amount input to avoid construct tx cycle.
 	sa.sendMaxChangeEvent = sa.SendMax
 	amountSet := dcrutil.Amount(amount).ToCoin()
-	if sa.Load.WL.SelectedWallet.Wallet.GetAssetType() == libUtil.BTCWalletAsset {
+	if sa.assetType == libUtil.BTCWalletAsset {
 		amountSet = btcutil.Amount(amount).ToBTC()
 	}
 	sa.amountEditor.Editor.SetText(fmt.Sprintf("%.8f", amountSet))
@@ -118,7 +119,7 @@ func (sa *sendAmount) validAmount() (int64, bool, error) {
 		return -1, sa.SendMax, err
 	}
 
-	if sa.Load.WL.SelectedWallet.Wallet.GetAssetType() == libUtil.BTCWalletAsset {
+	if sa.assetType == libUtil.BTCWalletAsset {
 		return btc.AmountSatoshi(amount), sa.SendMax, nil
 	}
 	return dcr.AmountAtom(amount), sa.SendMax, nil
@@ -201,19 +202,19 @@ func (sa *sendAmount) handle() {
 	sa.amountEditor.SetError(sa.amountErrorText)
 
 	if sa.amountErrorText != "" {
-		sa.amountEditor.LineColor = sa.Theme.Color.Danger
-		sa.usdAmountEditor.LineColor = sa.Theme.Color.Danger
+		sa.amountEditor.LineColor = sa.theme.Color.Danger
+		sa.usdAmountEditor.LineColor = sa.theme.Color.Danger
 	} else {
-		sa.amountEditor.LineColor = sa.Theme.Color.Gray2
-		sa.usdAmountEditor.LineColor = sa.Theme.Color.Gray2
+		sa.amountEditor.LineColor = sa.theme.Color.Gray2
+		sa.usdAmountEditor.LineColor = sa.theme.Color.Gray2
 	}
 
 	if sa.SendMax {
-		sa.amountEditor.CustomButton.Background = sa.Theme.Color.Primary
-		sa.usdAmountEditor.CustomButton.Background = sa.Theme.Color.Primary
+		sa.amountEditor.CustomButton.Background = sa.theme.Color.Primary
+		sa.usdAmountEditor.CustomButton.Background = sa.theme.Color.Primary
 	} else if len(sa.amountEditor.Editor.Text()) < 1 || !sa.SendMax {
-		sa.amountEditor.CustomButton.Background = sa.Theme.Color.Gray1
-		sa.usdAmountEditor.CustomButton.Background = sa.Theme.Color.Gray1
+		sa.amountEditor.CustomButton.Background = sa.theme.Color.Gray1
+		sa.usdAmountEditor.CustomButton.Background = sa.theme.Color.Gray1
 	}
 
 	for _, evt := range sa.amountEditor.Editor.Events() {
@@ -257,4 +258,8 @@ func (sa *sendAmount) IsMaxClicked() bool {
 		return false
 	}
 	return true
+}
+
+func (sa *sendAmount) setAssetType(assetType libUtil.AssetType) {
+	sa.assetType = assetType
 }
