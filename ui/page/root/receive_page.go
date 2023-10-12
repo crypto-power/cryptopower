@@ -104,7 +104,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 	pg.copyAddressButton.Inset = layout.UniformInset(values.MarginPadding0)
 
 	pg.selector = components.NewWalletAndAccountSelector(pg.Load).
-		Title(values.String(values.StrFrom)).
+		Title(values.String(values.StrTo)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
 			currentAddress, err := pg.selectedWallet.CurrentAddress(selectedAccount.Number)
 			if err != nil {
