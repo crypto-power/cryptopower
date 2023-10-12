@@ -199,7 +199,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		 go pg.WL.AssetsManager.RateSource.Refresh(false)
+		go pg.WL.AssetsManager.RateSource.Refresh(false)
 	}
 
 	pg.listenForMixerNotifications()

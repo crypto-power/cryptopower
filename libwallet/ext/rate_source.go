@@ -454,8 +454,8 @@ func (cs *CommonRateSource) copyRates() map[string]*Ticker {
 	defer cs.mtx.RUnlock()
 	tickers := make(map[string]*Ticker, len(cs.tickers))
 	for m, t := range cs.tickers {
-		copy := *t
-		tickers[m] = &copy
+		tickerCopy := *t
+		tickers[m] = &tickerCopy
 	}
 	return tickers
 }
@@ -515,10 +515,8 @@ func (cs *CommonRateSource) Refresh(force bool) {
 		return
 	}
 
-	var wsStarting bool
 	if !cs.wsFailed() {
 		// Connection has not been initialized.
-		wsStarting = true
 		log.Tracef("Initializing websocket connection for %s", cs.source)
 		err := cs.connectWebsocket()
 		if err != nil {
@@ -529,6 +527,7 @@ func (cs *CommonRateSource) Refresh(force bool) {
 
 	errCount := cs.wsErrorCount()
 	var delay time.Duration
+	var wsStarting bool
 	switch {
 	case errCount < 5:
 	case errCount < 20:
@@ -887,6 +886,6 @@ func isSupportedMarket(market, rateSource string) (string, bool) {
 	return marketName, true
 }
 
-func dummyGetTickerFunc(market string) (*Ticker, error) {
+func dummyGetTickerFunc(string) (*Ticker, error) {
 	return &Ticker{}, nil
 }
