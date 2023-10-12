@@ -31,8 +31,9 @@ type Page struct {
 
 func NewSendPage(l *load.Load) *Page {
 	pg := &Page{
-		Load:              l,
-		GenericPageModal:  app.NewGenericPageModal(SendPageID),
+		Load: l,
+
+		GenericPageModal: app.NewGenericPageModal(SendPageID),
 		sharedProperties: newSharedProperties(l, false),
 	}
 

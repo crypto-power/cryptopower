@@ -23,8 +23,9 @@ type PageModal struct {
 
 func NewPageModal(l *load.Load) *PageModal {
 	sm := &PageModal{
-		Load:              l,
-		Modal:             l.Theme.ModalFloatTitle(values.String(values.StrSend)),
+		Load: l,
+
+		Modal:            l.Theme.ModalFloatTitle(values.String(values.StrSend)),
 		sharedProperties: newSharedProperties(l, true),
 	}
 
