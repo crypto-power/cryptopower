@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	w "decred.org/dcrwallet/v4/wallet"
 	"github.com/asdine/storm"
 	"github.com/crypto-power/cryptopower/libwallet/assets/wallet/walletdata"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"

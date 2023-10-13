@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	dcrW "decred.org/dcrwallet/v3/wallet"
-	"decred.org/dcrwallet/v3/wallet/txrules"
+	dcrW "decred.org/dcrwallet/v4/wallet"
+	"decred.org/dcrwallet/v4/wallet/txrules"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader/dcr"
@@ -60,7 +60,6 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 
 	stakeOptions := &dcr.StakeOptions{
 		VotingEnabled: false,
-		AddressReuse:  false,
 		VotingAddress: nil,
 	}
 
@@ -82,6 +81,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 		ManualTickets:           cfg.ManualTickets,
 		AccountGapLimit:         cfg.AccountGapLimit,
 		MixSplitLimit:           cfg.MixSplitLimit,
+		WatchLast:               20, // Limit number of watched addresses to 20.
 	}
 	walletLoader := dcr.NewLoader(loaderCfg)
 

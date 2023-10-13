@@ -7,14 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"decred.org/dcrwallet/v3/errors"
-	w "decred.org/dcrwallet/v3/wallet"
+	"decred.org/dcrwallet/v4/errors"
+	w "decred.org/dcrwallet/v4/wallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/decred/dcrd/blockchain/stake/v5"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrutil/v4"
 	"github.com/decred/dcrd/wire"
+	"github.com/decred/vspd/types/v2"
 )
 
 func (asset *Asset) TotalStakingRewards() (int64, error) {
@@ -123,13 +124,16 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	}
 	defer asset.LockWallet()
 
+	log.Info("Setting the ticket(s) purchasing account info")
+	vspClient.SetAccountInfo(account, account)
+
 	request := &w.PurchaseTicketsRequest{
 		Count:         int(numTickets),
 		SourceAccount: uint32(account),
 		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: vspClient.FeePercentage,
+		VSPFeePercent: vspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return vspClient.Process(ctx, ticketHash, feeTx, asset.GetvspPolicy(account))
+			return vspClient.Process(ctx, ticketHash, feeTx)
 		},
 	}
 
@@ -150,17 +154,6 @@ func (asset *Asset) PurchaseTickets(account, numTickets int32, vspHost, passphra
 	}
 
 	return ticketsResponse.TicketHashes, err
-}
-
-// GetvspPolicy creates the VSP policy using the account number provided.
-// Uses the user-specified instructions for processing fee payments
-// on a ticket, rather than some default policy.
-func (asset *Asset) GetvspPolicy(account int32) vsp.Policy {
-	return vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(account),
-		ChangeAcct: uint32(account),
-	}
 }
 
 // VSPTicketInfo returns vsp-related info for a given ticket. Returns an error
@@ -204,7 +197,36 @@ func (asset *Asset) VSPTicketInfo(hash string) (*VSPTicketInfo, error) {
 
 	ticketInfo.Client = vspClient
 
-	vspTicketStatus, err := vspClient.GetTicketStatus(ctx, ticketHash)
+	txs, _, err := asset.Internal().DCR.GetTransactionsByHashes(ctx, []*chainhash.Hash{ticketHash})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(txs) == 0 {
+		return nil, fmt.Errorf("%v is not a ticket", ticketHash)
+	}
+
+	ticketTx := txs[0]
+
+	if len(ticketTx.TxOut) != 3 {
+		return nil, fmt.Errorf("ticket %v has multiple commitments", ticketHash)
+	}
+
+	if !stake.IsSStx(ticketTx) {
+		return nil, fmt.Errorf("%v is not a ticket", ticketHash)
+	}
+
+	commitmentAddr, err := stake.AddrFromSStxPkScrCommitment(ticketTx.TxOut[1].PkScript, asset.chainParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract commitment address from %v: %w",
+			ticketHash, err)
+	}
+
+	req := types.TicketStatusRequest{
+		TicketHash: ticketHash.String(),
+	}
+
+	vspTicketStatus, err := vspClient.TicketStatus(ctx, req, commitmentAddr)
 	if err != nil {
 		log.Warnf("unable to get vsp ticket: %s Error: %v", hash, err)
 		return ticketInfo, nil
@@ -401,6 +423,9 @@ func (asset *Asset) runTicketBuyer(ctx context.Context, passphrase string, cfg *
 				continue
 			}
 
+			log.Info("Setting the ticket(s) purchasing account info")
+			cfg.VspClient.SetAccountInfo(cfg.PurchaseAccount, cfg.PurchaseAccount)
+
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
 			buyTicket := func() {
@@ -452,19 +477,14 @@ func (asset *Asset) buyTicket(ctx context.Context, passphrase string, sdiff dcru
 	// Count is 1 to prevent combining multiple split outputs in one tx,
 	// which can be used to link the tickets eventually purchased with the
 	// split outputs.
-	vspPolicy := vsp.Policy{
-		MaxFee:     0.2e8,
-		FeeAcct:    uint32(cfg.PurchaseAccount),
-		ChangeAcct: uint32(cfg.PurchaseAccount),
-	}
 	request := &w.PurchaseTicketsRequest{
 		Count:         1,
 		SourceAccount: uint32(cfg.PurchaseAccount),
 		Expiry:        expiry,
 		MinConf:       asset.RequiredConfirmations(),
-		VSPFeeProcess: cfg.VspClient.FeePercentage,
+		VSPFeePercent: cfg.VspClient.FeePercentage,
 		VSPFeePaymentProcess: func(ctx context.Context, ticketHash *chainhash.Hash, feeTx *wire.MsgTx) error {
-			return cfg.VspClient.Process(ctx, ticketHash, feeTx, vspPolicy)
+			return cfg.VspClient.Process(ctx, ticketHash, feeTx)
 		},
 	}
 	// Mixed split buying through CoinShuffle++, if configured.

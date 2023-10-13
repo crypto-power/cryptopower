@@ -340,9 +340,9 @@ func (pg *Page) HandleUserInteractions() {
 					ticketTx.Hash, ticketInfo.FeeTxStatus.String(), ticketInfo.VSP)
 			}
 
-			// Confirm that fee hasn't been paid, sender account exists, the wallet
+			// Confirm that fee processing errored, sender account exists, the wallet
 			// is unlocked and no previous ticket processing instance is running.
-			if ticketInfo.FeeTxStatus != dcr.VSPFeeProcessPaid && len(ticketTx.Inputs) == 1 &&
+			if ticketInfo.FeeTxStatus == dcr.VSPFeeProcessErrored && len(ticketTx.Inputs) == 1 &&
 				ticketInfo.Client != nil && atomic.CompareAndSwapUint32(&pg.processingTicket, 0, 1) {
 
 				log.Infof("Attempting to process the unconfirmed VSP fee for tx: %v", ticketTx.Hash)
@@ -353,8 +353,7 @@ func (pg *Page) HandleUserInteractions() {
 					return
 				}
 
-				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(pg.ctx, txHash, pg.dcrImpl.GetvspPolicy(account))
+				err = ticketInfo.Client.Process(pg.ctx, txHash, nil)
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}

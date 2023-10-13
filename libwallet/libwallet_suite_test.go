@@ -10,6 +10,6 @@ import (
 
 func TestLibwallet(t *testing.T) {
 	RegisterFailHandler(Fail)
-	rand.Seed(GinkgoRandomSeed())
+	rand.New(rand.NewSource(GinkgoRandomSeed()))
 	RunSpecs(t, "Libwallet Suite")
 }

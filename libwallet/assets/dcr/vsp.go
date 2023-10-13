@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -37,6 +37,10 @@ func (asset *Asset) VSPClient(host string, pubKey []byte) (*vsp.Client, error) {
 		PubKey: pubKey,
 		Dialer: nil, // optional, but consider providing a value
 		Wallet: asset.Internal().DCR,
+		Params: asset.chainParams,
+		Policy: &vsp.Policy{
+			MaxFee: 0.1e8,
+		},
 	}
 	client, err := vsp.New(cfg)
 	if err != nil {

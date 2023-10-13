@@ -8,7 +8,7 @@ package libwallet
 import (
 	"os"
 
-	"decred.org/dcrwallet/v3/errors"
+	"decred.org/dcrwallet/v4/errors"
 	"github.com/crypto-power/cryptopower/libwallet/internal/loader"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
 	"github.com/crypto-power/cryptopower/libwallet/internal/vsp"
