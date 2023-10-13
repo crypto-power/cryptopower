@@ -212,7 +212,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
 			case values.StrSend:
-				hp.ParentWindow().ShowModal(send.NewPageModal(hp.Load))
+				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, true))
 			}
 		}
 	}

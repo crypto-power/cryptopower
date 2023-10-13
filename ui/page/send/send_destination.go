@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -22,7 +23,6 @@ const (
 type destination struct {
 	*load.Load
 
-	selectedWallet             sharedW.Asset
 	addressChanged             func()
 	destinationAddressEditor   cryptomaterial.Editor
 	destinationAccountSelector *components.WalletAndAccountSelector
@@ -34,7 +34,7 @@ type destination struct {
 	selectedIndex int
 }
 
-func newSendDestination(l *load.Load, selectedWallet sharedW.Asset) *destination {
+func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination {
 	dst := &destination{
 		Load: l,
 	}
@@ -47,15 +47,13 @@ func newSendDestination(l *load.Load, selectedWallet sharedW.Asset) *destination
 		{Text: values.String(values.StrAddress)},
 		{Text: values.String(values.StrWallets)},
 	})
-
-	dst.initDestinationWalletSelector(selectedWallet)
-
+	dst.initDestinationWalletSelector(assetType)
 	return dst
 }
 
-func (dst *destination) initDestinationWalletSelector(selectedWallet sharedW.Asset) {
+func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetType) {
 	// Destination wallet picker
-	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, selectedWallet.GetAssetType()).
+	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, assetType).
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrTo))
 
@@ -64,7 +62,6 @@ func (dst *destination) initDestinationWalletSelector(selectedWallet sharedW.Ass
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
 	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
-	dst.selectedWallet = selectedWallet
 }
 
 // destinationAddress validates the destination address obtained from the provided
@@ -101,7 +98,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
-	if dst.selectedWallet.IsAddressValid(address) {
+	if dst.destinationWalletSelector.SelectedWallet().IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return address, nil
 	}

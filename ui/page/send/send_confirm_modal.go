@@ -120,7 +120,7 @@ func (scm *sendConfirmModal) Handle() {
 	}
 }
 
-func (scm *sendConfirmModal) Layout(gtx C) D {
+func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 	w := []layout.Widget{
 		func(gtx C) D {
 			scm.SetPadding(unit.Dp(0))
@@ -331,7 +331,7 @@ func (scm *sendConfirmModal) Layout(gtx C) D {
 	return scm.Modal.Layout(gtx, w)
 }
 
-func (scm *sendConfirmModal) contentRow(gtx C, leftValue, rightValue, walletName string) layout.Dimensions {
+func (scm *sendConfirmModal) contentRow(gtx layout.Context, leftValue, rightValue, walletName string) layout.Dimensions {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			txt := scm.Theme.Body2(leftValue)

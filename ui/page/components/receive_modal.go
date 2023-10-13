@@ -44,7 +44,6 @@ type ReceiveModal struct {
 	newAddr           cryptomaterial.Button
 	info, more        cryptomaterial.IconButton
 	receiveAddress    cryptomaterial.Label
-	// generateNewAddressButton cryptomaterial.Button
 }
 
 func NewReceiveModal(l *load.Load) *ReceiveModal {
