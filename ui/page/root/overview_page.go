@@ -1381,8 +1381,11 @@ func (pg *OverviewPage) loadStakes() {
 			log.Errorf("error loading staking activities: %v", err)
 			return
 		}
-
-		pg.stakes = append(pg.stakes, txs...)
+		for _, stakeTx := range txs {
+			if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
+				pg.stakes = append(pg.stakes, stakeTx)
+			}
+		}
 	}
 
 	sort.Slice(pg.stakes, func(i, j int) bool {

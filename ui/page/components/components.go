@@ -397,7 +397,7 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 						Width:       cryptomaterial.WrapContent,
 						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Horizontal,
-						Alignment:   layout.Middle,
+						Alignment:   layout.Baseline,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
@@ -509,22 +509,32 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 							Alignment:   layout.End,
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								t := time.Unix(row.Transaction.Timestamp, 0)
-								durationDays := int(time.Since(t).Abs().Hours() / 24)
-								durationPrefix := values.String(values.StrVoted)
-								durationPostfix := "days ago"
-								if durationDays < 1 {
-									durationDays = int(time.Since(t).Abs().Minutes() / 60)
-								}
-								if row.Transaction.Type == txhelper.TxTypeRevocation {
-									durationPrefix = values.String(values.StrRevoke)
-								}
-								durationTxt := fmt.Sprintf("%s %d %s", durationPrefix, durationDays, durationPostfix)
+								tx := &row.Transaction
+								if tx.Type == txhelper.TxTypeTicketPurchase {
+									durationPrefix := values.String(values.StrVoted)
+									if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
+										durationPrefix = values.String(values.StrUmined)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterImmature) {
+										durationPrefix = values.String(values.StrImmature)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterLive) {
+										durationPrefix = values.String(values.StrLive)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterExpired) {
+										durationPrefix = values.String(values.StrExpired)
+									} else {
+										ticketSpender, _ := wal.(*dcr.Asset).TicketSpender(tx.Hash)
+										if ticketSpender != nil {
+											// if this is not a vote a tx, then it must be a revoked tx.
+											if ticketSpender.Type != txhelper.TxTypeVote {
+												durationPrefix = values.String(values.StrRevoke)
+											}
+										}
+									}
+									durationTxt := TimeAgo(row.Transaction.Timestamp)
+									durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
 
-								voteOrVoted := row.Transaction.Type == txhelper.TxTypeTicketPurchase || row.Transaction.Type == txhelper.TxTypeVote
-								if voteOrVoted || row.Transaction.Type == txhelper.TxTypeRevocation {
 									lbl := l.Theme.Label(values.TextSize12, durationTxt)
 									return lbl.Layout(gtx)
+
 								}
 								return D{}
 							}),
