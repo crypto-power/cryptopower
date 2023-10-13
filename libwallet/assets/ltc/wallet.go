@@ -547,3 +547,29 @@ func decodeAddress(s string, params *chaincfg.Params) (ltcutil.Address, error) {
 	}
 	return addr, nil
 }
+
+// GetWalletBalance returns the total balance across all accounts.
+func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrLTCNotInitialized
+	}
+
+	var totalBalance, totalSpendable, totalImmatureReward int64
+	// var balance *sharedW.Balance
+	accountsResult, err := asset.GetAccountsRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, acc := range accountsResult.Accounts {
+		totalBalance += acc.Balance.Total.ToInt()
+		totalSpendable += acc.Balance.Spendable.ToInt()
+		totalImmatureReward += acc.Balance.ImmatureReward.ToInt()
+	}
+
+	return &sharedW.Balance{
+		Total:          Amount(totalBalance),
+		Spendable:      Amount(totalSpendable),
+		ImmatureReward: Amount(totalImmatureReward),
+	}, nil
+}

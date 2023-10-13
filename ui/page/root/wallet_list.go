@@ -10,6 +10,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/crypto-power/cryptopower/wallet"
 )
@@ -337,12 +339,17 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 						txt.Color = pg.Theme.Color.Text
 						txt.Font.Weight = font.SemiBold
 						return txt.Layout(gtx)
-
-						// return components.LayoutBalanceWithUnit(gtx, pg.Load, item.TotalBalance)
-
 					}),
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize16, "$0.00")
+						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+							totalBalance, _ := item.Wallet.GetWalletBalance()
+
+							txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, totalBalance.Total.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin()))
+							txt.Color = pg.Theme.Color.Text
+							return txt.Layout(gtx)
+						}
+
+						txt := pg.Theme.Label(values.TextSize16, "$--")
 						txt.Color = pg.Theme.Color.Text
 						return txt.Layout(gtx)
 					}),

@@ -14,6 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -51,7 +52,6 @@ type WalletSelectorPage struct {
 	assetDropdownContainer *widget.List
 	shadowBox              *cryptomaterial.Shadow
 	addWalClickable        *cryptomaterial.Clickable
-	SegmentedControl       *cryptomaterial.SegmentedControl
 
 	// wallet selector options
 	listLock       sync.RWMutex
@@ -59,13 +59,11 @@ type WalletSelectorPage struct {
 	indexMapping   map[int]walletIndexTuple
 	badWalletsList map[libutils.AssetType][]*badWalletListItem
 
-	walletComponents  *cryptomaterial.WalletClickableList
-	assetCollapsibles map[libutils.AssetType]*cryptomaterial.Collapsible
-}
-
-var segmentedControlTitles = []string{
-	values.String(values.StrWallets),
-	values.String(values.StrRecentTransactions),
+	walletComponents      *cryptomaterial.WalletClickableList
+	assetCollapsibles     map[libutils.AssetType]*cryptomaterial.Collapsible
+	assetsBalance         map[libutils.AssetType]sharedW.AssetAmount
+	assetsTotalUSDBalance map[libutils.AssetType]float64
+	assetRate             map[libutils.AssetType]float64
 }
 
 func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
@@ -87,8 +85,10 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 		shadowBox: l.Theme.Shadow(),
 	}
 
-	pg.SegmentedControl = l.Theme.SegmentedControl(segmentedControlTitles)
 	pg.assetCollapsibles = make(map[libutils.AssetType]*cryptomaterial.Collapsible)
+	pg.assetsBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
+	pg.assetsTotalUSDBalance = make(map[libutils.AssetType]float64)
+	pg.assetRate = make(map[libutils.AssetType]float64)
 	pg.walletsList = make(map[libutils.AssetType][]*load.WalletItem)
 	pg.indexMapping = make(map[int]walletIndexTuple)
 	pg.addWalClickable = l.Theme.NewClickable(false)
@@ -109,6 +109,42 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
 	}
+
+	go func() {
+		preferredExchange := pg.WL.AssetsManager.GetCurrencyConversionExchange()
+		// calculate total assets balance
+		assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
+		if err != nil {
+			log.Error(err)
+		}
+		pg.assetsBalance = assetsBalance
+
+		// calculate total assets balance in USD
+		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(pg.Load, assetsBalance)
+		if err != nil {
+			log.Error(err)
+		}
+		pg.assetsTotalUSDBalance = assetsTotalUSDBalance
+
+		// calculate assets USD rate
+		for assetType := range assetsBalance {
+			marketValue, exist := values.AssetExchangeMarketValue[assetType]
+			if !exist {
+				log.Errorf("Unsupported asset type: %s", assetType)
+				break
+			}
+
+			rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, marketValue)
+			if err != nil {
+				log.Error(err)
+				break
+			}
+			pg.assetRate[assetType] = rate.LastTradePrice
+
+		}
+
+		pg.ParentWindow().Reload()
+	}()
 
 	pg.listenForNotifications()
 	pg.loadWallets()
@@ -185,16 +221,6 @@ func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 	return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
 }
 
-func (pg *WalletSelectorPage) sectionTitle(title string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{
-			Left: values.MarginPadding20,
-		}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-			return layout.Center.Layout(gtx, pg.SegmentedControl.Layout)
-		})
-	}
-}
-
 func (pg *WalletSelectorPage) collapseAll() {
 	for _, collapsible := range pg.assetCollapsibles {
 		collapsible.SetExpanded(false) // Collapse this item
@@ -210,9 +236,7 @@ func (pg *WalletSelectorPage) expandOnly(assetType libutils.AssetType) {
 }
 
 func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
-	// supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
 	assetDropdown := func(gtx C) D {
-		// return pg.walletComponents.Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 		supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(pg.Load, supportedAssets[i]))
@@ -220,7 +244,6 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	}
 
 	pageContent := []func(gtx C) D{
-		pg.sectionTitle(values.String(values.StrSelectWalletToOpen)),
 		assetDropdown,
 	}
 
@@ -240,7 +263,6 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return layout.Inset{
 					Right: values.MarginPadding48,
-					// Bottom: values.MarginPadding4,
 				}.Layout(gtx, pageContent[i])
 			})
 		})
@@ -253,6 +275,10 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 			layout.Rigid(func(gtx C) D {
 				return pg.assetCollapsibles[asset].Layout(gtx,
 					func(gtx C) D {
+						margin := layout.Inset{}
+						if pg.assetCollapsibles[asset].IsExpanded() {
+							margin = layout.Inset{Bottom: values.MarginPadding5}
+						}
 						pg.shadowBox.SetShadowRadius(20)
 						return cryptomaterial.LinearLayout{
 							Width:      cryptomaterial.WrapContent,
@@ -261,8 +287,8 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 							Background: pg.Theme.Color.Surface,
 							Alignment:  layout.Middle,
 							Shadow:     pg.shadowBox,
-							// Margin:     layout.UniformInset(values.MarginPadding5),
-							Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+							Margin:     margin,
+							Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
@@ -303,13 +329,26 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 												Alignment: layout.End,
 											}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize16, "0.00 "+asset.String())
+													// check if asset balance is nil
+													if pg.assetsBalance[asset] == nil {
+														txt := pg.Theme.Label(values.TextSize16, "0.00 "+asset.String())
+														txt.Color = pg.Theme.Color.Text
+														txt.Font.Weight = font.SemiBold
+														return txt.Layout(gtx)
+													}
+													txt := pg.Theme.Label(values.TextSize16, pg.assetsBalance[asset].String())
 													txt.Color = pg.Theme.Color.Text
 													txt.Font.Weight = font.SemiBold
 													return txt.Layout(gtx)
 												}),
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize16, "$0.00")
+													if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+														txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, pg.assetsTotalUSDBalance[asset]))
+														txt.Color = pg.Theme.Color.Text
+														return txt.Layout(gtx)
+													}
+
+													txt := pg.Theme.Label(values.TextSize16, "$ --")
 													txt.Color = pg.Theme.Color.Text
 													return txt.Layout(gtx)
 												}),
@@ -331,15 +370,10 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 					},
 					func(gtx C) D {
 						return cryptomaterial.LinearLayout{
-							Width:  cryptomaterial.MatchParent,
-							Height: cryptomaterial.WrapContent,
-							// Padding:    layout.UniformInset(values.MarginPadding18),
-							// Background: values.TransparentColor(values.TransparentBlack, 0.70),
+							Width:      cryptomaterial.MatchParent,
+							Height:     cryptomaterial.WrapContent,
 							Background: pg.Theme.Color.LightGray,
-							// Alignment:  layout.Middle,
-							// Shadow:     pg.shadowBox,
-							// Margin:     layout.UniformInset(values.MarginPadding5),
-							Border: cryptomaterial.Border{Radius: cryptomaterial.CornerRadius{BottomLeft: int(values.MarginPadding14), BottomRight: 14}},
+							Border:     cryptomaterial.Border{Radius: cryptomaterial.CornerRadius{BottomLeft: int(values.MarginPadding14), BottomRight: 14}},
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
@@ -355,12 +389,7 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 												return txt.Layout(gtx)
 											})
 										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{
-												// Right:  values.MarginPadding48,
-												// Bottom: values.MarginPadding24,
-											}.Layout(gtx, pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout20dp))
-										}),
+										layout.Rigid(pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout20dp)),
 									)
 								})
 							}),
@@ -379,16 +408,13 @@ func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clicka
 			Top:    values.MarginPadding16,
 			Bottom: values.MarginPadding24,
 		}.Layout(gtx, func(gtx C) D {
-			// pg.shadowBox.SetShadowRadius(14)
 			return cryptomaterial.LinearLayout{
-				Width:  cryptomaterial.WrapContent,
-				Height: cryptomaterial.WrapContent,
-				// Padding:    layout.UniformInset(values.MarginPadding12),
+				Width:      cryptomaterial.WrapContent,
+				Height:     cryptomaterial.WrapContent,
 				Background: pg.Theme.Color.DefaultThemeColors().SurfaceHighlight,
 				Clickable:  clk,
-				// Shadow:     pg.shadowBox,
-				Border:    cryptomaterial.Border{Radius: clk.Radius},
-				Alignment: layout.Middle,
+				Border:     cryptomaterial.Border{Radius: clk.Radius},
+				Alignment:  layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(ic),
 				layout.Rigid(func(gtx C) D {

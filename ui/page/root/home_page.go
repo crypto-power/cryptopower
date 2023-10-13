@@ -57,7 +57,7 @@ type HomePage struct {
 
 var navigationTabTitles = []string{
 	values.String(values.StrOverview),
-	values.String(values.StrAssets),
+	values.String(values.StrWallets),
 	values.String(values.StrTrade),
 	values.String(values.StrGovernance),
 }
@@ -190,7 +190,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		switch hp.navigationTab.SelectedTab() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load)
-		case values.String(values.StrAssets):
+		case values.String(values.StrWallets):
 			pg = NewWalletSelectorPage(hp.Load)
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
@@ -252,7 +252,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			switch item.Title {
 			case values.String(values.StrOverview):
 				pg = NewOverviewPage(hp.Load)
-			case values.String(values.StrAssets):
+			case values.String(values.StrWallets):
 				pg = NewWalletSelectorPage(hp.Load)
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
@@ -415,7 +415,7 @@ func (hp *HomePage) initBottomNavItems() {
 				Clickable:     hp.Theme.NewClickable(true),
 				Image:         hp.Theme.Icons.WalletIcon,
 				ImageInactive: hp.Theme.Icons.WalletIconInactive,
-				Title:         values.String(values.StrAssets),
+				Title:         values.String(values.StrWallets),
 				PageID:        WalletSelectorPageID,
 			},
 			{
