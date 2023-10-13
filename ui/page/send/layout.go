@@ -10,7 +10,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-	// "github.com/crypto-power/cryptopower/app"
 )
 
 type (
@@ -82,7 +81,7 @@ func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
 
 	if pg.isModalLayout {
 		modalContent := []layout.Widget{pg.layoutDesktop}
-		return pg.Modal.Layout(gtx, modalContent, 450)
+		return pg.modalLayout.Layout(gtx, modalContent, 450)
 	}
 	return pg.layoutDesktop(gtx)
 }

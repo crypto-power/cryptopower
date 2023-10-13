@@ -40,7 +40,7 @@ type Page struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	*cryptomaterial.Modal
+	modalLayout *cryptomaterial.Modal
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -101,9 +101,7 @@ type selectedUTXOsInfo struct {
 
 func NewSendPage(l *load.Load, isModalLayout bool) *Page {
 	pg := &Page{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(SendPageID),
-		Modal:            l.Theme.ModalFloatTitle(values.String(values.StrSend)),
+		Load: l,
 
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
@@ -111,7 +109,14 @@ func NewSendPage(l *load.Load, isModalLayout bool) *Page {
 		isModalLayout:  isModalLayout,
 		exchangeRate:   -1,
 	}
-	
+
+	if isModalLayout {
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
+		pg.GenericPageModal = pg.modalLayout.GenericPageModal
+	} else {
+		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
+	}
+
 	if isModalLayout {
 		pg.initWalletSelector()
 	} else {
@@ -156,10 +161,23 @@ func (pg *Page) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet
-		pg.initializeAccountSelectors()
 		pg.amount.setAssetType(selectedWallet.GetAssetType())
 		pg.sendDestination.initDestinationWalletSelector(selectedWallet.GetAssetType())
+		pg.initializeAccountSelectors()
+		pg.resetDestinationAccountSelectors()
 	})
+}
+
+func (pg *Page) resetDestinationAccountSelectors() {
+	// this resets the selected destination account based on the
+	// selected source account. This is done to prevent sending to
+	// an account that is invalid either because the destination
+	// account is the same as the source account or because the
+	// destination account needs to change based on if the selected
+	// wallet has privacy enabled.
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
+		pg.sendDestination.destinationWalletSelector.SelectedWallet())
+	pg.validateAndConstructTx()
 }
 
 func (pg *Page) initializeAccountSelectors() {
@@ -167,15 +185,7 @@ func (pg *Page) initializeAccountSelectors() {
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
-			// this resets the selected destination account based on the
-			// selected source account. This is done to prevent sending to
-			// an account that is invalid either because the destination
-			// account is the same as the source account or because the
-			// destination account needs to change based on if the selected
-			// wallet has privacy enabled.
-			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
-				pg.sendDestination.destinationWalletSelector.SelectedWallet())
-			pg.validateAndConstructTx()
+			pg.resetDestinationAccountSelectors()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
@@ -520,7 +530,7 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.toCoinSelection.Clicked() && !pg.isModalLayout {
+	if pg.toCoinSelection.Clicked() && !pg.isModalLayout { // modal layout cannot render the coinSeletion page
 		_, err := pg.sendDestination.destinationAddress()
 		if err != nil {
 			pg.addressValidationError(err.Error())
@@ -539,6 +549,9 @@ func (pg *Page) HandleUserInteractions() {
 			pg.confirmTxModal.txSent = func() {
 				pg.resetFields()
 				pg.clearEstimates()
+				if pg.isModalLayout {
+					pg.modalLayout.Dismiss()
+				}
 			}
 
 			pg.ParentWindow().ShowModal(pg.confirmTxModal)
@@ -588,18 +601,24 @@ func (pg *Page) HandleUserInteractions() {
 // interaction recently occurred on the modal and may be used to update the
 // page's UI components shortly before they are displayed.
 func (pg *Page) Handle() {
-	if pg.Modal.BackdropClicked(true) {
-		pg.Dismiss()
+	pg.HandleUserInteractions()
+
+	if pg.modalLayout.BackdropClicked(true) {
+		pg.modalLayout.Dismiss()
 	}
 }
 
-func (pg *Page) OnResume() {}
+func (pg *Page) OnResume() {
+	pg.OnNavigatedTo()
+}
 
 // OnDismiss is called after the modal is dismissed.
 // NOTE: The modal may be re-displayed on the app's window, in which case
 // OnResume() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnResume() method.
-func (pg *Page) OnDismiss() {}
+func (pg *Page) OnDismiss() {
+	pg.OnNavigatedFrom()
+}
 
 // KeysToHandle returns an expression that describes a set of key combinations
 // that this page wishes to capture. The HandleKeyPress() method will only be
