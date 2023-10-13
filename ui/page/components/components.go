@@ -367,6 +367,9 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 
 	wal := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
+	amount := wal.ToAmount(row.Transaction.Amount).String()
+	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
+	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
@@ -386,7 +389,6 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					if row.Transaction.Type == txhelper.TxTypeRegular {
-						amount := wal.ToAmount(row.Transaction.Amount).String()
 						if row.Transaction.Direction == txhelper.TxDirectionSent && !strings.Contains(amount, "-") {
 							amount = "-" + amount
 						}
@@ -399,15 +401,11 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 						Orientation: layout.Horizontal,
 						Alignment:   layout.Baseline,
 					}.Layout(gtx,
+						layout.Rigid(l.Theme.Label(values.TextSize18, txStatus.Title).Layout),
 						layout.Rigid(func(gtx C) D {
-							return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
-						}),
-						layout.Rigid(func(gtx C) D {
-							assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
 							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, assetIcon.Layout12dp)
 						}),
 						layout.Rigid(func(gtx C) D {
-							walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
 						}),
 					)
@@ -423,11 +421,9 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 							Alignment:   layout.Middle,
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
 								return assetIcon.Layout12dp(gtx)
 							}),
 							layout.Rigid(func(gtx C) D {
-								walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
 							}),
 						)
@@ -440,14 +436,12 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 						Alignment:   layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							walBal := wal.ToAmount(row.Transaction.Amount).String()
-							walBalTxt := l.Theme.Label(values.TextSize12, walBal)
+							walBalTxt := l.Theme.Label(values.TextSize12, amount)
 							walBalTxt.Color = l.Theme.Color.GrayText2
 							return walBalTxt.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							wall := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
-							if dcrAsset, ok := wall.(*dcr.Asset); ok {
+							if dcrAsset, ok := wal.(*dcr.Asset); ok {
 								if ok, _ := dcrAsset.TicketHasVotedOrRevoked(row.Transaction.Hash); ok {
 									return layout.Inset{
 										Left: values.MarginPadding4,
@@ -461,9 +455,8 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
-							wall := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
 							var ticketSpender *sharedW.Transaction
-							if dcrAsset, ok := wall.(*dcr.Asset); ok {
+							if dcrAsset, ok := wal.(*dcr.Asset); ok {
 								ticketSpender, _ = dcrAsset.TicketSpender(row.Transaction.Hash)
 							}
 
@@ -500,7 +493,6 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					//layout.Rigid(status.Layout),
 					layout.Rigid(func(gtx C) D {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
