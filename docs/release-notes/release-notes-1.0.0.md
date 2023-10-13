@@ -14,7 +14,7 @@ Cryptopower is a self-custodial multi-coin wallet application designed for both 
 
 ## Verifying the Release
 
-In order to verify the release, you'll need to have `gpg` or `gpg2` installed on your system. Once you've obtained a copy (and hopefully verified that as well), you'll first need to import the keys that have signed this release if you haven't done so already:
+In order to verify the release, you'll need to have `gpg` or `gpg2` installed on your system. Once you've obtained a copy (and hopefully verified that as well), you can proceed with importing the key that has signed this release (provided below) if you haven't done so already:
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
