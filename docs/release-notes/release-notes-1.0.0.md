@@ -64,7 +64,7 @@ Simply copy that entire text, save it as `key.txt`, and open a terminal.
 
 In the terminal, use the cd command to navigate to the directory path where you’ve saved `key.txt`. Then use the `gpg --import` command.
 
-(Note that Windows uses \ for directory paths, but Linux/macOS use /)
+(Note that Windows uses `\` for directory paths, but Linux/macOS use `/`)
 
 ```
 $ cd /path/to/the/key
@@ -79,7 +79,7 @@ gpg: Total number processed: 1
 gpg:              unchanged: 1
 ```
 
-You can then delete key.txt.
+You can then delete `key.txt`.
 
 Once you have the required PGP keys, you can verify the release with:
 
