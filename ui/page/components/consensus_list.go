@@ -158,11 +158,34 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, newestFirst bool) []*ConsensusItem {
-	agendas, err := l.WL.AssetsManager.AllDCRWallets()[0].(*dcr.Asset).AllVoteAgendas("", newestFirst)
+func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
+	agendas, err := l.WL.AssetsManager.AllVoteAgendas(newestFirst)
 	if err != nil {
 		return nil
 	}
+
+	{
+		// TODO: This part only applies after a wallet is selected. Fetch the
+		// vote choices for the selected wallet and update the agendas slice.
+		dcrUniqueImpl := selectedWallet.(*dcr.Asset)
+		walletChoices, err := dcrUniqueImpl.AgendaChoices("")
+		if err != nil {
+			return nil
+		}
+		// Update the vote preference value in the agendas slice. Where the
+		// wallet doesn't have a set vote preference, default to "abstain".
+		for i := range agendas {
+			agenda := agendas[i]
+			if voteChoice, ok := walletChoices[agenda.AgendaID]; ok {
+				agenda.VotingPreference = voteChoice
+			} else {
+				agenda.VotingPreference = "abstain"
+			}
+		}
+		// TODO: When the wallet selection is cleared (i.e. no wallet is
+		// selected), also clear each agenda.VotingPreference value!
+	}
+
 	consensusItems := make([]*ConsensusItem, len(agendas))
 	for i := 0; i < len(agendas); i++ {
 		consensusItems[i] = &ConsensusItem{

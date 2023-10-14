@@ -192,18 +192,18 @@ func (asset *Asset) SetVoteChoice(agendaID, choiceID, hash, passphrase string) e
 	return firstErr
 }
 
-// AllVoteAgendas returns all agendas of all stake versions for the active
-// network and this version of the software. Also returns any saved vote
-// preferences for the agendas of the current stake version. Vote preferences
-// for older agendas cannot currently be retrieved.
-func (asset *Asset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, error) {
+// AgendaChoices returns saved vote preferences for the agendas of the current
+// stake version. If a txHash is provided, the vote preferences saved for that
+// specific tx will be returned. Vote preferences for older agendas cannot
+// currently be retrieved.
+func (asset *Asset) AgendaChoices(txHash string) (map[string]string, error) {
 	if asset.chainParams.Deployments == nil {
 		return nil, nil // no agendas to return
 	}
 
 	var ticketHash *chainhash.Hash
-	if hash != "" {
-		hash, err := chainhash.NewHashFromStr(hash)
+	if txHash != "" {
+		hash, err := chainhash.NewHashFromStr(txHash)
 		if err != nil {
 			return nil, fmt.Errorf("invalid hash: %w", err)
 		}
@@ -216,17 +216,32 @@ func (asset *Asset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, er
 		return nil, err
 	}
 
+	choicesMap := make(map[string]string, len(choices))
+	for c := range choices {
+		choicesMap[choices[c].AgendaID] = choices[c].ChoiceID
+	}
+
+	return choicesMap, nil
+}
+
+// AllVoteAgendas returns all agendas of all stake versions for the active
+// network and this version of the software.
+func AllVoteAgendas(chainParams *chaincfg.Params, newestFirst bool) ([]*Agenda, error) {
+	if chainParams.Deployments == nil {
+		return nil, nil // no agendas to return
+	}
+
 	// Check for all agendas from the intital stake version to the
 	// current stake version, in order to fetch legacy agendas.
 	deployments := make([]chaincfg.ConsensusDeployment, 0)
-	for _, v := range asset.chainParams.Deployments {
+	for _, v := range chainParams.Deployments {
 		deployments = append(deployments, v...)
 	}
 
 	// Fetch high level agenda detail form dcrdata api.
-	var dcrdataAgenda []DcrdataAgenda
+	var dcrdataAgenda []*DcrdataAgenda
 	host := dcrdataAgendasAPIMainnetURL
-	if asset.chainParams.Net == wire.TestNet3 {
+	if chainParams.Net == wire.TestNet3 {
 		host = dcrdataAgendasAPITestnetURL
 	}
 
@@ -235,38 +250,28 @@ func (asset *Asset) AllVoteAgendas(hash string, newestFirst bool) ([]*Agenda, er
 		HTTPURL: host,
 	}
 
-	if _, err = utils.HTTPRequest(req, &dcrdataAgenda); err != nil {
+	if _, err := utils.HTTPRequest(req, &dcrdataAgenda); err != nil {
 		return nil, err
 	}
 
+	agendaStatuses := make(map[string]string, len(dcrdataAgenda))
+	for _, agenda := range dcrdataAgenda {
+		agendaStatuses[agenda.Name] = AgendaStatusFromStr(agenda.Status).String()
+	}
+
 	agendas := make([]*Agenda, len(deployments))
-	var status string
 	for i := range deployments {
 		d := &deployments[i]
-
-		votingPreference := "abstain" // assume abstain, if we have the saved pref, it'll be updated below
-		for c := range choices {
-			if choices[c].AgendaID == d.Vote.Id {
-				votingPreference = choices[c].ChoiceID
-				break
-			}
-		}
-
-		for j := range dcrdataAgenda {
-			if dcrdataAgenda[j].Name == d.Vote.Id {
-				status = AgendaStatusFromStr(dcrdataAgenda[j].Status).String()
-			}
-		}
 
 		agendas[i] = &Agenda{
 			AgendaID:         d.Vote.Id,
 			Description:      d.Vote.Description,
 			Mask:             uint32(d.Vote.Mask),
 			Choices:          d.Vote.Choices,
-			VotingPreference: votingPreference,
+			VotingPreference: "", // this value can be updated after reading a selected wallet's preferences
 			StartTime:        int64(d.StartTime),
 			ExpireTime:       int64(d.ExpireTime),
-			Status:           status,
+			Status:           agendaStatuses[d.Vote.Id],
 		}
 	}
 
