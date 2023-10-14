@@ -10,7 +10,7 @@ import (
 	"gioui.org/op/paint"
 
 	"github.com/crypto-power/cryptopower/app"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -59,13 +59,9 @@ func NewGovernancePage(l *load.Load) *Page {
 func (pg *Page) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
-	} else if pg.isGovernanceFeatureEnabled() {
+	} else {
 		pg.Display(NewProposalsPage(pg.Load))
 	}
-}
-
-func (pg *Page) isGovernanceFeatureEnabled() bool {
-	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false)
 }
 
 func (pg *Page) isProposalsAPIAllowed() bool {
@@ -101,7 +97,6 @@ func (pg *Page) HandleUserInteractions() {
 	if pg.enableGovernanceBtn.Clicked() && pg.isProposalsAPIAllowed() {
 		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
 	}
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {
@@ -128,8 +123,8 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	if !pg.isGovernanceFeatureEnabled() {
-		return components.UniformPadding(gtx, pg.splashScreenLayout)
+	if !pg.isProposalsAPIAllowed() {
+		return components.UniformPadding(gtx, pg.splashScreen)
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
@@ -147,9 +142,9 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	if !pg.isGovernanceFeatureEnabled() {
-		return components.UniformMobile(gtx, false, false, pg.splashScreenLayout)
-	}
+	// if !pg.isGovernanceFeatureEnabled() {
+	// 	return components.UniformMobile(gtx, false, false, pg.splashScreenLayout)
+	// }
 	return components.UniformMobile(gtx, false, true, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.layoutPageTopNav),

@@ -56,9 +56,8 @@ type ProposalsPage struct {
 
 	updatedIcon *cryptomaterial.Icon
 
-	syncCompleted         bool
-	isSyncing             bool
-	navigateToSettingsBtn cryptomaterial.Button
+	syncCompleted bool
+	isSyncing     bool
 }
 
 func NewProposalsPage(l *load.Load) *ProposalsPage {
@@ -81,7 +80,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
-	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
@@ -164,10 +162,6 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
-	}
-
 	pg.searchEditor.EditorIconButtonEvent = func() {
 		// TODO: Proposals search functionality
 	}
@@ -221,28 +215,11 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
-	// If proposals API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isProposalsAPIAllowed() {
-		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
-		})
-		// Disable main page from recieving events
-		gtx = gtx.Disabled()
-	}
-
-	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-			return pg.layoutMobile(gtx)
-		}
-		return pg.layoutDesktop(gtx)
-	})
-
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-
-	return layout.Stack{}.Layout(gtx, mainChild, overlay)
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		return pg.layoutMobile(gtx)
+	}
+	return pg.layoutDesktop(gtx)
 }
 
 func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {

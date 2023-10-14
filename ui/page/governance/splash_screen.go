@@ -73,7 +73,7 @@ func (pg *Page) splashScreen(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
 				Top:   values.MarginPadding24,
 				Right: values.MarginPadding16,
-			}.Layout(gtx, pg.enableGovernanceBtn.Layout)
+			}.Layout(gtx, pg.navigateToSettingsBtn.Layout)
 		}),
 	)
 }
