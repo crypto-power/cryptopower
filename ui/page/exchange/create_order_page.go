@@ -60,6 +60,7 @@ type CreateOrderPage struct {
 	amountErrorText  string
 	fetchingRate     bool
 	rateError        bool
+	inited           bool
 
 	materialLoader material.LoaderStyle
 
@@ -219,11 +220,18 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
-		pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
-		pg.listenForSyncNotifications()
-		pg.loadOrderConfig()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		pg.initPage()
 	}
+}
+
+// initPage initializes required data on this page and should be called only
+// once after it has been displayed.
+func (pg *CreateOrderPage) initPage() {
+	pg.inited = true
+	pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+	pg.listenForSyncNotifications()
+	pg.loadOrderConfig()
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -594,7 +602,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	var navBtn *cryptomaterial.Button
 
 	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
-
 	switch {
 	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
@@ -608,6 +615,10 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	case !pg.isMultipleAssetTypeWalletAvailable():
 		msg = pg.errMsg
 		overlaySet = true
+	}
+
+	if !overlaySet && !pg.inited {
+		pg.initPage()
 	}
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
