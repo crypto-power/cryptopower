@@ -54,7 +54,7 @@ type VerifySeedPage struct {
 
 func NewVerifySeedPage(l *load.Load, masterParentID string, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
-		masterParentID:         masterParentID,
+		masterParentID:   masterParentID,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
 		wallet:           wallet,

@@ -63,7 +63,7 @@ type SaveSeedPage struct {
 
 func NewSaveSeedPage(l *load.Load, masterParentID string, wallet sharedW.Asset, redirect Redirectfunc) *SaveSeedPage {
 	pg := &SaveSeedPage{
-		masterParentID:         masterParentID,
+		masterParentID:   masterParentID,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),
 		wallet:           wallet,
