@@ -152,11 +152,6 @@ func (mgr *AssetsManager) SetCurrencyConversionExchange(xc string) {
 		err := mgr.RateSource.ToggleSource(xc)
 		if err != nil {
 			log.Errorf("Failed to toggle rate source: %v", err)
-			return
-		}
-
-		if xc != values.DefaultExchangeValue {
-			mgr.RateSource.Refresh(true)
 		}
 	}()
 }

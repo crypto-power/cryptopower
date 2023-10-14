@@ -128,6 +128,7 @@ type CommonRateSource struct {
 	mtx           sync.RWMutex
 	tickers       map[string]*Ticker
 	refreshing    bool
+	cond          *sync.Cond
 	getTicker     func(market string) (*Ticker, error)
 	sourceChanged chan *struct{}
 	lastUpdate    time.Time
@@ -146,9 +147,10 @@ type CommonRateSource struct {
 	rateListeners    map[string]*RateListener
 }
 
-// Name is the string associated with the rate source.
+// Name is the string associated with the rate source for display.
 func (cs *CommonRateSource) Name() string {
-	return cs.source
+	src := cs.source
+	return strings.ToUpper(src[:1]) + src[1:]
 }
 
 func (cs *CommonRateSource) Ready() bool {
@@ -165,12 +167,6 @@ func (cs *CommonRateSource) Refreshing() bool {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
 	return cs.refreshing
-}
-
-func (cs *CommonRateSource) setRefreshStatus(refreshing bool) {
-	cs.mtx.Lock()
-	defer cs.mtx.Unlock()
-	cs.refreshing = refreshing
 }
 
 func (cs *CommonRateSource) ratesUpdated(t time.Time) {
@@ -197,16 +193,19 @@ func (cs *CommonRateSource) isDisabled() bool {
 	return cs.disabled
 }
 
-// ToggleSource changes the rate source to newSource.
+// ToggleSource changes the rate source to newSource. This method takes some
+// time to refresh the rates and should be executed a a goroutine.
 func (cs *CommonRateSource) ToggleSource(newSource string) error {
-	if strings.EqualFold(newSource, cs.source) {
+	if newSource == cs.source {
 		return nil // nothing to do
 	}
 
 	getTickerFn := dummyGetTickerFunc
 	wsProcessor := func([]byte) ([]*Ticker, error) { return nil, nil }
+	refresh := true
 	switch newSource {
 	case none: /* none is the dummy rate source for when user disables rates */
+		refresh = false
 	case binance:
 		getTickerFn = binanceGetTicker
 		wsProcessor = processBinanceWsMessage
@@ -227,6 +226,10 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 	cs.resetWs(wsProcessor)
 
 	go cs.notifyRateListeners()
+
+	if refresh {
+		cs.Refresh(true)
+	}
 
 	return nil
 }
@@ -338,9 +341,11 @@ func (cs *CommonRateSource) startWebsocket() {
 			}
 
 			message, err := ws.Read()
-			if err != nil && ws.On() {
-				cs.setWsFail(err)
-				return
+			if err != nil {
+				if ws.On() {
+					cs.setWsFail(err)
+				}
+				return // last close error msg for previous websocket connect.
 			}
 
 			tickers, err := processor(message)
@@ -469,21 +474,29 @@ func (cs *CommonRateSource) notifyRateListeners() {
 }
 
 // Refresh refreshes all expired rates and reconnects the rates websocket if it
-// was previously disconnect.
+// was previously disconnect. This method takes some time to refresh the rates
+// and should be executed a a goroutine.
 func (cs *CommonRateSource) Refresh(force bool) {
 	if cs.source == none || cs.isDisabled() {
 		return
 	}
 
-	if cs.Refreshing() {
-		return
+	// Block until previous refresh is done.
+	cs.mtx.Lock()
+	for cs.refreshing {
+		cs.cond.Wait()
 	}
+	cs.refreshing = true
+	cs.mtx.Unlock()
 
-	cs.setRefreshStatus(true)
-	defer cs.setRefreshStatus(false)
+	defer func() {
+		cs.mtx.Lock()
+		cs.refreshing = false
+		cs.cond.Signal()
+		cs.mtx.Unlock()
+	}()
 
-	now := time.Now()
-	defer cs.ratesUpdated(now)
+	defer cs.ratesUpdated(time.Now())
 	defer cs.notifyRateListeners()
 
 	tickers := make(map[string]*Ticker)
@@ -536,15 +549,14 @@ func (cs *CommonRateSource) Refresh(force bool) {
 		delay = time.Minute * 60
 	}
 	okToTry := cs.wsFailTime().Add(delay)
-	if now.After(okToTry) {
-		// Try to connect, but don't wait for the response.
+	if time.Now().After(okToTry) {
 		wsStarting = true
 		err := cs.connectWebsocket()
 		if err != nil {
 			cs.fail("Error connecting websocket", err)
 		}
 	} else {
-		log.Errorf("%s websocket disabled. Too many errors. Will attempt to reconnect after %.1f minutes", cs.source, time.Until(okToTry).Minutes())
+		log.Errorf("%s websocket disabled. Too many errors. Refresh after %.1f minutes", cs.source, time.Until(okToTry).Minutes())
 	}
 
 	if !wsStarting {
@@ -623,16 +635,16 @@ func NewCommonRateSource(ctx context.Context, source string) (*CommonRateSource,
 		rateListeners: make(map[string]*RateListener),
 		sourceChanged: make(chan *struct{}),
 	}
+	s.cond = sync.NewCond(&s.mtx)
 
-	if source != none {
-		go func() {
-			<-ctx.Done()
-			ws, _ := s.websocket()
-			if ws != nil {
-				ws.Close()
-			}
-		}()
-	}
+	// Start shutdown goroutine.
+	go func() {
+		<-ctx.Done()
+		ws, _ := s.websocket()
+		if ws != nil {
+			ws.Close()
+		}
+	}()
 
 	return s, nil
 }
