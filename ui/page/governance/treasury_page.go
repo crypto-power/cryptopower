@@ -12,6 +12,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -37,7 +38,7 @@ type TreasuryPage struct {
 	assetsManager *libwallet.AssetsManager
 
 	sourceWalletSelector *components.WalletAndAccountSelector
-	selectedWallet       *load.WalletMapping
+	selectedWallet       sharedW.Asset
 
 	treasuryItems []*components.TreasuryItem
 
@@ -299,9 +300,8 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			selectedWallet := pg.WL.SelectedWallet.Wallet
 			votingPreference := treasuryItem.OptionsRadioGroup.Value
-			err := selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			err := pg.selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -322,10 +322,10 @@ func (pg *TreasuryPage) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
-	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet
+		pg.selectedWallet = selectedWallet.Asset
 		pg.FetchPolicies()
 	})
 }

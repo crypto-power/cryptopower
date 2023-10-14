@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -96,8 +97,8 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadPolicies(l *load.Load, selectedWallet *load.Asset, pikey string) []*TreasuryItem {
-	policies, err := selectedWallet.Asset.(*dcr.Asset).TreasuryPolicies(pikey, "")
+func LoadPolicies(l *load.Load, selectedWallet sharedW.Asset, pikey string) []*TreasuryItem {
+	policies, err := selectedWallet.(*dcr.Asset).TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil
 	}

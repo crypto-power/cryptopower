@@ -8,7 +8,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -128,11 +128,6 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
 		return D{}
 	}
 
-	// if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-	// 	warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
-	// 	warning.Color = l.Theme.Color.Danger
-	// 	return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
-	// }
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)
@@ -164,9 +159,7 @@ func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) [
 		return nil
 	}
 
-	{
-		// TODO: This part only applies after a wallet is selected. Fetch the
-		// vote choices for the selected wallet and update the agendas slice.
+	if selectedWallet != nil {
 		dcrUniqueImpl := selectedWallet.(*dcr.Asset)
 		walletChoices, err := dcrUniqueImpl.AgendaChoices("")
 		if err != nil {
