@@ -186,16 +186,16 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 
 	if pg.toBackup.Button.Clicked() {
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.ParentWindow().CurrentPageID(), pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
 	}
 }
 
-// listenForNotifications starts a goroutine to watch for sync updates
-// and update the UI accordingly. To prevent UI lags, this method does not
-// refresh the window display everytime a sync update is received. During
-// active blocks sync, rescan or proposals sync, the Layout method auto
-// refreshes the display every set interval. Other sync updates that affect
-// the UI but occur outside of an active sync requires a display refresh.
+// listenForNotifications starts a goroutine to watch for sync updates and
+// update the UI accordingly. To prevent UI lags, this method does not refresh
+// the window display every time a sync update is received. During active blocks
+// sync, rescan or proposals sync, the Layout method auto refreshes the display
+// every set interval. Other sync updates that affect the UI but occur outside
+// of an active sync requires a display refresh.
 func (pg *WalletInfo) listenForNotifications() {
 	switch {
 	case pg.SyncProgressListener != nil:

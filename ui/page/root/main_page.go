@@ -1024,7 +1024,7 @@ func (mp *MainPage) showBackupInfo() {
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
+			mp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.ParentWindow().CurrentPageID(), mp.WL.SelectedWallet.Wallet, redirect))
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
