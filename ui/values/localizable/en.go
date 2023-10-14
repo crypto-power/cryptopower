@@ -78,7 +78,6 @@ const EN = `
 "cancel" = "Cancel"
 "canceling" = "Cancelling..."
 "cancelMixer" = "Cancel mixer?"
-"change" = "Change"
 "changeAccount" = "Change account"
 "changeSpecificPeer" = "Change specific peer"
 "changeSpendingPass" = "Change spending passphrase"
@@ -767,4 +766,5 @@ const EN = `
 "name" = "Name"
 "price" = "Price"
 "refreshState" = "Refreshing..."
+"24hChange" = "24H Change"
 `

@@ -188,7 +188,6 @@ const (
 	StrCancel                          = "cancel"
 	StrCanceling                       = "canceling"
 	StrCancelMixer                     = "cancelMixer"
-	StrChange                          = "change"
 	StrChangeAccount                   = "changeAccount"
 	StrChangeSpecificPeer              = "changeSpecificPeer"
 	StrChangeSpendingPass              = "changeSpendingPass"
@@ -877,4 +876,5 @@ const (
 	StrName                            = "name"
 	StrPrice                           = "price"
 	StrRefreshState                    = "refreshState"
+	Str24HChange                       = "24hChange"
 )

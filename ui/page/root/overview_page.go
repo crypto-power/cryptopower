@@ -809,7 +809,7 @@ func (pg *OverviewPage) marketTableHeader(gtx C) D {
 				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.StrPrice), col))
 			}),
 			layout.Flexed(.2, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.StrChange), col))
+				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.Str24HChange), col))
 			}),
 		)
 	}
