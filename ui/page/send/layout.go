@@ -108,7 +108,12 @@ func (pg *Page) layoutDesktop(gtx layout.Context) D {
 			})
 		},
 		pg.toSection,
-		pg.coinSelectionSection,
+		func(gtx C) D {
+			if pg.isModalLayout {
+				return D{}
+			}
+			return pg.coinSelectionSection(gtx)
+		},
 		pg.txLabelSection,
 	}
 

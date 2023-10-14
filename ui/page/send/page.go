@@ -40,7 +40,9 @@ type Page struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	modalLayout *cryptomaterial.Modal
+
+	modalLayout   *cryptomaterial.Modal
+	isModalLayout bool
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -60,7 +62,6 @@ type Page struct {
 	backdrop  *widget.Clickable
 
 	isFetchingExchangeRate bool
-	isModalLayout          bool
 
 	exchangeRate        float64
 	usdExchangeSet      bool
@@ -113,13 +114,9 @@ func NewSendPage(l *load.Load, isModalLayout bool) *Page {
 	if isModalLayout {
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
-	} else {
-		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
-	}
-
-	if isModalLayout {
 		pg.initWalletSelector()
 	} else {
+		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
 		pg.selectedWallet = &load.WalletMapping{
 			Asset: l.WL.SelectedWallet.Wallet,
 		}
@@ -151,7 +148,7 @@ func NewSendPage(l *load.Load, isModalLayout bool) *Page {
 	return pg
 }
 
-// initWalletSelector is used for the send modal to for wallet selection.
+// initWalletSelector is used for the send modal for wallet selection.
 func (pg *Page) initWalletSelector() {
 	// initialize wallet selector
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
@@ -164,19 +161,12 @@ func (pg *Page) initWalletSelector() {
 		pg.amount.setAssetType(selectedWallet.GetAssetType())
 		pg.sendDestination.initDestinationWalletSelector(selectedWallet.GetAssetType())
 		pg.initializeAccountSelectors()
-		pg.resetDestinationAccountSelectors()
+		pg.resetDestinationAccountSelector()
 	})
 }
 
-func (pg *Page) resetDestinationAccountSelectors() {
-	// this resets the selected destination account based on the
-	// selected source account. This is done to prevent sending to
-	// an account that is invalid either because the destination
-	// account is the same as the source account or because the
-	// destination account needs to change based on if the selected
-	// wallet has privacy enabled.
-	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
-		pg.sendDestination.destinationWalletSelector.SelectedWallet())
+func (pg *Page) resetDestinationAccountSelector() {
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 	pg.validateAndConstructTx()
 }
 
@@ -185,7 +175,13 @@ func (pg *Page) initializeAccountSelectors() {
 	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
-			pg.resetDestinationAccountSelectors()
+			// this resets the selected destination account based on the
+			// selected source account. This is done to prevent sending to
+			// an account that is invalid either because the destination
+			// account is the same as the source account or because the
+			// destination account needs to change based on if the selected
+			// wallet has privacy enabled.
+			pg.resetDestinationAccountSelector()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
@@ -530,7 +526,7 @@ func (pg *Page) HandleUserInteractions() {
 		go pg.fetchExchangeRate()
 	}
 
-	if pg.toCoinSelection.Clicked() && !pg.isModalLayout { // modal layout cannot render the coinSeletion page
+	if pg.toCoinSelection.Clicked() {
 		_, err := pg.sendDestination.destinationAddress()
 		if err != nil {
 			pg.addressValidationError(err.Error())
@@ -601,13 +597,16 @@ func (pg *Page) HandleUserInteractions() {
 // interaction recently occurred on the modal and may be used to update the
 // page's UI components shortly before they are displayed.
 func (pg *Page) Handle() {
-	pg.HandleUserInteractions()
-
 	if pg.modalLayout.BackdropClicked(true) {
 		pg.modalLayout.Dismiss()
+	} else {
+		pg.HandleUserInteractions()
 	}
 }
 
+// OnResume is called to initialize data and get UI elements ready to be
+// displayed. This is called just before Handle() and Layout() are called (in
+// that order).
 func (pg *Page) OnResume() {
 	pg.OnNavigatedTo()
 }
