@@ -8,7 +8,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -128,11 +128,11 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
 		return D{}
 	}
 
-	if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-		warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
-		warning.Color = l.Theme.Color.Danger
-		return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
-	}
+	// if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+	// 	warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
+	// 	warning.Color = l.Theme.Color.Danger
+	// 	return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
+	// }
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)
@@ -158,9 +158,8 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
-	dcrUniqueImpl := selectedWallet.(*dcr.Asset)
-	agendas, err := dcrUniqueImpl.AllVoteAgendas("", newestFirst)
+func LoadAgendas(l *load.Load, newestFirst bool) []*ConsensusItem {
+	agendas, err := l.WL.AssetsManager.AllDCRWallets()[0].(*dcr.Asset).AllVoteAgendas("", newestFirst)
 	if err != nil {
 		return nil
 	}

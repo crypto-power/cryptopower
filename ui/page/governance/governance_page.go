@@ -10,7 +10,6 @@ import (
 	"gioui.org/op/paint"
 
 	"github.com/crypto-power/cryptopower/app"
-	// sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -24,6 +23,8 @@ const GovernancePageID = "Governance"
 type Page struct {
 	*load.Load
 	*app.MasterPage
+
+	modal *cryptomaterial.Modal
 
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
@@ -41,6 +42,7 @@ func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(GovernancePageID),
+		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
 
@@ -142,9 +144,6 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	// if !pg.isGovernanceFeatureEnabled() {
-	// 	return components.UniformMobile(gtx, false, false, pg.splashScreenLayout)
-	// }
 	return components.UniformMobile(gtx, false, true, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.layoutPageTopNav),

@@ -97,7 +97,7 @@ func (pg *ConsensusPage) OnNavigatedFrom() {}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
-	consensusItems := components.LoadAgendas(pg.Load, pg.WL.SelectedWallet.Wallet, false)
+	consensusItems := components.LoadAgendas(pg.Load /*pg.WL.SelectedWallet.Wallet,*/, false)
 	if len(consensusItems) > 0 {
 		consensusItem := consensusItems[0]
 		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
@@ -227,14 +227,14 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	selectedWallet := pg.WL.SelectedWallet.Wallet
+	// selectedWallet := pg.WL.SelectedWallet.Wallet
 
 	pg.isSyncing = true
 
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, selectedWallet, true)
+		items := components.LoadAgendas(pg.Load /*selectedWallet,*/, true)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {

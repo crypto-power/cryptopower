@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -29,69 +28,15 @@ func (t *TreasuryItem) SetVoteChoices(voteChoices [3]string) {
 func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layoutPiKey(gtx, l, treasuryItem.Policy)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-				warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
-				warning.Color = l.Theme.Color.Danger
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
-			}
-			return D{}
-		}),
 		layout.Rigid(layoutVoteChoice(l, treasuryItem)),
 		layout.Rigid(func(gtx C) D {
-			if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-				return D{}
-			}
 			return layoutPolicyVoteAction(gtx, l, treasuryItem)
-		}),
-	)
-}
-
-func layoutPiKey(gtx C, l *load.Load, treasuryKeyPolicy dcr.TreasuryKeyPolicy) D {
-	statusLabel := l.Theme.Label(values.TextSize14, treasuryKeyPolicy.PiKey)
-	backgroundColor := l.Theme.Color.LightBlue
-	if l.WL.AssetsManager.IsDarkModeOn() {
-		backgroundColor = l.Theme.Color.Background
-	}
-
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			lbl := l.Theme.Label(values.TextSize20, values.String(values.StrPiKey))
-			lbl.Font.Weight = font.SemiBold
-			return lbl.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Background: backgroundColor,
-				Width:      cryptomaterial.WrapContent,
-				Height:     cryptomaterial.WrapContent,
-				Direction:  layout.Center,
-				Alignment:  layout.Middle,
-				Border: cryptomaterial.Border{
-					Color:  backgroundColor,
-					Width:  values.MarginPadding1,
-					Radius: cryptomaterial.Radius(4),
-				},
-				Padding: layout.Inset{
-					Top:    values.MarginPadding3,
-					Bottom: values.MarginPadding3,
-					Left:   values.MarginPadding8,
-					Right:  values.MarginPadding8,
-				},
-				Margin: layout.Inset{Left: values.MarginPadding10},
-			}.Layout2(gtx, statusLabel.Layout)
 		}),
 	)
 }
 
 func layoutVoteChoice(l *load.Load, treasuryItem *TreasuryItem) layout.Widget {
 	return func(gtx C) D {
-		if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-			return D{}
-		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				lbl := l.Theme.Label(values.TextSize16, values.String(values.StrSetTreasuryPolicy))
@@ -151,8 +96,8 @@ func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadPolicies(l *load.Load, selectedWallet sharedW.Asset, pikey string) []*TreasuryItem {
-	policies, err := selectedWallet.(*dcr.Asset).TreasuryPolicies(pikey, "")
+func LoadPolicies(l *load.Load, selectedWallet *load.Asset, pikey string) []*TreasuryItem {
+	policies, err := selectedWallet.Asset.(*dcr.Asset).TreasuryPolicies(pikey, "")
 	if err != nil {
 		return nil
 	}
