@@ -16,7 +16,7 @@ import (
 
 type WalletItem struct {
 	Wallet       sharedW.Asset
-	TotalBalance string
+	TotalBalance sharedW.AssetAmount
 }
 
 type WalletLoad struct {

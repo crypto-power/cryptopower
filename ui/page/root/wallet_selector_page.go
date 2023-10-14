@@ -221,25 +221,11 @@ func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 	return components.UniformMobile(gtx, false, false, pg.pageContentLayout)
 }
 
-func (pg *WalletSelectorPage) collapseAll() {
-	for _, collapsible := range pg.assetCollapsibles {
-		collapsible.SetExpanded(false) // Collapse this item
-	}
-}
-
-func (pg *WalletSelectorPage) expandOnly(assetType libutils.AssetType) {
-	pg.collapseAll()
-
-	if collapsible, exists := pg.assetCollapsibles[assetType]; exists {
-		collapsible.SetExpanded(true) // Expand this item
-	}
-}
-
 func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	assetDropdown := func(gtx C) D {
 		supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
-			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(pg.Load, supportedAssets[i]))
+			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(supportedAssets[i]))
 		})
 	}
 
@@ -269,7 +255,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetType) layout.Widget {
+func (pg *WalletSelectorPage) assetDropdown(asset libutils.AssetType) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -278,6 +264,12 @@ func (pg *WalletSelectorPage) assetDropdown(l *load.Load, asset libutils.AssetTy
 						margin := layout.Inset{}
 						if pg.assetCollapsibles[asset].IsExpanded() {
 							margin = layout.Inset{Bottom: values.MarginPadding5}
+							for key := range pg.assetCollapsibles {
+								if key != asset {
+									pg.assetCollapsibles[key].SetExpanded(false)
+									pg.ParentWindow().Reload()
+								}
+							}
 						}
 						pg.shadowBox.SetShadowRadius(20)
 						return cryptomaterial.LinearLayout{

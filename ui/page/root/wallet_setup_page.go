@@ -627,5 +627,5 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 }
 
 func (pg *CreateWallet) walletCreationSuccessCallback() {
-	pg.ParentNavigator().Display(NewHomePage(pg.Load))
+	pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
 }

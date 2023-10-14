@@ -26,19 +26,14 @@ func (pg *WalletSelectorPage) loadWallets() {
 	walletsList := make(map[libutils.AssetType][]*load.WalletItem)
 
 	for _, wal := range wallets {
-		var totalBalance int64
-		accountsResult, err := wal.GetAccountsRaw()
+		balance, err := wal.GetWalletBalance()
 		if err != nil {
 			log.Errorf("wallet (%v) balance was ignored : %v", wal.GetWalletName(), err)
-		} else {
-			for _, acc := range accountsResult.Accounts {
-				totalBalance += acc.Balance.Total.ToInt()
-			}
 		}
 
 		listItem := &load.WalletItem{
 			Wallet:       wal,
-			TotalBalance: wal.ToAmount(totalBalance).String(),
+			TotalBalance: balance.Total,
 		}
 
 		walletsList[wal.GetAssetType()] = append(walletsList[wal.GetAssetType()], listItem)
@@ -182,7 +177,7 @@ func (pg *WalletSelectorPage) badWalletSection(gtx C, badWalletsList []*badWalle
 }
 
 func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWalletListItem) D {
-	m20 := values.MarginPadding20
+	m16 := values.MarginPadding16
 	m10 := values.MarginPadding10
 
 	layoutBadWallet := func(gtx C, badWallet *badWalletListItem, lastItem bool) D {
@@ -192,9 +187,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(pg.Theme.Body2(badWallet.Name).Layout),
 						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, badWallet.deleteBtn.Layout)
-							})
+							return layout.E.Layout(gtx, badWallet.deleteBtn.Layout)
 						}),
 					)
 				}),
@@ -202,7 +195,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 					if lastItem {
 						return D{}
 					}
-					return layout.Inset{Top: values.MarginPadding10, Left: values.MarginPadding38, Right: values.MarginPaddingMinus10}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return pg.Theme.Separator().Layout(gtx)
 					})
 				}),
@@ -210,11 +203,10 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 		})
 	}
 
-	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
 		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16, Left: values.MarginPadding16, Right: values.MarginPadding16},
+		Padding:    layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16},
 		Background: pg.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     pg.shadowBox,
@@ -222,7 +214,7 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: m20}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: m16, Right: m16}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						txt := pg.Theme.Label(values.TextSize16, "Bad Wallets")
@@ -234,10 +226,8 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 						return layout.Inset{Top: m10, Bottom: m10}.Layout(gtx, pg.Theme.Separator().Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.NewClickableList(layout.Vertical).Layout(gtx, len(badWalletsList), func(gtx C, i int) D {
-								return layoutBadWallet(gtx, badWalletsList[i], i == len(badWalletsList)-1)
-							})
+						return pg.Theme.NewClickableList(layout.Vertical).Layout(gtx, len(badWalletsList), func(gtx C, i int) D {
+							return layoutBadWallet(gtx, badWalletsList[i], i == len(badWalletsList)-1)
 						})
 					}),
 				)
@@ -247,7 +237,6 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 }
 
 func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
-	pg.shadowBox.SetShadowRadius(14)
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
 		Height:     cryptomaterial.WrapContent,
@@ -279,7 +268,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 								return layout.Inset{
 									Left: values.MarginPadding8,
 								}.Layout(gtx, func(gtx C) D {
-									return walletHightlighLabel(pg.Theme, gtx, values.String(values.StrWatchOnly))
+									return walletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
 								})
 							}
 							return D{}
@@ -306,10 +295,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 											Left:  values.MarginPadding8,
 											Right: values.MarginPadding8,
 										}.Layout(gtx, func(gtx C) D {
-											txt := pg.Theme.Label(values.TextSize16, ".")
-											txt.Color = pg.Theme.Color.Text
-											txt.Font.Weight = font.Bold
-											return txt.Layout(gtx)
+											return pg.Theme.Icons.Dot.Layout8dp(gtx)
 										})
 									}),
 									layout.Rigid(func(gtx C) D {
@@ -335,16 +321,14 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 					Alignment: layout.End,
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize16, item.TotalBalance)
+						txt := pg.Theme.Label(values.TextSize16, item.TotalBalance.String())
 						txt.Color = pg.Theme.Color.Text
 						txt.Font.Weight = font.SemiBold
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							totalBalance, _ := item.Wallet.GetWalletBalance()
-
-							txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, totalBalance.Total.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin()))
+							txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin()))
 							txt.Color = pg.Theme.Color.Text
 							return txt.Layout(gtx)
 						}

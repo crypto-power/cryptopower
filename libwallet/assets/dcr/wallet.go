@@ -289,7 +289,6 @@ func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
 	}
 
 	var totalBalance, totalSpendable, totalImmatureReward int64
-	// var balance *sharedW.Balance
 	accountsResult, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err

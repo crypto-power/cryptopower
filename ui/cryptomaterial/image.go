@@ -33,6 +33,10 @@ func NewImage(src image.Image) *Image {
 // reduced the image original scale of 1 by half to 0.5 fix blurry images
 // this in turn reduced the image layout size by half. Multiplying the
 // layout size by 2 to give the original image size to scale ratio.
+func (img *Image) Layout8dp(gtx C) D {
+	return img.LayoutSize(gtx, values.MarginPadding8)
+}
+
 func (img *Image) Layout12dp(gtx C) D {
 	return img.LayoutSize(gtx, values.MarginPadding12)
 }
