@@ -89,10 +89,9 @@ type assetBalanceSliderItem struct {
 }
 
 type assetMarketData struct {
-	title   string
-	subText string
-	market  string
-	image   *cryptomaterial.Image
+	assetType libutils.AssetType
+	market    string
+	image     *cryptomaterial.Image
 }
 
 type mixerData struct {
@@ -101,7 +100,6 @@ type mixerData struct {
 }
 
 func NewOverviewPage(l *load.Load) *OverviewPage {
-	dcr, ltc, btc := libutils.DCRWalletAsset, libutils.LTCWalletAsset, libutils.BTCWalletAsset
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
@@ -139,22 +137,19 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 		},
 		mktValues: []assetMarketData{
 			{
-				title:   dcr.ToFull(),
-				subText: dcr.String(),
-				market:  values.DCRUSDTMarket,
-				image:   l.Theme.Icons.DCRBlue,
+				assetType: libutils.DCRWalletAsset,
+				market:    values.DCRUSDTMarket,
+				image:     l.Theme.Icons.DCR,
 			},
 			{
-				title:   btc.ToFull(),
-				subText: btc.String(),
-				market:  values.BTCUSDTMarket,
-				image:   l.Theme.Icons.BTC,
+				assetType: libutils.BTCWalletAsset,
+				market:    values.BTCUSDTMarket,
+				image:     l.Theme.Icons.BTC,
 			},
 			{
-				title:   ltc.ToFull(),
-				subText: ltc.String(),
-				market:  values.LTCUSDTMarket,
-				image:   l.Theme.Icons.LTC,
+				assetType: libutils.LTCWalletAsset,
+				market:    values.LTCUSDTMarket,
+				image:     l.Theme.Icons.LTC,
 			},
 		},
 		assetBalanceSlider: l.Theme.Slider(),
@@ -689,18 +684,22 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 									},
 								}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
+										// DCR has a different icon on mobile.
+										if asset.assetType == libutils.DCRWalletAsset {
+											return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, pg.Theme.Icons.DCRBlue.Layout48dp)
+										}
 										return layout.Inset{Top: values.MarginPadding12}.Layout(gtx, asset.image.Layout48dp)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize16, asset.title)
+													txt := pg.Theme.Label(values.TextSize16, asset.assetType.ToFull())
 													txt.Color = pg.Theme.Color.Text
 													return txt.Layout(gtx)
 												}),
 												layout.Rigid(func(gtx C) D {
-													txt := pg.Theme.Label(values.TextSize12, asset.subText)
+													txt := pg.Theme.Label(values.TextSize12, asset.assetType.String())
 													txt.Color = pg.Theme.Color.GrayText3
 													return layout.Inset{Left: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
 												}),
@@ -828,9 +827,9 @@ func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData, rate *ext.
 				return layout.Inset{
 					Left:  values.MarginPadding8,
 					Right: values.MarginPadding4,
-				}.Layout(gtx, pg.assetTableLabel(asset.title, pg.Theme.Color.Text))
+				}.Layout(gtx, pg.assetTableLabel(asset.assetType.ToFull(), pg.Theme.Color.Text))
 			}),
-			layout.Rigid(pg.assetTableLabel(asset.subText, pg.Theme.Color.GrayText3)),
+			layout.Rigid(pg.assetTableLabel(asset.assetType.String(), pg.Theme.Color.GrayText3)),
 		)
 	}
 
