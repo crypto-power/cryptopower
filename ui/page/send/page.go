@@ -593,9 +593,12 @@ func (pg *Page) HandleUserInteractions() {
 	}
 }
 
-// Handle is called just before Layout() to determine if any user
-// interaction recently occurred on the modal and may be used to update the
-// page's UI components shortly before they are displayed.
+// Handle is like HandleUserInteractions but Handle is called if this page is
+// displayed as a modal while HandleUserInteractions is called if this page
+// is displayed as a full page. Either Handle or HandleUserInteractions will
+// be called just before Layout() is called to determine if any user interaction
+// recently occurred on the modal or page and may be used to update any affected
+// UI components shortly before they are displayed by the Layout() method.
 func (pg *Page) Handle() {
 	if pg.modalLayout.BackdropClicked(true) {
 		pg.modalLayout.Dismiss()
@@ -607,11 +610,20 @@ func (pg *Page) Handle() {
 // OnResume is called to initialize data and get UI elements ready to be
 // displayed. This is called just before Handle() and Layout() are called (in
 // that order).
+
+// OnResume is like OnNavigatedTo but OnResume is called if this page is
+// displayed as a modal while OnNavigatedTo is called if this page is displayed
+// as a full page. Either OnResume or OnNavigatedTo is called to initialize
+// data and get UI elements ready to be displayed. This is called just before
+// Handle() and Layout() are called (in that order).
 func (pg *Page) OnResume() {
 	pg.OnNavigatedTo()
 }
 
-// OnDismiss is called after the modal is dismissed.
+// OnDismiss is like OnNavigatedFrom but OnDismiss is called if this page is
+// displayed as a modal while OnNavigatedFrom is called if this page is
+// displayed as a full page. Either OnDismiss or OnNavigatedFrom is called
+// after the modal is dismissed.
 // NOTE: The modal may be re-displayed on the app's window, in which case
 // OnResume() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnResume() method.
