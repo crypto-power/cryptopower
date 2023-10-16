@@ -3,6 +3,7 @@ package page
 import (
 	"os"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -23,6 +24,13 @@ type (
 	D = layout.Dimensions
 )
 
+type page struct {
+	pageTitle    string
+	subTitle     string
+	image        *cryptomaterial.Image
+	indicatorBtn *cryptomaterial.Clickable
+}
+
 type startPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -32,9 +40,18 @@ type startPage struct {
 	*app.GenericPageModal
 
 	addWalletButton cryptomaterial.Button
+	nextButton      cryptomaterial.Button
+	skipButton      cryptomaterial.Button
+	homePageButton  cryptomaterial.Button
 
-	loading    bool
-	isQuitting bool
+	pages []page
+
+	loading          bool
+	isQuitting       bool
+	allWalletsOpened bool
+	displayStartPage bool
+
+	currentPage int
 }
 
 func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
@@ -42,13 +59,19 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(StartPageID),
 		loading:          true,
+		displayStartPage: true,
 
 		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
+		nextButton:      l.Theme.Button(values.String(values.StrNext)),
+		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkip)),
+		homePageButton:  l.Theme.OutlineButton(values.String(values.StrSkipWalletCreation)),
 	}
 
 	if len(isShuttingDown) > 0 {
 		sp.isQuitting = isShuttingDown[0]
 	}
+
+	sp.initPages()
 
 	return sp
 }
@@ -78,6 +101,29 @@ func (sp *startPage) OnNavigatedTo() {
 		}
 	} else {
 		sp.loading = false
+	}
+}
+
+func (sp *startPage) initPages() {
+	sp.pages = []page{
+		{
+			pageTitle:    "Multi-wallet support",
+			subTitle:     "Send, Receive and Exchange Decred, Bitcoin and Litecoin.",
+			image:        sp.Theme.Icons.MiltiWalletIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
+		},
+		{
+			pageTitle:    "Cross platform",
+			subTitle:     "Crytopower has cross platform apps for desktop and mobile.",
+			image:        sp.Theme.Icons.CrossPlatformIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
+		},
+		{
+			pageTitle:    "Integrated exchange functionality",
+			subTitle:     "Easily exchange coins within the app.",
+			image:        sp.Theme.Icons.IntegratedExchangeIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
+		},
 	}
 }
 
@@ -116,7 +162,8 @@ func (sp *startPage) openWallets(password string) error {
 		return err
 	}
 
-	sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
+	sp.allWalletsOpened = true
+	sp.loading = false
 	return nil
 }
 
@@ -126,8 +173,37 @@ func (sp *startPage) openWallets(password string) error {
 // displayed.
 // Part of the load.Page interface.
 func (sp *startPage) HandleUserInteractions() {
-	for sp.addWalletButton.Clicked() {
+	if sp.addWalletButton.Clicked() {
 		sp.ParentNavigator().Display(root.NewCreateWallet(sp.Load))
+	}
+
+	if sp.homePageButton.Clicked() && sp.allWalletsOpened {
+		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
+	}
+
+	for sp.nextButton.Clicked() {
+		if sp.currentPage == len(sp.pages)-1 { // index starts at 0
+			sp.currentPage = -1 // we have reached the last page.
+		} else {
+			sp.currentPage++
+		}
+	}
+
+	if sp.skipButton.Clicked() {
+		sp.currentPage = -1
+	}
+
+	for i, page := range sp.pages {
+		if page.indicatorBtn.Clicked() {
+			sp.currentPage = i
+		}
+	}
+
+	if sp.displayStartPage {
+		time.AfterFunc(time.Second*2, func() {
+			sp.displayStartPage = false
+			sp.ParentWindow().Reload()
+		})
 	}
 }
 
@@ -144,6 +220,8 @@ func (sp *startPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (sp *startPage) Layout(gtx C) D {
+	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
+	sp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
 	if sp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return sp.layoutMobile(gtx)
 	}
@@ -152,110 +230,190 @@ func (sp *startPage) Layout(gtx C) D {
 
 // Desktop layout
 func (sp *startPage) layoutDesktop(gtx C) D {
-	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
-	return layout.Flex{
-		Alignment: layout.Middle,
-		Axis:      layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return sp.loadingSection(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if sp.loading {
-				return D{}
-			}
+	if sp.currentPage < 0 {
+		return sp.loadingSection(gtx)
+	}
 
-			gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding350)
-			return layout.Inset{
-				Left:  values.MarginPadding24,
-				Right: values.MarginPadding24,
-			}.Layout(gtx, sp.addWalletButton.Layout)
-		}),
-	)
+	if sp.displayStartPage {
+		return sp.pageLayout(gtx, func(gtx C) D {
+			welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
+			welcomeText.Alignment = text.Middle
+			welcomeText.Font.Weight = font.Bold
+			return welcomeText.Layout(gtx)
+		})
+	}
+	return sp.infoPageLayout(gtx)
+}
+
+func (sp *startPage) pageLayout(gtx C, body layout.Widget) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.MatchParent,
+		Orientation: layout.Vertical,
+		Alignment:   layout.Middle,
+		Direction:   layout.Center,
+	}.Layout2(gtx, body)
 }
 
 func (sp *startPage) loadingSection(gtx C) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X // use maximum width
-	if sp.loading {
-		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-	} else {
-		gtx.Constraints.Min.Y = (gtx.Constraints.Max.Y * 65) / 100 // use 65% of view height
-	}
+	return sp.pageLayout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Center.Layout(gtx, func(gtx C) D {
+					welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
+					welcomeText.Alignment = text.Middle
+					welcomeText.Font.Weight = font.Bold
+					return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				netType := sp.WL.Wallet.Net.Display()
+				nType := sp.Theme.Label(values.TextSize20, netType)
+				nType.Font.Weight = font.Medium
+				return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if sp.loading {
+					loadStatus := sp.Theme.Label(values.TextSize20, values.String(values.StrLoading))
+					if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
+						switch {
+						case sp.isQuitting:
+							loadStatus.Text = values.String(values.StrClosingWallet)
 
-	return layout.Stack{Alignment: layout.Center}.Layout(gtx,
-		layout.Stacked(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Center.Layout(gtx, func(gtx C) D {
-						welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
-						welcomeText.Alignment = text.Middle
-						welcomeText.Font.Weight = font.Bold
-						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					netType := sp.WL.Wallet.Net.Display()
-					nType := sp.Theme.Label(values.TextSize20, netType)
-					nType.Font.Weight = font.Medium
-					return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)
-				}),
-				layout.Rigid(func(gtx C) D {
-					if sp.loading {
-						loadStatus := sp.Theme.Label(values.TextSize20, values.String(values.StrLoading))
-						if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
-							switch {
-							case sp.isQuitting:
-								loadStatus.Text = values.String(values.StrClosingWallet)
-
-								for {
-									// Closes all pending modals still open.
-									modal := sp.ParentWindow().TopModal()
-									if modal == nil {
-										// No modal that exists.
-										break
-									}
-									sp.ParentWindow().DismissModal(modal.ID())
+							for {
+								// Closes all pending modals still open.
+								modal := sp.ParentWindow().TopModal()
+								if modal == nil {
+									// No modal that exists.
+									break
 								}
-
-							default:
-								loadStatus.Text = values.String(values.StrOpeningWallet)
+								sp.ParentWindow().DismissModal(modal.ID())
 							}
-						}
 
-						return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, loadStatus.Layout)
+						default:
+							loadStatus.Text = values.String(values.StrOpeningWallet)
+						}
 					}
 
-					welcomeText := sp.Theme.Label(values.TextSize24, values.String(values.StrWelcomeNote))
-					welcomeText.Alignment = text.Middle
-					return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
-				}),
-			)
-		}),
-	)
+					return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, loadStatus.Layout)
+				}
+
+				welcomeText := sp.Theme.Label(values.TextSize24, values.String(values.StrWelcomeNote))
+				welcomeText.Alignment = text.Middle
+				return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
+				return layout.Inset{
+					Top:   values.MarginPadding100,
+					Left:  values.MarginPadding24,
+					Right: values.MarginPadding24,
+				}.Layout(gtx, sp.addWalletButton.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if !sp.allWalletsOpened {
+					gtx = gtx.Disabled()
+				}
+				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, sp.homePageButton.Layout)
+			}),
+		)
+	})
 }
 
 // Mobile layout
 func (sp *startPage) layoutMobile(gtx C) D {
-	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
-	return layout.Flex{
-		Alignment: layout.Middle,
-		Axis:      layout.Vertical,
-	}.Layout(gtx,
+	if sp.currentPage < 0 {
+		return sp.loadingSection(gtx)
+	}
+
+	if sp.displayStartPage {
+		return sp.pageLayout(gtx, func(gtx C) D {
+			welcomeText := sp.Theme.Label(values.TextSize60, strings.ToUpper(values.String(values.StrAppName)))
+			welcomeText.Alignment = text.Middle
+			welcomeText.Font.Weight = font.Bold
+			return welcomeText.Layout(gtx)
+		})
+	}
+	return sp.infoPageLayout(gtx)
+}
+
+func (sp *startPage) infoPageLayout(gtx C) D {
+	return sp.pageLayout(gtx, func(gtx C) D {
+		return layout.Flex{
+			Alignment: layout.Middle,
+			Axis:      layout.Vertical,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				list := &layout.List{Axis: layout.Horizontal}
+				return list.Layout(gtx, len(sp.pages), func(gtx C, i int) D {
+					if i == sp.currentPage {
+						return sp.pageSections(gtx, sp.pages[i])
+					}
+					return D{}
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Top:    values.MarginPadding35,
+					Bottom: values.MarginPadding35,
+				}.Layout(gtx, sp.currentPageIndicatorLayout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
+				return sp.nextButton.Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
+					return sp.skipButton.Layout(gtx)
+				})
+			}),
+		)
+	})
+}
+
+func (sp *startPage) pageSections(gtx C, page page) D {
+	return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return sp.loadingSection(gtx)
+			return page.image.LayoutSize2(gtx, values.MarginPadding280, values.MarginPadding172)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if sp.loading {
-				return D{}
-			}
-
-			gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding350)
-			return layout.Inset{
-				Left:  values.MarginPadding24,
-				Right: values.MarginPadding24,
-			}.Layout(gtx, sp.addWalletButton.Layout)
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				lblPageTitle := sp.Theme.Label(values.TextSize32, page.pageTitle)
+				lblPageTitle.Alignment = text.Middle
+				lblPageTitle.Font.Weight = font.Bold
+				return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, lblPageTitle.Layout)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			lblSubTitle := sp.Theme.Label(values.TextSize16, page.subTitle)
+			return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, lblSubTitle.Layout)
 		}),
 	)
+}
+
+func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
+	if sp.currentPage < 0 {
+		return D{}
+	}
+
+	list := &layout.List{Axis: layout.Horizontal}
+	return list.Layout(gtx, len(sp.pages), func(gtx C, i int) D {
+		ic := cryptomaterial.NewIcon(sp.Theme.Icons.ImageBrightness1)
+		ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
+		if i == sp.currentPage {
+			ic.Color = sp.Theme.Color.Primary
+		}
+		return layout.Inset{
+			Right: values.MarginPadding4,
+			Left:  values.MarginPadding4,
+		}.Layout(gtx, func(gtx C) D {
+			return sp.pages[i].indicatorBtn.Layout(gtx, func(gtx C) D {
+				return ic.Layout(gtx, values.MarginPadding12)
+			})
+		})
+	})
 }
 
 func (sp *startPage) setLanguageSetting() {

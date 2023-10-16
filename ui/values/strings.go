@@ -649,6 +649,8 @@ const (
 	StrSignCopied                      = "signCopied"
 	StrSignMessage                     = "signMessage"
 	StrSignMessageInfo                 = "signMessageInfo"
+	StrSkip                            = "skip"
+	StrSkipWalletCreation              = "skipWalletCreation"
 	StrSource                          = "source"
 	StrSourceModalInfo                 = "sourceModalInfo"
 	StrSourceWalletNotSynced           = "sourceWalletNotSynced"
