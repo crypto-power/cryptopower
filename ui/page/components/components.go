@@ -436,6 +436,33 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 						Alignment:   layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
+							if row.Transaction.Type == txhelper.TxTypeMixed {
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.WrapContent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Horizontal,
+									Direction:   layout.W,
+									Alignment:   layout.Middle,
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										// mix denomination
+										mixedDenom := wal.ToAmount(row.Transaction.MixDenomination).String()
+										txt := l.Theme.Label(values.TextSize12, mixedDenom)
+										txt.Color = l.Theme.Color.GrayText2
+										return txt.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// Mixed outputs count
+										if row.Transaction.MixCount > 1 {
+											label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
+											label.Color = l.Theme.Color.GrayText2
+											return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
+										}
+										return D{}
+									}),
+								)
+							}
+
 							walBalTxt := l.Theme.Label(values.TextSize12, amount)
 							walBalTxt.Color = l.Theme.Color.GrayText2
 							return walBalTxt.Layout(gtx)
@@ -535,7 +562,7 @@ func LayoutTransactionRow2(gtx layout.Context, l *load.Load, row TransactionRow)
 					}),
 
 					layout.Rigid(func(gtx C) D {
-						if row.Transaction.Type == txhelper.TxTypeRegular {
+						if row.Transaction.Type == txhelper.TxTypeRegular || row.Transaction.Type == txhelper.TxTypeMixed {
 							statusIcon := l.Theme.Icons.ConfirmIcon
 							if TxConfirmations(l, row.Transaction) < wal.RequiredConfirmations() {
 								statusIcon = l.Theme.Icons.PendingIcon
