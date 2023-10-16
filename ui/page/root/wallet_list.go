@@ -147,10 +147,10 @@ func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.Wallet
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 
-	var itemIDs []cryptomaterial.ClickedItem
+	var itemIDs []cryptomaterial.SelectedWalletItem
 	for i, wallet := range mainWalletList {
 		globalIndex := len(itemIDs)
-		itemIDs = append(itemIDs, cryptomaterial.ClickedItem{
+		itemIDs = append(itemIDs, cryptomaterial.SelectedWalletItem{
 			AssetType: wallet.Wallet.GetAssetType(),
 			Index:     globalIndex,
 		})
@@ -163,8 +163,8 @@ func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.Wallet
 	}
 
 	return pg.walletComponents.Layout(gtx, itemIDs, func(gtx C, i int) D {
-		clickedItem := itemIDs[i]
-		wallet := mainWalletList[clickedItem.Index]
+		SelectedWalletItem := itemIDs[i]
+		wallet := mainWalletList[SelectedWalletItem.Index]
 		return pg.walletWrapper(gtx, wallet)
 	})
 }
@@ -204,14 +204,20 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 	}
 
 	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16},
+		Width:  cryptomaterial.WrapContent,
+		Height: cryptomaterial.WrapContent,
+		Padding: layout.Inset{
+			Top:    values.MarginPadding16,
+			Bottom: values.MarginPadding16},
 		Background: pg.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     pg.shadowBox,
-		Margin:     layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding2, Left: values.MarginPadding16, Right: values.MarginPadding16},
-		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+		Margin: layout.Inset{
+			Top:    values.MarginPadding8,
+			Bottom: values.MarginPadding2,
+			Left:   values.MarginPadding16,
+			Right:  values.MarginPadding16},
+		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: m16, Right: m16}.Layout(gtx, func(gtx C) D {
@@ -240,12 +246,16 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
 		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16, Left: values.MarginPadding16, Right: values.MarginPadding16},
+		Padding:    layout.UniformInset(values.MarginPadding16),
 		Background: pg.Theme.Color.Surface,
 		Alignment:  layout.Middle,
 		Shadow:     pg.shadowBox,
-		Margin:     layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding4, Left: values.MarginPadding16, Right: values.MarginPadding16},
-		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+		Margin: layout.Inset{
+			Top:    values.MarginPadding8,
+			Bottom: values.MarginPadding4,
+			Left:   values.MarginPadding16,
+			Right:  values.MarginPadding16},
+		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{
@@ -275,7 +285,6 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 						}),
 					)
 				}),
-
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{
 						Axis:      layout.Horizontal,
@@ -328,7 +337,8 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin()))
+							usdBalance := utils.FormatUSDBalance(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
+							txt := pg.Theme.Label(values.TextSize16, usdBalance)
 							txt.Color = pg.Theme.Color.Text
 							return txt.Layout(gtx)
 						}

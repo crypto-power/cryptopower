@@ -554,12 +554,12 @@ func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
 		return nil, utils.ErrLTCNotInitialized
 	}
 
-	var totalBalance, totalSpendable, totalImmatureReward int64
 	accountsResult, err := asset.GetAccountsRaw()
 	if err != nil {
 		return nil, err
 	}
 
+	var totalBalance, totalSpendable, totalImmatureReward int64
 	for _, acc := range accountsResult.Accounts {
 		totalBalance += acc.Balance.Total.ToInt()
 		totalSpendable += acc.Balance.Spendable.ToInt()

@@ -66,7 +66,7 @@ type CreateWallet struct {
 	isLoading  bool
 }
 
-func NewCreateWallet(l *load.Load) *CreateWallet {
+func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWallet {
 	pg := &CreateWallet{
 		GenericPageModal: app.NewGenericPageModal(CreateWalletID),
 		scrollContainer: &widget.List{
@@ -93,6 +93,9 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		bg = l.Theme.Color.Background
 	}
 	pg.assetTypeSelector.SetBackground(bg)
+	if len(assetType) > 0 {
+		pg.assetTypeSelector.SetSelectedAssetType(assetType[0])
+	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true

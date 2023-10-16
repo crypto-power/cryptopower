@@ -51,7 +51,7 @@ type WalletSelectorPage struct {
 	scrollContainer        *widget.List
 	assetDropdownContainer *widget.List
 	shadowBox              *cryptomaterial.Shadow
-	addWalClickable        *cryptomaterial.Clickable
+	addWalClickable        map[libutils.AssetType]*cryptomaterial.Clickable
 
 	// wallet selector options
 	listLock       sync.RWMutex
@@ -91,8 +91,9 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 	pg.assetRate = make(map[libutils.AssetType]float64)
 	pg.walletsList = make(map[libutils.AssetType][]*load.WalletItem)
 	pg.indexMapping = make(map[int]walletIndexTuple)
-	pg.addWalClickable = l.Theme.NewClickable(false)
-	pg.addWalClickable.Radius = cryptomaterial.Radius(14)
+	pg.addWalClickable = make(map[libutils.AssetType]*cryptomaterial.Clickable)
+	// pg.addWalClickable = l.Theme.NewClickable(false)
+	// pg.addWalClickable.Radius = cryptomaterial.Radius(14)
 
 	pg.initWalletSelectorOptions()
 
@@ -108,6 +109,8 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
+		pg.addWalClickable[asset] = pg.Load.Theme.NewClickable(false)
+		pg.addWalClickable[asset].Radius = cryptomaterial.Radius(14)
 	}
 
 	go func() {
@@ -180,14 +183,20 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 	for _, walletsOfType := range pg.badWalletsList {
 		for _, badWallet := range walletsOfType {
 			if badWallet.deleteBtn.Clicked() {
-				pg.deleteBadWallet(badWallet.Wallet.ID) // Assuming the Wallet inside badWalletListItem has an ID field
+				pg.deleteBadWallet(badWallet.Wallet.ID)
 				pg.ParentWindow().Reload()
 			}
 		}
 	}
 
-	if pg.addWalClickable.Clicked() {
-		pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
+	// if pg.addWalClickable.Clicked() {
+	// 	pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
+	// }
+
+	for asset, clickable := range pg.addWalClickable {
+		if clickable.Clicked() {
+			pg.ParentNavigator().Display(NewCreateWallet(pg.Load, asset))
+		}
 	}
 }
 
@@ -261,136 +270,149 @@ func (pg *WalletSelectorPage) assetDropdown(asset libutils.AssetType) layout.Wid
 			layout.Rigid(func(gtx C) D {
 				return pg.assetCollapsibles[asset].Layout(gtx,
 					func(gtx C) D {
-						margin := layout.Inset{}
-						if pg.assetCollapsibles[asset].IsExpanded() {
-							margin = layout.Inset{Bottom: values.MarginPadding5}
-							for key := range pg.assetCollapsibles {
-								if key != asset {
-									pg.assetCollapsibles[key].SetExpanded(false)
-									pg.ParentWindow().Reload()
-								}
-							}
-						}
-						pg.shadowBox.SetShadowRadius(20)
-						return cryptomaterial.LinearLayout{
-							Width:      cryptomaterial.WrapContent,
-							Height:     cryptomaterial.WrapContent,
-							Padding:    layout.UniformInset(values.MarginPadding18),
-							Background: pg.Theme.Color.Surface,
-							Alignment:  layout.Middle,
-							Shadow:     pg.shadowBox,
-							Margin:     margin,
-							Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Right: values.MarginPadding8,
-									Left:  values.MarginPadding8,
-								}.Layout(gtx, func(gtx C) D {
-									image := components.CoinImageBySymbol(pg.Load, asset, false)
-									if image != nil {
-										return image.LayoutSize(gtx, values.MarginPadding30)
-									}
-									return D{}
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize16, asset.String())
-										txt.Color = pg.Theme.Color.Text
-										txt.Font.Weight = font.SemiBold
-										return txt.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Label(values.TextSize16, asset.ToFull())
-										txt.Color = pg.Theme.Color.Text
-										return txt.Layout(gtx)
-									}),
-								)
-							}),
-							layout.Flexed(1, func(gtx C) D {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									return layout.Flex{
-										Axis:      layout.Horizontal,
-										Alignment: layout.Middle,
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{
-												Axis:      layout.Vertical,
-												Alignment: layout.End,
-											}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													// check if asset balance is nil
-													if pg.assetsBalance[asset] == nil {
-														txt := pg.Theme.Label(values.TextSize16, "0.00 "+asset.String())
-														txt.Color = pg.Theme.Color.Text
-														txt.Font.Weight = font.SemiBold
-														return txt.Layout(gtx)
-													}
-													txt := pg.Theme.Label(values.TextSize16, pg.assetsBalance[asset].String())
-													txt.Color = pg.Theme.Color.Text
-													txt.Font.Weight = font.SemiBold
-													return txt.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-														txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, pg.assetsTotalUSDBalance[asset]))
-														txt.Color = pg.Theme.Color.Text
-														return txt.Layout(gtx)
-													}
-
-													txt := pg.Theme.Label(values.TextSize16, "$ --")
-													txt.Color = pg.Theme.Color.Text
-													return txt.Layout(gtx)
-												}),
-											)
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-												if pg.assetCollapsibles[asset].IsExpanded() {
-													return pg.Theme.Icons.ChevronCollapse.Layout16dp(gtx)
-												}
-
-												return pg.Theme.Icons.ChevronExpand.Layout16dp(gtx)
-											})
-										}),
-									)
-								})
-							}),
-						)
+						return pg.dropdownTitleLayout(gtx, asset)
 					},
 					func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:      cryptomaterial.MatchParent,
-							Height:     cryptomaterial.WrapContent,
-							Background: pg.Theme.Color.LightGray,
-							Border:     cryptomaterial.Border{Radius: cryptomaterial.CornerRadius{BottomLeft: int(values.MarginPadding14), BottomRight: 14}},
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											if len(pg.walletsList[asset]) > 0 {
-												return pg.walletListLayout(gtx, asset)
-											}
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												txt := pg.Theme.Label(values.TextSize16, "No wallets created yet")
-												txt.Color = pg.Theme.Color.GrayText3
-												return txt.Layout(gtx)
-											})
-										}),
-										layout.Rigid(pg.layoutAddMoreRowSection(pg.addWalClickable, values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout20dp)),
-									)
-								})
-							}),
-						)
+						return pg.dropdownContentLayout(gtx, asset)
 					},
 				)
 			}),
 		)
 	}
+}
+
+func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetType) D {
+	margin := layout.Inset{}
+	if pg.assetCollapsibles[asset].IsExpanded() {
+		margin = layout.Inset{Bottom: values.MarginPadding5}
+		for key := range pg.assetCollapsibles {
+			if key != asset {
+				pg.assetCollapsibles[key].SetExpanded(false)
+				pg.ParentWindow().Reload()
+			}
+		}
+	}
+	pg.shadowBox.SetShadowRadius(20)
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.WrapContent,
+		Height:     cryptomaterial.WrapContent,
+		Padding:    layout.UniformInset(values.MarginPadding18),
+		Background: pg.Theme.Color.Surface,
+		Alignment:  layout.Middle,
+		Shadow:     pg.shadowBox,
+		Margin:     margin,
+		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Right: values.MarginPadding8,
+				Left:  values.MarginPadding8,
+			}.Layout(gtx, func(gtx C) D {
+				image := components.CoinImageBySymbol(pg.Load, asset, false)
+				if image != nil {
+					return image.LayoutSize(gtx, values.MarginPadding30)
+				}
+				return D{}
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					txt := pg.Theme.Label(values.TextSize16, asset.String())
+					txt.Color = pg.Theme.Color.Text
+					txt.Font.Weight = font.SemiBold
+					return txt.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					txt := pg.Theme.Label(values.TextSize16, asset.ToFull())
+					txt.Color = pg.Theme.Color.Text
+					return txt.Layout(gtx)
+				}),
+			)
+		}),
+		layout.Flexed(1, func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return layout.Flex{
+					Axis:      layout.Horizontal,
+					Alignment: layout.Middle,
+				}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{
+							Axis:      layout.Vertical,
+							Alignment: layout.End,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								// check if asset balance is nil
+								if pg.assetsBalance[asset] == nil {
+									txt := pg.Theme.Label(values.TextSize16, "0.00 "+asset.String())
+									txt.Color = pg.Theme.Color.Text
+									txt.Font.Weight = font.SemiBold
+									return txt.Layout(gtx)
+								}
+								txt := pg.Theme.Label(values.TextSize16, pg.assetsBalance[asset].String())
+								txt.Color = pg.Theme.Color.Text
+								txt.Font.Weight = font.SemiBold
+								return txt.Layout(gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+									txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, pg.assetsTotalUSDBalance[asset]))
+									txt.Color = pg.Theme.Color.Text
+									return txt.Layout(gtx)
+								}
+
+								txt := pg.Theme.Label(values.TextSize16, "$ --")
+								txt.Color = pg.Theme.Color.Text
+								return txt.Layout(gtx)
+							}),
+						)
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+							if pg.assetCollapsibles[asset].IsExpanded() {
+								return pg.Theme.Icons.ChevronCollapse.Layout16dp(gtx)
+							}
+
+							return pg.Theme.Icons.ChevronExpand.Layout16dp(gtx)
+						})
+					}),
+				)
+			})
+		}),
+	)
+}
+
+func (pg *WalletSelectorPage) dropdownContentLayout(gtx C, asset libutils.AssetType) D {
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.MatchParent,
+		Height:     cryptomaterial.WrapContent,
+		Background: pg.Theme.Color.LightGray,
+		Border: cryptomaterial.Border{
+			Radius: cryptomaterial.CornerRadius{
+				BottomLeft:  int(values.MarginPadding14),
+				BottomRight: int(values.MarginPadding14),
+			},
+		},
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if len(pg.walletsList[asset]) > 0 {
+							return pg.walletListLayout(gtx, asset)
+						}
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Center.Layout(gtx, func(gtx C) D {
+							txt := pg.Theme.Label(values.TextSize16, "No wallets created yet")
+							txt.Color = pg.Theme.Color.GrayText3
+							return txt.Layout(gtx)
+						})
+					}),
+					layout.Rigid(pg.layoutAddMoreRowSection(pg.addWalClickable[asset], values.String(values.StrAddWallet), pg.Theme.Icons.NewWalletIcon.Layout20dp)),
+				)
+			})
+		}),
+	)
 }
 
 func (pg *WalletSelectorPage) layoutAddMoreRowSection(clk *cryptomaterial.Clickable, buttonText string, ic func(gtx C) D) layout.Widget {

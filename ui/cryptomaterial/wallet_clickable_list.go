@@ -6,7 +6,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 )
 
-type ClickedItem struct {
+type SelectedWalletItem struct {
 	AssetType utils.AssetType
 	Index     int
 }
@@ -20,7 +20,7 @@ type WalletClickableList struct {
 	DividerHeight   unit.Dp
 	IsShadowEnabled bool
 	IsHoverable     bool
-	ItemIDs         map[*Clickable]ClickedItem
+	ItemIDs         map[*Clickable]SelectedWalletItem
 }
 
 func (t *Theme) NewWalletClickableList(axis layout.Axis) *WalletClickableList {
@@ -36,7 +36,7 @@ func (t *Theme) NewWalletClickableList(axis layout.Axis) *WalletClickableList {
 	return click
 }
 
-func (cl *WalletClickableList) ItemClicked() (bool, ClickedItem) {
+func (cl *WalletClickableList) ItemClicked() (bool, SelectedWalletItem) {
 	for _, clickable := range cl.clickables {
 		if clickable.Clicked() {
 			if itemID, exists := cl.ItemIDs[clickable]; exists {
@@ -44,17 +44,17 @@ func (cl *WalletClickableList) ItemClicked() (bool, ClickedItem) {
 			}
 		}
 	}
-	return false, ClickedItem{}
+	return false, SelectedWalletItem{}
 }
 
-func (cl *WalletClickableList) handleClickables(itemIDs []ClickedItem) {
+func (cl *WalletClickableList) handleClickables(itemIDs []SelectedWalletItem) {
 	if len(cl.clickables) != len(itemIDs) {
 
 		// Resize the clickables slice to match the size of the provided itemIDs
 		cl.clickables = make([]*Clickable, len(itemIDs))
 
 		// Initialize the ItemIDs map
-		cl.ItemIDs = make(map[*Clickable]ClickedItem)
+		cl.ItemIDs = make(map[*Clickable]SelectedWalletItem)
 
 		for i, itemID := range itemIDs {
 			clickable := cl.theme.NewClickable(cl.IsHoverable)
@@ -71,7 +71,7 @@ func (cl *WalletClickableList) handleClickables(itemIDs []ClickedItem) {
 	}
 }
 
-func (cl *WalletClickableList) Layout(gtx layout.Context, itemIDs []ClickedItem, w layout.ListElement) layout.Dimensions {
+func (cl *WalletClickableList) Layout(gtx layout.Context, itemIDs []SelectedWalletItem, w layout.ListElement) layout.Dimensions {
 	cl.handleClickables(itemIDs)
 	count := len(itemIDs) // Using len(itemIDs) as the count.
 	return cl.List.Layout(gtx, count, func(gtx C, i int) D {
