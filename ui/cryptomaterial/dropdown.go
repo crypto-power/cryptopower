@@ -153,16 +153,6 @@ func (d *DropDown) layoutActiveIcon(gtx layout.Context, index int) D {
 
 func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 	item := d.items[itemIndex]
-
-	width := gtx.Dp(values.MarginPadding180)
-	if d.revs {
-		width = gtx.Dp(values.MarginPadding140)
-	}
-
-	if d.Width > 0 {
-		width = d.Width
-	}
-
 	radius := Radius(0)
 	clickable := item.clickable
 	if !d.isOpen {
@@ -174,6 +164,12 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 	if item.Icon != nil {
 		padding = values.MarginPadding8
 	}
+
+	width := d.Width
+	if width <= 0 {
+		width = dropdownWidth(gtx, d.revs)
+	}
+
 	return LinearLayout{
 		Width:     width,
 		Height:    WrapContent,
@@ -189,13 +185,7 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 			return item.Icon.Layout24dp(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(115))
-			if d.revs {
-				gtx.Constraints.Max.X = gtx.Dp(unit.Dp(100))
-			}
-			if d.Width > 0 {
-				gtx.Constraints.Max.X = d.Width - gtx.Dp(unit.Dp(40)) // give some space for the dropdown Icon
-			}
+			gtx.Constraints.Max.X = width - gtx.Dp(values.MarginPadding40) // give some space for the dropdown Icon
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Inset{
 				Right: unit.Dp(5),
@@ -212,6 +202,15 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 			return d.layoutActiveIcon(gtx, itemIndex)
 		}),
 	)
+}
+
+// dropdownWidth returns the default width for a dropdown depending on the it's
+// position.
+func dropdownWidth(gtx C, reversePosition bool) int {
+	if reversePosition {
+		return gtx.Dp(values.MarginPadding140)
+	}
+	return gtx.Dp(values.MarginPadding180)
 }
 
 func (d *DropDown) Layout(gtx C, dropPos int, reversePos bool) D {
@@ -284,8 +283,9 @@ func (d *DropDown) closedLayout(gtx C, iLeft int, iRight int) D {
 				layout.Rigid(func(gtx C) D {
 					return d.layoutOption(gtx, d.selectedIndex)
 				}))
-			w := (lay.Size.X * 800) / gtx.Dp(MaxWidth)
-			d.Width = w + 10
+			if d.Width <= 0 {
+				d.Width = dropdownWidth(gtx, d.revs)
+			}
 			return lay
 		})
 	})
