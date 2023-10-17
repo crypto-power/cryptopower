@@ -3,6 +3,9 @@
 package cryptomaterial
 
 import (
+	"image/color"
+
+	"gioui.org/font"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 )
@@ -60,4 +63,11 @@ func (t *Theme) Label(size unit.Sp, txt string) Label {
 func (t *Theme) labelWithDefaultColor(l Label) Label {
 	l.Color = t.Color.DeepBlue
 	return l
+}
+
+func (t *Theme) DecoratedText(size unit.Sp, txt string, color color.NRGBA, weight font.Weight) Label {
+	label := Label{material.Label(t.Base, size, txt)}
+	label.Color = color
+	label.Font.Weight = weight
+	return label
 }
