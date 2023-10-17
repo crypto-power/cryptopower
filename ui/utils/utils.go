@@ -83,7 +83,7 @@ func BreakBalance(p *message.Printer, balance string) (b1, b2 string) {
 	return
 }
 
-func FormatAsUSD(p *message.Printer, usdAmt float64) string {
+func FormatAsUSDString(p *message.Printer, usdAmt float64) string {
 	return p.Sprintf("$%.2f", usdAmt)
 }
 
