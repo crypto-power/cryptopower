@@ -106,10 +106,6 @@ func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainText
 	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.Text, false, font.Normal)
 }
 
-func LayoutBalanceSizeWeight(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, weight font.Weight) layout.Dimensions {
-	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.Text, false, weight)
-}
-
 func LayoutBalanceSizeScale(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32) layout.Dimensions {
 	return formatBalance(gtx, l, amount, mainTextSize, scale, l.Theme.Color.Text, false, font.Normal)
 }

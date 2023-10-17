@@ -270,7 +270,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 
 											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													return components.LayoutTransactionRow(gtx, pg.Load, row)
+													return components.LayoutTransactionRow(gtx, pg.Load, row, true)
 												}),
 												layout.Rigid(func(gtx C) D {
 													// No divider for last row
@@ -342,7 +342,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												return components.LayoutTransactionRow(gtx, pg.Load, row)
+												return components.LayoutTransactionRow(gtx, pg.Load, row, true)
 											}),
 											layout.Rigid(func(gtx C) D {
 												// No divider for last row
