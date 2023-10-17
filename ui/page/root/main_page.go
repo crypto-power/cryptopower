@@ -371,7 +371,7 @@ func (mp *MainPage) updateBalance() {
 	}
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
-	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+	mp.totalBalanceUSD = utils.FormatAsUSD(mp.Printer, balanceInUSD)
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed

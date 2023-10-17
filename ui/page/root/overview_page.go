@@ -839,7 +839,7 @@ func (pg *OverviewPage) marketTableRows(gtx C, asset assetMarketData, rate *ext.
 			Alignment: layout.Middle,
 		}.Layout(gtx,
 			layout.Flexed(.785, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel(fmt.Sprintf("$%.2f", rate.LastTradePrice), pg.Theme.Color.Text))
+				return layout.E.Layout(gtx, pg.assetTableLabel(utils.FormatAsUSD(pg.Printer, rate.LastTradePrice), pg.Theme.Color.Text))
 			}),
 			layout.Flexed(.215, func(gtx C) D {
 				hasRateChange := rate.PriceChangePercent != nil
@@ -999,7 +999,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 		}
 
 		toUSDString := func(balance float64) string {
-			return utils.FormatUSDBalance(pg.Printer, balance)
+			return utils.FormatAsUSD(pg.Printer, balance)
 		}
 
 		for assetType, balance := range assetsTotalUSDBalance {

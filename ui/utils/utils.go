@@ -83,8 +83,8 @@ func BreakBalance(p *message.Printer, balance string) (b1, b2 string) {
 	return
 }
 
-func FormatUSDBalance(p *message.Printer, balance float64) string {
-	return p.Sprintf("$%.2f", balance)
+func FormatAsUSD(p *message.Printer, usdAmt float64) string {
+	return p.Sprintf("$%.2f", usdAmt)
 }
 
 func CryptoToUSD(exchangeRate, coin float64) float64 {
