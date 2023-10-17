@@ -184,6 +184,9 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 }
 
 func (pg *TreasuryPage) layout(gtx C) D {
+	if pg.selectedWallet == nil {
+		return pg.decredWalletRequired(gtx)
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -322,10 +325,28 @@ func (pg *TreasuryPage) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
-	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	if pg.sourceWalletSelector.SelectedWallet() != nil {
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	}
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet.Asset
 		pg.FetchPolicies()
+	})
+}
+
+// TODO: Temporary UI. Pending when new designs will be ready for this feature
+func (pg *TreasuryPage) decredWalletRequired(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+		Alignment:   layout.Middle,
+	}.Layout2(gtx, func(gtx C) D {
+		txt := "This feature requires that you have a decred wallet."
+		lbl := pg.Theme.Label(values.TextSize16, txt)
+		lbl.Font.Weight = font.SemiBold
+		return lbl.Layout(gtx)
 	})
 }
