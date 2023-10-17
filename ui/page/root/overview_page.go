@@ -945,7 +945,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return components.LayoutTransactionRow2(gtx, pg.Load, row)
+										return components.LayoutTransactionRow(gtx, pg.Load, row, false)
 									}),
 									layout.Rigid(func(gtx C) D {
 										// No divider for last row
@@ -983,7 +983,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									return components.LayoutTransactionRow2(gtx, pg.Load, row)
+									return components.LayoutTransactionRow(gtx, pg.Load, row, false)
 								}),
 								layout.Rigid(func(gtx C) D {
 									// No divider for last row
