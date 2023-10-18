@@ -20,6 +20,11 @@ func (asset *Asset) listenForTransactions() {
 
 notificationsLoop:
 	for {
+		if asset.syncCtx.Err() != nil {
+			notify.Done()
+			break notificationsLoop // return early
+		}
+
 		select {
 		case n, ok := <-notify.C:
 			if !ok {

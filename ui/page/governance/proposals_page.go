@@ -217,6 +217,16 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (pg *ProposalsPage) resetListeners() {
+	pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
+	if pg.ProposalNotificationListener != nil {
+		close(pg.ProposalNotifChan)
+		pg.ProposalNotificationListener = nil
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -380,6 +390,10 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.ProposalNotifChan:
 				if n.ProposalStatus == wallet.Synced {
@@ -390,11 +404,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
-				close(pg.ProposalNotifChan)
-				pg.ProposalNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()

@@ -88,10 +88,11 @@ func (pageStack *PageStack) Pop() bool {
 		closeablePage.OnClosed()
 	}
 
-	pageStack.pages = pageStack.pages[:l-1]
 	if l > 1 {
 		pageStack.pages[l-2].OnNavigatedTo() // get previous page ready for display
 	}
+
+	pageStack.pages = pageStack.pages[:l-1] // remove page.
 	return true
 }
 

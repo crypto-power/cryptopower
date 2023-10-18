@@ -292,6 +292,8 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	if mp.CurrentPage() == nil {
 		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page?
+	} else {
+		mp.CurrentPage().OnNavigatedTo()
 	}
 
 	mp.listenForNotifications() // start sync notifications listening.
@@ -307,8 +309,6 @@ func (mp *MainPage) OnNavigatedTo() {
 	case libutils.BTCWalletAsset:
 	case libutils.LTCWalletAsset:
 	}
-
-	mp.CurrentPage().OnNavigatedTo()
 }
 
 func (mp *MainPage) isGovernanceAPIAllowed() bool {
@@ -582,6 +582,33 @@ func (mp *MainPage) OnNavigatedFrom() {
 	}
 
 	mp.ctxCancel()
+	mp.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (mp *MainPage) resetListeners() {
+	w := mp.WL.SelectedWallet.Wallet
+	w.RemoveSyncProgressListener(MainPageID)
+	w.RemoveTxAndBlockNotificationListener(MainPageID)
+	mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
+	mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
+
+	if mp.SyncProgressListener != nil {
+		close(mp.SyncStatusChan)
+		mp.SyncProgressListener = nil
+	}
+	if mp.TxAndBlockNotificationListener != nil {
+		mp.CloseTxAndBlockChan()
+		mp.TxAndBlockNotificationListener = nil
+	}
+	if mp.ProposalNotificationListener != nil {
+		close(mp.ProposalNotifChan)
+		mp.ProposalNotificationListener = nil
+	}
+	if mp.OrderNotificationListener != nil {
+		close(mp.OrderNotifChan)
+		mp.OrderNotificationListener = nil
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -932,6 +959,10 @@ func (mp *MainPage) listenForNotifications() {
 
 	go func() {
 		for {
+			if mp.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-mp.TxAndBlockNotifChan():
 				switch n.Type {
@@ -976,22 +1007,7 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				selectedWallet.RemoveSyncProgressListener(MainPageID)
-				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
-				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
-				mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
-
-				close(mp.SyncStatusChan)
-				mp.CloseTxAndBlockChan()
-				close(mp.ProposalNotifChan)
-				close(mp.OrderNotifChan)
-
-				mp.SyncProgressListener = nil
-				mp.TxAndBlockNotificationListener = nil
-				mp.ProposalNotificationListener = nil
-				mp.OrderNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()

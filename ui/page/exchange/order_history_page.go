@@ -88,8 +88,16 @@ func (pg *OrderHistoryPage) OnNavigatedTo() {
 }
 
 func (pg *OrderHistoryPage) OnNavigatedFrom() {
-	if pg.ctxCancel != nil {
-		pg.ctxCancel()
+	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (pg *OrderHistoryPage) resetListeners() {
+	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
+	if pg.OrderNotificationListener != nil {
+		close(pg.OrderNotifChan)
+		pg.OrderNotificationListener = nil
 	}
 }
 
@@ -303,6 +311,10 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.OrderNotifChan:
 				if n.OrderStatus == wallet.OrderStatusSynced {
@@ -310,11 +322,7 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
-				close(pg.OrderNotifChan)
-				pg.OrderNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()

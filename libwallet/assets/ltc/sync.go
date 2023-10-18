@@ -226,6 +226,10 @@ func (asset *Asset) handleNotifications() {
 
 notificationsLoop:
 	for {
+		if asset.syncCtx.Err() != nil {
+			break notificationsLoop // return early
+		}
+
 		select {
 		case n, ok := <-asset.chainClient.Notifications():
 			if !ok {
@@ -572,6 +576,10 @@ func (asset *Asset) waitForSyncCompletion() {
 	defer t.Stop()
 
 	for {
+		if asset.syncCtx.Err() != nil {
+			return // return early
+		}
+
 		select {
 		case <-t.C:
 			if asset.chainClient.IsCurrent() {

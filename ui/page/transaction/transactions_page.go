@@ -412,6 +412,10 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.NewTransaction {
@@ -419,11 +423,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
-				pg.CloseTxAndBlockChan()
-				pg.TxAndBlockNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()
@@ -438,4 +438,14 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (pg *TransactionsPage) resetListeners() {
+	pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+	if pg.TxAndBlockNotificationListener != nil {
+		pg.CloseTxAndBlockChan()
+		pg.TxAndBlockNotificationListener = nil
+	}
 }

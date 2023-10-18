@@ -347,7 +347,20 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 	}
 
 	go func() {
+		resetListeners := func() {
+			ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
+			if ws.TxAndBlockNotificationListener != nil {
+				ws.CloseTxAndBlockChan()
+				ws.TxAndBlockNotificationListener = nil
+			}
+		}
+
 		for {
+			if ctx.Err() != nil {
+				resetListeners()
+				return // return early
+			}
+
 			select {
 			case n := <-ws.TxAndBlockNotifChan():
 				switch n.Type {
@@ -377,10 +390,8 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context
 
 				}
 			case <-ctx.Done():
-				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
-				ws.CloseTxAndBlockChan()
-				ws.TxAndBlockNotificationListener = nil
-				return
+				resetListeners()
+				return // exit
 			}
 		}
 	}()

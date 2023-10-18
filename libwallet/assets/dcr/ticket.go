@@ -307,17 +307,25 @@ func (asset *Asset) runTicketBuyer(ctx context.Context, passphrase string, cfg *
 
 	var nextIntervalStart, expiry int32
 	var cancels []func()
+	handleCtxErr := func() error {
+		defer outerCancel()
+		fatalMu.Lock()
+		err := fatal
+		fatalMu.Unlock()
+		if err != nil {
+			return err
+		}
+		return ctx.Err()
+	}
+
 	for {
+		if ctx.Err() != nil {
+			return handleCtxErr() // return early
+		}
+
 		select {
 		case <-ctx.Done():
-			defer outerCancel()
-			fatalMu.Lock()
-			err := fatal
-			fatalMu.Unlock()
-			if err != nil {
-				return err
-			}
-			return ctx.Err()
+			return handleCtxErr()
 		case n := <-c.C:
 			if len(n.AttachedBlocks) == 0 {
 				continue

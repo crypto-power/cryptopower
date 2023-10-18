@@ -27,17 +27,17 @@ func (pg *Page) listenForTxNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.BlockAttached || n.Type == listeners.NewTransaction {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
-				pg.CloseTxAndBlockChan()
-				pg.TxAndBlockNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()

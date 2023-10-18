@@ -255,6 +255,30 @@ func (pg *OverviewPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (pg *OverviewPage) resetListeners() {
+	dcrWallets := pg.WL.AssetsManager.AllDCRWallets()
+	for _, wal := range dcrWallets {
+		w := wal.(*dcr.Asset)
+		w.RemoveAccountMixerNotificationListener(OverviewPageID)
+		w.RemoveTxAndBlockNotificationListener(OverviewPageID)
+	}
+
+	if pg.AccountMixerNotificationListener != nil {
+		close(pg.MixerChan)
+		pg.AccountMixerNotificationListener = nil
+	}
+	if pg.TxAndBlockNotificationListener != nil {
+		pg.CloseTxAndBlockChan()
+		pg.TxAndBlockNotificationListener = nil
+	}
+	if pg.RateListener != nil {
+		close(pg.RateUpdateChan)
+		pg.RateListener = nil
+	}
 }
 
 func (pg *OverviewPage) OnCurrencyChanged() {
@@ -1227,6 +1251,10 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.MixerChan:
 				if n.RunStatus == wallet.MixerStarted {
@@ -1252,20 +1280,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 			case <-pg.RateUpdateChan:
 				pg.ParentWindow().Reload()
 			case <-pg.ctx.Done():
-				for _, wal := range dcrWallets {
-					w := wal.(*dcr.Asset)
-					w.RemoveAccountMixerNotificationListener(OverviewPageID)
-					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
-				}
-				pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
-				close(pg.MixerChan)
-				pg.CloseTxAndBlockChan()
-				close(pg.RateUpdateChan)
-				pg.AccountMixerNotificationListener = nil
-				pg.TxAndBlockNotificationListener = nil
-				pg.RateListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()

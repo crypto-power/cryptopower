@@ -544,6 +544,10 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.MixerChan:
 				if n.RunStatus == wallet.MixerStarted {
@@ -565,12 +569,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 				}
 
 			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-				pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
-				close(pg.MixerChan)
-				pg.CloseTxAndBlockChan()
-				pg.AccountMixerNotificationListener = nil
-				return
+				return // exit
 			}
 		}
 	}()
@@ -585,4 +584,18 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+func (pg *AccountMixerPage) resetListeners() {
+	pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+	pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
+	if pg.TxAndBlockNotificationListener != nil {
+		pg.CloseTxAndBlockChan()
+		pg.AccountMixerNotificationListener = nil
+	}
+	if pg.AccountMixerNotificationListener != nil {
+		close(pg.MixerChan)
+		pg.AccountMixerNotificationListener = nil
+	}
 }

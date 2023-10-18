@@ -198,6 +198,10 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case notification := <-pg.ProposalNotifChan:
 				if notification.ProposalStatus == wallet.Synced {
@@ -209,11 +213,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 				}
 			// is this really needed since listener has been set up on main.go
 			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
-				close(pg.ProposalNotifChan)
-				pg.ProposalNotificationListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()
@@ -228,6 +228,15 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+func (pg *ProposalDetails) resetListeners() {
+	pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
+	if pg.ProposalNotificationListener != nil {
+		close(pg.ProposalNotifChan)
+		pg.ProposalNotificationListener = nil
+	}
 }
 
 // - Layout

@@ -135,6 +135,8 @@ func (hp *HomePage) OnNavigatedTo() {
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load))
+	} else {
+		hp.CurrentPage().OnNavigatedTo()
 	}
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
@@ -699,6 +701,10 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 		duration := time.Second * 5
 
 		for {
+			if hp.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case <-hp.ctx.Done():
 				return

@@ -219,6 +219,10 @@ func (asset *Asset) handleNotifications() {
 
 notificationsLoop:
 	for {
+		if asset.syncCtx.Err() != nil {
+			break notificationsLoop // return early
+		}
+
 		select {
 		case n, ok := <-asset.chainClient.Notifications():
 			if !ok {
@@ -248,7 +252,7 @@ notificationsLoop:
 				select {
 				case <-t.C:
 					if !asset.IsSynced() {
-						// initial sync is inprogress.
+						// initial sync is in progress.
 						asset.updateSyncProgress(n.Height)
 					} else {
 						// initial sync is complete
@@ -258,7 +262,7 @@ notificationsLoop:
 				}
 
 			case chain.FilteredBlockConnected:
-				// if relevants txs were detected. Atempt to send them first
+				// If relevant txs were detected, attempt to send them first.
 				for _, tx := range n.RelevantTxs {
 					asset.publishTransactionConfirmed(tx.Hash.String(), n.Block.Height)
 				}
@@ -558,6 +562,10 @@ func (asset *Asset) waitForSyncCompletion() {
 	defer t.Stop()
 
 	for {
+		if asset.syncCtx.Err() != nil {
+			return // return early
+		}
+
 		select {
 		case <-t.C:
 			if asset.chainClient.IsCurrent() {

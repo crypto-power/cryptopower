@@ -55,9 +55,9 @@ func (pg *DEXPage) OnNavigatedTo() {
 	if pg.CurrentPage() == nil {
 		// TODO: Handle pg.inited
 		pg.Display(NewDEXOnboarding(pg.Load))
+	} else {
+		pg.CurrentPage().OnNavigatedTo()
 	}
-
-	pg.CurrentPage().OnNavigatedTo()
 }
 
 // Layout draws the page UI components into the provided layout context to be

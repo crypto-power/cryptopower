@@ -227,6 +227,10 @@ func (pg *WalletInfo) listenForNotifications() {
 
 	go func() {
 		for {
+			if pg.ctx.Err() != nil {
+				return // return early
+			}
+
 			select {
 			case n := <-pg.SyncStatusChan:
 				// Update sync progress fields which will be displayed
@@ -279,19 +283,7 @@ func (pg *WalletInfo) listenForNotifications() {
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
-				selectedWallet.RemoveSyncProgressListener(InfoID)
-				selectedWallet.RemoveTxAndBlockNotificationListener(InfoID)
-				selectedWallet.SetBlocksRescanProgressListener(nil)
-
-				close(pg.SyncStatusChan)
-				pg.CloseTxAndBlockChan()
-				close(pg.BlockRescanChan)
-
-				pg.SyncProgressListener = nil
-				pg.TxAndBlockNotificationListener = nil
-				pg.BlocksRescanProgressListener = nil
-
-				return
+				return // exit
 			}
 		}
 	}()
@@ -306,4 +298,26 @@ func (pg *WalletInfo) listenForNotifications() {
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedFrom() {
 	pg.ctxCancel()
+	pg.resetListeners()
+}
+
+// resetListeners removes unused listeners for this page.
+func (pg *WalletInfo) resetListeners() {
+	w := pg.WL.SelectedWallet.Wallet
+	w.RemoveSyncProgressListener(InfoID)
+	w.RemoveTxAndBlockNotificationListener(InfoID)
+	w.SetBlocksRescanProgressListener(nil)
+
+	if pg.SyncProgressListener != nil {
+		close(pg.SyncStatusChan)
+		pg.SyncProgressListener = nil
+	}
+	if pg.TxAndBlockNotificationListener != nil {
+		pg.CloseTxAndBlockChan()
+		pg.TxAndBlockNotificationListener = nil
+	}
+	if pg.BlocksRescanProgressListener != nil {
+		close(pg.BlockRescanChan)
+		pg.BlocksRescanProgressListener = nil
+	}
 }

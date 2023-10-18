@@ -479,5 +479,12 @@ func (pg *Page) OnNavigatedFrom() {
 	// should be ignored.
 	if pg.ctxCancel != nil {
 		pg.ctxCancel()
+
+		// Reset listeners.
+		pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
+		if pg.TxAndBlockNotificationListener != nil {
+			pg.CloseTxAndBlockChan()
+			pg.TxAndBlockNotificationListener = nil
+		}
 	}
 }

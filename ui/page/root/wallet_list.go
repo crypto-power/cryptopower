@@ -359,18 +359,27 @@ func (pg *WalletSelectorPage) listenForNotifications() {
 		}
 
 		go func(wal sharedW.Asset) {
+			resetListeners := func() {
+				wal.RemoveSyncProgressListener(WalletSelectorPageID)
+				close(syncListener.SyncStatusChan)
+				syncListener = nil
+				pg.isListenerAdded = false
+			}
+
 			for {
+				if pg.ctx.Err() != nil {
+					resetListeners()
+					return // return early
+				}
+
 				select {
 				case n := <-syncListener.SyncStatusChan:
 					if n.Stage == wallet.SyncCompleted {
 						pg.ParentWindow().Reload()
 					}
 				case <-pg.ctx.Done():
-					wal.RemoveSyncProgressListener(WalletSelectorPageID)
-					close(syncListener.SyncStatusChan)
-					syncListener = nil
-					pg.isListenerAdded = false
-					return
+					resetListeners()
+					return // exit
 				}
 			}
 		}(w)
