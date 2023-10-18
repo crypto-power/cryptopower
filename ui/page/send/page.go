@@ -41,11 +41,15 @@ type Page struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	modalLayout   *cryptomaterial.Modal
+	isModalLayout bool
+
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
 	pageContainer *widget.List
 
+	sourceWalletSelector  *components.WalletAndAccountSelector
 	sourceAccountSelector *components.WalletAndAccountSelector
 	sendDestination       *destination
 	amount                *sendAmount
@@ -96,22 +100,30 @@ type selectedUTXOsInfo struct {
 	totalUTXOsAmount int64
 }
 
-func NewSendPage(l *load.Load) *Page {
+func NewSendPage(l *load.Load, isModalLayout bool) *Page {
 	pg := &Page{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(SendPageID),
-		sendDestination:  newSendDestination(l),
-		amount:           newSendAmount(l),
-
-		exchangeRate: -1,
+		Load: l,
 
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
+		isModalLayout:  isModalLayout,
+		exchangeRate:   -1,
 	}
-	pg.selectedWallet = &load.WalletMapping{
-		Asset: l.WL.SelectedWallet.Wallet,
+
+	if isModalLayout {
+		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
+		pg.GenericPageModal = pg.modalLayout.GenericPageModal
+		pg.initWalletSelector()
+	} else {
+		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
+		pg.selectedWallet = &load.WalletMapping{
+			Asset: l.WL.SelectedWallet.Wallet,
+		}
 	}
+
+	pg.amount = newSendAmount(l.Theme, pg.selectedWallet.GetAssetType())
+	pg.sendDestination = newSendDestination(l, pg.selectedWallet.GetAssetType())
 
 	callbackFunc := func() libUtil.AssetType {
 		return pg.selectedWallet.GetAssetType()
@@ -121,8 +133,46 @@ func NewSendPage(l *load.Load) *Page {
 	pg.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
 	pg.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
+	pg.initializeAccountSelectors()
+
+	pg.sendDestination.addressChanged = func() {
+		pg.validateAndConstructTx()
+	}
+
+	pg.amount.amountChanged = func() {
+		pg.validateAndConstructTxAmountOnly()
+	}
+
+	pg.initLayoutWidgets()
+
+	return pg
+}
+
+// initWalletSelector is used for the send modal for wallet selection.
+func (pg *Page) initWalletSelector() {
+	// initialize wallet selector
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load).
+		Title(values.String(values.StrSelectWallet))
+	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+
+	// Source wallet picker
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.selectedWallet = selectedWallet
+		pg.amount.setAssetType(selectedWallet.GetAssetType())
+		pg.sendDestination.initDestinationWalletSelector(selectedWallet.GetAssetType())
+		pg.initializeAccountSelectors()
+		pg.resetDestinationAccountSelector()
+	})
+}
+
+func (pg *Page) resetDestinationAccountSelector() {
+	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
+	pg.validateAndConstructTx()
+}
+
+func (pg *Page) initializeAccountSelectors() {
 	// Source account picker
-	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(l).
+	pg.sourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load).
 		Title(values.String(values.StrFrom)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {
 			// this resets the selected destination account based on the
@@ -131,9 +181,7 @@ func NewSendPage(l *load.Load) *Page {
 			// account is the same as the source account or because the
 			// destination account needs to change based on if the selected
 			// wallet has privacy enabled.
-			pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(
-				pg.sendDestination.destinationWalletSelector.SelectedWallet())
-			pg.validateAndConstructTx()
+			pg.resetDestinationAccountSelector()
 		}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			accountIsValid := account.Number != load.MaxInt32 && !pg.selectedWallet.IsWatchingOnlyWallet()
@@ -182,22 +230,10 @@ func NewSendPage(l *load.Load) *Page {
 
 	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		if pg.selectedWallet.Asset.GetAssetType() == libUtil.DCRWalletAsset {
+		if pg.selectedWallet.GetAssetType() == libUtil.DCRWalletAsset {
 			pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
 		}
 	})
-
-	pg.sendDestination.addressChanged = func() {
-		pg.validateAndConstructTx()
-	}
-
-	pg.amount.amountChanged = func() {
-		pg.validateAndConstructTxAmountOnly()
-	}
-
-	pg.initLayoutWidgets()
-
-	return pg
 }
 
 // RestyleWidgets restyles select widgets to match the current theme. This is
@@ -227,7 +263,7 @@ func (pg *Page) OnNavigatedTo() {
 	pg.RestyleWidgets()
 
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
@@ -268,7 +304,7 @@ func (pg *Page) fetchExchangeRate() {
 	}
 	pg.isFetchingExchangeRate = true
 	var market string
-	switch pg.WL.SelectedWallet.Wallet.GetAssetType() {
+	switch pg.selectedWallet.GetAssetType() {
 	case libUtil.DCRWalletAsset:
 		market = values.DCRUSDTMarket
 	case libUtil.BTCWalletAsset:
@@ -276,7 +312,7 @@ func (pg *Page) fetchExchangeRate() {
 	case libUtil.LTCWalletAsset:
 		market = values.LTCUSDTMarket
 	default:
-		log.Errorf("Unsupported asset type: %s", pg.WL.SelectedWallet.Wallet.GetAssetType())
+		log.Errorf("Unsupported asset type: %s", pg.selectedWallet.GetAssetType())
 		pg.isFetchingExchangeRate = false
 		return
 	}
@@ -381,7 +417,7 @@ func (pg *Page) constructTx() {
 		amountAtom = spendableAmount - feeAtom
 	}
 
-	wal := pg.WL.SelectedWallet.Wallet
+	wal := pg.selectedWallet
 	totalSendingAmount := wal.ToAmount(amountAtom + feeAtom)
 	balanceAfterSend := wal.ToAmount(spendableAmount - totalSendingAmount.ToInt())
 
@@ -509,6 +545,9 @@ func (pg *Page) HandleUserInteractions() {
 			pg.confirmTxModal.txSent = func() {
 				pg.resetFields()
 				pg.clearEstimates()
+				if pg.isModalLayout {
+					pg.modalLayout.Dismiss()
+				}
 			}
 
 			pg.ParentWindow().ShowModal(pg.confirmTxModal)
@@ -552,6 +591,44 @@ func (pg *Page) HandleUserInteractions() {
 		pg.amount.SendMax = true
 		pg.amount.amountChanged()
 	}
+}
+
+// Handle is like HandleUserInteractions but Handle is called if this page is
+// displayed as a modal while HandleUserInteractions is called if this page
+// is displayed as a full page. Either Handle or HandleUserInteractions will
+// be called just before Layout() is called to determine if any user interaction
+// recently occurred on the modal or page and may be used to update any affected
+// UI components shortly before they are displayed by the Layout() method.
+func (pg *Page) Handle() {
+	if pg.modalLayout.BackdropClicked(true) {
+		pg.modalLayout.Dismiss()
+	} else {
+		pg.HandleUserInteractions()
+	}
+}
+
+// OnResume is called to initialize data and get UI elements ready to be
+// displayed. This is called just before Handle() and Layout() are called (in
+// that order).
+
+// OnResume is like OnNavigatedTo but OnResume is called if this page is
+// displayed as a modal while OnNavigatedTo is called if this page is displayed
+// as a full page. Either OnResume or OnNavigatedTo is called to initialize
+// data and get UI elements ready to be displayed. This is called just before
+// Handle() and Layout() are called (in that order).
+func (pg *Page) OnResume() {
+	pg.OnNavigatedTo()
+}
+
+// OnDismiss is like OnNavigatedFrom but OnDismiss is called if this page is
+// displayed as a modal while OnNavigatedFrom is called if this page is
+// displayed as a full page. Either OnDismiss or OnNavigatedFrom is called
+// after the modal is dismissed.
+// NOTE: The modal may be re-displayed on the app's window, in which case
+// OnResume() will be called again. This method should not destroy UI
+// components unless they'll be recreated in the OnResume() method.
+func (pg *Page) OnDismiss() {
+	pg.OnNavigatedFrom()
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations

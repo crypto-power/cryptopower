@@ -441,7 +441,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.PageID {
 			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load)
+				pg = send.NewSendPage(mp.Load, false)
 			case ReceivePageID:
 				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
@@ -482,7 +482,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case ReceivePageID:
 				pg = NewReceivePage(mp.Load)
 			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load)
+				pg = send.NewSendPage(mp.Load, false)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case info.InfoID:
@@ -523,7 +523,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			if i == 0 {
-				pg = send.NewSendPage(mp.Load)
+				pg = send.NewSendPage(mp.Load, false)
 			} else {
 				pg = NewReceivePage(mp.Load)
 			}

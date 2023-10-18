@@ -3,6 +3,7 @@ package send
 import (
 	"fmt"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -58,7 +59,7 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+string(pg.WL.SelectedWallet.Wallet.GetAssetType())).Layout),
+				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+string(pg.selectedWallet.GetAssetType())).Layout),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
@@ -78,19 +79,61 @@ func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
+
+	if pg.isModalLayout {
+		modalContent := []layout.Widget{pg.layoutDesktop}
+		return pg.modalLayout.Layout(gtx, modalContent, 450)
+	}
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *Page) layoutDesktop(gtx layout.Context) D {
 	pageContent := []func(gtx C) D{
 		func(gtx C) D {
 			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
-				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if pg.isModalLayout {
+							return layout.Inset{
+								Bottom: values.MarginPadding16,
+							}.Layout(gtx, func(gtx C) D {
+								return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+							})
+						}
+						return D{}
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if pg.selectedWallet.IsSynced() {
+							return D{}
+						}
+						txt := pg.Theme.Label(values.TextSize14, values.String(values.StrFunctionUnavailable))
+						txt.Font.Weight = font.SemiBold
+						txt.Color = pg.Theme.Color.Danger
+						return txt.Layout(gtx)
+					}),
+				)
 			})
 		},
-		pg.toSection,
-		pg.coinSelectionSection,
-		pg.txLabelSection,
+		func(gtx C) D {
+			// disable this section if the layout is a modal layout
+			// and the selected wallet is not synced.
+			if pg.isModalLayout && !pg.selectedWallet.IsSynced() {
+				gtx = gtx.Disabled()
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.toSection),
+				layout.Rigid(func(gtx C) D {
+					if pg.isModalLayout {
+						return D{}
+					}
+					return pg.coinSelectionSection(gtx)
+				}),
+				layout.Rigid(pg.txLabelSection),
+			)
+		},
 	}
 
 	// Display the transaction fee rate selection only for btc and ltc wallets.

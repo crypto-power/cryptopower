@@ -44,13 +44,12 @@ type ReceiveModal struct {
 	newAddr           cryptomaterial.Button
 	info, more        cryptomaterial.IconButton
 	receiveAddress    cryptomaterial.Label
-	// generateNewAddressButton cryptomaterial.Button
 }
 
 func NewReceiveModal(l *load.Load) *ReceiveModal {
 	rm := &ReceiveModal{
 		Load:           l,
-		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
+		Modal:          l.Theme.ModalFloatTitle(values.String(values.StrReceive)),
 		copyRedirect:   l.Theme.NewClickable(false),
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
 		more:           l.Theme.IconButton(l.Theme.Icons.NavigationMore),
@@ -91,7 +90,6 @@ func (rm *ReceiveModal) OnResume() {
 	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
-
 }
 
 func (rm *ReceiveModal) OnDismiss() {
@@ -169,7 +167,6 @@ func (rm *ReceiveModal) generateQRForAddress() {
 }
 
 func (rm *ReceiveModal) generateNewAddress() (string, error) {
-
 	newAddr, err := rm.sourceWalletSelector.selectedWallet.NextAddress(rm.sourceAccountSelector.selectedAccount.Number)
 	if err != nil {
 		return "", err
@@ -192,6 +189,7 @@ func (rm *ReceiveModal) generateCurrentAddress() error {
 }
 
 func (rm *ReceiveModal) Layout(gtx layout.Context) D {
+	walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
@@ -253,7 +251,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																		return rm.sourceAccountSelector.Layout(rm.ParentWindow(), gtx)
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		if !rm.sourceWalletSelector.SelectedWallet().IsSynced() {
+																		if !walletSyned {
 																			txt := rm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
 																			txt.Font.Weight = font.SemiBold
 																			txt.Color = rm.Theme.Color.Danger
@@ -266,7 +264,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 														}),
 														layout.Rigid(func(gtx C) D {
 															gtx.Constraints.Min.X = gtx.Constraints.Max.X
-															if rm.sourceWalletSelector.selectedWallet.IsSynced() {
+															if walletSyned {
 																return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 																	layout.Rigid(func(gtx C) D {
 																		txt := rm.Theme.Body2(values.String(values.StrYourAddress))
@@ -297,7 +295,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																Top: values.MarginPadding16,
 															}.Layout(gtx, func(gtx C) D {
 																return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-																	if rm.sourceWalletSelector.selectedWallet.IsSynced() {
+																	if walletSyned {
 																		return layout.Flex{}.Layout(gtx,
 																			layout.Flexed(0.9, rm.Load.Theme.Body1(rm.addressEditor.Editor.Text()).Layout),
 																			layout.Flexed(0.1, func(gtx C) D {
@@ -338,7 +336,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																				Alignment: layout.Middle,
 																			}.Layout(gtx,
 																				layout.Rigid(func(gtx C) D {
-																					if rm.qrImage == nil || !rm.sourceWalletSelector.selectedWallet.IsSynced() {
+																					if rm.qrImage == nil || !walletSyned {
 																						// Display generated address only on a synced wallet
 																						return D{}
 																					}
@@ -400,24 +398,17 @@ func (rm *ReceiveModal) initWalletSelectors() {
 
 	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
-		err := rm.generateCurrentAddress()
-		if err != nil {
-			log.Error("Error getting current address: " + err.Error())
-			return
-		}
-		rm.generateQRForAddress()
+		rm.generateAddressAndQRCode()
 	})
 
 	rm.sourceAccountSelector.AccountSelected(func(selectedAccount *sharedW.Account) {
-		err := rm.generateCurrentAddress()
-		if err != nil {
-			log.Error("Error getting current address: " + err.Error())
-			return
-		}
-		rm.generateQRForAddress()
-
+		rm.generateAddressAndQRCode()
 	})
 
+	rm.generateAddressAndQRCode()
+}
+
+func (rm *ReceiveModal) generateAddressAndQRCode() {
 	err := rm.generateCurrentAddress()
 	if err != nil {
 		log.Error("Error getting current address: " + err.Error())

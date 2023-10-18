@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -33,7 +34,7 @@ type destination struct {
 	selectedIndex int
 }
 
-func newSendDestination(l *load.Load) *destination {
+func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination {
 	dst := &destination{
 		Load: l,
 	}
@@ -46,9 +47,13 @@ func newSendDestination(l *load.Load) *destination {
 		{Text: values.String(values.StrAddress)},
 		{Text: values.String(values.StrWallets)},
 	})
+	dst.initDestinationWalletSelector(assetType)
+	return dst
+}
 
+func (dst *destination) initDestinationWalletSelector(assetType libUtil.AssetType) {
 	// Destination wallet picker
-	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, l.WL.SelectedWallet.Wallet.GetAssetType()).
+	dst.destinationWalletSelector = components.NewWalletAndAccountSelector(dst.Load, assetType).
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrTo))
 
@@ -57,8 +62,6 @@ func newSendDestination(l *load.Load) *destination {
 		EnableWatchOnlyWallets(true).
 		Title(values.String(values.StrAccount))
 	dst.destinationAccountSelector.SelectFirstValidAccount(dst.destinationWalletSelector.SelectedWallet())
-
-	return dst
 }
 
 // destinationAddress validates the destination address obtained from the provided
@@ -95,7 +98,7 @@ func (dst *destination) validateDestinationAddress() (string, error) {
 		return address, fmt.Errorf(values.String(values.StrDestinationMissing))
 	}
 
-	if dst.WL.SelectedWallet.Wallet.IsAddressValid(address) {
+	if dst.destinationWalletSelector.SelectedWallet().IsAddressValid(address) {
 		dst.destinationAddressEditor.SetError("")
 		return address, nil
 	}
