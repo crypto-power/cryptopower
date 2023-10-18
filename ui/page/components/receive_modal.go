@@ -189,6 +189,7 @@ func (rm *ReceiveModal) generateCurrentAddress() error {
 }
 
 func (rm *ReceiveModal) Layout(gtx layout.Context) D {
+	walletSyned := rm.sourceWalletSelector.selectedWallet.IsSynced()
 	w := []layout.Widget{
 		func(gtx C) D {
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
@@ -250,7 +251,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																		return rm.sourceAccountSelector.Layout(rm.ParentWindow(), gtx)
 																	}),
 																	layout.Rigid(func(gtx C) D {
-																		if !rm.sourceWalletSelector.SelectedWallet().IsSynced() {
+																		if !walletSyned {
 																			txt := rm.Theme.Label(values.TextSize14, values.String(values.StrSourceWalletNotSynced))
 																			txt.Font.Weight = font.SemiBold
 																			txt.Color = rm.Theme.Color.Danger
@@ -263,7 +264,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 														}),
 														layout.Rigid(func(gtx C) D {
 															gtx.Constraints.Min.X = gtx.Constraints.Max.X
-															if rm.sourceWalletSelector.selectedWallet.IsSynced() {
+															if walletSyned {
 																return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 																	layout.Rigid(func(gtx C) D {
 																		txt := rm.Theme.Body2(values.String(values.StrYourAddress))
@@ -294,7 +295,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																Top: values.MarginPadding16,
 															}.Layout(gtx, func(gtx C) D {
 																return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-																	if rm.sourceWalletSelector.selectedWallet.IsSynced() {
+																	if walletSyned {
 																		return layout.Flex{}.Layout(gtx,
 																			layout.Flexed(0.9, rm.Load.Theme.Body1(rm.addressEditor.Editor.Text()).Layout),
 																			layout.Flexed(0.1, func(gtx C) D {
@@ -335,7 +336,7 @@ func (rm *ReceiveModal) Layout(gtx layout.Context) D {
 																				Alignment: layout.Middle,
 																			}.Layout(gtx,
 																				layout.Rigid(func(gtx C) D {
-																					if rm.qrImage == nil || !rm.sourceWalletSelector.selectedWallet.IsSynced() {
+																					if rm.qrImage == nil || !walletSyned {
 																						// Display generated address only on a synced wallet
 																						return D{}
 																					}

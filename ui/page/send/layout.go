@@ -3,6 +3,7 @@ package send
 import (
 	"fmt"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -104,17 +105,35 @@ func (pg *Page) layoutDesktop(gtx layout.Context) D {
 					layout.Rigid(func(gtx C) D {
 						return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
 					}),
+					layout.Rigid(func(gtx C) D {
+						if pg.selectedWallet.IsSynced() {
+							return D{}
+						}
+						txt := pg.Theme.Label(values.TextSize14, values.String(values.StrFunctionUnavailable))
+						txt.Font.Weight = font.SemiBold
+						txt.Color = pg.Theme.Color.Danger
+						return txt.Layout(gtx)
+					}),
 				)
 			})
 		},
-		pg.toSection,
 		func(gtx C) D {
-			if pg.isModalLayout {
-				return D{}
+			// disable this section if the layout is a modal layout
+			// and the selected wallet is not synced.
+			if pg.isModalLayout && !pg.selectedWallet.IsSynced() {
+				gtx = gtx.Disabled()
 			}
-			return pg.coinSelectionSection(gtx)
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.toSection),
+				layout.Rigid(func(gtx C) D {
+					if pg.isModalLayout {
+						return D{}
+					}
+					return pg.coinSelectionSection(gtx)
+				}),
+				layout.Rigid(pg.txLabelSection),
+			)
 		},
-		pg.txLabelSection,
 	}
 
 	// Display the transaction fee rate selection only for btc and ltc wallets.
