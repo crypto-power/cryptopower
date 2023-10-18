@@ -51,7 +51,7 @@ type VerifySeedPage struct {
 	verifySeedButton cryptomaterial.Button
 }
 
-func NewVerifySeedPage(l *load.Load,  wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),

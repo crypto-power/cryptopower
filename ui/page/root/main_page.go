@@ -1046,4 +1046,3 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 	}.Layout2(gtx, indexLabel.Layout)
 }
-
