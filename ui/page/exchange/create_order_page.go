@@ -47,7 +47,8 @@ type CreateOrderPage struct {
 	*app.GenericPageModal
 
 	*listeners.OrderNotificationListener
-	*ext.RateListener
+	// TODO: add rate listener when price cache has been implemented for
+	// exchanges.
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -1247,7 +1248,7 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 }
 
 func (pg *CreateOrderPage) listenForNotifications() {
-	if pg.OrderNotificationListener != nil && pg.RateListener != nil {
+	if pg.OrderNotificationListener != nil {
 		return
 	}
 
@@ -1256,14 +1257,6 @@ func (pg *CreateOrderPage) listenForNotifications() {
 	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
 	if err != nil {
 		log.Errorf("Error adding instantswap notification listener: %v", err)
-		return
-	}
-
-	pg.WL.AssetsManager.RateSource.RemoveRateListener(CreateOrderPageID) // clear if any
-	pg.RateListener = ext.NewRateListener()
-	err = pg.WL.AssetsManager.RateSource.AddRateListener(pg.RateListener, CreateOrderPageID)
-	if err != nil {
-		log.Errorf("Error adding rate notification listener: %v", err)
 		return
 	}
 
@@ -1280,14 +1273,10 @@ func (pg *CreateOrderPage) listenForNotifications() {
 				case wallet.OrderSchedulerEnded:
 					pg.scheduler.SetChecked(false)
 				}
-			case <-pg.RateUpdateChan:
-				pg.ParentWindow().Reload()
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.RateSource.RemoveRateListener(CreateOrderPageID)
 				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 				close(pg.OrderNotifChan)
-				close(pg.RateUpdateChan)
-				pg.RateListener = nil
 				pg.OrderNotificationListener = nil
 
 				return

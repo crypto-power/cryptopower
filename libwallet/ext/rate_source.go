@@ -77,8 +77,6 @@ var (
 	// expired rates and reconnect websocket if need be.
 	RateRefreshDuration = 60 * time.Minute
 
-	rateNotificationInterval = 5 * time.Minute
-
 	bittrexRateSubscription = signalRClientMsg{
 		H: "c3",
 		M: "Subscribe",
@@ -147,7 +145,6 @@ type CommonRateSource struct {
 
 	rateListenersMtx sync.RWMutex
 	rateListeners    map[string]*RateListener
-	lastNotified     time.Time
 }
 
 // Name is the string associated with the rate source for display.
@@ -228,7 +225,7 @@ func (cs *CommonRateSource) ToggleSource(newSource string) error {
 
 	cs.resetWs(wsProcessor)
 
-	go cs.notifyRateListeners(true)
+	go cs.notifyRateListeners()
 
 	if refresh {
 		cs.Refresh(true)
@@ -384,7 +381,7 @@ func (cs *CommonRateSource) startWebsocket() {
 				cs.wsUpdated()
 			}
 
-			cs.notifyRateListeners(false)
+			cs.notifyRateListeners()
 		}
 	}()
 }
@@ -467,30 +464,12 @@ func (cs *CommonRateSource) copyRates() map[string]*Ticker {
 	return tickers
 }
 
-// notifyRateListeners will send a rate notification to all listeners if
-// rateNotificationInterval is due. Set force to true to ignore
-// rateNotificationInterval.
-func (cs *CommonRateSource) notifyRateListeners(force bool) {
+func (cs *CommonRateSource) notifyRateListeners() {
 	cs.rateListenersMtx.RLock()
-	lastNotified := cs.lastNotified
-	cs.rateListenersMtx.RUnlock()
-
-	now := time.Now()
-	if now.Sub(lastNotified) < rateNotificationInterval && !force {
-		return
-	}
-
-	// Update cs.lastNotified.
-	cs.rateListenersMtx.Lock()
-	cs.lastNotified = now
-	cs.rateListenersMtx.Unlock()
-
-	// Notify all listeners.
-	cs.rateListenersMtx.RLock()
+	defer cs.rateListenersMtx.RUnlock()
 	for _, l := range cs.rateListeners {
 		l.Notify()
 	}
-	cs.rateListenersMtx.RUnlock()
 }
 
 // Refresh refreshes all expired rates and reconnects the rates websocket if it
@@ -517,7 +496,7 @@ func (cs *CommonRateSource) Refresh(force bool) {
 	}()
 
 	defer cs.ratesUpdated(time.Now())
-	defer cs.notifyRateListeners(true)
+	defer cs.notifyRateListeners()
 
 	tickers := make(map[string]*Ticker)
 	if !force {
