@@ -24,11 +24,11 @@ type (
 	D = layout.Dimensions
 )
 
-type page struct {
-	pageTitle    string
-	subTitle     string
-	image        *cryptomaterial.Image
-	indicatorBtn *cryptomaterial.Clickable
+type onBoardingScreen struct {
+	onBoardingScreenTitle string
+	subTitle              string
+	image                 *cryptomaterial.Image
+	indicatorBtn          *cryptomaterial.Clickable
 }
 
 type startPage struct {
@@ -42,13 +42,11 @@ type startPage struct {
 	addWalletButton cryptomaterial.Button
 	nextButton      cryptomaterial.Button
 	skipButton      cryptomaterial.Button
-	homePageButton  cryptomaterial.Button
 
-	pages []page
+	onBoardingScreens []onBoardingScreen
 
 	loading          bool
 	isQuitting       bool
-	allWalletsOpened bool
 	displayStartPage bool
 
 	currentPage int
@@ -63,8 +61,7 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 
 		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
 		nextButton:      l.Theme.Button(values.String(values.StrNext)),
-		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkip)),
-		homePageButton:  l.Theme.OutlineButton(values.String(values.StrSkipWalletCreation)),
+		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkipWalletCreation)),
 	}
 
 	if len(isShuttingDown) > 0 {
@@ -91,6 +88,7 @@ func (sp *startPage) OnNavigatedTo() {
 	}
 
 	if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
+		sp.currentPage = -1
 		sp.setLanguageSetting()
 		// Set the log levels.
 		sp.WL.AssetsManager.GetLogLevels()
@@ -105,24 +103,24 @@ func (sp *startPage) OnNavigatedTo() {
 }
 
 func (sp *startPage) initPages() {
-	sp.pages = []page{
+	sp.onBoardingScreens = []onBoardingScreen{
 		{
-			pageTitle:    "Multi-wallet support",
-			subTitle:     "Send, Receive and Exchange Decred, Bitcoin and Litecoin.",
-			image:        sp.Theme.Icons.MiltiWalletIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
+			onBoardingScreenTitle: values.String(values.StrMultiWalletSupport),
+			subTitle:              values.String(values.StrMultiWalletSupportSubtext),
+			image:                 sp.Theme.Icons.MultiWalletIcon,
+			indicatorBtn:          sp.Theme.NewClickable(false),
 		},
 		{
-			pageTitle:    "Cross platform",
-			subTitle:     "Crytopower has cross platform apps for desktop and mobile.",
-			image:        sp.Theme.Icons.CrossPlatformIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
+			onBoardingScreenTitle: values.String(values.StrCrossPlatform),
+			subTitle:              values.String(values.StrCrossPlatformSubtext),
+			image:                 sp.Theme.Icons.CrossPlatformIcon,
+			indicatorBtn:          sp.Theme.NewClickable(false),
 		},
 		{
-			pageTitle:    "Integrated exchange functionality",
-			subTitle:     "Easily exchange coins within the app.",
-			image:        sp.Theme.Icons.IntegratedExchangeIcon,
-			indicatorBtn: sp.Theme.NewClickable(false),
+			onBoardingScreenTitle: values.String(values.StrIntegratedExchange),
+			subTitle:              values.String(values.StrIntegratedExchangeSubtext),
+			image:                 sp.Theme.Icons.IntegratedExchangeIcon,
+			indicatorBtn:          sp.Theme.NewClickable(false),
 		},
 	}
 }
@@ -162,8 +160,7 @@ func (sp *startPage) openWallets(password string) error {
 		return err
 	}
 
-	sp.allWalletsOpened = true
-	sp.loading = false
+	sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
 	return nil
 }
 
@@ -177,24 +174,20 @@ func (sp *startPage) HandleUserInteractions() {
 		sp.ParentNavigator().Display(root.NewCreateWallet(sp.Load))
 	}
 
-	if sp.homePageButton.Clicked() && sp.allWalletsOpened {
+	if sp.skipButton.Clicked() {
 		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
 	}
 
 	for sp.nextButton.Clicked() {
-		if sp.currentPage == len(sp.pages)-1 { // index starts at 0
-			sp.currentPage = -1 // we have reached the last page.
+		if sp.currentPage == len(sp.onBoardingScreens)-1 { // index starts at 0
+			sp.currentPage = -1 // we have reached the last screen.
 		} else {
 			sp.currentPage++
 		}
 	}
 
-	if sp.skipButton.Clicked() {
-		sp.currentPage = -1
-	}
-
-	for i, page := range sp.pages {
-		if page.indicatorBtn.Clicked() {
+	for i, onBoardingScreen := range sp.onBoardingScreens {
+		if onBoardingScreen.indicatorBtn.Clicked() {
 			sp.currentPage = i
 		}
 	}
@@ -242,7 +235,7 @@ func (sp *startPage) layoutDesktop(gtx C) D {
 			return welcomeText.Layout(gtx)
 		})
 	}
-	return sp.infoPageLayout(gtx)
+	return sp.onBoardingScreensLayout(gtx)
 }
 
 func (sp *startPage) pageLayout(gtx C, body layout.Widget) D {
@@ -303,19 +296,24 @@ func (sp *startPage) loadingSection(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, welcomeText.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
+				if sp.loading {
+					return D{}
+				}
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
 				return layout.Inset{
 					Top:   values.MarginPadding100,
 					Left:  values.MarginPadding24,
 					Right: values.MarginPadding24,
 				}.Layout(gtx, sp.addWalletButton.Layout)
+
 			}),
 			layout.Rigid(func(gtx C) D {
-				if !sp.allWalletsOpened {
-					gtx = gtx.Disabled()
+				if sp.loading {
+					return D{}
 				}
+				gtx = gtx.Disabled()
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
-				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, sp.homePageButton.Layout)
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, sp.skipButton.Layout)
 			}),
 		)
 	})
@@ -335,10 +333,10 @@ func (sp *startPage) layoutMobile(gtx C) D {
 			return welcomeText.Layout(gtx)
 		})
 	}
-	return sp.infoPageLayout(gtx)
+	return sp.onBoardingScreensLayout(gtx)
 }
 
-func (sp *startPage) infoPageLayout(gtx C) D {
+func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 	return sp.pageLayout(gtx, func(gtx C) D {
 		return layout.Flex{
 			Alignment: layout.Middle,
@@ -346,9 +344,9 @@ func (sp *startPage) infoPageLayout(gtx C) D {
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				list := &layout.List{Axis: layout.Horizontal}
-				return list.Layout(gtx, len(sp.pages), func(gtx C, i int) D {
+				return list.Layout(gtx, len(sp.onBoardingScreens), func(gtx C, i int) D {
 					if i == sp.currentPage {
-						return sp.pageSections(gtx, sp.pages[i])
+						return sp.pageSections(gtx, sp.onBoardingScreens[i])
 					}
 					return D{}
 				})
@@ -363,31 +361,25 @@ func (sp *startPage) infoPageLayout(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
 				return sp.nextButton.Layout(gtx)
 			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
-					return sp.skipButton.Layout(gtx)
-				})
-			}),
 		)
 	})
 }
 
-func (sp *startPage) pageSections(gtx C, page page) D {
+func (sp *startPage) pageSections(gtx C, onBoardingScreen onBoardingScreen) D {
 	return layout.Flex{Alignment: layout.Middle, Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return page.image.LayoutSize2(gtx, values.MarginPadding280, values.MarginPadding172)
+			return onBoardingScreen.image.LayoutSize2(gtx, values.MarginPadding280, values.MarginPadding172)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
-				lblPageTitle := sp.Theme.Label(values.TextSize32, page.pageTitle)
+				lblPageTitle := sp.Theme.Label(values.TextSize32, onBoardingScreen.onBoardingScreenTitle)
 				lblPageTitle.Alignment = text.Middle
 				lblPageTitle.Font.Weight = font.Bold
 				return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, lblPageTitle.Layout)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			lblSubTitle := sp.Theme.Label(values.TextSize16, page.subTitle)
+			lblSubTitle := sp.Theme.Label(values.TextSize16, onBoardingScreen.subTitle)
 			return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, lblSubTitle.Layout)
 		}),
 	)
@@ -399,7 +391,7 @@ func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
 	}
 
 	list := &layout.List{Axis: layout.Horizontal}
-	return list.Layout(gtx, len(sp.pages), func(gtx C, i int) D {
+	return list.Layout(gtx, len(sp.onBoardingScreens), func(gtx C, i int) D {
 		ic := cryptomaterial.NewIcon(sp.Theme.Icons.ImageBrightness1)
 		ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
 		if i == sp.currentPage {
@@ -409,7 +401,7 @@ func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
 			Right: values.MarginPadding4,
 			Left:  values.MarginPadding4,
 		}.Layout(gtx, func(gtx C) D {
-			return sp.pages[i].indicatorBtn.Layout(gtx, func(gtx C) D {
+			return sp.onBoardingScreens[i].indicatorBtn.Layout(gtx, func(gtx C) D {
 				return ic.Layout(gtx, values.MarginPadding12)
 			})
 		})
