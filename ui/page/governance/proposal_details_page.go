@@ -185,9 +185,10 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 }
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
-	if pg.ProposalNotificationListener == nil {
+	if pg.ProposalNotificationListener != nil {
 		return
 	}
+
 	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
 	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalDetailsPageID)
 	if err != nil {
