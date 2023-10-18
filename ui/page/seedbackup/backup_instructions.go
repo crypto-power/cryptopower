@@ -24,7 +24,6 @@ type (
 type Redirectfunc func(load *load.Load, pg app.WindowNavigator)
 
 type BackupInstructionsPage struct {
-	masterParentID string
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -42,9 +41,8 @@ type BackupInstructionsPage struct {
 	redirectCallback Redirectfunc
 }
 
-func NewBackupInstructionsPage(l *load.Load, masterParentID string, wallet sharedW.Asset, redirect Redirectfunc) *BackupInstructionsPage {
+func NewBackupInstructionsPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) *BackupInstructionsPage {
 	bi := &BackupInstructionsPage{
-		masterParentID:   masterParentID,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(BackupInstructionsPageID),
 		wallet:           wallet,
@@ -92,19 +90,19 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 	for pg.viewSeedBtn.Clicked() {
 		if pg.verifyCheckBoxes() {
 			// TODO: Will repeat the paint cycle, just queue the next fragment to be displayed
-			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.masterParentID, pg.wallet, pg.redirectCallback))
+			pg.ParentNavigator().Display(NewSaveSeedPage(pg.Load, pg.wallet, pg.redirectCallback))
 		}
 	}
 }
 
-func promptToExit(load *load.Load, masterParentID string, pageNavigator app.PageNavigator, window app.WindowNavigator) {
+func promptToExit(load *load.Load, window app.WindowNavigator, redirect Redirectfunc) {
 	infoModal := modal.NewCustomModal(load).
 		Title(values.String(values.StrExit) + "?").
 		Body(values.String(values.StrSureToExitBackup)).
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pageNavigator.ClosePagesAfter(masterParentID)
+			redirect(load, window)
 			return true
 		})
 	window.ShowModal(infoModal)
@@ -128,7 +126,7 @@ func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 		Title:      values.String(values.StrKeepInMind),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.masterParentID, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return pg.infoList.Layout(gtx, len(pg.checkBoxes), func(gtx C, i int) D {

@@ -29,7 +29,6 @@ type shuffledSeedWords struct {
 }
 
 type VerifySeedPage struct {
-	masterParentID string
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -52,9 +51,8 @@ type VerifySeedPage struct {
 	verifySeedButton cryptomaterial.Button
 }
 
-func NewVerifySeedPage(l *load.Load, masterParentID string, wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
+func NewVerifySeedPage(l *load.Load,  wallet sharedW.Asset, seed string, redirect Redirectfunc) *VerifySeedPage {
 	pg := &VerifySeedPage{
-		masterParentID:   masterParentID,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(VerifySeedPageID),
 		wallet:           wallet,
@@ -263,7 +261,7 @@ func (pg *VerifySeedPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		SubTitle:   values.String(values.StrStep2of2),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.masterParentID, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -362,7 +360,7 @@ func (pg *VerifySeedPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 		SubTitle:   values.String(values.StrStep2of2),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.masterParentID, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

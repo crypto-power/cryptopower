@@ -52,7 +52,6 @@ type WalletInfo struct {
 	checkBox         cryptomaterial.CheckBoxStyle
 
 	isStatusConnected bool
-	redirectfunc      seedbackup.Redirectfunc
 }
 
 type progressInfo struct {
@@ -69,7 +68,7 @@ type progressInfo struct {
 // status progress percentage.
 var syncProgressInfo = map[sharedW.Asset]progressInfo{}
 
-func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
+func NewInfoPage(l *load.Load) *WalletInfo {
 	pg := &WalletInfo{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
@@ -82,8 +81,6 @@ func NewInfoPage(l *load.Load, redirect seedbackup.Redirectfunc) *WalletInfo {
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = values.TextSize14
-
-	pg.redirectfunc = redirect
 
 	go func() {
 		pg.isStatusConnected = libutils.IsOnline()
@@ -186,7 +183,10 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 
 	if pg.toBackup.Button.Clicked() {
-		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.ParentWindow().CurrentPageID(), pg.WL.SelectedWallet.Wallet, pg.redirectfunc))
+		currentPage := pg.ParentWindow().CurrentPageID()
+		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, func(load *load.Load, navigator app.WindowNavigator) {
+			navigator.ClosePagesAfter(currentPage)
+		}))
 	}
 }
 

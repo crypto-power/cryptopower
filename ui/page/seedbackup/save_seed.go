@@ -35,7 +35,6 @@ type saveSeedRow struct {
 }
 
 type SaveSeedPage struct {
-	masterParentID string
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -61,9 +60,8 @@ type SaveSeedPage struct {
 	seedFormatRadioGroup *widget.Enum
 }
 
-func NewSaveSeedPage(l *load.Load, masterParentID string, wallet sharedW.Asset, redirect Redirectfunc) *SaveSeedPage {
+func NewSaveSeedPage(l *load.Load, wallet sharedW.Asset, redirect Redirectfunc) *SaveSeedPage {
 	pg := &SaveSeedPage{
-		masterParentID:   masterParentID,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SaveSeedPageID),
 		wallet:           wallet,
@@ -154,7 +152,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
-			pg.ParentNavigator().ClosePagesAfter(pg.masterParentID)
+			pg.redirectCallback(pg.Load, pg.ParentWindow())
 		}).
 		SetCancelable(false)
 	pg.ParentWindow().ShowModal(passwordModal)
@@ -167,7 +165,7 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *SaveSeedPage) HandleUserInteractions() {
 	for pg.actionButton.Clicked() {
-		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.masterParentID, pg.wallet, pg.seed, pg.redirectCallback))
+		pg.ParentNavigator().Display(NewVerifySeedPage(pg.Load, pg.wallet, pg.seed, pg.redirectCallback))
 	}
 }
 
@@ -197,7 +195,7 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.masterParentID, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -245,7 +243,7 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.masterParentID, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
