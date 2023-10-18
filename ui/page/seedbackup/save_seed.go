@@ -155,7 +155,8 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 		}).
 		SetNegativeButtonCallback(func() {
 			pg.ParentNavigator().ClosePagesAfter(pg.masterParentID)
-		})
+		}).
+		SetCancelable(false)
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
