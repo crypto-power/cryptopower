@@ -277,21 +277,27 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 						Width:       cryptomaterial.WrapContent,
 						Height:      cryptomaterial.WrapContent,
 						Orientation: layout.Horizontal,
+						Direction:   layout.W,
 						Alignment:   layout.Baseline,
-						Direction:   layout.Center,
 					}.Layout(gtx,
 						layout.Rigid(l.Theme.Label(values.TextSize18, txStatus.Title).Layout),
 						layout.Rigid(func(gtx C) D {
-							if isTxPage {
-								return D{}
-							}
-							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, assetIcon.Layout12dp)
-						}),
-						layout.Rigid(func(gtx C) D {
-							if isTxPage {
-								return D{}
-							}
-							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										if isTxPage {
+											return D{}
+										}
+										return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, assetIcon.Layout12dp)
+									}),
+									layout.Rigid(func(gtx C) D {
+										if isTxPage {
+											return D{}
+										}
+										return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
+									}),
+								)
+							})
 						}),
 					)
 				}),
