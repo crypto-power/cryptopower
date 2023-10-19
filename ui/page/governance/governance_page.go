@@ -1,7 +1,7 @@
 package governance
 
 import (
-	"context"
+	// "context"
 	"image"
 
 	"gioui.org/font"
@@ -94,11 +94,6 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.splashScreenInfoButton.Button.Clicked() {
 		pg.showInfoModal()
-	}
-
-	if pg.enableGovernanceBtn.Clicked() && pg.isGovernanceAPIAllowed() {
-		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
-		pg.Display(NewProposalsPage(pg.Load))
 	}
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {

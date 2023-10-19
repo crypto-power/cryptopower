@@ -10,6 +10,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -54,8 +55,9 @@ type ProposalsPage struct {
 
 	updatedIcon *cryptomaterial.Icon
 
-	syncCompleted bool
-	isSyncing     bool
+	syncCompleted    bool
+	isSyncing        bool
+	proposalsFetched bool
 }
 
 func NewProposalsPage(l *load.Load) *ProposalsPage {
@@ -98,11 +100,22 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
+	if pg.isGovernanceAPIAllowed() {
+		pg.syncAndUpdateProposals()
+		pg.proposalsFetched = true
+	}
+}
+
+func (pg *ProposalsPage) syncAndUpdateProposals() {
 	go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 	// Only proceed if allowed make Proposals API call.
 	pg.listenForSyncNotifications()
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+}
+
+func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -171,6 +184,11 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.isSyncing = true
 
 		// Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
+	}
+
+	if !pg.proposalsFetched && pg.isGovernanceAPIAllowed() {
+		pg.syncAndUpdateProposals()
+		pg.proposalsFetched = true
 	}
 
 	if pg.infoButton.Button.Clicked() {
