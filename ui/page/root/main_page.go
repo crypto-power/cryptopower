@@ -300,7 +300,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 
 	if mp.CurrentPage() == nil {
-		mp.Display(info.NewInfoPage(mp.Load, redirect)) // TODO: Should pagestack have a start page?
+		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page?
 	}
 
 	mp.listenForNotifications() // start sync notifications listening.
@@ -445,7 +445,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case ReceivePageID:
 				pg = NewReceivePage(mp.Load)
 			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load, redirect)
+				pg = info.NewInfoPage(mp.Load)
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case privacy.AccountMixerPageID:
@@ -486,7 +486,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case transaction.TransactionsPageID:
 				pg = transaction.NewTransactionsPage(mp.Load)
 			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load, redirect)
+				pg = info.NewInfoPage(mp.Load)
 			}
 
 			if pg == nil || mp.ID() == mp.CurrentPageID() {
@@ -505,7 +505,7 @@ func (mp *MainPage) HandleUserInteractions() {
 			case staking.OverviewPageID:
 				pg = staking.NewStakingPage(mp.Load)
 			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load, redirect)
+				pg = info.NewInfoPage(mp.Load)
 			case WalletSettingsPageID:
 				pg = NewWalletSettingsPage(mp.Load)
 			}
@@ -1024,7 +1024,10 @@ func (mp *MainPage) showBackupInfo() {
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
+			currentPage := mp.ParentWindow().CurrentPageID()
+			mp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, func(load *load.Load, navigator app.WindowNavigator) {
+				navigator.ClosePagesAfter(currentPage)
+			}))
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
@@ -1042,8 +1045,4 @@ func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D 
 		Margin:     layout.Inset{Right: values.MarginPadding8},
 		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 	}.Layout2(gtx, indexLabel.Layout)
-}
-
-func redirect(l *load.Load, pg app.WindowNavigator) {
-	pg.Display(NewWalletSelectorPage(l))
 }

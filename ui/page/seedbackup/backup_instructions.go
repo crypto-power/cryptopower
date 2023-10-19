@@ -95,14 +95,14 @@ func (pg *BackupInstructionsPage) HandleUserInteractions() {
 	}
 }
 
-func promptToExit(load *load.Load, pageNavigator app.PageNavigator, window app.WindowNavigator) {
+func promptToExit(load *load.Load, window app.WindowNavigator, redirect Redirectfunc) {
 	infoModal := modal.NewCustomModal(load).
 		Title(values.String(values.StrExit) + "?").
 		Body(values.String(values.StrSureToExitBackup)).
 		SetNegativeButtonText(values.String(values.StrNo)).
 		SetPositiveButtonText(values.String(values.StrYes)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			pageNavigator.ClosePagesAfter("Main")
+			redirect(load, window)
 			return true
 		})
 	window.ShowModal(infoModal)
@@ -126,7 +126,7 @@ func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 		Title:      values.String(values.StrKeepInMind),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return pg.infoList.Layout(gtx, len(pg.checkBoxes), func(gtx C, i int) D {

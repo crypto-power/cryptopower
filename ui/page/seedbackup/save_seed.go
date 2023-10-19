@@ -152,8 +152,9 @@ func (pg *SaveSeedPage) OnNavigatedTo() {
 			return true
 		}).
 		SetNegativeButtonCallback(func() {
-			pg.ParentNavigator().ClosePagesAfter("Main")
-		})
+			pg.redirectCallback(pg.Load, pg.ParentWindow())
+		}).
+		SetCancelable(false)
 	pg.ParentWindow().ShowModal(passwordModal)
 }
 
@@ -194,7 +195,7 @@ func (pg *SaveSeedPage) layoutDesktop(gtx C) D {
 		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -242,7 +243,7 @@ func (pg *SaveSeedPage) layoutMobile(gtx C) D {
 		SubTitle:   values.String(values.StrStep1),
 		BackButton: pg.backButton,
 		Back: func() {
-			promptToExit(pg.Load, pg.ParentNavigator(), pg.ParentWindow())
+			promptToExit(pg.Load, pg.ParentWindow(), pg.redirectCallback)
 		},
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
