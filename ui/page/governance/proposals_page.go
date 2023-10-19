@@ -10,7 +10,6 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -91,10 +90,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	return pg
 }
 
-func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
-}
-
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -102,12 +97,12 @@ func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
 // Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if pg.isProposalsAPIAllowed() {
-		// Only proceed if allowed make Proposals API call.
-		pg.listenForSyncNotifications()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
-		pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
-	}
+
+	go pg.WL.AssetsManager.Politeia.Sync(context.Background())
+	// Only proceed if allowed make Proposals API call.
+	pg.listenForSyncNotifications()
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -192,10 +187,6 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			pg.syncCompleted = false
 			pg.ParentWindow().Reload()
 		})
-	}
-
-	for pg.infoButton.Button.Clicked() {
-		// TODO: proposal info modal
 	}
 }
 
@@ -378,6 +369,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.isSyncing = false
 
 					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
