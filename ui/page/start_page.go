@@ -25,10 +25,10 @@ type (
 )
 
 type onBoardingScreen struct {
-	onBoardingScreenTitle string
-	subTitle              string
-	image                 *cryptomaterial.Image
-	indicatorBtn          *cryptomaterial.Clickable
+	title        string
+	subTitle     string
+	image        *cryptomaterial.Image
+	indicatorBtn *cryptomaterial.Clickable
 }
 
 type startPage struct {
@@ -105,22 +105,22 @@ func (sp *startPage) OnNavigatedTo() {
 func (sp *startPage) initPages() {
 	sp.onBoardingScreens = []onBoardingScreen{
 		{
-			onBoardingScreenTitle: values.String(values.StrMultiWalletSupport),
-			subTitle:              values.String(values.StrMultiWalletSupportSubtext),
-			image:                 sp.Theme.Icons.MultiWalletIcon,
-			indicatorBtn:          sp.Theme.NewClickable(false),
+			title:        values.String(values.StrMultiWalletSupport),
+			subTitle:     values.String(values.StrMultiWalletSupportSubtext),
+			image:        sp.Theme.Icons.MultiWalletIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
 		},
 		{
-			onBoardingScreenTitle: values.String(values.StrCrossPlatform),
-			subTitle:              values.String(values.StrCrossPlatformSubtext),
-			image:                 sp.Theme.Icons.CrossPlatformIcon,
-			indicatorBtn:          sp.Theme.NewClickable(false),
+			title:        values.String(values.StrCrossPlatform),
+			subTitle:     values.String(values.StrCrossPlatformSubtext),
+			image:        sp.Theme.Icons.CrossPlatformIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
 		},
 		{
-			onBoardingScreenTitle: values.String(values.StrIntegratedExchange),
-			subTitle:              values.String(values.StrIntegratedExchangeSubtext),
-			image:                 sp.Theme.Icons.IntegratedExchangeIcon,
-			indicatorBtn:          sp.Theme.NewClickable(false),
+			title:        values.String(values.StrIntegratedExchange),
+			subTitle:     values.String(values.StrIntegratedExchangeSubtext),
+			image:        sp.Theme.Icons.IntegratedExchangeIcon,
+			indicatorBtn: sp.Theme.NewClickable(false),
 		},
 	}
 }
@@ -175,7 +175,7 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	if sp.skipButton.Clicked() {
-		sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
+		sp.currentPage = -1
 	}
 
 	for sp.nextButton.Clicked() {
@@ -307,14 +307,6 @@ func (sp *startPage) loadingSection(gtx C) D {
 				}.Layout(gtx, sp.addWalletButton.Layout)
 
 			}),
-			layout.Rigid(func(gtx C) D {
-				if sp.loading {
-					return D{}
-				}
-				gtx = gtx.Disabled()
-				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
-				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, sp.skipButton.Layout)
-			}),
 		)
 	})
 }
@@ -361,6 +353,12 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
 				return sp.nextButton.Layout(gtx)
 			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding350)
+					return sp.skipButton.Layout(gtx)
+				})
+			}),
 		)
 	})
 }
@@ -372,7 +370,7 @@ func (sp *startPage) pageSections(gtx C, onBoardingScreen onBoardingScreen) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
-				lblPageTitle := sp.Theme.Label(values.TextSize32, onBoardingScreen.onBoardingScreenTitle)
+				lblPageTitle := sp.Theme.Label(values.TextSize32, onBoardingScreen.title)
 				lblPageTitle.Alignment = text.Middle
 				lblPageTitle.Font.Weight = font.Bold
 				return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, lblPageTitle.Layout)
