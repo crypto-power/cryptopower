@@ -142,11 +142,18 @@ func (ws *WalletAndAccountSelector) SelectFirstValidAccount(wallet *load.WalletM
 	return errors.New(values.String(values.StrNoValidAccountFound))
 }
 
-func (ws *WalletAndAccountSelector) SetSelectedAsset(assetType ...utils.AssetType) {
-	ws.assetType = assetType
-	ws.selectorModal.setupWallet(assetType[0])
-	ws.selectedWallet = ws.selectorItems[0].item.(*load.WalletMapping)
+// SetSelectedAsset sets the specified assetType and returns true if the asset
+// has at least one wallet.
+func (ws *WalletAndAccountSelector) SetSelectedAsset(assetType ...utils.AssetType) bool {
 	ws.accountSelector = false
+	ws.selectorModal.setupWallet(assetType[0])
+	if len(ws.selectorItems) == 0 {
+		return false
+	}
+
+	ws.assetType = assetType
+	ws.selectedWallet = ws.selectorItems[0].item.(*load.WalletMapping)
+	return true
 }
 
 func (ws *WalletAndAccountSelector) SelectedAsset() utils.AssetType {
@@ -154,9 +161,7 @@ func (ws *WalletAndAccountSelector) SelectedAsset() utils.AssetType {
 }
 
 func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, accountNumber int32) error {
-	if !ws.accountSelector {
-		ws.accountSelector = true
-	}
+	ws.accountSelector = true
 	ws.SetSelectedWallet(wallet)
 
 	account, err := wallet.GetAccount(accountNumber)
@@ -164,16 +169,17 @@ func (ws *WalletAndAccountSelector) SelectAccount(wallet *load.WalletMapping, ac
 		return err
 	}
 
-	if ws.accountIsValid(account) {
-		ws.SetSelectedAccount(account)
-		if ws.accountCallback != nil {
-			ws.accountCallback(account)
-		}
-		return nil
+	if !ws.accountIsValid(account) {
+		ws.ResetAccount()
+		return errors.New(values.String(values.StrNoValidAccountFound))
 	}
 
-	ws.ResetAccount()
-	return errors.New(values.String(values.StrNoValidAccountFound))
+	ws.SetSelectedAccount(account)
+	if ws.accountCallback != nil {
+		ws.accountCallback(account)
+	}
+
+	return nil
 }
 
 func (ws *WalletAndAccountSelector) ResetAccount() {
@@ -463,6 +469,7 @@ func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 			clickable: sm.Theme.NewClickable(true),
 		})
 	}
+
 	sm.selectorItems = selectorItems
 }
 
