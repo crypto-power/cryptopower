@@ -61,7 +61,7 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 
 		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
 		nextButton:      l.Theme.Button(values.String(values.StrNext)),
-		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkipWalletCreation)),
+		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkip)),
 	}
 
 	if len(isShuttingDown) > 0 {
