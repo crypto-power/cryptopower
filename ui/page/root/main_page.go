@@ -299,7 +299,7 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
 	case libutils.DCRWalletAsset:
-		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isProposalsAPIAllowed() {
+		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isGovernanceAPIAllowed() {
 			if mp.WL.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
@@ -312,7 +312,7 @@ func (mp *MainPage) OnNavigatedTo() {
 	mp.CurrentPage().OnNavigatedTo()
 }
 
-func (mp *MainPage) isProposalsAPIAllowed() bool {
+func (mp *MainPage) isGovernanceAPIAllowed() bool {
 	return mp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
@@ -918,7 +918,7 @@ func (mp *MainPage) listenForNotifications() {
 	}
 
 	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	if mp.isProposalsAPIAllowed() {
+	if mp.isGovernanceAPIAllowed() {
 		err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
 		if err != nil {
 			log.Errorf("Error adding politeia notification listener: %v", err)

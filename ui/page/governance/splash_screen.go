@@ -19,7 +19,7 @@ func (pg *Page) initSplashScreenWidgets() {
 func (pg *Page) splashScreenLayout(gtx C) D {
 	// If Proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isProposalsAPIAllowed() {
+	if !pg.isGovernanceAPIAllowed() {
 		gtxCopy := gtx
 		overlay = layout.Stacked(func(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))

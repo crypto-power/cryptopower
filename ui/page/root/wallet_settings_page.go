@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"strconv"
 	"strings"
 
@@ -58,8 +57,6 @@ type WalletSettingsPage struct {
 	backButton cryptomaterial.IconButton
 	infoButton cryptomaterial.IconButton
 
-	fetchProposal     *cryptomaterial.Switch
-	proposalNotif     *cryptomaterial.Switch
 	spendUnconfirmed  *cryptomaterial.Switch
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
@@ -86,8 +83,6 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		signMessage:         l.Theme.NewClickable(false),
 		updateConnectToPeer: l.Theme.NewClickable(false),
 
-		fetchProposal:     l.Theme.Switch(),
-		proposalNotif:     l.Theme.Switch(),
 		spendUnconfirmed:  l.Theme.Switch(),
 		spendUnmixedFunds: l.Theme.Switch(),
 		connectToPeer:     l.Theme.Switch(),
@@ -108,11 +103,6 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) OnNavigatedTo() {
-	// set switch button state on page load
-	if !pg.isPrivacyModeOn() { // set state if privacy mode is off.
-		pg.fetchProposal.SetChecked(pg.readBool(sharedW.FetchProposalConfigKey))
-		pg.proposalNotif.SetChecked(pg.readBool(sharedW.ProposalNotificationConfigKey))
-	}
 	pg.spendUnconfirmed.SetChecked(pg.readBool(sharedW.SpendUnconfirmedConfigKey))
 	pg.spendUnmixedFunds.SetChecked(pg.readBool(sharedW.SpendUnmixedFundsKey))
 
@@ -207,18 +197,6 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
 			}),
 			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
-			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.isProposalsAPIAllowed() {
-					return pg.subSection(gtx, values.String(values.StrFetchProposals), pg.fetchProposal.Layout)
-				}
-				return D{}
-			}),
-			layout.Rigid(func(gtx C) D {
-				if pg.readBool(sharedW.FetchProposalConfigKey) && !pg.isPrivacyModeOn() && pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-					return pg.subSection(gtx, values.String(values.StrPropNotif), pg.proposalNotif.Layout)
-				}
-				return D{}
-			}),
 			layout.Rigid(func(gtx C) D {
 				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 					return pg.subSection(gtx, values.String(values.StrUnconfirmedFunds), pg.spendUnconfirmed.Layout)
@@ -386,7 +364,7 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 			layout.Rigid(pg.Theme.Label(values.TextSize16, title).Layout),
 			layout.Flexed(1, func(gtx C) D {
 				switch title {
-				case values.String(values.StrFetchProposals), values.String(values.StrPropNotif),
+				case values.String(values.StrPropNotif),
 					values.String(values.StrConnectToSpecificPeer):
 					if pg.isPrivacyModeOn() {
 						textlabel := pg.Theme.Label(values.TextSize12, values.String(values.StrPrivacyModeActive))
@@ -599,7 +577,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
-func (pg *WalletSettingsPage) isProposalsAPIAllowed() bool {
+func (pg *WalletSettingsPage) isGovernanceAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
@@ -661,40 +639,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			SetupWithTemplate(modal.SecurityToolsInfoTemplate).
 			Title(values.String(values.StrSecurityTools))
 		pg.ParentWindow().ShowModal(info)
-	}
-
-	if pg.fetchProposal.Changed() && pg.isProposalsAPIAllowed() {
-		if pg.fetchProposal.IsChecked() {
-			if !pg.WL.AssetsManager.Politeia.IsSyncing() {
-				go pg.WL.AssetsManager.Politeia.Sync(context.Background())
-				// set proposal notification config when proposal fetching is enabled
-				pg.proposalNotif.SetChecked(pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false))
-				pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
-			} else {
-				pg.fetchProposal.SetChecked(false)
-			}
-		} else {
-			info := modal.NewCustomModal(pg.Load).
-				Title(values.String(values.StrGovernance)).
-				Body(values.String(values.StrGovernanceSettingsInfo)).
-				SetNegativeButtonText(values.String(values.StrCancel)).
-				SetNegativeButtonCallback(func() {
-					pg.fetchProposal.SetChecked(true)
-				}).
-				PositiveButtonStyle(pg.Theme.Color.Surface, pg.Theme.Color.Danger).
-				SetPositiveButtonText(values.String(values.StrDisable)).
-				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-					if pg.WL.AssetsManager.Politeia.IsSyncing() {
-						go pg.WL.AssetsManager.Politeia.StopSync()
-					}
-
-					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, false)
-					// set proposal notification config when proposal fetching is disabled
-					pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.ProposalNotificationConfigKey, false)
-					return true
-				})
-			pg.ParentWindow().ShowModal(info)
-		}
 	}
 
 	if pg.spendUnconfirmed.Changed() {
@@ -762,10 +706,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 
 	if pg.checkStats.Clicked() {
 		pg.ParentNavigator().Display(s.NewStatPage(pg.Load))
-	}
-
-	if pg.proposalNotif.Changed() {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.ProposalNotificationConfigKey, pg.proposalNotif.IsChecked())
 	}
 
 	for pg.addAccount.Clicked() {

@@ -66,7 +66,7 @@ func (pg *Page) OnNavigatedTo() {
 	}
 }
 
-func (pg *Page) isProposalsAPIAllowed() bool {
+func (pg *Page) isGovernanceAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
@@ -96,7 +96,7 @@ func (pg *Page) HandleUserInteractions() {
 		pg.showInfoModal()
 	}
 
-	if pg.enableGovernanceBtn.Clicked() && pg.isProposalsAPIAllowed() {
+	if pg.enableGovernanceBtn.Clicked() && pg.isGovernanceAPIAllowed() {
 		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 		pg.Display(NewProposalsPage(pg.Load))
 	}
@@ -125,7 +125,7 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	if !pg.isProposalsAPIAllowed() {
+	if !pg.isGovernanceAPIAllowed() {
 		return components.UniformPadding(gtx, pg.splashScreen)
 	}
 
