@@ -31,8 +31,8 @@ type badWalletListItem struct {
 }
 
 type walletIndexTuple struct {
-	AssetType  libutils.AssetType
-	LocalIndex int
+	AssetType libutils.AssetType
+	Index     int
 }
 
 type WalletSelectorPage struct {
@@ -59,7 +59,7 @@ type WalletSelectorPage struct {
 	indexMapping   map[int]walletIndexTuple
 	badWalletsList map[libutils.AssetType][]*badWalletListItem
 
-	walletComponents      *cryptomaterial.WalletClickableList
+	walletComponents      *cryptomaterial.ClickableList
 	assetCollapsibles     map[libutils.AssetType]*cryptomaterial.Collapsible
 	assetsBalance         map[libutils.AssetType]sharedW.AssetAmount
 	assetsTotalUSDBalance map[libutils.AssetType]float64
@@ -92,8 +92,6 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 	pg.walletsList = make(map[libutils.AssetType][]*load.WalletItem)
 	pg.indexMapping = make(map[int]walletIndexTuple)
 	pg.addWalClickable = make(map[libutils.AssetType]*cryptomaterial.Clickable)
-	// pg.addWalClickable = l.Theme.NewClickable(false)
-	// pg.addWalClickable.Radius = cryptomaterial.Radius(14)
 
 	pg.initWalletSelectorOptions()
 
@@ -143,7 +141,6 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 				break
 			}
 			pg.assetRate[assetType] = rate.LastTradePrice
-
 		}
 
 		pg.ParentWindow().Reload()
@@ -164,19 +161,19 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 	defer pg.listLock.Unlock()
 
 	if ok, clickedItem := pg.walletComponents.ItemClicked(); ok {
-		tuple, exists := pg.indexMapping[clickedItem.Index]
+		tuple, exists := pg.indexMapping[clickedItem]
 		if !exists {
 			// Handle error - this should never happen
 			return
 		}
 
 		wallets, wExists := pg.walletsList[tuple.AssetType]
-		if !wExists || len(wallets) <= tuple.LocalIndex {
+		if !wExists || len(wallets) <= tuple.Index {
 			// Handle error
 			return
 		}
 
-		pg.WL.SelectedWallet = wallets[tuple.LocalIndex]
+		pg.WL.SelectedWallet = wallets[tuple.Index]
 		pg.ParentNavigator().Display(NewMainPage(pg.Load))
 	}
 
@@ -188,10 +185,6 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 			}
 		}
 	}
-
-	// if pg.addWalClickable.Clicked() {
-	// 	pg.ParentNavigator().Display(NewCreateWallet(pg.Load))
-	// }
 
 	for asset, clickable := range pg.addWalClickable {
 		if clickable.Clicked() {

@@ -17,7 +17,7 @@ import (
 )
 
 func (pg *WalletSelectorPage) initWalletSelectorOptions() {
-	pg.walletComponents = pg.Theme.NewWalletClickableList(layout.Vertical)
+	pg.walletComponents = pg.Theme.NewClickableList(layout.Vertical)
 }
 
 func (pg *WalletSelectorPage) loadWallets() {
@@ -147,22 +147,22 @@ func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.Wallet
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 
-	var itemIDs []cryptomaterial.SelectedWalletItem
+	var itemIDs []walletIndexTuple
 	for i, wallet := range mainWalletList {
 		globalIndex := len(itemIDs)
-		itemIDs = append(itemIDs, cryptomaterial.SelectedWalletItem{
+		itemIDs = append(itemIDs, walletIndexTuple{
 			AssetType: wallet.Wallet.GetAssetType(),
 			Index:     globalIndex,
 		})
 
 		// Populate the mapping here
 		pg.indexMapping[globalIndex] = walletIndexTuple{
-			AssetType:  wallet.Wallet.GetAssetType(),
-			LocalIndex: i,
+			AssetType: wallet.Wallet.GetAssetType(),
+			Index:     i,
 		}
 	}
 
-	return pg.walletComponents.Layout(gtx, itemIDs, func(gtx C, i int) D {
+	return pg.walletComponents.Layout(gtx, len(itemIDs), func(gtx C, i int) D {
 		SelectedWalletItem := itemIDs[i]
 		wallet := mainWalletList[SelectedWalletItem.Index]
 		return pg.walletWrapper(gtx, wallet)
