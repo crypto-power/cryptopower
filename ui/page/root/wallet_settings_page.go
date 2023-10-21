@@ -364,8 +364,7 @@ func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget
 			layout.Rigid(pg.Theme.Label(values.TextSize16, title).Layout),
 			layout.Flexed(1, func(gtx C) D {
 				switch title {
-				case values.String(values.StrPropNotif),
-					values.String(values.StrConnectToSpecificPeer):
+				case values.String(values.StrConnectToSpecificPeer):
 					if pg.isPrivacyModeOn() {
 						textlabel := pg.Theme.Label(values.TextSize12, values.String(values.StrPrivacyModeActive))
 						textlabel.Color = pg.Theme.Color.GrayText2
@@ -575,10 +574,6 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			return true
 		})
 	pg.ParentWindow().ShowModal(warningModal)
-}
-
-func (pg *WalletSettingsPage) isGovernanceAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
