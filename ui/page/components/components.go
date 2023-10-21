@@ -696,12 +696,10 @@ func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.A
 }
 
 func CalculateAssetsUSDBalance(l *load.Load, assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount) (map[libutils.AssetType]float64, error) {
-	preferredExchange := l.WL.AssetsManager.GetCurrencyConversionExchange()
-
 	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
-		rate, err := l.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, market)
-		if err != nil {
-			return 0, err
+		rate := l.WL.AssetsManager.RateSource.GetTicker(market)
+		if rate == nil || rate.LastTradePrice <= 0 {
+			return 0, fmt.Errorf("No rate information available")
 		}
 
 		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil

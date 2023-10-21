@@ -40,6 +40,7 @@ require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/gen2brain/beeep v0.0.0-20220402123239-6a3042f4b71a
 	github.com/gomarkdown/markdown v0.0.0-20220817224203-2206187d3406
+	github.com/gorilla/websocket v1.5.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/kevinburke/nacl v0.0.0-20190829012316-f3ed23dbd7f8
@@ -116,7 +117,6 @@ require (
 	github.com/google/trillian v1.4.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/jrick/bitset v1.0.0 // indirect
 	github.com/jrick/wsrpc/v2 v2.3.5 // indirect

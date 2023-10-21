@@ -14,7 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -52,8 +52,8 @@ type orderSchedulerModal struct {
 	fetchingRate bool
 	rateError    bool
 
-	exchangeRate, binanceRate float64
-	exchange                  api.IDExchange
+	exchangeRate float64
+	exchange     api.IDExchange
 	*orderData
 }
 
@@ -65,7 +65,6 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		frequencySelector: NewFrequencySelector(l),
 		orderData:         data,
 		copyRedirect:      l.Theme.NewClickable(false),
-		binanceRate:       -1,
 		exchangeRate:      -1,
 	}
 
@@ -286,11 +285,22 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							if osm.binanceRate <= 0 {
+																							ticker := osm.WL.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+																							if ticker == nil || ticker.LastTradePrice <= 0 {
 																								return D{}
 																							}
 
-																							binanceRate := values.StringF(values.StrBinanceRate, fromCur, osm.binanceRate, toCur)
+																							rate := ticker.LastTradePrice
+																							//  Binance and Bittrex always returns
+																							// ticker.LastTradePrice in's the quote
+																							// asset unit e.g DCR-BTC, LTC-BTC. We will
+																							// also do this when and if USDT is
+																							// supported.
+																							if osm.fromCurrency == libutils.BTCWalletAsset {
+																								rate = 1 / ticker.LastTradePrice
+																							}
+
+																							binanceRate := values.StringF(values.StrCurrencyConverterRate, osm.WL.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
@@ -483,7 +493,6 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 }
 
 func (osm *orderSchedulerModal) getExchangeRateInfo() error {
-	osm.binanceRate = -1
 	osm.exchangeRate = -1
 	osm.fetchingRate = true
 	osm.rateError = false
@@ -501,25 +510,8 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 		return err
 	}
 
-	ticker, err := osm.WL.AssetsManager.ExternalService.GetTicker(ext.Binance, libwallet.MarketName(fromCur, toCur))
-	if err != nil {
-		osm.rateError = true
-		osm.fetchingRate = false
-		return err
-	}
-
-	if ticker != nil && ticker.LastTradePrice > 0 {
-		osm.binanceRate = ticker.LastTradePrice
-		/// Binance always returns ticker.LastTradePrice in's the quote asset
-		// unit e.g DCR-BTC, LTC-BTC. We will also do this when and if USDT is supported.
-		if osm.fromCurrency == utils.BTCWalletAsset {
-			osm.binanceRate = 1 / ticker.LastTradePrice
-		}
-	}
-
 	osm.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	osm.fetchingRate = false
 	osm.rateError = false
-
 	return nil
 }

@@ -67,7 +67,6 @@ type Page struct {
 	usdExchangeSet      bool
 	exchangeRateMessage string
 	confirmTxModal      *sendConfirmModal
-	currencyExchange    string
 
 	txLabelInputEditor cryptomaterial.Editor
 
@@ -276,8 +275,7 @@ func (pg *Page) OnNavigatedTo() {
 
 	pg.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		pg.currencyExchange = pg.WL.AssetsManager.GetCurrencyConversionExchange()
-		pg.usdExchangeSet = true
+		pg.usdExchangeSet = pg.WL.AssetsManager.RateSource.Ready()
 		go pg.fetchExchangeRate()
 	} else {
 		// If exchange rate is not supported, validate and construct the TX.
@@ -317,9 +315,8 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 
-	rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(pg.currencyExchange, market)
-	if err != nil {
-		log.Error(err)
+	rate := pg.WL.AssetsManager.RateSource.GetTicker(market)
+	if rate == nil || rate.LastTradePrice <= 0 {
 		pg.isFetchingExchangeRate = false
 		return
 	}
@@ -341,7 +338,7 @@ func (pg *Page) validateAndConstructTx() {
 		pg.constructTx()
 	} else {
 		pg.clearEstimates()
-		pg.showBalaceAfterSend()
+		pg.showBalanceAfterSend()
 	}
 }
 
@@ -444,15 +441,15 @@ func (pg *Page) constructTx() {
 		pg.feeRateSelector.USDExchangeSet = true
 		pg.txFeeUSD = fmt.Sprintf("$%.4f", utils.CryptoToUSD(pg.exchangeRate, feeAndSize.Fee.CoinValue))
 		pg.feeRateSelector.TxFeeUSD = pg.txFeeUSD
-		pg.totalCostUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.totalCostUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalSendingAmount.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 
 		usdAmount := utils.CryptoToUSD(pg.exchangeRate, wal.ToAmount(amountAtom).ToCoin())
-		pg.sendAmountUSD = utils.FormatUSDBalance(pg.Printer, usdAmount)
+		pg.sendAmountUSD = utils.FormatAsUSDString(pg.Printer, usdAmount)
 	}
 }
 
-func (pg *Page) showBalaceAfterSend() {
+func (pg *Page) showBalanceAfterSend() {
 	if pg.sourceAccountSelector != nil {
 		sourceAccount := pg.sourceAccountSelector.SelectedAccount()
 		if sourceAccount.Balance == nil {
@@ -460,7 +457,7 @@ func (pg *Page) showBalaceAfterSend() {
 		}
 		balanceAfterSend := sourceAccount.Balance.Spendable
 		pg.balanceAfterSend = balanceAfterSend.String()
-		pg.balanceAfterSendUSD = utils.FormatUSDBalance(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
+		pg.balanceAfterSendUSD = utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, balanceAfterSend.ToCoin()))
 	}
 }
 

@@ -73,9 +73,8 @@ type MainPage struct {
 	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
-	usdExchangeRate       float64
-	totalBalance          sharedW.AssetAmount
-	currencyExchangeValue string
+	usdExchangeRate float64
+	totalBalance    sharedW.AssetAmount
 
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
@@ -327,7 +326,6 @@ func (mp *MainPage) isProposalsAPIAllowed() bool {
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(mp.WL) {
-		mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 		go mp.fetchExchangeRate()
 	}
 }
@@ -352,9 +350,8 @@ func (mp *MainPage) fetchExchangeRate() {
 		return
 	}
 
-	rate, err := mp.WL.AssetsManager.ExternalService.GetTicker(mp.currencyExchangeValue, market)
-	if err != nil {
-		log.Error(err)
+	rate := mp.WL.AssetsManager.RateSource.GetTicker(market)
+	if rate == nil || rate.LastTradePrice <= 0 {
 		mp.isFetchingExchangeRate = false
 		return
 	}
@@ -374,7 +371,7 @@ func (mp *MainPage) updateBalance() {
 	}
 	mp.totalBalance = totalBalance.Total
 	balanceInUSD := totalBalance.Total.MulF64(mp.usdExchangeRate).ToCoin()
-	mp.totalBalanceUSD = utils.FormatUSDBalance(mp.Printer, balanceInUSD)
+	mp.totalBalanceUSD = utils.FormatAsUSDString(mp.Printer, balanceInUSD)
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed

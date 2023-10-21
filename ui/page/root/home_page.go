@@ -761,7 +761,7 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 			totalBalance += balance
 		}
 
-		hp.totalBalanceUSD = utils.FormatUSDBalance(hp.Printer, totalBalance)
+		hp.totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
 }
