@@ -59,6 +59,7 @@ var navigationTabTitles = []string{
 	values.String(values.StrOverview),
 	values.String(values.StrWallets),
 	values.String(values.StrTrade),
+	values.String(values.StrGovernance),
 }
 
 func NewHomePage(l *load.Load) *HomePage {
@@ -193,6 +194,8 @@ func (hp *HomePage) HandleUserInteractions() {
 			pg = NewWalletSelectorPage(hp.Load)
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
+		case values.String(values.StrGovernance):
+			pg = governance.NewGovernancePage(hp.Load)
 		}
 
 		hp.Display(pg)

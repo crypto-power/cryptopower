@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"context"
 	"image"
 
 	"gioui.org/font"
@@ -10,7 +9,6 @@ import (
 	"gioui.org/op/paint"
 
 	"github.com/crypto-power/cryptopower/app"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -24,6 +22,8 @@ const GovernancePageID = "Governance"
 type Page struct {
 	*load.Load
 	*app.MasterPage
+
+	modal *cryptomaterial.Modal
 
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
@@ -41,6 +41,7 @@ func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
 		MasterPage:      app.NewMasterPage(GovernancePageID),
+		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
 
@@ -59,16 +60,12 @@ func NewGovernancePage(l *load.Load) *Page {
 func (pg *Page) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
-	} else if pg.isGovernanceFeatureEnabled() {
+	} else {
 		pg.Display(NewProposalsPage(pg.Load))
 	}
 }
 
-func (pg *Page) isGovernanceFeatureEnabled() bool {
-	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false)
-}
-
-func (pg *Page) isProposalsAPIAllowed() bool {
+func (pg *Page) isGovernanceAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
@@ -98,12 +95,6 @@ func (pg *Page) HandleUserInteractions() {
 		pg.showInfoModal()
 	}
 
-	if pg.enableGovernanceBtn.Clicked() && pg.isProposalsAPIAllowed() {
-		go pg.WL.AssetsManager.Politeia.Sync(context.Background())
-		pg.Display(NewProposalsPage(pg.Load))
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.FetchProposalConfigKey, true)
-	}
-
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {
 		if clickedTabIndex == 0 {
 			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
@@ -128,8 +119,8 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	if !pg.isGovernanceFeatureEnabled() {
-		return components.UniformPadding(gtx, pg.splashScreenLayout)
+	if !pg.isGovernanceAPIAllowed() {
+		return components.UniformPadding(gtx, pg.splashScreen)
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
@@ -147,9 +138,6 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	if !pg.isGovernanceFeatureEnabled() {
-		return components.UniformMobile(gtx, false, false, pg.splashScreenLayout)
-	}
 	return components.UniformMobile(gtx, false, true, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.layoutPageTopNav),

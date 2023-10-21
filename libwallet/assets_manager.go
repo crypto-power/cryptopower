@@ -440,6 +440,12 @@ func (mgr *AssetsManager) PiKeys() [][]byte {
 	return mgr.chainsParams.DCR.PiKeys
 }
 
+// AllVoteAgendas returns all agendas of all stake versions for the active
+// network and this version of the software.
+func (mgr *AssetsManager) AllVoteAgendas(newestFirst bool) ([]*dcr.Agenda, error) {
+	return dcr.AllVoteAgendas(mgr.chainsParams.DCR, newestFirst)
+}
+
 // sortWallets returns the watchonly wallets ordered last.
 func (mgr *AssetsManager) sortWallets(assetType utils.AssetType) []sharedW.Asset {
 	normalWallets := make([]sharedW.Asset, 0)

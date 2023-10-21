@@ -97,7 +97,7 @@ func (pg *ConsensusPage) OnNavigatedFrom() {}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
-	consensusItems := components.LoadAgendas(pg.Load, pg.WL.SelectedWallet.Wallet, false)
+	consensusItems := components.LoadAgendas(pg.Load, nil, false)
 	if len(consensusItems) > 0 {
 		consensusItem := consensusItems[0]
 		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
@@ -227,14 +227,17 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	selectedWallet := pg.WL.SelectedWallet.Wallet
-
+	//TODO implement wallet selector. Currently, we are fetching and
+	// displaying all agenda. we will need to add some form of filter
+	// to switch between all agendas' or just agenda's for the selected
+	// wallet
+	// selectedWallet := pg.WL.SelectedWallet.Wallet
 	pg.isSyncing = true
 
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, selectedWallet, true)
+		items := components.LoadAgendas(pg.Load, nil, true)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {

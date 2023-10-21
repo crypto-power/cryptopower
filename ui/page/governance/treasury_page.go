@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -35,7 +36,10 @@ type TreasuryPage struct {
 	ctxCancel context.CancelFunc
 
 	assetsManager *libwallet.AssetsManager
-	wallets       []sharedW.Asset
+
+	sourceWalletSelector *components.WalletAndAccountSelector
+	selectedWallet       sharedW.Asset
+
 	treasuryItems []*components.TreasuryItem
 
 	listContainer      *widget.List
@@ -48,6 +52,8 @@ type TreasuryPage struct {
 
 	isPolicyFetchInProgress bool
 	navigateToSettingsBtn   cryptomaterial.Button
+
+	PiKey string
 }
 
 func NewTreasuryPage(l *load.Load) *TreasuryPage {
@@ -55,7 +61,6 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TreasuryPageID),
 		assetsManager:    l.WL.AssetsManager,
-		wallets:          l.WL.SortedWalletList(),
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -71,6 +76,7 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
+	pg.initWalletSelector()
 	return pg
 }
 
@@ -80,7 +86,11 @@ func (pg *TreasuryPage) ID() string {
 
 func (pg *TreasuryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if pg.isTreasuryAPIAllowed() {
+	// Fetch (or re-fetch) treasury policies in background as this makes
+	// a network call. Refresh the window once the call completes.
+	pg.PiKey = hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
+
+	if pg.isTreasuryAPIAllowed() && pg.selectedWallet != nil {
 		pg.FetchPolicies()
 	}
 }
@@ -144,15 +154,10 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 }
 
 func (pg *TreasuryPage) FetchPolicies() {
-	selectedWallet := pg.WL.SelectedWallet.Wallet
-
 	pg.isPolicyFetchInProgress = true
 
-	// Fetch (or re-fetch) treasury policies in background as this makes
-	// a network call. Refresh the window once the call completes.
-	key := hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
 	go func() {
-		pg.treasuryItems = components.LoadPolicies(pg.Load, selectedWallet, key)
+		pg.treasuryItems = components.LoadPolicies(pg.Load, pg.selectedWallet, pg.PiKey)
 		pg.isPolicyFetchInProgress = true
 		pg.ParentWindow().Reload()
 	}()
@@ -179,6 +184,9 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 }
 
 func (pg *TreasuryPage) layout(gtx C) D {
+	if pg.selectedWallet == nil {
+		return pg.decredWalletRequired(gtx)
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -196,15 +204,7 @@ func (pg *TreasuryPage) layout(gtx C) D {
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding10,
-						}.Layout(gtx, pg.layoutContent)
-					}),
-				)
-			})
+			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.layoutContent)
 		}),
 	)
 }
@@ -229,10 +229,6 @@ func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
 }
 
 func (pg *TreasuryPage) layoutContent(gtx C) D {
-	if len(pg.treasuryItems) == 0 {
-		return components.LayoutNoPoliciesFound(gtx, pg.Load, pg.isPolicyFetchInProgress)
-	}
-
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			list := layout.List{Axis: layout.Vertical}
@@ -249,12 +245,54 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 							Padding:     layout.UniformInset(values.MarginPadding15),
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
 						}.
-							Layout2(gtx, func(gtx C) D {
-								return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
-							})
+							Layout(gtx,
+								layout.Rigid(pg.layoutPiKey),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+										gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding350)
+										return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+									})
+								}),
+								layout.Rigid(func(gtx C) D {
+									return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
+								}),
+							)
 					})
 				})
 			})
+		}),
+	)
+}
+
+func (pg *TreasuryPage) layoutPiKey(gtx C) D {
+	backgroundColor := pg.Theme.Color.LightBlue
+	if pg.WL.AssetsManager.IsDarkModeOn() {
+		backgroundColor = pg.Theme.Color.Background
+	}
+
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			lbl := pg.Theme.Label(values.TextSize20, values.String(values.StrPiKey))
+			lbl.Font.Weight = font.SemiBold
+			return lbl.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Background: backgroundColor,
+				Width:      cryptomaterial.WrapContent,
+				Height:     cryptomaterial.WrapContent,
+				Direction:  layout.Center,
+				Alignment:  layout.Middle,
+				Border: cryptomaterial.Border{
+					Radius: cryptomaterial.Radius(4),
+				},
+				Padding: layout.Inset{
+					Top:    values.MarginPadding3,
+					Bottom: values.MarginPadding3,
+					Left:   values.MarginPadding8,
+					Right:  values.MarginPadding8,
+				},
+			}.Layout2(gtx, pg.Theme.Label(values.TextSize14, pg.PiKey).Layout)
 		}),
 	)
 }
@@ -265,15 +303,15 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmVote)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			selectedWallet := pg.WL.SelectedWallet.Wallet
 			votingPreference := treasuryItem.OptionsRadioGroup.Value
-			err := selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			err := pg.selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
-			go pg.FetchPolicies() // re-fetch policies when voting is done.
+
+			pg.FetchPolicies() // re-fetch policies when voting is done.
 			infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrPolicySetSuccessful), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(infoModal)
 
@@ -281,4 +319,34 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
+}
+
+func (pg *TreasuryPage) initWalletSelector() {
+	// Source wallet picker
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+		Title(values.String(values.StrSelectWallet))
+	if pg.sourceWalletSelector.SelectedWallet() != nil {
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	}
+
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.selectedWallet = selectedWallet.Asset
+		pg.FetchPolicies()
+	})
+}
+
+// TODO: Temporary UI. Pending when new designs will be ready for this feature
+func (pg *TreasuryPage) decredWalletRequired(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+		Alignment:   layout.Middle,
+	}.Layout2(gtx, func(gtx C) D {
+		txt := "This feature requires that you have a decred wallet."
+		lbl := pg.Theme.Label(values.TextSize16, txt)
+		lbl.Font.Weight = font.SemiBold
+		return lbl.Layout(gtx)
+	})
 }

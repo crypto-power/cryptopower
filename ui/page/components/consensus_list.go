@@ -128,11 +128,6 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
 		return D{}
 	}
 
-	if l.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-		warning := l.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
-		warning.Color = l.Theme.Color.Danger
-		return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, warning.Layout)
-	}
 	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	item.VoteButton.Background = l.Theme.Color.Gray3
 	item.VoteButton.SetEnabled(false)
@@ -159,11 +154,31 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 }
 
 func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
-	dcrUniqueImpl := selectedWallet.(*dcr.Asset)
-	agendas, err := dcrUniqueImpl.AllVoteAgendas("", newestFirst)
+	agendas, err := l.WL.AssetsManager.AllVoteAgendas(newestFirst)
 	if err != nil {
 		return nil
 	}
+
+	if selectedWallet != nil {
+		dcrUniqueImpl := selectedWallet.(*dcr.Asset)
+		walletChoices, err := dcrUniqueImpl.AgendaChoices("")
+		if err != nil {
+			return nil
+		}
+		// Update the vote preference value in the agendas slice. Where the
+		// wallet doesn't have a set vote preference, default to "abstain".
+		for i := range agendas {
+			agenda := agendas[i]
+			if voteChoice, ok := walletChoices[agenda.AgendaID]; ok {
+				agenda.VotingPreference = voteChoice
+			} else {
+				agenda.VotingPreference = "abstain"
+			}
+		}
+		// TODO: When the wallet selection is cleared (i.e. no wallet is
+		// selected), also clear each agenda.VotingPreference value!
+	}
+
 	consensusItems := make([]*ConsensusItem, len(agendas))
 	for i := 0; i < len(agendas); i++ {
 		consensusItems[i] = &ConsensusItem{

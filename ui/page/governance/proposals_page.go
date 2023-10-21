@@ -16,7 +16,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/crypto-power/cryptopower/wallet"
 )
@@ -56,9 +55,9 @@ type ProposalsPage struct {
 
 	updatedIcon *cryptomaterial.Icon
 
-	syncCompleted         bool
-	isSyncing             bool
-	navigateToSettingsBtn cryptomaterial.Button
+	syncCompleted    bool
+	isSyncing        bool
+	proposalsFetched bool
 }
 
 func NewProposalsPage(l *load.Load) *ProposalsPage {
@@ -81,7 +80,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
-	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
 	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
@@ -94,10 +92,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	return pg
 }
 
-func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
-}
-
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
@@ -105,12 +99,23 @@ func (pg *ProposalsPage) isProposalsAPIAllowed() bool {
 // Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if pg.isProposalsAPIAllowed() {
-		// Only proceed if allowed make Proposals API call.
-		pg.listenForSyncNotifications()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
-		pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+
+	if pg.isGovernanceAPIAllowed() {
+		pg.syncAndUpdateProposals()
+		pg.proposalsFetched = true
 	}
+}
+
+func (pg *ProposalsPage) syncAndUpdateProposals() {
+	go pg.WL.AssetsManager.Politeia.Sync(context.Background())
+	// Only proceed if allowed make Proposals API call.
+	pg.listenForSyncNotifications()
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+}
+
+func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -164,10 +169,6 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 
-	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
-	}
-
 	pg.searchEditor.EditorIconButtonEvent = func() {
 		// TODO: Proposals search functionality
 	}
@@ -185,6 +186,11 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		// Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
 	}
 
+	if !pg.proposalsFetched && pg.isGovernanceAPIAllowed() {
+		pg.syncAndUpdateProposals()
+		pg.proposalsFetched = true
+	}
+
 	if pg.infoButton.Button.Clicked() {
 		infoModal := modal.NewCustomModal(pg.Load).
 			Title(values.String(values.StrProposal)).
@@ -199,10 +205,6 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			pg.syncCompleted = false
 			pg.ParentWindow().Reload()
 		})
-	}
-
-	for pg.infoButton.Button.Clicked() {
-		// TODO: proposal info modal
 	}
 }
 
@@ -221,28 +223,11 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
-	// If proposals API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isProposalsAPIAllowed() {
-		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
-		})
-		// Disable main page from recieving events
-		gtx = gtx.Disabled()
-	}
-
-	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-			return pg.layoutMobile(gtx)
-		}
-		return pg.layoutDesktop(gtx)
-	})
-
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-
-	return layout.Stack{}.Layout(gtx, mainChild, overlay)
+	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		return pg.layoutMobile(gtx)
+	}
+	return pg.layoutDesktop(gtx)
 }
 
 func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
@@ -402,6 +387,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.isSyncing = false
 
 					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():
 				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
