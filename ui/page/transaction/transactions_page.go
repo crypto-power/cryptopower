@@ -54,17 +54,39 @@ type TransactionsPage struct {
 	previousTxFilter int32
 	scroll           *components.Scroll[*sharedW.Transaction]
 
+	selectedWallet *load.WalletMapping
+
 	tabs *cryptomaterial.ClickableList
 
 	materialLoader material.LoaderStyle
+
+	assetTypeSelector   *components.AssetTypeSelector
+	assetWallets        []sharedW.Asset
+	isAssetTypeSelector bool
 }
 
-func NewTransactionsPage(l *load.Load) *TransactionsPage {
+func NewTransactionsPage(l *load.Load, isAssetTypeSelector bool) *TransactionsPage {
 	pg := &TransactionsPage{
-		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
-		separator:        l.Theme.Separator(),
-		transactionList:  l.Theme.NewClickableList(layout.Vertical),
+		Load:                l,
+		GenericPageModal:    app.NewGenericPageModal(TransactionsPageID),
+		separator:           l.Theme.Separator(),
+		transactionList:     l.Theme.NewClickableList(layout.Vertical),
+		isAssetTypeSelector: isAssetTypeSelector,
+	}
+	pg.selectedWallet = &load.WalletMapping{}
+
+	// init the asset selector
+	if isAssetTypeSelector {
+		pg.assetTypeSelector = components.NewAssetTypeSelector(l)
+		pg.assetTypeSelector.SetBackground(pg.Theme.Color.Gray2)
+		// pg.assetTypeSelector.SetSelectedAssetType(pg.WL.AllSortedWalletList()[0].GetAssetType())
+		pg.initAssetTypeSelector()
+		pg.assetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+			pg.initAssetTypeSelector()
+			go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		})
+	} else {
+		pg.selectedWallet.Asset = l.WL.SelectedWallet.Wallet
 	}
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.loadTransactions)
@@ -85,13 +107,28 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
-	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
 	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+}
+
+func (pg *TransactionsPage) initAssetTypeSelector() {
+	pg.assetWallets = pg.WL.AllSortedWalletList()
+	if pg.assetTypeSelector.SelectedAssetType() != nil {
+		switch *pg.assetTypeSelector.SelectedAssetType() {
+		case utils.DCRWalletAsset:
+			pg.assetWallets = pg.WL.AssetsManager.AllDCRWallets()
+		case utils.BTCWalletAsset:
+			pg.assetWallets = pg.WL.AssetsManager.AllBTCWallets()
+		case utils.LTCWalletAsset:
+			pg.assetWallets = pg.WL.AssetsManager.AllLTCWallets()
+		}
+	}
+	pg.selectedWallet.Asset = pg.assetWallets[0]
 }
 
 func (pg *TransactionsPage) sectionNavTab(gtx C) D {
@@ -148,7 +185,7 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
-	wal := pg.WL.SelectedWallet.Wallet
+	wal := pg.selectedWallet
 	items := []cryptomaterial.DropDownItem{}
 	_, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	for _, name := range keysinfo {
@@ -183,7 +220,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 }
 
 func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, bool, error) {
-	wal := pg.WL.SelectedWallet.Wallet
+	wal := pg.selectedWallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
 		err := fmt.Errorf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
@@ -205,11 +242,33 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW
 		pg.previousTxFilter = txFilter
 	}
 
-	tempTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, true)
+	tempTxs, err := pg.fetchWalletTransactions(offset, pageSize, txFilter)
 	if err != nil {
 		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
 	return tempTxs, len(tempTxs), isReset, err
+}
+
+func (pg *TransactionsPage) fetchWalletTransactions(offset, pageSize, txFilter int32) ([]sharedW.Transaction, error) {
+	var txs []sharedW.Transaction
+	var err error
+
+	if pg.isAssetTypeSelector {
+		for _, wal := range pg.assetWallets {
+			txns, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, true)
+			if err != nil {
+				return nil, err
+			}
+
+			txs = append(txs, txns...)
+		}
+	} else {
+		txs, err = pg.selectedWallet.GetTransactionsRaw(offset, pageSize, txFilter, true)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return txs, err
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -285,6 +344,11 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 				}),
 				layout.Expanded(func(gtx C) D {
 					return pg.txTypeDropDown.Layout(gtx, 0, true)
+				}),
+				layout.Expanded(func(gtx C) D {
+					gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150)
+					gtx.Constraints.Max.Y = gtx.Dp(values.MarginPadding50)
+					return pg.assetTypeSelector.Layout(pg.ParentWindow(), gtx)
 				}),
 			)
 		})
@@ -393,7 +457,8 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
+
+	err := pg.selectedWallet.Wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return

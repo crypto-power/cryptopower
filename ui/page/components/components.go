@@ -226,9 +226,17 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	return &txStatus
 }
 
+<<<<<<< HEAD
 // transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
 // direction, balance, status. isTxPage determines if the transaction should be drawn using the transactions page layout.
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, isTxPage bool) layout.Dimensions {
+=======
+// transactionRow is a single transaction row on the transactions and overview
+// page. It lays out a transaction's direction, balance, status. isTxPage
+// determines if the transaction should be drawn using the transactions page
+// layout.
+func LayoutTransactionRow(gtx layout.Context, l *load.Load, selectedWallet *load.WalletMapping, row TransactionRow, isTxPage bool) layout.Dimensions {
+>>>>>>> 16d25c9b (add tx entry page to the home page)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if wal == nil {
 		return D{}
@@ -494,7 +502,11 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 							return D{}
 						}
 						statusIcon := l.Theme.Icons.ConfirmIcon
+<<<<<<< HEAD
 						if TxConfirmations(wal, tx) < wal.RequiredConfirmations() {
+=======
+						if TxConfirmations(l, row.Transaction) < selectedWallet.RequiredConfirmations() {
+>>>>>>> 16d25c9b (add tx entry page to the home page)
 							statusIcon = l.Theme.Icons.PendingIcon
 						}
 
