@@ -23,6 +23,7 @@ const (
 	SetGapLimitTemplate            = "SetGapLimit"
 	SourceModalInfoTemplate        = "SourceModalInfo"
 	TotalValueInfoTemplate         = "TotalValueInfo"
+	BondStrengthInfoTemplate       = "BondStrengthInfo"
 )
 
 func verifyMessageInfo(th *cryptomaterial.Theme) []layout.Widget {
@@ -117,6 +118,13 @@ func sourceModalInfo(th *cryptomaterial.Theme) []layout.Widget {
 
 func totalValueInfo(th *cryptomaterial.Theme) []layout.Widget {
 	text := values.StringF(values.StrTotalValueMsg, `<br />`, `<br />`)
+	return []layout.Widget{
+		renderers.RenderHTML(text, th).Layout,
+	}
+}
+
+func bondStrengthInfo(th *cryptomaterial.Theme) []layout.Widget {
+	text := values.StringF(values.StrBondStrengthMsg, `<br />`, `<br />`)
 	return []layout.Widget{
 		renderers.RenderHTML(text, th).Layout,
 	}

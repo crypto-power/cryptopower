@@ -63,7 +63,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *DEXPage) Layout(gtx layout.Context) layout.Dimensions {
+func (pg *DEXPage) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -87,10 +87,10 @@ func (pg *DEXPage) topBar(gtx C) D {
 		Clickable:   pg.openTradeMainPage,
 		Padding:     layout.UniformInset(values.MarginPadding12),
 	}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
 		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrDcrDex))
 			txt.Color = pg.Theme.Color.Gray1
 			return txt.Layout(gtx)
