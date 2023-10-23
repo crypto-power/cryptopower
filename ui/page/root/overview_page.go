@@ -1376,7 +1376,7 @@ func (pg *OverviewPage) loadTransactions() {
 func (pg *OverviewPage) loadStakes() {
 	wal := pg.WL.AssetsManager.AllDCRWallets()
 	for _, w := range wal {
-		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterStaking, true)
+		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
 		if err != nil {
 			log.Errorf("error loading staking activities: %v", err)
 			return
