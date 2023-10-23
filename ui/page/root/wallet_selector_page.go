@@ -112,7 +112,6 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 	}
 
 	go func() {
-		preferredExchange := pg.WL.AssetsManager.GetCurrencyConversionExchange()
 		// calculate total assets balance
 		assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
 		if err != nil {
@@ -135,7 +134,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 				break
 			}
 
-			rate, err := pg.WL.AssetsManager.ExternalService.GetTicker(preferredExchange, marketValue)
+			rate := pg.WL.AssetsManager.RateSource.GetTicker(marketValue)
 			if err != nil {
 				log.Error(err)
 				break
@@ -249,9 +248,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 			},
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-				return layout.Inset{
-					Right: values.MarginPadding48,
-				}.Layout(gtx, pageContent[i])
+				return pageContent[i](gtx)
 			})
 		})
 	})
@@ -349,7 +346,7 @@ func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetTyp
 							}),
 							layout.Rigid(func(gtx C) D {
 								if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-									txt := pg.Theme.Label(values.TextSize16, utils.FormatUSDBalance(pg.Printer, pg.assetsTotalUSDBalance[asset]))
+									txt := pg.Theme.Label(values.TextSize16, utils.FormatAsUSDString(pg.Printer, pg.assetsTotalUSDBalance[asset]))
 									txt.Color = pg.Theme.Color.Text
 									return txt.Layout(gtx)
 								}

@@ -303,16 +303,12 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 										return layout.Inset{
 											Left:  values.MarginPadding8,
 											Right: values.MarginPadding8,
-										}.Layout(gtx, func(gtx C) D {
-											return pg.Theme.Icons.Dot.Layout8dp(gtx)
-										})
+										}.Layout(gtx, pg.Theme.Icons.Dot.Layout8dp)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{
 											Right: values.MarginPadding4,
-										}.Layout(gtx, func(gtx C) D {
-											return pg.Theme.Icons.RedAlert.Layout16dp(gtx)
-										})
+										}.Layout(gtx, pg.Theme.Icons.RedAlert.Layout16dp)
 									}),
 									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout),
 								)
@@ -337,7 +333,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							usdBalance := utils.FormatUSDBalance(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
+							usdBalance := utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
 							txt := pg.Theme.Label(values.TextSize16, usdBalance)
 							txt.Color = pg.Theme.Color.Text
 							return txt.Layout(gtx)
