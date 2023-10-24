@@ -66,6 +66,47 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 	)
 }
 
+func (sc *SegmentedControl) TransparentLayout(gtx C) D {
+	sc.handleEvents()
+
+	return LinearLayout{
+		Width:  WrapContent,
+		Height: WrapContent,
+		Border: Border{Radius: Radius(8)},
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+				isSelectedSegment := sc.SelectedIndex() == i
+				return layout.Center.Layout(gtx, func(gtx C) D {
+					bg := sc.theme.Color.Gray2
+					txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+					border := Border{Radius: Radius(8)}
+					if isSelectedSegment {
+						bg = sc.theme.Color.LightBlue8
+						txt.Color = sc.theme.Color.Primary
+					}
+					paddingTB := values.MarginPadding10
+					paddingLR := values.MarginPadding30
+
+					return LinearLayout{
+						Width:  WrapContent,
+						Height: WrapContent,
+						Padding: layout.Inset{
+							Top:    paddingTB,
+							Bottom: paddingTB,
+							Left:   paddingLR,
+							Right:  paddingLR,
+						},
+						Background: bg,
+						Margin:     layout.UniformInset(values.MarginPadding5),
+						Border:     border,
+					}.Layout2(gtx, txt.Layout)
+				})
+			})
+		}),
+	)
+}
+
 func (sc *SegmentedControl) handleEvents() {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -88,6 +129,7 @@ func (sc *SegmentedControl) SelectedSegment() string {
 	defer sc.mu.Unlock()
 	return sc.segmentTitles[sc.selectedIndex]
 }
+
 func (sc *SegmentedControl) Changed() bool {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()

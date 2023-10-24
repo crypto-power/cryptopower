@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"gioui.org/font"
+	// "gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/unit"
+	// "gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -38,17 +38,14 @@ const (
 	MainPageID = "Main"
 )
 
-var (
-	NavDrawerWidth          = unit.Dp(160)
-	NavDrawerMinimizedWidth = unit.Dp(72)
-)
-
-type NavHandler struct {
-	Clickable     *widget.Clickable
-	Image         *cryptomaterial.Image
-	ImageInactive *cryptomaterial.Image
-	Title         string
-	PageID        string
+var pageTabs = []string{
+	values.String(values.StrInfo),
+	values.String(values.StrSend),
+	values.String(values.StrReceive),
+	values.String(values.StrTransactions),
+	values.String(values.StrStakeShuffle),
+	values.String(values.StrStaking),
+	values.String(values.StrSettings),
 }
 
 type MainPage struct {
@@ -60,46 +57,37 @@ type MainPage struct {
 	*listeners.ProposalNotificationListener
 	*listeners.OrderNotificationListener
 
-	ctx                  context.Context
-	ctxCancel            context.CancelFunc
-	drawerNav            components.NavDrawer
-	bottomNavigationBar  components.BottomNavigationBar
-	floatingActionButton components.BottomNavigationBar
-
+	ctx                    context.Context
+	ctxCancel              context.CancelFunc
+	tab                    *cryptomaterial.SegmentedControl
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
 	openWalletSelector     *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
-	usdExchangeRate float64
-	totalBalance    sharedW.AssetAmount
+	totalBalance sharedW.AssetAmount
 
+	usdExchangeRate        float64
 	usdExchangeSet         bool
 	isFetchingExchangeRate bool
 	isBalanceHidden        bool
 
-	setNavExpanded  func()
-	totalBalanceUSD string
+	currencyExchangeValue string
+	totalBalanceUSD       string
 }
 
 func NewMainPage(l *load.Load) *MainPage {
 	mp := &MainPage{
 		Load:       l,
 		MasterPage: app.NewMasterPage(MainPageID),
+		tab:        l.Theme.SegmentedControl(pageTabs),
 		checkBox:   l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
 
 	mp.hideBalanceButton = mp.Theme.NewClickable(false)
 	mp.openWalletSelector = mp.Theme.NewClickable(false)
 	mp.refreshExchangeRateBtn = mp.Theme.NewClickable(true)
-	mp.setNavExpanded = func() {
-		mp.drawerNav.DrawerToggled(mp.drawerNav.IsNavExpanded)
-	}
-
-	mp.isBalanceHidden = mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.HideBalanceConfigKey, false)
-	mp.bottomNavigationBar.OnViewCreated()
-	mp.initNavItems()
 
 	return mp
 }
@@ -111,167 +99,13 @@ func (mp *MainPage) ID() string {
 	return MainPageID
 }
 
-func (mp *MainPage) initNavItems() {
-	mp.drawerNav = components.NavDrawer{
-		Load:        mp.Load,
-		CurrentPage: mp.CurrentPageID(),
-		DCRDrawerNavItems: []components.NavHandler{
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.OverviewIcon,
-				ImageInactive: mp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrInfo),
-				PageID:        info.InfoID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.SendIcon,
-				Title:         values.String(values.StrSend),
-				ImageInactive: mp.Theme.Icons.SendInactiveIcon,
-				PageID:        send.SendPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.ReceiveIcon,
-				ImageInactive: mp.Theme.Icons.ReceiveInactiveIcon,
-				Title:         values.String(values.StrReceive),
-				PageID:        ReceivePageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.TransactionsIcon,
-				ImageInactive: mp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.Mixer,
-				ImageInactive: mp.Theme.Icons.MixerInactive,
-				Title:         values.String(values.StrStakeShuffle),
-				PageID:        privacy.AccountMixerPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.StakeIcon,
-				ImageInactive: mp.Theme.Icons.StakeIconInactive,
-				Title:         values.String(values.StrStaking),
-				PageID:        staking.OverviewPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.MoreIcon,
-				ImageInactive: mp.Theme.Icons.MoreIconInactive,
-				Title:         values.String(values.StrSettings),
-				PageID:        WalletSettingsPageID,
-			},
-		},
-		BTCDrawerNavItems: []components.NavHandler{
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.OverviewIcon,
-				ImageInactive: mp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrInfo),
-				PageID:        info.InfoID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.SendIcon,
-				Title:         values.String(values.StrSend),
-				ImageInactive: mp.Theme.Icons.SendInactiveIcon,
-				PageID:        send.SendPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.ReceiveIcon,
-				ImageInactive: mp.Theme.Icons.ReceiveInactiveIcon,
-				Title:         values.String(values.StrReceive),
-				PageID:        ReceivePageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.TransactionsIcon,
-				ImageInactive: mp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.MoreIcon,
-				ImageInactive: mp.Theme.Icons.MoreIconInactive,
-				Title:         values.String(values.StrSettings),
-				PageID:        WalletSettingsPageID,
-			},
-		},
-		MinimizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowBack),
-		MaximizeNavDrawerButton: mp.Theme.IconButton(mp.Theme.Icons.NavigationArrowForward),
-	}
-
-	mp.bottomNavigationBar = components.BottomNavigationBar{
-		Load:        mp.Load,
-		CurrentPage: mp.CurrentPageID(),
-		BottomNaigationItems: []components.BottomNavigationBarHandler{
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.OverviewIcon,
-				ImageInactive: mp.Theme.Icons.OverviewIconInactive,
-				Title:         values.String(values.StrInfo),
-				PageID:        info.InfoID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.TransactionsIcon,
-				ImageInactive: mp.Theme.Icons.TransactionsIconInactive,
-				Title:         values.String(values.StrTransactions),
-				PageID:        transaction.TransactionsPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.StakeIcon,
-				ImageInactive: mp.Theme.Icons.StakeIconInactive,
-				Title:         values.String(values.StrStaking),
-				PageID:        staking.OverviewPageID,
-			},
-			{
-				Clickable:     mp.Theme.NewClickable(true),
-				Image:         mp.Theme.Icons.MoreIcon,
-				ImageInactive: mp.Theme.Icons.MoreIconInactive,
-				Title:         values.String(values.StrMore),
-				PageID:        WalletSettingsPageID,
-			},
-		},
-	}
-
-	mp.floatingActionButton = components.BottomNavigationBar{
-		Load:        mp.Load,
-		CurrentPage: mp.CurrentPageID(),
-		FloatingActionButton: []components.BottomNavigationBarHandler{
-			{
-				Clickable: mp.Theme.NewClickable(true),
-				Image:     mp.Theme.Icons.SendIcon,
-				Title:     values.String(values.StrSend),
-				PageID:    send.SendPageID,
-			},
-			{
-				Clickable: mp.Theme.NewClickable(true),
-				Image:     mp.Theme.Icons.ReceiveIcon,
-				Title:     values.String(values.StrReceive),
-				PageID:    ReceivePageID,
-			},
-		},
-	}
-	mp.floatingActionButton.FloatingActionButton[0].Clickable.Hoverable = false
-	mp.floatingActionButton.FloatingActionButton[1].Clickable.Hoverable = false
-}
-
 // OnNavigatedTo is called when the page is about to be displayed and
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
 func (mp *MainPage) OnNavigatedTo() {
-	mp.setNavExpanded()
-
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
+
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	mp.updateBalance()
@@ -318,6 +152,7 @@ func (mp *MainPage) isGovernanceAPIAllowed() bool {
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(mp.WL) {
+		mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 		go mp.fetchExchangeRate()
 	}
 }
@@ -377,10 +212,6 @@ func (mp *MainPage) OnDarkModeChanged(isDarkModeOn bool) {
 	if currentPage, ok := mp.CurrentPage().(load.AppSettingsChangeHandler); ok {
 		currentPage.OnDarkModeChanged(isDarkModeOn)
 	}
-
-	mp.initNavItems()
-	mp.setNavExpanded()
-	mp.bottomNavigationBar.OnViewCreated()
 }
 
 func (mp *MainPage) OnCurrencyChanged() {
@@ -405,130 +236,39 @@ func (mp *MainPage) HandleUserInteractions() {
 		mp.ParentNavigator().CloseCurrentPage()
 	}
 
-	mp.drawerNav.CurrentPage = mp.CurrentPageID()
-	mp.bottomNavigationBar.CurrentPage = mp.CurrentPageID()
-	mp.floatingActionButton.CurrentPage = mp.CurrentPageID()
-
-	for mp.drawerNav.MinimizeNavDrawerButton.Button.Clicked() {
-		mp.drawerNav.IsNavExpanded = true
-		mp.setNavExpanded()
-	}
-
-	for mp.drawerNav.MaximizeNavDrawerButton.Button.Clicked() {
-		mp.drawerNav.IsNavExpanded = false
-		mp.setNavExpanded()
-	}
-
 	displayPage := func(pg app.Page) {
 		// Load the current wallet balance on page reload.
-		mp.updateBalance()
+		// mp.updateBalance()
 		mp.Display(pg)
 	}
 
-	for _, item := range mp.drawerNav.DCRDrawerNavItems {
-		for item.Clickable.Clicked() {
-			var pg app.Page
-			switch item.PageID {
-			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load, false)
-			case ReceivePageID:
-				pg = NewReceivePage(mp.Load)
-			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load)
-			case transaction.TransactionsPageID:
-				pg = transaction.NewTransactionsPage(mp.Load)
-			case privacy.AccountMixerPageID:
-				dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.Asset)
-				if dcrUniqueImpl != nil {
-					if !dcrUniqueImpl.AccountMixerConfigIsSet() {
-						pg = privacy.NewSetupPrivacyPage(mp.Load)
-					} else {
-						pg = privacy.NewAccountMixerPage(mp.Load)
-					}
+	if mp.tab.Changed() {
+		var pg app.Page
+		switch mp.tab.SelectedSegment() {
+		case values.String(values.StrSend):
+			pg = send.NewSendPage(mp.Load, false)
+		case values.String(values.StrReceive):
+			pg = NewReceivePage(mp.Load)
+		case values.String(values.StrInfo):
+			pg = info.NewInfoPage(mp.Load)
+		case values.String(values.StrTransactions):
+			pg = transaction.NewTransactionsPage(mp.Load)
+		case values.String(values.StrStakeShuffle):
+			dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.Asset)
+			if dcrUniqueImpl != nil {
+				if !dcrUniqueImpl.AccountMixerConfigIsSet() {
+					pg = privacy.NewSetupPrivacyPage(mp.Load)
+				} else {
+					pg = privacy.NewAccountMixerPage(mp.Load)
 				}
-			case staking.OverviewPageID:
-				pg = staking.NewStakingPage(mp.Load)
-			case WalletSettingsPageID:
-				pg = NewWalletSettingsPage(mp.Load)
 			}
-
-			if pg == nil || mp.ID() == mp.CurrentPageID() {
-				continue
-			}
-
-			displayPage(pg)
+		case values.String(values.StrStaking):
+			pg = staking.NewStakingPage(mp.Load)
+		case values.String(values.StrSettings):
+			pg = NewWalletSettingsPage(mp.Load)
 		}
-	}
 
-	for _, item := range mp.drawerNav.BTCDrawerNavItems {
-		for item.Clickable.Clicked() {
-			var pg app.Page
-			switch item.PageID {
-			case WalletSettingsPageID:
-				pg = NewWalletSettingsPage(mp.Load)
-			case ReceivePageID:
-				pg = NewReceivePage(mp.Load)
-			case send.SendPageID:
-				pg = send.NewSendPage(mp.Load, false)
-			case transaction.TransactionsPageID:
-				pg = transaction.NewTransactionsPage(mp.Load)
-			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load)
-			}
-
-			if pg == nil || mp.ID() == mp.CurrentPageID() {
-				continue
-			}
-			displayPage(pg)
-		}
-	}
-
-	for _, item := range mp.bottomNavigationBar.BottomNaigationItems {
-		for item.Clickable.Clicked() {
-			var pg app.Page
-			switch item.PageID {
-			case transaction.TransactionsPageID:
-				pg = transaction.NewTransactionsPage(mp.Load)
-			case staking.OverviewPageID:
-				pg = staking.NewStakingPage(mp.Load)
-			case info.InfoID:
-				pg = info.NewInfoPage(mp.Load)
-			case WalletSettingsPageID:
-				pg = NewWalletSettingsPage(mp.Load)
-			}
-
-			if pg == nil || mp.ID() == mp.CurrentPageID() {
-				continue
-			}
-
-			// clear stack
-			displayPage(pg)
-		}
-	}
-
-	for i, item := range mp.floatingActionButton.FloatingActionButton {
-		for item.Clickable.Clicked() {
-			var pg app.Page
-			if i == 0 {
-				pg = send.NewSendPage(mp.Load, false)
-			} else {
-				pg = NewReceivePage(mp.Load)
-			}
-
-			if mp.ID() == mp.CurrentPageID() {
-				continue
-			}
-
-			if mp.WL.SelectedWallet.Wallet.IsSynced() {
-				mp.Display(pg)
-			} else if mp.WL.SelectedWallet.Wallet.IsSyncing() {
-				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrWalletSyncing), modal.DefaultClickFunc())
-				mp.ParentWindow().ShowModal(errModal)
-			} else {
-				errModal := modal.NewErrorModal(mp.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
-				mp.ParentWindow().ShowModal(errModal)
-			}
-		}
+		displayPage(pg)
 	}
 
 	for mp.hideBalanceButton.Clicked() {
@@ -589,9 +329,10 @@ func (mp *MainPage) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (mp *MainPage) Layout(gtx C) D {
 	mp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if mp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
-		return mp.layoutMobile(gtx)
-	}
+	// TODO: mobile layout
+	// if mp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	// 	return mp.layoutMobile(gtx)
+	// }
 	return mp.layoutDesktop(gtx)
 }
 
@@ -605,66 +346,145 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       cryptomaterial.MatchParent,
-						Height:      cryptomaterial.MatchParent,
-						Orientation: layout.Horizontal,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							var drawer D
-							switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-							case libutils.BTCWalletAsset:
-								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
-							case libutils.DCRWalletAsset:
-								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.DCRDrawerNavItems)
-							case libutils.LTCWalletAsset:
-								drawer = mp.drawerNav.LayoutNavDrawer(gtx, mp.drawerNav.BTCDrawerNavItems)
-							}
-							return drawer
-						}),
-						layout.Rigid(func(gtx C) D {
-							if mp.CurrentPage() == nil {
-								return D{}
-							}
-							switch mp.CurrentPage().ID() {
-							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
-								transaction.TransactionsPageID, privacy.AccountMixerPageID:
-								// Disable page functionality if a page is not synced or rescanning is in progress.
-								if !mp.WL.SelectedWallet.Wallet.IsSynced() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
-									return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
-										values.String(values.StrFunctionUnavailable), nil)
+					return components.UniformPadding(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.MatchParent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+							Direction:   layout.Center,
+						}.Layout(gtx,
+							layout.Rigid(mp.pageTabLayout),
+							layout.Rigid(func(gtx C) D {
+								if mp.CurrentPage() == nil {
+									return D{}
 								}
-								fallthrough
-							default:
-								return mp.CurrentPage().Layout(gtx)
-							}
-						}),
-					)
+								switch mp.CurrentPage().ID() {
+								case ReceivePageID, send.SendPageID, staking.OverviewPageID,
+									transaction.TransactionsPageID, privacy.AccountMixerPageID:
+									// Disable page functionality if a page is not synced or rescanning is in progress.
+									if !mp.WL.SelectedWallet.Wallet.IsSynced() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
+										return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
+											values.String(values.StrFunctionUnavailable), nil)
+									}
+									fallthrough
+								default:
+									return mp.CurrentPage().Layout(gtx)
+								}
+							}),
+						)
+					})
 				}),
 			)
 		}),
 	)
 }
 
-func (mp *MainPage) layoutMobile(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(mp.LayoutTopBar),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Stack{Alignment: layout.N}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					currentPage := mp.CurrentPage()
-					if currentPage == nil {
-						return D{}
-					}
-					return currentPage.Layout(gtx)
+func (mp *MainPage) LayoutTopBar(gtx C) D {
+	assetType := mp.WL.SelectedWallet.Wallet.GetAssetType()
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Background:  mp.Theme.Color.White,
+		Orientation: layout.Vertical,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			h := values.MarginPadding24
+			v := values.MarginPadding8
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Horizontal,
+				Alignment:   layout.Middle,
+				Padding: layout.Inset{
+					Right:  h,
+					Left:   values.MarginPadding10,
+					Top:    v,
+					Bottom: v,
+				},
+			}.GradientLayout(gtx, assetType,
+				layout.Rigid(func(gtx C) D {
+					return D{}
+					return layout.W.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   mp.openWalletSelector,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Left:  values.MarginPadding12,
+									Right: values.MarginPadding12,
+								}.Layout(gtx, mp.Theme.Icons.ChevronLeft.Layout12dp)
+							}),
+							layout.Rigid(func(gtx C) D {
+								image := components.CoinImageBySymbol(mp.Load, assetType,
+									mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
+								if image != nil {
+									return image.Layout24dp(gtx)
+								}
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
+								lbl.Color = mp.Theme.Color.PageNavText
+								return layout.Inset{
+									Left: values.MarginPadding10,
+								}.Layout(gtx, lbl.Layout)
+							}),
+							layout.Rigid(func(gtx C) D {
+								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return layout.Inset{
+										Left: values.MarginPadding10,
+									}.Layout(gtx, func(gtx C) D {
+										return components.WalletHightlighLabel(mp.Theme, gtx, values.TextSize16, values.String(values.StrWatchOnly))
+									})
+								}
+								return D{}
+							}),
+						)
+					})
 				}),
-				layout.Stacked(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, mp.floatingActionButton.LayoutSendReceive)
+				layout.Rigid(func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								icon := mp.Theme.Icons.RevealIcon
+								if mp.isBalanceHidden {
+									icon = mp.Theme.Icons.ConcealIcon
+								}
+								return layout.Inset{
+									Top:   values.MarginPadding5,
+									Right: values.MarginPadding9,
+								}.Layout(gtx, func(gtx C) D {
+									return mp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
+								})
+							}),
+							layout.Rigid(func(gtx C) D {
+								return mp.totalAssetBalance(gtx)
+							}),
+							layout.Rigid(func(gtx C) D {
+								if !mp.isBalanceHidden {
+									return mp.LayoutUSDBalance(gtx)
+								}
+								return D{}
+							}),
+						)
+					})
 				}),
 			)
 		}),
-		layout.Rigid(mp.bottomNavigationBar.LayoutBottomNavigationBar),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return mp.Theme.Separator().Layout(gtx)
+		}),
 	)
+}
+
+func (mp *MainPage) pageTabLayout(gtx C) D {
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, mp.tab.TransparentLayout)
 }
 
 func (mp *MainPage) LayoutUSDBalance(gtx C) D {
@@ -710,111 +530,6 @@ func (mp *MainPage) totalAssetBalance(gtx C) D {
 		})
 	}
 	return components.LayoutBalanceWithUnit(gtx, mp.Load, mp.totalBalance.String())
-}
-
-func (mp *MainPage) LayoutTopBar(gtx C) D {
-	assetType := mp.WL.SelectedWallet.Wallet.GetAssetType()
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Background:  mp.Theme.Color.White,
-		Orientation: layout.Vertical,
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			h := values.MarginPadding24
-			v := values.MarginPadding8
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.WrapContent,
-				Orientation: layout.Horizontal,
-				Alignment:   layout.Middle,
-				Padding: layout.Inset{
-					Right:  h,
-					Left:   values.MarginPadding10,
-					Top:    v,
-					Bottom: v,
-				},
-			}.GradientLayout(gtx, assetType,
-				layout.Rigid(func(gtx C) D {
-					return layout.W.Layout(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Horizontal,
-							Alignment:   layout.Middle,
-							Clickable:   mp.openWalletSelector,
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Left:  values.MarginPadding12,
-									Right: values.MarginPadding12,
-								}.Layout(gtx, func(gtx C) D {
-									return mp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding12)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								image := components.CoinImageBySymbol(mp.Load, assetType,
-									mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
-								if image != nil {
-									return image.Layout24dp(gtx)
-								}
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
-								lbl.Color = mp.Theme.Color.PageNavText
-								return layout.Inset{
-									Left: values.MarginPadding10,
-								}.Layout(gtx, lbl.Layout)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return layout.Inset{
-										Left: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return walletHightlighLabel(mp.Theme, gtx, values.TextSize16, values.String(values.StrWatchOnly))
-									})
-								}
-								return D{}
-							}),
-						)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								icon := mp.Theme.Icons.RevealIcon
-								if mp.isBalanceHidden {
-									icon = mp.Theme.Icons.ConcealIcon
-								}
-								return layout.Inset{
-									Top:   values.MarginPadding5,
-									Right: values.MarginPadding9,
-								}.Layout(gtx, func(gtx C) D {
-									return mp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								return mp.totalAssetBalance(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if !mp.isBalanceHidden {
-									return mp.LayoutUSDBalance(gtx)
-								}
-								return D{}
-							}),
-						)
-					})
-				}),
-			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return mp.Theme.Separator().Layout(gtx)
-		}),
-	)
 }
 
 // postDesktopNotification posts notifications to the desktop.
@@ -1011,28 +726,12 @@ func (mp *MainPage) showBackupInfo() {
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-			currentPage := mp.ParentWindow().CurrentPageID()
-			mp.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, func(load *load.Load, navigator app.WindowNavigator) {
-				navigator.ClosePagesAfter(currentPage)
-			}))
+			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
 }
 
-func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
-	indexLabel := theme.Label(textSize, content)
-	indexLabel.Color = theme.Color.PageNavText
-	indexLabel.Font.Weight = font.Medium
-	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     gtx.Dp(values.MarginPadding22),
-		Direction:  layout.Center,
-		Background: theme.Color.Gray8,
-		Padding: layout.Inset{
-			Left:  values.MarginPadding8,
-			Right: values.MarginPadding8},
-		Margin: layout.Inset{Right: values.MarginPadding8},
-		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
-	}.Layout2(gtx, indexLabel.Layout)
+func redirect(l *load.Load, pg app.WindowNavigator) {
+	pg.Display(NewWalletSelectorPage(l))
 }

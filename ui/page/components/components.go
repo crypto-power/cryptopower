@@ -983,6 +983,23 @@ func DisablePageWithOverlay(l *load.Load, currentPage app.Page, gtx C, txt strin
 	)
 }
 
+func WalletHightlighLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
+	indexLabel := theme.Label(textSize, content)
+	indexLabel.Color = theme.Color.PageNavText
+	indexLabel.Font.Weight = font.Medium
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.WrapContent,
+		Height:     gtx.Dp(values.MarginPadding22),
+		Direction:  layout.Center,
+		Background: theme.Color.Gray8,
+		Padding: layout.Inset{
+			Left:  values.MarginPadding8,
+			Right: values.MarginPadding8},
+		Margin: layout.Inset{Right: values.MarginPadding8},
+		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
+	}.Layout2(gtx, indexLabel.Layout)
+}
+
 // InputsNotEmpty checks if all the provided editors have non-empty text.
 func InputsNotEmpty(editors ...*widget.Editor) bool {
 	for _, e := range editors {
