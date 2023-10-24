@@ -970,7 +970,6 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						if len(pg.stakes) == 0 {
 							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 								return pg.Theme.Body1(values.StrNoStaking).Layout(gtx)
 							})
 						}

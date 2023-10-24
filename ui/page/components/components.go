@@ -321,6 +321,9 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 						Alignment:   layout.Middle,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
+							if isTxPage {
+								return D{}
+							}
 							if row.Transaction.Type == txhelper.TxTypeMixed {
 								return cryptomaterial.LinearLayout{
 									Width:       cryptomaterial.WrapContent,
@@ -380,11 +383,11 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 								return D{}
 							}
 							amnt := wal.ToAmount(ticketSpender.VoteReward).ToCoin()
-							lbl := l.Theme.Label(values.TextSize12, fmt.Sprintf("%.2f", amnt))
+							txt := fmt.Sprintf("%.2f", amnt)
 							if amnt > 0 {
-								lbl = l.Theme.Label(values.TextSize12, fmt.Sprintf("+%.2f", amnt))
+								txt = fmt.Sprintf("+%.2f", amnt)
 							}
-							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, lbl.Layout)
+							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, l.Theme.Label(values.TextSize12, txt).Layout)
 						}),
 					)
 				}),
@@ -471,9 +474,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 
 										durationTxt := TimeAgo(row.Transaction.Timestamp)
 										durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
-
-										lbl := l.Theme.Label(values.TextSize12, durationTxt)
-										return lbl.Layout(gtx)
+										return l.Theme.Label(values.TextSize12, durationTxt).Layout(gtx)
 									}
 									return D{}
 								}),
