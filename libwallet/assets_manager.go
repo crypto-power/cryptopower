@@ -15,6 +15,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
+	"github.com/crypto-power/cryptopower/ui/values"
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
@@ -190,13 +191,20 @@ func (mgr *AssetsManager) initRateSource() (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mgr.cancelFuncs = append(mgr.cancelFuncs, cancel)
 
-	rateSource := mgr.GetCurrencyConversionExchange()
+	rateSource := values.DefaultExchangeValue
+	disabled := true
+	// Check if database has been initialized. ATM, new setups need a wallet
+	// before mgr.db is initialized.
+	if mgr.db != nil {
+		rateSource = mgr.GetCurrencyConversionExchange()
+		disabled = mgr.IsPrivacyModeOn()
+	}
+
 	mgr.RateSource, err = ext.NewCommonRateSource(ctx, rateSource)
 	if err != nil {
 		return fmt.Errorf("ext.NewCommonRateSource error: %w", err)
 	}
 
-	disabled := mgr.IsPrivacyModeOn()
 	mgr.RateSource.ToggleStatus(disabled)
 
 	// Start the refresh goroutine even if rate source is disabled.
