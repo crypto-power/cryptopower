@@ -165,13 +165,14 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 		padding = values.MarginPadding8
 	}
 
-	width := d.Width
-	if width <= 0 {
-		width = dropdownWidth(gtx, d.revs)
+	dropdownWidth := d.Width
+	dropdownItemWidth := dropdownWidth
+	if dropdownWidth <= 0 {
+		dropdownWidth = defaultDropdownWidth(gtx, d.revs)
 	}
 
 	return LinearLayout{
-		Width:     width,
+		Width:     dropdownWidth,
 		Height:    WrapContent,
 		Clickable: clickable,
 		Padding:   layout.UniformInset(padding),
@@ -182,10 +183,11 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 				return layout.Dimensions{}
 			}
 
+			dropdownItemWidth -= gtx.Dp(values.MarginPadding24) // account for the dropdown Icon
 			return item.Icon.Layout24dp(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Max.X = width - gtx.Dp(values.MarginPadding40) // give some space for the dropdown Icon
+			gtx.Constraints.Max.X = dropdownItemWidth - gtx.Dp(values.MarginPadding50) // give some space for the dropdown Icon
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Inset{
 				Right: unit.Dp(5),
@@ -204,9 +206,9 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 	)
 }
 
-// dropdownWidth returns the default width for a dropdown depending on the it's
-// position.
-func dropdownWidth(gtx C, reversePosition bool) int {
+// defaultDropdownWidth returns the default width for a dropdown depending on
+// it's position.
+func defaultDropdownWidth(gtx C, reversePosition bool) int {
 	if reversePosition {
 		return gtx.Dp(values.MarginPadding140)
 	}
@@ -284,7 +286,7 @@ func (d *DropDown) closedLayout(gtx C, iLeft int, iRight int) D {
 					return d.layoutOption(gtx, d.selectedIndex)
 				}))
 			if d.Width <= 0 {
-				d.Width = dropdownWidth(gtx, d.revs)
+				d.Width = defaultDropdownWidth(gtx, d.revs)
 			}
 			return lay
 		})

@@ -33,6 +33,7 @@ type WalletAndAccountSelector struct {
 	changed      bool
 
 	errorLabel cryptomaterial.Label
+	HideLogo   bool
 }
 
 type selectorModal struct {
@@ -78,7 +79,7 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 				ws.walletCallback(wallet)
 			}
 		}).
-		accountCliked(func(account *sharedW.Account) {
+		accountClicked(func(account *sharedW.Account) {
 			if ws.selectedAccount.Number != account.Number {
 				ws.changed = true
 			}
@@ -310,6 +311,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 }
 
 func (ws *WalletAndAccountSelector) setWalletLogo(gtx C) D {
+	if ws.HideLogo {
+		return D{}
+	}
 	walletIcon := CoinImageBySymbol(ws.Load, ws.selectedWallet.GetAssetType(),
 		ws.selectedWallet.IsWatchingOnlyWallet())
 	if walletIcon == nil {
@@ -397,25 +401,26 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 	sm.infoButton.Inset = layout.UniformInset(values.MarginPadding4)
 
 	sm.accountIsValid = func(*sharedW.Account) bool { return false }
-	wallets := sm.WL.AssetsManager.AllWallets()
 
-	if len(assetType) > 0 { // load specific wallet type
-		switch assetType[0] {
+	var wallets []sharedW.Asset
+	for _, asset := range assetType {
+		switch asset {
 		case utils.BTCWalletAsset:
-			wallets = sm.WL.AssetsManager.AllBTCWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllBTCWallets()...)
 		case utils.DCRWalletAsset:
-			wallets = sm.WL.AssetsManager.AllDCRWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllDCRWallets()...)
 		case utils.LTCWalletAsset:
-			wallets = sm.WL.AssetsManager.AllLTCWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllLTCWallets()...)
 		}
 	}
 
-	// only set selected wallet if there is atleast 1 wallet
-	if len(wallets) > 0 {
-		sm.selectedWallet = &load.WalletMapping{
-			Asset: wallets[0],
-		} // Set the default wallet to wallet loaded by cryptopower.
+	if len(wallets) == 0 {
+		wallets = sm.WL.AssetsManager.AllWallets()
 	}
+
+	sm.selectedWallet = &load.WalletMapping{
+		Asset: wallets[0],
+	} // Set the default wallet to wallet loaded by cryptopower.
 	sm.accountSelector = false
 
 	sm.Modal.ShowScrollbar(true)
@@ -432,17 +437,21 @@ func (sm *selectorModal) OnResume() {
 
 func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
-	wallets := sm.WL.AssetsManager.AllWallets()
 
-	if len(assetType) > 0 { // load specific wallet type
-		switch assetType[0] {
+	var wallets []sharedW.Asset
+	for _, asset := range assetType {
+		switch asset {
 		case utils.BTCWalletAsset:
-			wallets = sm.WL.AssetsManager.AllBTCWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllBTCWallets()...)
 		case utils.DCRWalletAsset:
-			wallets = sm.WL.AssetsManager.AllDCRWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllDCRWallets()...)
 		case utils.LTCWalletAsset:
-			wallets = sm.WL.AssetsManager.AllLTCWallets()
+			wallets = append(wallets, sm.WL.AssetsManager.AllLTCWallets()...)
 		}
+	}
+
+	if len(wallets) == 0 {
+		wallets = sm.WL.AssetsManager.AllWallets()
 	}
 
 	for _, wal := range wallets {
@@ -526,7 +535,7 @@ func (sm *selectorModal) walletClicked(callback func(*load.WalletMapping)) *sele
 	return sm
 }
 
-func (sm *selectorModal) accountCliked(callback func(*sharedW.Account)) *selectorModal {
+func (sm *selectorModal) accountClicked(callback func(*sharedW.Account)) *selectorModal {
 	sm.onAccountClicked = callback
 	return sm
 }
