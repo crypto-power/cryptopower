@@ -950,7 +950,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 									layout.Rigid(func(gtx C) D {
 										// No divider for last row
 										if row.Index == len(pg.transactions)-1 {
-											return layout.Dimensions{}
+											return D{}
 										}
 
 										gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -988,7 +988,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 								layout.Rigid(func(gtx C) D {
 									// No divider for last row
 									if row.Index == len(pg.stakes)-1 {
-										return layout.Dimensions{}
+										return D{}
 									}
 
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
