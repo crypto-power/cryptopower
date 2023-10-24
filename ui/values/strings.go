@@ -895,4 +895,5 @@ const (
 	StrInsufficientFundsInAccount      = "insufficientFundsInAccount"
 	StrBondStrengthErrMsg              = "bondStrengthErrMsg"
 	StrMinimumBondStrength             = "minimumBondStrength"
+	StrAssets                          = "assets"
 )

@@ -772,7 +772,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 									return layout.Inset{
 										Left: values.MarginPadding10,
 									}.Layout(gtx, func(gtx C) D {
-										return walletHightlighLabel(mp.Theme, gtx, values.String(values.StrWatchOnly))
+										return walletHightlighLabel(mp.Theme, gtx, values.TextSize16, values.String(values.StrWatchOnly))
 									})
 								}
 								return D{}
@@ -1020,16 +1020,19 @@ func (mp *MainPage) showBackupInfo() {
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
 }
 
-func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, content string) D {
-	indexLabel := theme.Label(values.TextSize16, content)
+func walletHightlighLabel(theme *cryptomaterial.Theme, gtx C, textSize unit.Sp, content string) D {
+	indexLabel := theme.Label(textSize, content)
 	indexLabel.Color = theme.Color.PageNavText
 	indexLabel.Font.Weight = font.Medium
 	return cryptomaterial.LinearLayout{
-		Width:      gtx.Dp(values.MarginPadding100),
+		Width:      cryptomaterial.WrapContent,
 		Height:     gtx.Dp(values.MarginPadding22),
 		Direction:  layout.Center,
 		Background: theme.Color.Gray8,
-		Margin:     layout.Inset{Right: values.MarginPadding8},
-		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
+		Padding: layout.Inset{
+			Left:  values.MarginPadding8,
+			Right: values.MarginPadding8},
+		Margin: layout.Inset{Right: values.MarginPadding8},
+		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(9), Color: theme.Color.Gray3, Width: values.MarginPadding1},
 	}.Layout2(gtx, indexLabel.Layout)
 }

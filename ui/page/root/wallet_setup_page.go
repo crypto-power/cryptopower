@@ -66,7 +66,7 @@ type CreateWallet struct {
 	isLoading  bool
 }
 
-func NewCreateWallet(l *load.Load) *CreateWallet {
+func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWallet {
 	pg := &CreateWallet{
 		GenericPageModal: app.NewGenericPageModal(CreateWalletID),
 		scrollContainer: &widget.List{
@@ -93,6 +93,9 @@ func NewCreateWallet(l *load.Load) *CreateWallet {
 		bg = l.Theme.Color.Background
 	}
 	pg.assetTypeSelector.SetBackground(bg)
+	if len(assetType) > 0 {
+		pg.assetTypeSelector.SetSelectedAssetType(assetType[0])
+	}
 
 	pg.walletName = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletName))
 	pg.walletName.Editor.SingleLine, pg.walletName.Editor.Submit = true, true
@@ -627,5 +630,11 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 }
 
 func (pg *CreateWallet) walletCreationSuccessCallback() {
-	pg.ParentNavigator().Display(NewHomePage(pg.Load))
+	// display the overview page if the user is creating a wallet
+	// for the first time (i.e coming from the onboarding page)
+	if len(pg.WL.AssetsManager.AllWallets()) == 1 {
+		pg.ParentNavigator().Display(NewHomePage(pg.Load))
+		return
+	}
+	pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
 }

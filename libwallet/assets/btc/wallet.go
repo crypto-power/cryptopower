@@ -516,3 +516,28 @@ func (asset *Asset) AccountXPubMatches(account uint32, xPub string) (bool, error
 
 	return acctXPubKey.AccountPubKey.String() == xPub, nil
 }
+
+// GetWalletBalance returns the total balance across all accounts.
+func (asset *Asset) GetWalletBalance() (*sharedW.Balance, error) {
+	if !asset.WalletOpened() {
+		return nil, utils.ErrBTCNotInitialized
+	}
+
+	accountsResult, err := asset.GetAccountsRaw()
+	if err != nil {
+		return nil, err
+	}
+
+	var totalBalance, totalSpendable, totalImmatureReward int64
+	for _, acc := range accountsResult.Accounts {
+		totalBalance += acc.Balance.Total.ToInt()
+		totalSpendable += acc.Balance.Spendable.ToInt()
+		totalImmatureReward += acc.Balance.ImmatureReward.ToInt()
+	}
+
+	return &sharedW.Balance{
+		Total:          Amount(totalBalance),
+		Spendable:      Amount(totalSpendable),
+		ImmatureReward: Amount(totalImmatureReward),
+	}, nil
+}

@@ -785,4 +785,5 @@ const EN = `
 "insufficientFundsInAccount" = "Insufficient funds in this account"
 "bondStrengthErrMsg" = "Bond Strength must be a valid number"
 "minimumBondStrength" = "Minimum Bond Strength is %d"
+"assets" = "Assets"
 `

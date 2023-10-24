@@ -60,6 +60,10 @@ func (t *Theme) Label(size unit.Sp, txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
 }
 
+func (t *Theme) Label2(size unit.Sp, txt string) Label {
+	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
+}
+
 func (t *Theme) labelWithDefaultColor(l Label) Label {
 	l.Color = t.Color.DeepBlue
 	return l

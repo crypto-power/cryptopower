@@ -49,6 +49,7 @@ type Color struct {
 	Gray6            color.NRGBA
 	Gray7            color.NRGBA
 	Gray8            color.NRGBA
+	LightGray        color.NRGBA
 	Green50          color.NRGBA
 	Green500         color.NRGBA
 	Orange           color.NRGBA
@@ -126,6 +127,7 @@ func (c *Color) DefaultThemeColors() *Color {
 		Gray6:            rgb(0xD8D8D8),
 		Gray7:            rgb(0x8997a5),
 		Gray8:            rgb(0xEDEFF1),
+		LightGray:        rgb(0xFBFCFC),
 		Green50:          rgb(0xE8F7EA),
 		Green500:         rgb(0x41BE53),
 		Orange:           rgb(0xD34A21),

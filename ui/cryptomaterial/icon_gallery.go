@@ -28,7 +28,7 @@ type Icons struct {
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -186,6 +186,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
 	i.Notification = NewImage(decredIcons["notification"])
+	i.Dot = NewImage(decredIcons["dot"])
 
 	/* Start exchange icons */
 	i.FlypMeIcon = NewImage(decredIcons["flypme"])
