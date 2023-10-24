@@ -966,7 +966,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					})
 				}),
 				layout.Flexed(.5, func(gtx C) D {
-					return pg.pageContentWrapper(gtx, values.StrStakingActivity, nil, func(gtx C) D {
+					return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 						if len(pg.stakes) == 0 {
 							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
