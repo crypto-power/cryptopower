@@ -550,7 +550,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 					return pg.semiBoldLabel(values.String(values.StrCurrentTier)).Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.viewOnlyCard(gtx, &pg.Theme.Color.Gray2, func(gtx C) D {
+					return pg.viewOnlyCard(&pg.Theme.Color.Gray2, func(gtx C) D {
 						return pg.Theme.Label(values.TextSize16, "0").Layout(gtx)
 					})(gtx)
 				}),
@@ -586,7 +586,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 							return layout.Inset{Top: u16, Left: u10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrNewTier)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(gtx, nil, func(gtx C) D {
+							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
 								return pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d", pg.newTier)).Layout(gtx)
 							}))
 						}),
@@ -602,7 +602,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 							return layout.Inset{Top: u16}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrCurrency)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return pg.viewOnlyCard(gtx, &pg.Theme.Color.Gray2, func(gtx C) D {
+							return pg.viewOnlyCard(&pg.Theme.Color.Gray2, func(gtx C) D {
 								icon, assetType := pg.bondAssetInfo()
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
@@ -625,7 +625,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 							return layout.Inset{Top: u16, Left: u10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrTotalCost)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(gtx, nil, func(gtx C) D {
+							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
 								return pg.bondAmountInfoDisplay(gtx)
 							}))
 						}),
@@ -647,7 +647,7 @@ func (pg *DEXOnboarding) semiBoldLabel(title string) cryptomaterial.Label {
 	return lb
 }
 
-func (pg *DEXOnboarding) viewOnlyCard(gtx C, bg *color.NRGBA, info func(gtx C) D) func(gtx C) D {
+func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(gtx C) D {
 	var cardBg color.NRGBA
 	if bg != nil {
 		cardBg = *bg
