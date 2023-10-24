@@ -57,8 +57,12 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 		s.items = items
 		s.isSliderItemsSet = true
 	}
-	s.handleClickEvent()
 
+	if len(s.items) == 0 {
+		return D{}
+	}
+
+	s.handleClickEvent()
 	gtx.Constraints.Max = s.items[s.selected](gtx).Size
 	return layout.Stack{Alignment: layout.S}.Layout(gtx,
 		layout.Expanded(s.items[s.selected]),
@@ -136,10 +140,6 @@ func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 
 func (s *Slider) containerLayout(gtx C, content layout.Widget) D {
 	return s.card.Layout(gtx, content)
-}
-
-func (s *Slider) centerLayout(gtx C, content layout.Widget) D {
-	return layout.Center.Layout(gtx, content)
 }
 
 func (s *Slider) RefreshItems() {
