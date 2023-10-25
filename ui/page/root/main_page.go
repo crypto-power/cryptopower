@@ -6,10 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	// "gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	// "gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -38,16 +36,6 @@ const (
 	MainPageID = "Main"
 )
 
-var pageTabs = []string{
-	values.String(values.StrInfo),
-	values.String(values.StrSend),
-	values.String(values.StrReceive),
-	values.String(values.StrTransactions),
-	values.String(values.StrStakeShuffle),
-	values.String(values.StrStaking),
-	values.String(values.StrSettings),
-}
-
 type MainPage struct {
 	*app.MasterPage
 
@@ -59,14 +47,16 @@ type MainPage struct {
 
 	ctx                    context.Context
 	ctxCancel              context.CancelFunc
-	tab                    *cryptomaterial.SegmentedControl
+	pageNavigationTab      *cryptomaterial.SegmentedControl
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
 	openWalletSelector     *cryptomaterial.Clickable
 	checkBox               cryptomaterial.CheckBoxStyle
 
 	// page state variables
-	totalBalance sharedW.AssetAmount
+	totalBalance   sharedW.AssetAmount
+	selectedWallet sharedW.Asset
+	assetType      libutils.AssetType
 
 	usdExchangeRate        float64
 	usdExchangeSet         bool
@@ -81,9 +71,12 @@ func NewMainPage(l *load.Load) *MainPage {
 	mp := &MainPage{
 		Load:       l,
 		MasterPage: app.NewMasterPage(MainPageID),
-		tab:        l.Theme.SegmentedControl(pageTabs),
 		checkBox:   l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
+
+	mp.selectedWallet = mp.WL.SelectedWallet.Wallet
+
+	mp.initTabOptions()
 
 	mp.hideBalanceButton = mp.Theme.NewClickable(false)
 	mp.openWalletSelector = mp.Theme.NewClickable(false)
@@ -106,6 +99,7 @@ func (mp *MainPage) ID() string {
 func (mp *MainPage) OnNavigatedTo() {
 	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
 
+	mp.assetType = mp.selectedWallet.GetAssetType()
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
 	mp.updateBalance()
@@ -115,11 +109,11 @@ func (mp *MainPage) OnNavigatedTo() {
 	// is required before updateExchangeSetting() returns.
 	mp.updateExchangeSetting()
 
-	backupLater := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
+	backupLater := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.SeedBackupNotificationConfigKey, false)
 	// reset the checkbox
 	mp.checkBox.CheckBox.Value = false
 
-	needBackup := mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != ""
+	needBackup := mp.selectedWallet.GetEncryptedSeed() != ""
 	if needBackup && !backupLater {
 		mp.showBackupInfo()
 	}
@@ -130,19 +124,39 @@ func (mp *MainPage) OnNavigatedTo() {
 
 	mp.listenForNotifications() // start sync notifications listening.
 
-	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
-	case libutils.DCRWalletAsset:
-		if mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isGovernanceAPIAllowed() {
+	if mp.assetType == libutils.DCRWalletAsset {
+		if mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isGovernanceAPIAllowed() {
 			if mp.WL.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
 			go mp.WL.AssetsManager.Politeia.Sync(mp.ctx)
 		}
-	case libutils.BTCWalletAsset:
-	case libutils.LTCWalletAsset:
 	}
 
 	mp.CurrentPage().OnNavigatedTo()
+}
+
+// initTabOptions initializes the page navigation tabs
+func (mp *MainPage) initTabOptions() {
+	commonTabs := []string{
+		values.String(values.StrInfo),
+		values.String(values.StrSend),
+		values.String(values.StrReceive),
+		values.String(values.StrTransactions),
+		values.String(values.StrSettings),
+	}
+
+	if mp.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
+		dcrSpecificTabs := []string{
+			values.String(values.StrStakeShuffle),
+			values.String(values.StrStaking),
+		}
+
+		// update the tab options with additional items at specific index
+		commonTabs = append(commonTabs[:4], append(dcrSpecificTabs, commonTabs[4:]...)...)
+	}
+
+	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs)
 }
 
 func (mp *MainPage) isGovernanceAPIAllowed() bool {
@@ -152,7 +166,6 @@ func (mp *MainPage) isGovernanceAPIAllowed() bool {
 func (mp *MainPage) updateExchangeSetting() {
 	mp.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(mp.WL) {
-		mp.currencyExchangeValue = mp.WL.AssetsManager.GetCurrencyConversionExchange()
 		go mp.fetchExchangeRate()
 	}
 }
@@ -164,7 +177,7 @@ func (mp *MainPage) fetchExchangeRate() {
 
 	mp.isFetchingExchangeRate = true
 	var market string
-	switch mp.WL.SelectedWallet.Wallet.GetAssetType() {
+	switch mp.assetType {
 	case libutils.DCRWalletAsset:
 		market = values.DCRUSDTMarket
 	case libutils.BTCWalletAsset:
@@ -172,7 +185,7 @@ func (mp *MainPage) fetchExchangeRate() {
 	case libutils.LTCWalletAsset:
 		market = values.LTCUSDTMarket
 	default:
-		log.Errorf("Unsupported asset type: %s", mp.WL.SelectedWallet.Wallet.GetAssetType())
+		log.Errorf("Unsupported asset type: %s", mp.assetType)
 		mp.isFetchingExchangeRate = false
 		return
 	}
@@ -238,13 +251,13 @@ func (mp *MainPage) HandleUserInteractions() {
 
 	displayPage := func(pg app.Page) {
 		// Load the current wallet balance on page reload.
-		// mp.updateBalance()
+		mp.updateBalance()
 		mp.Display(pg)
 	}
 
-	if mp.tab.Changed() {
+	if mp.pageNavigationTab.Changed() {
 		var pg app.Page
-		switch mp.tab.SelectedSegment() {
+		switch mp.pageNavigationTab.SelectedSegment() {
 		case values.String(values.StrSend):
 			pg = send.NewSendPage(mp.Load, false)
 		case values.String(values.StrReceive):
@@ -254,7 +267,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		case values.String(values.StrTransactions):
 			pg = transaction.NewTransactionsPage(mp.Load)
 		case values.String(values.StrStakeShuffle):
-			dcrUniqueImpl := mp.WL.SelectedWallet.Wallet.(*dcr.Asset)
+			dcrUniqueImpl := mp.selectedWallet.(*dcr.Asset)
 			if dcrUniqueImpl != nil {
 				if !dcrUniqueImpl.AccountMixerConfigIsSet() {
 					pg = privacy.NewSetupPrivacyPage(mp.Load)
@@ -273,7 +286,7 @@ func (mp *MainPage) HandleUserInteractions() {
 
 	for mp.hideBalanceButton.Clicked() {
 		mp.isBalanceHidden = !mp.isBalanceHidden
-		mp.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, mp.isBalanceHidden)
+		mp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, mp.isBalanceHidden)
 	}
 }
 
@@ -317,8 +330,8 @@ func (mp *MainPage) OnNavigatedFrom() {
 	// The encrypted seed exists by default and is cleared after wallet is backed up.
 	// Activate the modal requesting the user to backup their current wallet on
 	// every wallet open request until the encrypted seed is cleared (backup happens).
-	if mp.WL.SelectedWallet.Wallet.GetEncryptedSeed() != "" {
-		mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
+	if mp.selectedWallet.GetEncryptedSeed() != "" {
+		mp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
 	mp.ctxCancel()
@@ -351,7 +364,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							Width:       cryptomaterial.MatchParent,
 							Height:      cryptomaterial.WrapContent,
 							Orientation: layout.Vertical,
-							Direction:   layout.Center,
+							Alignment:   layout.Middle,
 						}.Layout(gtx,
 							layout.Rigid(mp.pageTabLayout),
 							layout.Rigid(func(gtx C) D {
@@ -362,7 +375,7 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 								case ReceivePageID, send.SendPageID, staking.OverviewPageID,
 									transaction.TransactionsPageID, privacy.AccountMixerPageID:
 									// Disable page functionality if a page is not synced or rescanning is in progress.
-									if !mp.WL.SelectedWallet.Wallet.IsSynced() || mp.WL.SelectedWallet.Wallet.IsRescanning() {
+									if !mp.selectedWallet.IsSynced() || mp.selectedWallet.IsRescanning() {
 										return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
 											values.String(values.StrFunctionUnavailable), nil)
 									}
@@ -380,11 +393,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 }
 
 func (mp *MainPage) LayoutTopBar(gtx C) D {
-	assetType := mp.WL.SelectedWallet.Wallet.GetAssetType()
+	assetType := mp.assetType
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
-		Background:  mp.Theme.Color.White,
 		Orientation: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -403,7 +415,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 				},
 			}.GradientLayout(gtx, assetType,
 				layout.Rigid(func(gtx C) D {
-					return D{}
+					isWatchOnlyWallet := mp.selectedWallet.IsWatchingOnlyWallet()
 					return layout.W.Layout(gtx, func(gtx C) D {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
@@ -416,25 +428,24 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 								return layout.Inset{
 									Left:  values.MarginPadding12,
 									Right: values.MarginPadding12,
-								}.Layout(gtx, mp.Theme.Icons.ChevronLeft.Layout12dp)
+								}.Layout(gtx, mp.Theme.Icons.ChevronLeft.Layout24dp)
 							}),
 							layout.Rigid(func(gtx C) D {
-								image := components.CoinImageBySymbol(mp.Load, assetType,
-									mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
+								image := components.CoinImageBySymbol(mp.Load, assetType, isWatchOnlyWallet)
 								if image != nil {
 									return image.Layout24dp(gtx)
 								}
 								return D{}
 							}),
 							layout.Rigid(func(gtx C) D {
-								lbl := mp.Theme.H6(mp.WL.SelectedWallet.Wallet.GetWalletName())
+								lbl := mp.Theme.H6(mp.selectedWallet.GetWalletName())
 								lbl.Color = mp.Theme.Color.PageNavText
 								return layout.Inset{
 									Left: values.MarginPadding10,
 								}.Layout(gtx, lbl.Layout)
 							}),
 							layout.Rigid(func(gtx C) D {
-								if mp.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+								if isWatchOnlyWallet {
 									return layout.Inset{
 										Left: values.MarginPadding10,
 									}.Layout(gtx, func(gtx C) D {
@@ -462,9 +473,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 									return mp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
 								})
 							}),
-							layout.Rigid(func(gtx C) D {
-								return mp.totalAssetBalance(gtx)
-							}),
+							layout.Rigid(mp.totalAssetBalance),
 							layout.Rigid(func(gtx C) D {
 								if !mp.isBalanceHidden {
 									return mp.LayoutUSDBalance(gtx)
@@ -484,7 +493,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 }
 
 func (mp *MainPage) pageTabLayout(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, mp.tab.TransparentLayout)
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, mp.pageNavigationTab.TransparentLayout)
 }
 
 func (mp *MainPage) LayoutUSDBalance(gtx C) D {
@@ -537,7 +546,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 	var notification string
 	switch t := notifier.(type) {
 	case wallet.NewTransaction:
-		wal := mp.WL.SelectedWallet.Wallet
+		wal := mp.selectedWallet
 		switch t.Transaction.Type {
 		case dcr.TxTypeRegular:
 			if t.Transaction.Direction != dcr.TxDirectionReceived {
@@ -566,7 +575,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 
 		initializeBeepNotification(notification)
 	case wallet.Proposal:
-		proposalNotification := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
+		proposalNotification := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
 			!mp.WL.AssetsManager.IsPrivacyModeOn()
 		if !proposalNotification {
 			return
@@ -613,17 +622,15 @@ func (mp *MainPage) listenForNotifications() {
 		return
 	}
 
-	selectedWallet := mp.WL.SelectedWallet.Wallet
-
 	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := mp.selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
 	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	err = mp.selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -660,7 +667,7 @@ func (mp *MainPage) listenForNotifications() {
 					}
 					mp.ParentWindow().Reload()
 				case listeners.BlockAttached:
-					beep := mp.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
+					beep := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
 					if beep {
 						err := beeep.Beep(5, 1)
 						if err != nil {
@@ -691,8 +698,8 @@ func (mp *MainPage) listenForNotifications() {
 					mp.ParentWindow().Reload()
 				}
 			case <-mp.ctx.Done():
-				selectedWallet.RemoveSyncProgressListener(MainPageID)
-				selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
+				mp.selectedWallet.RemoveSyncProgressListener(MainPageID)
+				mp.selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
 				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
 				mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
 
@@ -720,18 +727,16 @@ func (mp *MainPage) showBackupInfo() {
 		CheckBox(mp.checkBox, true).
 		SetNegativeButtonText(values.String(values.StrBackupLater)).
 		SetNegativeButtonCallback(func() {
-			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+			mp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
 		}).
 		PositiveButtonStyle(mp.Load.Theme.Color.Primary, mp.Load.Theme.Color.InvText).
 		SetPositiveButtonText(values.String(values.StrBackupNow)).
 		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
-			mp.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
-			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.WL.SelectedWallet.Wallet, redirect))
+			mp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, true)
+			mp.ParentNavigator().Display(seedbackup.NewBackupInstructionsPage(mp.Load, mp.selectedWallet, func(load *load.Load, navigator app.WindowNavigator) {
+				navigator.ClosePagesAfter(mp.ParentWindow().CurrentPageID())
+			}))
 			return true
 		})
 	mp.ParentWindow().ShowModal(backupNowOrLaterModal)
-}
-
-func redirect(l *load.Load, pg app.WindowNavigator) {
-	pg.Display(NewWalletSelectorPage(l))
 }

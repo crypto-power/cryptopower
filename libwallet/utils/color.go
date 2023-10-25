@@ -36,9 +36,9 @@ func GradientColorSchemes() map[AssetType]GradientColorScheme {
 			Blend2: 65.88,                                       // 65.88 %
 		},
 		DCRWalletAsset: {
-			Color1: ColorScheme{R: 45, G: 216, B: 163, O: 100}, // rgba(41, 112, 255, 0.3)
+			Color1: ColorScheme{R: 45, G: 216, B: 163, O: 100}, // rgba(45, 216, 163, 1)
 			Blend1: 34.76,                                      // 34.76%
-			Color2: ColorScheme{R: 33, G: 89, B: 204, O: 100},  // rgba(45, 216, 163, 0.3)
+			Color2: ColorScheme{R: 33, G: 89, B: 204, O: 100},  // rgba(33, 89, 204, 1)
 			Blend2: 65.88,                                      // 65.88 %
 		},
 		LTCWalletAsset: {
