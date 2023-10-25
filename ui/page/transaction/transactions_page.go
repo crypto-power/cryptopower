@@ -59,8 +59,10 @@ type TransactionsPage struct {
 
 	sourceWalletSelector *components.WalletAndAccountSelector
 	assetWallets         []sharedW.Asset
-	isHomepageLayout     bool
-	showAssetType        bool
+
+	isHomepageLayout,
+	showAssetType,
+	showLoader bool
 }
 
 func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage {
@@ -83,6 +85,16 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 			Asset: l.WL.SelectedWallet.Wallet,
 		}
 	}
+
+	items := []cryptomaterial.DropDownItem{}
+	_, keysinfo := components.TxPageDropDownFields(pg.selectedWallet.GetAssetType(), pg.selectedTabIndex)
+	for _, name := range keysinfo {
+		item := cryptomaterial.DropDownItem{}
+		item.Text = name
+		items = append(items, item)
+	}
+
+	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.loadTransactions)
 
@@ -126,6 +138,7 @@ func (pg *TransactionsPage) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet
+		go pg.refreshAvailableTxType()
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	})
 }
@@ -141,17 +154,8 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
+	pg.showLoader = true
 	wal := pg.selectedWallet
-	items := []cryptomaterial.DropDownItem{}
-	_, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
-	for _, name := range keysinfo {
-		item := cryptomaterial.DropDownItem{}
-		item.Text = name
-		items = append(items, item)
-	}
-
-	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
-
 	go func() {
 		countfn := func(fType int32) int {
 			count, _ := wal.CountTransactions(fType)
@@ -172,6 +176,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 		}
 		pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 		pg.ParentWindow().Reload()
+		pg.showLoader = false
 	}()
 }
 
