@@ -214,9 +214,14 @@ func (hp *HomePage) HandleUserInteractions() {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
 			case values.StrSend:
-				if hp.WL.SelectedWallet == nil {
-					hp.showWarningNoWallet()
-					return
+				allWallets := hp.WL.AssetsManager.AllWallets()
+				if len(allWallets) == 1 {
+					if allWallets[0].IsWatchingOnlyWallet() {
+						if hp.WL.SelectedWallet == nil {
+							hp.showWarningNoWallet()
+							return
+						}
+					}
 				}
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, true))
 			}
