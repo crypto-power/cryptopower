@@ -326,22 +326,14 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 					Alignment: layout.End,
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize16, item.TotalBalance.String())
-						txt.Color = pg.Theme.Color.Text
-						txt.Font.Weight = font.SemiBold
-						return txt.Layout(gtx)
+						return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.TotalBalance.String())
 					}),
 					layout.Rigid(func(gtx C) D {
+						usdBalance := ""
 						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							usdBalance := utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
-							txt := pg.Theme.Label(values.TextSize16, usdBalance)
-							txt.Color = pg.Theme.Color.Text
-							return txt.Layout(gtx)
+							usdBalance = utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
 						}
-
-						txt := pg.Theme.Label(values.TextSize16, "$--")
-						txt.Color = pg.Theme.Color.Text
-						return txt.Layout(gtx)
+						return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
 					}),
 				)
 			})

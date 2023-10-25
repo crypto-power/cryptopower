@@ -391,7 +391,7 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 						}),
 						layout.Rigid(func(gtx C) D {
 							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-								return components.LayoutBalanceColor(gtx, pg.Load, item.totalBalance.String(), col)
+								return components.LayoutBalanceColorWithState(gtx, pg.Load, item.totalBalance.String(), col)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
@@ -406,9 +406,7 @@ func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layo
 										Right:  values.MarginPadding8,
 										Left:   values.MarginPadding8,
 									}.Layout(gtx, func(gtx C) D {
-										lbl := pg.Theme.Body2(item.totalBalanceUSD)
-										lbl.Color = col
-										return lbl.Layout(gtx)
+										return components.LayoutBalanceColorWithStateUSD(gtx, pg.Load, item.totalBalanceUSD, col)
 									})
 								})
 							})

@@ -339,21 +339,14 @@ func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetTyp
 									txt.Font.Weight = font.SemiBold
 									return txt.Layout(gtx)
 								}
-								txt := pg.Theme.Label(values.TextSize16, pg.assetsBalance[asset].String())
-								txt.Color = pg.Theme.Color.Text
-								txt.Font.Weight = font.SemiBold
-								return txt.Layout(gtx)
+								return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, pg.assetsBalance[asset].String())
 							}),
 							layout.Rigid(func(gtx C) D {
+								usdBalance := ""
 								if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-									txt := pg.Theme.Label(values.TextSize16, utils.FormatAsUSDString(pg.Printer, pg.assetsTotalUSDBalance[asset]))
-									txt.Color = pg.Theme.Color.Text
-									return txt.Layout(gtx)
+									usdBalance = utils.FormatAsUSDString(pg.Printer, pg.assetsTotalUSDBalance[asset])
 								}
-
-								txt := pg.Theme.Label(values.TextSize16, "$ --")
-								txt.Color = pg.Theme.Color.Text
-								return txt.Layout(gtx)
+								return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
 							}),
 						)
 					}),

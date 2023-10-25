@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -20,7 +21,7 @@ var (
 	noDecimal                 = regexp.MustCompile(`([0-9]{1,3},*)+`)
 )
 
-func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, displayUnitText bool) D {
+func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, displayUnitText bool) D {
 
 	startIndex := 0
 	stopIndex := 0
@@ -66,6 +67,31 @@ func formatBalance(gtx layout.Context, l *load.Load, amount string, mainTextSize
 	)
 }
 
+func formatBalanceWithHiden(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, textFont font.Weight, col color.NRGBA, isUSD bool) D {
+	isBalanceHidden := l.WL.AssetsManager.IsTotalBalanceVisible()
+	txt := l.Theme.Label(mainTextSize, amount)
+	if isUSD {
+		if !IsFetchExchangeRateAPIAllowed(l.WL) {
+			txt.Text = "$ --"
+		}
+	}
+	if isBalanceHidden {
+		unit := ""
+		if !isUSD {
+			stopIndex := getIndexUnit(amount)
+			isUnitExist := stopIndex == -1
+			if isUnitExist {
+				stopIndex = len(amount)
+			}
+			unit = amount[stopIndex:]
+		}
+		txt.Text = "****** " + unit
+	}
+	txt.Color = col
+	txt.Font.Weight = textFont
+	return txt.Layout(gtx)
+}
+
 // getIndexUnit returns index of unit currency in amount and
 // helps to break out the unit part from the amount string.
 func getIndexUnit(amount string) int {
@@ -104,4 +130,24 @@ func LayoutBalanceSizeScale(gtx layout.Context, l *load.Load, amount string, mai
 
 func LayoutBalanceColor(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
 	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, color, false)
+}
+
+func LayoutBalanceWithState(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
+	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, false)
+}
+
+func LayoutBalanceColorWithState(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
+	return formatBalanceWithHiden(gtx, l, amount, values.TextSize20, font.Normal, color, false)
+}
+
+func LayoutBalanceWithStateSemiBold(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
+	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.SemiBold, l.Theme.Color.Text, false)
+}
+
+func LayoutBalanceWithStateUSD(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
+	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, true)
+}
+
+func LayoutBalanceColorWithStateUSD(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
+	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, color, true)
 }
