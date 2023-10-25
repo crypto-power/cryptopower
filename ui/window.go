@@ -282,6 +282,9 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 		if modal := win.navigator.TopModal(); modal != nil {
 			gtx = gtx.Disabled()
 		}
+		if win.navigator.CurrentPage() == nil {
+			win.navigator.Display(page.NewStartPage(win.load))
+		}
 		return win.navigator.CurrentPage().Layout(gtx)
 	})
 
