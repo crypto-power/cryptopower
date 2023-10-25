@@ -231,19 +231,29 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 }
 
 // transactionRow is a single transaction row on the transactions and overview page. It lays out a transaction's
-// direction, balance, status.
-func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) layout.Dimensions {
+// direction, balance, status. isTxPage determines if the transaction should be drawn using the transactions page layout.
+func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, isTxPage bool) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
 	wal := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
+	amount := wal.ToAmount(row.Transaction.Amount).String()
+	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
+	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
+
+	insetLeft := values.MarginPadding16
+	insetRight := values.MarginPadding16
+
+	if !isTxPage {
+		insetLeft = values.MarginPadding8
+		insetRight = values.MarginPadding8
+	}
 
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
 		Width:       cryptomaterial.MatchParent,
 		Height:      gtx.Dp(values.MarginPadding56),
 		Alignment:   layout.Middle,
-		Padding:     layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16},
+		Padding:     layout.Inset{Right: insetRight, Left: insetLeft},
 	}.Layout(gtx,
 		layout.Rigid(txStatus.Icon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
@@ -251,7 +261,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				Width:       cryptomaterial.WrapContent,
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
-				Padding:     layout.Inset{Left: values.MarginPadding16},
+				Padding:     layout.Inset{Left: insetLeft},
 				Direction:   layout.Center,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -263,10 +273,33 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 						return LayoutBalanceSize(gtx, l, amount, values.TextSize18)
 					}
 
-					return l.Theme.Label(values.TextSize18, txStatus.Title).Layout(gtx)
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Direction:   layout.W,
+						Alignment:   layout.Baseline,
+					}.Layout(gtx,
+						layout.Rigid(l.Theme.Label(values.TextSize18, txStatus.Title).Layout),
+						layout.Rigid(func(gtx C) D {
+							if isTxPage {
+								return D{}
+							}
+							return layout.E.Layout(gtx, func(gtx C) D {
+								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, assetIcon.Layout12dp)
+									}),
+									layout.Rigid(func(gtx C) D {
+										return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
+									}),
+								)
+							})
+						}),
+					)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if row.Transaction.Type == txhelper.TxTypeMixed {
+					if !isTxPage && row.Transaction.Type == txhelper.TxTypeRegular {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
 							Height:      cryptomaterial.WrapContent,
@@ -274,34 +307,102 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 							Direction:   layout.W,
 							Alignment:   layout.Middle,
 						}.Layout(gtx,
+							layout.Rigid(assetIcon.Layout12dp),
 							layout.Rigid(func(gtx C) D {
-								// mix denomination
-								mixedDenom := wal.ToAmount(row.Transaction.MixDenomination).String()
-								txt := l.Theme.Label(values.TextSize12, mixedDenom)
-								txt.Color = l.Theme.Color.GrayText2
-								return txt.Layout(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								// Mixed outputs count
-								if row.Transaction.Type == txhelper.TxTypeMixed && row.Transaction.MixCount > 1 {
-									label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
-									label.Color = l.Theme.Color.GrayText2
-									return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
-								}
-								return D{}
+								return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, walName.Layout)
 							}),
 						)
 					}
-					return D{}
+
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.WrapContent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Horizontal,
+						Alignment:   layout.Middle,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							if isTxPage {
+								return D{}
+							}
+							if row.Transaction.Type == txhelper.TxTypeMixed {
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.WrapContent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: layout.Horizontal,
+									Direction:   layout.W,
+									Alignment:   layout.Middle,
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										// mix denomination
+										mixedDenom := wal.ToAmount(row.Transaction.MixDenomination).String()
+										txt := l.Theme.Label(values.TextSize12, mixedDenom)
+										txt.Color = l.Theme.Color.GrayText2
+										return txt.Layout(gtx)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// Mixed outputs count
+										if row.Transaction.MixCount > 1 {
+											label := l.Theme.Label(values.TextSize12, fmt.Sprintf("x%d", row.Transaction.MixCount))
+											label.Color = l.Theme.Color.GrayText2
+											return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, label.Layout)
+										}
+										return D{}
+									}),
+								)
+							}
+
+							if isTxPage {
+								return D{}
+							}
+
+							walBalTxt := l.Theme.Label(values.TextSize12, amount)
+							walBalTxt.Color = l.Theme.Color.GrayText2
+							return walBalTxt.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							if dcrAsset, ok := wal.(*dcr.Asset); ok && !isTxPage {
+								if ok, _ := dcrAsset.TicketHasVotedOrRevoked(row.Transaction.Hash); ok {
+									return layout.Inset{
+										Left: values.MarginPadding4,
+									}.Layout(gtx, func(gtx C) D {
+										ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+										ic.Color = l.Theme.Color.GrayText2
+										return ic.Layout(gtx, values.MarginPadding6)
+									})
+								}
+							}
+							return D{}
+						}),
+						layout.Rigid(func(gtx C) D {
+							var ticketSpender *sharedW.Transaction
+							if dcrAsset, ok := wal.(*dcr.Asset); ok {
+								ticketSpender, _ = dcrAsset.TicketSpender(row.Transaction.Hash)
+							}
+
+							if ticketSpender == nil || isTxPage {
+								return D{}
+							}
+							amnt := wal.ToAmount(ticketSpender.VoteReward).ToCoin()
+							txt := fmt.Sprintf("%.2f", amnt)
+							if amnt > 0 {
+								txt = fmt.Sprintf("+%.2f", amnt)
+							}
+							return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, l.Theme.Label(values.TextSize12, txt).Layout)
+						}),
+					)
 				}),
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			status := l.Theme.Label(values.TextSize16, values.String(values.StrUnknown))
+			txSize := values.TextSize16
+			if !isTxPage {
+				txSize = values.TextSize12
+			}
+			status := l.Theme.Label(txSize, values.String(values.StrUnknown))
 			txConfirmations := TxConfirmations(l, row.Transaction)
-			reqConf := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID).RequiredConfirmations()
+			reqConf := wal.RequiredConfirmations()
 			if txConfirmations < 1 {
-				status = l.Theme.Label(values.TextSize16, values.String(values.StrUnconfirmedTx))
+				status = l.Theme.Label(txSize, values.String(values.StrUnconfirmedTx))
 				status.Color = l.Theme.Color.GrayText1
 			} else if txConfirmations >= reqConf {
 				status.Color = l.Theme.Color.GrayText2
@@ -309,14 +410,15 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 				timeSplit := time.Unix(row.Transaction.Timestamp, 0).Format("03:04:05 PM")
 				status.Text = fmt.Sprintf("%v at %v", date, timeSplit)
 			} else {
-				status = l.Theme.Label(values.TextSize16, values.StringF(values.StrTxStatusPending, txConfirmations, reqConf))
+				status = l.Theme.Label(txSize, values.StringF(values.StrTxStatusPending, txConfirmations, reqConf))
 				status.Color = l.Theme.Color.GrayText1
 			}
 
 			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
+				return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if row.Transaction.Type == txhelper.TxTypeVote || row.Transaction.Type == txhelper.TxTypeRevocation {
+						voteOrRevocationTx := row.Transaction.Type == txhelper.TxTypeVote || row.Transaction.Type == txhelper.TxTypeRevocation
+						if isTxPage && voteOrRevocationTx {
 							title := values.String(values.StrRevoke)
 							if row.Transaction.Type == txhelper.TxTypeVote {
 								title = values.String(values.StrVote)
@@ -343,22 +445,76 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow) 
 
 						return D{}
 					}),
-					layout.Rigid(status.Layout),
 					layout.Rigid(func(gtx C) D {
+						if !isTxPage {
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.MatchParent,
+								Orientation: layout.Vertical,
+								Alignment:   layout.End,
+								Direction:   layout.Center,
+							}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									tx := &row.Transaction
+									if wal.TxMatchesFilter(tx, libutils.TxFilterStaking) {
+										durationPrefix := values.String(values.StrVoted)
+										if tx.Type == txhelper.TxTypeTicketPurchase {
+											if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
+												durationPrefix = values.String(values.StrUmined)
+											} else if wal.TxMatchesFilter(tx, libutils.TxFilterImmature) {
+												durationPrefix = values.String(values.StrImmature)
+											} else if wal.TxMatchesFilter(tx, libutils.TxFilterLive) {
+												durationPrefix = values.String(values.StrLive)
+											} else if wal.TxMatchesFilter(tx, libutils.TxFilterExpired) {
+												durationPrefix = values.String(values.StrExpired)
+											}
+										} else if tx.Type == txhelper.TxTypeRevocation {
+											durationPrefix = values.String(values.StrRevoked)
+										}
+
+										durationTxt := TimeAgo(row.Transaction.Timestamp)
+										durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
+										return l.Theme.Label(values.TextSize12, durationTxt).Layout(gtx)
+									}
+									return D{}
+								}),
+								layout.Rigid(status.Layout),
+							)
+						}
+						return D{}
+					}),
+					layout.Rigid(func(gtx C) D {
+						if isTxPage {
+							return status.Layout(gtx)
+						}
+						return D{}
+					}),
+					layout.Rigid(func(gtx C) D {
+						isMixedOrRegular := row.Transaction.Type == txhelper.TxTypeMixed || row.Transaction.Type == txhelper.TxTypeRegular
+						if !isTxPage && !isMixedOrRegular {
+							return D{}
+						}
 						statusIcon := l.Theme.Icons.ConfirmIcon
-						if TxConfirmations(l, row.Transaction) < l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if TxConfirmations(l, row.Transaction) < wal.RequiredConfirmations() {
 							statusIcon = l.Theme.Icons.PendingIcon
 						}
 
+						if isTxPage {
+							return layout.Inset{
+								Left: values.MarginPadding15,
+								Top:  values.MarginPadding5,
+							}.Layout(gtx, statusIcon.Layout12dp)
+						}
+
 						return layout.Inset{
-							Left: values.MarginPadding15,
-							Top:  values.MarginPadding5,
+							Left: values.MarginPadding2,
 						}.Layout(gtx, statusIcon.Layout12dp)
 					}),
 				)
 			})
 		}),
 	)
+
 }
 
 func TxConfirmations(l *load.Load, transaction sharedW.Transaction) int32 {

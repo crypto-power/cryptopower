@@ -48,6 +48,8 @@ type OverviewPage struct {
 	mobileMarketOverviewList layout.List
 	recentProposalList       layout.List
 	recentTradeList          layout.List
+	recentTransactions       layout.List
+	recentStakes             layout.List
 
 	scrollContainer               *widget.List
 	mobileMarketOverviewContainer *widget.List
@@ -57,6 +59,8 @@ type OverviewPage struct {
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
+	transactions              []sharedW.Transaction
+	stakes                    []sharedW.Transaction
 	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
@@ -152,6 +156,15 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 				image:     l.Theme.Icons.LTC,
 			},
 		},
+		recentTransactions: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+		recentStakes: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+
 		assetBalanceSlider: l.Theme.Slider(),
 		card:               l.Theme.Card(),
 		sliderRedirectBtn:  l.Theme.NewClickable(false),
@@ -169,6 +182,9 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 	pg.forwardButton.Size = values.MarginPadding20
 
 	pg.assetsTotalBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
+
+	pg.stakes = make([]sharedW.Transaction, 0)
+	pg.transactions = make([]sharedW.Transaction, 0)
 
 	return pg
 }
@@ -189,6 +205,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 
 	pg.updateAssetsSliders()
 	go pg.updateAssetsUSDBalance()
+	go pg.loadTransactions()
 
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
@@ -912,20 +929,75 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(.5, func(gtx C) D {
 					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
-							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return pg.Theme.Body1("No recent transaction").Layout(gtx)
+						return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
+							if len(pg.transactions) == 0 {
+								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
+								})
+							}
+
+							return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
+								row := components.TransactionRow{
+									Transaction: pg.transactions[index],
+									Index:       index,
+								}
+
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return components.LayoutTransactionRow(gtx, pg.Load, row, false)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// No divider for last row
+										if row.Index == len(pg.transactions)-1 {
+											return D{}
+										}
+
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										separator := pg.Theme.Separator()
+										return layout.E.Layout(gtx, func(gtx C) D {
+											// Show bottom divider for all rows except last
+											return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+										})
+									}),
+								)
 							})
 						})
 					})
 				}),
 				layout.Flexed(.5, func(gtx C) D {
-					return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
-						return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
+						if len(pg.stakes) == 0 {
+							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return pg.Theme.Body1(values.StrNoStaking).Layout(gtx)
+							})
+						}
 
-							return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
+							row := components.TransactionRow{
+								Transaction: pg.stakes[index],
+								Index:       index,
+							}
+
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return components.LayoutTransactionRow(gtx, pg.Load, row, false)
+								}),
+								layout.Rigid(func(gtx C) D {
+									// No divider for last row
+									if row.Index == len(pg.stakes)-1 {
+										return D{}
+									}
+
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									separator := pg.Theme.Separator()
+									return layout.E.Layout(gtx, func(gtx C) D {
+										// Show bottom divider for all rows except last
+										return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+									})
+								}),
+							)
 						})
 					})
 				}),
@@ -1273,5 +1345,53 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 				})
 			}),
 		)
+	}
+}
+
+func (pg *OverviewPage) loadTransactions() {
+	pg.transactions = make([]sharedW.Transaction, 0)
+	wal := pg.WL.AllSortedWalletList()
+	for _, w := range wal {
+		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
+		if err != nil {
+			log.Errorf("error loading transactions: %v", err)
+			return
+		}
+
+		pg.transactions = append(pg.transactions, txs...)
+	}
+
+	sort.Slice(pg.transactions, func(i, j int) bool {
+		return pg.transactions[i].Timestamp > pg.transactions[j].Timestamp
+	})
+
+	if len(pg.transactions) > 3 {
+		pg.transactions = pg.transactions[:3]
+	}
+
+	pg.loadStakes()
+}
+
+func (pg *OverviewPage) loadStakes() {
+	wal := pg.WL.AssetsManager.AllDCRWallets()
+	for _, w := range wal {
+		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
+		if err != nil {
+			log.Errorf("error loading staking activities: %v", err)
+			return
+		}
+		for _, stakeTx := range txs {
+			if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
+				pg.stakes = append(pg.stakes, stakeTx)
+			}
+		}
+	}
+
+	sort.Slice(pg.stakes, func(i, j int) bool {
+		return pg.stakes[i].Timestamp > pg.stakes[j].Timestamp
+	})
+
+	if len(pg.stakes) > 3 {
+		pg.stakes = pg.stakes[:3]
 	}
 }

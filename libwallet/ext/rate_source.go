@@ -608,7 +608,7 @@ func (cs *CommonRateSource) GetTicker(market string) *Ticker {
 	return &t
 }
 
-// Used to initialize the embedding rate source.
+// Used to initialize a rate source.
 func NewCommonRateSource(ctx context.Context, source string) (*CommonRateSource, error) {
 	if source != binance && source != bittrex && source != none {
 		return nil, fmt.Errorf("New rate source %s is not supported", source)
