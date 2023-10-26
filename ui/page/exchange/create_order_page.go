@@ -1161,17 +1161,25 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 		sourceAccount = exchangeConfig.SourceAccountNumber
 		destinationAccount = exchangeConfig.DestinationAccountNumber
-	} else {
+	}
+
+	noSourceWallet := sourceWallet == nil || sourceWallet.Asset == nil
+	noDestinationWallet := destinationWallet == nil || destinationWallet.Asset == nil
+	if noSourceWallet || noDestinationWallet {
 		// New exchange configuration will be generated using the set asset
 		// types since none existed before. It two distinct asset type wallet
 		// don't exist execution does get here.
 		wallets := pg.WL.AssetsManager.AllWallets()
-		pg.fromCurrency = wallets[0].GetAssetType()
+		if noSourceWallet {
+			pg.fromCurrency = wallets[0].GetAssetType()
+		}
 
-		for _, w := range wallets {
-			if w.GetAssetType() != pg.fromCurrency {
-				pg.toCurrency = w.GetAssetType()
-				break
+		if noDestinationWallet {
+			for _, w := range wallets {
+				if w.GetAssetType() != pg.fromCurrency {
+					pg.toCurrency = w.GetAssetType()
+					break
+				}
 			}
 		}
 	}
@@ -1180,7 +1188,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.fromCurrency).
 		Title(values.String(values.StrSource))
 
-	if sourceWallet == nil {
+	if noSourceWallet {
 		isConfigUpdateRequired = true
 		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
 		sourceWallet = pg.sourceWalletSelector.SelectedWallet()
@@ -1216,7 +1224,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.toCurrency).
 		Title(values.String(values.StrDestination))
 
-	if destinationWallet == nil {
+	if noDestinationWallet {
 		isConfigUpdateRequired = true
 		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
 		destinationWallet = pg.destinationWalletSelector.SelectedWallet()
