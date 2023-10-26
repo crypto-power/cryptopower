@@ -174,7 +174,6 @@ func (sp *startPage) HandleUserInteractions() {
 	if sp.addWalletButton.Clicked() {
 		sp.ParentNavigator().Display(components.NewCreateWallet(sp.Load, func() {
 			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
-			return
 		}))
 	}
 
