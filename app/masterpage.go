@@ -1,7 +1,5 @@
 package app
 
-import "fmt"
-
 // MasterPage is a page that can display subpages. It is an extension of the
 // GenericPageModal which provides access to the Window or PageNavigator that
 // was used to display the MasterPage. The ParentNavigator of a MasterPage is
@@ -87,8 +85,6 @@ func (masterPage *MasterPage) ClearStackAndDisplay(newPage Page) {
 // CloseAllPages dismisses all pages in the stack.
 // Part of the PageNavigator interface.
 func (masterPage *MasterPage) CloseAllPages() {
-	fmt.Println("------CloseAllPages---111----")
 	masterPage.subPages.Reset()
-	fmt.Println("------CloseAllPages---2222----")
 	masterPage.ParentWindow().Reload()
 }
