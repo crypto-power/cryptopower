@@ -215,13 +215,15 @@ func (hp *HomePage) HandleUserInteractions() {
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
 			case values.StrSend:
 				allWallets := hp.WL.AssetsManager.AllWallets()
-				if len(allWallets) == 1 {
-					if allWallets[0].IsWatchingOnlyWallet() {
-						if hp.WL.SelectedWallet == nil {
-							hp.showWarningNoWallet()
-							return
-						}
+				isSendAvailable := false
+				for _, wallet := range allWallets {
+					if !wallet.IsWatchingOnlyWallet() {
+						isSendAvailable = true
 					}
+				}
+				if !isSendAvailable {
+					hp.showWarningNoWallet()
+					return
 				}
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, true))
 			}
