@@ -184,7 +184,7 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 			}
 
 			dropdownItemWidth -= gtx.Dp(values.MarginPadding24) // account for the dropdown Icon
-			return item.Icon.Layout24dp(gtx)
+			return item.Icon.Layout20dp(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.X = dropdownItemWidth - gtx.Dp(values.MarginPadding50) // give some space for the dropdown Icon
