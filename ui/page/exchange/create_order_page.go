@@ -209,13 +209,47 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 }
 
 func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) bool {
-	ok := pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
+	asset, ok := pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
 	if !ok {
+		isSourceWallet := len(selectedFromAsset) != 0
+		pg.displayCreateWalletModal(isSourceWallet, asset)
 		return false
 	}
 
 	pg.updateExchangeRate()
 	return true
+}
+
+func (pg *CreateOrderPage) displayCreateWalletModal(isSourceWallet bool, asset libutils.AssetType) {
+	createWalletModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrCreateWallet)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return layout.Center.Layout(gtx, pg.Theme.Body2(values.StringF(values.StrCreateAssetWalletToSwapMsg, asset.ToFull())).Layout)
+			})
+		}).
+		SetCancelable(true).
+		SetContentAlignment(layout.Center, layout.W, layout.Center).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+				pg.walletCreationSuccessFunc(isSourceWallet, asset)
+			}, asset))
+			return true
+		}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrContinue))
+	pg.ParentWindow().ShowModal(createWalletModal)
+}
+
+func (pg *CreateOrderPage) walletCreationSuccessFunc(isSourceWallet bool, asset libutils.AssetType) {
+	if isSourceWallet {
+		pg.updateWalletAndAccountSelector([]libutils.AssetType{asset}, nil)
+	} else {
+		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{asset})
+	}
+	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
+	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
+	pg.ParentWindow().Reload()
 }
 
 func (pg *CreateOrderPage) ID() string {
@@ -471,12 +505,12 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 	return true
 }
 
-func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) bool {
+func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) (libutils.AssetType, bool) {
 	if len(selectedFromAsset) > 0 {
 		selectedAsset := selectedFromAsset[0]
 		ok := pg.sourceWalletSelector.SetSelectedAsset(selectedAsset)
 		if !ok {
-			return false
+			return selectedAsset, false
 		}
 
 		pg.fromCurrency = selectedAsset
@@ -508,7 +542,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 		selectedAsset := selectedToAsset[0]
 		ok := pg.destinationWalletSelector.SetSelectedAsset(selectedAsset)
 		if !ok {
-			return false
+			return selectedAsset, false
 		}
 
 		pg.toCurrency = selectedAsset
@@ -548,7 +582,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 
 	// Save the exchange configuration changes.
 	pg.updateExchangeConfig()
-	return true
+	return "", true
 }
 
 // swapCurrency swaps the values of the from and to currency fields.
@@ -984,7 +1018,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 																gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
 															})
 														}),
@@ -993,7 +1027,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											)
 										}),
 										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+											return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 												return layout.E.Layout(gtx, pg.viewAllButton.Layout)
 											})
 										}),

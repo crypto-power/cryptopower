@@ -444,22 +444,7 @@ func (sm *selectorModal) OnResume() {
 func (sm *selectorModal) setupWallet(assetType ...utils.AssetType) {
 	selectorItems := make([]*SelectorItem, 0)
 
-	var wallets []sharedW.Asset
-	for _, asset := range assetType {
-		switch asset {
-		case utils.BTCWalletAsset:
-			wallets = append(wallets, sm.WL.AssetsManager.AllBTCWallets()...)
-		case utils.DCRWalletAsset:
-			wallets = append(wallets, sm.WL.AssetsManager.AllDCRWallets()...)
-		case utils.LTCWalletAsset:
-			wallets = append(wallets, sm.WL.AssetsManager.AllLTCWallets()...)
-		}
-	}
-
-	if len(wallets) == 0 {
-		wallets = sm.WL.AssetsManager.AllWallets()
-	}
-
+	wallets := sm.WL.AssetsManager.AssetWallets(assetType...)
 	for _, wal := range wallets {
 		if wal.IsWatchingOnlyWallet() && !sm.isWatchOnlyEnabled {
 			continue

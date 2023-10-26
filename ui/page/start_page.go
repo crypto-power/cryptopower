@@ -13,6 +13,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/root"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -171,7 +172,10 @@ func (sp *startPage) openWallets(password string) error {
 // Part of the load.Page interface.
 func (sp *startPage) HandleUserInteractions() {
 	if sp.addWalletButton.Clicked() {
-		sp.ParentNavigator().Display(root.NewCreateWallet(sp.Load))
+		sp.ParentNavigator().Display(components.NewCreateWallet(sp.Load, func() {
+			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
+			return
+		}))
 	}
 
 	if sp.skipButton.Clicked() {

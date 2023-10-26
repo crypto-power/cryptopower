@@ -1,4 +1,4 @@
-package root
+package components
 
 import (
 	"errors"
@@ -15,8 +15,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
-	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -46,7 +44,7 @@ type CreateWallet struct {
 
 	walletActions []*walletAction
 
-	assetTypeSelector     *components.AssetTypeSelector
+	assetTypeSelector     *AssetTypeSelector
 	assetTypeError        cryptomaterial.Label
 	walletName            cryptomaterial.Editor
 	watchOnlyWalletHex    cryptomaterial.Editor
@@ -62,11 +60,13 @@ type CreateWallet struct {
 
 	selectedWalletAction int
 
+	walletCreationSuccessCallback func()
+
 	showLoader bool
 	isLoading  bool
 }
 
-func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWallet {
+func NewCreateWallet(l *load.Load, walletCreationSuccessCallback func(), assetType ...libutils.AssetType) *CreateWallet {
 	pg := &CreateWallet{
 		GenericPageModal: app.NewGenericPageModal(CreateWalletID),
 		scrollContainer: &widget.List{
@@ -75,7 +75,7 @@ func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWalle
 				Alignment: layout.Middle,
 			},
 		},
-		assetTypeSelector: components.NewAssetTypeSelector(l),
+		assetTypeSelector: NewAssetTypeSelector(l),
 		list:              layout.List{Axis: layout.Vertical},
 
 		continueBtn:          l.Theme.Button(values.String(values.StrContinue)),
@@ -85,7 +85,14 @@ func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWalle
 		selectedWalletAction: -1,
 		assetTypeError:       l.Theme.Body1(""),
 
-		Load: l,
+		Load:                          l,
+		walletCreationSuccessCallback: walletCreationSuccessCallback,
+	}
+
+	if walletCreationSuccessCallback == nil {
+		pg.walletCreationSuccessCallback = func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		}
 	}
 
 	bg := l.Theme.Color.White
@@ -114,7 +121,7 @@ func NewCreateWallet(l *load.Load, assetType ...libutils.AssetType) *CreateWalle
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton, _ = SubpageHeaderButtons(l)
 
 	return pg
 }
@@ -507,7 +514,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 			pg.walletCreationSuccessCallback()
 		}
 		ast := pg.assetTypeSelector.SelectedAssetType()
-		pg.ParentNavigator().Display(info.NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
+		pg.ParentNavigator().Display(NewRestorePage(pg.Load, pg.walletName.Editor.Text(), *ast, afterRestore))
 	}
 
 	// imported wallet click action control
@@ -629,12 +636,12 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 	return true
 }
 
-func (pg *CreateWallet) walletCreationSuccessCallback() {
-	// display the overview page if the user is creating a wallet
-	// for the first time (i.e coming from the onboarding page)
-	if len(pg.WL.AssetsManager.AllWallets()) == 1 {
-		pg.ParentNavigator().Display(NewHomePage(pg.Load))
-		return
-	}
-	pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
-}
+// func (pg *CreateWallet) walletCreationSuccessCallback() {
+// 	// display the overview page if the user is creating a wallet
+// 	// for the first time (i.e coming from the onboarding page)
+// 	if len(pg.WL.AssetsManager.AllWallets()) == 1 {
+// 		pg.ParentNavigator().Display(NewHomePage(pg.Load))
+// 		return
+// 	}
+// 	pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+// }
