@@ -424,7 +424,9 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	if pg.tab.Changed() {
 		pg.selectedTabIndex = pg.tab.SelectedIndex()
-		pg.initWalletDropdown()
+		if pg.isHomepageLayout {
+			pg.initWalletDropdown()
+		}
 		pg.refreshAvailableTxType()
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
