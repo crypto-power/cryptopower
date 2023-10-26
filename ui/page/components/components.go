@@ -235,6 +235,10 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, isTxPage bool) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	wal := l.WL.AssetsManager.WalletWithID(row.Transaction.WalletID)
+	if wal == nil {
+		return D{}
+	}
+
 	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
 	amount := wal.ToAmount(row.Transaction.Amount).String()
 	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
