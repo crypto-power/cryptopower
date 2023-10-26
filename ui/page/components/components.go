@@ -352,10 +352,6 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 								)
 							}
 
-							if isTxPage {
-								return D{}
-							}
-
 							walBalTxt := l.Theme.Label(values.TextSize12, amount)
 							walBalTxt.Color = l.Theme.Color.GrayText2
 							return walBalTxt.Layout(gtx)
