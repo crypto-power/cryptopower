@@ -155,7 +155,8 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		syncData: &SyncData{
 			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)

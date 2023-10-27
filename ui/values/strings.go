@@ -897,4 +897,5 @@ const (
 	StrBondStrengthErrMsg              = "bondStrengthErrMsg"
 	StrMinimumBondStrength             = "minimumBondStrength"
 	StrAssets                          = "assets"
+	StrNoWalletsAvailable              = "noWalletsAvailable"
 )
