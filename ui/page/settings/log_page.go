@@ -158,6 +158,10 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
+
+	if pg.title == values.String(values.StrWalletLog) {
+		return container(gtx)
+	}
 	return components.UniformPadding(gtx, container)
 }
 

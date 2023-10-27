@@ -327,7 +327,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 }
 
 func (pg *TxDetailsPage) layoutDesktop(gtx C, body layout.Widget) D {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *TxDetailsPage) layoutMobile(gtx C, body layout.Widget) D {

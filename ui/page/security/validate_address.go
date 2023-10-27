@@ -99,7 +99,7 @@ func (pg *ValidateAddressPage) Layout(gtx C) D {
 }
 
 func (pg *ValidateAddressPage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *ValidateAddressPage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {

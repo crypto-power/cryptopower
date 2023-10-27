@@ -232,84 +232,82 @@ func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
 func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
-	return components.UniformPadding(gtx, func(gtx C) D {
-		txlisingView := layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{Alignment: layout.N}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding60,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-									return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-										if pg.scroll.ItemsCount() == -1 {
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												return pg.materialLoader.Layout(gtx)
-											})
-										}
-
-										// return "No transactions yet" text if there are no transactions
-										if pg.scroll.ItemsCount() == 0 {
-											padding := values.MarginPadding16
-											txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
-											txt.Color = pg.Theme.Color.GrayText3
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
-											})
-										}
-
-										wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
-										return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-											row := components.TransactionRow{
-												Transaction: wallTxs[index],
-												Index:       index,
-											}
-
-											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													return components.LayoutTransactionRow(gtx, pg.Load, row, true)
-												}),
-												layout.Rigid(func(gtx C) D {
-													// No divider for last row
-													if row.Index == len(wallTxs)-1 {
-														return layout.Dimensions{}
-													}
-
-													gtx.Constraints.Min.X = gtx.Constraints.Max.X
-													separator := pg.Theme.Separator()
-													return layout.E.Layout(gtx, func(gtx C) D {
-														// Show bottom divider for all rows except last
-														return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
-													})
-												}),
-											)
+	txlisingView := layout.Flexed(1, func(gtx C) D {
+		return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
+			return layout.Stack{Alignment: layout.N}.Layout(gtx,
+				layout.Expanded(func(gtx C) D {
+					return layout.Inset{
+						Top: values.MarginPadding60,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+							return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+									if pg.scroll.ItemsCount() == -1 {
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return layout.Center.Layout(gtx, func(gtx C) D {
+											return pg.materialLoader.Layout(gtx)
 										})
+									}
+
+									// return "No transactions yet" text if there are no transactions
+									if pg.scroll.ItemsCount() == 0 {
+										padding := values.MarginPadding16
+										txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
+										txt.Color = pg.Theme.Color.GrayText3
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										return layout.Center.Layout(gtx, func(gtx C) D {
+											return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
+										})
+									}
+
+									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
+									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
+										row := components.TransactionRow{
+											Transaction: wallTxs[index],
+											Index:       index,
+										}
+
+										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												return components.LayoutTransactionRow(gtx, pg.Load, row, true)
+											}),
+											layout.Rigid(func(gtx C) D {
+												// No divider for last row
+												if row.Index == len(wallTxs)-1 {
+													return layout.Dimensions{}
+												}
+
+												gtx.Constraints.Min.X = gtx.Constraints.Max.X
+												separator := pg.Theme.Separator()
+												return layout.E.Layout(gtx, func(gtx C) D {
+													// Show bottom divider for all rows except last
+													return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
+												})
+											}),
+										)
 									})
 								})
 							})
 						})
-					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.txTypeDropDown.Layout(gtx, 0, true)
-					}),
-				)
-			})
+					})
+				}),
+				layout.Expanded(func(gtx C) D {
+					return pg.txTypeDropDown.Layout(gtx, 0, true)
+				}),
+			)
 		})
-
-		items := []layout.FlexChild{layout.Rigid(pg.pageTitle)}
-		if pg.WL.SelectedWallet.Wallet.GetAssetType() == utils.DCRWalletAsset {
-			// Layouts only supportted by DCR
-			line := pg.Theme.Separator()
-			line.Color = pg.Theme.Color.Gray3
-			items = append(items, layout.Rigid(line.Layout))
-			items = append(items, layout.Rigid(pg.sectionNavTab))
-		}
-		items = append(items, txlisingView)
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
+
+	items := []layout.FlexChild{layout.Rigid(pg.pageTitle)}
+	if pg.WL.SelectedWallet.Wallet.GetAssetType() == utils.DCRWalletAsset {
+		// Layouts only supportted by DCR
+		line := pg.Theme.Separator()
+		line.Color = pg.Theme.Color.Gray3
+		items = append(items, layout.Rigid(line.Layout))
+		items = append(items, layout.Rigid(pg.sectionNavTab))
+	}
+	items = append(items, txlisingView)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
 func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {

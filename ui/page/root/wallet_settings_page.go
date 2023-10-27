@@ -169,7 +169,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 		}
 
 		return pg.Theme.List(pg.pageContainer).Layout(gtx, len(w), func(gtx C, i int) D {
-			return layout.Inset{Left: values.MarginPadding50}.Layout(gtx, w[i])
+			return w[i](gtx)
 		})
 	}
 
@@ -180,7 +180,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 }
 
 func (pg *WalletSettingsPage) layoutDesktop(gtx C, body layout.Widget) D {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {

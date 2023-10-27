@@ -121,7 +121,7 @@ func (c *Color) DefaultThemeColors() *Color {
 		LightBlue5:       rgb(0x70CBFF),
 		LightBlue6:       rgb(0x4B91D8),
 		LightBlue7:       rgb(0xF0F3FF),
-		LightBlue8:       rgb(0xE2ECFF),
+		LightBlue8:       rgb(0xE3ECFC),
 		Gray1:            rgb(0x3d5873), // darkest gray #3D5873 (icon color),
 		Gray2:            rgb(0xe6eaed), // light 0xe6eaed
 		Gray3:            rgb(0xc4cbd2), // InactiveGray #C4CBD2

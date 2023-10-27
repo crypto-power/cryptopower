@@ -705,7 +705,7 @@ func CoinImageBySymbol(l *load.Load, assetType libutils.AssetType, isWatchOnly b
 		if isWatchOnly {
 			return l.Theme.Icons.DcrWatchOnly
 		}
-		return l.Theme.Icons.DCRGroupIcon
+		return l.Theme.Icons.DCR
 	case libutils.LTCWalletAsset.ToStringLower():
 		if isWatchOnly {
 			return l.Theme.Icons.LtcWatchOnly

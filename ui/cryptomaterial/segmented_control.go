@@ -72,7 +72,6 @@ func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 	return LinearLayout{
 		Width:  WrapContent,
 		Height: WrapContent,
-		Border: Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
@@ -85,22 +84,27 @@ func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 						bg = sc.theme.Color.LightBlue8
 						txt.Color = sc.theme.Color.Primary
 					}
-					paddingTB := values.MarginPadding10
-					paddingLR := values.MarginPadding30
+					paddingTB := values.MarginPadding8
+					paddingLR := values.MarginPadding32
+					pr := values.MarginPadding6
+					if i == len(sc.segmentTitles) { // no need to add padding to the last item
+						pr = values.MarginPadding0
+					}
 
-					return LinearLayout{
-						Width:  WrapContent,
-						Height: WrapContent,
-						Padding: layout.Inset{
-							Top:    paddingTB,
-							Bottom: paddingTB,
-							Left:   paddingLR,
-							Right:  paddingLR,
-						},
-						Background: bg,
-						Margin:     layout.UniformInset(values.MarginPadding5),
-						Border:     border,
-					}.Layout2(gtx, txt.Layout)
+					return layout.Inset{Right: pr}.Layout(gtx, func(gtx C) D {
+						return LinearLayout{
+							Width:  WrapContent,
+							Height: WrapContent,
+							Padding: layout.Inset{
+								Top:    paddingTB,
+								Bottom: paddingTB,
+								Left:   paddingLR,
+								Right:  paddingLR,
+							},
+							Background: bg,
+							Border:     border,
+						}.Layout2(gtx, txt.Layout)
+					})
 				})
 			})
 		}),
