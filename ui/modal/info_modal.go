@@ -231,8 +231,7 @@ func (in *InfoModal) NegativeButtonStyle(background, text color.NRGBA) *InfoModa
 	return in
 }
 
-// for backwards compatibility. template can be a translated string or an
-// existing template.
+// for backwards compatibility.
 func (in *InfoModal) SetupWithTemplate(template string) *InfoModal {
 	title := in.dialogTitle
 	subtitle := in.subtitle
@@ -260,13 +259,6 @@ func (in *InfoModal) SetupWithTemplate(template string) *InfoModal {
 		customTemplate = totalValueInfo(in.Theme)
 	case BondStrengthInfoTemplate:
 		customTemplate = bondStrengthInfo(in.Theme)
-	default:
-		prepTemplate := func(th *cryptomaterial.Theme) func(gtx C) D {
-			return func(gtx layout.Context) layout.Dimensions {
-				return th.Body2(template).Layout(gtx)
-			}
-		}
-		customTemplate = append(customTemplate, prepTemplate(in.Theme))
 	}
 
 	in.dialogTitle = title

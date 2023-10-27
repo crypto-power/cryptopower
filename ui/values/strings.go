@@ -945,4 +945,6 @@ const (
 	StrSeeMore                         = "seeMore"
 	StrAssetPrice                      = "assetPrice"
 	StrAssetAmount                     = "assetAmount"
+	StrBooked                          = "booked"
+	StrExecuted                        = "executed"
 )

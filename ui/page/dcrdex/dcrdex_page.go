@@ -67,12 +67,12 @@ func (pg *DEXPage) ID() string {
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if !pg.inited {
-		pg.Display(NewDEXOnboarding(pg.Load))
-	} else if pg.CurrentPage() == nil {
+	if pg.CurrentPage() != nil {
+		pg.CurrentPage().OnNavigatedTo()
+	} else if pg.inited {
 		pg.Display(NewDEXMarketPage(pg.Load))
 	} else {
-		pg.CurrentPage().OnNavigatedTo()
+		pg.Display(NewDEXOnboarding(pg.Load))
 	}
 }
 
@@ -85,17 +85,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 			return pg.splashPage(gtx)
 		})
 	}
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.MatchParent,
-				Orientation: layout.Vertical,
-			}.Layout(gtx,
-				layout.Flexed(1, pg.CurrentPage().Layout),
-			)
-		}),
-	)
+	return pg.CurrentPage().Layout(gtx)
 }
 
 // HandleUserInteractions is called just before Layout() to determine if any

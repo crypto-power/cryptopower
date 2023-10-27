@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"strconv"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -41,14 +40,13 @@ var (
 		}},
 	}
 
-	// formWidth is the maximum width for form elements on the onboarding DEX
-	// page.
+	// formWidth is the width for form elements on the onboarding DEX page.
 	formWidth = values.MarginPadding450
 
-	u20 = values.MarginPadding20
-	u16 = values.MarginPadding16
-	u2  = values.MarginPadding2
-	u10 = values.MarginPadding10
+	dp20 = values.MarginPadding20
+	dp16 = values.MarginPadding16
+	dp2  = values.MarginPadding2
+	dp10 = values.MarginPadding10
 )
 
 // onboardingStep is each step of the flow required for a user to create a DEX
@@ -112,8 +110,6 @@ type DEXOnboarding struct {
 	materialLoader material.LoaderStyle
 	showLoader     bool
 	isLoading      bool
-
-	redirected bool // TODO: Remove
 }
 
 func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
@@ -125,7 +121,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		currentStep:           onboardingSetPassword,
 		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
 		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		serverDropDown:        th.DropDown(knownDEXServers[l.AssetsManager.NetType()], values.DEXServerDropdownGroup, 0),
+		serverDropDown:        th.DropDown(knownDEXServers[l.AssetsManager.NetType()], values.DEXServerDropdownGroup, false),
 		addServerBtn:          th.NewClickable(false),
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
 		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
@@ -197,9 +193,8 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 		Orientation: layout.Vertical,
 		Background:  pg.Theme.Color.Surface,
 		Margin: layout.Inset{
-			Bottom: values.MarginPadding50,
-			Right:  u20,
-			Left:   u20,
+			Right: dp20,
+			Left:  dp20,
 		},
 		Border: cryptomaterial.Border{
 			Radius: cryptomaterial.Radius(r),
@@ -209,7 +204,7 @@ func (pg *DEXOnboarding) Layout(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			txt := pg.Theme.Body1(values.String(values.StrDCRDEXWelcomeMessage))
 			txt.Font.Weight = font.Bold
-			return pg.centerLayout(gtx, u16, u20, txt.Layout)
+			return pg.centerLayout(gtx, dp16, dp20, txt.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.onBoardingStepRow(gtx)
@@ -310,16 +305,14 @@ func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 					lb := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d", step))
 					lb.Color = textColor
 					lb.Font.Weight = font.SemiBold
-					return layout.Inset{Top: u10, Bottom: u10}.Layout(gtx, lb.Layout)
+					return layout.Inset{Top: dp10, Bottom: dp10}.Layout(gtx, lb.Layout)
 				}),
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			inset := layout.Inset{Top: u10, Bottom: u10}
+			inset := layout.Inset{Top: dp10, Bottom: dp10}
 			if !activeStep {
-				return inset.Layout(gtx, func(gtx C) D {
-					return semiBoldLabelGrey3(pg.Theme, gtx, stepDesc)
-				})
+				return inset.Layout(gtx, semiBoldLabelGrey3(pg.Theme, stepDesc).Layout)
 			}
 
 			lb := pg.semiBoldLabel(stepDesc)
@@ -341,10 +334,10 @@ func (pg *DEXOnboarding) stepSetPassword(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSetTradePasswordDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u16}.Layout(gtx, pg.passwordEditor.Layout)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.passwordEditor.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u16}.Layout(gtx, pg.confirmPasswordEditor.Layout)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.confirmPasswordEditor.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.formFooterButtons(gtx)
@@ -358,7 +351,7 @@ func (pg *DEXOnboarding) stepSetPassword(gtx C) D {
 func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, u20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrSelectServer)).Layout)
+			return pg.centerLayout(gtx, dp20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrSelectServer)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSelectDEXServerDesc)).Layout)
@@ -366,38 +359,12 @@ func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			l := pg.Theme.Label(values.TextSize16, values.String(values.StrServer))
 			l.Font.Weight = font.Bold
-			return layout.Inset{Top: u20}.Layout(gtx, l.Layout)
+			return layout.Inset{Top: dp20}.Layout(gtx, l.Layout)
 		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.serverDropDown.Layout(gtx, 0, false)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Start}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					color := pg.Theme.Color.Primary
-					return cryptomaterial.LinearLayout{
-						Width:       gtx.Dp(values.MarginPadding110),
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Horizontal,
-						Margin:      layout.Inset{Top: u16},
-						Direction:   layout.W,
-						Alignment:   layout.Middle,
-						Clickable:   pg.addServerBtn,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							icon := pg.Theme.Icons.ContentAdd
-							return icon.Layout(gtx, color)
-						}),
-						layout.Rigid(func(gtx C) D {
-							label := pg.Theme.Label(values.TextSize16, values.String(values.StrAddServer))
-							label.Color = color
-							label.Font.Weight = font.SemiBold
-							return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, label.Layout)
-						}),
-					)
-				}),
-			)
-		}),
+		layout.Rigid(pg.serverDropDown.Layout),
+		layout.Rigid(components.IconButton(pg.Theme.Icons.ContentAdd, values.String(values.StrAddServer),
+			layout.Inset{Top: dp16}, pg.Theme, pg.addServerBtn),
+		),
 		layout.Rigid(func(gtx C) D {
 			return pg.formFooterButtons(gtx)
 		}),
@@ -418,7 +385,7 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 				Width:       width,
 				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Horizontal,
-				Margin:      layout.Inset{Top: values.MarginPadding20, Bottom: u16},
+				Margin:      layout.Inset{Top: values.MarginPadding20, Bottom: dp16},
 				Alignment:   layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -448,10 +415,10 @@ func (pg *DEXOnboarding) subStepAddServer(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrAddServerDesc)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u16}.Layout(gtx, pg.serverURLEditor.Layout)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.serverURLEditor.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u16}.Layout(gtx, pg.serverCertEditor.Layout)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.serverCertEditor.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.formFooterButtons(gtx)
@@ -511,16 +478,16 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, u20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
+			return pg.centerLayout(gtx, dp20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, pg.Theme.Body1(values.String(values.StrSelectBondWalletMsg)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrSupportedWallets)).Layout)
+			return layout.Inset{Top: dp20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrSupportedWallets)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u2}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
 				if pg.bondSourceWalletSelector == nil {
 					return D{} // TODO: return btn to create wallet
 				}
@@ -528,10 +495,10 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrAccount)).Layout)
+			return layout.Inset{Top: dp20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrAccount)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u2}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Top: dp2}.Layout(gtx, func(gtx C) D {
 				if pg.bondSourceAccountSelector == nil {
 					return D{}
 				}
@@ -539,13 +506,13 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u20 * u2, Bottom: u20 * u2}.Layout(gtx, pg.Theme.Separator().Layout)
+			return layout.Inset{Top: dp20 * dp2, Bottom: dp20 * dp2}.Layout(gtx, pg.Theme.Separator().Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.S.Layout(gtx, pg.Theme.Body1(values.String(values.StrSelectBondStrengthMsg)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, u20, u16, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
+			return pg.centerLayout(gtx, dp20, dp16, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -564,7 +531,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 				layout.Flexed(0.5, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: u16, Right: u10}.Layout(gtx, func(gtx C) D {
+							return layout.Inset{Top: dp16, Right: dp10}.Layout(gtx, func(gtx C) D {
 								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 									layout.Rigid(pg.semiBoldLabel(values.String(values.StrBondStrength)).Layout),
 									layout.Rigid(func(gtx C) D {
@@ -572,24 +539,24 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 											Width:     cryptomaterial.WrapContent,
 											Height:    cryptomaterial.WrapContent,
 											Clickable: pg.bondStrengthMoreInfo,
-											Padding:   layout.Inset{Top: u2, Left: u2},
+											Padding:   layout.Inset{Top: dp2, Left: dp2},
 										}.Layout2(gtx, pg.Theme.Icons.InfoAction.Layout16dp)
 									}),
 								)
 							})
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Right: u10}.Layout(gtx, pg.bondStrengthEditor.Layout)
+							return layout.Inset{Right: dp10}.Layout(gtx, pg.bondStrengthEditor.Layout)
 						}),
 					)
 				}),
 				layout.Flexed(0.5, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: u16, Left: u10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrNewTier)).Layout)
+							return layout.Inset{Top: dp16, Left: dp10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrNewTier)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
+							return layout.Inset{Left: dp10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
 								return pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d", pg.newTier)).Layout(gtx)
 							}))
 						}),
@@ -602,7 +569,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 				layout.Flexed(0.3, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: u16}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrCurrency)).Layout)
+							return layout.Inset{Top: dp16}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrCurrency)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return pg.viewOnlyCard(&pg.Theme.Color.Gray2, func(gtx C) D {
@@ -625,10 +592,10 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 				layout.Flexed(0.7, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: u16, Left: u10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrTotalCost)).Layout)
+							return layout.Inset{Top: dp16, Left: dp10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrTotalCost)).Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: u10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
+							return layout.Inset{Left: dp10}.Layout(gtx, pg.viewOnlyCard(nil, func(gtx C) D {
 								return pg.bondAmountInfoDisplay(gtx)
 							}))
 						}),
@@ -637,7 +604,7 @@ func (pg *DEXOnboarding) stepPostBond(gtx C) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: u16}.Layout(gtx, pg.formFooterButtons)
+			return layout.Inset{Top: dp16}.Layout(gtx, pg.formFooterButtons)
 		}),
 	)
 
@@ -665,12 +632,12 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 			Orientation: layout.Vertical,
 			Border: cryptomaterial.Border{
 				Radius: cryptomaterial.Radius(8),
-				Width:  u2,
+				Width:  dp2,
 				Color:  pg.Theme.Color.Gray2,
 			},
 			Margin: layout.Inset{
-				Top:    u2,
-				Bottom: u2,
+				Top:    dp2,
+				Bottom: dp2,
 			},
 			Padding: layout.Inset{
 				Top:    u12,
@@ -688,7 +655,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 	gtx.Constraints.Max.X = gtx.Dp(width)
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, u20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
+			return pg.centerLayout(gtx, dp20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
@@ -700,26 +667,26 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 				Background:  pg.Theme.Color.Gray4,
 				Orientation: layout.Vertical,
 				Margin: layout.Inset{
-					Top:    u20,
+					Top:    dp20,
 					Bottom: u30,
 				},
 				Border: cryptomaterial.Border{
 					Radius: cryptomaterial.Radius(8),
 				},
-				Padding: layout.UniformInset(u16),
+				Padding: layout.UniformInset(dp16),
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: u2}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
+							return layout.Inset{Top: dp2}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout16dp)
 						}),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Left: u10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrWaitingForConfirmation)).Layout)
+							return layout.Inset{Left: dp10}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrWaitingForConfirmation)).Layout)
 						}),
 					)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: 10, Bottom: u10}.Layout(gtx, pg.Theme.Body1(values.StringF(values.StrDEXBondConfirmationMsg, "dex.decred.org", 2 /* TODO: use real values */)).Layout)
+					return layout.Inset{Top: 10, Bottom: dp10}.Layout(gtx, pg.Theme.Body1(values.StringF(values.StrDEXBondConfirmationMsg, "dex.decred.org", 2 /* TODO: use real values */)).Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -734,7 +701,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: u20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrPaymentDetails)).Layout)
+			return layout.Inset{Bottom: dp20}.Layout(gtx, pg.semiBoldLabel(values.String(values.StrPaymentDetails)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: values.MarginPadding60}.Layout(gtx, func(gtx C) D {
@@ -742,9 +709,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 					layout.Flexed(0.33, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrNewTier))
-								})
+								return layout.Inset{Bottom: 5}.Layout(gtx, semiBoldLabelGrey3(pg.Theme, values.String(values.StrNewTier)).Layout)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.Theme.Body1(fmt.Sprintf("%d", pg.newTier)).Layout(gtx)
@@ -754,9 +719,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 					layout.Flexed(0.33, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrBondStrength))
-								})
+								return layout.Inset{Bottom: 5}.Layout(gtx, semiBoldLabelGrey3(pg.Theme, values.String(values.StrBondStrength)).Layout)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.Theme.Body1(fmt.Sprintf("%d", pg.newTier /* TODO: Use real value */)).Layout(gtx)
@@ -766,9 +729,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 					layout.Flexed(0.33, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrTotalCost))
-								})
+								return layout.Inset{Bottom: 5}.Layout(gtx, semiBoldLabelGrey3(pg.Theme, values.String(values.StrTotalCost)).Layout)
 							}),
 							layout.Rigid(func(gtx C) D {
 								return pg.bondAmountInfoDisplay(gtx)
@@ -935,19 +896,11 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			hasEnough := pg.bondAccountHasEnough()
 			bondStrengthOk := pg.validateBondStrength()
 			if !hasEnough || !bondStrengthOk {
-				// return
+				return
 			}
 
 			// TODO: Post bond, wait for confirmations and redirect to market page.
 			pg.currentStep = onBoardingStepWaitForConfirmation
-			if !pg.redirected {
-				pg.redirected = true
-				log.Info("Redirecting to market page...")
-				time.AfterFunc(5*time.Second, func() {
-					pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
-				})
-			}
-
 			// Scroll to the top of the confirmation page after leaving the long
 			// post bond form.
 			pg.scrollContainer.Position.Offset = 0
@@ -982,11 +935,11 @@ func (pg *DEXOnboarding) validateBondStrength() bool {
 	return ok
 }
 
-func semiBoldLabelGrey3(th *cryptomaterial.Theme, gtx C, text string) D {
+func semiBoldLabelGrey3(th *cryptomaterial.Theme, text string) cryptomaterial.Label {
 	lb := th.Label(values.TextSize16, text)
 	lb.Color = th.Color.GrayText3
 	lb.Font.Weight = font.SemiBold
-	return lb.Layout(gtx)
+	return lb
 }
 
 func (pg *DEXOnboarding) passwordsMatch(editors ...*widget.Editor) bool {

@@ -836,4 +836,6 @@ const EN = `
 "market" = "Market"
 "assetPrice" = "Price (%s)"
 "assetAmount" = "Amount (%s)"
+"booked" = "Booked"
+"executed" = "Executed"
 `

@@ -16,6 +16,8 @@ type SegmentedControl struct {
 	leftNavBtn,
 	rightNavBtn *Clickable
 
+	Padding layout.Inset
+
 	selectedIndex int
 	segmentTitles []string
 
@@ -33,6 +35,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
 		segmentTitles: segmentTitles,
 		leftNavBtn:    t.NewClickable(false),
 		rightNavBtn:   t.NewClickable(false),
+		Padding:       layout.UniformInset(values.MarginPadding8),
 	}
 }
 
@@ -57,14 +60,17 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 						txt.Color = sc.theme.Color.Text
 						border = Border{Radius: Radius(8)}
 					}
-					return LinearLayout{
+
+					ll := LinearLayout{
 						Width:      WrapContent,
 						Height:     WrapContent,
-						Padding:    layout.UniformInset(values.MarginPadding8),
 						Background: bg,
 						Margin:     layout.UniformInset(values.MarginPadding5),
 						Border:     border,
-					}.Layout2(gtx, txt.Layout)
+						Padding:    sc.Padding,
+					}
+
+					return ll.Layout2(gtx, txt.Layout)
 				})
 			})
 		}),
