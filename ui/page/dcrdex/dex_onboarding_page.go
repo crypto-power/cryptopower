@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"strconv"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -111,6 +112,8 @@ type DEXOnboarding struct {
 	materialLoader material.LoaderStyle
 	showLoader     bool
 	isLoading      bool
+
+	redirected bool // TODO: Remove
 }
 
 func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
@@ -139,6 +142,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 	pg.goBackBtn.HighlightColor = pg.Theme.Color.Gray7
 
 	pg.bondStrengthEditor.IsTitleLabel = false
+	pg.serverDropDown.Width = formWidth
 
 	pg.onBoardingSteps = map[onboardingStep]dexOnboardingStep{
 		onboardingSetPassword: {
@@ -314,7 +318,7 @@ func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 			inset := layout.Inset{Top: u10, Bottom: u10}
 			if !activeStep {
 				return inset.Layout(gtx, func(gtx C) D {
-					return pg.semiBoldLabelGrey3(gtx, stepDesc)
+					return semiBoldLabelGrey3(pg.Theme, gtx, stepDesc)
 				})
 			}
 
@@ -365,7 +369,6 @@ func (pg *DEXOnboarding) stepChooseServer(gtx C) D {
 			return layout.Inset{Top: u20}.Layout(gtx, l.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			pg.serverDropDown.Width = gtx.Dp(formWidth)
 			return pg.serverDropDown.Layout(gtx, 0, false)
 		}),
 		layout.Rigid(func(gtx C) D {
@@ -688,7 +691,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 			return pg.centerLayout(gtx, u20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, u20, u16, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
+			return pg.centerLayout(gtx, 0, 0, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -697,7 +700,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 				Background:  pg.Theme.Color.Gray4,
 				Orientation: layout.Vertical,
 				Margin: layout.Inset{
-					Top:    u30,
+					Top:    u20,
 					Bottom: u30,
 				},
 				Border: cryptomaterial.Border{
@@ -740,7 +743,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return pg.semiBoldLabelGrey3(gtx, values.String(values.StrNewTier))
+									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrNewTier))
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -752,7 +755,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return pg.semiBoldLabelGrey3(gtx, values.String(values.StrBondStrength))
+									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrBondStrength))
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -764,7 +767,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{Bottom: 5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return pg.semiBoldLabelGrey3(gtx, values.String(values.StrTotalCost))
+									return semiBoldLabelGrey3(pg.Theme, gtx, values.String(values.StrTotalCost))
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
@@ -932,11 +935,19 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			hasEnough := pg.bondAccountHasEnough()
 			bondStrengthOk := pg.validateBondStrength()
 			if !hasEnough || !bondStrengthOk {
-				return
+				// return
 			}
 
 			// TODO: Post bond, wait for confirmations and redirect to market page.
 			pg.currentStep = onBoardingStepWaitForConfirmation
+			if !pg.redirected {
+				pg.redirected = true
+				log.Info("Redirecting to market page...")
+				time.AfterFunc(5*time.Second, func() {
+					pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
+				})
+			}
+
 			// Scroll to the top of the confirmation page after leaving the long
 			// post bond form.
 			pg.scrollContainer.Position.Offset = 0
@@ -971,9 +982,9 @@ func (pg *DEXOnboarding) validateBondStrength() bool {
 	return ok
 }
 
-func (pg *DEXOnboarding) semiBoldLabelGrey3(gtx C, text string) D {
-	lb := pg.Theme.Label(values.TextSize16, text)
-	lb.Color = pg.Theme.Color.GrayText3
+func semiBoldLabelGrey3(th *cryptomaterial.Theme, gtx C, text string) D {
+	lb := th.Label(values.TextSize16, text)
+	lb.Color = th.Color.GrayText3
 	lb.Font.Weight = font.SemiBold
 	return lb.Layout(gtx)
 }

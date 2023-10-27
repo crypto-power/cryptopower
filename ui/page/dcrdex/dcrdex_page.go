@@ -32,6 +32,7 @@ type DEXPage struct {
 	splashPageContainer   *widget.List
 	finalizeOnboardingBtn cryptomaterial.Button
 	isDexFirstVisit       bool
+	inited                bool
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
@@ -49,6 +50,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 
 	// Init splash page more info widget.
 	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
+	dp.inited = true // TODO: Set value
 	return dp
 }
 
@@ -65,12 +67,13 @@ func (pg *DEXPage) ID() string {
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	if pg.CurrentPage() == nil {
-		// TODO: Handle pg.inited
+	if !pg.inited {
 		pg.Display(NewDEXOnboarding(pg.Load))
+	} else if pg.CurrentPage() == nil {
+		pg.Display(NewDEXMarketPage(pg.Load))
+	} else {
+		pg.CurrentPage().OnNavigatedTo()
 	}
-
-	pg.CurrentPage().OnNavigatedTo()
 }
 
 // Layout draws the page UI components into the provided layout context to be
