@@ -25,6 +25,9 @@ type Page struct {
 
 	modal *cryptomaterial.Modal
 
+	// selectedTabIdx int
+	tab *cryptomaterial.SegmentedControl
+
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
 	enableGovernanceBtn    cryptomaterial.Button
@@ -44,6 +47,8 @@ func NewGovernancePage(l *load.Load) *Page {
 		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
+
+	pg.tab = l.Theme.SegmentedControl(governanceTabTitles)
 
 	pg.tabCategoryList.IsHoverable = false
 
@@ -67,6 +72,10 @@ func (pg *Page) OnNavigatedTo() {
 
 func (pg *Page) isGovernanceAPIAllowed() bool {
 	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+}
+
+func (pg *Page) sectionNavTab(gtx C) D {
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -109,6 +118,17 @@ func (pg *Page) HandleUserInteractions() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.HandleUserInteractions()
 	}
+
+	if pg.tab.Changed() {
+		selectedTabIdx := pg.tab.SelectedIndex()
+		if selectedTabIdx == 0 {
+			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
+		} else if selectedTabIdx == 1 {
+			pg.Display(NewConsensusPage(pg.Load))
+		} else {
+			pg.Display(NewTreasuryPage(pg.Load))
+		}
+	}
 }
 
 func (pg *Page) Layout(gtx C) D {
@@ -124,16 +144,22 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.layoutPageTopNav),
-			layout.Rigid(pg.layoutTabs),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
+		txlisingView := layout.Flexed(1, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.layoutPageTopNav),
+				layout.Rigid(pg.Theme.Separator().Layout),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+						return pg.CurrentPage().Layout(gtx)
+					})
+				}),
+			)
+		})
+
+		items := []layout.FlexChild{}
+		items = append(items, layout.Rigid(pg.sectionNavTab))
+		items = append(items, txlisingView)
+		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, items...)
 	})
 }
 
