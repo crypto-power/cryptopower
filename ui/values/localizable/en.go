@@ -787,5 +787,5 @@ const EN = `
 "bondStrengthErrMsg" = "Bond Strength must be a valid number"
 "minimumBondStrength" = "Minimum Bond Strength is %d"
 "assets" = "Assets"
-"noWalletsAvailable" = "There are no wallets available for this function, Please try again later."
+"noWalletsAvailable" = "You cannot spend from a watch only wallet, try creating another wallet."
 `
