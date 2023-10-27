@@ -64,6 +64,8 @@ type WalletSelectorPage struct {
 	assetsBalance         map[libutils.AssetType]sharedW.AssetAmount
 	assetsTotalUSDBalance map[libutils.AssetType]float64
 	assetRate             map[libutils.AssetType]float64
+
+	onWalletSelected func(isWalletSelected bool)
 }
 
 func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
@@ -104,6 +106,12 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+
+	if pg.onWalletSelected == nil {
+		pg.onWalletSelected = func(isWalletSelected bool) {}
+	}
+
+	pg.onWalletSelected(false)
 
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
@@ -173,6 +181,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 		}
 
 		pg.WL.SelectedWallet = wallets[tuple.Index]
+		pg.onWalletSelected(true)
 		pg.ParentNavigator().Display(NewMainPage(pg.Load))
 	}
 

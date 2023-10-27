@@ -42,12 +42,16 @@ type HomePage struct {
 	hideBalanceButton      *cryptomaterial.Clickable
 	infoButton             cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 
+	walletSelectorPage *WalletSelectorPage
+
 	bottomNavigationBar  components.BottomNavigationBar
 	floatingActionButton components.BottomNavigationBar
 
 	// page state variables
-	isBalanceHidden bool
-	isConnected     *atomic.Bool
+	isBalanceHidden,
+	isWalletSelected bool
+
+	isConnected *atomic.Bool
 
 	startSpvSync uint32
 
@@ -110,6 +114,11 @@ func NewHomePage(l *load.Load) *HomePage {
 		}
 	}
 	l.ToggleSync = toggleSync
+
+	hp.walletSelectorPage = NewWalletSelectorPage(l)
+	hp.walletSelectorPage.onWalletSelected = func(isWalletSelected bool) {
+		hp.isWalletSelected = isWalletSelected
+	}
 
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
@@ -190,7 +199,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load)
 		case values.String(values.StrWallets):
-			pg = NewWalletSelectorPage(hp.Load)
+			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
 		case values.String(values.StrGovernance):
@@ -263,7 +272,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			case values.String(values.StrOverview):
 				pg = NewOverviewPage(hp.Load)
 			case values.String(values.StrWallets):
-				pg = NewWalletSelectorPage(hp.Load)
+				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
 			}
@@ -360,13 +369,24 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
-				layout.Rigid(hp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Left: values.MarginPadding20,
-					}.Layout(gtx, hp.navigationTab.Layout)
+					if hp.isWalletSelected {
+						return D{}
+					}
+					return cryptomaterial.LinearLayout{
+						Width:       cryptomaterial.MatchParent,
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Vertical,
+					}.Layout(gtx,
+						layout.Rigid(hp.LayoutTopBar),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{
+								Left: values.MarginPadding20,
+							}.Layout(gtx, hp.navigationTab.Layout)
+						}),
+						layout.Rigid(hp.Theme.Separator().Layout),
+					)
 				}),
-				layout.Rigid(hp.Theme.Separator().Layout),
 				layout.Flexed(1, hp.CurrentPage().Layout),
 			)
 		}),

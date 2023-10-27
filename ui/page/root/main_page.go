@@ -493,7 +493,7 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 }
 
 func (mp *MainPage) pageTabLayout(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding32}.Layout(gtx, mp.pageNavigationTab.TransparentLayout)
+	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, mp.pageNavigationTab.TransparentLayout)
 }
 
 func (mp *MainPage) LayoutUSDBalance(gtx C) D {
