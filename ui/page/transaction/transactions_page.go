@@ -63,7 +63,8 @@ type TransactionsPage struct {
 
 	isHomepageLayout,
 	showAssetType,
-	showLoader bool
+	showLoader,
+	showDisabledLayout bool
 }
 
 func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage {
@@ -84,15 +85,6 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 	} else {
 		pg.selectedWallet = l.WL.SelectedWallet.Wallet
 	}
-
-	items := []cryptomaterial.DropDownItem{}
-	_, keysinfo := components.TxPageDropDownFields(pg.selectedWallet.GetAssetType(), pg.selectedTabIndex)
-	for _, name := range keysinfo {
-		item := cryptomaterial.DropDownItem{}
-		item.Text = name
-		items = append(items, item)
-	}
-	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.loadTransactions)
 
@@ -121,9 +113,10 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 
 // initWalletSelector is used by the tx history page, for wallet selection.
 func (pg *TransactionsPage) initWalletDropdown() {
+	pg.showLoader = true
 	pg.assetWallets = pg.WL.AllSortedWalletList()
 	if pg.tab.SelectedSegment() != values.String(values.StrTxOverview) {
-		pg.assetWallets = pg.WL.AssetsManager.AllDCRWallets()
+		pg.assetWallets = pg.WL.SortedWalletList(utils.DCRWalletAsset)
 	}
 
 	items := []cryptomaterial.DropDownItem{}
@@ -143,10 +136,18 @@ func (pg *TransactionsPage) initWalletDropdown() {
 
 	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
 	pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
+	pg.showLoader = false
 }
 
 func (pg *TransactionsPage) sectionNavTab(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+	}.Layout2(gtx, func(gtx C) D {
+		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
+	})
 }
 
 func (pg *TransactionsPage) pageTitle(gtx C) D {
@@ -158,6 +159,16 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 func (pg *TransactionsPage) refreshAvailableTxType() {
 	pg.showLoader = true
 	wal := pg.selectedWallet
+
+	items := []cryptomaterial.DropDownItem{}
+	_, keysinfo := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
+	for _, name := range keysinfo {
+		item := cryptomaterial.DropDownItem{}
+		item.Text = name
+		items = append(items, item)
+	}
+	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
+
 	go func() {
 		countfn := func(fType int32) int {
 			count, _ := wal.CountTransactions(fType)
@@ -215,18 +226,34 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
+func (pg *TransactionsPage) Layout(gtx C) D {
 	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *TransactionsPage) pageLayout(gtx C, body layout.Widget) D {
+	// If wallet is not synced, display the overlay with the message.
+	pg.showDisabledLayout = pg.isHomepageLayout && (!pg.selectedWallet.IsSynced() || pg.selectedWallet.IsRescanning())
+
+	overlay := layout.Stacked(func(gtx C) D { return D{} })
+	if pg.showDisabledLayout {
+		gtxCopy := gtx
+		overlay = layout.Stacked(func(gtx C) D {
+			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, values.String(values.StrFunctionUnavailable), nil)
+		})
+		// Disable main page from recieving events
+		gtx = gtx.Disabled()
+	}
+
+	return layout.Stack{}.Layout(gtx, layout.Expanded(body), overlay)
+}
+
+func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 	wal := pg.WL.SelectedWallet.Wallet
 
-	showTxSyncError := pg.isHomepageLayout && (!pg.selectedWallet.IsSynced() || pg.selectedWallet.IsRescanning())
 	txlisingView := layout.Flexed(1, func(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
 			return layout.Stack{Alignment: layout.NW}.Layout(gtx,
@@ -234,77 +261,54 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 					return layout.Inset{
 						Top: values.MarginPadding60,
 					}.Layout(gtx, func(gtx C) D {
-						// show error message is selected wallet is not synced.
-						if showTxSyncError {
-							txt := pg.Theme.Label(values.TextSize16, values.String(values.StrFunctionUnavailable))
-							txt.Font.Weight = font.SemiBold
-							txt.Color = pg.Theme.Color.Danger
-							return txt.Layout(gtx)
-						}
-
-						return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-							itemsCount := pg.scroll.ItemsCount()
-							padding := values.MarginPadding2
-							if itemsCount == 0 {
-								padding = values.MarginPadding0
-							}
-							return layout.Inset{Right: padding}.Layout(gtx, func(gtx C) D {
-								return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-									return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-									if pg.scroll.ItemsCount() == -1 || pg.showLoader {
-										gtx.Constraints.Min.X = gtx.Constraints.Max.X
-										return layout.Center.Layout(gtx, func(gtx C) D {
-											return pg.materialLoader.Layout(gtx)
-										})
-									}
-								})
-
+						return pg.pageLayout(gtx, func(gtx C) D {
+							itemCount := pg.scroll.ItemsCount()
+							card := pg.Theme.Card()
 							// return "No transactions yet" text if there are no transactions
-							if pg.scroll.ItemsCount() == 0 {
+							if itemCount == 0 {
 								padding := values.MarginPadding16
 								txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
 								txt.Color = pg.Theme.Color.GrayText3
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return layout.Center.Layout(gtx, func(gtx C) D {
-									return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
+								return card.Layout(gtx, func(gtx C) D {
+									gtx.Constraints.Min.X = gtx.Constraints.Max.X
+									return layout.Center.Layout(gtx, func(gtx C) D {
+										return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
+									})
 								})
 							}
 
-							wallTxs := pg.scroll.FetchedData()
-							return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-								tx := wallTxs[index]
-
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutTransactionRow(gtx, pg.Load, pg.selectedWallet, row, true)
-									}),
-									layout.Rigid(func(gtx C) D {
-										// No divider for last row
-										if row.Index == len(wallTxs)-1 {
-											return layout.Dimensions{}
-										}
-
-										// return "No transactions yet" text if there are no transactions
-										if pg.scroll.ItemsCount() == 0 {
-											padding := values.MarginPadding16
-											txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
-											txt.Color = pg.Theme.Color.GrayText3
+							return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+								return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+									return card.Layout(gtx, func(gtx C) D {
+										if itemCount == -1 || pg.showLoader {
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											return layout.Center.Layout(gtx, func(gtx C) D {
-												return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
-											})
+											return layout.Center.Layout(gtx, pg.materialLoader.Layout)
 										}
 
-												gtx.Constraints.Min.X = gtx.Constraints.Max.X
-												separator := pg.Theme.Separator()
-												return layout.E.Layout(gtx, func(gtx C) D {
-													// Show bottom divider for all rows except last
-													return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
-												})
-											}),
-										)
-									}),
-								)
+										wallTxs := pg.scroll.FetchedData()
+										return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
+											tx := wallTxs[index]
+													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+														layout.Rigid(func(gtx C) D {
+															return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, true)
+														}),
+														layout.Rigid(func(gtx C) D {
+															// No divider for last row
+															if index == len(wallTxs)-1 {
+																return layout.Dimensions{}
+															}
+
+															gtx.Constraints.Min.X = gtx.Constraints.Max.X
+															separator := pg.Theme.Separator()
+															return layout.E.Layout(gtx, func(gtx C) D {
+																// Show bottom divider for all rows except last
+																return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
+															})
+														}),
+													)
+										})
+									})
+								})
 							})
 						})
 					})
@@ -316,7 +320,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 					return D{}
 				}),
 				layout.Expanded(func(gtx C) D {
-					if showTxSyncError {
+					if pg.showDisabledLayout {
 						return D{}
 					}
 					return pg.txTypeDropDown.Layout(gtx, 0, true)
@@ -331,11 +335,10 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 		items = append(items, layout.Rigid(pg.sectionNavTab))
 	}
 	items = append(items, txlisingView)
-	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, items...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
-func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
-	wal := pg.WL.SelectedWallet.Wallet
+func (pg *TransactionsPage) layoutMobile(gtx C) D {
 	container := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -366,7 +369,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 											layout.Rigid(func(gtx C) D {
 												// No divider for last row
 												if index == len(wallTxs)-1 {
-													return layout.Dimensions{}
+													return D{}
 												}
 
 												gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -423,11 +426,11 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	cryptomaterial.DisplayOneDropdown(dropDownList...)
 
 	if pg.tab.Changed() {
-		pg.selectedTabIndex = pg.tab.SelectedIndex()
 		if pg.isHomepageLayout {
 			pg.initWalletDropdown()
 		}
 		pg.refreshAvailableTxType()
+		pg.selectedTabIndex = pg.tab.SelectedIndex()
 		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 	}
 }
