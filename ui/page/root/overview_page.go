@@ -245,7 +245,11 @@ func (pg *OverviewPage) HandleUserInteractions() {
 			Wallet: mixerData.Asset,
 		}
 
-		mp := NewMainPage(pg.Load)
+		pg.walletSelected(true)
+		callback := func() {
+			pg.walletSelected(false)
+		}
+		mp := NewMainPage(pg.Load, callback)
 		pg.ParentNavigator().Display(mp)
 		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
 	}

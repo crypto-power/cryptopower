@@ -107,10 +107,6 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	if pg.onWalletSelected == nil {
-		pg.onWalletSelected = func(isWalletSelected bool) {}
-	}
-
 	pg.onWalletSelected(false)
 
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
@@ -182,7 +178,11 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 
 		pg.WL.SelectedWallet = wallets[tuple.Index]
 		pg.onWalletSelected(true)
-		pg.ParentNavigator().Display(NewMainPage(pg.Load))
+
+		callback := func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		}
+		pg.ParentNavigator().Display(NewMainPage(pg.Load, callback))
 	}
 
 	for _, walletsOfType := range pg.badWalletsList {

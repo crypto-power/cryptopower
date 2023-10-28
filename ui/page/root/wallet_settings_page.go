@@ -61,10 +61,12 @@ type WalletSettingsPage struct {
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
 
+	onWalletSelected func()
+
 	peerAddr string
 }
 
-func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
+func NewWalletSettingsPage(l *load.Load, onWalletSelected func()) *WalletSettingsPage {
 	pg := &WalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
@@ -90,7 +92,8 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		accountsList: l.Theme.NewClickableList(layout.Vertical),
+		accountsList:     l.Theme.NewClickableList(layout.Vertical),
+		onWalletSelected: onWalletSelected,
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -440,9 +443,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 				m.Dismiss()
 				pg.ParentWindow().CloseAllPages()
 				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
-					hp := NewHomePage(pg.Load)
-					pg.ParentWindow().Display(hp)
-					hp.Display(NewWalletSelectorPage(hp.Load))
+					pg.onWalletSelected()
 				}
 			}
 
