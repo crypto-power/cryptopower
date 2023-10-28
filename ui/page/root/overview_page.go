@@ -252,6 +252,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		mp := NewMainPage(pg.Load, walletCallbackFunc)
 		pg.ParentNavigator().Display(mp)
 		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
+		mp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
