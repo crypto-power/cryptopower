@@ -188,6 +188,7 @@ const (
 	StrCancel                          = "cancel"
 	StrCanceling                       = "canceling"
 	StrCancelMixer                     = "cancelMixer"
+	StrCentralizedExchange             = "centralizedExchange"
 	StrChangeAccount                   = "changeAccount"
 	StrChangeSpecificPeer              = "changeSpecificPeer"
 	StrChangeSpendingPass              = "changeSpendingPass"

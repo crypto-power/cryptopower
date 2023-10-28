@@ -78,6 +78,7 @@ const EN = `
 "cancel" = "Cancel"
 "canceling" = "Cancelling..."
 "cancelMixer" = "Cancel mixer?"
+"centralizedExchange" = "Centralized Exchange"
 "changeAccount" = "Change account"
 "changeSpecificPeer" = "Change specific peer"
 "changeSpendingPass" = "Change spending passphrase"
