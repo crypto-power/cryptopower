@@ -82,7 +82,7 @@ type OverviewPage struct {
 	mixerSliderData      map[int]*mixerData
 	sortedMixerSlideKeys []int
 
-	walletSelected func(isWalletSelected bool)
+	showNavigationFunc showNavigationFunc
 }
 
 type assetBalanceSliderItem struct {
@@ -105,7 +105,7 @@ type mixerData struct {
 	unmixedBalance sharedW.AssetAmount
 }
 
-func NewOverviewPage(l *load.Load, walletSelected func(isWalletSelected bool)) *OverviewPage {
+func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *OverviewPage {
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
@@ -171,7 +171,7 @@ func NewOverviewPage(l *load.Load, walletSelected func(isWalletSelected bool)) *
 		card:               l.Theme.Card(),
 		sliderRedirectBtn:  l.Theme.NewClickable(false),
 		forceRefreshRates:  l.Theme.NewClickable(false),
-		walletSelected:     walletSelected,
+		showNavigationFunc: showNavigationFunc,
 	}
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -229,7 +229,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
 		walPage := NewWalletSelectorPage(pg.Load)
-		walPage.onWalletSelected = pg.walletSelected
+		walPage.showNavigationFunc = pg.showNavigationFunc
 		pg.ParentNavigator().Display(walPage)
 	}
 
@@ -245,11 +245,11 @@ func (pg *OverviewPage) HandleUserInteractions() {
 			Wallet: mixerData.Asset,
 		}
 
-		pg.walletSelected(true)
-		callback := func() {
-			pg.walletSelected(false)
+		pg.showNavigationFunc(true)
+		walletCallbackFunc := func() {
+			pg.showNavigationFunc(false)
 		}
-		mp := NewMainPage(pg.Load, callback)
+		mp := NewMainPage(pg.Load, walletCallbackFunc)
 		pg.ParentNavigator().Display(mp)
 		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
 	}

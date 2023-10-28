@@ -66,15 +66,15 @@ type MainPage struct {
 	currencyExchangeValue string
 	totalBalanceUSD       string
 
-	onWalletSelected func()
+	showNavigationFunc func()
 }
 
-func NewMainPage(l *load.Load, onWalletSelected func()) *MainPage {
+func NewMainPage(l *load.Load, showNavigationFunc func()) *MainPage {
 	mp := &MainPage{
-		Load:             l,
-		MasterPage:       app.NewMasterPage(MainPageID),
-		checkBox:         l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
-		onWalletSelected: onWalletSelected,
+		Load:               l,
+		MasterPage:         app.NewMasterPage(MainPageID),
+		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
+		showNavigationFunc: showNavigationFunc,
 	}
 
 	mp.selectedWallet = mp.WL.SelectedWallet.Wallet
@@ -249,8 +249,7 @@ func (mp *MainPage) HandleUserInteractions() {
 	}
 
 	for mp.openWalletSelector.Clicked() {
-		mp.onWalletSelected()
-		mp.ParentNavigator().CloseCurrentPage()
+		mp.showNavigationFunc()
 	}
 
 	displayPage := func(pg app.Page) {
@@ -282,7 +281,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		case values.String(values.StrStaking):
 			pg = staking.NewStakingPage(mp.Load)
 		case values.String(values.StrSettings):
-			pg = NewWalletSettingsPage(mp.Load, mp.onWalletSelected)
+			pg = NewWalletSettingsPage(mp.Load, mp.showNavigationFunc)
 		}
 
 		displayPage(pg)

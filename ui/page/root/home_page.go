@@ -49,11 +49,11 @@ type HomePage struct {
 
 	// page state variables
 	isBalanceHidden,
-	isWalletSelected bool
+	isHiddenNavigation bool
 
-	isConnected    *atomic.Bool
-	walletSelected func(isWalletSelected bool)
-	startSpvSync   uint32
+	isConnected        *atomic.Bool
+	showNavigationFunc showNavigationFunc
+	startSpvSync       uint32
 
 	totalBalanceUSD string
 }
@@ -115,11 +115,12 @@ func NewHomePage(l *load.Load) *HomePage {
 	}
 	l.ToggleSync = toggleSync
 
+	// initialize wallet page
 	hp.walletSelectorPage = NewWalletSelectorPage(l)
-	hp.walletSelected = func(isWalletSelected bool) {
-		hp.isWalletSelected = isWalletSelected
+	hp.showNavigationFunc = func(isHiddenNavigation bool) {
+		hp.isHiddenNavigation = isHiddenNavigation
 	}
-	hp.walletSelectorPage.onWalletSelected = hp.walletSelected
+	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
 
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
@@ -144,7 +145,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	go hp.CalculateAssetsUSDBalance()
 
 	if hp.CurrentPage() == nil {
-		hp.Display(NewOverviewPage(hp.Load, hp.walletSelected))
+		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
 	}
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
@@ -198,7 +199,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		var pg app.Page
 		switch hp.navigationTab.SelectedTab() {
 		case values.String(values.StrOverview):
-			pg = NewOverviewPage(hp.Load, hp.walletSelected)
+			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
 		case values.String(values.StrWallets):
 			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
@@ -271,7 +272,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.Title {
 			case values.String(values.StrOverview):
-				pg = NewOverviewPage(hp.Load, hp.walletSelected)
+				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
 			case values.String(values.StrWallets):
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
@@ -371,7 +372,7 @@ func (hp *HomePage) layoutDesktop(gtx C) D {
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if hp.isWalletSelected {
+					if hp.isHiddenNavigation {
 						return D{}
 					}
 					return cryptomaterial.LinearLayout{

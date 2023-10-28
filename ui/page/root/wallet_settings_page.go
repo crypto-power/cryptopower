@@ -61,12 +61,12 @@ type WalletSettingsPage struct {
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
 
-	onWalletSelected func()
+	walletCallbackFunc func()
 
 	peerAddr string
 }
 
-func NewWalletSettingsPage(l *load.Load, onWalletSelected func()) *WalletSettingsPage {
+func NewWalletSettingsPage(l *load.Load, walletCallbackFunc func()) *WalletSettingsPage {
 	pg := &WalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
@@ -92,8 +92,8 @@ func NewWalletSettingsPage(l *load.Load, onWalletSelected func()) *WalletSetting
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		accountsList:     l.Theme.NewClickableList(layout.Vertical),
-		onWalletSelected: onWalletSelected,
+		accountsList:       l.Theme.NewClickableList(layout.Vertical),
+		walletCallbackFunc: walletCallbackFunc,
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
