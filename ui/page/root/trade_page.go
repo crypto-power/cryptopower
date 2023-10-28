@@ -18,8 +18,8 @@ const (
 )
 
 var tabTitles = []string{
-	values.String(values.StrCentralizedExchange),
 	values.String(values.StrDcrDex),
+	values.String(values.StrCentralizedExchange),
 }
 
 type TradePage struct {
@@ -76,7 +76,7 @@ func (pg *TradePage) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
+		pg.Display(dcrdex.NewDEXPage(pg.Load))
 	}
 }
 
@@ -91,10 +91,11 @@ func (pg *TradePage) HandleUserInteractions() {
 	}
 
 	if pg.tab.SelectedIndex() == 0 {
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
+		pg.Display(dcrdex.NewDEXPage(pg.Load))
+
 	}
 	if pg.tab.SelectedIndex() == 1 {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
+		pg.Display(exchange.NewCreateOrderPage(pg.Load))
 	}
 }
 
