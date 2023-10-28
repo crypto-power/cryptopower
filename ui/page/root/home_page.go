@@ -51,9 +51,9 @@ type HomePage struct {
 	isBalanceHidden,
 	isWalletSelected bool
 
-	isConnected *atomic.Bool
-
-	startSpvSync uint32
+	isConnected    *atomic.Bool
+	walletSelected func(isWalletSelected bool)
+	startSpvSync   uint32
 
 	totalBalanceUSD string
 }
@@ -116,9 +116,10 @@ func NewHomePage(l *load.Load) *HomePage {
 	l.ToggleSync = toggleSync
 
 	hp.walletSelectorPage = NewWalletSelectorPage(l)
-	hp.walletSelectorPage.onWalletSelected = func(isWalletSelected bool) {
+	hp.walletSelected = func(isWalletSelected bool) {
 		hp.isWalletSelected = isWalletSelected
 	}
+	hp.walletSelectorPage.onWalletSelected = hp.walletSelected
 
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
@@ -143,7 +144,7 @@ func (hp *HomePage) OnNavigatedTo() {
 	go hp.CalculateAssetsUSDBalance()
 
 	if hp.CurrentPage() == nil {
-		hp.Display(NewOverviewPage(hp.Load))
+		hp.Display(NewOverviewPage(hp.Load, hp.walletSelected))
 	}
 
 	// Initiate the auto sync for all the DCR wallets with set autosync.
@@ -197,7 +198,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		var pg app.Page
 		switch hp.navigationTab.SelectedTab() {
 		case values.String(values.StrOverview):
-			pg = NewOverviewPage(hp.Load)
+			pg = NewOverviewPage(hp.Load, hp.walletSelected)
 		case values.String(values.StrWallets):
 			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
@@ -270,7 +271,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			var pg app.Page
 			switch item.Title {
 			case values.String(values.StrOverview):
-				pg = NewOverviewPage(hp.Load)
+				pg = NewOverviewPage(hp.Load, hp.walletSelected)
 			case values.String(values.StrWallets):
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
