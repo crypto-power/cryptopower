@@ -10,4 +10,5 @@ const (
 	WalletsDropdownGroup
 	DEXCurrencyPairGroup
 	DEXOrderTypes
+	StartPageDropdownGroup
 )
