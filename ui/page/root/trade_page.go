@@ -92,7 +92,6 @@ func (pg *TradePage) HandleUserInteractions() {
 
 	if pg.tab.SelectedIndex() == 0 {
 		pg.Display(dcrdex.NewDEXPage(pg.Load))
-
 	}
 	if pg.tab.SelectedIndex() == 1 {
 		pg.Display(exchange.NewCreateOrderPage(pg.Load))
