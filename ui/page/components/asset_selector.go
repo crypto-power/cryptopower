@@ -21,7 +21,6 @@ const AssetTypeSelectorID = "AssetTypeSelectorID"
 type AssetTypeSelector struct {
 	openSelectorDialog *cryptomaterial.Clickable
 	*assetTypeModal
-	changed bool
 
 	hint            string
 	isDisableBorder bool
@@ -40,7 +39,7 @@ type assetTypeModal struct {
 	*cryptomaterial.Modal
 
 	selectedAssetType  *AssetTypeItem
-	assetTypeCallback  func(*AssetTypeItem)
+	assetTypeCallback  func(*AssetTypeItem) bool
 	dialogTitle        string
 	onAssetTypeClicked func(*AssetTypeItem)
 	assetTypeList      layout.List
@@ -58,14 +57,13 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 
 	ats.assetTypeModal = newAssetTypeModal(l).
 		assetTypeClicked(func(assetType *AssetTypeItem) {
-			if ats.selectedAssetType != nil {
-				if ats.selectedAssetType.Type.String() != assetType.Type.String() {
-					ats.changed = true
-				}
-			}
-			ats.selectedAssetType = assetType
+			ok := true
 			if ats.assetTypeCallback != nil {
-				ats.assetTypeCallback(assetType)
+				ok = ats.assetTypeCallback(assetType)
+			}
+
+			if ok && (ats.selectedAssetType == nil || ats.selectedAssetType.Type.String() != assetType.Type.String()) {
+				ats.selectedAssetType = assetType
 			}
 		})
 	ats.assetTypeItems = ats.buildExchangeItems()
@@ -142,7 +140,7 @@ func (ats *AssetTypeSelector) Title(title string) *AssetTypeSelector {
 }
 
 // AssetTypeSelected sets the callback executed when an asset type is selected.
-func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetTypeItem)) *AssetTypeSelector {
+func (ats *AssetTypeSelector) AssetTypeSelected(callback func(*AssetTypeItem) bool) *AssetTypeSelector {
 	ats.assetTypeCallback = callback
 	return ats
 }

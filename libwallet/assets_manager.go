@@ -535,6 +535,27 @@ func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 	return nil
 }
 
+// AssetWallets returns the wallets for the specified asset type(s).
+func (mgr *AssetsManager) AssetWallets(assetTypes ...utils.AssetType) []sharedW.Asset {
+	var wallets []sharedW.Asset
+	for _, asset := range assetTypes {
+		switch asset {
+		case utils.BTCWalletAsset:
+			wallets = append(wallets, mgr.AllBTCWallets()...)
+		case utils.DCRWalletAsset:
+			wallets = append(wallets, mgr.AllDCRWallets()...)
+		case utils.LTCWalletAsset:
+			wallets = append(wallets, mgr.AllLTCWallets()...)
+		}
+	}
+
+	if len(wallets) == 0 && len(assetTypes) == 0 {
+		wallets = mgr.AllWallets()
+	}
+
+	return wallets
+}
+
 func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
 	if badWallet, ok := mgr.Assets.BTC.BadWallets[walletID]; ok {
 		return badWallet

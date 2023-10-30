@@ -187,7 +187,9 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 
 	for asset, clickable := range pg.addWalClickable {
 		if clickable.Clicked() {
-			pg.ParentNavigator().Display(NewCreateWallet(pg.Load, asset))
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
+			}, asset))
 		}
 	}
 }

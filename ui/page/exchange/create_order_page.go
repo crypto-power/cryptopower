@@ -165,20 +165,20 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.toAmountEditor = *components.NewSelectAssetEditor(l)
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
 
-	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) bool {
 		isMatching := pg.fromCurrency == pg.toCurrency && pg.fromCurrency != libutils.NilAsset
 		if pg.fromCurrency == ati.Type || isMatching {
-			return
+			return false
 		}
-		pg.updateWalletAndAccountSelector([]libutils.AssetType{ati.Type}, nil)
+		return pg.updateWalletAndAccountSelector([]libutils.AssetType{ati.Type}, nil)
 	})
 
-	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) {
+	pg.toAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) bool {
 		isMatching := pg.fromCurrency == pg.toCurrency && pg.toCurrency != libutils.NilAsset
 		if pg.toCurrency == ati.Type || isMatching {
-			return
+			return false
 		}
-		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{ati.Type})
+		return pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{ati.Type})
 	})
 
 	pg.createOrderBtn = pg.Theme.Button(values.String(values.StrCreateOrder))
@@ -208,9 +208,48 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	return pg
 }
 
-func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) {
-	pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) bool {
+	asset, ok := pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
+	if !ok {
+		isSourceWallet := len(selectedFromAsset) != 0
+		pg.displayCreateWalletModal(isSourceWallet, asset)
+		return false
+	}
+
 	pg.updateExchangeRate()
+	return true
+}
+
+func (pg *CreateOrderPage) displayCreateWalletModal(isSourceWallet bool, asset libutils.AssetType) {
+	createWalletModal := modal.NewCustomModal(pg.Load).
+		Title(values.String(values.StrCreateWallet)).
+		UseCustomWidget(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return layout.Center.Layout(gtx, pg.Theme.Body2(values.StringF(values.StrCreateAssetWalletToSwapMsg, asset.ToFull())).Layout)
+			})
+		}).
+		SetCancelable(true).
+		SetContentAlignment(layout.Center, layout.W, layout.Center).
+		SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+				pg.walletCreationSuccessFunc(isSourceWallet, asset)
+			}, asset))
+			return true
+		}).
+		SetNegativeButtonText(values.String(values.StrCancel)).
+		SetPositiveButtonText(values.String(values.StrContinue))
+	pg.ParentWindow().ShowModal(createWalletModal)
+}
+
+func (pg *CreateOrderPage) walletCreationSuccessFunc(isSourceWallet bool, asset libutils.AssetType) {
+	if isSourceWallet {
+		pg.updateWalletAndAccountSelector([]libutils.AssetType{asset}, nil)
+	} else {
+		pg.updateWalletAndAccountSelector(nil, []libutils.AssetType{asset})
+	}
+	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
+	pg.ParentNavigator().ClosePagesAfter(CreateOrderPageID)
+	pg.ParentWindow().Reload()
 }
 
 func (pg *CreateOrderPage) ID() string {
@@ -466,23 +505,31 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 	return true
 }
 
-func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) {
+func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) (libutils.AssetType, bool) {
 	if len(selectedFromAsset) > 0 {
-		pg.fromCurrency = selectedFromAsset[0]
-		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
+		selectedAsset := selectedFromAsset[0]
+		ok := pg.sourceWalletSelector.SetSelectedAsset(selectedAsset)
+		if !ok {
+			return selectedAsset, false
+		}
 
+		pg.fromCurrency = selectedAsset
 		pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
 
 		// If the to and from asset are the same, select a new to asset.
-		if selectedFromAsset[0] == pg.toCurrency {
+		if selectedAsset == pg.toCurrency {
 			// Get all available assets.
 			allAssets := pg.WL.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
-				if asset != selectedFromAsset[0] {
+				if asset != selectedAsset {
 
 					// Select the first available asset as the new to asset.
+					ok := pg.destinationWalletSelector.SetSelectedAsset(asset)
+					if !ok {
+						continue
+					}
+
 					pg.toCurrency = asset
-					pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
 					pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
 
 					break
@@ -492,23 +539,33 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 	}
 
 	if len(selectedToAsset) > 0 {
-		pg.toCurrency = selectedToAsset[0]
-		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
+		selectedAsset := selectedToAsset[0]
+		ok := pg.destinationWalletSelector.SetSelectedAsset(selectedAsset)
+		if !ok {
+			return selectedAsset, false
+		}
 
+		pg.toCurrency = selectedAsset
 		pg.toAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.toCurrency)
 
 		// If the to and from asset are the same, select a new from asset.
-		if selectedToAsset[0] == pg.fromCurrency {
+		if selectedAsset == pg.fromCurrency {
 
 			// Get all available assets.
 			allAssets := pg.WL.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
-				if asset != selectedToAsset[0] {
+				if asset != selectedAsset {
 
 					// Select the first available asset as the new from asset.
+					ok := pg.sourceWalletSelector.SetSelectedAsset(asset)
+					if !ok {
+						continue
+					}
+
 					pg.fromCurrency = asset
-					pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
 					pg.fromAmountEditor.AssetTypeSelector.SetSelectedAssetType(pg.fromCurrency)
+
+					break
 				}
 			}
 		}
@@ -525,6 +582,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 
 	// Save the exchange configuration changes.
 	pg.updateExchangeConfig()
+	return "", true
 }
 
 // swapCurrency swaps the values of the from and to currency fields.
@@ -960,7 +1018,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 																gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
 															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
 															})
 														}),
@@ -969,7 +1027,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											)
 										}),
 										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+											return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 												return layout.E.Layout(gtx, pg.viewAllButton.Layout)
 											})
 										}),
@@ -1137,17 +1195,25 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 
 		sourceAccount = exchangeConfig.SourceAccountNumber
 		destinationAccount = exchangeConfig.DestinationAccountNumber
-	} else {
+	}
+
+	noSourceWallet := sourceWallet == nil || sourceWallet.Asset == nil
+	noDestinationWallet := destinationWallet == nil || destinationWallet.Asset == nil
+	if noSourceWallet || noDestinationWallet {
 		// New exchange configuration will be generated using the set asset
 		// types since none existed before. It two distinct asset type wallet
 		// don't exist execution does get here.
 		wallets := pg.WL.AssetsManager.AllWallets()
-		pg.fromCurrency = wallets[0].GetAssetType()
+		if noSourceWallet {
+			pg.fromCurrency = wallets[0].GetAssetType()
+		}
 
-		for _, w := range wallets {
-			if w.GetAssetType() != pg.fromCurrency {
-				pg.toCurrency = w.GetAssetType()
-				break
+		if noDestinationWallet {
+			for _, w := range wallets {
+				if w.GetAssetType() != pg.fromCurrency {
+					pg.toCurrency = w.GetAssetType()
+					break
+				}
 			}
 		}
 	}
@@ -1156,7 +1222,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.fromCurrency).
 		Title(values.String(values.StrSource))
 
-	if sourceWallet == nil {
+	if noSourceWallet {
 		isConfigUpdateRequired = true
 		pg.sourceWalletSelector.SetSelectedAsset(pg.fromCurrency)
 		sourceWallet = pg.sourceWalletSelector.SelectedWallet()
@@ -1192,7 +1258,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 	pg.destinationWalletSelector = components.NewWalletAndAccountSelector(pg.Load, pg.toCurrency).
 		Title(values.String(values.StrDestination))
 
-	if destinationWallet == nil {
+	if noDestinationWallet {
 		isConfigUpdateRequired = true
 		pg.destinationWalletSelector.SetSelectedAsset(pg.toCurrency)
 		destinationWallet = pg.destinationWalletSelector.SelectedWallet()
