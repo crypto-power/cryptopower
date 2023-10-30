@@ -2,6 +2,7 @@ package governance
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gioui.org/layout"
@@ -24,7 +25,7 @@ const (
 	ProposalsPageID = "Proposals"
 
 	// pageSize defines the number of proposals that can be fetched at ago.
-	pageSize = int32(10)
+	pageSize = int32(20)
 )
 
 type (
@@ -140,6 +141,8 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 		offset = 0
 		pg.previousFilter = proposalFilter
 	}
+
+	fmt.Println("------proposalFilter--------->", proposalFilter)
 
 	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true)
 	listItems := make([]*components.ProposalItem, 0)
@@ -287,7 +290,8 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 						if pg.scroll.ItemsCount() <= 0 {
-							return components.LayoutNoProposalsFound(gtx, pg.Load, pg.isSyncing, 0)
+							isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
+							return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
 						}
 						proposalItems := pg.scroll.FetchedData().([]*components.ProposalItem)
 						return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
@@ -308,7 +312,8 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutSyncSection(gtx C) D {
-	if pg.isSyncing {
+	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
+	if isProposalSyncing {
 		return pg.layoutIsSyncingSection(gtx)
 	} else if pg.syncCompleted {
 		return pg.updatedIcon.Layout(gtx, values.MarginPadding20)
@@ -330,6 +335,7 @@ func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
+	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -344,7 +350,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						var text string
-						if pg.isSyncing {
+						if isProposalSyncing {
 							text = values.String(values.StrSyncingState)
 						} else if pg.syncCompleted {
 							text = values.String(values.StrUpdated)

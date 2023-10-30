@@ -28,10 +28,10 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 		proposal := prop.Proposal
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layoutAuthorAndDate(gtx, l, prop)
+				return layoutTitleAndDate(gtx, l, prop)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layoutTitle(gtx, l, proposal)
+				return layoutAuthor(gtx, l, prop)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if proposal.Category == libwallet.ProposalCategoryActive ||
@@ -45,18 +45,11 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 	})
 }
 
-func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
+func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	proposal := item.Proposal
 	grayCol := l.Theme.Color.GrayText2
-
-	nameLabel := l.Theme.Body2(proposal.Username)
-	nameLabel.Color = grayCol
-
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
-
-	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
-	versionLabel.Color = grayCol
 
 	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
 	stateLabel.Color = grayCol
@@ -86,14 +79,10 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	categoryLabel.Color = categoryLabelColor
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(nameLabel.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-				}),
-				layout.Rigid(versionLabel.Layout),
-			)
+		layout.Flexed(0.7, func(gtx C) D {
+			lbl := l.Theme.H6(proposal.Name)
+			lbl.Font.Weight = font.SemiBold
+			return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -145,10 +134,26 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	)
 }
 
-func layoutTitle(gtx C, l *load.Load, proposal libwallet.Proposal) D {
-	lbl := l.Theme.H6(proposal.Name)
-	lbl.Font.Weight = font.SemiBold
-	return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
+func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
+	proposal := item.Proposal
+	grayCol := l.Theme.Color.GrayText2
+
+	nameLabel := l.Theme.Body2(proposal.Username)
+	nameLabel.Color = grayCol
+
+	dotLabel := l.Theme.H4(" . ")
+	dotLabel.Color = grayCol
+
+	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
+	versionLabel.Color = grayCol
+
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(nameLabel.Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+		}),
+		layout.Rigid(versionLabel.Layout),
+	)
 }
 
 func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem) D {

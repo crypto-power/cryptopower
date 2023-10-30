@@ -109,7 +109,7 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 
 	// progressScale represent the different progress bar layers
 	progressScale := func(width int, color color.NRGBA, layer int) layout.Dimensions {
-		maxHeight := values.MarginPadding8
+		maxHeight := values.MarginPadding10
 		rW, rE = 0, 0
 		if layer == 2 {
 			if width >= progressBarWidth {
@@ -280,7 +280,11 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 
 func (v *VoteBar) layoutInfo(window app.WindowNavigator, gtx C) D {
 	dims := layout.Flex{}.Layout(gtx,
-		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, v.totalVotes)).Layout),
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			lb := v.Theme.Body1(values.StringF(values.StrTotalVotesReverse, v.totalVotes))
+			lb.Font.Weight = font.SemiBold
+			return lb.Layout(gtx)
+		}),
 		layout.Rigid(func(gtx C) D {
 			if v.infoButton.Button.Clicked() {
 				window.ShowModal(v.infoButtonModal())

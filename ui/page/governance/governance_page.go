@@ -144,10 +144,10 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
-		txlisingView := layout.Flexed(1, func(gtx C) D {
+		proposalListView := layout.Flexed(1, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(pg.layoutPageTopNav),
-				layout.Rigid(pg.Theme.Separator().Layout),
+				// layout.Rigid(pg.layoutPageTopNav),
+				// layout.Rigid(pg.Theme.Separator().Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 						return pg.CurrentPage().Layout(gtx)
@@ -158,7 +158,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 
 		items := []layout.FlexChild{}
 		items = append(items, layout.Rigid(pg.sectionNavTab))
-		items = append(items, txlisingView)
+		items = append(items, proposalListView)
 		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, items...)
 	})
 }
@@ -241,7 +241,7 @@ func (pg *Page) layoutTabs(gtx C) D {
 
 func (pg *Page) layoutPageTopNav(gtx C) D {
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.GovernanceActiveIcon.Layout24dp),
+		// layout.Rigid(pg.Theme.Icons.GovernanceActiveIcon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Left: values.MarginPadding20,
