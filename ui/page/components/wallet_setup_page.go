@@ -635,13 +635,3 @@ func (pg *CreateWallet) validRestoreWalletInputs() bool {
 
 	return true
 }
-
-// func (pg *CreateWallet) walletCreationSuccessCallback() {
-// 	// display the overview page if the user is creating a wallet
-// 	// for the first time (i.e coming from the onboarding page)
-// 	if len(pg.WL.AssetsManager.AllWallets()) == 1 {
-// 		pg.ParentNavigator().Display(NewHomePage(pg.Load))
-// 		return
-// 	}
-// 	pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
-// }
