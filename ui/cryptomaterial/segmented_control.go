@@ -13,6 +13,9 @@ type SegmentedControl struct {
 	theme *Theme
 	list  *ClickableList
 
+	leftNavBtn,
+	rightNavBtn *Clickable
+
 	selectedIndex int
 	segmentTitles []string
 
@@ -28,6 +31,8 @@ func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
 		list:          list,
 		theme:         t,
 		segmentTitles: segmentTitles,
+		leftNavBtn:    t.NewClickable(false),
+		rightNavBtn:   t.NewClickable(false),
 	}
 }
 
@@ -68,12 +73,20 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 
 func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 	sc.handleEvents()
-
+	hideLeftNav := sc.list.Position.BeforeEnd && sc.list.Position.First == 0
 	return LinearLayout{
-		Width:  WrapContent,
-		Height: WrapContent,
+		Width:       WrapContent,
+		Height:      WrapContent,
+		Orientation: layout.Horizontal,
+		Alignment:   layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			if hideLeftNav {
+				return D{}
+			}
+			return sc.leftNavBtn.Layout(gtx, sc.theme.Icons.ChevronLeft.Layout24dp)
+		}),
+		layout.Flexed(.94, func(gtx C) D {
 			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 				isSelectedSegment := sc.SelectedIndex() == i
 				return layout.Center.Layout(gtx, func(gtx C) D {
@@ -108,6 +121,12 @@ func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 				})
 			})
 		}),
+		layout.Flexed(.03, func(gtx C) D {
+			if !hideLeftNav {
+				return D{}
+			}
+			return sc.rightNavBtn.Layout(gtx, sc.theme.Icons.ChevronRight.Layout24dp)
+		}),
 	)
 }
 
@@ -119,6 +138,18 @@ func (sc *SegmentedControl) handleEvents() {
 			sc.changed = true
 		}
 		sc.selectedIndex = clickedSegmentIndex
+	}
+
+	if sc.leftNavBtn.Clicked() {
+		sc.list.Position.First = 0
+		sc.list.Position.Offset = 0
+		sc.list.Position.BeforeEnd = true
+		sc.list.ScrollToEnd = false
+	}
+	if sc.rightNavBtn.Clicked() {
+		sc.list.Position.OffsetLast = 0
+		sc.list.Position.BeforeEnd = false
+		sc.list.ScrollToEnd = true
 	}
 }
 
