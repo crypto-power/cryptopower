@@ -113,7 +113,7 @@ func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst b
 	return string(jsonEncodedTransactions), nil
 }
 
-func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []sharedW.Transaction, err error) {
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []*sharedW.Transaction, err error) {
 	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
 	return
 }
@@ -260,7 +260,7 @@ func (asset *Asset) TxMatchesFilter2(direction, blockHeight int32, txType, ticke
 	return asset.TxMatchesFilter(&tx, txFilter)
 }
 
-func Confirmations(bestBlock int32, tx sharedW.Transaction) int32 {
+func Confirmations(bestBlock int32, tx *sharedW.Transaction) int32 {
 	if tx.BlockHeight == sharedW.UnminedTxHeight {
 		return 0
 	}
@@ -268,7 +268,7 @@ func Confirmations(bestBlock int32, tx sharedW.Transaction) int32 {
 	return (bestBlock - tx.BlockHeight) + 1
 }
 
-func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx sharedW.Transaction) string {
+func TicketStatus(ticketMaturity, ticketExpiry, bestBlock int32, tx *sharedW.Transaction) string {
 	if tx.Type != TxTypeTicketPurchase {
 		return ""
 	}

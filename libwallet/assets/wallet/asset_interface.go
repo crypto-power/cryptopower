@@ -55,7 +55,7 @@ type Asset interface {
 	CountTransactions(txFilter int32) (int, error)
 	GetTransactionRaw(txHash string) (*Transaction, error)
 	TxMatchesFilter(tx *Transaction, txFilter int32) bool
-	GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]Transaction, error)
+	GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]*Transaction, error)
 
 	GetBestBlock() *BlockInfo
 	GetBestBlockHeight() int32

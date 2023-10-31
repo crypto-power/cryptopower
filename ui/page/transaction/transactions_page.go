@@ -57,7 +57,7 @@ type TransactionsPage struct {
 	txTypeDropDown   *cryptomaterial.DropDown
 	transactionList  *cryptomaterial.ClickableList
 	previousTxFilter int32
-	scroll           *components.Scroll[sharedW.Transaction]
+	scroll           *components.Scroll[*sharedW.Transaction]
 
 	tabs *cryptomaterial.ClickableList
 
@@ -189,7 +189,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]sharedW.Transaction, int, bool, error) {
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, bool, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
@@ -386,7 +386,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
 		transactions := pg.scroll.FetchedData()
-		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &transactions[selectedItem], false))
+		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, transactions[selectedItem], false))
 	}
 	cryptomaterial.DisplayOneDropdown(pg.txTypeDropDown)
 

@@ -10,7 +10,7 @@ import (
 	w "github.com/ltcsuite/ltcwallet/wallet"
 )
 
-func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary w.TransactionSummary) sharedW.Transaction {
+func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary w.TransactionSummary) *sharedW.Transaction {
 	txHex := fmt.Sprintf("%x", txsummary.Transaction)
 	decodedTx, _ := asset.decodeTxHex(txHex)
 	txSize := decodedTx.SerializeSize()
@@ -28,7 +28,7 @@ func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary 
 	outputs, totalOutputsAmount := asset.decodeTxOutputs(decodedTx, txsummary.MyOutputs)
 	amount, direction := txhelper.TransactionAmountAndDirection(totalInputsAmount, totalOutputsAmount, int64(txsummary.Fee))
 
-	tx := sharedW.Transaction{
+	return &sharedW.Transaction{
 		WalletID:    asset.GetWalletID(),
 		Hash:        txsummary.Hash.String(),
 		Type:        txType,
@@ -48,5 +48,4 @@ func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary 
 		Inputs:    inputs,
 		Outputs:   outputs,
 	}
-	return tx
 }

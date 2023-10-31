@@ -40,7 +40,7 @@ type (
 	C              = layout.Context
 	D              = layout.Dimensions
 	TransactionRow struct {
-		Transaction sharedW.Transaction
+		Transaction *sharedW.Transaction
 		Index       int
 	}
 
@@ -239,7 +239,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 		return D{}
 	}
 
-	txStatus := TransactionTitleIcon(l, wal, &row.Transaction)
+	txStatus := TransactionTitleIcon(l, wal, row.Transaction)
 	amount := wal.ToAmount(row.Transaction.Amount).String()
 	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
 	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
@@ -459,7 +459,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 								Direction:   layout.Center,
 							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									tx := &row.Transaction
+									tx := row.Transaction
 									if wal.TxMatchesFilter(tx, libutils.TxFilterStaking) {
 										durationPrefix := values.String(values.StrVoted)
 										if tx.Type == txhelper.TxTypeTicketPurchase {
@@ -521,7 +521,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, 
 
 }
 
-func TxConfirmations(l *load.Load, transaction sharedW.Transaction) int32 {
+func TxConfirmations(l *load.Load, transaction *sharedW.Transaction) int32 {
 	if transaction.BlockHeight != -1 {
 		return (l.WL.AssetsManager.WalletWithID(transaction.WalletID).GetBestBlockHeight() - transaction.BlockHeight) + 1
 	}

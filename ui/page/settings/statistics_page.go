@@ -30,7 +30,7 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	txs      []sharedW.Transaction
+	txs      []*sharedW.Transaction
 	accounts *sharedW.Accounts
 
 	l             layout.List

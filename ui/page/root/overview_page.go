@@ -59,8 +59,8 @@ type OverviewPage struct {
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
-	transactions              []sharedW.Transaction
-	stakes                    []sharedW.Transaction
+	transactions              []*sharedW.Transaction
+	stakes                    []*sharedW.Transaction
 	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
@@ -186,8 +186,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 
 	pg.assetsTotalBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
 
-	pg.stakes = make([]sharedW.Transaction, 0)
-	pg.transactions = make([]sharedW.Transaction, 0)
+	pg.stakes = make([]*sharedW.Transaction, 0)
+	pg.transactions = make([]*sharedW.Transaction, 0)
 
 	return pg
 }
@@ -1357,7 +1357,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 }
 
 func (pg *OverviewPage) loadTransactions() {
-	pg.transactions = make([]sharedW.Transaction, 0)
+	pg.transactions = make([]*sharedW.Transaction, 0)
 	wal := pg.WL.AllSortedWalletList()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)

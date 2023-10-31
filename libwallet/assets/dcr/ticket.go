@@ -565,8 +565,8 @@ func (asset *Asset) NextTicketPriceRemaining() (secs int64, err error) {
 }
 
 // UnspentUnexpiredTickets returns all Unmined, Immature and Live tickets.
-func (asset *Asset) UnspentUnexpiredTickets() ([]sharedW.Transaction, error) {
-	var tickets []sharedW.Transaction
+func (asset *Asset) UnspentUnexpiredTickets() ([]*sharedW.Transaction, error) {
+	var tickets []*sharedW.Transaction
 	for _, filter := range []int32{TxFilterUnmined, TxFilterImmature, TxFilterLive} {
 		tx, err := asset.GetTransactionsRaw(0, 0, filter, true)
 		if err != nil {
