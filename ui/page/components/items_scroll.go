@@ -68,13 +68,20 @@ func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll) FetchScrollData(isScrollUp bool, window app.WindowNavigator) {
+func (s *Scroll) FetchScrollData(isScrollUp bool, window app.WindowNavigator, isResetList bool) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
 		s.isLoadingItems = false
 		// offset will be added back so that the earlier page is recreated.
 		s.offset -= s.pageSize
+	}
+	if isResetList {
+		s.loadedAllItems = false
+		s.isLoadingItems = false
+		s.offset = 0
+		s.itemsCount = 0
+		s.data = nil
 	}
 	s.mu.Unlock()
 
@@ -97,9 +104,9 @@ func (s *Scroll) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
 
 	s.direction = temDirection
 	s.mu.Lock()
-	fmt.Println("-fetchScrollData---isScrollUp->", isScrollUp)
+	fmt.Println("------s.isLoadingItems------->", s.isLoadingItems)
+	fmt.Println("------s.loadedAllItems------->", s.loadedAllItems)
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
-		fmt.Println("-fetchScrollData------000000>")
 		s.mu.Unlock()
 		return
 	}
@@ -108,32 +115,24 @@ func (s *Scroll) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
 		s.list.Position.Offset = s.scrollView*-1 + 1
 		s.list.Position.OffsetLast = 1
 		s.offset -= s.pageSize
-		fmt.Println("-scroll---Up--->", s.offset)
 	} else {
 		s.list.Position.Offset = 1
 		s.list.Position.OffsetLast = s.scrollView*-1 + 1
 		if s.data != nil {
 			s.offset += s.pageSize
 		}
-		fmt.Println("-scroll---down--->", s.offset)
 	}
 
-	fmt.Println("-fetchScrollData------11111>")
-
 	s.isLoadingItems = true
-	// s.itemsCount = -1 // should trigger loading icon
+	itemsCountTemp := s.itemsCount
+	s.itemsCount = -1 // should trigger loading icon
 	offset := s.offset
 	tempSize := s.pageSize
 
 	s.mu.Unlock()
 
 	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
-	// if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-	// 	items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
-	// }
-	fmt.Println("-fetchScrollData------22222>")
+	fmt.Println("-----count-------->", itemsLen)
 
 	s.mu.Lock()
 
@@ -153,11 +152,11 @@ func (s *Scroll) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
 	if itemsLen > 0 {
 		s.data = items
 		s.itemsCount = itemsLen
+	} else {
+		s.itemsCount = itemsCountTemp
 	}
 	s.isLoadingItems = false
 	s.mu.Unlock()
-
-	fmt.Println("-fetchScrollData------33333>")
 
 	if isReset {
 		// resets the values for use on the next iteration.

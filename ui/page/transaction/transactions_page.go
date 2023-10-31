@@ -98,7 +98,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	}
 
 	pg.listenForTxNotifications()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 func (pg *TransactionsPage) sectionNavTab(gtx C) D {
@@ -382,7 +382,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 		break
 	}
 
@@ -395,7 +395,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if tabItemClicked, clickedTabIndex := pg.tabs.ItemClicked(); tabItemClicked {
 		pg.selectedTabIndex = clickedTabIndex
 		pg.refreshAvailableTxType()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	}
 }
 
@@ -415,7 +415,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			select {
 			case n := <-pg.TxAndBlockNotifChan():
 				if n.Type == listeners.NewTransaction {
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():

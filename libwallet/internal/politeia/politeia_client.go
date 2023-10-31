@@ -147,6 +147,17 @@ func (c *politeiaClient) tokenInventory() (*www.TokenInventoryReply, error) {
 	return &tokenInventoryReply, nil
 }
 
+func (c *politeiaClient) getInventory() (*www.TokenInventoryReply, error) {
+	var tokenInventoryReply www.TokenInventoryReply
+
+	err := c.makeRequest(http.MethodGet, apiPath, tkv1.RouteInventory, nil, &tokenInventoryReply)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tokenInventoryReply, nil
+}
+
 func (c *politeiaClient) voteDetails(token string) (*tkv1.DetailsReply, error) {
 	requestBody, err := json.Marshal(&tkv1.Details{Token: token})
 	if err != nil {

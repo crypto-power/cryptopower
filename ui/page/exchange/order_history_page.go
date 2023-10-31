@@ -84,7 +84,7 @@ func (pg *OrderHistoryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
 	pg.listenForSyncNotifications()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 func (pg *OrderHistoryPage) OnNavigatedFrom() {
@@ -95,7 +95,7 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
 	if pg.statusDropdown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
@@ -306,7 +306,7 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 			select {
 			case n := <-pg.OrderNotifChan:
 				if n.OrderStatus == wallet.OrderStatusSynced {
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():

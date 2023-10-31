@@ -111,7 +111,7 @@ func (pg *ProposalsPage) syncAndUpdateProposals() {
 	go pg.WL.AssetsManager.Politeia.Sync(context.Background())
 	// Only proceed if allowed make Proposals API call.
 	pg.listenForSyncNotifications()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
 }
 
@@ -169,7 +169,8 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	if pg.statusDropDown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		fmt.Println("---statusDropDown---Changed---", pg.statusDropDown.Selected())
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
@@ -392,7 +393,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 					pg.syncCompleted = true
 					pg.isSyncing = false
 
-					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 					pg.ParentWindow().Reload()
 				}
 			case <-pg.ctx.Done():

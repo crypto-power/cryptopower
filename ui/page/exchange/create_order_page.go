@@ -232,7 +232,7 @@ func (pg *CreateOrderPage) initPage() {
 	pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
 	pg.listenForNotifications()
 	pg.loadOrderConfig()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -1048,7 +1048,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1266,7 +1266,7 @@ func (pg *CreateOrderPage) listenForNotifications() {
 			case n := <-pg.OrderNotifChan:
 				switch n.OrderStatus {
 				case wallet.OrderStatusSynced, wallet.OrderCreated:
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
+					pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 					pg.ParentWindow().Reload()
 				case wallet.OrderSchedulerStarted:
 					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
