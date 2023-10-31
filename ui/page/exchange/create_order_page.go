@@ -69,8 +69,6 @@ type CreateOrderPage struct {
 	fromAmountEditor components.SelectAssetEditor
 	toAmountEditor   components.SelectAssetEditor
 
-	backButton cryptomaterial.IconButton
-
 	createOrderBtn         cryptomaterial.Button
 	swapButton             cryptomaterial.IconButton
 	refreshExchangeRateBtn cryptomaterial.IconButton
@@ -129,8 +127,6 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
 	}
-
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -329,7 +325,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.viewAllButton.Clicked() {
-		pg.ParentNavigator().Display(NewOrderHistoryPage(pg.Load))
+		pg.ParentWindow().Display(NewOrderHistoryPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
@@ -682,27 +678,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
-	sp := components.SubPage{
-		Load:       pg.Load,
-		Title:      values.String(values.StrCreateOrder),
-		BackButton: pg.backButton,
-		Back: func() {
-			pg.ParentNavigator().CloseCurrentPage()
-		},
-		Body: func(gtx C) D {
-			overlay := layout.Stacked(func(gtx C) D { return D{} })
-			if overlaySet {
-				gtxCopy := gtx
-				overlay = layout.Stacked(func(gtx C) D {
-					return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
-				})
-				// Disable main page from receiving events.
-				gtx = gtx.Disabled()
-			}
-			return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
-		},
-	}
-
 	return cryptomaterial.LinearLayout{
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
@@ -714,7 +689,16 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 			Alignment: layout.Middle,
 			Padding:   layout.Inset{Top: values.MarginPadding20},
 		}.Layout2(gtx, func(gtx C) D {
-			return sp.Layout(pg.ParentWindow(), gtx)
+			overlay := layout.Stacked(func(gtx C) D { return D{} })
+			if overlaySet {
+				gtxCopy := gtx
+				overlay = layout.Stacked(func(gtx C) D {
+					return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
+				})
+				// Disable main page from receiving events.
+				gtx = gtx.Disabled()
+			}
+			return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
 		})
 	})
 }

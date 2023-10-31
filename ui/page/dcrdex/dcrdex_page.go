@@ -7,7 +7,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 const DCRDEXID = "DCRDEXID"
@@ -71,29 +70,8 @@ func (pg *DEXPage) Layout(gtx C) D {
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
 			}.Layout(gtx,
-				layout.Rigid(pg.topBar),
 				layout.Flexed(1, pg.CurrentPage().Layout),
 			)
-		}),
-	)
-}
-
-func (pg *DEXPage) topBar(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Alignment:   layout.Middle,
-		Clickable:   pg.openTradeMainPage,
-		Padding:     layout.UniformInset(values.MarginPadding12),
-	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
-		}),
-		layout.Rigid(func(gtx C) D {
-			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrDcrDex))
-			txt.Color = pg.Theme.Color.Gray1
-			return txt.Layout(gtx)
 		}),
 	)
 }
