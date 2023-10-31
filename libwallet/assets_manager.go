@@ -505,6 +505,10 @@ func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
 // DeleteWallet deletes a wallet from the assets manager.
 func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	wallet := mgr.WalletWithID(walletID)
+	if wallet == nil { // already deleted?
+		return nil
+	}
+
 	if err := wallet.DeleteWallet(privPass); err != nil {
 		return err
 	}
