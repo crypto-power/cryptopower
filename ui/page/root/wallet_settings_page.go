@@ -441,9 +441,10 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			walletDeleted := func() {
 				m.Dismiss()
-				pg.ParentWindow().CloseAllPages()
 				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
-					pg.onWalletSelected()
+					pg.walletCallbackFunc()
+				} else {
+					pg.ParentWindow().CloseAllPages()
 				}
 			}
 
