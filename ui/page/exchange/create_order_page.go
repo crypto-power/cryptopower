@@ -286,7 +286,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.viewAllButton.Clicked() {
-		pg.ParentNavigator().Display(NewOrderHistoryPage(pg.Load))
+		pg.ParentWindow().Display(NewOrderHistoryPage(pg.Load))
 	}
 
 	if pg.infoButton.Button.Clicked() {
