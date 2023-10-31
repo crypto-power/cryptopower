@@ -139,7 +139,7 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 }
 
 func (pg *SignMessagePage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *SignMessagePage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {

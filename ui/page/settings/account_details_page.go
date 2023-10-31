@@ -169,7 +169,7 @@ func (pg *AcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx 
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *AcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {

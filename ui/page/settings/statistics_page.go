@@ -183,7 +183,7 @@ func (pg *StatPage) layoutDesktop(gtx C) D {
 
 	// Refresh frames every 1 second
 	op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
-	return components.UniformPadding(gtx, container)
+	return container(gtx)
 }
 
 func (pg *StatPage) layoutMobile(gtx C) D {

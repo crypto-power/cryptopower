@@ -244,28 +244,24 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		},
 	}
 
-	dims := components.UniformPadding(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.topNav(gtx)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-					return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-							return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-								return pageContent[i](gtx)
-							})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				return pg.topNav(gtx)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+						return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+							return pageContent[i](gtx)
 						})
 					})
 				})
-			}),
-		)
-	})
-
-	return dims
+			})
+		}),
+	)
 }
 
 func (pg *ReceivePage) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -364,11 +360,11 @@ func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 }
 
 func (pg *ReceivePage) topNav(gtx C) D {
-	m := values.MarginPadding0
+	// m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
-			return layout.Inset{Left: m}.Layout(gtx, pg.Theme.H6(textWithUnit).Layout)
+			return /*layout.Inset{Left: m}.Layout(gtx, */ pg.Theme.H6(textWithUnit).Layout(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {

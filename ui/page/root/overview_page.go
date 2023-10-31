@@ -81,6 +81,8 @@ type OverviewPage struct {
 
 	mixerSliderData      map[int]*mixerData
 	sortedMixerSlideKeys []int
+
+	showNavigationFunc showNavigationFunc
 }
 
 type assetBalanceSliderItem struct {
@@ -103,7 +105,7 @@ type mixerData struct {
 	unmixedBalance sharedW.AssetAmount
 }
 
-func NewOverviewPage(l *load.Load) *OverviewPage {
+func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *OverviewPage {
 	pg := &OverviewPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
@@ -169,6 +171,7 @@ func NewOverviewPage(l *load.Load) *OverviewPage {
 		card:               l.Theme.Card(),
 		sliderRedirectBtn:  l.Theme.NewClickable(false),
 		forceRefreshRates:  l.Theme.NewClickable(false),
+		showNavigationFunc: showNavigationFunc,
 	}
 
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -225,7 +228,9 @@ func (pg *OverviewPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *OverviewPage) HandleUserInteractions() {
 	for pg.sliderRedirectBtn.Clicked() {
-		pg.ParentNavigator().Display(NewWalletSelectorPage(pg.Load))
+		walPage := NewWalletSelectorPage(pg.Load)
+		walPage.showNavigationFunc = pg.showNavigationFunc
+		pg.ParentNavigator().Display(walPage)
 	}
 
 	if pg.forceRefreshRates.Clicked() {
@@ -240,9 +245,14 @@ func (pg *OverviewPage) HandleUserInteractions() {
 			Wallet: mixerData.Asset,
 		}
 
-		mp := NewMainPage(pg.Load)
+		pg.showNavigationFunc(true)
+		walletCallbackFunc := func() {
+			pg.showNavigationFunc(false)
+		}
+		mp := NewMainPage(pg.Load, walletCallbackFunc)
 		pg.ParentNavigator().Display(mp)
 		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
+		mp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
