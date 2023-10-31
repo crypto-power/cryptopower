@@ -57,7 +57,7 @@ type TransactionsPage struct {
 	txTypeDropDown   *cryptomaterial.DropDown
 	transactionList  *cryptomaterial.ClickableList
 	previousTxFilter int32
-	scroll           *components.Scroll
+	scroll           *components.Scroll[sharedW.Transaction]
 
 	tabs *cryptomaterial.ClickableList
 
@@ -189,7 +189,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]sharedW.Transaction, int, bool, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
@@ -260,7 +260,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 										})
 									}
 
-									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
+									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
 										row := components.TransactionRow{
 											Transaction: wallTxs[index],
@@ -331,7 +331,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 											return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
 										})
 									}
-									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
+									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
 										row := components.TransactionRow{
 											Transaction: wallTxs[index],
@@ -385,7 +385,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
-		transactions := pg.scroll.FetchedData().([]sharedW.Transaction)
+		transactions := pg.scroll.FetchedData()
 		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &transactions[selectedItem], false))
 	}
 	cryptomaterial.DisplayOneDropdown(pg.txTypeDropDown)

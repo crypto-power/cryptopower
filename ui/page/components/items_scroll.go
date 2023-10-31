@@ -15,9 +15,9 @@ import (
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
 // returns data interface, count of the items in the data interface, isReset and an error.
 // isReset is used to reset the offset value.
-type ScrollFunc func(offset, pageSize int32) (data interface{}, count int, isReset bool, err error)
+type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, isReset bool, err error)
 
-type Scroll struct {
+type Scroll[T any] struct {
 	load      *load.Load
 	list      *widget.List
 	listStyle *cryptomaterial.ListStyle
@@ -28,8 +28,8 @@ type Scroll struct {
 	pageSize   int32
 	offset     int32
 	itemsCount int
-	queryFunc  ScrollFunc
-	data       interface{}
+	queryFunc  ScrollFunc[T]
+	data       []T
 
 	// scrollView defines the scroll view length in pixels.
 	scrollView int
@@ -41,8 +41,8 @@ type Scroll struct {
 }
 
 // NewScroll returns a new scroll items component.
-func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
-	return &Scroll{
+func NewScroll[T any](load *load.Load, pageSize int32, queryFunc ScrollFunc[T]) *Scroll[T] {
+	return &Scroll[T]{
 		list: &widget.List{
 			List: layout.List{
 				Axis: layout.Vertical,
@@ -58,7 +58,7 @@ func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -76,7 +76,7 @@ func (s *Scroll) FetchScrollData(isReverse bool, window app.WindowNavigator) {
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 	s.mu.Lock()
 
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
@@ -137,14 +137,14 @@ func (s *Scroll) fetchScrollData(isReverse bool, window app.WindowNavigator) {
 }
 
 // FetchedData returns the latest queried data.
-func (s *Scroll) FetchedData() interface{} {
+func (s *Scroll[T]) FetchedData() []T {
 	defer s.mu.RUnlock()
 	s.mu.RLock()
 	return s.data
 }
 
 // ItemsCount returns the count of the last fetched items.
-func (s *Scroll) ItemsCount() int {
+func (s *Scroll[T]) ItemsCount() int {
 	defer s.mu.RUnlock()
 	s.mu.RLock()
 	return s.itemsCount
@@ -152,7 +152,7 @@ func (s *Scroll) ItemsCount() int {
 
 // List returns the list theme already in existence or newly created.
 // Multiple list instances shouldn't exist for a given scroll component.
-func (s *Scroll) List() *cryptomaterial.ListStyle {
+func (s *Scroll[T]) List() *cryptomaterial.ListStyle {
 	defer s.mu.RUnlock()
 	s.mu.RLock()
 	if s.listStyle == nil {
@@ -163,7 +163,7 @@ func (s *Scroll) List() *cryptomaterial.ListStyle {
 	return s.listStyle
 }
 
-func (s *Scroll) resetList() {
+func (s *Scroll[T]) resetList() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -174,7 +174,7 @@ func (s *Scroll) resetList() {
 // OnScrollChangeListener listens for the scroll bar movement and update the items
 // list view accordingly. FetchScrollData needs to be invoked first before calling
 // this function.
-func (s *Scroll) OnScrollChangeListener(window app.WindowNavigator) {
+func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	s.mu.Lock()
 
 	// Ignore if the list component on the UI hasn't been drawn.

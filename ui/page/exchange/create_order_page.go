@@ -53,7 +53,7 @@ type CreateOrderPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	scroll           *components.Scroll
+	scroll           *components.Scroll[*instantswap.Order]
 	ordersList       *cryptomaterial.ClickableList
 	exchangeSelector *ExSelector
 	selectedExchange *Exchange
@@ -292,7 +292,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
-		orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+		orderItems := pg.scroll.FetchedData()
 		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
@@ -1036,7 +1036,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	)
 }
 
-func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
 	return orders, len(orders), false, nil
 }
@@ -1045,7 +1045,7 @@ func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	if pg.scroll.ItemsCount() <= 0 {
 		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
-	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
