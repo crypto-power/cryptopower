@@ -73,20 +73,16 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 
 func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 	sc.handleEvents()
-	hideLeftNav := sc.list.Position.BeforeEnd && sc.list.Position.First == 0
 	return LinearLayout{
-		Width:       WrapContent,
+		Width:       gtx.Dp(values.MarginPadding600),
 		Height:      WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			if hideLeftNav {
-				return D{}
-			}
+		layout.Flexed(.035, func(gtx C) D {
 			return sc.leftNavBtn.Layout(gtx, sc.theme.Icons.ChevronLeft.Layout24dp)
 		}),
-		layout.Flexed(.94, func(gtx C) D {
+		layout.Flexed(.8, func(gtx C) D {
 			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 				isSelectedSegment := sc.SelectedIndex() == i
 				return layout.Center.Layout(gtx, func(gtx C) D {
@@ -121,10 +117,7 @@ func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 				})
 			})
 		}),
-		layout.Flexed(.03, func(gtx C) D {
-			if !hideLeftNav {
-				return D{}
-			}
+		layout.Flexed(.035, func(gtx C) D {
 			return sc.rightNavBtn.Layout(gtx, sc.theme.Icons.ChevronRight.Layout24dp)
 		}),
 	)
