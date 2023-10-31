@@ -36,6 +36,11 @@ const (
 	OverviewPageID = "Overview"
 )
 
+type multiWalletTx struct {
+	*sharedW.Transaction
+	walletID int
+}
+
 type OverviewPage struct {
 	*app.GenericPageModal
 	*load.Load
@@ -59,8 +64,8 @@ type OverviewPage struct {
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
-	transactions              []*sharedW.Transaction
-	stakes                    []*sharedW.Transaction
+	transactions              []*multiWalletTx
+	stakes                    []*multiWalletTx
 	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
@@ -186,8 +191,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 
 	pg.assetsTotalBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
 
-	pg.stakes = make([]*sharedW.Transaction, 0)
-	pg.transactions = make([]*sharedW.Transaction, 0)
+	pg.stakes = make([]*multiWalletTx, 0)
+	pg.transactions = make([]*multiWalletTx, 0)
 
 	return pg
 }
@@ -900,6 +905,10 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		axis = layout.Vertical
 	}
 
+	txAndWallet := func(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
+		return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -946,18 +955,14 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							}
 
 							return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
-								row := components.TransactionRow{
-									Transaction: pg.transactions[index],
-									Index:       index,
-								}
-
+								tx, wal := txAndWallet(pg.transactions[index])
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return components.LayoutTransactionRow(gtx, pg.Load, row, false)
+										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
 									}),
 									layout.Rigid(func(gtx C) D {
 										// No divider for last row
-										if row.Index == len(pg.transactions)-1 {
+										if index == len(pg.transactions)-1 {
 											return D{}
 										}
 
@@ -983,18 +988,14 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						}
 
 						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							row := components.TransactionRow{
-								Transaction: pg.stakes[index],
-								Index:       index,
-							}
-
+							tx, wal := txAndWallet(pg.transactions[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									return components.LayoutTransactionRow(gtx, pg.Load, row, false)
+									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
 								}),
 								layout.Rigid(func(gtx C) D {
 									// No divider for last row
-									if row.Index == len(pg.stakes)-1 {
+									if index == len(pg.stakes)-1 {
 										return D{}
 									}
 
@@ -1357,7 +1358,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 }
 
 func (pg *OverviewPage) loadTransactions() {
-	pg.transactions = make([]*sharedW.Transaction, 0)
+	pg.transactions = make([]*multiWalletTx, 0)
 	wal := pg.WL.AllSortedWalletList()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
@@ -1366,7 +1367,9 @@ func (pg *OverviewPage) loadTransactions() {
 			return
 		}
 
-		pg.transactions = append(pg.transactions, txs...)
+		for _, tx := range txs {
+			pg.transactions = append(pg.transactions, &multiWalletTx{tx, w.GetWalletID()})
+		}
 	}
 
 	sort.Slice(pg.transactions, func(i, j int) bool {
@@ -1381,6 +1384,7 @@ func (pg *OverviewPage) loadTransactions() {
 }
 
 func (pg *OverviewPage) loadStakes() {
+	pg.stakes = make([]*multiWalletTx, 0)
 	wal := pg.WL.AssetsManager.AllDCRWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
@@ -1390,7 +1394,7 @@ func (pg *OverviewPage) loadStakes() {
 		}
 		for _, stakeTx := range txs {
 			if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
-				pg.stakes = append(pg.stakes, stakeTx)
+				pg.stakes = append(pg.stakes, &multiWalletTx{stakeTx, w.GetWalletID()})
 			}
 		}
 	}

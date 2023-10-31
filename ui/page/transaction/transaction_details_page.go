@@ -1003,7 +1003,7 @@ func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionW
 	txn.status = l.Theme.Body1("")
 	txn.wallet = l.Theme.Body2(wal.GetWalletName())
 
-	if components.TxConfirmations(l, transaction) >= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+	if components.TxConfirmations(wal, transaction) >= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
 		txn.status.Text = components.FormatDateOrTime(transaction.Timestamp)
 		txn.confirmationIcons = l.Theme.Icons.ConfirmIcon
 	} else {

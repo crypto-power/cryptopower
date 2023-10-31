@@ -568,12 +568,7 @@ func (mp *MainPage) postDesktopNotification(notifier interface{}) {
 		}
 
 		if mp.WL.AssetsManager.OpenedWalletsCount() > 1 {
-			wallet := mp.WL.AssetsManager.WalletWithID(t.Transaction.WalletID)
-			if wallet == nil {
-				return
-			}
-
-			notification = fmt.Sprintf("[%s] %s", wallet.GetWalletName(), notification)
+			notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
 		}
 
 		initializeBeepNotification(notification)
@@ -691,8 +686,11 @@ func (mp *MainPage) listenForNotifications() {
 					mp.postDesktopNotification(notification)
 				}
 			case notification := <-mp.OrderNotifChan:
-				// Post desktop notification for all events except the synced event.
+				// Post desktop notification for all events except the synced
+				// event.
 				if notification.OrderStatus != wallet.OrderStatusSynced {
+					// TODO: mp.postDesktopNotification does not do anything
+					// with wallet.Order types.
 					mp.postDesktopNotification(notification)
 				}
 			case n := <-mp.SyncStatusChan:

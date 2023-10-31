@@ -51,7 +51,6 @@ func (asset *Asset) DecodeTransaction(walletTx *sharedW.TxInfoFromWallet, netPar
 	}
 
 	return &sharedW.Transaction{
-		WalletID:    walletTx.WalletID,
 		Hash:        msgTx.TxHash().String(),
 		Type:        txType,
 		Hex:         walletTx.Hex,

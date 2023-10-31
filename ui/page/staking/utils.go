@@ -44,9 +44,8 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 	}
 
 	tickets := make([]*transactionItem, 0)
-	assetsManager := l.WL.AssetsManager
 	for _, tx := range txs {
-		w := assetsManager.WalletWithID(tx.WalletID)
+		bestBlockHeight := impl.GetBestBlockHeight()
 
 		ticketSpender, err := impl.TicketSpender(tx.Hash)
 		if err != nil {
@@ -73,13 +72,13 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 		}
 
 		ticketCopy := tx
-		txStatus := components.TransactionTitleIcon(l, w, tx)
-		confirmations := dcr.Confirmations(w.GetBestBlockHeight(), tx)
+		txStatus := components.TransactionTitleIcon(l, impl, tx)
+		confirmations := dcr.Confirmations(bestBlockHeight, tx)
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = dcr.Confirmations(w.GetBestBlockHeight(), ticketSpender) <= impl.TicketMaturity()
+			showProgress = dcr.Confirmations(bestBlockHeight, ticketSpender) <= impl.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -99,7 +98,7 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 
 			confs := confirmations
 			if ticketSpender != nil {
-				confs = dcr.Confirmations(w.GetBestBlockHeight(), ticketSpender)
+				confs = dcr.Confirmations(bestBlockHeight, ticketSpender)
 			}
 
 			progress = (float32(confs) / float32(progressMax)) * 100
@@ -109,7 +108,7 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 			transaction:   ticketCopy,
 			ticketSpender: ticketSpender,
 			status:        txStatus,
-			confirmations: dcr.Confirmations(w.GetBestBlockHeight(), tx),
+			confirmations: dcr.Confirmations(bestBlockHeight, tx),
 			progress:      progress,
 			showProgress:  showProgress,
 			showTime:      showTime,

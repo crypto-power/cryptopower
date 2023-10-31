@@ -29,7 +29,6 @@ func (asset *Asset) decodeTransactionWithTxSummary(blockheight int32, txsummary 
 	amount, direction := txhelper.TransactionAmountAndDirection(totalInputsAmount, totalOutputsAmount, int64(txsummary.Fee))
 
 	return &sharedW.Transaction{
-		WalletID:    asset.GetWalletID(),
 		Hash:        txsummary.Hash.String(),
 		Type:        txType,
 		Hex:         txHex,
