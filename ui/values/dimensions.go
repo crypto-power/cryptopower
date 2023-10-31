@@ -96,6 +96,7 @@ var (
 	MarginPadding500      = unit.Dp(500)
 	DP515                 = unit.Dp(515)
 	MarginPadding550      = unit.Dp(550)
+	MarginPadding570      = unit.Dp(570)
 	MarginPadding600      = unit.Dp(600)
 
 	TextSize10   = unit.Sp(10)
