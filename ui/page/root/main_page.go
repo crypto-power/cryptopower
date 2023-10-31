@@ -359,36 +359,36 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
+				Alignment:   layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return components.UniformPadding(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.MatchParent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Vertical,
-							Alignment:   layout.Middle,
-						}.Layout(gtx,
-							layout.Rigid(mp.pageTabLayout),
-							layout.Rigid(func(gtx C) D {
-								if mp.CurrentPage() == nil {
-									return D{}
+					return cryptomaterial.LinearLayout{
+						Width:       gtx.Dp(values.MarginPadding550),
+						Height:      cryptomaterial.WrapContent,
+						Orientation: layout.Vertical,
+						Alignment:   layout.Middle,
+						Margin:      layout.Inset{Top: values.MarginPadding28},
+					}.Layout(gtx,
+						layout.Rigid(mp.pageTabLayout),
+						layout.Rigid(func(gtx C) D {
+							if mp.CurrentPage() == nil {
+								return D{}
+							}
+							switch mp.CurrentPage().ID() {
+							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
+								transaction.TransactionsPageID, privacy.AccountMixerPageID:
+								// Disable page functionality if a page is not synced or rescanning is in progress.
+								if !mp.selectedWallet.IsSynced() || mp.selectedWallet.IsRescanning() {
+									return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
+										values.String(values.StrFunctionUnavailable), nil)
 								}
-								switch mp.CurrentPage().ID() {
-								case ReceivePageID, send.SendPageID, staking.OverviewPageID,
-									transaction.TransactionsPageID, privacy.AccountMixerPageID:
-									// Disable page functionality if a page is not synced or rescanning is in progress.
-									if !mp.selectedWallet.IsSynced() || mp.selectedWallet.IsRescanning() {
-										return components.DisablePageWithOverlay(mp.Load, mp.CurrentPage(), gtx,
-											values.String(values.StrFunctionUnavailable), nil)
-									}
-									fallthrough
-								default:
-									return mp.CurrentPage().Layout(gtx)
-								}
-							}),
-						)
-					})
+								fallthrough
+							default:
+								return mp.CurrentPage().Layout(gtx)
+							}
+						}),
+					)
 				}),
 			)
 		}),

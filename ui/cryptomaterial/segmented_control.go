@@ -78,7 +78,7 @@ func (sc *SegmentedControl) TransparentLayout(gtx C) D {
 				isSelectedSegment := sc.SelectedIndex() == i
 				return layout.Center.Layout(gtx, func(gtx C) D {
 					bg := sc.theme.Color.Gray2
-					txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+					txt := sc.theme.DecoratedText(values.TextSize14, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
 					border := Border{Radius: Radius(8)}
 					if isSelectedSegment {
 						bg = sc.theme.Color.LightBlue8
