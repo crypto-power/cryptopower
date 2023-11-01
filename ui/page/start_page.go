@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -25,13 +26,21 @@ type (
 	D = layout.Dimensions
 )
 
+type setupAction struct {
+	title     string
+	subTitle  string
+	clickable *cryptomaterial.Clickable
+	border    cryptomaterial.Border
+	width     unit.Dp
+}
+
 type onBoardingScreen struct {
 	title    string
 	subTitle string
 
-	image        *cryptomaterial.Image
-	indicatorBtn *cryptomaterial.Clickable
-	languageSec  *cryptomaterial.DropDown
+	image            *cryptomaterial.Image
+	indicatorBtn     *cryptomaterial.Clickable
+	languageDropdown *cryptomaterial.DropDown
 }
 
 type startPage struct {
@@ -45,10 +54,9 @@ type startPage struct {
 	addWalletButton cryptomaterial.Button
 	nextButton      cryptomaterial.Button
 	skipButton      cryptomaterial.Button
-	backButton      cryptomaterial.IconButton
+	backButton      cryptomaterial.Clickable
 
-	recommended *cryptomaterial.Clickable
-	advanced    *cryptomaterial.Clickable
+	setupActions []*setupAction
 
 	onBoardingScreens []onBoardingScreen
 
@@ -56,7 +64,8 @@ type startPage struct {
 	isQuitting       bool
 	displayStartPage bool
 
-	currentPage int
+	currentPage         int
+	selectedSetupAction int
 }
 
 func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
@@ -66,14 +75,12 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 		loading:          true,
 		displayStartPage: true,
 
-		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
-		nextButton:      l.Theme.Button(values.String(values.StrNext)),
-		skipButton:      l.Theme.OutlineButton(values.String(values.StrSkip)),
-		advanced:        l.Theme.NewClickable(true),
-		recommended:     l.Theme.NewClickable(true),
+		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
+		nextButton:          l.Theme.Button(values.String(values.StrNext)),
+		skipButton:          l.Theme.OutlineButton(values.String(values.StrSkip)),
+		backButton:          *l.Theme.NewClickable(true),
+		selectedSetupAction: -1,
 	}
-
-	sp.backButton, _ = components.SubpageHeaderButtons(l)
 
 	if len(isShuttingDown) > 0 {
 		sp.isQuitting = isShuttingDown[0]
@@ -111,6 +118,41 @@ func (sp *startPage) OnNavigatedTo() {
 	}
 }
 
+func (sp *startPage) initSetupItems() {
+	radius := cryptomaterial.CornerRadius{
+		TopRight:    8,
+		TopLeft:     8,
+		BottomRight: 8,
+		BottomLeft:  8,
+	}
+
+	setupActions := []*setupAction{
+		{
+			title:     values.String(values.StrRecommended),
+			subTitle:  values.String(values.StrRecommendedContent),
+			clickable: sp.Theme.NewClickable(false),
+			border: cryptomaterial.Border{
+				Radius: radius,
+				Color:  sp.Theme.Color.DefaultThemeColors().White,
+				Width:  values.MarginPadding2,
+			},
+			width: values.MarginPadding110,
+		},
+		{
+			title:     values.String(values.StrAdvanced),
+			subTitle:  values.String(values.StrAdvancedContent),
+			clickable: sp.Theme.NewClickable(false),
+			border: cryptomaterial.Border{
+				Radius: radius,
+				Color:  sp.Theme.Color.DefaultThemeColors().White,
+				Width:  values.MarginPadding2,
+			},
+			width: values.MarginPadding110,
+		},
+	}
+	sp.setupActions = setupActions
+}
+
 func (sp *startPage) initPages() {
 	sp.onBoardingScreens = []onBoardingScreen{
 		{
@@ -134,7 +176,7 @@ func (sp *startPage) initPages() {
 		{
 			title:    values.String(values.StrChooseSetupType),
 			subTitle: values.String(values.StrLanguage),
-			languageSec: sp.Theme.DropDown([]cryptomaterial.DropDownItem{
+			languageDropdown: sp.Theme.DropDown([]cryptomaterial.DropDownItem{
 				{Text: values.String(values.StrEnglish)},
 				{Text: values.String(values.StrSpanish)},
 				{Text: values.String(values.StrFrench)},
@@ -200,6 +242,12 @@ func (sp *startPage) HandleUserInteractions() {
 	}
 
 	for sp.nextButton.Clicked() {
+		// if sp.selectedSetupAction == 0 {
+		// 	sp.recommendedSettings()
+		// } else if sp.selectedSetupAction == 1 {
+		// 	sp.ParentNavigator().Display(settings.NewSettingsPage(sp.Load))
+		// }
+		//Requires refactor of settings page
 		if sp.currentPage == len(sp.onBoardingScreens)-1 { // index starts at 0
 			sp.currentPage = -1 // we have reached the last screen.
 		} else {
@@ -207,7 +255,13 @@ func (sp *startPage) HandleUserInteractions() {
 		}
 	}
 
-	for sp.backButton.Button.Clicked() {
+	for i, item := range sp.setupActions {
+		for item.clickable.Clicked() {
+			sp.selectedSetupAction = i
+		}
+	}
+
+	for sp.backButton.Clicked() {
 		sp.currentPage--
 	}
 
@@ -218,15 +272,6 @@ func (sp *startPage) HandleUserInteractions() {
 			}
 		}
 	}
-
-	// if sp.advanced.Clicked() {
-	// 	sp.ParentNavigator().Display(settings.NewSettingsPage(sp.Load))
-	//
-	// }
-	// if sp.recommended.Clicked() {
-	// 	sp.recommendedSettings()
-	// }
-	//Requires refactor of settingsPage
 
 	if sp.displayStartPage {
 		time.AfterFunc(time.Second*2, func() {
@@ -386,9 +431,7 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, sp.languageLayout)
 						}),
-						layout.Rigid(func(gtx C) D {
-							return sp.setupSectionLayout(gtx)
-						}),
+						layout.Rigid(sp.setupButton),
 						layout.Rigid(func(gtx C) D {
 							gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding570)
 							return layout.Inset{Top: values.MarginPadding20}.Layout(gtx, sp.nextButton.Layout)
@@ -432,75 +475,118 @@ func (sp *startPage) onBoardingScreensLayout(gtx C) D {
 }
 
 func (sp *startPage) languageLayout(gtx C) D {
-	return cryptomaterial.LinearLayout{}.Layout2(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, sp.Theme.Label(values.TextSize16, values.StrLanguage).Layout)
-			}),
-			layout.Rigid(func(gtx C) D {
-				return sp.onBoardingScreens[sp.currentPage].languageSec.Layout(gtx)
-			}),
-		)
-	})
-}
-
-func (sp *startPage) setupSectionLayout(gtx C) D {
-	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(sp.setupButton(sp.recommended, values.String(values.StrRecommended), values.String(values.StrRecommendedContent))),
+	// return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+		Alignment:   layout.Middle,
+	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: values.MarginPadding24}.Layout(gtx, sp.setupButton(sp.advanced, values.String(values.StrAdvanced), values.String(values.StrAdvancedContent)))
+			langTitle := sp.Theme.Label(values.TextSize16, values.String(values.StrLanguage))
+			langTitle.Font.Weight = font.Bold
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, langTitle.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Stack{}.Layout(gtx,
+					layout.Expanded(func(gtx C) D {
+						return sp.onBoardingScreens[sp.currentPage].languageDropdown.Layout(gtx)
+					}),
+				)
+			})
 		}),
 	)
 }
 
-func (sp *startPage) setupButton(clk *cryptomaterial.Clickable, title string, content string) layout.Widget {
-	return func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:       gtx.Dp(270),
-			Height:      gtx.Dp(180),
-			Orientation: layout.Vertical,
-			Direction:   layout.Center,
-			Alignment:   layout.Middle,
-			Clickable:   clk,
-			Padding: layout.Inset{
-				Top:   values.MarginPadding20,
-				Left:  values.MarginPadding20,
-				Right: values.MarginPadding20,
-			},
-			Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(8)},
-			Background: sp.Theme.Color.Surface,
-		}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				btnTitle := sp.Theme.Label(values.TextSize20, title)
+func (sp *startPage) setupButton(gtx C) D {
+	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceEnd}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			list := layout.List{}
+			return list.Layout(gtx, len(sp.setupActions), func(gtx C, i int) D {
+				item := sp.setupActions[i]
+
+				col := sp.Theme.Color.White
+				btnTitle := sp.Theme.Label(values.TextSize20, item.title)
 				btnTitle.Font.Weight = font.Bold
-				btnTitle.Alignment = text.Alignment(layout.Middle)
+				content := sp.Theme.Label(values.TextSize16, item.subTitle)
+				content.Alignment = text.Alignment(layout.Middle)
 
-				return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, btnTitle.Layout)
+				radius := cryptomaterial.CornerRadius{
+					TopLeft:     8,
+					TopRight:    8,
+					BottomRight: 8,
+					BottomLeft:  8,
+				}
+				border := sp.Theme.Color.White
 
-			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Alignment(layout.Center)}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						label := sp.Theme.Label(values.TextSize16, content)
-						label.Alignment = text.Alignment(layout.Middle)
-						if title == "Recommended" {
-							return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding25}.Layout(gtx, label.Layout)
-						}
-						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, label.Layout)
+				item.border = cryptomaterial.Border{
+					Radius: radius,
+					Color:  border,
+					Width:  values.MarginPadding2,
+				}
 
-					}),
-				)
-			}),
-		)
-	}
+				if sp.selectedSetupAction == i {
+
+					col = sp.Theme.Color.White
+
+					item.border = cryptomaterial.Border{
+						Radius: radius,
+						Color:  sp.Theme.Color.Primary,
+						Width:  values.MarginPadding2,
+					}
+				}
+
+				if item.clickable.IsHovered() {
+					item.border = cryptomaterial.Border{
+						Radius: radius,
+						Color:  sp.Theme.Color.Primary,
+						Width:  values.MarginPadding2,
+					}
+				}
+
+				return layout.Inset{
+					Right: values.MarginPadding8,
+				}.Layout(gtx, func(gtx C) D {
+					return cryptomaterial.LinearLayout{
+						Width:       gtx.Dp(270),
+						Height:      gtx.Dp(180),
+						Orientation: layout.Vertical,
+						Direction:   layout.Center,
+						Alignment:   layout.Middle,
+						Clickable:   item.clickable,
+						Border:      item.border,
+						Background:  col,
+						Padding: layout.Inset{
+							Top:   values.MarginPadding20,
+							Left:  values.MarginPadding20,
+							Right: values.MarginPadding20,
+						},
+						Margin: layout.Inset{Bottom: values.MarginPadding15},
+					}.Layout(gtx,
+						layout.Rigid(btnTitle.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding10}.Layout(gtx, content.Layout)
+						}),
+					)
+				})
+			})
+		}),
+	)
 }
 
 func (sp *startPage) pageHeaderLayout(gtx C) layout.Dimensions {
-	return layout.Flex{}.Layout(gtx,
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Alignment:   layout.Middle,
+		Clickable:   &sp.backButton,
+		Padding:     layout.UniformInset(values.MarginPadding12),
+	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Right: values.MarginPadding16,
-			}.Layout(gtx, sp.backButton.Layout)
+			return sp.Theme.Icons.ChevronLeft.LayoutSize(gtx, values.MarginPadding24)
 		}),
 		layout.Rigid(sp.Theme.Label(values.TextSize20, values.String(values.StrBack)).Layout),
 	)
@@ -560,6 +646,8 @@ func (sp *startPage) setLanguageSetting() {
 	values.SetUserLanguage(langPre)
 }
 
-// func (sp *startPage) recommendedSettings() {
-// 	To be implemented after settingsPage refactor
-// }
+//func (sp *startPage) recommendedSettings() {
+// 	To be implemented after settings page refactor
+// Should set settings for USD exchange, Fee rate api,
+// exchange api, and transaction notifications to enabled.
+//}
