@@ -281,6 +281,8 @@ func (hp *HomePage) HandleUserInteractions() {
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
+			case values.String(values.StrGovernance):
+				pg = governance.NewGovernancePage(hp.Load)
 			}
 
 			if pg == nil || hp.ID() == hp.CurrentPageID() {

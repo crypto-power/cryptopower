@@ -242,12 +242,12 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 
 func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.UniformInset(values.MarginPadding16),
-		Background: pg.Theme.Color.Surface,
-		Alignment:  layout.Middle,
-		Shadow:     pg.shadowBox,
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Padding:     layout.UniformInset(values.MarginPadding16),
+		Background:  pg.Theme.Color.Surface,
+		Shadow:      pg.shadowBox,
+		Orientation: layout.Vertical,
 		Margin: layout.Inset{
 			Top:    values.MarginPadding8,
 			Bottom: values.MarginPadding4,
@@ -257,7 +257,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{
-				Axis:      layout.Vertical,
+				Axis:      layout.Horizontal,
 				Alignment: layout.Start,
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -283,58 +283,57 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 						}),
 					)
 				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{
-						Axis:      layout.Horizontal,
-						Alignment: layout.Middle,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return pg.syncStatusIcon(gtx, item.Wallet)
-						}),
-						layout.Rigid(func(gtx C) D {
-							if len(item.Wallet.GetEncryptedSeed()) > 0 {
-								return layout.Flex{
-									Axis:      layout.Horizontal,
-									Alignment: layout.Middle,
-								}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Left:  values.MarginPadding8,
-											Right: values.MarginPadding8,
-										}.Layout(gtx, pg.Theme.Icons.Dot.Layout8dp)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Right: values.MarginPadding4,
-										}.Layout(gtx, pg.Theme.Icons.RedAlert.Layout16dp)
-									}),
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout),
-								)
-							}
-							return D{}
-						}),
-					)
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return layout.Flex{
+							Axis:      layout.Vertical,
+							Alignment: layout.End,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.TotalBalance.String())
+							}),
+							layout.Rigid(func(gtx C) D {
+								usdBalance := ""
+								if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+									usdBalance = utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
+								}
+								return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
+							}),
+						)
+					})
 				}),
 			)
 		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{
-					Axis:      layout.Vertical,
-					Alignment: layout.End,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.TotalBalance.String())
-					}),
-					layout.Rigid(func(gtx C) D {
-						usdBalance := ""
-						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							usdBalance = utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
-						}
-						return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
-					}),
-				)
-			})
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{
+				Axis: layout.Horizontal,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.syncStatusIcon(gtx, item.Wallet)
+				}),
+				layout.Rigid(func(gtx C) D {
+					if len(item.Wallet.GetEncryptedSeed()) > 0 {
+						return layout.Flex{
+							Axis:      layout.Horizontal,
+							Alignment: layout.Middle,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Left:  values.MarginPadding8,
+									Right: values.MarginPadding8,
+								}.Layout(gtx, pg.Theme.Icons.Dot.Layout8dp)
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Right: values.MarginPadding4,
+								}.Layout(gtx, pg.Theme.Icons.RedAlert.Layout16dp)
+							}),
+							layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout),
+						)
+					}
+					return D{}
+				}),
+			)
 		}),
 	)
 }
