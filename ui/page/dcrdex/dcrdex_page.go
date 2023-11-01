@@ -5,8 +5,11 @@ import (
 
 	"gioui.org/layout"
 	"github.com/crypto-power/cryptopower/app"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 const DCRDEXID = "DCRDEXID"
@@ -24,8 +27,11 @@ type DEXPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	openTradeMainPage *cryptomaterial.Clickable
-	inited            bool // TODO: Set value
+	openTradeMainPage     *cryptomaterial.Clickable
+	splashPageInfoButton  cryptomaterial.IconButton
+	enableDEXBtn          cryptomaterial.Button
+	navigateToSettingsBtn cryptomaterial.Button
+	inited                bool // TODO: Set value
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
@@ -34,6 +40,9 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		MasterPage:        app.NewMasterPage(DCRDEXID),
 		openTradeMainPage: l.Theme.NewClickable(false),
 	}
+
+	dp.initSplashPageWidgets()
+	dp.navigateToSettingsBtn = dp.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrDex)))
 	return dp
 }
 
@@ -59,10 +68,17 @@ func (pg *DEXPage) OnNavigatedTo() {
 	pg.CurrentPage().OnNavigatedTo()
 }
 
+func (pg *DEXPage) isExchangeAPIAllowed() bool {
+	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
+}
+
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
+	if !pg.isExchangeAPIAllowed() {
+		return components.UniformPadding(gtx, pg.splashPage)
+	}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -86,6 +102,9 @@ func (pg *DEXPage) HandleUserInteractions() {
 	}
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions()
+	}
+	if pg.splashPageInfoButton.Button.Clicked() {
+		pg.showInfoModal()
 	}
 }
 
