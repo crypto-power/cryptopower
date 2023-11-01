@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"decred.org/dcrwallet/v3/wallet"
@@ -113,7 +114,7 @@ func (p *Politeia) checkForUpdates() error {
 			return p.ctx.Err()
 		}
 
-		proposals, err := p.getProposalsRaw(ProposalCategoryAll, int32(offset), limit, true, true)
+		proposals, err := p.getProposalsRaw(ProposalCategoryAll, int32(offset), limit, true, true, "")
 		if err != nil && err != storm.ErrNotFound {
 			return err
 		}
@@ -131,7 +132,7 @@ func (p *Politeia) checkForUpdates() error {
 	}
 
 	// include abandoned proposals
-	allProposals, err := p.getProposalsRaw(ProposalCategoryAll, 0, 0, true, false)
+	allProposals, err := p.getProposalsRaw(ProposalCategoryAll, 0, 0, true, false, "")
 	if err != nil && err != storm.ErrNotFound {
 		return err
 	}
@@ -333,6 +334,7 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 				return p.ctx.Err()
 			}
 
+			proposals[i].LowerName = strings.ToLower(proposals[i].Name)
 			proposals[i].Category = category
 			if voteSummary, ok := votesSummaries[proposals[i].Token]; ok {
 				proposals[i].VoteStatus = int32(voteSummary.Status)
@@ -397,6 +399,7 @@ func (p *Politeia) FetchProposalDescription(token string) (string, error) {
 			// index file version will be used to determine if the
 			// saved file is out of date when compared to version.
 			proposal.IndexFileVersion = proposal.Version
+			proposal.LowerName = strings.ToLower(proposal.Name)
 			err = p.saveOrOverwiteProposal(proposal)
 			if err != nil {
 				log.Errorf("error saving new proposal: %s", err.Error())

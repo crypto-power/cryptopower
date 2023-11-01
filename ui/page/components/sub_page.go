@@ -61,7 +61,7 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 		}),
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(sp.Load.Theme.Label(values.TextSize20, sp.Title).Layout),
+				layout.Rigid(sp.Load.Theme.LabelSemiBold(values.TextSize20, sp.Title).Layout),
 				layout.Rigid(func(gtx C) D {
 					if !utils.StringNotEmpty(sp.SubTitle) {
 						return D{}

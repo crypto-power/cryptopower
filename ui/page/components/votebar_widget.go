@@ -36,6 +36,8 @@ type VoteBar struct {
 	publishedAt int64
 	numComment  int32
 
+	isDisableInfoTitle bool
+
 	yesColor color.NRGBA
 	noColor  color.NRGBA
 
@@ -44,6 +46,8 @@ type VoteBar struct {
 
 	legendIcon *cryptomaterial.Icon
 	infoButton cryptomaterial.IconButton
+
+	BottomExtra layout.Widget
 }
 
 var voteBarThumbWidth = 2
@@ -75,6 +79,12 @@ func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes float32) *VoteBar {
 	return v
 }
 
+func (v *VoteBar) SetDisableInfoTitle(isDisable bool) *VoteBar {
+	v.isDisableInfoTitle = isDisable
+
+	return v
+}
+
 func (v *VoteBar) SetVoteValidityParams(eligibleVotes, requiredPercentage, passPercentage float32) *VoteBar {
 	v.eligibleVotes = eligibleVotes
 	v.passPercentage = passPercentage
@@ -88,6 +98,11 @@ func (v *VoteBar) SetProposalDetails(numComment int32, publishedAt int64, token 
 	v.publishedAt = publishedAt
 	v.token = token
 
+	return v
+}
+
+func (v *VoteBar) SetBottomLayout(lay layout.Widget) *VoteBar {
+	v.BottomExtra = lay
 	return v
 }
 
@@ -220,6 +235,9 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 								return v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
 							}),
 							layout.Flexed(1, func(gtx C) D {
+								if v.isDisableInfoTitle {
+									return D{}
+								}
 								return layout.E.Layout(gtx, func(gtx C) D {
 									return v.layoutInfo(window, gtx)
 								})
@@ -228,6 +246,13 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.votebarLayout)
+					}),
+
+					layout.Rigid(func(gtx C) D {
+						if v.BottomExtra == nil {
+							return D{}
+						}
+						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.BottomExtra)
 					}),
 				)
 			})

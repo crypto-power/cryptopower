@@ -207,7 +207,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	go pg.updateAssetsUSDBalance()
 	go pg.loadTransactions()
 
-	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
+	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true, "")
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {

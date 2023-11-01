@@ -3,6 +3,7 @@ package governance
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gioui.org/layout"
@@ -52,8 +53,7 @@ type ProposalsPage struct {
 	syncButton     *widget.Clickable
 	searchEditor   cryptomaterial.Editor
 
-	infoButton cryptomaterial.IconButton
-
+	infoButton  cryptomaterial.IconButton
 	updatedIcon *cryptomaterial.Icon
 
 	syncCompleted    bool
@@ -67,7 +67,8 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 		GenericPageModal: app.NewGenericPageModal(ProposalsPageID),
 		assetsManager:    l.WL.AssetsManager,
 	}
-	pg.searchEditor = l.Theme.IconEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon, true)
+
+	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
 	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
 
 	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
@@ -144,7 +145,8 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 
 	fmt.Println("------proposalFilter--------->", proposalFilter)
 
-	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true)
+	searchKey := pg.searchEditor.Editor.Text()
+	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true, strings.TrimSpace(searchKey))
 	listItems := make([]*components.ProposalItem, 0)
 
 	if selectedType == values.String(values.StrUnderReview) {
@@ -169,7 +171,6 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	if pg.statusDropDown.Changed() {
-		fmt.Println("---statusDropDown---Changed---", pg.statusDropDown.Selected())
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
@@ -210,6 +211,15 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			pg.ParentWindow().Reload()
 		})
 	}
+
+	for _, evt := range pg.searchEditor.Editor.Events() {
+		if pg.searchEditor.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			}
+		}
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -244,7 +254,17 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 10, true)
+						return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+							layout.Flexed(1, func(gtx C) D {
+								return layout.Inset{
+									Bottom: values.MarginPadding20,
+								}.Layout(gtx, pg.searchEditor.Layout)
+							}),
+							layout.Rigid(func(gtx C) D {
+								return pg.statusDropDown.Layout(gtx, 10, true)
+							}),
+						)
+
 					}),
 				)
 			})

@@ -897,4 +897,8 @@ const (
 	StrBondStrengthErrMsg              = "bondStrengthErrMsg"
 	StrMinimumBondStrength             = "minimumBondStrength"
 	StrAssets                          = "assets"
+	StrTotalVotesTit                   = "totalVotesTit"
+	StrQuorumRequite                   = "quorumRequite"
+	StrDiscussionsTit                  = "discussionsTit"
+	StrTokenTit                        = "tokenTit"
 )

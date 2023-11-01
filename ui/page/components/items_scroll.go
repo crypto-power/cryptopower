@@ -46,6 +46,8 @@ type Scroll struct {
 	isLoadingItems bool
 	loadedAllItems bool
 
+	isHaveKeySearch bool
+
 	mu sync.RWMutex
 }
 
@@ -64,6 +66,10 @@ func NewScroll(load *load.Load, pageSize int32, queryFunc ScrollFunc) *Scroll {
 		prevListOffset: -1,
 		direction:      down,
 	}
+}
+
+func (s *Scroll) SetIsHaveKeySearch(isHaveKeySearch bool) {
+	s.isHaveKeySearch = isHaveKeySearch
 }
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of

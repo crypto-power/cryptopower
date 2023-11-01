@@ -14,6 +14,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -244,7 +245,74 @@ func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 		SetYesNoVoteParams(yes, no).
 		SetVoteValidityParams(eligibleTickets, quorumPercent, passPercentage).
 		SetProposalDetails(proposal.NumComments, proposal.PublishedAt, proposal.Token).
+		SetBottomLayout(pg.sumaryInfo).
+		SetDisableInfoTitle(true).
 		Layout(pg.ParentWindow(), gtx)
+}
+
+func (pg *ProposalDetails) sumaryInfo(gtx C) D {
+	totalVotes := fmt.Sprintf("%d", pg.proposal.YesVotes+pg.proposal.NoVotes)
+	quorum := fmt.Sprintf("%d", (pg.proposal.QuorumPercentage/100)*pg.proposal.EligibleTickets)
+	discussion := fmt.Sprintf("%d", pg.proposal.NumComments)
+	published := utils.FormatUTCTime(pg.proposal.PublishedAt)
+	token := pg.proposal.Token
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					lbl := pg.Theme.Body1(values.String(values.StrTotalVotesTit))
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						lbl := pg.Theme.Body2(totalVotes)
+						return lbl.Layout(gtx)
+					})
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					lbl := pg.Theme.Body1(values.String(values.StrQuorumRequite))
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						lbl := pg.Theme.Body2(quorum)
+						return lbl.Layout(gtx)
+					})
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.summaryRow(values.String(values.StrDiscussionsTit), discussion, gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.summaryRow(values.String(values.StrPublished2), published, gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.summaryRow(values.String(values.StrTokenTit), token, gtx)
+		}),
+	)
+}
+
+func (pg *ProposalDetails) summaryRow(title, content string, gtx C) D {
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			lbl := pg.Theme.Body1(title)
+			lbl.Font.Weight = font.SemiBold
+			return lbl.Layout(gtx)
+		}),
+		layout.Flexed(1, func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
+				lbl := pg.Theme.Body2(content)
+				return lbl.Layout(gtx)
+			})
+		}),
+	)
 }
 
 func (pg *ProposalDetails) layoutProposalVoteAction(gtx C) D {
@@ -437,7 +505,6 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		},
-		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),
 		func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(userLabel.Layout),
@@ -576,12 +643,12 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				return layout.Inset{}.Layout(gtx, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(pg.redirectIcon.Layout24dp),
 							layout.Rigid(func(gtx C) D {
 								return layout.Inset{
 									Top: values.MarginPadding5,
 								}.Layout(gtx, pg.Theme.Caption(values.String(values.StrViewOnPoliteia)).Layout)
 							}),
-							layout.Rigid(pg.redirectIcon.Layout24dp),
 						)
 					})
 				})

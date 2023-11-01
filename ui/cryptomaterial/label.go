@@ -60,6 +60,12 @@ func (t *Theme) Label(size unit.Sp, txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
 }
 
+func (t *Theme) LabelSemiBold(size unit.Sp, txt string) Label {
+	lb := t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
+	lb.Font.Weight = font.SemiBold
+	return lb
+}
+
 func (t *Theme) Label2(size unit.Sp, txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
 }

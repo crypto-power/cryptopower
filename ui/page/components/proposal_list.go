@@ -208,10 +208,10 @@ func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D
 	})
 }
 
-func LoadProposals(l *load.Load, category, offset, pageSize int32, newestFirst bool) []*ProposalItem {
+func LoadProposals(l *load.Load, category, offset, pageSize int32, newestFirst bool, key string) []*ProposalItem {
 	proposalItems := make([]*ProposalItem, 0)
 
-	proposals, err := l.WL.AssetsManager.Politeia.GetProposalsRaw(category, offset, pageSize, newestFirst)
+	proposals, err := l.WL.AssetsManager.Politeia.GetProposalsRaw(category, offset, pageSize, newestFirst, key)
 	if err == nil {
 		for i := 0; i < len(proposals); i++ {
 			proposal := proposals[i]

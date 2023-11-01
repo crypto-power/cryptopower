@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -90,28 +91,50 @@ func (p *Politeia) saveOrOverwiteProposal(proposal *Proposal) error {
 }
 
 // GetProposalsRaw fetches and returns a proposals from the db
-func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFirst bool) ([]Proposal, error) {
-	return p.getProposalsRaw(category, offset, limit, newestFirst, false)
+func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFirst bool, key string) ([]Proposal, error) {
+	return p.getProposalsRaw(category, offset, limit, newestFirst, false, key)
 }
 
-func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool) ([]Proposal, error) {
+func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool, keySearch string) ([]Proposal, error) {
 	var query storm.Query
+	keySearch = strings.ToLower(keySearch)
 	switch category {
 	case ProposalCategoryAll:
 
 		if skipAbandoned {
+			if keySearch != "" {
+				query = p.db.Select(
+					q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
+					q.Re("LowerName", "^"+keySearch),
+				)
+			} else {
+				query = p.db.Select(
+					q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
+				)
+			}
+		} else {
+			if keySearch != "" {
+				query = p.db.Select(
+					q.True(),
+					q.Re("LowerName", "^"+keySearch),
+				)
+			} else {
+				query = p.db.Select(
+					q.True(),
+				)
+			}
+		}
+	default:
+		if keySearch != "" {
 			query = p.db.Select(
-				q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
+				q.Eq("Category", category),
+				q.Re("LowerName", "^"+keySearch),
 			)
 		} else {
 			query = p.db.Select(
-				q.True(),
+				q.Eq("Category", category),
 			)
 		}
-	default:
-		query = p.db.Select(
-			q.Eq("Category", category),
-		)
 	}
 
 	if offset > 0 {
@@ -139,7 +162,7 @@ func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFi
 
 // GetProposals returns the result of GetProposalsRaw as a JSON string
 func (p *Politeia) GetProposals(category int32, offset, limit int32, newestFirst bool) (string, error) {
-	result, err := p.GetProposalsRaw(category, offset, limit, newestFirst)
+	result, err := p.GetProposalsRaw(category, offset, limit, newestFirst, "")
 	if err != nil {
 		return "", err
 	}
