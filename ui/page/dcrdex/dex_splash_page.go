@@ -32,7 +32,7 @@ func (pg *DEXPage) splashPage(gtx layout.Context) layout.Dimensions {
 				layout.Expanded(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return pg.Theme.Icons.GovernanceActiveIcon.LayoutSize(gtx, values.MarginPadding150)
+							return pg.Theme.Icons.DcrDex.LayoutSize(gtx, values.MarginPadding100)
 						}),
 						layout.Rigid(func(gtx C) D {
 							txt := pg.Theme.Label(values.TextSize24, values.String(values.StrWhatIsDex))
