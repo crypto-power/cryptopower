@@ -274,7 +274,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		case values.String(values.StrInfo):
 			pg = info.NewInfoPage(mp.Load)
 		case values.String(values.StrTransactions):
-			pg = transaction.NewTransactionsPage(mp.Load)
+			pg = transaction.NewTransactionsPage(mp.Load, false)
 		case values.String(values.StrStakeShuffle):
 			dcrUniqueImpl := mp.selectedWallet.(*dcr.Asset)
 			if dcrUniqueImpl != nil {

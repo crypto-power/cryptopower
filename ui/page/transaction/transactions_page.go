@@ -345,7 +345,13 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 		// Layouts only supportted by DCR
 		items = append(items, layout.Rigid(pg.sectionNavTab))
 	}
+
 	items = append(items, txlisingView)
+	if pg.isHomepageLayout {
+		return components.UniformPadding(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		})
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
