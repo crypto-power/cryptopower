@@ -677,6 +677,7 @@ const (
 	StrStaking                         = "staking"
 	StrStakingActivity                 = "stakingActivity"
 	StrStart                           = "start"
+	StrStartTrading                    = "startTrading"
 	StrStartupPassConfirm              = "startupPassConfirm"
 	StrStartupPassword                 = "startupPassword"
 	StrStartupPasswordEnabled          = "startupPasswordEnabled"

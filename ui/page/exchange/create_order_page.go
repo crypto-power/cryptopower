@@ -69,6 +69,8 @@ type CreateOrderPage struct {
 	refreshIcon            *cryptomaterial.Image
 	viewAllButton          cryptomaterial.Button
 	navToSettingsBtn       cryptomaterial.Button
+	splashPageInfoButton   cryptomaterial.IconButton
+	enableDEXBtn           cryptomaterial.Button
 
 	min          float64
 	max          float64
@@ -117,6 +119,9 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
 	}
+
+	pg.initSplashPageWidgets()
+	pg.navToSettingsBtn = pg.Theme.Button(values.String(values.StrStartTrading))
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -248,6 +253,10 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	}
 }
 
+func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
+}
+
 // initPage initializes required data on this page and should be called only
 // once after it has been displayed.
 func (pg *CreateOrderPage) initPage() {
@@ -320,6 +329,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			Body(values.String(values.StrCreateOrderPageInfo)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
+	}
+
+	if pg.splashPageInfoButton.Button.Clicked() {
+		pg.showInfoModal()
 	}
 
 	for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
@@ -601,13 +614,13 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.updateExchangeConfig()
 }
 
-func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	isAllowed := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
-	if !isAllowed {
-		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-	}
-	return isAllowed
-}
+// func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
+// 	isAllowed := pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
+// 	if !isAllowed {
+// 		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+// 	}
+// 	return isAllowed
+// }
 
 // isMultipleAssetTypeWalletAvailable checks if multiple asset types are
 // available for exchange functionality to run smoothly. Otherwise exchange
@@ -648,10 +661,10 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		msg = values.String(values.StrNoExchangeOnTestnet)
 		overlaySet = true
 
-	case !pg.isExchangeAPIAllowed():
-		msg = pg.errMsg
-		navBtn = &pg.navToSettingsBtn
-		overlaySet = true
+	// case !pg.isExchangeAPIAllowed():
+	// 	msg = pg.errMsg
+	// 	navBtn = &pg.navToSettingsBtn
+	// 	overlaySet = true
 
 	case !pg.isMultipleAssetTypeWalletAvailable():
 		msg = pg.errMsg
@@ -670,10 +683,11 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
-			Width:     gtx.Dp(values.MarginPadding600),
+			Width:     cryptomaterial.MatchParent,
 			Height:    cryptomaterial.MatchParent,
 			Alignment: layout.Middle,
-			Padding:   layout.Inset{Top: values.MarginPadding20},
+			Direction: layout.Center,
+			Padding:   layout.Inset{Top: values.MarginPadding0},
 		}.Layout2(gtx, func(gtx C) D {
 			overlay := layout.Stacked(func(gtx C) D { return D{} })
 			if overlaySet {
@@ -690,6 +704,9 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) layout(gtx C) D {
+	if !pg.isExchangeAPIAllowed() {
+		return components.UniformPadding(gtx, pg.splashPage)
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{

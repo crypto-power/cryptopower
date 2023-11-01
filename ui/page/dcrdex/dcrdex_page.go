@@ -42,7 +42,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 	}
 
 	dp.initSplashPageWidgets()
-	dp.navigateToSettingsBtn = dp.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrDex)))
+	dp.navigateToSettingsBtn = dp.Theme.Button(values.String(values.StrStartTrading))
 	return dp
 }
 
@@ -69,7 +69,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 }
 
 func (pg *DEXPage) isExchangeAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
 }
 
 // Layout draws the page UI components into the provided layout context to be
