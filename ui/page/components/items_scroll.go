@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"math"
 	"sync"
 
@@ -110,8 +109,6 @@ func (s *Scroll) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
 
 	s.direction = temDirection
 	s.mu.Lock()
-	fmt.Println("------s.isLoadingItems------->", s.isLoadingItems)
-	fmt.Println("------s.loadedAllItems------->", s.loadedAllItems)
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
 		s.mu.Unlock()
 		return
@@ -138,7 +135,6 @@ func (s *Scroll) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
 	s.mu.Unlock()
 
 	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize)
-	fmt.Println("-----count-------->", itemsLen)
 
 	s.mu.Lock()
 

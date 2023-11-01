@@ -2,7 +2,6 @@ package governance
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -142,8 +141,6 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, in
 		offset = 0
 		pg.previousFilter = proposalFilter
 	}
-
-	fmt.Println("------proposalFilter--------->", proposalFilter)
 
 	searchKey := pg.searchEditor.Editor.Text()
 	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true, strings.TrimSpace(searchKey))

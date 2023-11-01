@@ -48,18 +48,11 @@ func (c *politeiaClient) makeRequest(method, apiRoute, path string, body interfa
 		Cookies:   c.cookies,
 	}
 
-	// d, _ := json.Marshal(req)
-
-	// fmt.Println("---makeRequest--->", string(d))
-
 	respBytes := []byte{}
 	_, err := utils.HTTPRequest(req, &respBytes)
 	if err != nil {
 		return err
 	}
-
-	// d1, _ := json.Marshal(dest)
-	// fmt.Println("---makeResponse--->", string(d1))
 
 	err = json.Unmarshal(respBytes, dest)
 	if err != nil {
