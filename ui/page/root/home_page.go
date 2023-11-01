@@ -40,7 +40,6 @@ type HomePage struct {
 	appLevelSettingsButton *cryptomaterial.Clickable
 	appNotificationButton  *cryptomaterial.Clickable
 	hideBalanceButton      *cryptomaterial.Clickable
-	checkBox               cryptomaterial.CheckBoxStyle
 	infoButton             cryptomaterial.IconButton // TOD0: use *cryptomaterial.Clickable
 
 	bottomNavigationBar  components.BottomNavigationBar
@@ -215,6 +214,17 @@ func (hp *HomePage) HandleUserInteractions() {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
 			case values.StrSend:
+				allWallets := hp.WL.AssetsManager.AllWallets()
+				isSendAvailable := false
+				for _, wallet := range allWallets {
+					if !wallet.IsWatchingOnlyWallet() {
+						isSendAvailable = true
+					}
+				}
+				if !isSendAvailable {
+					hp.showWarningNoWallet()
+					return
+				}
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, true))
 			}
 		}
@@ -275,6 +285,16 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+}
+
+func (hp *HomePage) showWarningNoWallet() {
+	go func() {
+		info := modal.NewCustomModal(hp.Load).
+			PositiveButtonStyle(hp.Theme.Color.Primary, hp.Theme.Color.Surface).
+			SetContentAlignment(layout.W, layout.W, layout.Center).
+			Body(values.String(values.StrNoWalletsAvailable))
+		hp.ParentWindow().ShowModal(info)
+	}()
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations

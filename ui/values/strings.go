@@ -901,4 +901,5 @@ const (
 	StrQuorumRequite                   = "quorumRequite"
 	StrDiscussionsTit                  = "discussionsTit"
 	StrTokenTit                        = "tokenTit"
+	StrNoWalletsAvailable              = "noWalletsAvailable"
 )

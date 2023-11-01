@@ -791,4 +791,5 @@ const EN = `
 "quorumRequite" = "Quorum requirements"
 "discussionsTit" = "Discussions"
 "tokenTit" = "Token"
+"noWalletsAvailable" = "You cannot spend from a watch only wallet, try creating another wallet."
 `
