@@ -230,7 +230,11 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 // page. It lays out a transaction's direction, balance, status. isTxPage
 // determines if the transaction should be drawn using the transactions page
 // layout.
+<<<<<<< HEAD
 func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, isTxPage bool) layout.Dimensions {
+=======
+func LayoutTransactionRow(gtx layout.Context, l *load.Load, row TransactionRow, isTxPage bool) layout.Dimensions {
+>>>>>>> 46daad8f (remove asset name)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if wal == nil {
 		return D{}

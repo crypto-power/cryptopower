@@ -62,7 +62,6 @@ type TransactionsPage struct {
 	selectedWallet       sharedW.Asset
 
 	isHomepageLayout,
-	showAssetType,
 	showLoader,
 	showDisabledLayout bool
 }
@@ -81,7 +80,6 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 	// init the asset selector
 	if isHomepageLayout {
 		pg.initWalletDropdown()
-		pg.showAssetType = true
 	} else {
 		pg.selectedWallet = l.WL.SelectedWallet.Wallet
 	}
@@ -288,6 +286,17 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 										wallTxs := pg.scroll.FetchedData()
 										return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
 											tx := wallTxs[index]
+
+											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													return components.LayoutTransactionRow(gtx, pg.Load, pg.selectedWallet, row, true)
+												}),
+												layout.Rigid(func(gtx C) D {
+													// No divider for last row
+													if row.Index == len(wallTxs)-1 {
+														return layout.Dimensions{}
+													}
+
 													return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
 															return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, true)
@@ -306,6 +315,8 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 															})
 														}),
 													)
+												}),
+											)
 										})
 									})
 								})
