@@ -33,7 +33,7 @@ type OrderHistoryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	scroll         *components.Scroll
+	scroll         *components.Scroll[*instantswap.Order]
 	previousStatus api.Status
 
 	ordersList *cryptomaterial.ClickableList
@@ -99,7 +99,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
-		orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+		orderItems := pg.scroll.FetchedData()
 		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
@@ -229,7 +229,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 	})
 }
 
-func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
 	selectedStatus := pg.statusDropdown.Selected()
 	var statusFilter api.Status
 	switch selectedStatus {
@@ -265,7 +265,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
 	}
 
-	orderItems := pg.scroll.FetchedData().([]*instantswap.Order)
+	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {

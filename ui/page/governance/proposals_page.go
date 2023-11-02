@@ -44,7 +44,7 @@ type ProposalsPage struct {
 	ctx            context.Context // page context
 	ctxCancel      context.CancelFunc
 	assetsManager  *libwallet.AssetsManager
-	scroll         *components.Scroll
+	scroll         *components.Scroll[*components.ProposalItem]
 	previousFilter int32
 	statusDropDown *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
@@ -120,7 +120,7 @@ func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
 // UI update with the new proposals list.
-func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.ProposalItem, int, bool, error) {
 	var proposalFilter int32
 	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
@@ -174,7 +174,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
-		proposalItems := pg.scroll.FetchedData().([]*components.ProposalItem)
+		proposalItems := pg.scroll.FetchedData()
 		selectedProposal := proposalItems[selectedItem].Proposal
 		pg.ParentNavigator().Display(NewProposalDetailsPage(pg.Load, &selectedProposal))
 	}
@@ -289,7 +289,7 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 						if pg.scroll.ItemsCount() <= 0 {
 							return components.LayoutNoProposalsFound(gtx, pg.Load, pg.isSyncing, 0)
 						}
-						proposalItems := pg.scroll.FetchedData().([]*components.ProposalItem)
+						proposalItems := pg.scroll.FetchedData()
 						return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {

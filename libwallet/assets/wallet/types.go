@@ -329,7 +329,6 @@ type BlocksRescanProgressListener interface {
 // Transaction is used with storm for tx indexing operations.
 // For faster queries, the `Hash`, `Type` and `Direction` fields are indexed.
 type Transaction struct {
-	WalletID      int    `json:"walletID"`
 	Hash          string `storm:"id,unique" json:"hash"`
 	Type          string `storm:"index" json:"type,omitempty"`
 	Hex           string `json:"hex"`

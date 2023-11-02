@@ -36,7 +36,7 @@ type transactionItem struct {
 	dcrImpl *dcr.Asset
 }
 
-func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
+func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
 	if impl == nil {
 		log.Warn(values.ErrDCRSupportedOnly)
@@ -44,9 +44,8 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 	}
 
 	tickets := make([]*transactionItem, 0)
-	assetsManager := l.WL.AssetsManager
 	for _, tx := range txs {
-		w := assetsManager.WalletWithID(tx.WalletID)
+		bestBlockHeight := impl.GetBestBlockHeight()
 
 		ticketSpender, err := impl.TicketSpender(tx.Hash)
 		if err != nil {
@@ -73,13 +72,13 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 		}
 
 		ticketCopy := tx
-		txStatus := components.TransactionTitleIcon(l, w, &tx)
-		confirmations := dcr.Confirmations(w.GetBestBlockHeight(), tx)
+		txStatus := components.TransactionTitleIcon(l, impl, tx)
+		confirmations := dcr.Confirmations(bestBlockHeight, tx)
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender) <= impl.TicketMaturity()
+			showProgress = dcr.Confirmations(bestBlockHeight, ticketSpender) <= impl.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -99,17 +98,17 @@ func stakeToTransactionItems(l *load.Load, txs []sharedW.Transaction, newestFirs
 
 			confs := confirmations
 			if ticketSpender != nil {
-				confs = dcr.Confirmations(w.GetBestBlockHeight(), *ticketSpender)
+				confs = dcr.Confirmations(bestBlockHeight, ticketSpender)
 			}
 
 			progress = (float32(confs) / float32(progressMax)) * 100
 		}
 
 		tickets = append(tickets, &transactionItem{
-			transaction:   &ticketCopy,
+			transaction:   ticketCopy,
 			ticketSpender: ticketSpender,
 			status:        txStatus,
-			confirmations: dcr.Confirmations(w.GetBestBlockHeight(), tx),
+			confirmations: dcr.Confirmations(bestBlockHeight, tx),
 			progress:      progress,
 			showProgress:  showProgress,
 			showTime:      showTime,
@@ -296,9 +295,9 @@ func getTimeToMatureOrExpire(l *load.Load, tx *transactionItem) int {
 		progressMax = tx.dcrImpl.TicketExpiry()
 	}
 
-	confs := dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), *tx.transaction)
+	confs := dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), tx.transaction)
 	if tx.ticketSpender != nil {
-		confs = dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), *tx.ticketSpender)
+		confs = dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), tx.ticketSpender)
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100

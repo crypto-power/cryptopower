@@ -26,7 +26,7 @@ notificationsLoop:
 				break notificationsLoop
 			}
 
-			txToCache := make([]sharedW.Transaction, len(n.UnminedTransactions))
+			txToCache := make([]*sharedW.Transaction, len(n.UnminedTransactions))
 
 			// handle txs hitting the mempool.
 			for i, tx := range n.UnminedTransactions {

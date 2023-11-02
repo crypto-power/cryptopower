@@ -57,7 +57,7 @@ type TransactionsPage struct {
 	txTypeDropDown   *cryptomaterial.DropDown
 	transactionList  *cryptomaterial.ClickableList
 	previousTxFilter int32
-	scroll           *components.Scroll
+	scroll           *components.Scroll[*sharedW.Transaction]
 
 	tabs *cryptomaterial.ClickableList
 
@@ -189,7 +189,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, bool, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
@@ -231,6 +231,7 @@ func (pg *TransactionsPage) Layout(gtx layout.Context) layout.Dimensions {
 
 func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
+	wal := pg.WL.SelectedWallet.Wallet
 
 	txlisingView := layout.Flexed(1, func(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
@@ -260,20 +261,16 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 										})
 									}
 
-									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
+									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-										row := components.TransactionRow{
-											Transaction: wallTxs[index],
-											Index:       index,
-										}
-
+										tx := wallTxs[index]
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												return components.LayoutTransactionRow(gtx, pg.Load, row, true)
+												return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, true)
 											}),
 											layout.Rigid(func(gtx C) D {
 												// No divider for last row
-												if row.Index == len(wallTxs)-1 {
+												if index == len(wallTxs)-1 {
 													return layout.Dimensions{}
 												}
 
@@ -311,6 +308,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx layout.Context) layout.Dimensions 
 }
 
 func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+	wal := pg.WL.SelectedWallet.Wallet
 	container := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -331,20 +329,16 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 											return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
 										})
 									}
-									wallTxs := pg.scroll.FetchedData().([]sharedW.Transaction)
+									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-										row := components.TransactionRow{
-											Transaction: wallTxs[index],
-											Index:       index,
-										}
-
+										tx := wallTxs[index]
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
-												return components.LayoutTransactionRow(gtx, pg.Load, row, true)
+												return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, true)
 											}),
 											layout.Rigid(func(gtx C) D {
 												// No divider for last row
-												if row.Index == len(wallTxs)-1 {
+												if index == len(wallTxs)-1 {
 													return layout.Dimensions{}
 												}
 
@@ -385,8 +379,8 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
-		transactions := pg.scroll.FetchedData().([]sharedW.Transaction)
-		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, &transactions[selectedItem], false))
+		transactions := pg.scroll.FetchedData()
+		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, transactions[selectedItem], false))
 	}
 	cryptomaterial.DisplayOneDropdown(pg.txTypeDropDown)
 

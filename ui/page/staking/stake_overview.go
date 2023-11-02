@@ -46,7 +46,7 @@ type Page struct {
 	*app.GenericPageModal
 	*listeners.TxAndBlockNotificationListener
 
-	scroll *components.Scroll
+	scroll *components.Scroll[*transactionItem]
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -311,7 +311,7 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if clicked, selectedItem := pg.ticketsList.ItemClicked(); clicked {
-		tickets := pg.scroll.FetchedData().([]*transactionItem)
+		tickets := pg.scroll.FetchedData()
 		ticketTx := tickets[selectedItem].transaction
 		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
 
