@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -159,11 +160,6 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 func (pg *WalletSettingsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
-			func(gtx C) D {
-				return layout.Inset{
-					Bottom: values.MarginPadding26,
-				}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.StrSettings)).Layout)
-			},
 			pg.generalSection(),
 			pg.account(),
 			pg.securityTools(),
@@ -191,101 +187,167 @@ func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
 }
 
 func (pg *WalletSettingsPage) generalSection() layout.Widget {
-	dim := func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-					return D{}
-				}
-				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
-			}),
-			layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
-			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-					return pg.subSection(gtx, values.String(values.StrUnconfirmedFunds), pg.spendUnconfirmed.Layout)
-				}
-				return D{}
-			}),
-			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-					return pg.subSection(gtx, values.String(values.StrAllowSpendingFromUnmixedAccount), pg.spendUnmixedFunds.Layout)
-				}
-				return D{}
-			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
-					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
-							return D{}
-						}
-
-						peerAddrRow := clickableRowData{
-							title:     values.String(values.StrPeer),
-							clickable: pg.updateConnectToPeer,
-							labelText: pg.peerAddr,
-						}
-						return pg.clickableRow(gtx, peerAddrRow)
-					}),
-				)
-			}),
-		)
-	}
-
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrGeneral), dim)
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Orientation: layout.Vertical,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Background:  pg.Theme.Color.Surface,
+				Direction:   layout.Center,
+				Alignment:   layout.Middle,
+				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+				Padding:     layout.UniformInset(values.MarginPadding24),
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.pageSections(gtx, values.String(values.StrGeneral), func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return D{}
+								}
+								return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
+							}),
+							layout.Rigid(pg.sectionContent(pg.changeWalletName, values.String(values.StrRenameWalletSheetTitle))),
+							layout.Rigid(func(gtx C) D {
+								if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+									return pg.subSection(gtx, values.String(values.StrUnconfirmedFunds), pg.spendUnconfirmed.Layout)
+								}
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+									return pg.subSection(gtx, values.String(values.StrAllowSpendingFromUnmixedAccount), pg.spendUnmixedFunds.Layout)
+								}
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
+									layout.Rigid(func(gtx C) D {
+										if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
+											return D{}
+										}
+
+										peerAddrRow := clickableRowData{
+											title:     values.String(values.StrPeer),
+											clickable: pg.updateConnectToPeer,
+											labelText: pg.peerAddr,
+										}
+										return pg.clickableRow(gtx, peerAddrRow)
+									}),
+								)
+							}),
+						)
+					})
+				}),
+			)
+		})
 	}
 }
 
 func (pg *WalletSettingsPage) account() layout.Widget {
-	dim := func(gtx C) D {
-		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
-			return pg.subSection(gtx, pg.accounts[a].Name, pg.Theme.Icons.ChevronRight.Layout24dp)
-		})
-	}
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrAccount), dim)
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Orientation: layout.Vertical,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Background:  pg.Theme.Color.Surface,
+				Direction:   layout.Center,
+				Alignment:   layout.Middle,
+				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+				Padding:     layout.UniformInset(values.MarginPadding24),
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.pageSections(gtx, values.String(values.StrAccount), func(gtx C) D {
+						return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
+							return pg.subSection(gtx, pg.accounts[a].Name, pg.Theme.Icons.ChevronRight.Layout24dp)
+						})
+					})
+				}),
+			)
+		})
 	}
 }
 
 func (pg *WalletSettingsPage) debug() layout.Widget {
-	dims := func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
-			layout.Rigid(func(gtx C) D {
-				if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
-					return pg.sectionDimension(gtx, pg.setGapLimit, values.String(values.StrSetGapLimit))
-				}
-				return D{}
-			}),
-			layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
-			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
-		)
-	}
-
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrDebug), dims)
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Orientation: layout.Vertical,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Background:  pg.Theme.Color.Surface,
+				Direction:   layout.Center,
+				Alignment:   layout.Middle,
+				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+				Padding:     layout.UniformInset(values.MarginPadding24),
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.pageSections(gtx, values.String(values.StrDebug), func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
+							layout.Rigid(func(gtx C) D {
+								if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+									return pg.sectionDimension(gtx, pg.setGapLimit, values.String(values.StrSetGapLimit))
+								}
+								return D{}
+							}),
+							layout.Rigid(pg.sectionContent(pg.checklog, values.String(values.StrCheckWalletLog))),
+							layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
+						)
+					})
+				}),
+			)
+		})
 	}
 }
 
 func (pg *WalletSettingsPage) securityTools() layout.Widget {
-	dims := func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.sectionContent(pg.verifyMessage, values.String(values.StrVerifyMessage))),
-			layout.Rigid(pg.sectionContent(pg.validateAddr, values.String(values.StrValidateMsg))),
-			layout.Rigid(pg.sectionContent(pg.signMessage, values.String(values.StrSignMessage))),
-		)
-	}
-
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrSecurityTools), dims)
+		return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Orientation: layout.Vertical,
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Background:  pg.Theme.Color.Surface,
+				Direction:   layout.Center,
+				Alignment:   layout.Middle,
+				Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+				Padding:     layout.UniformInset(values.MarginPadding24),
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.pageSections(gtx, values.String(values.StrSecurityTools), func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(pg.sectionContent(pg.verifyMessage, values.String(values.StrVerifyMessage))),
+							layout.Rigid(pg.sectionContent(pg.validateAddr, values.String(values.StrValidateMsg))),
+							layout.Rigid(pg.sectionContent(pg.signMessage, values.String(values.StrSignMessage))),
+						)
+					})
+				}),
+			)
+		})
 	}
 }
 
 func (pg *WalletSettingsPage) dangerZone() layout.Widget {
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrDangerZone),
-			pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)),
+		return cryptomaterial.LinearLayout{
+			Orientation: layout.Vertical,
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
+			Background:  pg.Theme.Color.Surface,
+			Direction:   layout.Center,
+			Alignment:   layout.Middle,
+			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+			Padding:     layout.UniformInset(values.MarginPadding24),
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.pageSections(gtx, values.String(values.StrDangerZone),
+					pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)),
+				)
+			}),
 		)
 	}
 }
@@ -297,9 +359,10 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Label(values.TextSize14, title)
+							txt := pg.Theme.Label(values.TextSize20, title)
 							txt.Color = pg.Theme.Color.GrayText2
-							return txt.Layout(gtx)
+							txt.Font.Weight = font.Bold
+							return layout.Inset{Bottom: values.MarginPadding15}.Layout(gtx, txt.Layout)
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							if title == values.String(values.StrSecurityTools) {
@@ -319,12 +382,6 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 							return D{}
 						}),
 					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding10,
-						Top:    values.MarginPadding7,
-					}.Layout(gtx, pg.Theme.Separator().Layout)
 				}),
 				layout.Rigid(body),
 			)
@@ -349,7 +406,7 @@ func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.
 			textLabel.Color = pg.Theme.Color.Danger
 		}
 		return layout.Inset{
-			Bottom: values.MarginPadding20,
+			Bottom: values.MarginPadding15,
 		}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(textLabel.Layout),
