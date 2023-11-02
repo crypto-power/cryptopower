@@ -63,6 +63,7 @@ type TransactionsPage struct {
 
 	isHomepageLayout,
 	showLoader,
+	hasDCRwallet,
 	showDisabledLayout bool
 }
 
@@ -73,9 +74,8 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 		separator:        l.Theme.Separator(),
 		transactionList:  l.Theme.NewClickableList(layout.Vertical),
 		isHomepageLayout: isHomepageLayout,
+		tab:              l.Theme.SegmentedControl(txTabs),
 	}
-
-	pg.tab = l.Theme.SegmentedControl(txTabs)
 
 	// init the asset selector
 	if isHomepageLayout {
@@ -100,6 +100,8 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
+
+	//TODO: Add wallet sync listener
 	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
@@ -109,9 +111,10 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
-// initWalletSelector is used by the tx history page, for wallet selection.
+// initWalletSelector initializes the wallet selector dropdown to enable
+// filtering transactions for a specific wallet when this page is used to
+// display transactions for multiple wallets.
 func (pg *TransactionsPage) initWalletDropdown() {
-	pg.showLoader = true
 	pg.assetWallets = pg.WL.AllSortedWalletList()
 	if pg.tab.SelectedSegment() != values.String(values.StrTxOverview) {
 		pg.assetWallets = pg.WL.SortedWalletList(utils.DCRWalletAsset)
@@ -119,33 +122,20 @@ func (pg *TransactionsPage) initWalletDropdown() {
 
 	items := []cryptomaterial.DropDownItem{}
 	for _, wal := range pg.assetWallets {
-		item := cryptomaterial.DropDownItem{}
-		switch wal.GetAssetType() {
-		case utils.DCRWalletAsset:
-			item.Icon = pg.Theme.Icons.DCR
-		case utils.LTCWalletAsset:
-			item.Icon = pg.Theme.Icons.LTC
-		case utils.BTCWalletAsset:
-			item.Icon = pg.Theme.Icons.BTC
+		assetType := wal.GetAssetType()
+		if assetType == utils.DCRWalletAsset && !pg.hasDCRwallet {
+			pg.hasDCRwallet = true
 		}
-		item.Text = wal.GetWalletName()
+
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(assetType),
+		}
 		items = append(items, item)
 	}
 
 	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
 	pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
-	pg.showLoader = false
-}
-
-func (pg *TransactionsPage) sectionNavTab(gtx C) D {
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.MatchParent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Direction:   layout.Center,
-	}.Layout2(gtx, func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
-	})
 }
 
 func (pg *TransactionsPage) pageTitle(gtx C) D {
@@ -166,7 +156,9 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 		items = append(items, item)
 	}
 	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
-
+	// Do this in background to prevent the app from freezing when counting
+	// wallet txs. This is needed in situatuin where the wallet has lots of
+	// txs to be counted.
 	go func() {
 		countfn := func(fType int32) int {
 			count, _ := wal.CountTransactions(fType)
@@ -231,7 +223,7 @@ func (pg *TransactionsPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *TransactionsPage) pageLayout(gtx C, body layout.Widget) D {
+func (pg *TransactionsPage) syncOverlay(gtx C, body layout.Widget) D {
 	// If wallet is not synced, display the overlay with the message.
 	pg.showDisabledLayout = pg.isHomepageLayout && (!pg.selectedWallet.IsSynced() || pg.selectedWallet.IsRescanning())
 
@@ -259,7 +251,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 					return layout.Inset{
 						Top: values.MarginPadding60,
 					}.Layout(gtx, func(gtx C) D {
-						return pg.pageLayout(gtx, func(gtx C) D {
+						return pg.syncOverlay(gtx, func(gtx C) D {
 							itemCount := pg.scroll.ItemsCount()
 							card := pg.Theme.Card()
 							// return "No transactions yet" text if there are no transactions
@@ -325,7 +317,7 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 					})
 				}),
 				layout.Expanded(func(gtx C) D {
-					if pg.isHomepageLayout {
+					if pg.isHomepageLayout && len(pg.assetWallets) > 1 {
 						return pg.walletDropDown.Layout(gtx, 0, false)
 					}
 					return D{}
@@ -341,8 +333,8 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 	})
 
 	items := []layout.FlexChild{}
-	if pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset {
-		// Layouts only supportted by DCR
+	if pg.hasDCRwallet && pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset {
+		// Layouts only supported by DCR
 		items = append(items, layout.Rigid(pg.sectionNavTab))
 	}
 
@@ -353,6 +345,17 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 		})
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+}
+
+func (pg *TransactionsPage) sectionNavTab(gtx C) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+	}.Layout2(gtx, func(gtx C) D {
+		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
+	})
 }
 
 func (pg *TransactionsPage) layoutMobile(gtx C) D {

@@ -226,7 +226,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 	return &txStatus
 }
 
-// transactionRow is a single transaction row on the transactions and overview
+// LayoutTransactionRow is a single transaction row on the transactions and overview
 // page. It lays out a transaction's direction, balance, status. isTxPage
 // determines if the transaction should be drawn using the transactions page
 // layout.
