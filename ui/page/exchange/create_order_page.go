@@ -16,7 +16,6 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -199,7 +198,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	return pg
 }
 
-func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) bool {
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []libutils.AssetType, selectedToAsset []libutils.AssetType) bool {
 	asset, ok := pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
 	if !ok {
 		isSourceWallet := len(selectedFromAsset) != 0
@@ -500,7 +499,7 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 	return true
 }
 
-func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) (libutils.AssetType, bool) {
+func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.AssetType, selectedToAsset []libutils.AssetType) (libutils.AssetType, bool) {
 	if len(selectedFromAsset) > 0 {
 		selectedAsset := selectedFromAsset[0]
 		ok := pg.sourceWalletSelector.SetSelectedAsset(selectedAsset)
@@ -614,14 +613,6 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.updateExchangeConfig()
 }
 
-// func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-// 	isAllowed := pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
-// 	if !isAllowed {
-// 		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-// 	}
-// 	return isAllowed
-// }
-
 // isMultipleAssetTypeWalletAvailable checks if multiple asset types are
 // available for exchange functionality to run smoothly. Otherwise exchange
 // functionality is disable till different asset type wallets are created.
@@ -660,11 +651,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
 		overlaySet = true
-
-	// case !pg.isExchangeAPIAllowed():
-	// 	msg = pg.errMsg
-	// 	navBtn = &pg.navToSettingsBtn
-	// 	overlaySet = true
 
 	case !pg.isMultipleAssetTypeWalletAvailable():
 		msg = pg.errMsg

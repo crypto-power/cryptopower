@@ -16,4 +16,5 @@ const (
 	SpendUnmixedFundsKey             = "spend_unmixed_funds"
 	KnownDexServersConfigKey         = "known_dex_servers"
 	GapLimitConfigKey                = "gap_limit_key"
+	DexFirstVisitKey                 = "dexFirstVisit"
 )

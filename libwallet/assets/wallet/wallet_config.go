@@ -56,6 +56,7 @@ const (
 	LanguagePreferenceKey            = "app_language"
 	DarkModeConfigKey                = "dark_mode"
 	HideTotalBalanceConfigKey        = "hideTotalUSDBalance"
+	DexFirstVisitKey                 = "dexFirstVisit"
 
 	PassphraseTypePin  int32 = 0
 	PassphraseTypePass int32 = 1

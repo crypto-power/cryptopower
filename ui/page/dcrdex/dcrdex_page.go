@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/layout"
 	"github.com/crypto-power/cryptopower/app"
-	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -59,7 +58,6 @@ func (pg *DEXPage) ID() string {
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	if pg.CurrentPage() == nil {
 		// TODO: Handle pg.inited
 		pg.Display(NewDEXOnboarding(pg.Load))
@@ -68,15 +66,11 @@ func (pg *DEXPage) OnNavigatedTo() {
 	pg.CurrentPage().OnNavigatedTo()
 }
 
-func (pg *DEXPage) isExchangeAPIAllowed() bool {
-	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
-}
-
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	if !pg.isExchangeAPIAllowed() {
+	if !pg.AssetsManager.IsDexFirstVisit() {
 		return components.UniformPadding(gtx, pg.splashPage)
 	}
 	return layout.Stack{}.Layout(gtx,
@@ -105,6 +99,9 @@ func (pg *DEXPage) HandleUserInteractions() {
 	}
 	if pg.splashPageInfoButton.Button.Clicked() {
 		pg.showInfoModal()
+	}
+	if pg.navigateToSettingsBtn.Button.Clicked() {
+		pg.AssetsManager.SetDexFirstVisit(true)
 	}
 }
 

@@ -3,11 +3,11 @@ package dcrdex
 import (
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/renderers"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -35,17 +35,18 @@ func (pg *DEXPage) splashPage(gtx layout.Context) layout.Dimensions {
 							return pg.Theme.Icons.DcrDex.LayoutSize(gtx, values.MarginPadding100)
 						}),
 						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Label(values.TextSize24, values.String(values.StrWhatIsDex))
-							txt.Font.Weight = font.SemiBold
+							pgTitle := pg.Theme.Label(values.TextSize24, values.String(values.StrWhatIsDex))
+							pgTitle.Font.Weight = font.SemiBold
 
 							return layout.Inset{
 								Top:    values.MarginPadding30,
 								Bottom: values.MarginPadding16,
-							}.Layout(gtx, txt.Layout)
+							}.Layout(gtx, pgTitle.Layout)
 						}),
 						layout.Rigid(func(gtx C) D {
-							text := values.StringF(values.StrDexContent, `<span style="text-color: gray">`, `<br>`, `</span>`)
-							return renderers.RenderHTML(text, pg.Theme).Layout(gtx)
+							pgContent := pg.Theme.Label(values.TextSize16, values.String(values.StrDexContent))
+							pgContent.Alignment = text.Middle
+							return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pgContent.Layout)
 						}),
 					)
 				}),

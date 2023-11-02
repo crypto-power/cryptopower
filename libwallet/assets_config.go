@@ -288,3 +288,15 @@ func (mgr *AssetsManager) SetTotalBalanceVisibility(data bool) {
 func genKey(prefix, identifier interface{}) string {
 	return fmt.Sprintf("%v-%v", prefix, identifier)
 }
+
+// IsDexFirstVisit checks if its the users first visit to DCRDEX page
+func (mgr *AssetsManager) IsDexFirstVisit() bool {
+	var data bool
+	mgr.db.ReadWalletConfigValue(sharedW.DexFirstVisitKey, &data)
+	return data
+}
+
+// SetDexFirstVisit sets the first visit to DCRDEX .
+func (mgr *AssetsManager) SetDexFirstVisit(data bool) {
+	mgr.db.SaveWalletConfigValue(sharedW.DexFirstVisitKey, data)
+}
