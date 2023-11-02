@@ -31,12 +31,6 @@ type Page struct {
 	navigateToSettingsBtn  cryptomaterial.Button
 }
 
-var governanceTabTitles = []string{
-	values.String(values.StrProposal),
-	values.String(values.StrConsensusChange),
-	values.String(values.StrTreasurySpending),
-}
-
 func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
@@ -166,12 +160,19 @@ func (pg *Page) selectedTabIndex() int {
 }
 
 func (pg *Page) layoutTabs(gtx C) D {
-	var selectedTabDims layout.Dimensions
+	tabs := []string{
+		values.String(values.StrProposal),
+		values.String(values.StrConsensusChange),
+	}
+	if len(pg.WL.AssetsManager.AssetWallets(libutils.DCRWalletAsset)) > 0 {
+		tabs = append(tabs, values.String(values.StrTreasurySpending))
+	}
 
+	var selectedTabDims layout.Dimensions
 	return layout.Inset{
 		Top: values.MarginPadding20,
 	}.Layout(gtx, func(gtx C) D {
-		return pg.tabCategoryList.Layout(gtx, len(governanceTabTitles), func(gtx C, i int) D {
+		return pg.tabCategoryList.Layout(gtx, len(tabs), func(gtx C, i int) D {
 			isSelectedTab := pg.selectedTabIndex() == i
 			return layout.Stack{Alignment: layout.S}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
@@ -180,7 +181,7 @@ func (pg *Page) layoutTabs(gtx C) D {
 						Bottom: values.MarginPadding8,
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Center.Layout(gtx, func(gtx C) D {
-							lbl := pg.Theme.Label(values.TextSize16, governanceTabTitles[i])
+							lbl := pg.Theme.Label(values.TextSize16, tabs[i])
 							lbl.Color = pg.Theme.Color.GrayText1
 							if isSelectedTab {
 								lbl.Color = pg.Theme.Color.Primary
