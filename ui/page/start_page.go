@@ -79,8 +79,6 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (sp *startPage) OnNavigatedTo() {
-	sp.WL.AssetsManager = sp.WL.Wallet.GetAssetsManager()
-
 	if sp.isQuitting {
 		log.Info("Displaying the shutdown wallets view page")
 
@@ -263,7 +261,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				netType := sp.WL.Wallet.Net.Display()
+				netType := sp.WL.AssetsManager.NetType().Display()
 				nType := sp.Theme.Label(values.TextSize20, netType)
 				nType.Font.Weight = font.Medium
 				return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)

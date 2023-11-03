@@ -11,7 +11,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 type WalletItem struct {
@@ -22,8 +21,6 @@ type WalletItem struct {
 type WalletLoad struct {
 	AssetsManager *libwallet.AssetsManager
 	TxAuthor      dcr.TxAuthor
-
-	Wallet *wallet.Wallet
 
 	SelectedWallet  *WalletItem
 	SelectedAccount *int
@@ -125,7 +122,7 @@ func (wl *WalletLoad) SpendableWalletBalance(walletID int) (sharedW.AssetAmount,
 }
 
 func (wl *WalletLoad) DCRHDPrefix() string {
-	switch wl.Wallet.Net {
+	switch wl.AssetsManager.NetType() {
 	case utils.Testnet:
 		return dcr.TestnetHDPath
 	case utils.Mainnet:
@@ -136,7 +133,7 @@ func (wl *WalletLoad) DCRHDPrefix() string {
 }
 
 func (wl *WalletLoad) BTCHDPrefix() string {
-	switch wl.Wallet.Net {
+	switch wl.AssetsManager.NetType() {
 	case utils.Testnet:
 		return btc.TestnetHDPath
 	case utils.Mainnet:
@@ -148,7 +145,7 @@ func (wl *WalletLoad) BTCHDPrefix() string {
 
 // LTC HDPrefix returns the HD path prefix for the Litecoin wallet network.
 func (wl *WalletLoad) LTCHDPrefix() string {
-	switch wl.Wallet.Net {
+	switch wl.AssetsManager.NetType() {
 	case utils.Testnet:
 		return ltc.TestnetHDPath
 	case utils.Mainnet:

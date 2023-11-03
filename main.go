@@ -10,11 +10,16 @@ import (
 
 	"gioui.org/app"
 
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/logger"
 	"github.com/crypto-power/cryptopower/ui"
 	_ "github.com/crypto-power/cryptopower/ui/assets"
-	"github.com/crypto-power/cryptopower/wallet"
+)
+
+const (
+	devBuild  = "dev"
+	prodBuild = "prod"
 )
 
 var (
@@ -23,7 +28,7 @@ var (
 	// BuildDate is the date the application was built. It is set using the -ldflags
 	BuildDate string
 	// BuildEnv is the build environment. It is set using the -ldflags
-	BuildEnv = wallet.DevBuild
+	BuildEnv = devBuild
 )
 
 func main() {
@@ -49,7 +54,7 @@ func main() {
 	}
 
 	var buildDate time.Time
-	if BuildEnv == wallet.ProdBuild {
+	if BuildEnv == prodBuild {
 		buildDate, err = time.Parse(time.RFC3339, BuildDate)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
@@ -68,29 +73,23 @@ func main() {
 	}
 
 	logDir := filepath.Join(cfg.LogDir, net)
-	wal, err := wallet.NewWallet(cfg.HomeDir, net, Version, logDir, buildDate)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	err = wal.InitAssetsManager()
+	assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, logDir, net)
 	if err != nil {
 		log.Errorf("init assetsManager error: %v", err)
 		return
 	}
 
 	// if debuglevel is passed at commandLine persist the option.
-	if cfg.DebugLevel != "" && wal.GetAssetsManager().IsAssetManagerDB() {
-		wal.GetAssetsManager().SetLogLevels(cfg.DebugLevel)
+	if cfg.DebugLevel != "" && assetsManager.IsAssetManagerDB() {
+		assetsManager.SetLogLevels(cfg.DebugLevel)
 	}
 
-	if wal.GetAssetsManager().IsAssetManagerDB() {
+	if assetsManager.IsAssetManagerDB() {
 		// now that assets manager is up, set stored debuglevel
-		logger.SetLogLevels(wal.GetAssetsManager().GetLogLevels())
+		logger.SetLogLevels(assetsManager.GetLogLevels())
 	}
 
-	win, err := ui.CreateWindow(wal)
+	win, err := ui.CreateWindow(assetsManager, Version, buildDate)
 	if err != nil {
 		log.Errorf("Could not initialize window: %s\ns", err)
 		return
@@ -100,7 +99,7 @@ func main() {
 		// Wait until we receive the shutdown request.
 		<-win.Quit
 		// Terminate all the backend processes safely.
-		wal.Shutdown()
+		assetsManager.Shutdown()
 		// Backend process terminated safely trigger app shutdown now.
 		win.IsShutdown <- struct{}{}
 	}()
