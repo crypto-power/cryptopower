@@ -90,7 +90,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -865,7 +865,7 @@ func (pg *TxDetailsPage) txnIORow(gtx C, amount int64, acctNum int32, address st
 }
 
 func (pg *TxDetailsPage) showbrowserURLModal(copyredirect *cryptomaterial.Clickable) {
-	redirectURL := pg.WL.AssetsManager.BlockExplorerURLForTx(pg.wallet.GetAssetType(), pg.transaction.Hash)
+	redirectURL := pg.AssetsManager.BlockExplorerURLForTx(pg.wallet.GetAssetType(), pg.transaction.Hash)
 	info := modal.NewCustomModal(pg.Load).
 		Title(values.String(values.StrViewOnExplorer)).
 		Body(values.String(values.StrCopyLink)).

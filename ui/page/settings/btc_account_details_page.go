@@ -47,11 +47,11 @@ type BTCAcctDetailsPage struct {
 	infoButton              cryptomaterial.IconButton
 }
 
-func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetailsPage {
+func NewAcctBTCDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *BTCAcctDetailsPage {
 	pg := &BTCAcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
-		wallet:           l.WL.SelectedWallet.Wallet,
+		wallet:           wallet,
 		account:          account,
 
 		theme:                    l.Theme,
@@ -78,7 +78,7 @@ func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetai
 func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
 	pg.totalBalance = pg.account.Balance.Total.String()
 
-	pg.hdPath = pg.WL.BTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
+	pg.hdPath = pg.AssetsManager.BTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount
@@ -400,7 +400,7 @@ func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 }
 
 func (pg *BTCAcctDetailsPage) loadExtendedPubKey() {
-	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	xpub, err := pg.wallet.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 	}

@@ -88,7 +88,7 @@ func (es *ExSelector) SupportedExchanges(server ...instantswap.Server) []*Exchan
 		return []*Exchange{exchng}
 	}
 
-	exchangeServers := es.WL.AssetsManager.InstantSwap.ExchangeServers()
+	exchangeServers := es.AssetsManager.InstantSwap.ExchangeServers()
 
 	var exchange []*Exchange
 	for _, exchangeServer := range exchangeServers {
@@ -171,7 +171,7 @@ func (es *ExSelector) Layout(window app.WindowNavigator, gtx C) D {
 	es.Handle(window)
 
 	bg := es.Theme.Color.White
-	if es.WL.AssetsManager.IsDarkModeOn() {
+	if es.AssetsManager.IsDarkModeOn() {
 		bg = es.Theme.Color.Background
 	}
 

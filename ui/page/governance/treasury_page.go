@@ -60,7 +60,7 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg := &TreasuryPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TreasuryPageID),
-		assetsManager:    l.WL.AssetsManager,
+		assetsManager:    l.AssetsManager,
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -88,7 +88,7 @@ func (pg *TreasuryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	// Fetch (or re-fetch) treasury policies in background as this makes
 	// a network call. Refresh the window once the call completes.
-	pg.PiKey = hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
+	pg.PiKey = hex.EncodeToString(pg.AssetsManager.PiKeys()[0])
 
 	if pg.isTreasuryAPIAllowed() && pg.selectedWallet != nil {
 		pg.FetchPolicies()
@@ -102,7 +102,7 @@ func (pg *TreasuryPage) OnNavigatedFrom() {
 }
 
 func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -127,7 +127,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
+		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
@@ -266,7 +266,7 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 
 func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 	backgroundColor := pg.Theme.Color.LightBlue
-	if pg.WL.AssetsManager.IsDarkModeOn() {
+	if pg.AssetsManager.IsDarkModeOn() {
 		backgroundColor = pg.Theme.Color.Background
 	}
 
@@ -326,11 +326,11 @@ func (pg *TreasuryPage) initWalletSelector() {
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
 	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
 	}
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet.Asset
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedWallet = selectedWallet
 		pg.FetchPolicies()
 	})
 }

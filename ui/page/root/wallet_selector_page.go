@@ -36,6 +36,11 @@ type walletIndexTuple struct {
 
 type showNavigationFunc func(showNavigation bool)
 
+type walletWithBalance struct {
+	wallet       sharedW.Asset
+	totalBalance sharedW.AssetAmount
+}
+
 type WalletSelectorPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -51,7 +56,7 @@ type WalletSelectorPage struct {
 
 	// wallet selector options
 	listLock       sync.RWMutex
-	walletsList    map[libutils.AssetType][]*load.WalletItem
+	walletsList    map[libutils.AssetType][]*walletWithBalance
 	indexMapping   map[int]walletIndexTuple
 	badWalletsList map[libutils.AssetType][]*badWalletListItem
 
@@ -87,7 +92,7 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 	pg.assetsBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
 	pg.assetsTotalUSDBalance = make(map[libutils.AssetType]float64)
 	pg.assetRate = make(map[libutils.AssetType]float64)
-	pg.walletsList = make(map[libutils.AssetType][]*load.WalletItem)
+	pg.walletsList = make(map[libutils.AssetType][]*walletWithBalance)
 	pg.indexMapping = make(map[int]walletIndexTuple)
 	pg.addWalClickable = make(map[libutils.AssetType]*cryptomaterial.Clickable)
 
@@ -103,7 +108,7 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.showNavigationFunc(false)
 
-	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
+	for _, asset := range pg.AssetsManager.AllAssetTypes() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
 		pg.addWalClickable[asset] = pg.Load.Theme.NewClickable(false)
 		pg.addWalClickable[asset].Radius = cryptomaterial.Radius(14)
@@ -132,7 +137,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 				break
 			}
 
-			rate := pg.WL.AssetsManager.RateSource.GetTicker(marketValue)
+			rate := pg.AssetsManager.RateSource.GetTicker(marketValue)
 			if err != nil {
 				log.Error(err)
 				break
@@ -170,13 +175,13 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 			return
 		}
 
-		pg.WL.SelectedWallet = wallets[tuple.Index]
+		selectedWallet := wallets[tuple.Index].wallet
 		pg.showNavigationFunc(true)
 
 		callback := func() {
 			pg.ParentNavigator().CloseCurrentPage()
 		}
-		pg.ParentNavigator().Display(NewMainPage(pg.Load, callback))
+		pg.ParentNavigator().Display(NewSingleWalletMasterPage(pg.Load, selectedWallet, callback))
 	}
 
 	for _, walletsOfType := range pg.badWalletsList {
@@ -228,7 +233,7 @@ func (pg *WalletSelectorPage) layoutMobile(gtx C) D {
 
 func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	assetDropdown := func(gtx C) D {
-		supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
+		supportedAssets := pg.AssetsManager.AllAssetTypes()
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 			top := values.MarginPadding15
 			bottom := values.MarginPadding0
@@ -357,7 +362,7 @@ func (pg *WalletSelectorPage) dropdownTitleLayout(gtx C, asset libutils.AssetTyp
 							}),
 							layout.Rigid(func(gtx C) D {
 								usdBalance := ""
-								if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+								if pg.AssetsManager.ExchangeRateFetchingEnabled() {
 									usdBalance = utils.FormatAsUSDString(pg.Printer, pg.assetsTotalUSDBalance[asset])
 								}
 								return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)

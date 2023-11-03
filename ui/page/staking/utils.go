@@ -32,22 +32,14 @@ type transactionItem struct {
 	dateTooltip       *cryptomaterial.Tooltip
 	daysBehindTooltip *cryptomaterial.Tooltip
 	durationTooltip   *cryptomaterial.Tooltip
-
-	dcrImpl *dcr.Asset
 }
 
-func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil, values.ErrDCRSupportedOnly
-	}
-
+func (pg *Page) stakeToTransactionItems(txs []*sharedW.Transaction, newestFirst bool, hasFilter func(int32) bool) ([]*transactionItem, error) {
 	tickets := make([]*transactionItem, 0)
 	for _, tx := range txs {
-		bestBlockHeight := impl.GetBestBlockHeight()
+		bestBlockHeight := pg.dcrWallet.GetBestBlockHeight()
 
-		ticketSpender, err := impl.TicketSpender(tx.Hash)
+		ticketSpender, err := pg.dcrWallet.TicketSpender(tx.Hash)
 		if err != nil {
 			return nil, err
 		}
@@ -72,13 +64,13 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 		}
 
 		ticketCopy := tx
-		txStatus := components.TransactionTitleIcon(l, impl, tx)
+		txStatus := components.TransactionTitleIcon(pg.Load, pg.dcrWallet, tx)
 		confirmations := dcr.Confirmations(bestBlockHeight, tx)
 		var ticketAge string
 
 		showProgress := txStatus.TicketStatus == dcr.TicketStatusImmature || txStatus.TicketStatus == dcr.TicketStatusLive
 		if ticketSpender != nil { /// voted or revoked
-			showProgress = dcr.Confirmations(bestBlockHeight, ticketSpender) <= impl.TicketMaturity()
+			showProgress = dcr.Confirmations(bestBlockHeight, ticketSpender) <= pg.dcrWallet.TicketMaturity()
 			ticketAge = fmt.Sprintf("%d days", ticketSpender.DaysToVoteOrRevoke)
 		} else if txStatus.TicketStatus == dcr.TicketStatusImmature ||
 			txStatus.TicketStatus == dcr.TicketStatusLive {
@@ -91,9 +83,9 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 
 		var progress float32
 		if showProgress {
-			progressMax := impl.TicketMaturity()
+			progressMax := pg.dcrWallet.TicketMaturity()
 			if txStatus.TicketStatus == dcr.TicketStatusLive {
-				progressMax = impl.TicketExpiry()
+				progressMax = pg.dcrWallet.TicketExpiry()
 			}
 
 			confs := confirmations
@@ -115,13 +107,11 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 			purchaseTime:  time.Unix(tx.Timestamp, 0).Format("Jan 2, 2006 15:04:05 PM"),
 			ticketAge:     ticketAge,
 
-			statusTooltip:     l.Theme.Tooltip(),
-			walletNameTooltip: l.Theme.Tooltip(),
-			dateTooltip:       l.Theme.Tooltip(),
-			daysBehindTooltip: l.Theme.Tooltip(),
-			durationTooltip:   l.Theme.Tooltip(),
-
-			dcrImpl: impl,
+			statusTooltip:     pg.Theme.Tooltip(),
+			walletNameTooltip: pg.Theme.Tooltip(),
+			dateTooltip:       pg.Theme.Tooltip(),
+			daysBehindTooltip: pg.Theme.Tooltip(),
+			durationTooltip:   pg.Theme.Tooltip(),
 		})
 	}
 
@@ -147,11 +137,11 @@ func stakeToTransactionItems(l *load.Load, txs []*sharedW.Transaction, newestFir
 	return tickets, nil
 }
 
-func TicketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
+func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transactionItem) D {
 	date := time.Unix(tx.transaction.Timestamp, 0).Format("Jan 2, 2006")
 	timeSplit := time.Unix(tx.transaction.Timestamp, 0).Format("03:04:05 PM")
 	dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
-	bestBlock := l.WL.SelectedWallet.Wallet.GetBestBlock()
+	bestBlock := dcrWallet.GetBestBlock()
 	col := l.Theme.Color.GrayText3
 
 	switch tx.status.TicketStatus {
@@ -160,8 +150,8 @@ func TicketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusImmature:
-		maturity := tx.dcrImpl.TicketMaturity()
-		blockTime := l.WL.SelectedWallet.Wallet.TargetTimePerBlockMinutes()
+		maturity := dcrWallet.TicketMaturity()
+		blockTime := dcrWallet.TargetTimePerBlockMinutes()
 		maturityDuration := time.Duration(maturity*int32(blockTime)) * time.Minute
 		blockRemaining := (bestBlock.Height - tx.transaction.BlockHeight)
 
@@ -184,8 +174,8 @@ func TicketStatusDetails(gtx C, l *load.Load, tx *transactionItem) D {
 			}),
 		)
 	case dcr.TicketStatusLive:
-		expiry := tx.dcrImpl.TicketExpiry()
-		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc, expiry, getTimeToMatureOrExpire(l, tx), expiry))
+		expiry := dcrWallet.TicketExpiry()
+		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc, expiry, getTimeToMatureOrExpire(dcrWallet, tx), expiry))
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusVotedOrRevoked:
@@ -228,7 +218,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 	)
 }
 
-func ticketListLayout(gtx C, l *load.Load, ticket *transactionItem) layout.Dimensions {
+func ticketListLayout(gtx C, l *load.Load, wallet *dcr.Asset, ticket *transactionItem) layout.Dimensions {
 	return layout.Inset{
 		Right: values.MarginPadding26,
 	}.Layout(gtx, func(gtx C) D {
@@ -253,7 +243,7 @@ func ticketListLayout(gtx C, l *load.Load, ticket *transactionItem) layout.Dimen
 				)
 			},
 			func(gtx C) D {
-				return TicketStatusDetails(gtx, l, ticket)
+				return TicketStatusDetails(gtx, l, wallet, ticket)
 			})
 	})
 }
@@ -289,15 +279,16 @@ func nextTicketRemaining(allsecs int) string {
 	return str
 }
 
-func getTimeToMatureOrExpire(l *load.Load, tx *transactionItem) int {
-	progressMax := tx.dcrImpl.TicketMaturity()
+func getTimeToMatureOrExpire(dcrWallet *dcr.Asset, tx *transactionItem) int {
+	progressMax := dcrWallet.TicketMaturity()
 	if tx.status.TicketStatus == dcr.TicketStatusLive {
-		progressMax = tx.dcrImpl.TicketExpiry()
+		progressMax = dcrWallet.TicketExpiry()
 	}
 
-	confs := dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), tx.transaction)
+	bestBlockHeight := dcrWallet.GetBestBlockHeight()
+	confs := dcr.Confirmations(bestBlockHeight, tx.transaction)
 	if tx.ticketSpender != nil {
-		confs = dcr.Confirmations(l.WL.SelectedWallet.Wallet.GetBestBlockHeight(), tx.ticketSpender)
+		confs = dcr.Confirmations(bestBlockHeight, tx.ticketSpender)
 	}
 
 	progress := (float32(confs) / float32(progressMax)) * 100

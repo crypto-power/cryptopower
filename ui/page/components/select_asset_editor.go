@@ -37,7 +37,7 @@ func (sae SelectAssetEditor) Layout(window app.WindowNavigator, gtx C) D {
 	l := sae.Theme.SeparatorVertical(height, width)
 	l.Color = sae.Theme.Color.Gray3
 	bg := sae.Theme.Color.White
-	if sae.WL.AssetsManager.IsDarkModeOn() {
+	if sae.AssetsManager.IsDarkModeOn() {
 		bg = sae.Theme.Color.Background
 	}
 	return cryptomaterial.LinearLayout{

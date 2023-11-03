@@ -111,7 +111,7 @@ func (osm *orderSettingsModal) OnCancel(cancel func()) *orderSettingsModal {
 func (osm *orderSettingsModal) OnResume() {
 	osm.ctx, osm.ctxCancel = context.WithCancel(context.TODO())
 
-	osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
@@ -121,7 +121,7 @@ func (osm *orderSettingsModal) OnResume() {
 	}
 	osm.addressEditor.Editor.SetText(address)
 
-	osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 		address, err := osm.destinationWalletSelector.SelectedWallet().CurrentAddress(osm.destinationAccountSelector.SelectedAccount().Number)
 		if err != nil {
@@ -168,7 +168,7 @@ func (osm *orderSettingsModal) Handle() {
 			DestinationAccountNumber: params.destinationAccountSelector.SelectedAccount().Number,
 		}
 
-		osm.WL.AssetsManager.SetExchangeConfig(configInfo)
+		osm.AssetsManager.SetExchangeConfig(configInfo)
 		osm.settingsSaved(params)
 		osm.Dismiss()
 	}
@@ -458,10 +458,10 @@ func (osm *orderSettingsModal) Layout(gtx layout.Context) D {
 }
 
 func (osm *orderSettingsModal) initWalletSelectors() {
-	if osm.WL.AssetsManager.IsExchangeConfigSet() {
-		exchangeConfig := osm.WL.AssetsManager.GetExchangeConfig()
-		sourceWallet := osm.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
-		destinationWallet := osm.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
+	if osm.AssetsManager.IsExchangeConfigSet() {
+		exchangeConfig := osm.AssetsManager.GetExchangeConfig()
+		sourceWallet := osm.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
+		destinationWallet := osm.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
 
 		sourceCurrency := exchangeConfig.SourceAsset
 		toCurrency := exchangeConfig.DestinationAsset
@@ -476,10 +476,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			osm.sourceWalletSelector = components.NewWalletAndAccountSelector(osm.Load, sourceCurrency).
 				Title(values.String(values.StrSource))
 
-			sourceW := &load.WalletMapping{
-				Asset: sourceWallet,
-			}
-			osm.sourceWalletSelector.SetSelectedWallet(sourceW)
+			osm.sourceWalletSelector.SetSelectedWallet(sourceWallet)
 
 			// Source account picker
 			osm.sourceAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
@@ -490,7 +487,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 				})
 			osm.sourceAccountSelector.SelectAccount(osm.sourceWalletSelector.SelectedWallet(), exchangeConfig.SourceAccountNumber)
 
-			osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 				osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 			})
 		}
@@ -506,10 +503,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 				Title(values.String(values.StrDestination)).
 				EnableWatchOnlyWallets(true)
 
-			destW := &load.WalletMapping{
-				Asset: destinationWallet,
-			}
-			osm.destinationWalletSelector.SetSelectedWallet(destW)
+			osm.destinationWalletSelector.SetSelectedWallet(destinationWallet)
 
 			// Destination account picker
 			osm.destinationAccountSelector = components.NewWalletAndAccountSelector(osm.Load).
@@ -522,7 +516,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 				})
 			osm.destinationAccountSelector.SelectAccount(osm.destinationWalletSelector.SelectedWallet(), exchangeConfig.DestinationAccountNumber)
 
-			osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+			osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 				osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 			})
 		}
@@ -541,7 +535,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			})
 		osm.sourceAccountSelector.SelectFirstValidAccount(osm.sourceWalletSelector.SelectedWallet())
 
-		osm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		osm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 			osm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 		})
 
@@ -560,7 +554,7 @@ func (osm *orderSettingsModal) initWalletSelectors() {
 			})
 		osm.destinationAccountSelector.SelectFirstValidAccount(osm.destinationWalletSelector.SelectedWallet())
 
-		osm.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		osm.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 			osm.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 		})
 	}

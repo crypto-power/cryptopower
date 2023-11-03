@@ -184,7 +184,7 @@ func (pg *VerifySeedPage) verifySeed() {
 			if !pg.toggleSeedInput.IsChecked() {
 				seed = pg.selectedSeedPhrase()
 			}
-			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
+			_, err := pg.wallet.VerifySeedForWallet(seed, password)
 			if err != nil {
 				if err.Error() == utils.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)

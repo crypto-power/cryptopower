@@ -26,19 +26,13 @@ type agendaVoteModal struct {
 	dcrImpl         *dcr.Asset
 }
 
-func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		// log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
+func newAgendaVoteModal(l *load.Load, dcrWallet *dcr.Asset, agenda *dcr.Agenda, votechoice string, onPreferenceUpdated func()) *agendaVoteModal {
 	avm := &agendaVoteModal{
 		agenda:              agenda,
 		CreatePasswordModal: modal.NewCreatePasswordModal(l),
 		voteChoice:          votechoice,
 		onPreferenceUpdated: onPreferenceUpdated,
-		dcrImpl:             impl,
+		dcrImpl:             dcrWallet,
 	}
 	avm.EnableName(false)
 	avm.EnableConfirmPassword(false)
@@ -59,8 +53,7 @@ func newAgendaVoteModal(l *load.Load, agenda *dcr.Agenda, votechoice string, onP
 }
 
 func (avm *agendaVoteModal) OnResume() {
-	wl := load.NewWalletMapping(avm.WL.SelectedWallet.Wallet)
-	avm.accountSelector.SelectFirstValidAccount(wl)
+	avm.accountSelector.SelectFirstValidAccount(avm.dcrImpl)
 }
 
 // - Layout

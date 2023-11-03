@@ -29,6 +29,7 @@ type SetupPrivacyPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	wallet *dcr.Asset
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -40,10 +41,11 @@ type SetupPrivacyPage struct {
 	infoButton cryptomaterial.IconButton
 }
 
-func NewSetupPrivacyPage(l *load.Load) *SetupPrivacyPage {
+func NewSetupPrivacyPage(l *load.Load, wallet *dcr.Asset) *SetupPrivacyPage {
 	pg := &SetupPrivacyPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SetupPrivacyPageID),
+		wallet:           wallet,
 		pageContainer:    layout.List{Axis: layout.Vertical},
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetupStakeShuffle)),
 	}
@@ -133,7 +135,7 @@ func (pg *SetupPrivacyPage) privacyIntroLayout(gtx layout.Context) layout.Dimens
 // Part of the load.Page interface.
 func (pg *SetupPrivacyPage) HandleUserInteractions() {
 	if pg.toPrivacySetup.Clicked() {
-		accounts, err := pg.WL.SelectedWallet.Wallet.GetAccountsRaw()
+		accounts, err := pg.wallet.GetAccountsRaw()
 		if err != nil {
 			log.Error(err)
 		}
@@ -152,9 +154,9 @@ func (pg *SetupPrivacyPage) HandleUserInteractions() {
 				window:        pg.ParentWindow(),
 				pageNavigator: pg.ParentNavigator(),
 				checkBox:      pg.Theme.CheckBox(new(widget.Bool), values.String(values.StrMoveFundsFrmDefaultToUnmixed)),
-			})
+			}, pg.wallet)
 		} else {
-			pg.ParentNavigator().Display(NewSetupMixerAccountsPage(pg.Load))
+			pg.ParentNavigator().Display(NewSetupMixerAccountsPage(pg.Load, pg.wallet))
 		}
 	}
 }

@@ -771,11 +771,11 @@ func CalculateMixedAccountBalance(selectedWallet *dcr.Asset) (*CummulativeWallet
 	}, nil
 }
 
-func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, error) {
+func CalculateTotalWalletsBalance(wallet sharedW.Asset) (*CummulativeWalletsBalance, error) {
 	var totalBalance, spandableBalance, immatureReward, votingAuthority,
 		immatureStakeGeneration, lockedByTickets, unConfirmed int64
 
-	accountsResult, err := l.WL.SelectedWallet.Wallet.GetAccountsRaw()
+	accountsResult, err := wallet.GetAccountsRaw()
 	if err != nil {
 		return nil, err
 	}
@@ -785,7 +785,7 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		spandableBalance += account.Balance.Spendable.ToInt()
 		immatureReward += account.Balance.ImmatureReward.ToInt()
 
-		if l.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset {
+		if wallet.GetAssetType() == libutils.DCRWalletAsset {
 			// Fields required only by DCR
 			immatureStakeGeneration += account.Balance.ImmatureStakeGeneration.ToInt()
 			lockedByTickets += account.Balance.LockedByTickets.ToInt()
@@ -794,27 +794,23 @@ func CalculateTotalWalletsBalance(l *load.Load) (*CummulativeWalletsBalance, err
 		}
 	}
 
-	toAmount := func(v int64) sharedW.AssetAmount {
-		return l.WL.SelectedWallet.Wallet.ToAmount(v)
-	}
-
 	cumm := &CummulativeWalletsBalance{
-		Total:                   toAmount(totalBalance),
-		Spendable:               toAmount(spandableBalance),
-		ImmatureReward:          toAmount(immatureReward),
-		ImmatureStakeGeneration: toAmount(immatureStakeGeneration),
-		LockedByTickets:         toAmount(lockedByTickets),
-		VotingAuthority:         toAmount(votingAuthority),
-		UnConfirmed:             toAmount(unConfirmed),
+		Total:                   wallet.ToAmount(totalBalance),
+		Spendable:               wallet.ToAmount(spandableBalance),
+		ImmatureReward:          wallet.ToAmount(immatureReward),
+		ImmatureStakeGeneration: wallet.ToAmount(immatureStakeGeneration),
+		LockedByTickets:         wallet.ToAmount(lockedByTickets),
+		VotingAuthority:         wallet.ToAmount(votingAuthority),
+		UnConfirmed:             wallet.ToAmount(unConfirmed),
 	}
 
 	return cumm, nil
 }
 
-func calculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]int64, error) {
-	wallets := l.WL.AssetsManager.AllWallets()
-	assetsTotalBalance := make(map[libutils.AssetType]int64)
+func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.AssetAmount, error) {
+	assetsTotalBalance := make(map[libutils.AssetType]sharedW.AssetAmount)
 
+	wallets := l.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		if wal.IsWatchingOnlyWallet() {
 			continue
@@ -825,31 +821,15 @@ func calculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]int64, er
 			return nil, err
 		}
 
+		assetType := wal.GetAssetType()
 		for _, account := range accountsResult.Accounts {
-			assetsTotalBalance[wal.GetAssetType()] += account.Balance.Total.ToInt()
-		}
-	}
-
-	return assetsTotalBalance, nil
-}
-
-func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.AssetAmount, error) {
-	balances, err := calculateTotalAssetsBalance(l)
-	if err != nil {
-		return nil, err
-	}
-
-	assetsTotalBalance := make(map[libutils.AssetType]sharedW.AssetAmount)
-	for assetType, balance := range balances {
-		switch assetType {
-		case libutils.BTCWalletAsset:
-			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllBTCWallets()[0].ToAmount(balance)
-		case libutils.DCRWalletAsset:
-			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllDCRWallets()[0].ToAmount(balance)
-		case libutils.LTCWalletAsset:
-			assetsTotalBalance[assetType] = l.WL.AssetsManager.AllLTCWallets()[0].ToAmount(balance)
-		default:
-			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+			assetTotal, ok := assetsTotalBalance[assetType]
+			if ok {
+				assetTotal = wal.ToAmount(assetTotal.ToInt() + account.Balance.Total.ToInt())
+			} else {
+				assetTotal = account.Balance.Total
+			}
+			assetsTotalBalance[assetType] = assetTotal
 		}
 	}
 
@@ -858,7 +838,7 @@ func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.A
 
 func CalculateAssetsUSDBalance(l *load.Load, assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount) (map[libutils.AssetType]float64, error) {
 	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
-		rate := l.WL.AssetsManager.RateSource.GetTicker(market)
+		rate := l.AssetsManager.RateSource.GetTicker(market)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			return 0, fmt.Errorf("No rate information available")
 		}
@@ -935,13 +915,6 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 			})
 		}),
 	)
-}
-
-// IsFetchExchangeRateAPIAllowed returns true if the exchange rate fetch API is
-// allowed.
-func IsFetchExchangeRateAPIAllowed(wl *load.WalletLoad) bool {
-	return wl.AssetsManager.GetCurrencyConversionExchange() != values.DefaultExchangeValue &&
-		!wl.AssetsManager.IsPrivacyModeOn()
 }
 
 // DisablePageWithOverlay disables the provided page by highlighting a message why

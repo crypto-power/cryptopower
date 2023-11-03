@@ -12,6 +12,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -32,12 +33,12 @@ type sendConfirmModal struct {
 	isSending bool
 
 	*authoredTxData
-	asset           load.WalletMapping
+	asset           sharedW.Asset
 	exchangeRateSet bool
 	txLabel         string
 }
 
-func newSendConfirmModal(l *load.Load, data *authoredTxData, asset load.WalletMapping) *sendConfirmModal {
+func newSendConfirmModal(l *load.Load, data *authoredTxData, asset sharedW.Asset) *sendConfirmModal {
 	scm := &sendConfirmModal{
 		Load:           l,
 		Modal:          l.Theme.ModalFloatTitle("send_confirm_modal"),
@@ -183,7 +184,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						sendWallet := scm.WL.AssetsManager.WalletWithID(scm.sourceAccount.WalletID)
+						sendWallet := scm.AssetsManager.WalletWithID(scm.sourceAccount.WalletID)
 						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								txt := scm.Theme.Body2(values.String(values.StrFrom))
@@ -237,7 +238,7 @@ func (scm *sendConfirmModal) Layout(gtx layout.Context) D {
 											layout.Rigid(scm.setWalletLogo),
 											layout.Rigid(func(gtx C) D {
 												return layout.Inset{}.Layout(gtx, func(gtx C) D {
-													destinationWallet := scm.WL.AssetsManager.WalletWithID(scm.destinationAccount.WalletID)
+													destinationWallet := scm.AssetsManager.WalletWithID(scm.destinationAccount.WalletID)
 													txt := scm.Theme.Label(unit.Sp(16), destinationWallet.GetWalletName())
 													txt.Color = scm.Theme.Color.Text
 													txt.Font.Weight = font.Medium

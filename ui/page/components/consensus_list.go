@@ -8,7 +8,6 @@ import (
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -19,7 +18,7 @@ type ConsensusItem struct {
 	VoteButton cryptomaterial.Button
 }
 
-func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
+func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem, hasVotingWallet bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -33,7 +32,7 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layoutAgendaVoteAction(gtx, l, consensusItem)
+			return layoutAgendaVoteAction(gtx, l, consensusItem, hasVotingWallet)
 		}),
 	)
 }
@@ -123,18 +122,20 @@ func layoutAgendaDetails(l *load.Load, data string, weight ...font.Weight) layou
 	}
 }
 
-func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem) D {
+func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingWallet bool) D {
 	if item.Agenda.Status == dcr.AgendaStatusFinished.String() {
 		return D{}
 	}
 
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
-	item.VoteButton.Background = l.Theme.Color.Gray3
-	item.VoteButton.SetEnabled(false)
-	if item.Agenda.Status == dcr.AgendaStatusUpcoming.String() || item.Agenda.Status == dcr.AgendaStatusInProgress.String() {
+	canVote := hasVotingWallet && item.Agenda.Status == dcr.AgendaStatusUpcoming.String() || item.Agenda.Status == dcr.AgendaStatusInProgress.String()
+	item.VoteButton.SetEnabled(canVote)
+	if canVote {
 		item.VoteButton.Background = l.Theme.Color.Primary
-		item.VoteButton.SetEnabled(true)
+	} else {
+		item.VoteButton.Background = l.Theme.Color.Gray3
 	}
+
+	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
 	return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, item.VoteButton.Layout)
 }
 
@@ -153,15 +154,14 @@ func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	})
 }
 
-func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) []*ConsensusItem {
-	agendas, err := l.WL.AssetsManager.AllVoteAgendas(newestFirst)
+func LoadAgendas(l *load.Load, dcrWallet *dcr.Asset, newestFirst bool) []*ConsensusItem {
+	agendas, err := l.AssetsManager.AllVoteAgendas(newestFirst)
 	if err != nil {
 		return nil
 	}
 
-	if selectedWallet != nil {
-		dcrUniqueImpl := selectedWallet.(*dcr.Asset)
-		walletChoices, err := dcrUniqueImpl.AgendaChoices("")
+	if dcrWallet != nil {
+		walletChoices, err := dcrWallet.AgendaChoices("")
 		if err != nil {
 			return nil
 		}
@@ -175,8 +175,6 @@ func LoadAgendas(l *load.Load, selectedWallet sharedW.Asset, newestFirst bool) [
 				agenda.VotingPreference = "abstain"
 			}
 		}
-		// TODO: When the wallet selection is cleared (i.e. no wallet is
-		// selected), also clear each agenda.VotingPreference value!
 	}
 
 	consensusItems := make([]*ConsensusItem, len(agendas))
