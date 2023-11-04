@@ -5,6 +5,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -256,7 +257,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	}.Layout2(gtx, func(gtx C) D {
 		width := values.MarginPadding550
 		if pg.Load.IsMobileView() {
-			width = pg.Load.CurrentAppWidth()
+			width = unit.Dp(pg.Load.CurrentAppWidth())
 		}
 		return cryptomaterial.LinearLayout{
 			Width:  gtx.Dp(width),

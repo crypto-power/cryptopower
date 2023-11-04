@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/signal"
@@ -35,6 +36,9 @@ type Window struct {
 	*giouiApp.Window
 	navigator app.WindowNavigator
 
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+
 	load *load.Load
 
 	txAuthor dcr.TxAuthor
@@ -42,8 +46,8 @@ type Window struct {
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
 	Quit chan struct{}
-	// IsShutdown channel is used to report that backgound processes have completed
-	// shutting down, therefore the UI processes can finally stop.
+	// IsShutdown channel is used to report that background processes have
+	// completed shutting down, therefore the UI processes can finally stop.
 	IsShutdown chan struct{}
 }
 
@@ -72,8 +76,11 @@ func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Ti
 		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, net.Display()))
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
 	win := &Window{
+		ctx:        ctx,
+		ctxCancel:  cancel,
 		Window:     giouiWindow,
 		navigator:  app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
 		Quit:       make(chan struct{}, 1),
@@ -171,7 +178,8 @@ func (win *Window) HandleEvents() {
 		log.Info("...Initiating the app shutdown protocols...")
 		// clear all stack and display the shutdown page as backend processes are
 		// terminating.
-		win.navigator.ClearStackAndDisplay(page.NewStartPage(win.load, true))
+		win.navigator.ClearStackAndDisplay(page.NewStartPage(win.ctx, win.load, true))
+		win.ctxCancel()
 		// Trigger the backend processes shutdown.
 		win.Quit <- struct{}{}
 	}
@@ -212,7 +220,7 @@ func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
 	switch {
 	case win.navigator.CurrentPage() == nil:
 		// Prepare to display the StartPage if no page is currently displayed.
-		win.navigator.Display(page.NewStartPage(win.load))
+		win.navigator.Display(page.NewStartPage(win.ctx, win.load))
 
 	default:
 		// The app window may have received some user interaction such as key
@@ -274,7 +282,7 @@ func (win *Window) prepareToDisplayUI(evt system.FrameEvent) *op.Ops {
 			gtx = gtx.Disabled()
 		}
 		if win.navigator.CurrentPage() == nil {
-			win.navigator.Display(page.NewStartPage(win.load))
+			win.navigator.Display(page.NewStartPage(win.ctx, win.load))
 		}
 		return win.navigator.CurrentPage().Layout(gtx)
 	})

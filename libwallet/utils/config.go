@@ -21,6 +21,8 @@ const (
 )
 
 type (
+	// AssetType is the capitalized version of an asset's symbol (e.g BTC, DCR,
+	// LTC) that serves as the asset's unique identity.
 	AssetType string
 	SyncStage int8
 )

@@ -2,7 +2,9 @@ package root
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -32,6 +35,10 @@ type HomePage struct {
 	*app.MasterPage
 
 	*load.Load
+
+	dexCtx  context.Context
+	dexcMtx sync.Mutex
+	dexc    *dexc.DEXClient
 
 	ctx                 context.Context
 	ctxCancel           context.CancelFunc
@@ -67,11 +74,12 @@ var navigationTabTitles = []string{
 	values.String(values.StrGovernance),
 }
 
-func NewHomePage(l *load.Load) *HomePage {
+func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:        l,
 		MasterPage:  app.NewMasterPage(HomePageID),
 		isConnected: new(atomic.Bool),
+		dexCtx:      dexCtx,
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -141,6 +149,9 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	go hp.CalculateAssetsUSDBalance()
+	if !hp.dexcReady() {
+		go hp.initializeDEX()
+	}
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
@@ -181,21 +192,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.navigationTab.Changed() {
-		var pg app.Page
-		switch hp.navigationTab.SelectedTab() {
-		case values.String(values.StrOverview):
-			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
-		case values.String(values.StrTransactions):
-			pg = transaction.NewTransactionsPage(hp.Load, nil)
-		case values.String(values.StrWallets):
-			pg = hp.walletSelectorPage
-		case values.String(values.StrTrade):
-			pg = NewTradePage(hp.Load)
-		case values.String(values.StrGovernance):
-			pg = governance.NewGovernancePage(hp.Load)
-		}
-
-		hp.Display(pg)
+		hp.displaySelectedPage(hp.navigationTab.SelectedTab())
 	}
 
 	// set the page to the active nav, especially when navigating from over pages
@@ -257,26 +254,10 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
 		for item.Clickable.Clicked() {
-			var pg app.Page
-			switch item.Title {
-			case values.String(values.StrOverview):
-				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
-			case values.String(values.StrTransactions):
-				pg = transaction.NewTransactionsPage(hp.Load, nil)
-			case values.String(values.StrWallets):
-				pg = hp.walletSelectorPage
-			case values.String(values.StrTrade):
-				pg = NewTradePage(hp.Load)
-			case values.String(values.StrGovernance):
-				pg = governance.NewGovernancePage(hp.Load)
-			}
-
-			if pg == nil || hp.ID() == hp.CurrentPageID() {
+			hp.displaySelectedPage(item.Title)
+			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
-
-			// clear stack
-			hp.Display(pg)
 		}
 	}
 
@@ -288,6 +269,27 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+}
+
+func (hp *HomePage) displaySelectedPage(title string) {
+	var pg app.Page
+	switch title {
+	case values.String(values.StrOverview):
+		pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+	case values.String(values.StrTransactions):
+		pg = transaction.NewTransactionsPage(hp.Load, nil)
+	case values.String(values.StrWallets):
+		pg = hp.walletSelectorPage
+	case values.String(values.StrTrade):
+		if !hp.dexcReady() {
+			// Attempt to initialize dex again.
+			hp.initializeDEX()
+		}
+		pg = NewTradePage(hp.Load, hp.dexc)
+	case values.String(values.StrGovernance):
+		pg = governance.NewGovernancePage(hp.Load)
+	}
+	hp.Display(pg)
 }
 
 func (hp *HomePage) showWarningNoSpendableWallet() {
@@ -833,4 +835,32 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 		hp.totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
+}
+
+func (hp *HomePage) dexcReady() bool {
+	hp.dexcMtx.Lock()
+	defer hp.dexcMtx.Unlock()
+	return hp.dexc != nil
+}
+
+// initializeDEX initializes hp.dexCore
+func (hp *HomePage) initializeDEX() {
+	am := hp.AssetsManager
+	logDir := filepath.Dir(am.LogFile())
+	dexc, err := dexc.Start(hp.dexCtx, am.RootDir(), am.GetLanguagePreference(), logDir, am.GetLogLevels(), am.NetType(), 0 /* TODO: Make configurable */)
+	if err != nil {
+		log.Errorf("Error starting dex client: %v", err)
+		return
+	}
+
+	hp.dexcMtx.Lock()
+	hp.dexc = dexc
+	hp.dexcMtx.Unlock()
+
+	go func() {
+		<-hp.dexc.WaitForShutdown()
+		hp.dexcMtx.Lock()
+		hp.dexc = nil
+		hp.dexcMtx.Unlock()
+	}()
 }

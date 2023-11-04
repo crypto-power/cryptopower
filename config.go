@@ -35,6 +35,8 @@ type config struct {
 	Quiet            bool   `short:"q" long:"quiet" description:"Easy way to set debuglevel to error"`
 	SpendUnconfirmed bool   `long:"spendunconfirmed" description:"Allow the assetsManager to use transactions that have not been confirmed"`
 	Profile          int    `long:"profile" description:"Runs local web server for profiling"`
+
+	net libutils.NetworkType
 }
 
 func defaultConfig(defaultHomeDir string) config {
@@ -158,7 +160,6 @@ func loadConfig() (*config, error) {
 	if _, err := os.Stat(cfg.ConfigFile); os.IsNotExist(err) {
 		// Non-default config file must exist
 		if defaultCfg.ConfigFile != cfg.ConfigFile {
-			fmt.Fprintln(os.Stderr, err)
 			return loadConfigError(err)
 		}
 		// Warn about missing default config file, but continue
@@ -169,7 +170,6 @@ func loadConfig() (*config, error) {
 		err = flags.NewIniParser(parser).ParseFile(cfg.ConfigFile)
 		if err != nil {
 			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintln(os.Stderr, err)
 				parser.WriteHelp(os.Stderr)
 				return loadConfigError(err)
 			}
@@ -200,10 +200,7 @@ func loadConfig() (*config, error) {
 			}
 		}
 
-		str := "%s: failed to create home directory: %v"
-		err := fmt.Errorf(str, funcName, err)
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
+		return nil, fmt.Errorf("%s: failed to create home directory: %v", funcName, err)
 	}
 
 	// If a non-default appdata folder is specified, it may be necessary to
@@ -218,7 +215,6 @@ func loadConfig() (*config, error) {
 	// succeeds.  This prevents the warning on help messages and invalid
 	// options.
 	if configFileError != nil {
-		fmt.Printf("%v\n", configFileError)
 		return loadConfigError(configFileError)
 	}
 
@@ -230,12 +226,19 @@ func loadConfig() (*config, error) {
 	if cfg.MaxLogZips < 0 {
 		cfg.MaxLogZips = 0
 	}
-	net := cfg.Network
-	if net == "testnet" {
-		net = "testnet3"
+
+	cfg.net = libutils.ToNetworkType(cfg.Network)
+	if cfg.net == libutils.Unknown {
+		return loadConfigError(fmt.Errorf("network type is not supported: %s", cfg.Network))
 	}
-	logDir := filepath.Join(cfg.LogDir, net)
-	initLogRotator(logDir, cfg.MaxLogZips)
+
+	// Parse, validate, and set debug log level(s).
+	if cfg.Quiet {
+		cfg.DebugLevel = "error"
+	}
+
+	cfg.Network = string(cfg.net)
+	cfg.LogDir = filepath.Join(cfg.LogDir, cfg.Network)
 
 	// Special show command to list supported subsystems and exit.
 	if cfg.DebugLevel == "show" {
@@ -244,14 +247,8 @@ func loadConfig() (*config, error) {
 	}
 
 	// Parse, validate, and set debug log level(s).
-	if cfg.Quiet {
-		cfg.DebugLevel = "error"
-	}
-
-	// Parse, validate, and set debug log level(s).
 	if err := parseAndSetDebugLevels(cfg.DebugLevel); err != nil {
 		err = fmt.Errorf("%s: %v", funcName, err.Error())
-		fmt.Fprintln(os.Stderr, err)
 		parser.WriteHelp(os.Stderr)
 		return loadConfigError(err)
 	}

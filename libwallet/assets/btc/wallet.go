@@ -120,7 +120,7 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 
 func initWalletLoader(chainParams *chaincfg.Params, dbDirPath string) loader.AssetLoader {
 	dirName := ""
-	// testnet datadir takes a special structure differenting "testnet4" and "testnet3"
+	// testnet datadir takes a special structure differentiating "testnet4" and "testnet3"
 	// data directory.
 	if utils.ToNetworkType(chainParams.Net.String()) == utils.Testnet {
 		dirName = utils.NetDir(utils.BTCWalletAsset, utils.Testnet)

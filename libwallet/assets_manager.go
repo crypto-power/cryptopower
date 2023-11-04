@@ -111,13 +111,8 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 }
 
 // NewAssetsManager creates a new AssetsManager instance.
-func NewAssetsManager(rootDir, logDir, net string) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 	errors.Separator = ":: "
-
-	netType := utils.ToNetworkType(net)
-	if netType == utils.Unknown {
-		return nil, fmt.Errorf("network type is not supportted: %s", net)
-	}
 
 	// Create a root dir that has the path up the network folder.
 	rootDir = filepath.Join(rootDir, string(netType))
@@ -198,6 +193,10 @@ func NewAssetsManager(rootDir, logDir, net string) (*AssetsManager, error) {
 	mgr.listenForShutdown()
 
 	return mgr, nil
+}
+
+func (mgr *AssetsManager) RootDir() string {
+	return mgr.params.RootDir
 }
 
 // initRateSource initializes the user's rate source and starts a loop to
@@ -882,4 +881,13 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	}
 
 	return assetsTotalUSDBalance, nil
+}
+
+func (mgr *AssetsManager) IsAssetTypeSupported(assetType utils.AssetType) bool {
+	switch assetType {
+	case utils.DCRWalletAsset, utils.BTCWalletAsset, utils.LTCWalletAsset:
+		return true
+	default:
+		return false
+	}
 }

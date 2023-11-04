@@ -5,6 +5,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -26,6 +27,10 @@ type TradePage struct {
 	*load.Load
 	*app.MasterPage
 
+	// Might be nil but TradePage does not care because DEXPage is in the best
+	// position to handle a nil DEX client.
+	dexc *dexc.DEXClient
+
 	scrollContainer *widget.List
 
 	tab *cryptomaterial.SegmentedControl
@@ -35,10 +40,11 @@ type TradePage struct {
 	dcrdexBtn   *cryptomaterial.Clickable
 }
 
-func NewTradePage(l *load.Load) *TradePage {
+func NewTradePage(l *load.Load, dexc *dexc.DEXClient) *TradePage {
 	pg := &TradePage{
 		Load:       l,
 		MasterPage: app.NewMasterPage(TradePageID),
+		dexc:       dexc,
 
 		shadowBox: l.Theme.Shadow(),
 		scrollContainer: &widget.List{
@@ -76,7 +82,7 @@ func (pg *TradePage) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
+		pg.Display(dcrdex.NewDEXPage(pg.Load, pg.dexc))
 	}
 }
 
@@ -86,16 +92,13 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
-	}
-
-	if pg.tab.SelectedIndex() == 0 {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
-	}
-	if pg.tab.SelectedIndex() == 1 {
+	if pg.tab.SelectedIndex() == 0 && pg.CurrentPageID() != dcrdex.DCRDEXPageID {
+		pg.Display(dcrdex.NewDEXPage(pg.Load, pg.dexc))
+	} else if pg.CurrentPageID() != exchange.CreateOrderPageID && pg.tab.SelectedIndex() == 1 {
 		pg.Display(exchange.NewCreateOrderPage(pg.Load))
 	}
+
+	pg.CurrentPage().HandleUserInteractions()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
