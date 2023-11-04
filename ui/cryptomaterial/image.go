@@ -4,6 +4,8 @@ import (
 	"image"
 	"sync"
 
+	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -96,4 +98,16 @@ func (img *Image) LayoutSize2(gtx C, width, height unit.Dp) D {
 	i := widget.Image{Src: paint.NewImageOp(dst)}
 	i.Scale = .5 // reduced the original scale of 1 by half to fix blurry images
 	return i.Layout(gtx)
+}
+
+func (img *Image) LayoutSizeWithRadius(gtx C, width, height unit.Dp, radius int) D {
+	m := op.Record(gtx.Ops)
+	dims := img.LayoutSize2(gtx, width, height)
+	call := m.Stop()
+	defer clip.RRect{
+		Rect: image.Rectangle{Max: image.Point{X: gtx.Dp(unit.Dp(width)), Y: gtx.Dp(unit.Dp(height))}},
+		NE:   radius, NW: radius, SE: radius, SW: radius,
+	}.Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return dims
 }
