@@ -11,6 +11,15 @@ import (
 	"time"
 )
 
+type ProposalStatus int
+
+const (
+	ProposalStatusSynced ProposalStatus = iota
+	ProposalStatusNewProposal
+	ProposalStatusVoteStarted
+	ProposalStatusVoteFinished
+)
+
 type (
 	AssetType string
 	SyncStage int8

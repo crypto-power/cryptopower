@@ -26,7 +26,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/notification"
 	"github.com/crypto-power/cryptopower/ui/page"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 // Window represents the app window (and UI in general). There should only be one.
@@ -39,8 +38,6 @@ type Window struct {
 	load *load.Load
 
 	txAuthor dcr.TxAuthor
-
-	walletAcctMixerStatus chan *wallet.AccountMixer
 
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
@@ -77,11 +74,10 @@ func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Ti
 
 	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
 	win := &Window{
-		Window:                giouiWindow,
-		navigator:             app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
-		walletAcctMixerStatus: make(chan *wallet.AccountMixer),
-		Quit:                  make(chan struct{}, 1),
-		IsShutdown:            make(chan struct{}, 1),
+		Window:     giouiWindow,
+		navigator:  app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
+		Quit:       make(chan struct{}, 1),
+		IsShutdown: make(chan struct{}, 1),
 	}
 
 	l, err := win.NewLoad(mw, version, buildDate)

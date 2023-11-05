@@ -73,11 +73,11 @@ type Asset interface {
 	GetWalletBalance() (*Balance, error)
 	UnspentOutputs(account int32) ([]*UnspentOutput, error)
 
-	AddSyncProgressListener(syncProgressListener SyncProgressListener, uniqueIdentifier string) error
+	AddSyncProgressListener(syncProgressListener *SyncProgressListener, uniqueIdentifier string) error
 	RemoveSyncProgressListener(uniqueIdentifier string)
-	AddTxAndBlockNotificationListener(txAndBlockNotificationListener TxAndBlockNotificationListener, async bool, uniqueIdentifier string) error
+	AddTxAndBlockNotificationListener(txAndBlockNotificationListener *TxAndBlockNotificationListener, uniqueIdentifier string) error
 	RemoveTxAndBlockNotificationListener(uniqueIdentifier string)
-	SetBlocksRescanProgressListener(blocksRescanProgressListener BlocksRescanProgressListener)
+	SetBlocksRescanProgressListener(blocksRescanProgressListener *BlocksRescanProgressListener)
 
 	CurrentAddress(account int32) (string, error)
 	NextAddress(account int32) (string, error)

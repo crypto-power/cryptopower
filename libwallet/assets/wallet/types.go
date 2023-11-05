@@ -222,17 +222,16 @@ type PeerInfo struct {
 
 /** begin sync-related types */
 
-type SyncProgressListener interface {
-	OnSyncStarted()
-	OnPeerConnectedOrDisconnected(numberOfConnectedPeers int32)
-	OnCFiltersFetchProgress(cfiltersFetchProgress *CFiltersFetchProgressReport)
-	OnHeadersFetchProgress(headersFetchProgress *HeadersFetchProgressReport)
-	OnAddressDiscoveryProgress(addressDiscoveryProgress *AddressDiscoveryProgressReport)
-	OnHeadersRescanProgress(headersRescanProgress *HeadersRescanProgressReport)
-	OnSyncCompleted()
-	OnSyncCanceled(willRestart bool)
-	OnSyncEndedWithError(err error)
-	Debug(debugInfo *DebugInfo)
+type SyncProgressListener struct {
+	OnSyncStarted                 func()
+	OnPeerConnectedOrDisconnected func(numberOfConnectedPeers int32)
+	OnCFiltersFetchProgress       func(cfiltersFetchProgress *CFiltersFetchProgressReport)
+	OnHeadersFetchProgress        func(headersFetchProgress *HeadersFetchProgressReport)
+	OnAddressDiscoveryProgress    func(addressDiscoveryProgress *AddressDiscoveryProgressReport)
+	OnHeadersRescanProgress       func(headersRescanProgress *HeadersRescanProgressReport)
+	OnSyncCompleted               func()
+	OnSyncCanceled                func(willRestart bool)
+	OnSyncEndedWithError          func(err error)
 }
 
 type GeneralSyncProgress struct {
@@ -276,54 +275,20 @@ type HeadersRescanProgressReport struct {
 	WalletID            int   `json:"walletID"`
 }
 
-type DebugInfo struct {
-	TotalTimeElapsed          int64
-	TotalTimeRemaining        int64
-	CurrentStageTimeElapsed   int64
-	CurrentStageTimeRemaining int64
-}
+/** end sync-related types */
 
 /** begin tx-related types */
 
-// AsyncTxAndBlockNotificationListener is a TxAndBlockNotificationListener that
-// triggers notifcation callbacks asynchronously.
-type AsyncTxAndBlockNotificationListener struct {
-	TxAndBlockNotificationListener
+type TxAndBlockNotificationListener struct {
+	OnTransaction          func(transaction *Transaction)
+	OnBlockAttached        func(walletID int, blockHeight int32)
+	OnTransactionConfirmed func(walletID int, hash string, blockHeight int32)
 }
 
-// OnTransaction satisfies the TxAndBlockNotificationListener interface and
-// starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransaction(transaction string) {
-	go asyncTxBlockListener.TxAndBlockNotificationListener.OnTransaction(transaction)
-}
-
-// OnBlockAttached satisfies the TxAndBlockNotificationListener interface and
-// starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnBlockAttached(walletID int, blockHeight int32) {
-	go asyncTxBlockListener.TxAndBlockNotificationListener.OnBlockAttached(walletID, blockHeight)
-}
-
-// OnTransactionConfirmed satisfies the TxAndBlockNotificationListener interface
-// and starts a goroutine to actually handle the notification using the embedded
-// listener.
-func (asyncTxBlockListener *AsyncTxAndBlockNotificationListener) OnTransactionConfirmed(walletID int, hash string, blockHeight int32) {
-	go asyncTxBlockListener.TxAndBlockNotificationListener.OnTransactionConfirmed(walletID, hash, blockHeight)
-}
-
-/** end sync-related types */
-
-type TxAndBlockNotificationListener interface {
-	OnTransaction(transaction string)
-	OnBlockAttached(walletID int, blockHeight int32)
-	OnTransactionConfirmed(walletID int, hash string, blockHeight int32)
-}
-
-type BlocksRescanProgressListener interface {
-	OnBlocksRescanStarted(walletID int)
-	OnBlocksRescanProgress(*HeadersRescanProgressReport)
-	OnBlocksRescanEnded(walletID int, err error)
+type BlocksRescanProgressListener struct {
+	OnBlocksRescanStarted  func(walletID int)
+	OnBlocksRescanProgress func(*HeadersRescanProgressReport)
+	OnBlocksRescanEnded    func(walletID int, err error)
 }
 
 // Transaction is used with storm for tx indexing operations.

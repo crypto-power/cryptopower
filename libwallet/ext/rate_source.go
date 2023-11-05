@@ -117,6 +117,11 @@ type RateSource interface {
 	RemoveRateListener(uniqueID string)
 }
 
+// RateListener listens for new tickers and rate source change notifications.
+type RateListener struct {
+	OnRateUpdated func()
+}
+
 // CommonRateSource is an external rate source for fiat and crypto-currency
 // rates. These rates are estimates and maybe be affected by server latency and
 // should not be used for actual buy or sell orders except to display reasonable
@@ -254,6 +259,10 @@ func (cs *CommonRateSource) resetWs(processor WebsocketProcessor) {
 }
 
 func (cs *CommonRateSource) AddRateListener(listener *RateListener, uniqueID string) error {
+	if listener.OnRateUpdated == nil {
+		return fmt.Errorf("invalid RateListener")
+	}
+
 	cs.rateListenersMtx.Lock()
 	defer cs.rateListenersMtx.Unlock()
 
@@ -468,7 +477,7 @@ func (cs *CommonRateSource) notifyRateListeners() {
 	cs.rateListenersMtx.RLock()
 	defer cs.rateListenersMtx.RUnlock()
 	for _, l := range cs.rateListeners {
-		l.Notify()
+		l.OnRateUpdated()
 	}
 }
 

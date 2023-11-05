@@ -1,7 +1,6 @@
 package btc
 
 import (
-	"encoding/json"
 	"sync/atomic"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -36,13 +35,8 @@ notificationsLoop:
 				// decodeTxs
 				txToCache[i] = asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, tx)
 
-				result, err := json.Marshal(txToCache[i])
-				if err != nil {
-					log.Error(err)
-				} else {
-					// publish mempool tx.
-					asset.mempoolTransactionNotification(string(result))
-				}
+				// publish mempool tx.
+				asset.mempoolTransactionNotification(txToCache[i])
 			}
 
 			if len(n.UnminedTransactions) > 0 {
@@ -91,8 +85,8 @@ notificationsLoop:
 // until all notification handlers finish processing the notification. If a
 // notification handler were to try to access such features, it would result
 // in a deadlock.
-func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener sharedW.TxAndBlockNotificationListener,
-	async bool, uniqueIdentifier string,
+func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationListener *sharedW.TxAndBlockNotificationListener,
+	uniqueIdentifier string,
 ) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
@@ -101,12 +95,22 @@ func (asset *Asset) AddTxAndBlockNotificationListener(txAndBlockNotificationList
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
-	if async {
-		asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.AsyncTxAndBlockNotificationListener{
-			TxAndBlockNotificationListener: txAndBlockNotificationListener,
-		}
-	} else {
-		asset.txAndBlockNotificationListeners[uniqueIdentifier] = txAndBlockNotificationListener
+	asset.txAndBlockNotificationListeners[uniqueIdentifier] = &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			if txAndBlockNotificationListener.OnTransaction != nil {
+				go txAndBlockNotificationListener.OnTransaction(transaction)
+			}
+		},
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			if txAndBlockNotificationListener.OnBlockAttached != nil {
+				go txAndBlockNotificationListener.OnBlockAttached(walletID, blockHeight)
+			}
+		},
+		OnTransactionConfirmed: func(walletID int, hash string, blockHeight int32) {
+			if txAndBlockNotificationListener.OnTransactionConfirmed != nil {
+				txAndBlockNotificationListener.OnTransactionConfirmed(walletID, hash, blockHeight)
+			}
+		},
 	}
 	return nil
 }
@@ -121,7 +125,7 @@ func (asset *Asset) RemoveTxAndBlockNotificationListener(uniqueIdentifier string
 }
 
 // mempoolTransactionNotification publishes the txs that hit the mempool for the first time.
-func (asset *Asset) mempoolTransactionNotification(transaction string) {
+func (asset *Asset) mempoolTransactionNotification(transaction *sharedW.Transaction) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 

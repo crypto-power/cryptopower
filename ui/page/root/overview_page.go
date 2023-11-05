@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"fmt"
 	"image/color"
 	"sort"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/listeners"
-	"github.com/crypto-power/cryptopower/wallet"
 	"github.com/decred/dcrd/dcrutil/v3"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -44,9 +41,6 @@ type multiWalletTx struct {
 type OverviewPage struct {
 	*app.GenericPageModal
 	*load.Load
-
-	ctx       context.Context
-	ctxCancel context.CancelFunc
 
 	pageContainer            layout.List
 	marketOverviewList       layout.List
@@ -76,10 +70,6 @@ type OverviewPage struct {
 	ltc *assetBalanceSliderItem
 
 	assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount
-
-	*listeners.AccountMixerNotificationListener
-	*listeners.TxAndBlockNotificationListener
-	*ext.RateListener
 
 	materialLoader    material.LoaderStyle
 	forceRefreshRates *cryptomaterial.Clickable
@@ -209,8 +199,6 @@ func (pg *OverviewPage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	pg.updateAssetsSliders()
 	go pg.updateAssetsUSDBalance()
 	go pg.loadTransactions()
@@ -222,7 +210,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 		go pg.WL.AssetsManager.RateSource.Refresh(false)
 	}
 
-	pg.listenForMixerNotifications()
+	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
 
 }
 
@@ -269,7 +257,7 @@ func (pg *OverviewPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *OverviewPage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.stopNtfnListeners()
 }
 
 func (pg *OverviewPage) OnCurrencyChanged() {
@@ -1179,44 +1167,61 @@ func (pg *OverviewPage) centerLayout(gtx C, top, bottom unit.Dp, content layout.
 }
 
 func (pg *OverviewPage) listenForMixerNotifications() {
-	// Get all DCR wallets, and subscribe to the individual wallet's mixer channel.
-	// We are only interested in DCR wallets since mixing support
-	// is limited to DCR at this point.
-	dcrWallets := pg.WL.AssetsManager.AllDCRWallets()
+	accountMixerNotificationListener := &dcr.AccountMixerNotificationListener{
+		OnAccountMixerStarted: func(walletID int) {
+			pg.setUnMixedBalance(walletID)
+			pg.ParentWindow().Reload()
+		},
+		OnAccountMixerEnded: func(walletID int) {
+			delete(pg.mixerSliderData, walletID)
+			// Reload mixer slider items
+			pg.mixerSlider.RefreshItems()
+			pg.ParentWindow().Reload()
+		},
+	}
 
-	if pg.AccountMixerNotificationListener == nil {
-		pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
-		pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-		for _, wal := range dcrWallets {
-			w := wal.(*dcr.Asset)
-			if w == nil {
-				log.Warn(values.ErrDCRSupportedOnly)
-				continue
-			}
-			err := w.AddAccountMixerNotificationListener(pg, OverviewPageID)
+	// Reload wallets unmixed balance and reload UI on new blocks.
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			pg.reloadBalances()
+			pg.ParentWindow().Reload()
+		},
+	}
+
+	wallets := pg.WL.AssetsManager.AllWallets()
+	for _, wal := range wallets {
+		if w, ok := wal.(*dcr.Asset); ok {
+			// Only dcr wallets have mixing support currently.
+			err := w.AddAccountMixerNotificationListener(accountMixerNotificationListener, OverviewPageID)
 			if err != nil {
 				log.Errorf("Error adding account mixer notification listener: %+v", err)
 				continue
 			}
+		}
 
-			err = w.AddTxAndBlockNotificationListener(pg, true, OverviewPageID)
-			if err != nil {
-				log.Errorf("Error adding tx and block notification listener: %v", err)
-				continue
-			}
+		err := wal.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, OverviewPageID)
+		if err != nil {
+			log.Errorf("Error adding tx and block notification listener: %v", err)
+			continue
 		}
 	}
 
-	pg.RateListener = ext.NewRateListener()
-	err := pg.WL.AssetsManager.RateSource.AddRateListener(pg.RateListener, OverviewPageID)
+	// Reload the window whenever there is an exchange rate update.
+	rateListener := &ext.RateListener{
+		OnRateUpdated: pg.ParentWindow().Reload,
+	}
+	err := pg.WL.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
 	if err != nil {
 		log.Error("RateSource.AddRateListener error: %v", err)
 	}
 
 	pg.sortedMixerSlideKeys = make([]int, 0)
 	pg.mixerSliderData = make(map[int]*mixerData)
-	for _, wal := range dcrWallets {
-		w := wal.(*dcr.Asset)
+	for _, wal := range wallets {
+		w, ok := wal.(*dcr.Asset)
+		if !ok {
+			continue
+		}
 
 		if w.IsAccountMixerActive() {
 			if _, ok := pg.mixerSliderData[w.ID]; !ok {
@@ -1235,51 +1240,17 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 	sort.Ints(pg.sortedMixerSlideKeys)
 	// Reload mixer slider items
 	pg.mixerSlider.RefreshItems()
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.MixerChan:
-				if n.RunStatus == wallet.MixerStarted {
-					pg.setUnMixedBalance(n.WalletID)
-					pg.ParentWindow().Reload()
-				}
-
-				if n.RunStatus == wallet.MixerEnded {
-					delete(pg.mixerSliderData, n.WalletID)
-					// Reload mixer slider items
-					pg.mixerSlider.RefreshItems()
-					pg.ParentWindow().Reload()
-				}
-			case n := <-pg.TxAndBlockNotifChan():
-				// Reload wallets unmixed balance and reload UI on
-				// new blocks.
-				if n.Type == listeners.BlockAttached {
-					go func() {
-						pg.reloadBalances()
-						pg.ParentWindow().Reload()
-					}()
-				}
-			case <-pg.RateUpdateChan:
-				pg.ParentWindow().Reload()
-			case <-pg.ctx.Done():
-				for _, wal := range dcrWallets {
-					w := wal.(*dcr.Asset)
-					w.RemoveAccountMixerNotificationListener(OverviewPageID)
-					w.RemoveTxAndBlockNotificationListener(OverviewPageID)
-				}
-				pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
-				close(pg.MixerChan)
-				pg.CloseTxAndBlockChan()
-				close(pg.RateUpdateChan)
-				pg.AccountMixerNotificationListener = nil
-				pg.TxAndBlockNotificationListener = nil
-				pg.RateListener = nil
-
-				return
-			}
+func (pg *OverviewPage) stopNtfnListeners() {
+	wallets := pg.WL.AssetsManager.AllWallets()
+	for _, wal := range wallets {
+		if w, ok := wal.(*dcr.Asset); ok {
+			w.RemoveAccountMixerNotificationListener(OverviewPageID)
 		}
-	}()
+		wal.RemoveTxAndBlockNotificationListener(OverviewPageID)
+	}
+	pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {
