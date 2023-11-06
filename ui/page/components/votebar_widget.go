@@ -13,10 +13,8 @@ import (
 	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -263,21 +261,6 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 	)
 }
 
-func (v *VoteBar) infoButtonModal() *modal.InfoModal {
-	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
-	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
-	text3 := values.StringF(values.StrDiscussions, v.numComment)
-	text4 := values.StringF(values.StrPublished, utils.FormatUTCTime(v.publishedAt))
-	text5 := values.StringF(values.StrToken, v.token)
-
-	bodyText := fmt.Sprintf("%s\n %v\n %s\n %s\n %s", text1, text2, text3, text4, text5)
-	return modal.NewCustomModal(v.Load).
-		Title(values.String(values.StrProposalVoteDetails)).
-		Body(bodyText).
-		SetCancelable(true).
-		SetPositiveButtonText(values.String(values.StrGotIt))
-}
-
 func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, col color.NRGBA) D {
 	return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -304,24 +287,4 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 			}),
 		)
 	})
-}
-
-func (v *VoteBar) layoutInfo(window app.WindowNavigator, gtx C) D {
-	dims := layout.Flex{}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			lb := v.Theme.Body1(values.StringF(values.StrTotalVotesReverse, v.totalVotes))
-			lb.Font.Weight = font.SemiBold
-			return lb.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if v.infoButton.Button.Clicked() {
-				window.ShowModal(v.infoButtonModal())
-			}
-			return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-				return v.infoButton.Layout(gtx)
-			})
-		}),
-	)
-
-	return dims
 }

@@ -34,6 +34,8 @@ type WalletAndAccountSelector struct {
 
 	errorLabel cryptomaterial.Label
 	HideLogo   bool
+
+	hideBalance bool
 }
 
 type selectorModal struct {
@@ -67,6 +69,7 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 		errorLabel:         l.Theme.ErrorLabel(""),
+		hideBalance:        false,
 	}
 
 	ws.selectorModal = newSelectorModal(l, assetType...).
@@ -236,6 +239,10 @@ func (ws *WalletAndAccountSelector) SetError(errMsg string) {
 	ws.errorLabel.Text = errMsg
 }
 
+func (ws *WalletAndAccountSelector) SetHideBalance(isHide bool) {
+	ws.hideBalance = isHide
+}
+
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 	ws.Handle(window)
 
@@ -275,6 +282,9 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 							return layout.E.Layout(gtx, func(gtx C) D {
 								return layout.Flex{}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
+										if ws.hideBalance {
+											return D{}
+										}
 										if ws.accountSelector {
 											if ws.selectedAccount == nil {
 												return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)

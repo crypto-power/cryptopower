@@ -11,6 +11,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -33,6 +34,11 @@ type (
 	D = layout.Dimensions
 )
 
+type pFilter struct {
+	TypeFilter  int32
+	OrderNewest bool
+}
+
 type ProposalsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -46,14 +52,18 @@ type ProposalsPage struct {
 	ctxCancel      context.CancelFunc
 	assetsManager  *libwallet.AssetsManager
 	scroll         *components.Scroll[*components.ProposalItem]
-	previousFilter int32
+	previousFilter pFilter
 	statusDropDown *cryptomaterial.DropDown
+	orderDropDown  *cryptomaterial.DropDown
 	proposalsList  *cryptomaterial.ClickableList
 	syncButton     *widget.Clickable
 	searchEditor   cryptomaterial.Editor
 
 	infoButton  cryptomaterial.IconButton
 	updatedIcon *cryptomaterial.Icon
+
+	sourceWalletSelector *components.WalletAndAccountSelector
+	selectedWallet       sharedW.Asset
 
 	syncCompleted    bool
 	isSyncing        bool
@@ -68,7 +78,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	}
 
 	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
-	pg.searchEditor.Editor.SingleLine, pg.searchEditor.Editor.Submit, pg.searchEditor.Bordered = true, true, false
+	pg.searchEditor.Editor.SingleLine = true
 
 	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
@@ -89,6 +99,13 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 		{Text: values.String(values.StrRejected)},
 		{Text: values.String(values.StrAbandoned)},
 	}, values.ProposalDropdownGroup, 0)
+
+	pg.orderDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrNewest)},
+		{Text: values.String(values.StrOldest)},
+	}, values.ProposalDropdownGroup, 1)
+
+	pg.initWalletSelector()
 
 	return pg
 }
@@ -135,15 +152,21 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		proposalFilter = libwallet.ProposalCategoryAll
 	}
 
-	isReset := pg.previousFilter != proposalFilter
+	orderNewest := true
+	if pg.orderDropDown.Selected() == values.StrOldest {
+		orderNewest = false
+	}
+
+	isReset := proposalFilter != pg.previousFilter.TypeFilter || orderNewest == pg.previousFilter.OrderNewest
 	if isReset {
 		// reset the offset to zero
 		offset = 0
-		pg.previousFilter = proposalFilter
+		pg.previousFilter.TypeFilter = proposalFilter
+		pg.previousFilter.OrderNewest = orderNewest
 	}
 
 	searchKey := pg.searchEditor.Editor.Text()
-	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true, strings.TrimSpace(searchKey))
+	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, orderNewest, strings.TrimSpace(searchKey))
 	listItems := make([]*components.ProposalItem, 0)
 
 	if selectedType == values.String(values.StrUnderReview) {
@@ -171,8 +194,8 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
-	pg.searchEditor.EditorIconButtonEvent = func() {
-		// TODO: Proposals search functionality
+	if pg.orderDropDown.Changed() {
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
@@ -230,6 +253,20 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 	pg.ctxCancel()
 }
 
+func (pg *ProposalsPage) initWalletSelector() {
+	// Source wallet picker
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+		Title(values.String(values.StrSelectWallet))
+	pg.sourceWalletSelector.SetHideBalance(true)
+	if pg.sourceWalletSelector.SelectedWallet() != nil {
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	}
+
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.selectedWallet = selectedWallet.Asset
+	})
+}
+
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
@@ -242,31 +279,45 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(pg.layoutSectionHeader),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
-					}),
-					layout.Expanded(func(gtx C) D {
-						return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-							layout.Flexed(1, func(gtx C) D {
-								return layout.Inset{
-									Bottom: values.MarginPadding20,
-								}.Layout(gtx, pg.searchEditor.Layout)
-							}),
-							layout.Rigid(func(gtx C) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(pg.layoutSectionHeader),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.Inset{
+					Top:   values.MarginPadding10,
+					Right: values.MarginPadding24,
+					Left:  values.MarginPadding24,
+				}.Layout(gtx, func(gtx C) D {
+					return layout.Stack{}.Layout(gtx,
+						layout.Expanded(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding120}.Layout(gtx, pg.layoutContent)
+						}),
+						layout.Expanded(func(gtx C) D {
+							return layout.Inset{
+								Top:    values.MarginPadding60,
+								Bottom: values.MarginPadding20,
+							}.Layout(gtx, pg.searchEditor.Layout)
+						}),
+						layout.Expanded(func(gtx C) D {
+							return layout.W.Layout(gtx, func(gtx C) D {
+								gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
+								return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+							})
+						}),
+						layout.Expanded(func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
 								return pg.statusDropDown.Layout(gtx, 10, true)
-							}),
-						)
+							})
+						}),
+						layout.Expanded(func(gtx C) D {
+							return pg.orderDropDown.Layout(gtx, pg.orderDropDown.Width+30, true)
+						}),
+					)
+				})
+			}),
+		)
+	})
 
-					}),
-				)
-			})
-		}),
-	)
 }
 
 func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -354,41 +405,46 @@ func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
-				}),
-			)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			body := func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
+	return layout.Inset{Left: values.MarginPadding24,
+		Top:   values.MarginPadding16,
+		Right: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
 					layout.Rigid(func(gtx C) D {
-						var text string
-						if isProposalSyncing {
-							text = values.String(values.StrSyncingState)
-						} else if pg.syncCompleted {
-							text = values.String(values.StrUpdated)
-						} else {
-							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.assetsManager.Politeia.GetLastSyncedTimeStamp())
-						}
-
-						lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
-						lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-						if pg.syncCompleted {
-							lastUpdatedInfo.Color = pg.Theme.Color.Success
-						}
-
-						return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+						return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
 					}),
 				)
-			}
-			return layout.E.Layout(gtx, body)
-		}),
-	)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				body := func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							var text string
+							if isProposalSyncing {
+								text = values.String(values.StrSyncingState)
+							} else if pg.syncCompleted {
+								text = values.String(values.StrUpdated)
+							} else {
+								text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.assetsManager.Politeia.GetLastSyncedTimeStamp())
+							}
+
+							lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
+							lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+							if pg.syncCompleted {
+								lastUpdatedInfo.Color = pg.Theme.Color.Success
+							}
+
+							return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+						}),
+					)
+				}
+				return layout.E.Layout(gtx, body)
+			}),
+		)
+	})
+
 }
 
 func (pg *ProposalsPage) listenForSyncNotifications() {
