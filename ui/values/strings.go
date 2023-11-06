@@ -786,6 +786,7 @@ const (
 	StrViewSeedPhrase                  = "viewSeedPhrase"
 	StrViewTicket                      = "viewTicket"
 	StrVote                            = "vote"
+	StrVotes                           = "votes"
 	StrVoteChoice                      = "votechoice"
 	StrVoteConfirm                     = "voteConfirm"
 	StrVoted                           = "voted"

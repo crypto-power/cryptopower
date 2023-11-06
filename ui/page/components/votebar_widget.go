@@ -124,7 +124,7 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 
 	// progressScale represent the different progress bar layers
 	progressScale := func(width int, color color.NRGBA, layer int) layout.Dimensions {
-		maxHeight := values.MarginPadding10
+		maxHeight := values.MarginPadding17
 		rW, rE = 0, 0
 		if layer == 2 {
 			if width >= progressBarWidth {
@@ -207,7 +207,7 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 		},
 		Max: image.Point{
 			X: int(thumbLeftPos) + voteBarThumbWidth,
-			Y: 45,
+			Y: 24,
 		},
 	}
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
@@ -238,8 +238,11 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 								if v.isDisableInfoTitle {
 									return D{}
 								}
+
 								return layout.E.Layout(gtx, func(gtx C) D {
-									return v.layoutInfo(window, gtx)
+									lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
+									lb.Font.Weight = font.SemiBold
+									return lb.Layout(gtx)
 								})
 							}),
 						)

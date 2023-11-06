@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 
 	"gioui.org/font"
@@ -45,8 +44,15 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 	})
 }
 
+// func getStateLabel(gtx C, l *load.Load, proposal *lib) cryptomaterial.Label {
+// 	grayCol := l.Theme.Color.GrayText2
+// 	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
+// 	stateLabel.Color = grayCol
+// }
+
 func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	proposal := item.Proposal
+	proposal.Category = libwallet.ProposalCategoryPre
 	grayCol := l.Theme.Color.GrayText2
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
@@ -93,7 +99,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
+							if proposal.Category == libwallet.ProposalCategoryPre {
 								return layout.Inset{
 									Right: values.MarginPadding4,
 								}.Layout(gtx, stateLabel.Layout)
@@ -101,7 +107,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 							return D{}
 						}),
 						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryActive {
+							if proposal.Category == libwallet.ProposalCategoryActive {
 								return layout.Inset{
 									Right: values.MarginPadding4,
 									Top:   values.MarginPadding3,
@@ -110,23 +116,6 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 							return D{}
 						}),
 						layout.Rigid(timeAgoLabel.Layout),
-						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
-								return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-									rect := image.Rectangle{
-										Min: gtx.Constraints.Min,
-										Max: gtx.Constraints.Max,
-									}
-									rect.Max.Y = 20
-									layoutInfoTooltip(gtx, rect, *item)
-
-									infoIcon := cryptomaterial.NewIcon(l.Theme.Icons.ActionInfo)
-									infoIcon.Color = l.Theme.Color.GrayText2
-									return infoIcon.Layout(gtx, values.MarginPadding20)
-								})
-							}
-							return D{}
-						}),
 					)
 				}),
 			)
@@ -153,6 +142,28 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 			return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
 		}),
 		layout.Rigid(versionLabel.Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryPre {
+						return layout.Inset{
+							Right: values.MarginPadding4,
+						}.Layout(gtx, stateLabel.Layout)
+					}
+					return D{}
+				}),
+				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryActive {
+						return layout.Inset{
+							Right: values.MarginPadding4,
+							Top:   values.MarginPadding3,
+						}.Layout(gtx, l.Theme.Icons.TimerIcon.Layout12dp)
+					}
+					return D{}
+				}),
+				layout.Rigid(timeAgoLabel.Layout),
+			)
+		}),
 	)
 }
 
@@ -169,15 +180,6 @@ func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem
 		SetVoteValidityParams(eligibleTickets, quorumPercent, passPercentage).
 		SetProposalDetails(proposal.NumComments, proposal.PublishedAt, proposal.Token).
 		Layout(window, gtx)
-}
-
-func layoutInfoTooltip(gtx C, rect image.Rectangle, item ProposalItem) {
-	inset := layout.Inset{Top: values.MarginPadding20, Left: values.MarginPaddingMinus195}
-	item.tooltip.Layout(gtx, rect, inset, func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding195)
-		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding195)
-		return item.tooltipLabel.Layout(gtx)
-	})
 }
 
 func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D {

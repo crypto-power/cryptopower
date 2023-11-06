@@ -676,6 +676,7 @@ const EN = `
 "viewSeedPhrase" = "View seed phrase"
 "viewTicket" = "View associated ticket"
 "vote" = "Vote"
+"votes" = "%d votes"
 "votechoice" = "Vote Choice"
 "voteConfirm" = "Confirm to vote"
 "voted" = "Voted"
