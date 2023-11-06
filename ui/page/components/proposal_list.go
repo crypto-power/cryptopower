@@ -44,21 +44,20 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 	})
 }
 
-// func getStateLabel(gtx C, l *load.Load, proposal *lib) cryptomaterial.Label {
-// 	grayCol := l.Theme.Color.GrayText2
-// 	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
-// 	stateLabel.Color = grayCol
-// }
+func getStateLabel(l *load.Load, proposal libwallet.Proposal) cryptomaterial.Label {
+	grayCol := l.Theme.Color.GrayText2
+	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
+	stateLabel.Color = grayCol
+	return stateLabel
+}
 
 func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	proposal := item.Proposal
-	proposal.Category = libwallet.ProposalCategoryPre
 	grayCol := l.Theme.Color.GrayText2
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
 
-	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
-	stateLabel.Color = grayCol
+	stateLabel := getStateLabel(l, proposal)
 
 	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
@@ -94,9 +93,15 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(categoryLabel.Layout),
 				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryPre {
+						return D{}
+					}
 					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryPre {
+						return D{}
+					}
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							if proposal.Category == libwallet.ProposalCategoryPre {
@@ -133,36 +138,35 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
 
+	stateLabel := getStateLabel(l, proposal)
+
+	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
+	timeAgoLabel.Color = grayCol
+
 	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
 	versionLabel.Color = grayCol
 
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(nameLabel.Layout),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-		}),
-		layout.Rigid(versionLabel.Layout),
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(nameLabel.Layout),
 				layout.Rigid(func(gtx C) D {
-					if proposal.Category == libwallet.ProposalCategoryPre {
-						return layout.Inset{
-							Right: values.MarginPadding4,
-						}.Layout(gtx, stateLabel.Layout)
-					}
-					return D{}
+					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
 				}),
-				layout.Rigid(func(gtx C) D {
-					if proposal.Category == libwallet.ProposalCategoryActive {
-						return layout.Inset{
-							Right: values.MarginPadding4,
-							Top:   values.MarginPadding3,
-						}.Layout(gtx, l.Theme.Icons.TimerIcon.Layout12dp)
-					}
-					return D{}
-				}),
-				layout.Rigid(timeAgoLabel.Layout),
+				layout.Rigid(versionLabel.Layout),
 			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if proposal.Category == libwallet.ProposalCategoryPre {
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(stateLabel.Layout),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+					}),
+					layout.Rigid(timeAgoLabel.Layout),
+				)
+			}
+			return D{}
 		}),
 	)
 }
