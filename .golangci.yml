@@ -1,0 +1,31 @@
+run:
+  deadline: 10m
+  skip-dirs:
+    # foreign languages give false positives for misspell
+    - ui/values/localizable
+
+output:
+  format: github-actions,colored-line-number
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bidichk
+    - durationcheck
+    - exportloopref
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - grouper
+    - ineffassign
+    - makezero
+    - nosprintfhostport
+    - reassign
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - tparallel
+    - typecheck
+    - unconvert

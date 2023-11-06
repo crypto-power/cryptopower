@@ -231,7 +231,7 @@ func (in *InfoModal) NegativeButtonStyle(background, text color.NRGBA) *InfoModa
 	return in
 }
 
-// for backwards compatibilty
+// for backwards compatibility
 func (in *InfoModal) SetupWithTemplate(template string) *InfoModal {
 	title := in.dialogTitle
 	subtitle := in.subtitle

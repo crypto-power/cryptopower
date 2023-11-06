@@ -169,7 +169,7 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	// If Tickets Purcahse API is not allowed, display the overlay with the message.
+	// If Tickets Purchase API is not allowed, display the overlay with the message.
 	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
@@ -178,7 +178,7 @@ func (pg *Page) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 

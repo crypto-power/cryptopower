@@ -281,7 +281,7 @@ func (asset *Asset) Broadcast(privatePassphrase, transactionLabel string) ([]byt
 		return nil, errors.New(utils.ErrInvalidPassphrase)
 	}
 
-	// To discourage fee sniping, LockTime is explicity set in the raw tx.
+	// To discourage fee sniping, LockTime is explicitly set in the raw tx.
 	// More documentation on this:
 	// https://bitcoin.stackexchange.com/questions/48384/why-bitcoin-core-creates-time-locked-transactions-by-default
 	msgTx.LockTime = uint32(asset.GetBestBlockHeight())

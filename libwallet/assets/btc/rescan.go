@@ -140,7 +140,7 @@ func (asset *Asset) rescanAsync() error {
 
 	// Attempt to drop the the tx history. See the btcwallet/cmd/dropwtxmgr app
 	// for more information. Because of how often a forces rescan will be triggered,
-	// dropping the transaction history in every one of those ocassions won't make
+	// dropping the transaction history in every one of those occasions won't make
 	// much difference. Its recommended that on the manually triggered rescan that
 	// is when dropping transaction history can be done.
 	log.Infof("(%v) Dropping transaction history to perform full rescan...", asset.GetWalletName())
@@ -148,7 +148,7 @@ func (asset *Asset) rescanAsync() error {
 	err := w.DropTransactionHistory(asset.Internal().BTC.Database(), false)
 	if err != nil {
 		log.Errorf("Failed to drop wallet transaction history: %v", err)
-		// continue with the rescan despite the error occuring
+		// continue with the rescan despite the error occurring
 	}
 
 	log.Info("Starting wallet...")
@@ -396,7 +396,7 @@ func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
 // regardless thus avoid handling the possible scenario where btcwallet might miss
 // the syncedto store trigger event.
 func (asset *Asset) updateSyncedToBlock(height int32) {
-	// Ignore blocks notifications recieved during the wallet recovery phase.
+	// Ignore blocks notifications received during the wallet recovery phase.
 	if !asset.IsSynced() || asset.IsRescanning() {
 		return
 	}

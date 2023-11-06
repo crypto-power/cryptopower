@@ -146,7 +146,7 @@ func (asset *Asset) publishTransactionConfirmed(txHash string, blockHeight int32
 	}
 }
 
-// publishBlockAttached once the initial sync is complete all the new blocks recieved
+// publishBlockAttached once the initial sync is complete all the new blocks received
 // are published through this method.
 func (asset *Asset) publishBlockAttached(blockHeight int32) {
 	asset.notificationListenersMu.RLock()

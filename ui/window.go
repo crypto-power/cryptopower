@@ -317,7 +317,7 @@ func (win *Window) addKeyEventRequestsToOps(ops *op.Ops) {
 
 		// Execute the key.InputOP{}.Add operation after all other operations.
 		// This is particularly important because some pages call op.Defer to
-		// signfiy that some operations should be executed after all other
+		// signify that some operations should be executed after all other
 		// operations, which has an undesirable effect of discarding this key
 		// operation unless it's done last, after all other defers are done.
 		m := op.Record(ops)
