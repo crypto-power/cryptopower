@@ -101,9 +101,8 @@ func getIndexUnit(amount string) int {
 		return strings.Index(amount, " "+string(utils.DCRWalletAsset))
 	} else if strings.Contains(amount, string(utils.LTCWalletAsset)) {
 		return strings.Index(amount, " "+string(utils.LTCWalletAsset))
-	} else {
-		return -1
 	}
+	return -1
 }
 
 // LayoutBalance aligns the main and sub DCR balances horizontally, putting the sub
