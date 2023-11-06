@@ -10,22 +10,11 @@ output:
 linters:
   disable-all: true
   enable:
-    - asciicheck
-    - bidichk
-    - durationcheck
-    - exportloopref
-    - gofmt
-    - goimports
-    - gosimple
-    - govet
-    - grouper
-    - ineffassign
-    - makezero
-    - nosprintfhostport
-    - reassign
-    - rowserrcheck
-    - sqlclosecheck
+    - govet 
     - staticcheck
-    - tparallel
-    - typecheck
+    - gosimple 
     - unconvert
+    - ineffassign 
+    - revive
+    - goimports 
+    - unparam
