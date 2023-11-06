@@ -30,7 +30,7 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	txs      []sharedW.Transaction
+	txs      []*sharedW.Transaction
 	accounts *sharedW.Accounts
 
 	l             layout.List
@@ -183,7 +183,7 @@ func (pg *StatPage) layoutDesktop(gtx C) D {
 
 	// Refresh frames every 1 second
 	op.InvalidateOp{At: time.Now().Add(time.Second * 1)}.Add(gtx.Ops)
-	return components.UniformPadding(gtx, container)
+	return container(gtx)
 }
 
 func (pg *StatPage) layoutMobile(gtx C) D {

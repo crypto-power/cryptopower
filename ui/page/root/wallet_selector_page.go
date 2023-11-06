@@ -35,6 +35,8 @@ type walletIndexTuple struct {
 	Index     int
 }
 
+type showNavigationFunc func(showNavigation bool)
+
 type WalletSelectorPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -64,6 +66,8 @@ type WalletSelectorPage struct {
 	assetsBalance         map[libutils.AssetType]sharedW.AssetAmount
 	assetsTotalUSDBalance map[libutils.AssetType]float64
 	assetRate             map[libutils.AssetType]float64
+
+	showNavigationFunc showNavigationFunc
 }
 
 func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
@@ -104,6 +108,8 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+
+	pg.showNavigationFunc(false)
 
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
 		pg.assetCollapsibles[asset] = pg.Load.Theme.Collapsible()
@@ -173,7 +179,12 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 		}
 
 		pg.WL.SelectedWallet = wallets[tuple.Index]
-		pg.ParentNavigator().Display(NewMainPage(pg.Load))
+		pg.showNavigationFunc(true)
+
+		callback := func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		}
+		pg.ParentNavigator().Display(NewMainPage(pg.Load, callback))
 	}
 
 	for _, walletsOfType := range pg.badWalletsList {
@@ -187,7 +198,9 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 
 	for asset, clickable := range pg.addWalClickable {
 		if clickable.Clicked() {
-			pg.ParentNavigator().Display(NewCreateWallet(pg.Load, asset))
+			pg.ParentNavigator().Display(components.NewCreateWallet(pg.Load, func() {
+				pg.ParentNavigator().ClosePagesAfter(WalletSelectorPageID)
+			}, asset))
 		}
 	}
 }

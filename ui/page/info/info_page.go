@@ -109,50 +109,47 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Part of the load.Page interface.
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx layout.Context) layout.Dimensions {
-	body := func(gtx C) D {
-		return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-			return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
+	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
+		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+			return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+				return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{
+								Right: values.MarginPadding10,
+								Left:  values.MarginPadding10,
+							}.Layout(gtx, func(gtx C) D {
+								txt := pg.Theme.Body1(pg.WL.SelectedWallet.Wallet.GetWalletName())
+								txt.Font.Weight = font.SemiBold
+								return txt.Layout(gtx)
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							if len(pg.WL.SelectedWallet.Wallet.GetEncryptedSeed()) > 0 {
 								return layout.Inset{
-									Right: values.MarginPadding10,
-									Left:  values.MarginPadding10,
+									Top: values.MarginPadding16,
 								}.Layout(gtx, func(gtx C) D {
-									txt := pg.Theme.Body1(pg.WL.SelectedWallet.Wallet.GetWalletName())
-									txt.Font.Weight = font.SemiBold
-									return txt.Layout(gtx)
+									return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+										layout.Rigid(pg.Theme.Icons.RedAlert.Layout24dp),
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{
+												Left:  values.MarginPadding9,
+												Right: values.MarginPadding16,
+											}.Layout(gtx, pg.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
+										}),
+										layout.Rigid(pg.toBackup.Layout),
+									)
 								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								if len(pg.WL.SelectedWallet.Wallet.GetEncryptedSeed()) > 0 {
-									return layout.Inset{
-										Top: values.MarginPadding16,
-									}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-											layout.Rigid(pg.Theme.Icons.RedAlert.Layout24dp),
-											layout.Rigid(func(gtx C) D {
-												return layout.Inset{
-													Left:  values.MarginPadding9,
-													Right: values.MarginPadding16,
-												}.Layout(gtx, pg.Theme.Body2(values.String(values.StrBackupWarning)).Layout)
-											}),
-											layout.Rigid(pg.toBackup.Layout),
-										)
-									})
-								}
-								return D{}
-							}),
-							layout.Rigid(pg.syncStatusSection),
-						)
-					})
+							}
+							return D{}
+						}),
+						layout.Rigid(pg.syncStatusSection),
+					)
 				})
 			})
 		})
-	}
+	})
 
-	return components.UniformPadding(gtx, body)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

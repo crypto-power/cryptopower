@@ -278,7 +278,7 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 								return layout.Inset{
 									Left: values.MarginPadding8,
 								}.Layout(gtx, func(gtx C) D {
-									return walletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+									return components.WalletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
 								})
 							}
 							return D{}

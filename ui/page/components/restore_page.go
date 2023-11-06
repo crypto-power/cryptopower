@@ -1,4 +1,4 @@
-package info
+package components
 
 import (
 	"image"
@@ -17,7 +17,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -60,7 +59,7 @@ func NewRestorePage(l *load.Load, walletName string, walletType libutils.AssetTy
 		toggleSeedInput:  l.Theme.Switch(),
 	}
 
-	pg.backButton, _ = components.SubpageHeaderButtons(l)
+	pg.backButton, _ = SubpageHeaderButtons(l)
 	pg.backButton.Icon = pg.Theme.Icons.ContentClear
 
 	pg.seedInputEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrEnterWalletSeed))
@@ -96,7 +95,7 @@ func (pg *Restore) Layout(gtx C) D {
 
 func (pg *Restore) layoutDesktop(gtx C) D {
 	body := func(gtx C) D {
-		sp := components.SubPage{
+		sp := SubPage{
 			Load:       pg.Load,
 			Title:      values.String(values.StrRestoreWallet),
 			BackButton: pg.backButton,
@@ -109,12 +108,12 @@ func (pg *Restore) layoutDesktop(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformPadding(gtx, body)
+	return UniformPadding(gtx, body)
 }
 
 func (pg *Restore) layoutMobile(gtx C) D {
 	body := func(gtx C) D {
-		sp := components.SubPage{
+		sp := SubPage{
 			Load:       pg.Load,
 			Title:      values.String(values.StrRestoreWallet),
 			BackButton: pg.backButton,
@@ -127,11 +126,11 @@ func (pg *Restore) layoutMobile(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformMobile(gtx, false, false, body)
+	return UniformMobile(gtx, false, false, body)
 }
 
 func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return UniformPadding(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),
@@ -353,7 +352,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 
 	seedOrHex := strings.TrimSpace(pg.seedInputEditor.Editor.Text())
 	// Check if the user did input a hex or seed. If its a hex set the correct tabindex.
-	if len(seedOrHex) > components.MaxSeedBytes {
+	if len(seedOrHex) > MaxSeedBytes {
 		pg.tabIndex = 0
 	} else {
 		pg.tabIndex = 1

@@ -13,6 +13,9 @@ type SegmentedControl struct {
 	theme *Theme
 	list  *ClickableList
 
+	leftNavBtn,
+	rightNavBtn *Clickable
+
 	selectedIndex int
 	segmentTitles []string
 
@@ -28,6 +31,8 @@ func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
 		list:          list,
 		theme:         t,
 		segmentTitles: segmentTitles,
+		leftNavBtn:    t.NewClickable(false),
+		rightNavBtn:   t.NewClickable(false),
 	}
 }
 
@@ -66,6 +71,58 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 	)
 }
 
+func (sc *SegmentedControl) TransparentLayout(gtx C) D {
+	sc.handleEvents()
+	return LinearLayout{
+		Width:       gtx.Dp(values.MarginPadding600),
+		Height:      WrapContent,
+		Orientation: layout.Horizontal,
+		Alignment:   layout.Middle,
+	}.Layout(gtx,
+		layout.Flexed(.035, func(gtx C) D {
+			return sc.leftNavBtn.Layout(gtx, sc.theme.Icons.ChevronLeft.Layout24dp)
+		}),
+		layout.Flexed(.8, func(gtx C) D {
+			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+				isSelectedSegment := sc.SelectedIndex() == i
+				return layout.Center.Layout(gtx, func(gtx C) D {
+					bg := sc.theme.Color.Gray2
+					txt := sc.theme.DecoratedText(values.TextSize14, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+					border := Border{Radius: Radius(8)}
+					if isSelectedSegment {
+						bg = sc.theme.Color.LightBlue8
+						txt.Color = sc.theme.Color.Primary
+					}
+					paddingTB := values.MarginPadding8
+					paddingLR := values.MarginPadding32
+					pr := values.MarginPadding6
+					if i == len(sc.segmentTitles) { // no need to add padding to the last item
+						pr = values.MarginPadding0
+					}
+
+					return layout.Inset{Right: pr}.Layout(gtx, func(gtx C) D {
+						return LinearLayout{
+							Width:  WrapContent,
+							Height: WrapContent,
+							Padding: layout.Inset{
+								Top:    paddingTB,
+								Bottom: paddingTB,
+								Left:   paddingLR,
+								Right:  paddingLR,
+							},
+							Background: bg,
+							Border:     border,
+						}.Layout2(gtx, txt.Layout)
+					})
+				})
+			})
+		}),
+		layout.Flexed(.035, func(gtx C) D {
+			return sc.rightNavBtn.Layout(gtx, sc.theme.Icons.ChevronRight.Layout24dp)
+		}),
+	)
+}
+
 func (sc *SegmentedControl) handleEvents() {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -74,6 +131,18 @@ func (sc *SegmentedControl) handleEvents() {
 			sc.changed = true
 		}
 		sc.selectedIndex = clickedSegmentIndex
+	}
+
+	if sc.leftNavBtn.Clicked() {
+		sc.list.Position.First = 0
+		sc.list.Position.Offset = 0
+		sc.list.Position.BeforeEnd = true
+		sc.list.ScrollToEnd = false
+	}
+	if sc.rightNavBtn.Clicked() {
+		sc.list.Position.OffsetLast = 0
+		sc.list.Position.BeforeEnd = false
+		sc.list.ScrollToEnd = true
 	}
 }
 
@@ -88,6 +157,7 @@ func (sc *SegmentedControl) SelectedSegment() string {
 	defer sc.mu.Unlock()
 	return sc.segmentTitles[sc.selectedIndex]
 }
+
 func (sc *SegmentedControl) Changed() bool {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()

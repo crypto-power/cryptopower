@@ -61,10 +61,12 @@ type WalletSettingsPage struct {
 	spendUnmixedFunds *cryptomaterial.Switch
 	connectToPeer     *cryptomaterial.Switch
 
+	walletCallbackFunc func()
+
 	peerAddr string
 }
 
-func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
+func NewWalletSettingsPage(l *load.Load, walletCallbackFunc func()) *WalletSettingsPage {
 	pg := &WalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
@@ -90,7 +92,8 @@ func NewWalletSettingsPage(l *load.Load) *WalletSettingsPage {
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		accountsList: l.Theme.NewClickableList(layout.Vertical),
+		accountsList:       l.Theme.NewClickableList(layout.Vertical),
+		walletCallbackFunc: walletCallbackFunc,
 	}
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
@@ -169,7 +172,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 		}
 
 		return pg.Theme.List(pg.pageContainer).Layout(gtx, len(w), func(gtx C, i int) D {
-			return layout.Inset{Left: values.MarginPadding50}.Layout(gtx, w[i])
+			return w[i](gtx)
 		})
 	}
 
@@ -180,7 +183,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 }
 
 func (pg *WalletSettingsPage) layoutDesktop(gtx C, body layout.Widget) D {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
@@ -437,12 +440,10 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 			}
 
 			walletDeleted := func() {
+				m.Dismiss()
 				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
-					m.Dismiss()
-					pg.ParentNavigator().CloseCurrentPage()
-					pg.ParentWindow().Display(NewWalletSelectorPage(pg.Load))
+					pg.walletCallbackFunc()
 				} else {
-					m.Dismiss()
 					pg.ParentWindow().CloseAllPages()
 				}
 			}

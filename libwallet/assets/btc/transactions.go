@@ -16,8 +16,8 @@ import (
 type txCache struct {
 	blockHeight int32
 
-	unminedTxs []sharedW.Transaction
-	minedTxs   []sharedW.Transaction
+	unminedTxs []*sharedW.Transaction
+	minedTxs   []*sharedW.Transaction
 
 	mu sync.RWMutex
 }
@@ -68,7 +68,7 @@ func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, erro
 	transactions, err := asset.getTransactionsRaw(0, 0, true)
 	for _, tx := range transactions {
 		if tx.Hash == txHash {
-			return &tx, nil
+			return tx, nil
 		}
 	}
 	return nil, err
@@ -104,7 +104,7 @@ func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst b
 // get all transactions then return transactions that match the input limit and offset.
 // If offset and limit are 0, it will return all transactions
 // If newestFirst is true, it will return transactions from newest to oldest
-func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]*sharedW.Transaction, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrBTCNotInitialized
 	}
@@ -120,7 +120,7 @@ func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirs
 	start := offset
 	end := offset + limit
 	if start >= totalTxs {
-		return []sharedW.Transaction{}, nil
+		return []*sharedW.Transaction{}, nil
 	}
 
 	if end >= totalTxs {
@@ -145,18 +145,18 @@ func (asset *Asset) btcSupportedTxFilter(txFilter int32) int32 {
 
 // the offset is the height of start block
 // limit is number of blocks will take from offset to get transactions
-func (asset *Asset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]sharedW.Transaction, error) {
+func (asset *Asset) filterTxs(offset, limit, txFilter int32, newestFirst bool) ([]*sharedW.Transaction, error) {
 	txType := asset.btcSupportedTxFilter(txFilter)
 	transactions, err := asset.getTransactionsRaw(offset, limit, newestFirst)
 	if err != nil {
-		return []sharedW.Transaction{}, nil
+		return []*sharedW.Transaction{}, nil
 	}
 
 	if txType == txhelper.TxDirectionAll {
 		return transactions, err
 	}
 
-	txsCopy := make([]sharedW.Transaction, 0, len(transactions))
+	txsCopy := make([]*sharedW.Transaction, 0, len(transactions))
 	for _, tx := range transactions {
 		if tx.Direction == txType {
 			txsCopy = append(txsCopy, tx)
@@ -170,7 +170,7 @@ func (asset *Asset) filterTxs(offset, limit, txFilter int32, newestFirst bool) (
 // of the offset and the limit values.
 // If startblock is less that the endblock the list return is in ascending order
 // (starts with the oldest) otherwise its in descending (starts with the newest) order.
-func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]sharedW.Transaction, error) {
+func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([]*sharedW.Transaction, error) {
 	asset.txs.mu.RLock()
 	allTxs := append(asset.txs.unminedTxs, asset.txs.minedTxs...)
 	txCacheHeight := asset.txs.blockHeight
@@ -214,7 +214,7 @@ func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([
 		return nil, err
 	}
 
-	unminedTxs := make([]sharedW.Transaction, 0)
+	unminedTxs := make([]*sharedW.Transaction, 0)
 	for _, transaction := range txResult.UnminedTransactions {
 		unminedTx := asset.decodeTransactionWithTxSummary(sharedW.UnminedTxHeight, transaction)
 		unminedTxs = append(unminedTxs, unminedTx)
@@ -242,8 +242,8 @@ func (asset *Asset) getTransactionsRaw(offset, limit int32, newestFirst bool) ([
 	return append(unminedTxs, minedTxs...), nil
 }
 
-func (asset *Asset) extractTxs(blocks []wallet.Block) []sharedW.Transaction {
-	txs := make([]sharedW.Transaction, 0)
+func (asset *Asset) extractTxs(blocks []wallet.Block) []*sharedW.Transaction {
+	txs := make([]*sharedW.Transaction, 0)
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {
 			decodedTx := asset.decodeTransactionWithTxSummary(block.Height, transaction)

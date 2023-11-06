@@ -43,7 +43,7 @@ func (pg *Page) listenForTxNotifications() {
 	}()
 }
 
-func (pg *Page) fetchTickets(offset, pageSize int32) (interface{}, int, bool, error) {
+func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, bool, error) {
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
 		return nil, -1, false, err
@@ -82,7 +82,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding15, Bottom: values.MarginPadding16}.Layout(gtx, txt.Layout)
 						}
 
-						tickets := pg.scroll.FetchedData().([]*transactionItem)
+						tickets := pg.scroll.FetchedData()
 						return pg.ticketsList.Layout(gtx, len(tickets), func(gtx C, index int) D {
 							ticket := tickets[index]
 

@@ -112,7 +112,7 @@ func (pg *VerifyMessagePage) Layout(gtx C) D {
 }
 
 func (pg *VerifyMessagePage) layoutDesktop(gtx layout.Context, body layout.Widget) layout.Dimensions {
-	return components.UniformPadding(gtx, body)
+	return body(gtx)
 }
 
 func (pg *VerifyMessagePage) layoutMobile(gtx layout.Context, body layout.Widget) layout.Dimensions {

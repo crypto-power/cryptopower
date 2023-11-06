@@ -505,6 +505,10 @@ func (mgr *AssetsManager) AllWallets() (wallets []sharedW.Asset) {
 // DeleteWallet deletes a wallet from the assets manager.
 func (mgr *AssetsManager) DeleteWallet(walletID int, privPass string) error {
 	wallet := mgr.WalletWithID(walletID)
+	if wallet == nil { // already deleted?
+		return nil
+	}
+
 	if err := wallet.DeleteWallet(privPass); err != nil {
 		return err
 	}
@@ -533,6 +537,27 @@ func (mgr *AssetsManager) WalletWithID(walletID int) sharedW.Asset {
 		return wallet
 	}
 	return nil
+}
+
+// AssetWallets returns the wallets for the specified asset type(s).
+func (mgr *AssetsManager) AssetWallets(assetTypes ...utils.AssetType) []sharedW.Asset {
+	var wallets []sharedW.Asset
+	for _, asset := range assetTypes {
+		switch asset {
+		case utils.BTCWalletAsset:
+			wallets = append(wallets, mgr.AllBTCWallets()...)
+		case utils.DCRWalletAsset:
+			wallets = append(wallets, mgr.AllDCRWallets()...)
+		case utils.LTCWalletAsset:
+			wallets = append(wallets, mgr.AllLTCWallets()...)
+		}
+	}
+
+	if len(wallets) == 0 && len(assetTypes) == 0 {
+		wallets = mgr.AllWallets()
+	}
+
+	return wallets
 }
 
 func (mgr *AssetsManager) getbadWallet(walletID int) *sharedW.Wallet {
