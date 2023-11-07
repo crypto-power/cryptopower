@@ -40,9 +40,9 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	return backButton, infoButton
 }
 
-func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+func (sp *SubPage) Layout(window app.WindowNavigator, gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Bottom: values.MarginPadding22}.Layout(gtx, func(gtx C) D {
 				return sp.Header(window, gtx)
 			})
@@ -51,9 +51,9 @@ func (sp *SubPage) Layout(window app.WindowNavigator, gtx layout.Context) layout
 	)
 }
 
-func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return sp.Theme.Card().Layout(gtx, func(gtx C) D {
 				inset := layout.Inset{
 					Top:   values.MarginPadding16,
@@ -65,24 +65,24 @@ func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx layout.Con
 				})
 			})
 		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, sp.Body)
 		}),
 	)
 }
 
-func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+func (sp *SubPage) Header(window app.WindowNavigator, gtx C) D {
 	sp.EventHandler(window)
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Right: values.MarginPadding20,
 					}.Layout(gtx, sp.BackButton.Layout)
 				}),
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(sp.Load.Theme.LabelSemiBold(values.TextSize20, sp.Title).Layout),
 						layout.Rigid(func(gtx C) D {
@@ -96,40 +96,42 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx layout.Context) layout
 						}),
 					)
 				}),
-				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						if sp.InfoTemplate != "" {
 							return sp.InfoButton.Layout(gtx)
 						} else if sp.ExtraItem != nil {
 							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								layout.Rigid(func(gtx C) D {
 									if sp.ExtraText != "" {
 										return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 											return sp.Theme.Caption(sp.ExtraText).Layout(gtx)
 										})
 									}
-									return layout.Dimensions{}
+									return D{}
 								}),
-								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								layout.Rigid(func(gtx C) D {
 									return sp.ExtraItem.Layout(gtx, sp.Extra)
 								}),
 							)
 						}
-						return layout.Dimensions{}
+						return D{}
 					})
 				}),
 			)
 		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			if sp.ExtraHeader != nil {
-				return sp.ExtraHeader(gtx)
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return sp.ExtraHeader(gtx)
+				})
 			}
 			return D{}
 		}),
 	)
 }
 
-func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+func (sp *SubPage) CombinedLayout(window app.WindowNavigator, gtx C) D {
 	return sp.Theme.Card().Layout(gtx, func(gtx C) D {
 		return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
