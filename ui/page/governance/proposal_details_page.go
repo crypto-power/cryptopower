@@ -14,7 +14,8 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -58,10 +59,14 @@ type ProposalDetails struct {
 
 	viewInPoliteiaBtn *cryptomaterial.Clickable
 	copyRedirectURL   *cryptomaterial.Clickable
+	tempRightHead     *cryptomaterial.Clickable
 
 	descriptionCard cryptomaterial.Card
 	vote            cryptomaterial.Button
 	backButton      cryptomaterial.IconButton
+
+	sourceWalletSelector *components.WalletAndAccountSelector
+	selectedWallet       sharedW.Asset
 
 	voteBar            *components.VoteBar
 	loadingDescription bool
@@ -85,6 +90,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 		successIcon:       l.Theme.Icons.ActionCheckCircle,
 		viewInPoliteiaBtn: l.Theme.NewClickable(true),
 		copyRedirectURL:   l.Theme.NewClickable(false),
+		tempRightHead:     l.Theme.NewClickable(false),
 		voteBar:           components.NewVoteBar(l),
 	}
 
@@ -101,6 +107,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 		Right:  values.MarginPadding12,
 	}
 
+	pg.initWalletSelector()
 	return pg
 }
 
@@ -111,6 +118,21 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 func (pg *ProposalDetails) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	pg.listenForSyncNotifications()
+}
+
+func (pg *ProposalDetails) initWalletSelector() {
+	// Source wallet picker
+	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+		Title(values.String(values.StrSelectWallet))
+	pg.sourceWalletSelector.SetHideBalance(true)
+	if pg.sourceWalletSelector.SelectedWallet() != nil {
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	}
+
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+		pg.selectedWallet = selectedWallet.Asset
+		//TODO: implement when selected wallet
+	})
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -254,7 +276,7 @@ func (pg *ProposalDetails) sumaryInfo(gtx C) D {
 	totalVotes := fmt.Sprintf("%d", pg.proposal.YesVotes+pg.proposal.NoVotes)
 	quorum := fmt.Sprintf("%d", (pg.proposal.QuorumPercentage/100)*pg.proposal.EligibleTickets)
 	discussion := fmt.Sprintf("%d", pg.proposal.NumComments)
-	published := utils.FormatUTCTime(pg.proposal.PublishedAt)
+	published := libutils.FormatUTCTime(pg.proposal.PublishedAt)
 	token := pg.proposal.Token
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -392,59 +414,29 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 	)
 }
 
-func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
-	var label cryptomaterial.Label
-	var icon *cryptomaterial.Icon
+func (pg *ProposalDetails) getCategoryText() string {
 	proposal := pg.proposal
+	categoryTxt := ""
 	switch proposal.Category {
 	case libwallet.ProposalCategoryApproved:
-		label = pg.Theme.Body2(values.String(values.StrApproved))
-		icon = cryptomaterial.NewIcon(pg.successIcon)
-		icon.Color = pg.Theme.Color.Success
+		categoryTxt = values.String(values.StrApproved)
 	case libwallet.ProposalCategoryRejected:
-		label = pg.Theme.Body2(values.String(values.StrRejected))
-		icon = cryptomaterial.NewIcon(pg.rejectedIcon)
-		icon.Color = pg.Theme.Color.Danger
+		categoryTxt = values.String(values.StrRejected)
 	case libwallet.ProposalCategoryAbandoned:
-		label = pg.Theme.Body2(values.String(values.StrAbandoned))
+		categoryTxt = values.String(values.StrAbandoned)
 	case libwallet.ProposalCategoryActive:
-		label = pg.Theme.Body2(values.String(values.StrVotingInProgress))
+		categoryTxt = values.String(values.StrVotingInProgress)
 	}
-	timeagoLabel := pg.Theme.Body2(components.TimeAgo(proposal.Timestamp))
+	return categoryTxt
+}
+
+func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
+	proposal := pg.proposal
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if icon == nil {
-						return D{}
-					}
-					return icon.Layout(gtx, values.MarginPadding20)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, label.Layout)
-				}),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								if proposal.Category == libwallet.ProposalCategoryActive {
-									ic := pg.Theme.Icons.TimerIcon
-									if pg.WL.AssetsManager.IsDarkModeOn() {
-										ic = pg.Theme.Icons.TimerDarkMode
-									}
-									return layout.Inset{
-										Right: values.MarginPadding4,
-										Top:   values.MarginPadding3,
-									}.Layout(gtx, ic.Layout12dp)
-								}
-								return D{}
-							}),
-							layout.Rigid(timeagoLabel.Layout),
-						)
-					})
-				}),
-			)
+			gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
+			return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
 		}),
 		layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
 		layout.Rigid(pg.layoutProposalVoteBar),
@@ -471,12 +463,12 @@ func (pg *ProposalDetails) layoutTitle(gtx C) D {
 	proposal := pg.proposal
 
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-			if proposal.Category == libwallet.ProposalCategoryPre {
+		if proposal.Category == libwallet.ProposalCategoryPre {
+			return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
 				return pg.layoutInDiscussionState(gtx)
-			}
-			return pg.layoutNormalTitle(gtx)
-		})
+			})
+		}
+		return pg.layoutNormalTitle(gtx)
 	})
 }
 
@@ -522,6 +514,7 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 				layout.Rigid(updatedLabel.Layout),
 			)
 		},
+		pg.layoutRedirect(values.String(values.StrViewOnPoliteia), pg.redirectIcon, pg.viewInPoliteiaBtn),
 		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),
 	}
 
@@ -540,8 +533,6 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 		w = append(w, loading)
 	}
 
-	w = append(w, pg.layoutRedirect(values.String(values.StrViewOnPoliteia), pg.redirectIcon, pg.viewInPoliteiaBtn))
-
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
@@ -555,24 +546,21 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 
 func (pg *ProposalDetails) layoutRedirect(text string, icon *cryptomaterial.Image, btn *cryptomaterial.Clickable) layout.Widget {
 	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12})),
-			layout.Rigid(func(gtx C) D {
-				return btn.Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return pg.Theme.Body1(text).Layout(gtx)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{}.Layout(gtx, func(gtx C) D {
-								return layout.E.Layout(gtx, icon.Layout24dp)
-							})
-						}),
-					)
-				})
-			}),
-		)
+		return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return btn.Layout(gtx, func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Flex{}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+							return layout.E.Layout(gtx, icon.Layout24dp)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.Theme.Body1(text).Layout(gtx)
+					}),
+				)
+			})
+		})
 	}
 }
 
@@ -631,30 +619,35 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				pg.ParentNavigator().CloseCurrentPage()
 			},
 			Body: func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
-					}),
-					layout.Rigid(pg.layoutDescription),
-				)
+				return pg.layoutDescription(gtx)
 			},
-			ExtraItem: pg.viewInPoliteiaBtn,
+			ExtraHeader: func(gtx layout.Context) layout.Dimensions {
+				return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
+			},
+			ExtraItem: pg.tempRightHead,
 			Extra: func(gtx C) D {
+				grayCol := pg.Load.Theme.Color.GrayText2
+				timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
+				timeAgoLabel.Color = grayCol
+
+				dotLabel := pg.Load.Theme.H4(" . ")
+				dotLabel.Color = grayCol
+
+				categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
 				return layout.Inset{}.Layout(gtx, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(pg.redirectIcon.Layout24dp),
+							layout.Rigid(categoryLabel.Layout),
 							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Top: values.MarginPadding5,
-								}.Layout(gtx, pg.Theme.Caption(values.String(values.StrViewOnPoliteia)).Layout)
+								return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
 							}),
+							layout.Rigid(timeAgoLabel.Layout),
 						)
 					})
 				})
 			},
 		}
-		return page.Layout(pg.ParentWindow(), gtx)
+		return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
 	}
 	return components.UniformPadding(gtx, body)
 }

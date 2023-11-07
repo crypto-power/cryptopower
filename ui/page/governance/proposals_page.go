@@ -264,6 +264,7 @@ func (pg *ProposalsPage) initWalletSelector() {
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet.Asset
+		//TODO: Implement action when selected wallet
 	})
 }
 
