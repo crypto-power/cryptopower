@@ -77,6 +77,7 @@ func (asset *Asset) CreateMixerAccounts(mixedAccount, unmixedAccount, privPass s
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, mixedAccountNumber)
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, unmixedAccountNumber)
 	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
+	asset.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
 
 	return nil
 }
@@ -108,6 +109,7 @@ func (asset *Asset) SetAccountMixerConfig(mixedAccount, unmixedAccount int32, pr
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, mixedAccount)
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, unmixedAccount)
 	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
+	asset.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
 
 	return nil
 }
@@ -132,6 +134,7 @@ func (asset *Asset) ClearMixerConfig() {
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, -1)
 	asset.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, -1)
 	asset.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
+	asset.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 }
 
 func (asset *Asset) ReadyToMix(_ int) (bool, error) {

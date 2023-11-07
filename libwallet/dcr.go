@@ -43,6 +43,9 @@ func (mgr *AssetsManager) CreateNewDCRWallet(walletName, privatePassphrase strin
 		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
 
+	// Allow spending from the default account by default.
+	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
+
 	return wallet, nil
 }
 
@@ -59,6 +62,9 @@ func (mgr *AssetsManager) CreateNewDCRWatchOnlyWallet(walletName, extendedPublic
 	if mgr.db == nil && wallet != nil {
 		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
+
+	// Allow spending from the default account by default.
+	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 
 	return wallet, nil
 }
@@ -81,6 +87,9 @@ func (mgr *AssetsManager) RestoreDCRWallet(walletName, seedMnemonic, privatePass
 	if mgr.db == nil && wallet != nil {
 		mgr.setDBInterface(wallet.(sharedW.AssetsManagerDB))
 	}
+
+	// Allow spending from the default account by default.
+	wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 
 	return wallet, nil
 }

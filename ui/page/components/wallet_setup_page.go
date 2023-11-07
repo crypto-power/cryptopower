@@ -9,7 +9,6 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -455,7 +454,7 @@ func (pg *CreateWallet) HandleUserInteractions() {
 
 			switch *pg.assetTypeSelector.SelectedAssetType() {
 			case libutils.DCRWalletAsset:
-				wal, err := pg.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.CreateNewDCRWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)
 				if err != nil {
 					if err.Error() == libutils.ErrExist {
 						pg.walletName.SetError(values.StringF(values.StrWalletExist, pg.walletName.Editor.Text()))
@@ -466,15 +465,6 @@ func (pg *CreateWallet) HandleUserInteractions() {
 					pg.ParentWindow().ShowModal(errModal)
 					return
 				}
-
-				dcrUniqueImpl := wal.(*dcr.Asset)
-				err = dcrUniqueImpl.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), pg.passwordEditor.Editor.Text())
-				if err != nil {
-					errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
-					pg.ParentWindow().ShowModal(errModal)
-					return
-				}
-				wal.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			case libutils.BTCWalletAsset:
 				_, err := pg.AssetsManager.CreateNewBTCWallet(pg.walletName.Editor.Text(), pg.passwordEditor.Editor.Text(), sharedW.PassphraseTypePass)

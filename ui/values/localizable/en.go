@@ -550,6 +550,7 @@ const EN = `
 "setTreasuryPolicy" = "Set vote choice"
 "setUp" = "Set up"
 "setupMixerInfo" = "%v Two dedicated accounts %v mixed %v & %v unmixed %v will be created in order to use the mixer. %v This action cannot be undone.%v"
+"mixingNotSetUp" = "Set up mixing from the StakeShuffle tab in order to disable."
 "setUpNeededAccs" = "Set up needed accounts"
 "setUpPrivacy" = "Using StakeShuffle increases the privacy of your wallet transactions."
 "setUpStakeShuffle" = "Set up StakeShuffle"

@@ -214,7 +214,6 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			if err != nil {
 				return errfunc(err)
 			}
-			pg.dcrWallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			// rename mixed account
 			err = pg.dcrWallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))

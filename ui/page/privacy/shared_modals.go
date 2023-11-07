@@ -3,7 +3,6 @@ package privacy
 import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -76,7 +75,6 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 				pm.SetLoading(false)
 				return false
 			}
-			dcrWallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			if movefundsChecked {
 				err := moveFundsFromDefaultToUnmixed(conf, dcrWallet, password)

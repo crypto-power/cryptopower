@@ -660,6 +660,7 @@ const (
 	StrSetTreasuryPolicy               = "setTreasuryPolicy"
 	StrSetUp                           = "setUp"
 	StrSetupMixerInfo                  = "setupMixerInfo"
+	StrMixingNotSetUp                  = "mixingNotSetUp"
 	StrSetUpNeededAccs                 = "setUpNeededAccs"
 	StrSetUpPrivacy                    = "setUpPrivacy"
 	StrSetupStakeShuffle               = "setUpStakeShuffle"
