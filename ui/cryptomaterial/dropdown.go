@@ -16,18 +16,19 @@ const (
 var MaxWidth = unit.Dp(800)
 
 type DropDown struct {
-	theme          *Theme
-	items          []DropDownItem
-	isOpen         bool
-	backdrop       *widget.Clickable
-	Position       uint
-	revs           bool
-	selectedIndex  int
-	color          color.NRGBA
-	background     color.NRGBA
-	dropdownIcon   *widget.Icon
-	navigationIcon *widget.Icon
-	clickable      *Clickable
+	theme            *Theme
+	items            []DropDownItem
+	isOpen           bool
+	backdrop         *widget.Clickable
+	Position         uint
+	revs             bool
+	selectedIndex    int
+	preSelectedIndex int
+	color            color.NRGBA
+	background       color.NRGBA
+	dropdownIcon     *widget.Icon
+	navigationIcon   *widget.Icon
+	clickable        *Clickable
 
 	group               uint
 	closeAllDropdown    func(group uint)
@@ -50,17 +51,18 @@ type DropDownItem struct {
 // dropdown backdrop.
 func (t *Theme) DropDown(items []DropDownItem, group uint, pos uint) *DropDown {
 	d := &DropDown{
-		theme:          t,
-		isOpen:         false,
-		Position:       pos,
-		selectedIndex:  0,
-		items:          make([]DropDownItem, 0),
-		color:          t.Color.Gray2,
-		background:     t.Color.Surface,
-		dropdownIcon:   t.dropDownIcon,
-		navigationIcon: t.navigationCheckIcon,
-		clickable:      t.NewClickable(true),
-		backdrop:       new(widget.Clickable),
+		theme:            t,
+		isOpen:           false,
+		Position:         pos,
+		selectedIndex:    0,
+		preSelectedIndex: 0,
+		items:            make([]DropDownItem, 0),
+		color:            t.Color.Gray2,
+		background:       t.Color.Surface,
+		dropdownIcon:     t.dropDownIcon,
+		navigationIcon:   t.navigationCheckIcon,
+		clickable:        t.NewClickable(true),
+		backdrop:         new(widget.Clickable),
 
 		group:               group,
 		closeAllDropdown:    t.closeAllDropdownMenus,
@@ -90,6 +92,10 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
+func (d *DropDown) IsIndexChanged() bool {
+	return d.selectedIndex != d.preSelectedIndex
+}
+
 func (d *DropDown) SelectedIndex() int {
 	return d.selectedIndex
 }
@@ -103,6 +109,7 @@ func (d *DropDown) handleEvents() {
 		for i := range d.items {
 			index := i
 			for d.items[index].clickable.Clicked() {
+				d.preSelectedIndex = d.selectedIndex
 				d.selectedIndex = index
 				d.isOpen = false
 				break
@@ -124,6 +131,7 @@ func (d *DropDown) Changed() bool {
 		for i := range d.items {
 			index := i
 			for d.items[index].clickable.Clicked() {
+				d.preSelectedIndex = d.selectedIndex
 				d.selectedIndex = index
 				d.isOpen = false
 				return true

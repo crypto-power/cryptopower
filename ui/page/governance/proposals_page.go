@@ -98,12 +98,12 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 		{Text: values.String(values.StrApproved)},
 		{Text: values.String(values.StrRejected)},
 		{Text: values.String(values.StrAbandoned)},
-	}, values.ProposalDropdownGroup, 0)
+	}, values.ProposalDropdownGroup, 1)
 
 	pg.orderDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ProposalDropdownGroup, 1)
+	}, values.ProposalDropdownGroup, 0)
 
 	pg.initWalletSelector()
 
@@ -310,11 +310,11 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						}),
 						layout.Expanded(func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								return pg.statusDropDown.Layout(gtx, 10, true)
+								return pg.orderDropDown.Layout(gtx, pg.orderDropDown.Width+30, true)
 							})
 						}),
 						layout.Expanded(func(gtx C) D {
-							return pg.orderDropDown.Layout(gtx, pg.orderDropDown.Width+30, true)
+							return pg.statusDropDown.Layout(gtx, 10, true)
 						}),
 					)
 				})
@@ -411,7 +411,8 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
 	return layout.Inset{Left: values.MarginPadding24,
 		Top:   values.MarginPadding16,
-		Right: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+		Right: values.MarginPadding24,
+	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
