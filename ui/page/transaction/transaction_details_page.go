@@ -124,7 +124,6 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
 	}
 
-	pg.wallet = pg.WL.AssetsManager.WalletWithID(transaction.WalletID)
 	pg.backButton, _ = components.SubpageHeaderButtons(pg.Load)
 
 	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
@@ -250,7 +249,11 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 	}
 
 	pg.getTXSourceAccountAndDirection()
+<<<<<<< HEAD
 	pg.txnWidgets = pg.initTxnWidgets()
+=======
+	pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
+>>>>>>> 03851b24 (pr rebase)
 }
 
 func (pg *TxDetailsPage) getMoreItem() []moreItem {
@@ -293,7 +296,11 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 				}
 				pg.transaction = pg.txBackStack
 				pg.getTXSourceAccountAndDirection()
+<<<<<<< HEAD
 				pg.txnWidgets = pg.initTxnWidgets()
+=======
+				pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
+>>>>>>> 03851b24 (pr rebase)
 				pg.txBackStack = nil
 				pg.ParentWindow().Reload()
 			},
@@ -942,7 +949,11 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
 			pg.getTXSourceAccountAndDirection()
+<<<<<<< HEAD
 			pg.txnWidgets = pg.initTxnWidgets()
+=======
+			pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
+>>>>>>> 03851b24 (pr rebase)
 			pg.ParentWindow().Reload()
 		}
 	}

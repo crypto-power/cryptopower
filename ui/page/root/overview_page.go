@@ -833,11 +833,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 								tx, wal := pg.txAndWallet(pg.transactions[index])
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-<<<<<<< HEAD
 										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
-=======
-										return components.LayoutTransactionRow(gtx, pg.Load, row, false)
->>>>>>> 46daad8f (remove asset name)
 									}),
 									layout.Rigid(func(gtx C) D {
 										// No divider for last row
@@ -870,11 +866,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							tx, wal := pg.txAndWallet(pg.stakes[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-<<<<<<< HEAD
 									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
-=======
-									return components.LayoutTransactionRow(gtx, pg.Load, row, false)
->>>>>>> 46daad8f (remove asset name)
 								}),
 								layout.Rigid(func(gtx C) D {
 									// No divider for last row
