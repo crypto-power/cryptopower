@@ -1313,11 +1313,8 @@ func (pg *CreateOrderPage) listenForNotifications() {
 	if err != nil {
 		log.Errorf("CreateOrderPage.listenForNotifications error: %v", err)
 	}
-
-	// TODO: add rate listener.
 }
 
 func (pg *CreateOrderPage) stopNtfnListeners() {
 	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
-	// TODO: remove rate listener.
 }

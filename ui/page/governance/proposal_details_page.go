@@ -201,7 +201,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedFrom() {
-	pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
+	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalDetailsPageID)
 }
 
 // - Layout

@@ -111,7 +111,9 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 
 	if mp.CurrentPage() == nil {
-		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page?
+		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page? YES!
+	} else {
+		mp.CurrentPage().OnNavigatedTo()
 	}
 
 	mp.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
@@ -124,8 +126,6 @@ func (mp *MainPage) OnNavigatedTo() {
 			go mp.WL.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
 		}
 	}
-
-	mp.CurrentPage().OnNavigatedTo()
 }
 
 // initTabOptions initializes the page navigation tabs
@@ -664,7 +664,7 @@ func (mp *MainPage) listenForNotifications() {
 func (mp *MainPage) stopNtfnListeners() {
 	mp.selectedWallet.RemoveSyncProgressListener(MainPageID)
 	mp.selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
-	mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
+	mp.WL.AssetsManager.Politeia.RemoveSyncCallback(MainPageID)
 }
 
 func (mp *MainPage) showBackupInfo() {

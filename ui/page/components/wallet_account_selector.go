@@ -339,28 +339,28 @@ func (ws *WalletAndAccountSelector) ListenForTxNotifications(window app.WindowNa
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(transaction *sharedW.Transaction) {
 			// refresh wallets/Accounts list when new transaction is received
-			if ws.selectorModal != nil {
-				if ws.accountSelector {
-					ws.selectorModal.setupAccounts(ws.selectedWallet)
-				} else {
-					ws.selectorModal.setupWallet()
-				}
-				window.Reload()
+			if ws.selectorModal == nil {
+				return
 			}
+			if ws.accountSelector {
+				ws.selectorModal.setupAccounts(ws.selectedWallet)
+			} else {
+				ws.selectorModal.setupWallet()
+			}
+			window.Reload()
 		},
 		OnBlockAttached: func(walletID int, blockHeight int32) {
 			// refresh wallet and account balance on every new block
 			// only if sync is completed.
-			if ws.selectedWallet.IsSynced() {
-				if ws.selectorModal != nil {
-					if ws.accountSelector {
-						ws.selectorModal.setupAccounts(ws.selectedWallet)
-					} else {
-						ws.selectorModal.setupWallet()
-					}
-					window.Reload()
-				}
+			if !ws.selectedWallet.IsSynced() || ws.selectorModal == nil {
+				return
 			}
+			if ws.accountSelector {
+				ws.selectorModal.setupAccounts(ws.selectedWallet)
+			} else {
+				ws.selectorModal.setupWallet()
+			}
+			window.Reload()
 		},
 	}
 	err := ws.selectedWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, WalletAndAccountSelectorID)

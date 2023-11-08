@@ -210,7 +210,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) OnNavigatedFrom() {
-	pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
+	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalsPageID)
 }
 
 // Layout draws the page UI components into the provided layout context

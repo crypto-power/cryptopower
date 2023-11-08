@@ -588,7 +588,7 @@ func (p *Politeia) AddSyncCallback(syncCallback proposalSyncCallback, uniqueIden
 	return nil
 }
 
-func (p *Politeia) RemoveNotificationListener(uniqueIdentifier string) {
+func (p *Politeia) RemoveSyncCallback(uniqueIdentifier string) {
 	p.syncCallbacksMtx.Lock()
 	defer p.syncCallbacksMtx.Unlock()
 
