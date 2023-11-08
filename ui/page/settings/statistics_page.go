@@ -49,7 +49,7 @@ func NewStatPage(l *load.Load) *StatPage {
 		scrollbarList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		netType: l.WL.Wallet.Net.Display(),
+		netType: l.WL.AssetsManager.NetType().Display(),
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -212,7 +212,7 @@ func (pg *StatPage) appStartTime() {
 		m := (v - h*3600) / 60
 		s := v - h*3600 - m*60
 		return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
-	}(pg.WL.Wallet.StartupTime())
+	}(pg.Load.StartupTime())
 }
 
 // HandleUserInteractions is called just before Layout() to determine

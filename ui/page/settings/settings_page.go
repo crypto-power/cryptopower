@@ -15,7 +15,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/preference"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const SettingPageID = "Settings"
@@ -40,7 +39,6 @@ type SettingPage struct {
 	*app.GenericPageModal
 
 	pageContainer *widget.List
-	wal           *wallet.Wallet
 
 	changeStartupPass       *cryptomaterial.Clickable
 	language                *cryptomaterial.Clickable
@@ -73,7 +71,6 @@ func NewSettingsPage(l *load.Load) *SettingPage {
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		wal: l.WL.Wallet,
 
 		startupPassword:         l.Theme.Switch(),
 		transactionNotification: l.Theme.Switch(),
@@ -498,7 +495,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 	}
 
 	if pg.viewLog.Clicked() {
-		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.Wallet.LogFile(), values.String(values.StrAppLog)))
+		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.AssetsManager.LogFile(), values.String(values.StrAppLog)))
 	}
 
 	for pg.changeStartupPass.Clicked() {
@@ -513,7 +510,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 					pm.SetLoading(false)
 					return false
 				}
-				err := pg.wal.GetAssetsManager().VerifyStartupPassphrase(password)
+				err := pg.WL.AssetsManager.VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -533,7 +530,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 							m.SetLoading(false)
 							return false
 						}
-						err := pg.wal.GetAssetsManager().ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
+						err := pg.WL.AssetsManager.ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -564,7 +561,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 						m.SetLoading(false)
 						return false
 					}
-					err := pg.wal.GetAssetsManager().SetStartupPassphrase(password, sharedW.PassphraseTypePass)
+					err := pg.WL.AssetsManager.SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -587,7 +584,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.wal.GetAssetsManager().RemoveStartupPassphrase(password)
+					err := pg.WL.AssetsManager.RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)

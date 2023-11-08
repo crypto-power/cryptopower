@@ -25,6 +25,8 @@ type BTCUSDTBittrex struct {
 }
 
 type Load struct {
+	*AppInfo
+
 	Theme *cryptomaterial.Theme
 
 	WL              *WalletLoad

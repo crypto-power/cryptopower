@@ -77,7 +77,7 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 // initLogRotator.
 var (
 	// dcrLogger, btcLogger, mainLogger indentifies the respective loggers.
-	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", "cryptopower.log"
+	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", libwallet.LogFilename
 	ltcLogger                        = "ltc.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
 	// The backend must not be used before the log rotator has been initialized,
