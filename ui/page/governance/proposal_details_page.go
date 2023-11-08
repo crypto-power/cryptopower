@@ -129,6 +129,9 @@ func (pg *ProposalDetails) initWalletSelector() {
 		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
 	}
 
+	pg.sourceWalletSelector.SetLeftAlignment(true)
+	pg.sourceWalletSelector.SetBorder(false)
+
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet.Asset
 		//TODO: implement when selected wallet
