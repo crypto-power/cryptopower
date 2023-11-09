@@ -105,11 +105,8 @@ func (pg *ConsensusPage) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
-	pg.sourceWalletSelector.SetHideBalance(true)
-	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
-	}
 
+	pg.sourceWalletSelector.SetHideBalance(true)
 	pg.sourceWalletSelector.SetLeftAlignment(true)
 	pg.sourceWalletSelector.SetBorder(false)
 

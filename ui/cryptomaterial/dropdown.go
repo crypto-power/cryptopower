@@ -55,7 +55,7 @@ func (t *Theme) DropDown(items []DropDownItem, group uint, pos uint) *DropDown {
 		isOpen:           false,
 		Position:         pos,
 		selectedIndex:    0,
-		preSelectedIndex: 0,
+		preSelectedIndex: -1,
 		items:            make([]DropDownItem, 0),
 		color:            t.Color.Gray2,
 		background:       t.Color.Surface,
