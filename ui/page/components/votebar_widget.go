@@ -12,7 +12,6 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -217,7 +216,7 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 	}
 }
 
-func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
+func (v *VoteBar) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {

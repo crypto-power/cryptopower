@@ -272,7 +272,7 @@ func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 		SetProposalDetails(proposal.NumComments, proposal.PublishedAt, proposal.Token).
 		SetBottomLayout(pg.sumaryInfo).
 		SetDisableInfoTitle(true).
-		Layout(pg.ParentWindow(), gtx)
+		Layout(gtx)
 }
 
 func (pg *ProposalDetails) sumaryInfo(gtx C) D {

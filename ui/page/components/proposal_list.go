@@ -183,7 +183,7 @@ func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem
 		SetYesNoVoteParams(yes, no).
 		SetVoteValidityParams(eligibleTickets, quorumPercent, passPercentage).
 		SetProposalDetails(proposal.NumComments, proposal.PublishedAt, proposal.Token).
-		Layout(window, gtx)
+		Layout(gtx)
 }
 
 func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D {
