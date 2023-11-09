@@ -243,7 +243,7 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.UniformInset(values.MarginPadding26).Layout(gtx, body)
+			return layout.UniformInset(values.MarginPadding24).Layout(gtx, body)
 		})
 	})
 }

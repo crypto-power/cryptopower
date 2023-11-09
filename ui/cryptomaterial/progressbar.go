@@ -235,6 +235,20 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, labelWdg layout.Widget) D {
 	)
 }
 
+func (mp *MultiLayerProgressBar) Layout2(gtx C, labelWdg layout.Widget) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if mp.ShowLedger {
+				return labelWdg(gtx)
+			}
+			return D{}
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
+		}),
+	)
+}
+
 func (t *Theme) ProgressBarCirle(progress int) ProgressCircleStyle {
 	return ProgressCircleStyle{ProgressCircleStyle: material.ProgressCircle(t.Base, float32(progress)/100)}
 }
