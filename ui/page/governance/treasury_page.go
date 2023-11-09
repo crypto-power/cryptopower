@@ -167,6 +167,12 @@ func (pg *TreasuryPage) FetchPolicies() {
 	pg.ParentWindow().Reload()
 }
 
+func (pg *TreasuryPage) lineSeparator(inset layout.Inset) layout.Widget {
+	return func(gtx C) D {
+		return inset.Layout(gtx, pg.Theme.Separator().Layout)
+	}
+}
+
 func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
@@ -187,26 +193,49 @@ func (pg *TreasuryPage) layout(gtx C) D {
 	if pg.selectedWallet == nil {
 		return pg.decredWalletRequired(gtx)
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.Inset{
+			Left:  values.MarginPadding24,
+			Top:   values.MarginPadding16,
+			Right: values.MarginPadding24,
+		}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrTreasurySpending)).Layout),
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrTreasurySpending)).Layout),
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+								}),
+							)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, pg.layoutVerifyGovernanceKeys)
 						}),
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.layoutVerifyGovernanceKeys)
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return layout.Stack{}.Layout(gtx,
+							layout.Expanded(func(gtx C) D {
+								return layout.Inset{
+									Top: values.MarginPadding60,
+								}.Layout(gtx, pg.layoutContent)
+							}),
+							layout.Expanded(func(gtx C) D {
+								return layout.W.Layout(gtx, func(gtx C) D {
+									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
+									return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+								})
+							}),
+							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.MarginPadding55})),
+						)
+					})
 				}),
 			)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.layoutContent)
-		}),
-	)
+		})
+	})
 }
 
 func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
@@ -248,13 +277,9 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 							Layout(gtx,
 								layout.Rigid(pg.layoutPiKey),
 								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-										gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding350)
-										return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+									return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+										return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
 									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
 								}),
 							)
 					})
@@ -269,12 +294,11 @@ func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 	if pg.WL.AssetsManager.IsDarkModeOn() {
 		backgroundColor = pg.Theme.Color.Background
 	}
-
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize20, values.String(values.StrPiKey))
+		layout.Rigid(func(gtx C) D {
+			lbl := pg.Theme.Label(values.TextSize18, values.String(values.StrPiKey))
 			lbl.Font.Weight = font.SemiBold
-			return lbl.Layout(gtx)
+			return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, lbl.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -325,6 +349,9 @@ func (pg *TreasuryPage) initWalletSelector() {
 	// Source wallet picker
 	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
+
+	pg.sourceWalletSelector.SetLeftAlignment(true)
+	pg.sourceWalletSelector.SetBorder(false)
 	if pg.sourceWalletSelector.SelectedWallet() != nil {
 		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
 	}
