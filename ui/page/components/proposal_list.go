@@ -7,7 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
-	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -21,7 +20,7 @@ type ProposalItem struct {
 	voteBar      *VoteBar
 }
 
-func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *ProposalItem) D {
+func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 		proposal := prop.Proposal
@@ -36,7 +35,7 @@ func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *Propos
 				if proposal.Category == libwallet.ProposalCategoryActive ||
 					proposal.Category == libwallet.ProposalCategoryApproved ||
 					proposal.Category == libwallet.ProposalCategoryRejected {
-					return layoutProposalVoteBar(window, gtx, prop)
+					return layoutProposalVoteBar(gtx, prop)
 				}
 				return D{}
 			}),
@@ -171,7 +170,7 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 	)
 }
 
-func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem) D {
+func layoutProposalVoteBar(gtx C, item *ProposalItem) D {
 	proposal := item.Proposal
 	yes := float32(proposal.YesVotes)
 	no := float32(proposal.NoVotes)
