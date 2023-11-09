@@ -369,19 +369,19 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.dcr))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.dcr))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.btc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.btc))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.ltc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.ltc))
 	}
 
 	return pg.assetBalanceSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layout.Widget {
+func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem) layout.Widget {
 	return func(gtx C) D {
 		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			return layout.Stack{}.Layout(gtx,

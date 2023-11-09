@@ -154,11 +154,11 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.BtcWatchOnly = NewImage(decredIcons["logo_btc_watch_only"])
 	i.LtcWatchOnly = NewImage(decredIcons["logo_ltc_watch_only"])
 
-	i.DCRBackground = NewImage(decredIcons["dcrBkgImage"])
+	i.DCRBackground = NewImage(decredIcons["dcr_bg_image"])
 	i.DCRGroupIcon = NewImage(decredIcons["dcrGroupImage"])
-	i.LTCBackground = NewImage(decredIcons["ltBkgImage"])
+	i.LTCBackground = NewImage(decredIcons["ltc_bg_image"])
 	i.LTCGroupIcon = NewImage(decredIcons["ltGroupImage"])
-	i.BTCBackground = NewImage(decredIcons["btcBkgImage"])
+	i.BTCBackground = NewImage(decredIcons["btc_bg_image"])
 	i.BTCGroupIcon = NewImage(decredIcons["btcGroupIcon"])
 	/* End - Asset types Icons */
 

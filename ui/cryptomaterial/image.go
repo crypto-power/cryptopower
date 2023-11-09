@@ -104,10 +104,7 @@ func (img *Image) LayoutSizeWithRadius(gtx C, width, height unit.Dp, radius int)
 	m := op.Record(gtx.Ops)
 	dims := img.LayoutSize2(gtx, width, height)
 	call := m.Stop()
-	defer clip.RRect{
-		Rect: image.Rectangle{Max: image.Point{X: gtx.Dp(width), Y: gtx.Dp(height)}},
-		NE:   radius, NW: radius, SE: radius, SW: radius,
-	}.Push(gtx.Ops).Pop()
+	defer clip.UniformRRect(image.Rectangle{Max: image.Point{X: gtx.Dp(width), Y: gtx.Dp(height)}}, radius).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 	return dims
 }
