@@ -1,8 +1,6 @@
 package privacy
 
 import (
-	"context"
-
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -12,7 +10,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
-	"github.com/crypto-power/cryptopower/ui/renderers"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -26,15 +23,14 @@ type ManualMixerSetupPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
-
 	mixedAccountSelector   *components.WalletAndAccountSelector
 	unmixedAccountSelector *components.WalletAndAccountSelector
 
 	backButton     cryptomaterial.IconButton
 	infoButton     cryptomaterial.IconButton
+	backClickable  *cryptomaterial.Clickable
 	toPrivacySetup cryptomaterial.Button
+	backIcon       *cryptomaterial.Icon
 
 	dcrWallet *dcr.Asset
 }
@@ -46,6 +42,9 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUp)),
 		dcrWallet:        dcrWallet,
 	}
+	pg.backClickable = pg.Theme.NewClickable(true)
+	pg.backIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationArrowBack)
+	pg.backIcon.Color = pg.Theme.Color.Gray1
 
 	// Mixed account picker
 	pg.mixedAccountSelector = components.NewWalletAndAccountSelector(l).
@@ -105,8 +104,6 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
 	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
 }
@@ -114,69 +111,109 @@ func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *ManualMixerSetupPage) Layout(gtx layout.Context) layout.Dimensions {
-	body := func(gtx C) D {
-		page := components.SubPage{
-			Load:       pg.Load,
-			Title:      values.String(values.StrManualSetUp),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+func (pg *ManualMixerSetupPage) Layout(gtx C) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+						gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding50)
+						return pg.backClickable.Layout(gtx, pg.backLayout)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-						layout.Flexed(1, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return pg.mixerAccountSections(gtx, values.String(values.StrMixedAccount), func(gtx layout.Context) layout.Dimensions {
-										return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPaddingMinus15}.Layout(gtx, func(gtx C) D {
-										return pg.mixerAccountSections(gtx, values.String(values.StrUnmixedAccount), func(gtx layout.Context) layout.Dimensions {
-											return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
-										})
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding10, Left: values.MarginPadding16, Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{
-											Axis: layout.Horizontal,
-										}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												return pg.Theme.Icons.ActionInfo.Layout(gtx, pg.Theme.Color.Gray1)
-											}),
-											layout.Rigid(func(gtx C) D {
-												txt := `<span style="text-color: grayText2">
-											<b>Make sure to select the same accounts from the previous privacy setup. </b><br>Failing to do so could compromise wallet privacy.<br> You may not select the same account for mixed and unmixed.
-										</span>`
-												return layout.Inset{
-													Left: values.MarginPadding8,
-												}.Layout(gtx, renderers.RenderHTML(txt, pg.Theme).Layout)
-											}),
-										)
-									})
-								}),
-							)
+						layout.Rigid(func(gtx C) D {
+							return pg.mixerAccountSections(gtx, values.String(values.StrMixedAccount), func(gtx C) D {
+								return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
+							})
 						}),
 						layout.Rigid(func(gtx C) D {
-							gtx.Constraints.Min.X = gtx.Constraints.Max.X
-							return layout.UniformInset(values.MarginPadding15).Layout(gtx, pg.toPrivacySetup.Layout)
+							return layout.Inset{Top: values.MarginPaddingMinus15}.Layout(gtx, func(gtx C) D {
+								return pg.mixerAccountSections(gtx, values.String(values.StrUnmixedAccount), func(gtx C) D {
+									return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
+								})
+							})
 						}),
+						layout.Rigid(layout.Spacer{Height: values.MarginPadding15}.Layout),
+						layout.Rigid(pg.cautionCard),
+						layout.Rigid(layout.Spacer{Height: values.MarginPadding15}.Layout),
 					)
-				})
-			},
-		}
-		return page.Layout(pg.ParentWindow(), gtx)
-	}
-
-	return cryptomaterial.UniformPadding(gtx, body)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.UniformInset(values.MarginPadding15).Layout(gtx, pg.toPrivacySetup.Layout)
+				}),
+			)
+		})
+	})
 }
 
-func (pg *ManualMixerSetupPage) mixerAccountSections(gtx layout.Context, title string, body layout.Widget) layout.Dimensions {
+func (pg *ManualMixerSetupPage) cautionCard(gtx C) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Inset{
+		Left:  values.MarginPadding15,
+		Right: values.MarginPadding15,
+	}.Layout(gtx, func(gtx C) D {
+		card := pg.Theme.Card()
+		card.Color = pg.Theme.Color.Gray4
+		return card.Layout(gtx, func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding100)
+			gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
+			return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Start}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding40)
+						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return pg.Theme.Icons.ActionInfo.Layout(gtx, pg.Theme.Color.Gray1)
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Left: values.MarginPadding10,
+						}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleWarningTitle))
+									return label.Layout(gtx)
+								}),
+								layout.Rigid(func(gtx C) D {
+									label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleWarningDesc))
+									return label.Layout(gtx)
+								}),
+							)
+						})
+					}),
+				)
+			})
+		})
+	})
+}
+
+func (pg *ManualMixerSetupPage) backLayout(gtx C) D {
+	return layout.Inset{Right: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+		// Setting a minimum Y larger than the label allows it to be centered.
+		gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding50)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Left:  values.MarginPadding15,
+					Right: values.MarginPadding15,
+				}.Layout(gtx, func(gtx C) D {
+					return pg.backIcon.Layout(gtx, values.MarginPadding30)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Center.Layout(gtx, func(gtx C) D {
+					return pg.Theme.H6(values.String(values.StrSetUpStakeShuffleManualTitle)).Layout(gtx)
+				})
+			}),
+		)
+	})
+}
+
+func (pg *ManualMixerSetupPage) mixerAccountSections(gtx C, title string, body layout.Widget) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -242,21 +279,34 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) HandleUserInteractions() {
+	if pg.backClickable.Clicked() {
+		pg.ParentNavigator().CloseCurrentPage()
+	}
+
 	if pg.toPrivacySetup.Clicked() {
 		go pg.showModalSetupMixerAcct()
 	}
+	enableToPriv := func() {
+		mixed, unmixed := pg.mixedAccountSelector.SelectedAccount(), pg.unmixedAccountSelector.SelectedAccount()
+		if mixed == nil || unmixed == nil {
+			pg.toPrivacySetup.SetEnabled(false)
+			return
+		}
 
-	if pg.mixedAccountSelector.SelectedAccount().Number == pg.unmixedAccountSelector.SelectedAccount().Number {
-		pg.toPrivacySetup.SetEnabled(false)
-	} else {
+		if mixed.Number == unmixed.Number {
+			pg.toPrivacySetup.SetEnabled(false)
+			return
+		}
+
+		// Disable set up button if either mixed or unmixed account is the default account.
+		if mixed.Number == dcr.DefaultAccountNum ||
+			unmixed.Number == dcr.DefaultAccountNum {
+			pg.toPrivacySetup.SetEnabled(false)
+			return
+		}
 		pg.toPrivacySetup.SetEnabled(true)
 	}
-
-	// Disable set up button if either mixed or unmixed account is the default account.
-	if pg.mixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum ||
-		pg.unmixedAccountSelector.SelectedAccount().Number == dcr.DefaultAccountNum {
-		pg.toPrivacySetup.SetEnabled(false)
-	}
+	enableToPriv()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -266,6 +316,4 @@ func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *ManualMixerSetupPage) OnNavigatedFrom() {
-	pg.ctxCancel()
-}
+func (pg *ManualMixerSetupPage) OnNavigatedFrom() {}

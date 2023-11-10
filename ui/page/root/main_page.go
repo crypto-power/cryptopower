@@ -419,7 +419,8 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 							}
 							switch swmp.CurrentPage().ID() {
 							case ReceivePageID, send.SendPageID, staking.OverviewPageID,
-								transaction.TransactionsPageID, privacy.AccountMixerPageID:
+								transaction.TransactionsPageID, privacy.AccountMixerPageID,
+								privacy.SetupPrivacyPageID:
 								// Disable page functionality if a page is not synced or rescanning is in progress.
 								if !swmp.selectedWallet.IsSynced() || swmp.selectedWallet.IsRescanning() {
 									return components.DisablePageWithOverlay(swmp.Load, swmp.CurrentPage(), gtx,
