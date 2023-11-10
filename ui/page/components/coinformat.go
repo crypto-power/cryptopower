@@ -131,7 +131,7 @@ func LayoutBalanceWithUnitSize(gtx layout.Context, l *load.Load, amount string, 
 }
 
 func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
-	return formatBalance(gtx, l, amount, values.TextSize16, defaultScale, l.Theme.Color.Text, false)
+	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.Text, false)
 }
 
 func LayoutBalanceBold(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
