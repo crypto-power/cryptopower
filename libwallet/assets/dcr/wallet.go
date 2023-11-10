@@ -35,11 +35,11 @@ type Asset struct {
 	vspMu        sync.RWMutex
 	vsps         []*VSP
 
-	notificationListenersMu          sync.RWMutex
-	syncData                         *SyncData
-	accountMixerNotificationListener map[string]AccountMixerNotificationListener
-	txAndBlockNotificationListeners  map[string]sharedW.TxAndBlockNotificationListener
-	blocksRescanProgressListener     sharedW.BlocksRescanProgressListener
+	notificationListenersMu           sync.RWMutex
+	syncData                          *SyncData
+	accountMixerNotificationListeners map[string]*AccountMixerNotificationListener
+	txAndBlockNotificationListeners   map[string]*sharedW.TxAndBlockNotificationListener
+	blocksRescanProgressListener      *sharedW.BlocksRescanProgressListener
 }
 
 // Verify that DCR implements the shared assets interface.
@@ -116,11 +116,11 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
-		vspClients:                       make(map[string]*vsp.Client),
+		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
+		vspClients:                        make(map[string]*vsp.Client),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -153,10 +153,10 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
+		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -187,11 +187,11 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		vspClients:                       make(map[string]*vsp.Client),
-		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
+		vspClients:                        make(map[string]*vsp.Client),
+		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 	}
 
 	dcrWallet.SetNetworkCancelCallback(dcrWallet.SafelyCancelSync)
@@ -218,10 +218,10 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		vspClients:  make(map[string]*vsp.Client),
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners:  make(map[string]sharedW.TxAndBlockNotificationListener),
-		accountMixerNotificationListener: make(map[string]AccountMixerNotificationListener),
+		txAndBlockNotificationListeners:   make(map[string]*sharedW.TxAndBlockNotificationListener),
+		accountMixerNotificationListeners: make(map[string]*AccountMixerNotificationListener),
 	}
 
 	err = dcrWallet.Prepare(ldr, params)

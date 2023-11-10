@@ -1,5 +1,7 @@
 package politeia
 
+import "github.com/crypto-power/cryptopower/libwallet/utils"
+
 type Proposal struct {
 	ID               int    `storm:"id,increment"`
 	Token            string `json:"token" storm:"unique"`
@@ -50,9 +52,4 @@ type ProposalVote struct {
 	Bit    string
 }
 
-type ProposalNotificationListener interface {
-	OnProposalsSynced()
-	OnNewProposal(proposal interface{})
-	OnProposalVoteStarted(proposal interface{})
-	OnProposalVoteFinished(proposal interface{})
-}
+type proposalSyncCallback func(propName string, status utils.ProposalStatus)

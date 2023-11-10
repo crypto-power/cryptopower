@@ -1,7 +1,6 @@
 package components
 
 import (
-	"context"
 	"errors"
 
 	"gioui.org/font"
@@ -15,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/renderers"
@@ -25,7 +23,6 @@ import (
 const WalletAndAccountSelectorID = "WalletAndAccountSelector"
 
 type WalletAndAccountSelector struct {
-	*listeners.TxAndBlockNotificationListener
 	openSelectorDialog *cryptomaterial.Clickable
 	*selectorModal
 
@@ -334,56 +331,46 @@ func (ws *WalletAndAccountSelector) setWalletLogo(gtx C) D {
 	return inset.Layout(gtx, walletIcon.Layout24dp)
 }
 
-func (ws *WalletAndAccountSelector) ListenForTxNotifications(ctx context.Context, window app.WindowNavigator) {
-	if ws.TxAndBlockNotificationListener != nil {
-		return
-	}
-
-	ws.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := ws.selectedWallet.AddTxAndBlockNotificationListener(ws.TxAndBlockNotificationListener, true, WalletAndAccountSelectorID)
-	if err != nil {
-		log.Errorf("Error adding tx and block notification listener: %v", err)
-		return
-	}
-
-	go func() {
-		for {
-			select {
-			case n := <-ws.TxAndBlockNotifChan():
-				switch n.Type {
-				case listeners.BlockAttached:
-					// refresh wallet and account balance on every new block
-					// only if sync is completed.
-					if ws.selectedWallet.IsSynced() {
-						if ws.selectorModal != nil {
-							if ws.accountSelector {
-								ws.selectorModal.setupAccounts(ws.selectedWallet)
-							} else {
-								ws.selectorModal.setupWallet()
-							}
-							window.Reload()
-						}
-					}
-				case listeners.NewTransaction:
-					// refresh wallets/Accounts list when new transaction is received
-					if ws.selectorModal != nil {
-						if ws.accountSelector {
-							ws.selectorModal.setupAccounts(ws.selectedWallet)
-						} else {
-							ws.selectorModal.setupWallet()
-						}
-						window.Reload()
-					}
-
-				}
-			case <-ctx.Done():
-				ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
-				ws.CloseTxAndBlockChan()
-				ws.TxAndBlockNotificationListener = nil
+// ListenForTxNotifications listens for transaction and block updates and
+// updates the selector modal, if the modal is open at the time of the update.
+// The tx update listener MUST be unregistered using ws.StopTxNtfnListener()
+// when the page using this WalletAndAccountSelector widget is exited.
+func (ws *WalletAndAccountSelector) ListenForTxNotifications(window app.WindowNavigator) {
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			// refresh wallets/Accounts list when new transaction is received
+			if ws.selectorModal == nil {
 				return
 			}
-		}
-	}()
+			if ws.accountSelector {
+				ws.selectorModal.setupAccounts(ws.selectedWallet)
+			} else {
+				ws.selectorModal.setupWallet()
+			}
+			window.Reload()
+		},
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			// refresh wallet and account balance on every new block
+			// only if sync is completed.
+			if !ws.selectedWallet.IsSynced() || ws.selectorModal == nil {
+				return
+			}
+			if ws.accountSelector {
+				ws.selectorModal.setupAccounts(ws.selectedWallet)
+			} else {
+				ws.selectorModal.setupWallet()
+			}
+			window.Reload()
+		},
+	}
+	err := ws.selectedWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, WalletAndAccountSelectorID)
+	if err != nil {
+		log.Errorf("WalletAndAccountSelector.ListenForTxNotifications error: %v", err)
+	}
+}
+
+func (ws *WalletAndAccountSelector) StopTxNtfnListener() {
+	ws.selectedWallet.RemoveTxAndBlockNotificationListener(WalletAndAccountSelectorID)
 }
 
 // SelectorItem models a wallet or an account along with it's clickable.

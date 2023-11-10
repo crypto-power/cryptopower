@@ -1,19 +1,15 @@
 package exchange
 
 import (
-	"context"
-
 	"gioui.org/layout"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 
 	api "github.com/crypto-power/instantswap/instantswap"
 )
@@ -27,11 +23,6 @@ type OrderHistoryPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	*listeners.OrderNotificationListener
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	scroll         *components.Scroll[*instantswap.Order]
 	previousStatus api.Status
@@ -81,16 +72,12 @@ func (pg *OrderHistoryPage) ID() string {
 }
 
 func (pg *OrderHistoryPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
-	pg.listenForSyncNotifications()
+	pg.listenForSyncNotifications() // listener stopped in OnNavigatedFrom().
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
 func (pg *OrderHistoryPage) OnNavigatedFrom() {
-	if pg.ctxCancel != nil {
-		pg.ctxCancel()
-	}
+	pg.stopSyncNtfnListener()
 }
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
@@ -104,7 +91,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync(pg.ctx)
+		go pg.WL.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 }
 
@@ -291,31 +278,19 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 }
 
 func (pg *OrderHistoryPage) listenForSyncNotifications() {
-	if pg.OrderNotificationListener != nil {
-		return
+	orderNotificationListener := &instantswap.OrderNotificationListener{
+		OnExchangeOrdersSynced: func() {
+			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.ParentWindow().Reload()
+		},
 	}
-	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
-	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, OrderHistoryPageID)
+	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, OrderHistoryPageID)
 	if err != nil {
 		log.Errorf("Error adding instanswap notification listener: %v", err)
 		return
 	}
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.OrderNotifChan:
-				if n.OrderStatus == wallet.OrderStatusSynced {
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
-				close(pg.OrderNotifChan)
-				pg.OrderNotificationListener = nil
-
-				return
-			}
-		}
-	}()
+func (pg *OrderHistoryPage) stopSyncNtfnListener() {
+	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
 }

@@ -49,10 +49,10 @@ func (es Server) CapFirstLetter() string {
 }
 
 type InstantSwap struct {
-	db *storm.DB
+	db  *storm.DB
+	ctx context.Context
 
-	mu         *sync.RWMutex // Pointer required to avoid copying literal values.
-	ctx        context.Context
+	syncMu     sync.RWMutex
 	cancelSync context.CancelFunc
 
 	SchedulerCtx           context.Context
@@ -61,14 +61,14 @@ type InstantSwap struct {
 	SchedulerStartTime     time.Time
 
 	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
-	notificationListeners   map[string]OrderNotificationListener
+	notificationListeners   map[string]*OrderNotificationListener
 }
 
-type OrderNotificationListener interface {
-	OnExchangeOrdersSynced()
-	OnOrderCreated(order *Order)
-	OnOrderSchedulerStarted()
-	OnOrderSchedulerEnded()
+type OrderNotificationListener struct {
+	OnExchangeOrdersSynced  func()
+	OnOrderCreated          func(order *Order)
+	OnOrderSchedulerStarted func()
+	OnOrderSchedulerEnded   func()
 }
 
 type Order struct {

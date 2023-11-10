@@ -734,10 +734,8 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 					}
 
 					if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
-						err := hp.WL.AssetsManager.InstantSwap.Sync(hp.ctx)
-						if err != nil {
-							log.Errorf("Error syncing instant swap: %v", err)
-						}
+						hp.WL.AssetsManager.InstantSwap.StopSync() // in case it was syncing before losing network connection
+						hp.WL.AssetsManager.InstantSwap.Sync()
 					}
 
 					// Trigger UI update

@@ -263,13 +263,15 @@ func (pg *WalletInfo) progressStatusDetails() (int, string) {
 	pgrss := pg.fetchSyncProgress()
 	timeLeft := pgrss.remainingSyncTime
 	progress := pgrss.syncProgress
-	rescanUpdate := pg.rescanUpdate
-	if rescanUpdate != nil && rescanUpdate.ProgressReport != nil {
-		progress = int(rescanUpdate.ProgressReport.RescanProgress)
-		timeLeft = components.TimeFormat(int(rescanUpdate.ProgressReport.RescanTimeRemaining), true)
+
+	wallet := pg.WL.SelectedWallet.Wallet
+	walletIsRescanning := wallet.IsRescanning()
+	if walletIsRescanning && pg.rescanUpdate != nil {
+		progress = int(pg.rescanUpdate.RescanProgress)
+		timeLeft = components.TimeFormat(int(pg.rescanUpdate.RescanTimeRemaining), true)
 	}
 
-	if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() {
+	if wallet.IsSyncing() || walletIsRescanning {
 		timeLeftLabel = values.StringF(values.StrTimeLeft, timeLeft)
 		if progress == 0 {
 			timeLeftLabel = values.String(values.StrLoading)
@@ -280,11 +282,11 @@ func (pg *WalletInfo) progressStatusDetails() (int, string) {
 }
 
 func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
-	rescanUpdate := pg.rescanUpdate
-	if rescanUpdate == nil {
+	wal := pg.WL.SelectedWallet.Wallet
+	if !wal.IsRescanning() || pg.rescanUpdate == nil {
 		return D{}
 	}
-	wal := pg.WL.AssetsManager.WalletWithID(rescanUpdate.WalletID)
+
 	return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		card := pg.Theme.Card()
@@ -301,7 +303,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 						headersFetchedTitleLabel := pg.Theme.Body2(values.String(values.StrBlocksScanned))
 						headersFetchedTitleLabel.Color = pg.Theme.Color.GrayText2
 
-						blocksScannedLabel := pg.Theme.Body1(fmt.Sprint(rescanUpdate.ProgressReport.CurrentRescanHeight))
+						blocksScannedLabel := pg.Theme.Body1(fmt.Sprint(pg.rescanUpdate.CurrentRescanHeight))
 						return inset.Layout(gtx, func(gtx C) D {
 							return components.EndToEndRow(gtx, headersFetchedTitleLabel.Layout, blocksScannedLabel.Layout)
 						})
@@ -310,7 +312,7 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 						progressTitleLabel := pg.Theme.Body2(values.String(values.StrSyncingProgress))
 						progressTitleLabel.Color = pg.Theme.Color.GrayText2
 
-						rescanProgress := values.StringF(values.StrBlocksLeft, rescanUpdate.ProgressReport.TotalHeadersToScan-rescanUpdate.ProgressReport.CurrentRescanHeight)
+						rescanProgress := values.StringF(values.StrBlocksLeft, pg.rescanUpdate.TotalHeadersToScan-pg.rescanUpdate.CurrentRescanHeight)
 						blocksScannedLabel := pg.Theme.Body1(rescanProgress)
 						return inset.Layout(gtx, func(gtx C) D {
 							return components.EndToEndRow(gtx, progressTitleLabel.Layout, blocksScannedLabel.Layout)

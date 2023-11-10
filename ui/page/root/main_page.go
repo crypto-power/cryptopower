@@ -15,7 +15,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -28,7 +27,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 	"github.com/gen2brain/beeep"
 )
 
@@ -38,15 +36,8 @@ const (
 
 type MainPage struct {
 	*app.MasterPage
-
 	*load.Load
-	*listeners.SyncProgressListener
-	*listeners.TxAndBlockNotificationListener
-	*listeners.ProposalNotificationListener
-	*listeners.OrderNotificationListener
 
-	ctx                    context.Context
-	ctxCancel              context.CancelFunc
 	pageNavigationTab      *cryptomaterial.SegmentedControl
 	hideBalanceButton      *cryptomaterial.Clickable
 	refreshExchangeRateBtn *cryptomaterial.Clickable
@@ -100,8 +91,6 @@ func (mp *MainPage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (mp *MainPage) OnNavigatedTo() {
-	mp.ctx, mp.ctxCancel = context.WithCancel(context.TODO())
-
 	mp.assetType = mp.selectedWallet.GetAssetType()
 	// load wallet account balance first before rendering page contents.
 	// It loads balance for the current selected wallet.
@@ -122,21 +111,21 @@ func (mp *MainPage) OnNavigatedTo() {
 	}
 
 	if mp.CurrentPage() == nil {
-		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page?
+		mp.Display(info.NewInfoPage(mp.Load)) // TODO: Should pagestack have a start page? YES!
+	} else {
+		mp.CurrentPage().OnNavigatedTo()
 	}
 
-	mp.listenForNotifications() // start sync notifications listening.
+	mp.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
 
 	if mp.assetType == libutils.DCRWalletAsset {
 		if mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.FetchProposalConfigKey, false) && mp.isGovernanceAPIAllowed() {
 			if mp.WL.AssetsManager.Politeia.IsSyncing() {
 				return
 			}
-			go mp.WL.AssetsManager.Politeia.Sync(mp.ctx)
+			go mp.WL.AssetsManager.Politeia.Sync(context.TODO()) // TODO: Politeia should be given a ctx when initialized.
 		}
 	}
-
-	mp.CurrentPage().OnNavigatedTo()
 }
 
 // initTabOptions initializes the page navigation tabs
@@ -337,7 +326,7 @@ func (mp *MainPage) OnNavigatedFrom() {
 		mp.selectedWallet.SaveUserConfigValue(sharedW.SeedBackupNotificationConfigKey, false)
 	}
 
-	mp.ctxCancel()
+	mp.stopNtfnListeners()
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -544,52 +533,52 @@ func (mp *MainPage) totalAssetBalance(gtx C) D {
 	return components.LayoutBalanceWithUnit(gtx, mp.Load, mp.totalBalance.String())
 }
 
-// postDesktopNotification posts notifications to the desktop.
-func (mp *MainPage) postDesktopNotification(notifier interface{}) {
+func (mp *MainPage) postTransactionNotification(t *sharedW.Transaction) {
 	var notification string
-	switch t := notifier.(type) {
-	case wallet.NewTransaction:
-		wal := mp.selectedWallet
-		switch t.Transaction.Type {
-		case dcr.TxTypeRegular:
-			if t.Transaction.Direction != dcr.TxDirectionReceived {
-				return
-			}
-			// remove trailing zeros from amount and convert to string
-			amount := strconv.FormatFloat(wal.ToAmount(t.Transaction.Amount).ToCoin(), 'f', -1, 64)
-			notification = values.StringF(values.StrDcrReceived, amount)
-		case dcr.TxTypeVote:
-			reward := strconv.FormatFloat(wal.ToAmount(t.Transaction.VoteReward).ToCoin(), 'f', -1, 64)
-			notification = values.StringF(values.StrTicektVoted, reward)
-		case dcr.TxTypeRevocation:
-			notification = values.String(values.StrTicketRevoked)
-		default:
+	wal := mp.selectedWallet
+	switch t.Type {
+	case dcr.TxTypeRegular:
+		if t.Direction != dcr.TxDirectionReceived {
 			return
 		}
-
-		if mp.WL.AssetsManager.OpenedWalletsCount() > 1 {
-			notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
-		}
-
-		initializeBeepNotification(notification)
-	case wallet.Proposal:
-		proposalNotification := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
-			!mp.WL.AssetsManager.IsPrivacyModeOn()
-		if !proposalNotification {
-			return
-		}
-		switch {
-		case t.ProposalStatus == wallet.NewProposalFound:
-			notification = values.StringF(values.StrProposalAddedNotif, t.Proposal.Name)
-		case t.ProposalStatus == wallet.VoteStarted:
-			notification = values.StringF(values.StrVoteStartedNotif, t.Proposal.Name)
-		case t.ProposalStatus == wallet.VoteFinished:
-			notification = values.StringF(values.StrVoteEndedNotif, t.Proposal.Name)
-		default:
-			notification = values.StringF(values.StrNewProposalUpdate, t.Proposal.Name)
-		}
-		initializeBeepNotification(notification)
+		// remove trailing zeros from amount and convert to string
+		amount := strconv.FormatFloat(wal.ToAmount(t.Amount).ToCoin(), 'f', -1, 64)
+		notification = values.StringF(values.StrDcrReceived, amount)
+	case dcr.TxTypeVote:
+		reward := strconv.FormatFloat(wal.ToAmount(t.VoteReward).ToCoin(), 'f', -1, 64)
+		notification = values.StringF(values.StrTicektVoted, reward)
+	case dcr.TxTypeRevocation:
+		notification = values.String(values.StrTicketRevoked)
+	default:
+		return
 	}
+
+	if mp.WL.AssetsManager.OpenedWalletsCount() > 1 {
+		notification = fmt.Sprintf("[%s] %s", wal.GetWalletName(), notification)
+	}
+
+	initializeBeepNotification(notification)
+}
+
+func (mp *MainPage) postProposalNotification(propName string, status libutils.ProposalStatus) {
+	proposalNotification := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.ProposalNotificationConfigKey, false) ||
+		!mp.WL.AssetsManager.IsPrivacyModeOn()
+	if !proposalNotification {
+		return
+	}
+
+	var notification string
+	switch status {
+	case libutils.ProposalStatusNewProposal:
+		notification = values.StringF(values.StrProposalAddedNotif, propName)
+	case libutils.ProposalStatusVoteStarted:
+		notification = values.StringF(values.StrVoteStartedNotif, propName)
+	case libutils.ProposalStatusVoteFinished:
+		notification = values.StringF(values.StrVoteEndedNotif, propName)
+	default:
+		notification = values.StringF(values.StrNewProposalUpdate, propName)
+	}
+	initializeBeepNotification(notification)
 }
 
 func initializeBeepNotification(n string) {
@@ -608,116 +597,74 @@ func initializeBeepNotification(n string) {
 // listenForNotifications starts a goroutine to watch for notifications
 // and update the UI accordingly.
 func (mp *MainPage) listenForNotifications() {
-	// Return if any of the listener is not nil.
-	switch {
-	case mp.SyncProgressListener != nil:
-		return
-	case mp.TxAndBlockNotificationListener != nil:
-		return
-	case mp.ProposalNotificationListener != nil:
-		return
-	case mp.OrderNotificationListener != nil:
-		return
+	syncProgressListener := &sharedW.SyncProgressListener{
+		OnSyncCompleted: func() {
+			mp.updateBalance()
+			mp.ParentWindow().Reload()
+		},
 	}
-
-	mp.SyncProgressListener = listeners.NewSyncProgress()
-	err := mp.selectedWallet.AddSyncProgressListener(mp.SyncProgressListener, MainPageID)
+	err := mp.selectedWallet.AddSyncProgressListener(syncProgressListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
-	mp.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = mp.selectedWallet.AddTxAndBlockNotificationListener(mp.TxAndBlockNotificationListener, true, MainPageID)
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			mp.updateBalance()
+			if mp.WL.AssetsManager.IsTransactionNotificationsOn() {
+				// TODO: SPV wallets only receive mempool tx ntfn for txs that
+				// were broadcast by the wallet. We should probably be posting
+				// desktop ntfns for txs received from external parties, which
+				// will can be gotten from the OnTransactionConfirmed callback.
+				mp.postTransactionNotification(transaction)
+			}
+			mp.ParentWindow().Reload()
+		},
+		// OnBlockAttached is also called whenever OnTransactionConfirmed is
+		// called, so use OnBlockAttached. Also, OnTransactionConfirmed may be
+		// called multiple times whereas OnBlockAttached is only called once.
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			beep := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
+			if beep {
+				err := beeep.Beep(5, 1)
+				if err != nil {
+					log.Error(err.Error)
+				}
+			}
+
+			mp.updateBalance()
+			mp.ParentWindow().Reload()
+		},
+	}
+	err = mp.selectedWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, MainPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
 
-	mp.ProposalNotificationListener = listeners.NewProposalNotificationListener()
 	if mp.isGovernanceAPIAllowed() {
-		err = mp.WL.AssetsManager.Politeia.AddNotificationListener(mp.ProposalNotificationListener, MainPageID)
+		proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
+			// Post desktop notification for all events except the synced event.
+			if status != libutils.ProposalStatusSynced {
+				mp.postProposalNotification(propName, status)
+			}
+		}
+		err = mp.WL.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, MainPageID)
 		if err != nil {
 			log.Errorf("Error adding politeia notification listener: %v", err)
 			return
 		}
 	}
 
-	mp.OrderNotificationListener = listeners.NewOrderNotificationListener()
-	err = mp.WL.AssetsManager.InstantSwap.AddNotificationListener(mp.OrderNotificationListener, MainPageID)
-	if err != nil {
-		log.Errorf("Error adding instantswap notification listener: %v", err)
-		return
-	}
+	// TODO: Register trade order ntfn listener and post desktop ntfns for all
+	// events except the synced event.
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-mp.TxAndBlockNotifChan():
-				switch n.Type {
-				case listeners.NewTransaction:
-					mp.updateBalance()
-					if mp.WL.AssetsManager.IsTransactionNotificationsOn() {
-						update := wallet.NewTransaction{
-							Transaction: n.Transaction,
-						}
-						mp.postDesktopNotification(update)
-					}
-					mp.ParentWindow().Reload()
-				case listeners.BlockAttached:
-					beep := mp.selectedWallet.ReadBoolConfigValueForKey(sharedW.BeepNewBlocksConfigKey, false)
-					if beep {
-						err := beeep.Beep(5, 1)
-						if err != nil {
-							log.Error(err.Error)
-						}
-					}
-
-					mp.updateBalance()
-					mp.ParentWindow().Reload()
-				case listeners.TxConfirmed:
-					mp.updateBalance()
-					mp.ParentWindow().Reload()
-
-				}
-			case notification := <-mp.ProposalNotifChan:
-				// Post desktop notification for all events except the synced event.
-				if notification.ProposalStatus != wallet.Synced {
-					mp.postDesktopNotification(notification)
-				}
-			case notification := <-mp.OrderNotifChan:
-				// Post desktop notification for all events except the synced
-				// event.
-				if notification.OrderStatus != wallet.OrderStatusSynced {
-					// TODO: mp.postDesktopNotification does not do anything
-					// with wallet.Order types.
-					mp.postDesktopNotification(notification)
-				}
-			case n := <-mp.SyncStatusChan:
-				if n.Stage == wallet.SyncCompleted {
-					mp.updateBalance()
-					mp.ParentWindow().Reload()
-				}
-			case <-mp.ctx.Done():
-				mp.selectedWallet.RemoveSyncProgressListener(MainPageID)
-				mp.selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
-				mp.WL.AssetsManager.Politeia.RemoveNotificationListener(MainPageID)
-				mp.WL.AssetsManager.InstantSwap.RemoveNotificationListener(MainPageID)
-
-				close(mp.SyncStatusChan)
-				mp.CloseTxAndBlockChan()
-				close(mp.ProposalNotifChan)
-				close(mp.OrderNotifChan)
-
-				mp.SyncProgressListener = nil
-				mp.TxAndBlockNotificationListener = nil
-				mp.ProposalNotificationListener = nil
-				mp.OrderNotificationListener = nil
-
-				return
-			}
-		}
-	}()
+func (mp *MainPage) stopNtfnListeners() {
+	mp.selectedWallet.RemoveSyncProgressListener(MainPageID)
+	mp.selectedWallet.RemoveTxAndBlockNotificationListener(MainPageID)
+	mp.WL.AssetsManager.Politeia.RemoveSyncCallback(MainPageID)
 }
 
 func (mp *MainPage) showBackupInfo() {

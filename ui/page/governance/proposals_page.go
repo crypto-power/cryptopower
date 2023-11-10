@@ -11,13 +11,11 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const (
@@ -40,9 +38,6 @@ type ProposalsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	*listeners.ProposalNotificationListener
-	ctx            context.Context // page context
-	ctxCancel      context.CancelFunc
 	assetsManager  *libwallet.AssetsManager
 	scroll         *components.Scroll[*components.ProposalItem]
 	previousFilter int32
@@ -98,10 +93,8 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 // Part of the load.Page interface.
 // Once proposals update is complete fetchProposals() is automatically called.
 func (pg *ProposalsPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	if pg.isGovernanceAPIAllowed() {
-		pg.syncAndUpdateProposals()
+		pg.syncAndUpdateProposals() // starts a sync listener which is stopped in OnNavigatedFrom().
 		pg.proposalsFetched = true
 	}
 }
@@ -183,10 +176,11 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		go pg.assetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
-		// Todo: check after 1min if sync does not start, set isSyncing to false and cancel sync
+		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync
 	}
 
 	if !pg.proposalsFetched && pg.isGovernanceAPIAllowed() {
+		// TODO: What scenario leads to this??
 		pg.syncAndUpdateProposals()
 		pg.proposalsFetched = true
 	}
@@ -216,7 +210,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalsPageID)
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -368,34 +362,18 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 }
 
 func (pg *ProposalsPage) listenForSyncNotifications() {
-	if pg.ProposalNotificationListener != nil {
-		return
+	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
+		if status == libutils.ProposalStatusSynced {
+			pg.syncCompleted = true
+			pg.isSyncing = false
+
+			go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.ParentWindow().Reload()
+		}
 	}
-	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalsPageID)
+	err := pg.WL.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
 	}
-
-	go func() {
-		for {
-			select {
-			case n := <-pg.ProposalNotifChan:
-				if n.ProposalStatus == wallet.Synced {
-					pg.syncCompleted = true
-					pg.isSyncing = false
-
-					go pg.scroll.FetchScrollData(false, pg.ParentWindow())
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalsPageID)
-				close(pg.ProposalNotifChan)
-				pg.ProposalNotificationListener = nil
-
-				return
-			}
-		}
-	}()
 }

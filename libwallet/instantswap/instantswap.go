@@ -1,6 +1,7 @@
 package instantswap
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -34,13 +35,17 @@ func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 		return nil, err
 	}
 
+	// TODO: Callers should provide a ctx that is tied to the lifetime of the
+	// app, since InstantSwap is not tied to any single page. If it is tied to a
+	// specific page, then that page's ctx should be provided.
+	ctx := context.TODO()
+
 	return &InstantSwap{
-		db: db,
-		mu: &sync.RWMutex{},
+		db:  db,
+		ctx: ctx,
 
 		notificationListenersMu: &sync.RWMutex{},
-
-		notificationListeners: make(map[string]OrderNotificationListener),
+		notificationListeners:   make(map[string]*OrderNotificationListener),
 	}, nil
 }
 

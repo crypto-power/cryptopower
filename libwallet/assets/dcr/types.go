@@ -60,9 +60,9 @@ type CSPPConfig struct {
 	ChangeAccount      uint32
 }
 
-type AccountMixerNotificationListener interface {
-	OnAccountMixerStarted(walletID int)
-	OnAccountMixerEnded(walletID int)
+type AccountMixerNotificationListener struct {
+	OnAccountMixerStarted func(walletID int)
+	OnAccountMixerEnded   func(walletID int)
 }
 
 /** begin ticket-related types */

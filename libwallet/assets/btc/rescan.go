@@ -17,7 +17,7 @@ import (
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.
-func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
+func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener *sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 

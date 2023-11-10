@@ -17,33 +17,36 @@ const (
 	LastSyncedTimestampConfigKey = "instantswap_last_synced_timestamp"
 )
 
-// Sync synchronizes the exchange orders, by looping through each
-// exchange server and querying the order info and updating
-// the order saved in the databse with the order returned
-// from the order info query.
-func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
-	instantSwap.mu.RLock()
+// Sync synchronizes the exchange orders, by looping through each exchange
+// server and querying the order info and updating the order saved in the
+// databse with the order returned from the order info query. MUST be called
+// from a goroutine.
+func (instantSwap *InstantSwap) Sync() {
+	var syncCtx context.Context
 
-	if instantSwap.cancelSync != nil {
-		instantSwap.mu.RUnlock()
-		return errors.New(ErrSyncAlreadyInProgress)
+	instantSwap.syncMu.Lock()
+	if instantSwap.cancelSync == nil {
+		syncCtx, instantSwap.cancelSync = context.WithCancel(instantSwap.ctx)
+	}
+	instantSwap.syncMu.Unlock()
+
+	if syncCtx == nil {
+		return // already syncing
 	}
 
-	instantSwap.ctx, instantSwap.cancelSync = context.WithCancel(ctx)
-
 	defer func() {
+		instantSwap.syncMu.Lock()
+		instantSwap.cancelSync()
 		instantSwap.cancelSync = nil
+		instantSwap.syncMu.Unlock()
 	}()
-
-	instantSwap.mu.RUnlock()
 
 	log.Info("Exchange sync: started")
 	exchangeServers := instantSwap.ExchangeServers()
-	// Loop through each exchange server and sync the selected server.
 	for _, exchangeServer := range exchangeServers {
-		// Check if instantswap has been shutdown and exit if true.
-		if instantSwap.ctx.Err() != nil {
-			return instantSwap.ctx.Err()
+		// Stop syncing if the syncCtx has been canceled.
+		if syncCtx.Err() != nil {
+			return
 		}
 
 		// Initialize the exchange server.
@@ -55,16 +58,14 @@ func (instantSwap *InstantSwap) Sync(ctx context.Context) error {
 
 		err = instantSwap.syncServer(exchangeServer, exchangeObject)
 		if err != nil {
-			log.Errorf("Error syncing exchange server: %v", err)
-			return err
+			log.Errorf("Error syncing exchange (%s) server: %v", exchangeServer.Server, err)
+			return
 		}
 	}
 
 	log.Info("Exchange sync: completed")
 	instantSwap.saveLastSyncedTimestamp(time.Now().Unix())
 	instantSwap.publishSynced()
-
-	return nil
 }
 
 func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchangeObject instantswap.IDExchange) error {
@@ -100,19 +101,19 @@ func (instantSwap *InstantSwap) syncServer(exchangeServer ExchangeServer, exchan
 }
 
 func (instantSwap *InstantSwap) IsSyncing() bool {
-	instantSwap.mu.RLock()
-	defer instantSwap.mu.RUnlock()
+	instantSwap.syncMu.RLock()
+	defer instantSwap.syncMu.RUnlock()
 	return instantSwap.cancelSync != nil
 }
 
 func (instantSwap *InstantSwap) StopSync() {
-	instantSwap.mu.RLock()
+	instantSwap.syncMu.Lock()
 	if instantSwap.cancelSync != nil {
 		instantSwap.cancelSync()
 		instantSwap.cancelSync = nil
+		log.Info("Exchange sync: stopped")
 	}
-	instantSwap.mu.RUnlock()
-	log.Info("Exchange sync: stopped")
+	instantSwap.syncMu.Unlock()
 }
 
 // check all saved orders which status are not completed and update their status
@@ -185,7 +186,9 @@ func (instantSwap *InstantSwap) publishSynced() {
 	defer instantSwap.notificationListenersMu.Unlock()
 
 	for _, notificationListener := range instantSwap.notificationListeners {
-		notificationListener.OnExchangeOrdersSynced()
+		if notificationListener.OnExchangeOrdersSynced != nil {
+			notificationListener.OnExchangeOrdersSynced()
+		}
 	}
 }
 
@@ -194,7 +197,9 @@ func (instantSwap *InstantSwap) publishOrderCreated(order *Order) {
 	defer instantSwap.notificationListenersMu.Unlock()
 
 	for _, notificationListener := range instantSwap.notificationListeners {
-		notificationListener.OnOrderCreated(order)
+		if notificationListener.OnOrderCreated != nil {
+			notificationListener.OnOrderCreated(order)
+		}
 	}
 }
 
@@ -203,7 +208,9 @@ func (instantSwap *InstantSwap) PublishOrderSchedulerStarted() {
 	defer instantSwap.notificationListenersMu.Unlock()
 
 	for _, notificationListener := range instantSwap.notificationListeners {
-		notificationListener.OnOrderSchedulerStarted()
+		if notificationListener.OnOrderSchedulerStarted != nil {
+			notificationListener.OnOrderSchedulerStarted()
+		}
 	}
 }
 
@@ -212,11 +219,13 @@ func (instantSwap *InstantSwap) PublishOrderSchedulerEnded() {
 	defer instantSwap.notificationListenersMu.Unlock()
 
 	for _, notificationListener := range instantSwap.notificationListeners {
-		notificationListener.OnOrderSchedulerEnded()
+		if notificationListener.OnOrderSchedulerEnded != nil {
+			notificationListener.OnOrderSchedulerEnded()
+		}
 	}
 }
 
-func (instantSwap *InstantSwap) AddNotificationListener(notificationListener OrderNotificationListener, uniqueIdentifier string) error {
+func (instantSwap *InstantSwap) AddNotificationListener(notificationListener *OrderNotificationListener, uniqueIdentifier string) error {
 	instantSwap.notificationListenersMu.Lock()
 	defer instantSwap.notificationListenersMu.Unlock()
 
