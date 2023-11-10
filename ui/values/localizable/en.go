@@ -792,4 +792,5 @@ const EN = `
 "createAssetWalletToSwapMsg" = "You need to create a %s wallet to swap."
 "stakingInfo" = "Staking Info"
 "timeLeftTit" = "Time Left"
+"totalReward" = "Total Reward"
 `

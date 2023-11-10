@@ -244,7 +244,7 @@ func (mp *MultiLayerProgressBar) Layout2(gtx C, labelWdg layout.Widget) D {
 			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
+			return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, mp.progressBarLayout)
 		}),
 	)
 }

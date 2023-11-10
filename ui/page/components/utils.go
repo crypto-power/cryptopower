@@ -121,11 +121,10 @@ func LayoutIconAndTextWithSize(l *load.Load, gtx C, title string, val string, co
 
 func layoutIconAndText(l *load.Load, gtx C, title string, val string, col color.NRGBA, size unit.Sp, iconSize unit.Dp) D {
 	return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{
 					Right: values.MarginPadding5,
-					Top:   values.MarginPadding10,
 				}.Layout(gtx, func(gtx C) D {
 					ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 					ic.Color = col

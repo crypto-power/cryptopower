@@ -22,6 +22,10 @@ var (
 )
 
 func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, displayUnitText bool) D {
+	return formatBalanceFull(gtx, l, amount, mainTextSize, scale, col, 0, displayUnitText)
+}
+
+func formatBalanceFull(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, weight font.Weight, displayUnitText bool) D {
 
 	startIndex := 0
 	stopIndex := 0
@@ -51,18 +55,24 @@ func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, sca
 		layout.Rigid(func(gtx C) D {
 			txt := l.Theme.Label(mainTextSize, mainText)
 			txt.Color = col
+			txt.Font.Weight = weight
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			txt := l.Theme.Label(subTextSize, subText)
 			txt.Color = col
+			txt.Font.Weight = weight
 			return txt.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if displayUnitText {
-				return l.Theme.Label(mainTextSize, unitText).Layout(gtx)
+				txt := l.Theme.Label(mainTextSize, unitText)
+				txt.Font.Weight = weight
+				return txt.Layout(gtx)
 			}
-			return l.Theme.Label(subTextSize, unitText).Layout(gtx)
+			txt := l.Theme.Label(subTextSize, unitText)
+			txt.Font.Weight = weight
+			return txt.Layout(gtx)
 		}),
 	)
 }
@@ -121,7 +131,15 @@ func LayoutBalanceWithUnitSize(gtx layout.Context, l *load.Load, amount string, 
 }
 
 func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
-	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.Text, false)
+	return formatBalance(gtx, l, amount, values.TextSize16, defaultScale, l.Theme.Color.Text, false)
+}
+
+func LayoutBalanceBold(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
+	return formatBalanceFull(gtx, l, amount, values.TextSize16, defaultScale, l.Theme.Color.Text, font.Bold, false)
+}
+
+func LayoutBalanceSemiBold(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
+	return formatBalanceFull(gtx, l, amount, values.TextSize16, defaultScale, l.Theme.Color.Text, font.SemiBold, false)
 }
 
 func LayoutBalanceSizeScale(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32) layout.Dimensions {

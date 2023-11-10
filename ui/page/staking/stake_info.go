@@ -91,7 +91,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 												return title.Layout(gtx)
 											}
 
-											return components.LayoutBalanceSize(gtx, pg.Load, pg.ticketPrice, values.TextSize16)
+											return components.LayoutBalanceSemiBold(gtx, pg.Load, pg.ticketPrice)
 										})
 									}),
 								)
@@ -139,7 +139,7 @@ func (pg *Page) dataRows(gtx C, title1, value1 string) D {
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
 					label := pg.Theme.Label(values.TextSize16, value1)
-					label.Color = pg.Theme.Color.GrayText2
+					label.Color = pg.Theme.Color.Text
 					label.Font.Weight = font.SemiBold
 					return label.Layout(gtx)
 				})

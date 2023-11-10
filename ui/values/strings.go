@@ -902,4 +902,5 @@ const (
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
 	StrStakingInfo                     = "stakingInfo"
 	StrTimeLeftTit                     = "timeLeftTit"
+	StrTotalReward                     = "totalReward"
 )

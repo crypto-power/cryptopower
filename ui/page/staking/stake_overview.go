@@ -208,15 +208,14 @@ func (pg *Page) layoutDesktop(gtx C) D {
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(pg.stakePriceSection),
+		layout.Rigid(pg.stakeStatisticsSection),
 		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-				if pg.showMaterialLoader {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
-				}
-				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-					return pg.ticketListLayout(gtx)
-				})
+			if pg.showMaterialLoader {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Center.Layout(gtx, pg.materialLoader.Layout)
+			}
+			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+				return pg.ticketListLayout(gtx)
 			})
 		}),
 	)
@@ -239,7 +238,7 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{
-		Bottom: values.MarginPadding8,
+		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
