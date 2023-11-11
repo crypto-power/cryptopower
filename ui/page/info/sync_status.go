@@ -34,30 +34,32 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 			Top:    values.MarginPadding15,
 			Bottom: values.MarginPadding16,
 		}}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.syncBoxTitleRow)
-				}),
-				layout.Rigid(func(gtx C) D {
-					if syncing || rescanning {
-						return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-								layout.Rigid(pg.syncStatusIcon),
-								layout.Rigid(pg.progressBarRow),
-							)
-						})
-					}
-					return D{}
-				}),
-				layout.Rigid(func(gtx C) D {
-					switch {
-					case rescanning:
-						return pg.rescanDetailsLayout(gtx, uniform)
-					default:
-						return pg.syncContent(gtx, uniform)
-					}
-				}),
-			)
+			items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+				return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.syncBoxTitleRow)
+			})}
+
+			if syncing || rescanning {
+				items = append(items, layout.Rigid(func(gtx C) D {
+					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(pg.syncStatusIcon),
+							layout.Rigid(pg.progressBarRow),
+						)
+					})
+				}))
+			}
+
+			if rescanning {
+				items = append(items, layout.Rigid(func(gtx C) D {
+					return pg.rescanDetailsLayout(gtx, uniform)
+				}))
+			} else {
+				items = append(items, layout.Rigid(func(gtx C) D {
+					return pg.syncContent(gtx, uniform)
+				}))
+			}
+
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 		})
 	})
 }
@@ -86,7 +88,7 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 						Right: values.MarginPadding4,
 						Left:  values.MarginPadding4,
 					}.Layout(gtx, func(gtx C) D {
-						return pg.walletStatusIcon.Layout(gtx, values.MarginPadding10)
+						return pg.walletStatusIcon.Layout(gtx, values.MarginPadding15)
 					})
 				}),
 				layout.Rigid(statusLabel.Layout),
@@ -180,9 +182,9 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 					}),
 				)
 			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding36}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							latestBlockTitle := pg.Theme.Body1(fmt.Sprintf("%d (%s)", bestBlock.Height, components.TimeAgo(bestBlock.Timestamp)))
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
