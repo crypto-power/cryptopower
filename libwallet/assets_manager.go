@@ -24,6 +24,10 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 )
 
+// TODO: This is the main app's log filename, should probably be defined
+// elsewhere.
+const LogFilename = "cryptopower.log"
+
 // Assets is a struct that holds all the assets supported by the wallet.
 type Assets struct {
 	DCR struct {
@@ -106,8 +110,13 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 }
 
 // NewAssetsManager creates a new AssetsManager instance.
-func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, logDir, net string) (*AssetsManager, error) {
 	errors.Separator = ":: "
+
+	netType := utils.ToNetworkType(net)
+	if netType == utils.Unknown {
+		return nil, fmt.Errorf("network type is not supportted: %s", net)
+	}
 
 	// Create a root dir that has the path up the network folder.
 	rootDir = filepath.Join(rootDir, string(netType))
@@ -116,6 +125,7 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 	}
 
 	// validate the network type before proceeding to initialize the othe fields.
+	dbDriver := "bdb" // TODO: Should be a constant.
 	mgr, err := initializeAssetsFields(rootDir, dbDriver, logDir, netType)
 	if err != nil {
 		return nil, err
@@ -142,6 +152,10 @@ func NewAssetsManager(rootDir, dbDriver, politeiaHost, logDir string, netType ut
 		return nil, err
 	}
 
+	politeiaHost := PoliteiaMainnetHost
+	if netType == Testnet {
+		politeiaHost = PoliteiaTestnetHost
+	}
 	politeia, err := politeia.New(politeiaHost, mwDB)
 	if err != nil {
 		return nil, err
@@ -725,4 +739,44 @@ func (mgr *AssetsManager) AllAssetTypes() []utils.AssetType {
 		utils.BTCWalletAsset,
 		utils.LTCWalletAsset,
 	}
+}
+
+// BlockExplorerURLForTx returns a URL for viewing a transaction on the block
+// explorer of the specified asset.
+func (mgr *AssetsManager) BlockExplorerURLForTx(assetType utils.AssetType, txHash string) string {
+	var isMainnet bool
+	switch mgr.NetType() {
+	case utils.Mainnet:
+		isMainnet = true
+	case utils.Testnet:
+		isMainnet = false
+	default:
+		return "" // block explorer only exists for mainnet and testnet
+	}
+
+	switch assetType {
+	case utils.DCRWalletAsset:
+		if isMainnet {
+			return "https://explorer.dcrdata.org/tx/" + txHash
+		}
+		return "https://testnet.dcrdata.org/tx/" + txHash
+
+	case utils.BTCWalletAsset:
+		if isMainnet {
+			return "https://www.blockchain.com/btc/tx/" + txHash
+		}
+		return "https://live.blockcypher.com/btc-testnet/tx/" + txHash
+
+	case utils.LTCWalletAsset:
+		if isMainnet {
+			return "https://chain.so/tx/LTC/" + txHash
+		}
+		return "https://chain.so/tx/LTCTEST/" + txHash
+	}
+
+	return ""
+}
+
+func (mgr *AssetsManager) LogFile() string {
+	return filepath.Join(mgr.params.LogDir, LogFilename)
 }

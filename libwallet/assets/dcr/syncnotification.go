@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"decred.org/dcrwallet/v3/spv"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -39,7 +38,9 @@ func (asset *Asset) handlePeerCountUpdate(peerCount int32) {
 	asset.syncData.mu.Unlock()
 
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnPeerConnectedOrDisconnected(peerCount)
+		if syncProgressListener.OnPeerConnectedOrDisconnected != nil {
+			syncProgressListener.OnPeerConnectedOrDisconnected(peerCount)
+		}
 	}
 
 	if shouldLog {
@@ -117,15 +118,6 @@ func (asset *Asset) fetchCFiltersProgress(startCFiltersHeight, endCFiltersHeight
 
 	// notify progress listener of estimated progress report
 	asset.publishFetchCFiltersProgress()
-
-	cfiltersFetchTimeRemaining := estimatedTotalCFiltersFetchTime - float64(timeTakenSoFar)
-	debugInfo := &sharedW.DebugInfo{
-		TotalTimeElapsed:          timeTakenSoFar,
-		TotalTimeRemaining:        totalTimeRemainingSeconds,
-		CurrentStageTimeElapsed:   timeTakenSoFar,
-		CurrentStageTimeRemaining: int64(math.Round(cfiltersFetchTimeRemaining)),
-	}
-	asset.publishDebugInfo(debugInfo)
 }
 
 func (asset *Asset) publishFetchCFiltersProgress() {
@@ -134,7 +126,9 @@ func (asset *Asset) publishFetchCFiltersProgress() {
 	asset.syncData.mu.RUnlock()
 
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnCFiltersFetchProgress(cfilters)
+		if syncProgressListener.OnCFiltersFetchProgress != nil {
+			syncProgressListener.OnCFiltersFetchProgress(cfilters)
+		}
 	}
 }
 
@@ -239,19 +233,10 @@ func (asset *Asset) fetchHeadersProgress(lastFetchedHeaderHeight int32, _ int64)
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalSyncProgress = asset.syncData.headersFetchProgress.HeadersFetchProgress
 	asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds = int64((fetchTimeTakenSoFar * remainingHeaders) / headersFetchedSoFar)
 
-	timeTakenSoFar := asset.syncData.cfiltersFetchProgress.CfiltersFetchTimeSpent + int64(fetchTimeTakenSoFar)
-	debugInfo := &sharedW.DebugInfo{
-		TotalTimeElapsed:          timeTakenSoFar,
-		TotalTimeRemaining:        asset.syncData.headersFetchProgress.GeneralSyncProgress.TotalTimeRemainingSeconds,
-		CurrentStageTimeElapsed:   int64(fetchTimeTakenSoFar),
-		CurrentStageTimeRemaining: int64(fetchTimeTakenSoFar),
-	}
-
 	asset.syncData.mu.Unlock()
 
 	// notify progress listener of estimated progress report
 	asset.publishFetchHeadersProgress()
-	asset.publishDebugInfo(debugInfo)
 }
 
 func (asset *Asset) publishFetchHeadersProgress() {
@@ -260,7 +245,9 @@ func (asset *Asset) publishFetchHeadersProgress() {
 	asset.syncData.mu.RUnlock()
 
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnHeadersFetchProgress(headerFetch)
+		if syncProgressListener.OnHeadersFetchProgress != nil {
+			syncProgressListener.OnHeadersFetchProgress(headerFetch)
+		}
 	}
 }
 
@@ -389,14 +376,6 @@ func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64
 
 			asset.publishAddressDiscoveryProgress()
 
-			debugInfo := &sharedW.DebugInfo{
-				TotalTimeElapsed:          int64(math.Round(totalElapsedTime)),
-				TotalTimeRemaining:        totalTimeRemainingSeconds,
-				CurrentStageTimeElapsed:   int64(math.Round(elapsedDiscoveryTime)),
-				CurrentStageTimeRemaining: int64(math.Round(remainingAccountDiscoveryTime)),
-			}
-			asset.publishDebugInfo(debugInfo)
-
 			if showLogs {
 				// avoid logging same message multiple times
 				if totalProgressPercent != lastTotalPercent || totalTimeRemainingSeconds != lastTimeRemaining {
@@ -413,7 +392,9 @@ func (asset *Asset) updateAddressDiscoveryProgress(totalHeadersFetchTime float64
 
 func (asset *Asset) publishAddressDiscoveryProgress() {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
+		if syncProgressListener.OnAddressDiscoveryProgress != nil {
+			syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
+		}
 	}
 }
 
@@ -506,14 +487,6 @@ func (asset *Asset) rescanProgress(rescannedThrough int32) {
 
 	asset.publishHeadersRescanProgress()
 
-	debugInfo := &sharedW.DebugInfo{
-		TotalTimeElapsed:          totalElapsedTime,
-		TotalTimeRemaining:        totalTimeRemainingSeconds,
-		CurrentStageTimeElapsed:   elapsedRescanTime,
-		CurrentStageTimeRemaining: totalTimeRemainingSeconds,
-	}
-	asset.publishDebugInfo(debugInfo)
-
 	asset.syncData.mu.RLock()
 	if asset.syncData.showLogs {
 		log.Infof("Syncing %d%%, %s remaining, scanning %d of %d block headers.",
@@ -532,7 +505,9 @@ func (asset *Asset) publishHeadersRescanProgress() {
 	asset.syncData.mu.RUnlock()
 
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnHeadersRescanProgress(headersRescan)
+		if syncProgressListener.OnHeadersRescanProgress != nil {
+			syncProgressListener.OnHeadersRescanProgress(headersRescan)
+		}
 	}
 }
 
@@ -555,12 +530,6 @@ func (asset *Asset) rescanFinished() {
 	asset.publishHeadersRescanProgress()
 }
 
-func (asset *Asset) publishDebugInfo(debugInfo *sharedW.DebugInfo) {
-	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.Debug(debugInfo)
-	}
-}
-
 /** Helper functions start here */
 
 func (asset *Asset) estimateBlockHeadersCountAfter(lastHeaderTime int64) int32 {
@@ -576,7 +545,9 @@ func (asset *Asset) estimateBlockHeadersCountAfter(lastHeaderTime int64) int32 {
 
 func (asset *Asset) notifySyncError(err error) {
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnSyncEndedWithError(err)
+		if syncProgressListener.OnSyncEndedWithError != nil {
+			syncProgressListener.OnSyncEndedWithError(err)
+		}
 	}
 }
 
@@ -586,7 +557,9 @@ func (asset *Asset) notifySyncCanceled() {
 	asset.syncData.mu.RUnlock()
 
 	for _, syncProgressListener := range asset.syncProgressListeners() {
-		syncProgressListener.OnSyncCanceled(restartSyncRequested)
+		if syncProgressListener.OnSyncCanceled != nil {
+			syncProgressListener.OnSyncCanceled(restartSyncRequested)
+		}
 	}
 }
 
@@ -625,9 +598,13 @@ func (asset *Asset) syncedWallet(synced bool) {
 
 			for _, syncProgressListener := range asset.syncProgressListeners() {
 				if synced {
-					syncProgressListener.OnSyncCompleted()
+					if syncProgressListener.OnSyncCompleted != nil {
+						syncProgressListener.OnSyncCompleted()
+					}
 				} else {
-					syncProgressListener.OnSyncCanceled(false)
+					if syncProgressListener.OnSyncCanceled != nil {
+						syncProgressListener.OnSyncCanceled(false)
+					}
 				}
 			}
 		}()

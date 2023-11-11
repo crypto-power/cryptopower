@@ -42,9 +42,9 @@ func NewAboutPage(l *load.Load) *AboutPage {
 		card:             l.Theme.Card(),
 		container:        &layout.List{Axis: layout.Vertical},
 		version:          l.Theme.Body1(values.String(values.StrVersion)),
-		versionValue:     l.Theme.Body1(l.WL.Wallet.Version()),
+		versionValue:     l.Theme.Body1(l.Version()),
 		buildDate:        l.Theme.Body1(values.String(values.StrBuildDate)),
-		buildDateValue:   l.Theme.Body1(l.WL.Wallet.BuildDate().Format("2006-01-02 15:04:05")),
+		buildDateValue:   l.Theme.Body1(l.BuildDate().Format("2006-01-02 15:04:05")),
 		network:          l.Theme.Body1(values.String(values.StrNetwork)),
 		license:          l.Theme.Body1(values.String(values.StrLicense)),
 		licenseRow:       l.Theme.NewClickable(true),
@@ -58,7 +58,7 @@ func NewAboutPage(l *load.Load) *AboutPage {
 	pg.versionValue.Color = col
 	pg.buildDateValue.Color = col
 
-	netType := pg.WL.Wallet.Net.Display()
+	netType := pg.WL.AssetsManager.NetType().Display()
 	pg.networkValue = l.Theme.Body1(netType)
 	pg.networkValue.Color = col
 

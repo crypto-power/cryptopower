@@ -1,15 +1,12 @@
 package privacy
 
 import (
-	"context"
-
 	"gioui.org/layout"
 	"github.com/decred/dcrd/dcrutil/v3"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -17,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/preference"
 	"github.com/crypto-power/cryptopower/ui/renderers"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const AccountMixerPageID = "AccountMixer"
@@ -29,11 +25,6 @@ type AccountMixerPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	*listeners.AccountMixerNotificationListener
-	*listeners.TxAndBlockNotificationListener
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	pageContainer layout.List
 	wallet        sharedW.Asset
@@ -85,11 +76,9 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	if pg.WL.SelectedWallet.Wallet.IsSynced() {
 		// Listen for notifications only when the wallet is fully synced.
-		pg.listenForMixerNotifications()
+		pg.listenForMixerNotifications() // listener is stopped in OnNavigatedFrom().
 	}
 
 	pg.toggleMixer.SetChecked(pg.dcrImpl.IsAccountMixerActive())
@@ -520,60 +509,41 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 }
 
 func (pg *AccountMixerPage) listenForMixerNotifications() {
-	if pg.AccountMixerNotificationListener != nil {
-		return
+	accountMixerNotificationListener := &dcr.AccountMixerNotificationListener{
+		OnAccountMixerStarted: func(walletID int) {
+			pg.Toast.Notify(values.String(values.StrMixerStart))
+			pg.getMixerBalance()
+			pg.ParentWindow().Reload()
+		},
+		OnAccountMixerEnded: func(walletID int) {
+			pg.mixerCompleted = true
+			pg.getMixerBalance()
+			pg.ParentWindow().Reload()
+		},
 	}
-
-	if pg.TxAndBlockNotificationListener != nil {
-		return
-	}
-
-	pg.AccountMixerNotificationListener = listeners.NewAccountMixerNotificationListener()
-	err := pg.dcrImpl.AddAccountMixerNotificationListener(pg, AccountMixerPageID)
+	err := pg.dcrImpl.AddAccountMixerNotificationListener(accountMixerNotificationListener, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding account mixer notification listener: %+v", err)
 		return
 	}
 
-	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, AccountMixerPageID)
+	// this is needed to refresh the UI on every block
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			pg.getMixerBalance()
+			pg.ParentWindow().Reload()
+		},
+	}
+	err = pg.dcrImpl.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.MixerChan:
-				if n.RunStatus == wallet.MixerStarted {
-					pg.Toast.Notify(values.String(values.StrMixerStart))
-					pg.getMixerBalance()
-					pg.ParentWindow().Reload()
-				}
-
-				if n.RunStatus == wallet.MixerEnded {
-					pg.mixerCompleted = true
-					pg.getMixerBalance()
-					pg.ParentWindow().Reload()
-				}
-			// this is needed to refresh the UI on every block
-			case n := <-pg.TxAndBlockNotifChan():
-				if n.Type == listeners.BlockAttached {
-					pg.getMixerBalance()
-					pg.ParentWindow().Reload()
-				}
-
-			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-				pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
-				close(pg.MixerChan)
-				pg.CloseTxAndBlockChan()
-				pg.AccountMixerNotificationListener = nil
-				return
-			}
-		}
-	}()
+func (pg *AccountMixerPage) stopMixerNtfnListeners() {
+	pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+	pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -584,5 +554,5 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.stopMixerNtfnListeners()
 }

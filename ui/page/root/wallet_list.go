@@ -6,14 +6,12 @@ import (
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 func (pg *WalletSelectorPage) initWalletSelectorOptions() {
@@ -342,37 +340,26 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 }
 
 // start sync listener
-func (pg *WalletSelectorPage) listenForNotifications() {
-	if pg.isListenerAdded {
-		return
+func (pg *WalletSelectorPage) listenForSyncProgressNotifications() {
+	syncListener := &sharedW.SyncProgressListener{
+		OnSyncCompleted: func() {
+			pg.ParentWindow().Reload()
+		},
 	}
-
-	pg.isListenerAdded = true
 
 	allWallets := pg.WL.AllSortedWalletList()
 	for _, w := range allWallets {
-		syncListener := listeners.NewSyncProgress()
 		err := w.AddSyncProgressListener(syncListener, WalletSelectorPageID)
 		if err != nil {
 			log.Errorf("Error adding sync progress listener: %v", err)
 			return
 		}
+	}
+}
 
-		go func(wal sharedW.Asset) {
-			for {
-				select {
-				case n := <-syncListener.SyncStatusChan:
-					if n.Stage == wallet.SyncCompleted {
-						pg.ParentWindow().Reload()
-					}
-				case <-pg.ctx.Done():
-					wal.RemoveSyncProgressListener(WalletSelectorPageID)
-					close(syncListener.SyncStatusChan)
-					syncListener = nil
-					pg.isListenerAdded = false
-					return
-				}
-			}
-		}(w)
+func (pg *WalletSelectorPage) stopSyncProgressListeners() {
+	allWallets := pg.WL.AllSortedWalletList()
+	for _, w := range allWallets {
+		w.RemoveSyncProgressListener(WalletSelectorPageID)
 	}
 }

@@ -2,7 +2,6 @@ package root
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"image"
 	"time"
@@ -36,9 +35,6 @@ type ReceivePage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	assetsManager     *libwallet.AssetsManager
 	pageContainer     layout.List
@@ -135,14 +131,13 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
-	pg.selector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
-	pg.selector.SelectFirstValidAccount(pg.selectedWallet) // Want to reset the user's selection everytime this page appears?
+	pg.selector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
+	pg.selector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
 	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
@@ -514,5 +509,5 @@ func (pg *ReceivePage) handleCopyEvent(gtx C) {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.selector.StopTxNtfnListener()
 }
