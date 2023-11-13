@@ -9,6 +9,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -16,6 +17,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/values"
+	"github.com/decred/dcrd/dcrutil/v3"
 )
 
 const InfoID = "Info"
@@ -34,6 +36,7 @@ type WalletInfo struct {
 	*app.GenericPageModal
 
 	assetsManager *libwallet.AssetsManager
+	wallet        sharedW.Asset
 
 	rescanUpdate *sharedW.HeadersRescanProgressReport
 
@@ -43,6 +46,10 @@ type WalletInfo struct {
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
 	checkBox         cryptomaterial.CheckBoxStyle
+
+	mixerInfoButton,
+	mixerRedirect cryptomaterial.IconButton
+	unmixedBalance sharedW.AssetAmount
 
 	isStatusConnected bool
 }
@@ -65,6 +72,7 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(InfoID),
 		assetsManager:    l.WL.AssetsManager,
+		wallet:           l.WL.SelectedWallet.Wallet,
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -73,6 +81,10 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = values.TextSize14
+
+	pg.mixerRedirect, pg.mixerInfoButton = components.SubpageHeaderButtons(l)
+	pg.mixerRedirect.Icon = pg.Theme.Icons.NavigationArrowForward
+	pg.mixerRedirect.Size = values.MarginPadding20
 
 	go func() {
 		pg.isStatusConnected = libutils.IsOnline()
@@ -88,10 +100,18 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedTo() {
-	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
+	autoSync := pg.wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
 	pg.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
+
+	if pg.wallet.IsSynced() {
+		pg.listenForMixerNotifications()
+	}
+
+	if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+		pg.reloadMixerBalances()
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -100,9 +120,15 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, pg.walletInfoLayout)
-	})
+		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+			items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
+			if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+				items = append(items, layout.Rigid(pg.mixerLayout))
+			}
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		})
+	})
 }
 
 func (pg *WalletInfo) walletInfoLayout(gtx C) D {
@@ -147,6 +173,23 @@ func (pg *WalletInfo) walletNameAndBackupInfo(gtx C) D {
 	}
 
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx, items...)
+}
+
+func (pg *WalletInfo) mixerLayout(gtx C) D {
+	return layout.Inset{
+		Top:    values.MarginPadding16,
+		Bottom: values.MarginPadding16,
+	}.Layout(gtx, func(gtx C) D {
+		return components.MixerComponent{
+			Load:           pg.Load,
+			WalletName:     pg.wallet.GetWalletName(),
+			UnmixedBalance: pg.unmixedBalance.String(),
+			ForwardButton:  pg.mixerRedirect,
+			InfoButton:     pg.mixerInfoButton,
+			Width:          cryptomaterial.MatchParent,
+			Height:         cryptomaterial.WrapContent,
+		}.MixerLayout(gtx)
+	})
 }
 
 func (pg *WalletInfo) pageContentWrapper(gtx C, body layout.Widget) D {
@@ -277,6 +320,51 @@ func (pg *WalletInfo) listenForNotifications() {
 		},
 	}
 	pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
+}
+
+func (pg *WalletInfo) listenForMixerNotifications() {
+	accountMixerNotificationListener := &dcr.AccountMixerNotificationListener{
+		OnAccountMixerStarted: func(walletID int) {
+			pg.reloadMixerBalances()
+			pg.ParentWindow().Reload()
+		},
+		OnAccountMixerEnded: func(walletID int) {
+			pg.reloadMixerBalances()
+			pg.ParentWindow().Reload()
+		},
+	}
+	err := pg.wallet.(*dcr.Asset).AddAccountMixerNotificationListener(accountMixerNotificationListener, InfoID)
+	if err != nil {
+		log.Errorf("Error adding account mixer notification listener: %+v", err)
+		return
+	}
+
+	// this is needed to refresh the UI on every block
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			pg.reloadMixerBalances()
+			pg.ParentWindow().Reload()
+		},
+	}
+	err = pg.wallet.(*dcr.Asset).AddTxAndBlockNotificationListener(txAndBlockNotificationListener, InfoID)
+	if err != nil {
+		log.Errorf("Error adding tx and block notification listener: %v", err)
+		return
+	}
+}
+
+func (pg *WalletInfo) reloadMixerBalances() {
+	accounts, _ := pg.wallet.GetAccountsRaw()
+	for _, acct := range accounts.Accounts {
+		if acct.Number == pg.wallet.(*dcr.Asset).UnmixedAccountNumber() {
+			bal := acct.Balance.Total
+			// to prevent NPE set default amount 0 if asset amount is nil
+			if bal == nil {
+				bal = dcr.Amount(dcrutil.Amount(0))
+			}
+			pg.unmixedBalance = bal
+		}
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
