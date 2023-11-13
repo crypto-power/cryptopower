@@ -82,10 +82,10 @@ type SingleWalletMasterPage struct {
 func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigationFunc func()) *SingleWalletMasterPage {
 	swmp := &SingleWalletMasterPage{
 		Load:               l,
-		MasterPage:         app.NewMasterPage(MainPageID),
-		selectedWallet:     wallet,
+		MasterPage:         app.NewMasterPage(MainPageID, info.NewInfoPage(l, wallet)),
 		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 		showNavigationFunc: showNavigationFunc,
+		selectedWallet:     wallet,
 	}
 
 	swmp.activeTab = make(map[string]string)
@@ -262,10 +262,6 @@ func (swmp *SingleWalletMasterPage) OnCurrencyChanged() {
 // displayed.
 // Part of the load.Page interface.
 func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
-	if swmp.CurrentPage() != nil {
-		swmp.CurrentPage().HandleUserInteractions()
-	}
-
 	if swmp.refreshExchangeRateBtn.Clicked() {
 		go swmp.fetchExchangeRate()
 	}
@@ -332,6 +328,8 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		swmp.isBalanceHidden = !swmp.isBalanceHidden
 		swmp.selectedWallet.SetBoolConfigValueForKey(sharedW.HideBalanceConfigKey, swmp.isBalanceHidden)
 	}
+
+	swmp.CurrentPage().HandleUserInteractions()
 }
 
 // KeysToHandle returns an expression that describes a set of key combinations

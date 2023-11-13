@@ -40,7 +40,7 @@ var governanceTabTitles = []string{
 func NewGovernancePage(l *load.Load) *Page {
 	pg := &Page{
 		Load:            l,
-		MasterPage:      app.NewMasterPage(GovernancePageID),
+		MasterPage:      app.NewMasterPage(GovernancePageID, NewProposalsPage(l)),
 		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
@@ -58,11 +58,7 @@ func NewGovernancePage(l *load.Load) *Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedTo()
-	} else {
-		pg.Display(NewProposalsPage(pg.Load))
-	}
+	pg.CurrentPage().OnNavigatedTo()
 }
 
 func (pg *Page) isGovernanceAPIAllowed() bool {
@@ -77,16 +73,10 @@ func (pg *Page) isGovernanceAPIAllowed() bool {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedFrom()
-	}
+	pg.CurrentPage().OnNavigatedFrom()
 }
 
 func (pg *Page) HandleUserInteractions() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
-	}
-
 	if pg.navigateToSettingsBtn.Button.Clicked() {
 		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
@@ -96,19 +86,18 @@ func (pg *Page) HandleUserInteractions() {
 	}
 
 	if tabItemClicked, clickedTabIndex := pg.tabCategoryList.ItemClicked(); tabItemClicked {
-		if clickedTabIndex == 0 {
-			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
-		} else if clickedTabIndex == 1 {
+		currentPageID := pg.CurrentPageID()
+		if clickedTabIndex == 0 && currentPageID != ProposalsPageID {
+			pg.Display(NewProposalsPage(pg.Load))
+		} else if clickedTabIndex == 1 && currentPageID != ConsensusPageID {
 			pg.Display(NewConsensusPage(pg.Load))
-		} else {
+		} else if currentPageID != TreasuryPageID {
 			pg.Display(NewTreasuryPage(pg.Load))
 		}
 	}
 
 	// Handle individual page user interactions.
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
-	}
+	pg.CurrentPage().HandleUserInteractions()
 }
 
 func (pg *Page) Layout(gtx C) D {

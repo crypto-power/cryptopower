@@ -70,9 +70,18 @@ var navigationTabTitles = []string{
 func NewHomePage(l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:        l,
-		MasterPage:  app.NewMasterPage(HomePageID),
 		isConnected: new(atomic.Bool),
 	}
+
+	// Initialize wallet page
+	hp.walletSelectorPage = NewWalletSelectorPage(l)
+	hp.showNavigationFunc = func(isHiddenNavigation bool) {
+		hp.isHiddenNavigation = isHiddenNavigation
+	}
+	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
+
+	// Initialize master page.
+	hp.MasterPage = app.NewMasterPage(HomePageID, NewOverviewPage(l, hp.showNavigationFunc))
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
 	hp.appLevelSettingsButton = hp.Theme.NewClickable(false)
@@ -113,13 +122,6 @@ func NewHomePage(l *load.Load) *HomePage {
 	}
 	l.ToggleSync = toggleSync
 
-	// initialize wallet page
-	hp.walletSelectorPage = NewWalletSelectorPage(l)
-	hp.showNavigationFunc = func(isHiddenNavigation bool) {
-		hp.isHiddenNavigation = isHiddenNavigation
-	}
-	hp.walletSelectorPage.showNavigationFunc = hp.showNavigationFunc
-
 	hp.initBottomNavItems()
 	hp.bottomNavigationBar.OnViewCreated()
 
@@ -138,6 +140,8 @@ func (hp *HomePage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedTo() {
+	hp.CurrentPage().OnNavigatedTo()
+
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	go hp.CalculateAssetsUSDBalance()
@@ -176,10 +180,6 @@ func (hp *HomePage) OnDarkModeChanged(isDarkModeOn bool) {
 // displayed.
 // Part of the load.Page interface.
 func (hp *HomePage) HandleUserInteractions() {
-	if hp.CurrentPage() != nil {
-		hp.CurrentPage().HandleUserInteractions()
-	}
-
 	if hp.navigationTab.Changed() {
 		var pg app.Page
 		switch hp.navigationTab.SelectedTab() {
@@ -286,6 +286,8 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	hp.CurrentPage().HandleUserInteractions()
 }
 
 func (hp *HomePage) showWarningNoWallet() {
@@ -334,11 +336,7 @@ func (hp *HomePage) OnCurrencyChanged() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (hp *HomePage) OnNavigatedFrom() {
-	// Also remove all child pages.
-	if activeTab := hp.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedFrom()
-	}
-
+	hp.CurrentPage().OnNavigatedFrom()
 	hp.ctxCancel()
 }
 

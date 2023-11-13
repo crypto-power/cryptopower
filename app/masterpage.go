@@ -13,12 +13,21 @@ type MasterPage struct {
 	subPages *PageStack
 }
 
-// NewMasterPage returns an instance of MasterPage.
-func NewMasterPage(id string) *MasterPage {
-	return &MasterPage{
+// NewMasterPage returns an instance of MasterPage. startPage is optional.
+func NewMasterPage(id string, startPage Page) *MasterPage {
+	mp := &MasterPage{
 		GenericPageModal: NewGenericPageModal(id),
 		subPages:         NewPageStack(id),
 	}
+
+	if startPage == nil {
+		return mp
+	}
+
+	// Bind the navigator to the page.
+	startPage.OnAttachedToNavigator(mp)
+	mp.subPages.pages = append(mp.subPages.pages, startPage)
+	return mp
 }
 
 // CurrentPage returns the page that is at the top of the stack. Returns nil if
@@ -47,6 +56,11 @@ func (masterPage *MasterPage) Display(newPage Page) {
 	if pushed {
 		masterPage.ParentWindow().Reload()
 	}
+
+	// Page is ready to be displayed.
+	newPage.OnAttachedToNavigator(masterPage)
+	newPage.OnNavigatedTo()
+	masterPage.ParentWindow().Reload()
 }
 
 // CloseCurrentPage dismisses the page at the top of the stack and gets the next

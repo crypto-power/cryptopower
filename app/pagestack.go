@@ -41,14 +41,6 @@ func (pageStack *PageStack) PushAndNavigate(newPage Page, navigator PageNavigato
 	pageStack.mtx.Lock()
 	defer pageStack.mtx.Unlock()
 
-	if l := len(pageStack.pages); l > 0 {
-		currentPage := pageStack.pages[l-1]
-		if currentPage.ID() == newPage.ID() {
-			return false
-		}
-		currentPage.OnNavigatedFrom()
-	}
-
 	// Close any previous instance of this type. Use the Closed() method if
 	// implemented, to signal that the instance will never be re-displayed.
 	for i, existingPage := range pageStack.pages {
@@ -63,8 +55,6 @@ func (pageStack *PageStack) PushAndNavigate(newPage Page, navigator PageNavigato
 	}
 
 	pageStack.pages = append(pageStack.pages, newPage)
-	newPage.OnAttachedToNavigator(navigator)
-	newPage.OnNavigatedTo()
 	return true
 }
 
