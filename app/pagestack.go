@@ -13,11 +13,18 @@ type PageStack struct {
 	pages []Page
 }
 
-// NewPageStack creates a new PageStack object.
-func NewPageStack(name string) *PageStack {
-	return &PageStack{
+// NewPageStack creates a new PageStack object. startPage is optional but should
+// have it's navigator already attached if provided.
+func NewPageStack(name string, startPage Page) *PageStack {
+	ps := &PageStack{
 		name: name,
 	}
+
+	if startPage != nil {
+		ps.pages = append(ps.pages, startPage)
+	}
+
+	return ps
 }
 
 // Top returns the page that is at the top of the stack. Returns nil if the
@@ -72,16 +79,19 @@ func (pageStack *PageStack) Pop() bool {
 		return false
 	}
 
-	pageToPop := pageStack.pages[l-1]
+	var topPageIndex = l - 1
+	pageToPop := pageStack.pages[topPageIndex]
 	pageToPop.OnNavigatedFrom()
 	if closeablePage, ok := pageToPop.(Closable); ok {
 		closeablePage.OnClosed()
 	}
 
-	pageStack.pages = pageStack.pages[:l-1]
-	if l > 1 {
-		pageStack.pages[l-2].OnNavigatedTo() // get previous page ready for display
+	pageStack.pages = pageStack.pages[:topPageIndex] // remove page.
+	if topPageIndex == 0 {                           // we popped the last page
+		return true
 	}
+
+	pageStack.pages[len(pageStack.pages)-1].OnNavigatedTo() // get the top page ready for display
 	return true
 }
 

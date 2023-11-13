@@ -20,7 +20,7 @@ type SimpleWindowNavigator struct {
 func NewSimpleWindowNavigator(reloadDisplayFn func()) *SimpleWindowNavigator {
 	w := &SimpleWindowNavigator{
 		reloadDisplayFn: reloadDisplayFn,
-		subPages:        NewPageStack("main window"),
+		subPages:        NewPageStack("main window", nil),
 	}
 	return w
 }

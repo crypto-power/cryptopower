@@ -17,16 +17,16 @@ type MasterPage struct {
 func NewMasterPage(id string, startPage Page) *MasterPage {
 	mp := &MasterPage{
 		GenericPageModal: NewGenericPageModal(id),
-		subPages:         NewPageStack(id),
 	}
 
-	if startPage == nil {
-		return mp
+	if startPage != nil {
+		// Bind the navigator to the page.
+		startPage.OnAttachedToNavigator(mp)
+		mp.subPages.pages = append(mp.subPages.pages, startPage)
 	}
 
-	// Bind the navigator to the page.
-	startPage.OnAttachedToNavigator(mp)
-	mp.subPages.pages = append(mp.subPages.pages, startPage)
+	mp.subPages = NewPageStack(id, startPage)
+
 	return mp
 }
 
