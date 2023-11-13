@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	// "gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -796,7 +795,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return pg.Theme.Body1("No recent transaction").Layout(gtx)
@@ -806,7 +805,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
@@ -863,7 +862,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						}
 
 						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							tx, wal := txAndWallet(pg.transactions[index])
+							tx, wal := txAndWallet(pg.stakes[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)

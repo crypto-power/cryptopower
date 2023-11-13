@@ -42,6 +42,12 @@ type WalletInfo struct {
 
 	container *widget.List
 
+	transactions       []*sharedW.Transaction
+	recentTransactions layout.List
+
+	stakes       []*sharedW.Transaction
+	recentStakes layout.List
+
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
@@ -75,6 +81,14 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 		wallet:           l.WL.SelectedWallet.Wallet,
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
+		},
+		recentTransactions: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		},
+		recentStakes: layout.List{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
 		},
 		checkBox: l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
@@ -112,6 +126,12 @@ func (pg *WalletInfo) OnNavigatedTo() {
 	if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 		pg.reloadMixerBalances()
 	}
+
+	pg.loadTransactions()
+
+	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+		pg.loadStakes()
+	}
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -126,13 +146,22 @@ func (pg *WalletInfo) Layout(gtx C) D {
 			if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 				items = append(items, layout.Rigid(pg.mixerLayout))
 			}
+
+			if len(pg.transactions) > 0 {
+				items = append(items, layout.Rigid(pg.recentTransactionLayout))
+			}
+
+			if len(pg.stakes) > 0 {
+				items = append(items, layout.Rigid(pg.recentStakeLayout))
+			}
+
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 		})
 	})
 }
 
 func (pg *WalletInfo) walletInfoLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, func(gtx C) D {
+	return pg.pageContentWrapper(gtx, "", func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.walletNameAndBackupInfo),
 			layout.Rigid(pg.syncStatusSection),
@@ -161,7 +190,7 @@ func (pg *WalletInfo) walletNameAndBackupInfo(gtx C) D {
 	if len(pg.WL.SelectedWallet.Wallet.GetEncryptedSeed()) > 0 {
 		items = append(items, layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(pg.Theme.Icons.RedAlert.Layout24dp),
+				layout.Rigid(pg.Theme.Icons.RedAlert.Layout20dp),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Left:  values.MarginPadding9,
@@ -177,7 +206,6 @@ func (pg *WalletInfo) walletNameAndBackupInfo(gtx C) D {
 
 func (pg *WalletInfo) mixerLayout(gtx C) D {
 	return layout.Inset{
-		Top:    values.MarginPadding16,
 		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
 		return components.MixerComponent{
@@ -192,9 +220,81 @@ func (pg *WalletInfo) mixerLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletInfo) pageContentWrapper(gtx C, body layout.Widget) D {
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding20).Layout(gtx, body)
+func (pg *WalletInfo) recentTransactionLayout(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), func(gtx C) D {
+		return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
+			tx := pg.transactions[index]
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
+				}),
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if index == len(pg.transactions)-1 {
+						return D{}
+					}
+
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					separator := pg.Theme.Separator()
+					return layout.E.Layout(gtx, func(gtx C) D {
+						// Show bottom divider for all rows except last
+						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+					})
+				}),
+			)
+		})
+	})
+}
+
+func (pg *WalletInfo) recentStakeLayout(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), func(gtx C) D {
+		return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
+			tx := pg.stakes[index]
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
+				}),
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if index == len(pg.stakes)-1 {
+						return D{}
+					}
+
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					separator := pg.Theme.Separator()
+					return layout.E.Layout(gtx, func(gtx C) D {
+						// Show bottom divider for all rows except last
+						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+					})
+				}),
+			)
+		})
+	})
+}
+
+func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
+	return layout.Inset{
+		Bottom: values.MarginPadding16,
+	}.Layout(gtx, func(gtx C) D {
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if sectionTitle == "" {
+							return D{}
+						}
+						return layout.Inset{
+							Bottom: values.MarginPadding24,
+						}.Layout(gtx, func(gtx C) D {
+							txt := pg.Theme.Body1(sectionTitle)
+							txt.Font.Weight = font.SemiBold
+							return txt.Layout(gtx)
+						})
+					}),
+					layout.Rigid(body),
+				)
+			})
+		})
 	})
 }
 
@@ -364,6 +464,33 @@ func (pg *WalletInfo) reloadMixerBalances() {
 			}
 			pg.unmixedBalance = bal
 		}
+	}
+}
+
+func (pg *WalletInfo) loadTransactions() {
+	txs, err := pg.wallet.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
+	if err != nil {
+		log.Errorf("error loading transactions: %v", err)
+		return
+	}
+	pg.transactions = txs
+}
+
+func (pg *WalletInfo) loadStakes() {
+	pg.stakes = make([]*sharedW.Transaction, 0)
+
+	txs, err := pg.wallet.GetTransactionsRaw(0, 10, libutils.TxFilterStaking, true)
+	if err != nil {
+		log.Errorf("error loading staking activities: %v", err)
+		return
+	}
+	for _, stakeTx := range txs {
+		if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
+			pg.stakes = append(pg.stakes, stakeTx)
+		}
+	}
+	if len(pg.stakes) > 3 {
+		pg.stakes = pg.stakes[:3]
 	}
 }
 
