@@ -78,7 +78,6 @@ func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes float32) *VoteBar {
 
 func (v *VoteBar) SetDisableInfoTitle(isDisable bool) *VoteBar {
 	v.isDisableInfoTitle = isDisable
-
 	return v
 }
 
