@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	giouiApp "gioui.org/app"
 	"gioui.org/io/key"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/assets"
@@ -24,7 +26,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/notification"
 	"github.com/crypto-power/cryptopower/ui/page"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 // Window represents the app window (and UI in general). There should only be one.
@@ -34,13 +35,9 @@ type Window struct {
 	*giouiApp.Window
 	navigator app.WindowNavigator
 
-	wallet *wallet.Wallet
-
 	load *load.Load
 
 	txAuthor dcr.TxAuthor
-
-	walletAcctMixerStatus chan *wallet.AccountMixer
 
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
@@ -64,28 +61,26 @@ type WriteClipboard struct {
 // Should never be called more than once as it calls
 // app.NewWindow() which does not support being called more
 // than once.
-func CreateWindow(wal *wallet.Wallet) (*Window, error) {
+func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
 	appSize := giouiApp.Size(values.AppWidth, values.AppHeight)
 	// appMinSize is the minimum size the app.
 	appMinSize := giouiApp.MinSize(values.AppWidth, values.AppHeight)
 	// Display network on the app title if its not on mainnet.
-	if wal.Net != libutils.Mainnet {
-		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, wal.Net.Display()))
+	if net := mw.NetType(); net != libutils.Mainnet {
+		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, net.Display()))
 	}
 
 	giouiWindow := giouiApp.NewWindow(appSize, appMinSize, appTitle)
 	win := &Window{
-		Window:                giouiWindow,
-		navigator:             app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
-		wallet:                wal,
-		walletAcctMixerStatus: make(chan *wallet.AccountMixer),
-		Quit:                  make(chan struct{}, 1),
-		IsShutdown:            make(chan struct{}, 1),
+		Window:     giouiWindow,
+		navigator:  app.NewSimpleWindowNavigator(giouiWindow.Invalidate),
+		Quit:       make(chan struct{}, 1),
+		IsShutdown: make(chan struct{}, 1),
 	}
 
-	l, err := win.NewLoad()
+	l, err := win.NewLoad(mw, version, buildDate)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +89,7 @@ func CreateWindow(wal *wallet.Wallet) (*Window, error) {
 	return win, nil
 }
 
-func (win *Window) NewLoad() (*load.Load, error) {
+func (win *Window) NewLoad(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*load.Load, error) {
 	th := cryptomaterial.NewTheme(assets.FontCollection(), assets.DecredIcons, false)
 	if th == nil {
 		return nil, errors.New("unexpected error while loading theme")
@@ -102,8 +97,6 @@ func (win *Window) NewLoad() (*load.Load, error) {
 
 	// fetch status of the wallet if its online.
 	go libutils.IsOnline()
-
-	mw := win.wallet.GetAssetsManager()
 
 	// Set the user-configured theme colors on app load.
 	var isDarkModeOn bool
@@ -114,11 +107,12 @@ func (win *Window) NewLoad() (*load.Load, error) {
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
 	l := &load.Load{
+		AppInfo: load.StartApp(version, buildDate),
+
 		Theme: th,
 
 		WL: &load.WalletLoad{
 			AssetsManager: mw,
-			Wallet:        win.wallet,
 			TxAuthor:      win.txAuthor,
 		},
 

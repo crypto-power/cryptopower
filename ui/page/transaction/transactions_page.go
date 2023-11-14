@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"context"
 	"fmt"
 	"image"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -47,9 +45,6 @@ type TransactionsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	*listeners.TxAndBlockNotificationListener
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 	separator cryptomaterial.Line
 
 	selectedTabIndex int
@@ -89,15 +84,13 @@ func NewTransactionsPage(l *load.Load) *TransactionsPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	pg.refreshAvailableTxType()
 	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
-	pg.listenForTxNotifications()
+	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
@@ -392,33 +385,21 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 }
 
 func (pg *TransactionsPage) listenForTxNotifications() {
-	if pg.TxAndBlockNotificationListener != nil {
-		return
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+			pg.ParentWindow().Reload()
+		},
 	}
-	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, TransactionsPageID)
+	err := pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.TxAndBlockNotifChan():
-				if n.Type == listeners.NewTransaction {
-					pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
-				pg.CloseTxAndBlockChan()
-				pg.TxAndBlockNotificationListener = nil
-
-				return
-			}
-		}
-	}()
+func (pg *TransactionsPage) stopTxNotificationsListener() {
+	pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -429,5 +410,5 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.stopTxNotificationsListener()
 }

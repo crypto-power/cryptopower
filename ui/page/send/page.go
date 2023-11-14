@@ -1,7 +1,6 @@
 package send
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -43,9 +42,6 @@ type Page struct {
 
 	modalLayout   *cryptomaterial.Modal
 	isModalLayout bool
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	pageContainer *widget.List
 
@@ -261,13 +257,12 @@ func (pg *Page) UpdateSelectedUTXOs(utxos []*sharedW.UnspentOutput) {
 func (pg *Page) OnNavigatedTo() {
 	pg.RestyleWidgets()
 
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
 
-	pg.sourceAccountSelector.ListenForTxNotifications(pg.ctx, pg.ParentWindow())
+	pg.sourceAccountSelector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
 	// destinationAccountSelector does not have a default value,
 	// so assign it an initial value here
 	pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(pg.sendDestination.destinationWalletSelector.SelectedWallet())
@@ -649,7 +644,7 @@ func (pg *Page) HandleKeyPress(_ *key.Event) {}
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	pg.ctxCancel() // causes crash if nil, when the main page is closed if send page is created but never displayed (because sync in progress)
+	pg.sourceAccountSelector.StopTxNtfnListener()
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {

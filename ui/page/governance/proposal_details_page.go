@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -15,15 +14,14 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/renderers"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const ProposalDetailsPageID = "proposal_details"
@@ -40,11 +38,6 @@ type ProposalDetails struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	*listeners.ProposalNotificationListener // not needed.
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	descriptionList *layout.List
 
@@ -116,8 +109,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-	pg.listenForSyncNotifications()
+	pg.listenForSyncNotifications() // listener is stopped in OnNavigatedFrom()
 }
 
 func (pg *ProposalDetails) initWalletSelector() {
@@ -211,37 +203,20 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 }
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
-	if pg.ProposalNotificationListener == nil {
-		return
+	proposalSyncCallback := func(propName string, status utils.ProposalStatus) {
+		if status == utils.ProposalStatusSynced {
+			proposal, err := pg.WL.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
+			if err == nil {
+				pg.proposal = &libwallet.Proposal{Proposal: *proposal}
+				pg.ParentWindow().Reload()
+			}
+		}
 	}
-	pg.ProposalNotificationListener = listeners.NewProposalNotificationListener()
-	err := pg.WL.AssetsManager.Politeia.AddNotificationListener(pg.ProposalNotificationListener, ProposalDetailsPageID)
+	err := pg.WL.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalDetailsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
 	}
-
-	go func() {
-		for {
-			select {
-			case notification := <-pg.ProposalNotifChan:
-				if notification.ProposalStatus == wallet.Synced {
-					proposal, err := pg.WL.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
-					if err == nil {
-						pg.proposal = &libwallet.Proposal{Proposal: *proposal}
-						pg.ParentWindow().Reload()
-					}
-				}
-			// is this really needed since listener has been set up on main.go
-			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.Politeia.RemoveNotificationListener(ProposalDetailsPageID)
-				close(pg.ProposalNotifChan)
-				pg.ProposalNotificationListener = nil
-
-				return
-			}
-		}
-	}()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -252,7 +227,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalDetailsPageID)
 }
 
 // - Layout

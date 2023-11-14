@@ -30,8 +30,8 @@ type Politeia struct {
 	cancelSync context.CancelFunc
 	client     *politeiaClient
 
-	notificationListenersMu *sync.RWMutex // Pointer required to avoid copying literal values.
-	notificationListeners   map[string]ProposalNotificationListener
+	syncCallbacksMtx *sync.RWMutex // Pointer required to avoid copying literal values.
+	syncCallbacks    map[string]proposalSyncCallback
 }
 
 const (
@@ -53,10 +53,10 @@ func New(host string, db *storm.DB) (*Politeia, error) {
 		host: host,
 		db:   db,
 
-		mu:                      &sync.RWMutex{},
-		notificationListenersMu: &sync.RWMutex{},
+		mu:               &sync.RWMutex{},
+		syncCallbacksMtx: &sync.RWMutex{},
 
-		notificationListeners: make(map[string]ProposalNotificationListener),
+		syncCallbacks: make(map[string]proposalSyncCallback),
 	}, nil
 }
 

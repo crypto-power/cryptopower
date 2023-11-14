@@ -122,7 +122,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		currentStep:           onboardingSetPassword,
 		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
 		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		serverDropDown:        th.DropDown(knownDEXServers[l.WL.Wallet.Net], values.DEXServerDropdownGroup, 0),
+		serverDropDown:        th.DropDown(knownDEXServers[l.WL.AssetsManager.NetType()], values.DEXServerDropdownGroup, 0),
 		addServerBtn:          th.NewClickable(false),
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
 		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
@@ -875,7 +875,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.currentStep = onBoardingStepAddServer
-			knownServers, ok := knownDEXServers[pg.WL.Wallet.Net]
+			knownServers, ok := knownDEXServers[pg.WL.AssetsManager.NetType()]
 			if ok && len(knownServers) > 0 && !pg.wantCustomServer {
 				pg.currentStep = onboardingChooseServer
 			}
