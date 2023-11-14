@@ -386,7 +386,9 @@ func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem) lay
 		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			return layout.Stack{}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
-					return item.backgroundImage.LayoutSizeWithRadius(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221, 8)
+					width := gtx.Constraints.Max.X
+					height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
+					return item.backgroundImage.LayoutSizeWithRadius(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height), 8)
 				}),
 				layout.Expanded(func(gtx C) D {
 					col := pg.Theme.Color.InvText

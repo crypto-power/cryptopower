@@ -15,6 +15,7 @@ import (
 
 type Image struct {
 	image.Image
+	aspectRatio int
 
 	// Keep a cache for scaled images to reduce resource use.
 	layoutSizeMtx sync.Mutex
@@ -27,9 +28,15 @@ type Image struct {
 }
 
 func NewImage(src image.Image) *Image {
+	imageBounds := src.Bounds()
 	return &Image{
-		Image: src,
+		Image:       src,
+		aspectRatio: imageBounds.Dx() / imageBounds.Dy(),
 	}
+}
+
+func (img *Image) AspectRatio() int {
+	return img.aspectRatio
 }
 
 // reduced the image original scale of 1 by half to 0.5 fix blurry images
