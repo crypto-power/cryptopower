@@ -10,11 +10,11 @@ output:
 linters:
   disable-all: true
   enable:
-    - govet 
+    - govet
     - staticcheck
-    - gosimple 
+    - gosimple
     - unconvert
-    - ineffassign 
+    - ineffassign
     - revive
-    - goimports 
+    - goimports
     - unparam
