@@ -35,8 +35,6 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	assetsManager *libwallet.AssetsManager
-
 	dcrWalletSelector *components.WalletAndAccountSelector
 	selectedDCRWallet *dcr.Asset
 
@@ -60,7 +58,6 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg := &TreasuryPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TreasuryPageID),
-		assetsManager:    l.AssetsManager,
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},

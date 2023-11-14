@@ -621,25 +621,15 @@ func (pg *SettingPage) updateSettingOptions() {
 }
 
 func (pg *SettingPage) updatePrivacySettings() {
-	pg.setInitialSwitchStatus(pg.privacyActive, pg.AssetsManager.IsPrivacyModeOn())
-	if !pg.AssetsManager.IsPrivacyModeOn() {
+	privacyOn := pg.AssetsManager.IsPrivacyModeOn()
+	pg.setInitialSwitchStatus(pg.privacyActive, privacyOn)
+	if !privacyOn {
 		pg.setInitialSwitchStatus(pg.transactionNotification, pg.AssetsManager.IsTransactionNotificationsOn())
 		pg.setInitialSwitchStatus(pg.governanceAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI))
 		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI))
 		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI))
 		pg.setInitialSwitchStatus(pg.vspAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI))
-	} /*else {
-		// TODO: Re "Clear all the peers saved if the privacy mode is on". Does
-		// this mean clear all peers for all wallets? The privacy mode isn't on
-		// for just the selected wallet afterall.
-
-		if pg.WL.SelectedWallet != nil {
-			go func() {
-				// Clear all the peers saved if the privacy mode is on.
-				pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-			}()
-		}
-	}*/
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

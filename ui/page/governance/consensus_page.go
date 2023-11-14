@@ -152,7 +152,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for _, item := range pg.consensusItems {
 		if item.VoteButton.Clicked() {
-			pg.agendaVoteChoiceModal(&item.Agenda)
+			pg.agendaVoteChoiceModal(item.Agenda)
 		}
 	}
 

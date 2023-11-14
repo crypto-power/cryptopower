@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -14,7 +13,7 @@ import (
 )
 
 type ConsensusItem struct {
-	Agenda     dcr.Agenda
+	Agenda     *dcr.Agenda
 	VoteButton cryptomaterial.Button
 }
 
@@ -37,7 +36,7 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem, hasVoti
 	)
 }
 
-func layoutAgendaStatus(gtx C, l *load.Load, agenda dcr.Agenda) D {
+func layoutAgendaStatus(gtx C, l *load.Load, agenda *dcr.Agenda) D {
 	var statusLabel cryptomaterial.Label
 	var statusIcon *cryptomaterial.Icon
 	var backgroundColor color.NRGBA
@@ -127,7 +126,8 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingW
 		return D{}
 	}
 
-	canVote := hasVotingWallet && item.Agenda.Status == dcr.AgendaStatusUpcoming.String() || item.Agenda.Status == dcr.AgendaStatusInProgress.String()
+	hasVotingStatus := item.Agenda.Status == dcr.AgendaStatusUpcoming.String() || item.Agenda.Status == dcr.AgendaStatusInProgress.String()
+	canVote := hasVotingWallet && hasVotingStatus
 	item.VoteButton.SetEnabled(canVote)
 	if canVote {
 		item.VoteButton.Background = l.Theme.Color.Primary
@@ -135,7 +135,7 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingW
 		item.VoteButton.Background = l.Theme.Color.Gray3
 	}
 
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
+	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding150), gtx.Dp(values.MarginPadding200)
 	return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, item.VoteButton.Layout)
 }
 
@@ -160,29 +160,27 @@ func LoadAgendas(l *load.Load, dcrWallet *dcr.Asset, newestFirst bool) []*Consen
 		return nil
 	}
 
+	var walletChoices map[string]string
 	if dcrWallet != nil {
-		walletChoices, err := dcrWallet.AgendaChoices("")
+		walletChoices, err = dcrWallet.AgendaChoices("")
 		if err != nil {
 			return nil
-		}
-		// Update the vote preference value in the agendas slice. Where the
-		// wallet doesn't have a set vote preference, default to "abstain".
-		for i := range agendas {
-			agenda := agendas[i]
-			if voteChoice, ok := walletChoices[agenda.AgendaID]; ok {
-				agenda.VotingPreference = voteChoice
-			} else {
-				agenda.VotingPreference = "abstain"
-			}
 		}
 	}
 
 	consensusItems := make([]*ConsensusItem, len(agendas))
-	for i := 0; i < len(agendas); i++ {
+	for i := range agendas {
+		agenda := agendas[i]
+		if voteChoice, ok := walletChoices[agenda.AgendaID]; ok {
+			agenda.VotingPreference = voteChoice
+		} else {
+			agenda.VotingPreference = "-"
+		}
 		consensusItems[i] = &ConsensusItem{
-			Agenda:     *agendas[i],
+			Agenda:     agenda,
 			VoteButton: l.Theme.Button(values.String(values.StrSetChoice)),
 		}
 	}
+
 	return consensusItems
 }

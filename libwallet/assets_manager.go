@@ -855,6 +855,10 @@ func (mgr *AssetsManager) CalculateTotalAssetsBalance() (map[utils.AssetType]sha
 }
 
 func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType]sharedW.AssetAmount) (map[utils.AssetType]float64, error) {
+	if !mgr.ExchangeRateFetchingEnabled() {
+		return nil, fmt.Errorf("USD exchange rate is disabled")
+	}
+
 	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
 		rate := mgr.RateSource.GetTicker(market)
 		if rate == nil || rate.LastTradePrice <= 0 {
