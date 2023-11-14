@@ -55,12 +55,11 @@ func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return sp.Theme.Card().Layout(gtx, func(gtx C) D {
-				inset := layout.Inset{
+				return layout.Inset{
 					Top:   values.MarginPadding16,
 					Left:  values.MarginPadding24,
 					Right: values.MarginPadding24,
-				}
-				return inset.Layout(gtx, func(gtx C) D {
+				}.Layout(gtx, func(gtx C) D {
 					return sp.Header(window, gtx)
 				})
 			})
@@ -100,31 +99,27 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						if sp.InfoTemplate != "" {
 							return sp.InfoButton.Layout(gtx)
-						} else if sp.ExtraItem != nil {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									if sp.ExtraText != "" {
-										return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-											return sp.Theme.Caption(sp.ExtraText).Layout(gtx)
-										})
-									}
-									return D{}
-								}),
-								layout.Rigid(func(gtx C) D {
-									return sp.ExtraItem.Layout(gtx, sp.Extra)
-								}),
-							)
+						} else if sp.ExtraItem == nil {
+							return D{}
 						}
-						return D{}
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								if sp.ExtraText != "" {
+									return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, sp.Theme.Caption(sp.ExtraText).Layout)
+								}
+								return D{}
+							}),
+							layout.Rigid(func(gtx C) D {
+								return sp.ExtraItem.Layout(gtx, sp.Extra)
+							}),
+						)
 					})
 				}),
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if sp.ExtraHeader != nil {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return sp.ExtraHeader(gtx)
-				})
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, sp.ExtraHeader)
 			}
 			return D{}
 		}),

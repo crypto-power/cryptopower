@@ -142,7 +142,6 @@ func (c *politeiaClient) tokenInventory() (*www.TokenInventoryReply, error) {
 
 func (c *politeiaClient) getInventory() (*www.TokenInventoryReply, error) {
 	var tokenInventoryReply www.TokenInventoryReply
-
 	err := c.makeRequest(http.MethodGet, apiPath, tkv1.RouteInventory, nil, &tokenInventoryReply)
 	if err != nil {
 		return nil, err
