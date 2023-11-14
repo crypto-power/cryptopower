@@ -37,8 +37,8 @@ type TreasuryPage struct {
 
 	assetsManager *libwallet.AssetsManager
 
-	sourceWalletSelector *components.WalletAndAccountSelector
-	selectedWallet       sharedW.Asset
+	dcrWalletSelector *components.WalletAndAccountSelector
+	selectedDCRWallet *dcr.Asset
 
 	treasuryItems []*components.TreasuryItem
 
@@ -90,7 +90,7 @@ func (pg *TreasuryPage) OnNavigatedTo() {
 	// a network call. Refresh the window once the call completes.
 	pg.PiKey = hex.EncodeToString(pg.AssetsManager.PiKeys()[0])
 
-	if pg.isTreasuryAPIAllowed() && pg.selectedWallet != nil {
+	if pg.isTreasuryAPIAllowed() && pg.selectedDCRWallet != nil {
 		pg.FetchPolicies()
 	}
 }
@@ -157,7 +157,7 @@ func (pg *TreasuryPage) FetchPolicies() {
 	pg.isPolicyFetchInProgress = true
 
 	go func() {
-		pg.treasuryItems = components.LoadPolicies(pg.Load, pg.selectedWallet, pg.PiKey)
+		pg.treasuryItems = components.LoadPolicies(pg.Load, pg.selectedDCRWallet, pg.PiKey)
 		pg.isPolicyFetchInProgress = true
 		pg.ParentWindow().Reload()
 	}()
@@ -184,7 +184,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 }
 
 func (pg *TreasuryPage) layout(gtx C) D {
-	if pg.selectedWallet == nil {
+	if pg.selectedDCRWallet == nil {
 		return pg.decredWalletRequired(gtx)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -250,7 +250,7 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 								layout.Rigid(func(gtx C) D {
 									return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 										gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding350)
-										return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+										return pg.dcrWalletSelector.Layout(pg.ParentWindow(), gtx)
 									})
 								}),
 								layout.Rigid(func(gtx C) D {
@@ -304,7 +304,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		Title(values.String(values.StrConfirmVote)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			votingPreference := treasuryItem.OptionsRadioGroup.Value
-			err := pg.selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			err := pg.selectedDCRWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -323,14 +323,15 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 
 func (pg *TreasuryPage) initWalletSelector() {
 	// Source wallet picker
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+	pg.dcrWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
-	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+
+	if pg.dcrWalletSelector.SelectedWallet() != nil {
+		pg.selectedDCRWallet = pg.dcrWalletSelector.SelectedWallet().(*dcr.Asset)
 	}
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedWallet = selectedWallet
+	pg.dcrWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedDCRWallet = selectedWallet.(*dcr.Asset)
 		pg.FetchPolicies()
 	})
 }
