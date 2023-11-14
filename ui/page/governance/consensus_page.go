@@ -112,7 +112,7 @@ func (pg *ConsensusPage) initWalletSelector() {
 
 	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
 		pg.selectedWallet = selectedWallet.Asset
-		//TODO: Implement action when selected wallet
+		pg.FetchAgendas()
 	})
 }
 
@@ -258,15 +258,10 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	//TODO implement wallet selector. Currently, we are fetching and
-	// displaying all agenda. we will need to add some form of filter
-	// to switch between all agendas' or just agenda's for the selected
-	// wallet
-	// selectedWallet := pg.WL.SelectedWallet.Wallet
 	pg.isSyncing = true
 
 	orderNewest := true
-	if pg.orderDropDown.Selected() == values.StrOldest {
+	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
 		orderNewest = false
 	}
 
@@ -277,7 +272,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, nil, orderNewest)
+		items := components.LoadAgendas(pg.Load, pg.selectedWallet, orderNewest)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {

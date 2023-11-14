@@ -146,7 +146,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 	}
 
 	orderNewest := true
-	if pg.orderDropDown.Selected() == values.StrOldest {
+	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
 		orderNewest = false
 	}
 

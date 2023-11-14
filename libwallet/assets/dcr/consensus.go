@@ -279,6 +279,10 @@ func AllVoteAgendas(chainParams *chaincfg.Params, newestFirst bool) ([]*Agenda, 
 		sort.Slice(agendas, func(i, j int) bool {
 			return agendas[i].StartTime > agendas[j].StartTime
 		})
+	} else {
+		sort.Slice(agendas, func(i, j int) bool {
+			return agendas[i].StartTime < agendas[j].StartTime
+		})
 	}
 	return agendas, nil
 }
