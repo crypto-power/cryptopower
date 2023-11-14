@@ -207,9 +207,9 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	}
 	total := totalBalance.Spendable.ToInt() + totalBalance.LockedByTickets.ToInt()
 	pb := pg.Theme.MultiLayerProgressBar(pg.WL.SelectedWallet.Wallet.ToAmount(total).ToCoin(), items)
+	pb.ShowAddWidgetFirst = true
 	pb.Height = values.MarginPadding16
-	pb.ShowLedger = true
-	return pb.Layout2(gtx, labelWdg)
+	return pb.Layout(gtx, labelWdg)
 }
 
 func (pg *Page) stakingRecordStatistics(gtx C) D {
