@@ -790,4 +790,12 @@ const EN = `
 "assets" = "Assets"
 "noWalletsAvailable" = "You cannot spend from a watch only wallet, try creating another wallet."
 "createAssetWalletToSwapMsg" = "You need to create a %s wallet to swap."
+"stakingInfo" = "Staking Info"
+"strStakeTimeLeft" = "Time Left"
+"totalReward" = "Total Reward"
+"Revoked" = "Revoked"
+"unmined" = "Unmined"
+"voted"="Voted"
+"immature" = "Immature"
+"expired" = "Expired"
 `

@@ -45,6 +45,7 @@ type MultiLayerProgressBar struct {
 	total            float64
 	ShowLedger       bool
 	ShowOverLayValue bool
+	Reverse          bool
 }
 
 func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
@@ -222,15 +223,32 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 }
 
 func (mp *MultiLayerProgressBar) Layout(gtx C, labelWdg layout.Widget) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
-		}),
+
+	flex := layout.Flex{Axis: layout.Vertical}
+
+	if !mp.Reverse {
+		return flex.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if mp.ShowLedger {
+					return layout.Center.Layout(gtx, labelWdg)
+				}
+				return D{}
+			}),
+		)
+	}
+
+	return flex.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if mp.ShowLedger {
 				return layout.Center.Layout(gtx, labelWdg)
 			}
 			return D{}
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
 		}),
 	)
 }

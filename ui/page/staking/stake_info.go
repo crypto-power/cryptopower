@@ -3,6 +3,7 @@ package staking
 import (
 	"fmt"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -24,87 +25,101 @@ func (pg *Page) stakePriceSection(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{
-					Bottom: values.MarginPadding11,
+					Bottom: values.MarginPadding18,
 				}.Layout(gtx, func(gtx C) D {
 					col := pg.Theme.Color.GrayText2
 					leftWg := func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
+								txt := pg.Theme.Label(values.TextSize20, values.String(values.StrStakingInfo))
+								txt.Font.Weight = font.SemiBold
+								return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, txt.Layout)
+
+							}),
+
+							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+
 									layout.Rigid(func(gtx C) D {
-										title := pg.Theme.Label(values.TextSize16, values.String(values.StrTicketPrice)+": ")
+										title := pg.Theme.Label(values.TextSize16, values.String(values.StrTicketPrice))
 										title.Color = col
-										return title.Layout(gtx)
+										return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, title.Layout)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Center.Layout(gtx, func(gtx C) D {
 											if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
 												title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
-												title.Color = col
 												return title.Layout(gtx)
 											}
 
 											return components.LayoutBalanceSize(gtx, pg.Load, pg.ticketPrice, values.TextSize16)
 										})
 									}),
+								)
+							}),
+							pg.dataRows(values.String(values.StrLiveTickets), pg.ticketOverview.Live),
+						)
+					}
+					rightWg := func(gtx C) D {
+
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											title := pg.Theme.Label(values.TextSize16, values.String(values.StrStake))
+											title.Color = col
+											if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+												return title.Layout(gtx)
+											}
+											return D{}
+										}),
+										layout.Rigid(func(gtx C) D {
+											if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+												return layout.Inset{
+													Right: values.MarginPadding40,
+													Left:  values.MarginPadding4,
+												}.Layout(gtx, pg.stake.Layout)
+											}
+											return D{}
+										}),
+										layout.Rigid(func(gtx C) D {
+											icon := pg.Theme.Icons.HeaderSettingsIcon
+											// Todo -- darkmode icons
+											// if pg.ticketBuyerWallet.IsAutoTicketsPurchaseActive() {
+											// 	icon = pg.Theme.Icons.SettingsInactiveIcon
+											// }
+											if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+												return pg.stakeSettings.Layout(gtx, icon.Layout24dp)
+											}
+											return D{}
+										}),
+									)
+								})
+							}),
+
+							layout.Rigid(func(gtx C) D {
+								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Left:  values.MarginPadding8,
-											Right: values.MarginPadding4,
-										}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
+										title := pg.Theme.Label(values.TextSize16, values.String(values.StrStakeTimeLeft))
+										title.Color = col
+										return title.Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
 										secs, _ := pg.dcrImpl.NextTicketPriceRemaining()
 										txt := pg.Theme.Label(values.TextSize16, nextTicketRemaining(int(secs)))
-										txt.Color = col
 
 										if pg.WL.SelectedWallet.Wallet.IsSyncing() {
 											txt.Text = values.String(values.StrSyncingState)
 										}
-										return txt.Layout(gtx)
+										return layout.Inset{Left: values.MarginPadding18}.Layout(gtx, txt.Layout)
+
 									}),
 								)
 							}),
-							pg.dataRows(values.String(values.StrLiveTickets), pg.ticketOverview.Live),
-							pg.dataRows(values.String(values.StrCanBuy), pg.CalculateTotalTicketsCanBuy()),
-						)
-					}
 
-					rightWg := func(gtx C) D {
-						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								title := pg.Theme.Label(values.TextSize16, values.String(values.StrStake))
-								title.Color = col
-								if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return title.Layout(gtx)
-								}
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return layout.Inset{
-										Right: values.MarginPadding40,
-										Left:  values.MarginPadding4,
-									}.Layout(gtx, pg.stake.Layout)
-								}
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								icon := pg.Theme.Icons.HeaderSettingsIcon
-								// Todo -- darkmode icons
-								// if pg.ticketBuyerWallet.IsAutoTicketsPurchaseActive() {
-								// 	icon = pg.Theme.Icons.SettingsInactiveIcon
-								// }
-								if !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-									return pg.stakeSettings.Layout(gtx, icon.Layout24dp)
-								}
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-								pg.infoButton.Size = values.MarginPadding22
-								return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.infoButton.Layout)
-							}),
+							pg.dataRows(values.String(values.StrCanBuy), pg.CalculateTotalTicketsCanBuy()),
 						)
 					}
 
@@ -114,6 +129,12 @@ func (pg *Page) stakePriceSection(gtx C) D {
 					)
 				})
 			}),
+
+			layout.Rigid(func(gtx C) D {
+				line := pg.Theme.Separator()
+				return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, line.Layout)
+			}),
+
 			layout.Rigid(pg.balanceProgressBarLayout),
 		)
 	})
@@ -124,14 +145,13 @@ func (pg *Page) dataRows(title string, count int) layout.FlexChild {
 		return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					label := pg.Theme.Label(values.TextSize16, title+":")
+					label := pg.Theme.Label(values.TextSize16, title)
 					label.Color = pg.Theme.Color.GrayText2
-					return label.Layout(gtx)
+					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, label.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Left: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
 						label := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d", count))
-						label.Color = pg.Theme.Color.GrayText2
 						return label.Layout(gtx)
 					})
 				}),
@@ -182,7 +202,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	}
 
 	labelWdg := func(gtx C) D {
-		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+		return layout.Inset{Bottom: values.MarginPadding20, Right: values.MarginPadding250}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return components.LayoutIconAndText(pg.Load, gtx, values.String(values.StrStaked)+": ", totalBalance.LockedByTickets.String(), items[0].Color)
@@ -197,6 +217,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	pb := pg.Theme.MultiLayerProgressBar(pg.WL.SelectedWallet.Wallet.ToAmount(total).ToCoin(), items)
 	pb.Height = values.MarginPadding16
 	pb.ShowLedger = true
+	pb.Reverse = true
 	return pb.Layout(gtx, labelWdg)
 }
 

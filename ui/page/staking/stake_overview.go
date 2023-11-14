@@ -53,12 +53,11 @@ type Page struct {
 
 	ticketOverview *dcr.StakingOverview
 
-	ticketsList    *cryptomaterial.ClickableList
-	stakeSettings  *cryptomaterial.Clickable
-	stake          *cryptomaterial.Switch
-	infoButton     cryptomaterial.IconButton
-	materialLoader material.LoaderStyle
-
+	ticketsList        *cryptomaterial.ClickableList
+	stakeSettings      *cryptomaterial.Clickable
+	stake              *cryptomaterial.Switch
+	infoButton         cryptomaterial.IconButton
+	materialLoader     material.LoaderStyle
 	ticketPrice        string
 	totalRewards       string
 	showMaterialLoader bool
@@ -66,7 +65,8 @@ type Page struct {
 	navToSettingsBtn cryptomaterial.Button
 	processingTicket uint32
 
-	dcrImpl *dcr.Asset
+	dcrImpl         *dcr.Asset
+	stakeStatistics *cryptomaterial.Clickable
 }
 
 func NewStakingPage(l *load.Load) *Page {
@@ -87,6 +87,7 @@ func NewStakingPage(l *load.Load) *Page {
 	pg.ticketOverview = new(dcr.StakingOverview)
 	pg.initStakePriceWidget()
 	pg.initTicketList()
+	pg.initStakeStatistics()
 
 	pg.navToSettingsBtn = l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrVsp)))
 
@@ -208,6 +209,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(pg.stakePriceSection),
+		layout.Rigid(pg.stakeStatisticsSection),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
 				if pg.showMaterialLoader {
