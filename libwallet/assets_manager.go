@@ -824,3 +824,58 @@ func (mgr *AssetsManager) LTCHDPrefix() string {
 		return ""
 	}
 }
+
+func (mgr *AssetsManager) CalculateTotalAssetsBalance() (map[utils.AssetType]sharedW.AssetAmount, error) {
+	assetsTotalBalance := make(map[utils.AssetType]sharedW.AssetAmount)
+
+	wallets := mgr.AllWallets()
+	for _, wal := range wallets {
+		if wal.IsWatchingOnlyWallet() {
+			continue
+		}
+
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			return nil, err
+		}
+
+		assetType := wal.GetAssetType()
+		for _, account := range accountsResult.Accounts {
+			assetTotal, ok := assetsTotalBalance[assetType]
+			if ok {
+				assetTotal = wal.ToAmount(assetTotal.ToInt() + account.Balance.Total.ToInt())
+			} else {
+				assetTotal = account.Balance.Total
+			}
+			assetsTotalBalance[assetType] = assetTotal
+		}
+	}
+
+	return assetsTotalBalance, nil
+}
+
+func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType]sharedW.AssetAmount) (map[utils.AssetType]float64, error) {
+	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
+		rate := mgr.RateSource.GetTicker(market)
+		if rate == nil || rate.LastTradePrice <= 0 {
+			return 0, fmt.Errorf("No rate information available")
+		}
+
+		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil
+	}
+
+	assetsTotalUSDBalance := make(map[utils.AssetType]float64)
+	for assetType, balance := range balances {
+		marketValue, exist := values.AssetExchangeMarketValue[assetType]
+		if !exist {
+			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+		}
+		usdBal, err := usdBalance(balance, marketValue)
+		if err != nil {
+			return nil, err
+		}
+		assetsTotalUSDBalance[assetType] = usdBal
+	}
+
+	return assetsTotalUSDBalance, nil
+}

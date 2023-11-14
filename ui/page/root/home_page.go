@@ -776,13 +776,13 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 
 func (hp *HomePage) CalculateAssetsUSDBalance() {
 	if hp.AssetsManager.ExchangeRateFetchingEnabled() {
-		assetsBalance, err := components.CalculateTotalAssetsBalance(hp.Load)
+		assetsBalance, err := hp.AssetsManager.CalculateTotalAssetsBalance()
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(hp.Load, assetsBalance)
+		assetsTotalUSDBalance, err := hp.AssetsManager.CalculateAssetsUSDBalance(assetsBalance)
 		if err != nil {
 			log.Error(err)
 			return

@@ -407,11 +407,14 @@ func newSelectorModal(l *load.Load, assetType ...utils.AssetType) *selectorModal
 		}
 	}
 
-	if len(wallets) == 0 {
+	if len(assetType) == 0 {
 		wallets = sm.AssetsManager.AllWallets()
 	}
 
-	sm.selectedWallet = wallets[0] // Set the default wallet to wallet loaded by cryptopower.
+	if len(wallets) > 0 {
+		sm.selectedWallet = wallets[0] // Set the default wallet to wallet loaded by cryptopower.
+	}
+
 	sm.accountSelector = false
 
 	sm.Modal.ShowScrollbar(true)

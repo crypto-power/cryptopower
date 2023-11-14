@@ -807,61 +807,6 @@ func CalculateTotalWalletsBalance(wallet sharedW.Asset) (*CummulativeWalletsBala
 	return cumm, nil
 }
 
-func CalculateTotalAssetsBalance(l *load.Load) (map[libutils.AssetType]sharedW.AssetAmount, error) {
-	assetsTotalBalance := make(map[libutils.AssetType]sharedW.AssetAmount)
-
-	wallets := l.AssetsManager.AllWallets()
-	for _, wal := range wallets {
-		if wal.IsWatchingOnlyWallet() {
-			continue
-		}
-
-		accountsResult, err := wal.GetAccountsRaw()
-		if err != nil {
-			return nil, err
-		}
-
-		assetType := wal.GetAssetType()
-		for _, account := range accountsResult.Accounts {
-			assetTotal, ok := assetsTotalBalance[assetType]
-			if ok {
-				assetTotal = wal.ToAmount(assetTotal.ToInt() + account.Balance.Total.ToInt())
-			} else {
-				assetTotal = account.Balance.Total
-			}
-			assetsTotalBalance[assetType] = assetTotal
-		}
-	}
-
-	return assetsTotalBalance, nil
-}
-
-func CalculateAssetsUSDBalance(l *load.Load, assetsTotalBalance map[libutils.AssetType]sharedW.AssetAmount) (map[libutils.AssetType]float64, error) {
-	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
-		rate := l.AssetsManager.RateSource.GetTicker(market)
-		if rate == nil || rate.LastTradePrice <= 0 {
-			return 0, fmt.Errorf("No rate information available")
-		}
-
-		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil
-	}
-
-	assetsTotalUSDBalance := make(map[libutils.AssetType]float64)
-	for assetType, balance := range assetsTotalBalance {
-		marketValue, exist := values.AssetExchangeMarketValue[assetType]
-		if !exist {
-			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
-		}
-		usdBal, err := usdBalance(balance, marketValue)
-		if err != nil {
-			return nil, err
-		}
-		assetsTotalUSDBalance[assetType] = usdBal
-	}
-
-	return assetsTotalUSDBalance, nil
-}
-
 // SecondsToDays takes time in seconds and returns its string equivalent in the format ddhhmm.
 func SecondsToDays(totalTimeLeft int64) string {
 	q, r := divMod(totalTimeLeft, 24*60*60)

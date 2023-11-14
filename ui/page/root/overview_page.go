@@ -951,7 +951,7 @@ func (pg *OverviewPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, s
 
 func (pg *OverviewPage) updateAssetsUSDBalance() {
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
-		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(pg.Load, pg.assetsTotalBalance)
+		assetsTotalUSDBalance, err := pg.AssetsManager.CalculateAssetsUSDBalance(pg.assetsTotalBalance)
 		if err != nil {
 			log.Error(err)
 			return
@@ -981,7 +981,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 }
 
 func (pg *OverviewPage) updateAssetsSliders() {
-	assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
+	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
 	if err != nil {
 		log.Error(err)
 		return
