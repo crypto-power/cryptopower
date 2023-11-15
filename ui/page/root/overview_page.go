@@ -357,24 +357,26 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.dcr))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.dcr))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.btc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.btc))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.ltc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.ltc))
 	}
 
 	return pg.assetBalanceSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layout.Widget {
+func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem) layout.Widget {
 	return func(gtx C) D {
 		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			return layout.Stack{}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
-					return item.backgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
+					width := gtx.Constraints.Max.X
+					height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
+					return item.backgroundImage.LayoutSizeWithRadius(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height), 8)
 				}),
 				layout.Expanded(func(gtx C) D {
 					col := pg.Theme.Color.InvText

@@ -4,6 +4,8 @@ import (
 	"image"
 	"sync"
 
+	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -13,6 +15,7 @@ import (
 
 type Image struct {
 	image.Image
+	aspectRatio int
 
 	// Keep a cache for scaled images to reduce resource use.
 	layoutSizeMtx sync.Mutex
@@ -25,9 +28,15 @@ type Image struct {
 }
 
 func NewImage(src image.Image) *Image {
+	imageBounds := src.Bounds()
 	return &Image{
-		Image: src,
+		Image:       src,
+		aspectRatio: imageBounds.Dx() / imageBounds.Dy(),
 	}
+}
+
+func (img *Image) AspectRatio() int {
+	return img.aspectRatio
 }
 
 // reduced the image original scale of 1 by half to 0.5 fix blurry images
@@ -96,4 +105,13 @@ func (img *Image) LayoutSize2(gtx C, width, height unit.Dp) D {
 	i := widget.Image{Src: paint.NewImageOp(dst)}
 	i.Scale = .5 // reduced the original scale of 1 by half to fix blurry images
 	return i.Layout(gtx)
+}
+
+func (img *Image) LayoutSizeWithRadius(gtx C, width, height unit.Dp, radius int) D {
+	m := op.Record(gtx.Ops)
+	dims := img.LayoutSize2(gtx, width, height)
+	call := m.Stop()
+	defer clip.UniformRRect(image.Rectangle{Max: image.Point{X: gtx.Dp(width), Y: gtx.Dp(height)}}, radius).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return dims
 }
