@@ -38,13 +38,13 @@ type ProgressBarItem struct {
 type MultiLayerProgressBar struct {
 	t *Theme
 
-	ShowAddWidgetFirst bool
-	items              []ProgressBarItem
-	Radius             CornerRadius
-	Height             unit.Dp
-	Width              unit.Dp
-	total              float64
-	ShowOverLayValue   bool
+	items                []ProgressBarItem
+	Radius               CornerRadius
+	Height               unit.Dp
+	Width                unit.Dp
+	total                float64
+	ShowOverLayValue     bool
+	ShowOtherWidgetFirst bool
 }
 
 func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
@@ -229,7 +229,7 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, additionalWidget layout.Widget) D
 	}
 
 	progressBarTopPadding, otherWidget := values.MarginPadding24, additionalWidget
-	if !mp.ShowAddWidgetFirst {
+	if !mp.ShowOtherWidgetFirst {
 		// reduce the top padding if we're showing the progress bar before the other widget
 		progressBarTopPadding = values.MarginPadding5
 		otherWidget = func(gtx C) D {
@@ -244,7 +244,7 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, additionalWidget layout.Widget) D
 		layout.Rigid(otherWidget),
 	}
 
-	if mp.ShowAddWidgetFirst {
+	if mp.ShowOtherWidgetFirst {
 		// Swap the label and progress bar...
 		flexWidgets[0], flexWidgets[1] = flexWidgets[1], flexWidgets[0]
 	}

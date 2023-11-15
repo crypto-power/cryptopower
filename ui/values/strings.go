@@ -901,6 +901,6 @@ const (
 	StrNoWalletsAvailable              = "noWalletsAvailable"
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
 	StrStakingInfo                     = "stakingInfo"
-	StrTimeLeftTit                     = "timeLeftTit"
+	StrTimeLeftTitle                   = "timeLeftTitle"
 	StrTotalReward                     = "totalReward"
 )
