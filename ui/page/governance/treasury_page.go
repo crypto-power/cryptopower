@@ -176,7 +176,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 

@@ -1,0 +1,20 @@
+run:
+  deadline: 10m
+  skip-dirs:
+    # foreign languages give false positives for misspell
+    - ui/values/localizable
+
+output:
+  format: github-actions,colored-line-number
+
+linters:
+  disable-all: true
+  enable:
+    - govet
+    - staticcheck
+    - gosimple
+    - unconvert
+    - ineffassign
+    - revive
+    - goimports
+    - unparam

@@ -253,7 +253,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return btcWallet, nil
 }
 
-// SafelyCancelSync shuts down all the upstream processes. If not explicity
+// SafelyCancelSync shuts down all the upstream processes. If not explicitly
 // deleting a wallet use asset.CancelSync() instead.
 func (asset *Asset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {
