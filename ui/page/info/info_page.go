@@ -15,6 +15,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v3"
@@ -54,7 +55,7 @@ type WalletInfo struct {
 	checkBox         cryptomaterial.CheckBoxStyle
 
 	mixerInfoButton,
-	mixerRedirect cryptomaterial.IconButton
+	mixerRedirectButton cryptomaterial.IconButton
 	unmixedBalance sharedW.AssetAmount
 
 	isStatusConnected bool
@@ -96,9 +97,9 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = values.TextSize14
 
-	pg.mixerRedirect, pg.mixerInfoButton = components.SubpageHeaderButtons(l)
-	pg.mixerRedirect.Icon = pg.Theme.Icons.NavigationArrowForward
-	pg.mixerRedirect.Size = values.MarginPadding20
+	pg.mixerRedirectButton, pg.mixerInfoButton = components.SubpageHeaderButtons(l)
+	pg.mixerRedirectButton.Icon = pg.Theme.Icons.NavigationArrowForward
+	pg.mixerRedirectButton.Size = values.MarginPadding20
 
 	go func() {
 		pg.isStatusConnected = libutils.IsOnline()
@@ -119,18 +120,15 @@ func (pg *WalletInfo) OnNavigatedTo() {
 
 	pg.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
 
-	if pg.wallet.IsSynced() {
-		pg.listenForMixerNotifications()
-	}
-
-	if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
-		pg.reloadMixerBalances()
-	}
-
 	pg.loadTransactions()
 
 	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
 		pg.loadStakes()
+
+		if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+			pg.listenForMixerNotifications()
+			pg.reloadMixerBalances()
+		}
 	}
 }
 
@@ -143,7 +141,7 @@ func (pg *WalletInfo) Layout(gtx C) D {
 		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 			items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
-			if pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+			if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
 				items = append(items, layout.Rigid(pg.mixerLayout))
 			}
 
@@ -181,13 +179,13 @@ func (pg *WalletInfo) walletNameAndBackupInfo(gtx C) D {
 		return layout.Inset{
 			Right: values.MarginPadding10,
 		}.Layout(gtx, func(gtx C) D {
-			txt := pg.Theme.Body1(strings.ToUpper(pg.WL.SelectedWallet.Wallet.GetWalletName()))
+			txt := pg.Theme.Body1(strings.ToUpper(pg.wallet.GetWalletName()))
 			txt.Font.Weight = font.SemiBold
 			return txt.Layout(gtx)
 		})
 	})}
 
-	if len(pg.WL.SelectedWallet.Wallet.GetEncryptedSeed()) > 0 {
+	if len(pg.wallet.GetEncryptedSeed()) > 0 {
 		items = append(items, layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(pg.Theme.Icons.RedAlert.Layout20dp),
@@ -212,7 +210,7 @@ func (pg *WalletInfo) mixerLayout(gtx C) D {
 			Load:           pg.Load,
 			WalletName:     pg.wallet.GetWalletName(),
 			UnmixedBalance: pg.unmixedBalance.String(),
-			ForwardButton:  pg.mixerRedirect,
+			ForwardButton:  pg.mixerRedirectButton,
 			InfoButton:     pg.mixerInfoButton,
 			Width:          cryptomaterial.MatchParent,
 			Height:         cryptomaterial.WrapContent,
@@ -330,6 +328,11 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.WL.SelectedWallet.Wallet, func(load *load.Load, navigator app.WindowNavigator) {
 			navigator.ClosePagesAfter(currentPage)
 		}))
+	}
+
+	// Navigate to mixer page when wallet mixer slider forward button is clicked.
+	if pg.mixerRedirectButton.Button.Clicked() {
+		pg.ParentNavigator().Display(privacy.NewAccountMixerPage(pg.Load))
 	}
 }
 
