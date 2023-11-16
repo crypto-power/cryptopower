@@ -1,7 +1,6 @@
 package cryptomaterial
 
 import (
-	"fmt"
 	"image"
 	"time"
 
@@ -23,13 +22,10 @@ const (
 
 type Dragged func(dragDirection DragDirection)
 
-type SliceShow struct {
-	Duration time.Duration
-
-	push int
-
-	next *op.Ops
-
+type SliceAction struct {
+	duration time.Duration
+	push     int
+	next     *op.Ops
 	nextCall op.CallOp
 	lastCall op.CallOp
 
@@ -37,63 +33,56 @@ type SliceShow struct {
 	offset float32
 
 	// animation state
-	dragging    bool
 	dragStarted f32.Point
 	dragOffset  int
-
-	drag    gesture.Drag
-	Draged  Dragged
-	canPush bool
-
-	IsShowCarousel bool
-}
-
-func (t *Theme) SliceShow() *SliceShow {
-	return &SliceShow{
-		canPush:        true,
-		IsShowCarousel: true,
-	}
+	drag        gesture.Drag
+	draged      Dragged
+	isPushing   bool
 }
 
 // PushLeft pushes the existing widget to the left.
-func (s *SliceShow) PushLeft() { s.push = 1 }
+func (s *SliceAction) PushLeft() { s.push = 1 }
 
 // PushRight pushes the existing widget to the right.
-func (s *SliceShow) PushRight() { s.push = -1 }
+func (s *SliceAction) PushRight() { s.push = -1 }
 
-func (s *SliceShow) Layout(gtx C, w layout.Widget) D {
+func (s *SliceAction) Draged(drag Dragged) {
+	s.draged = drag
+}
+
+func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
 	for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
 		switch event.Type {
 		case pointer.Press:
-			fmt.Println("----drag.Events---------Press----")
 			s.dragStarted = event.Position
 			s.dragOffset = 0
-			s.dragging = true
 		case pointer.Drag:
 			newOffset := int(s.dragStarted.X - event.Position.X)
-			fmt.Println("----drag.Events---------Drag----", newOffset)
 			if newOffset > 100 {
-				if s.canPush && s.Draged != nil {
-					s.canPush = false
-					s.Draged(SlideRight)
+				if !s.isPushing && s.draged != nil {
+					s.isPushing = true
+					s.draged(SlideLeft)
 				}
 			} else if newOffset < -100 {
-				if s.canPush && s.Draged != nil {
-					s.canPush = false
-					s.Draged(SlideLeft)
+				if !s.isPushing && s.draged != nil {
+					s.isPushing = true
+					s.draged(SlideRight)
 				}
 			}
 			s.dragOffset = newOffset
 		case pointer.Release:
-			fmt.Println("----drag.Events---------Release----")
 			fallthrough
 		case pointer.Cancel:
-			fmt.Println("----drag.Events---------Cancel----")
-			s.dragging = false
-			s.canPush = true
+			s.isPushing = false
 		}
 	}
 
+	s.drag.Add(gtx.Ops)
+
+	return w(gtx)
+}
+
+func (s *SliceAction) TransformLayout(gtx C, w layout.Widget) D {
 	if s.push != 0 {
 		s.next = nil
 		s.lastCall = s.nextCall
@@ -110,7 +99,7 @@ func (s *SliceShow) Layout(gtx C, w layout.Widget) D {
 	}
 
 	if s.offset != 0 {
-		duration := s.Duration
+		duration := s.duration
 		if duration == 0 {
 			duration = defaultDuration
 		}
@@ -142,8 +131,6 @@ func (s *SliceShow) Layout(gtx C, w layout.Widget) D {
 		dims = w(gtx)
 		s.nextCall = m.Stop()
 	}
-
-	s.drag.Add(gtx.Ops)
 
 	if s.offset == 0 {
 		s.nextCall.Add(gtx.Ops)
@@ -177,17 +164,17 @@ func (s *SliceShow) Layout(gtx C, w layout.Widget) D {
 }
 
 // smooth handles -1 to 1 with ease-in-out cubic easing func.
-// func smooth(t float32) float32 {
-// 	if t < 0 {
-// 		return -easeInOutCubic(-t)
-// 	}
-// 	return easeInOutCubic(t)
-// }
+func smooth(t float32) float32 {
+	if t < 0 {
+		return -easeInOutCubic(-t)
+	}
+	return easeInOutCubic(t)
+}
 
-// // easeInOutCubic maps a linear value to a ease-in-out-cubic easing function.
-// func easeInOutCubic(t float32) float32 {
-// 	if t < 0.5 {
-// 		return 4 * t * t * t
-// 	}
-// 	return (t-1)*(2*t-2)*(2*t-2) + 1
-// }
+// easeInOutCubic maps a linear value to a ease-in-out-cubic easing function.
+func easeInOutCubic(t float32) float32 {
+	if t < 0.5 {
+		return 4 * t * t * t
+	}
+	return (t-1)*(2*t-2)*(2*t-2) + 1
+}
