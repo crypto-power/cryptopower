@@ -21,6 +21,7 @@ import (
 
 	"github.com/ararog/timeago"
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
@@ -65,6 +66,11 @@ type (
 
 	DexServer struct {
 		SavedHosts map[string][]byte
+	}
+
+	MultiWalletTx struct {
+		*sharedW.Transaction
+		WalletID int
 	}
 )
 
@@ -655,7 +661,7 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 			values.String(values.StrSent),
 			values.String(values.StrReceived),
 		}
-	case wType == libutils.DCRWalletAsset && tabIndex == 0:
+	case wType == libutils.DCRWalletAsset, wType == libutils.NilAsset && tabIndex == 0:
 		// DCR Transactions Activities dropdown fields.
 		mapInfo = map[string]int32{
 			values.String(values.StrAll):         libutils.TxFilterAllTx,
@@ -683,6 +689,8 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 			values.String(values.StrVote),
 			values.String(values.StrRevocation),
 		}
+	default:
+
 	}
 	return
 }
@@ -1001,4 +1009,8 @@ func InputsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
+}
+
+func TxAndWallet(assetManager *libwallet.AssetsManager, mtx *MultiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
+	return mtx.Transaction, assetManager.WalletWithID(mtx.WalletID)
 }

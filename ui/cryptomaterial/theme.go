@@ -321,3 +321,12 @@ func (t *Theme) AssetIcon(asset utils.AssetType) *Image {
 	}
 	return icon
 }
+
+func CentralizeWidget(gtx C, widget layout.Widget) D {
+	return LinearLayout{
+		Width:       MatchParent,
+		Height:      WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+	}.Layout2(gtx, widget)
+}

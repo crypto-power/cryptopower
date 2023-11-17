@@ -33,10 +33,10 @@ const (
 	OverviewPageID = "Overview"
 )
 
-type multiWalletTx struct {
-	*sharedW.Transaction
-	walletID int
-}
+// type multiWalletTx struct {
+// 	*sharedW.Transaction
+// 	walletID int
+// }
 
 type OverviewPage struct {
 	*app.GenericPageModal
@@ -58,8 +58,8 @@ type OverviewPage struct {
 	mixerSlider               *cryptomaterial.Slider
 	proposalItems             []*components.ProposalItem
 	orders                    []*instantswap.Order
-	transactions              []*multiWalletTx
-	stakes                    []*multiWalletTx
+	transactions              []*components.MultiWalletTx
+	stakes                    []*components.MultiWalletTx
 	sliderRedirectBtn         *cryptomaterial.Clickable
 	mktValues                 []assetMarketData
 
@@ -175,8 +175,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 
 	pg.assetsTotalBalance = make(map[libutils.AssetType]sharedW.AssetAmount)
 
-	pg.stakes = make([]*multiWalletTx, 0)
-	pg.transactions = make([]*multiWalletTx, 0)
+	pg.stakes = make([]*components.MultiWalletTx, 0)
+	pg.transactions = make([]*components.MultiWalletTx, 0)
 
 	return pg
 }
