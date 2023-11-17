@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -55,6 +56,7 @@ type orderSchedulerModal struct {
 	exchangeRate float64
 	exchange     api.IDExchange
 	*orderData
+	instantCurrencies []api.Currency
 }
 
 func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerModal {
@@ -107,7 +109,12 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		osm.exchange = exchange
 
 		go func() {
-			err := osm.getExchangeRateInfo()
+			err := osm.getInstantCurrencyInfos()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			err = osm.getExchangeRateInfo()
 			if err != nil {
 				log.Error(err)
 			}
@@ -475,6 +482,10 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 
 				FromCurrency: osm.orderData.fromCurrency.String(),
 				ToCurrency:   osm.orderData.toCurrency.String(),
+				FromNetwork:  osm.orderData.fromNetwork,
+				ToNetwork:    osm.orderData.toNetwork,
+				Provider:     osm.orderData.provider,
+				Signature:    osm.orderData.signature,
 
 				DestinationAddress: osm.orderData.destinationAddress,
 				RefundAddress:      osm.orderData.refundAddress,
@@ -492,6 +503,39 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 	}()
 }
 
+func (osm *orderSchedulerModal) getInstantCurrencyInfos() error {
+	osm.fetchingRate = true
+	currencies, err := osm.exchange.GetCurrencies()
+	osm.instantCurrencies = currencies
+	osm.fetchingRate = false
+	osm.rateError = err != nil
+	return err
+}
+
+func getNetwork(coinName string, currencies []api.Currency) string {
+	var lowerName = strings.ToLower(coinName)
+	var currency *api.Currency
+	for _, c := range currencies {
+		if strings.ToLower(c.Symbol) == lowerName {
+			currency = &c
+			break
+		}
+	}
+	if currency == nil || len(currency.Networks) == 0 {
+		return ""
+	}
+	for _, network := range currency.Networks {
+		var lowerNetwork = strings.ToLower(network)
+		if lowerNetwork == "mainnet" {
+			return network
+		}
+		if lowerNetwork == lowerName {
+			return network
+		}
+	}
+	return currency.Networks[0]
+}
+
 func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 	osm.exchangeRate = -1
 	osm.fetchingRate = true
@@ -499,19 +543,24 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 	fromCur := osm.fromCurrency.String()
 	toCur := osm.toCurrency.String()
 	params := api.ExchangeRateRequest{
-		From:   fromCur,
-		To:     toCur,
-		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
+		From:        fromCur,
+		FromNetwork: getNetwork(fromCur, osm.instantCurrencies),
+		To:          toCur,
+		ToNetwork:   getNetwork(toCur, osm.instantCurrencies),
+		Amount:      libwallet.RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := osm.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
+	osm.fetchingRate = false
 	if err != nil {
 		osm.rateError = true
-		osm.fetchingRate = false
 		return err
 	}
+	osm.orderData.fromNetwork = params.FromNetwork
+	osm.orderData.toNetwork = params.ToNetwork
+	osm.orderData.provider = res.Provider
+	osm.orderData.signature = res.Signature
 
-	osm.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
-	osm.fetchingRate = false
+	osm.exchangeRate = res.ExchangeRate // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	osm.rateError = false
 	return nil
 }

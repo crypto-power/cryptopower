@@ -288,6 +288,12 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/creack/pty v1.1.11/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf h1:8dd0iV9EMNiMOaZD2U3UjmMNmYTNbXz8L58NLWlFjWk=
 github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231117043956-f4a664ce5a63 h1:lG4ZX5eAGW7BRCFgac82UuS8cYxTdoRlDAhv6MQI+/M=
+github.com/crypto-power/instantswap v0.0.0-20231117043956-f4a664ce5a63/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188 h1:F8e4iACvL2Xdos+/ptOpXl9D2UzrJ3mLC6vRnKmdgz8=
+github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6 h1:MYjQZGr8ngIyLh+02aIo7ykr4k6TgCDKwGN4pFvrhyc=
+github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/davecgh/go-spew v0.0.0-20161028175848-04cdfd42973b/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v0.0.0-20171005155431-ecdeabc65495/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

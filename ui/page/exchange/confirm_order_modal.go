@@ -333,6 +333,10 @@ func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 		InvoicedAmount: com.invoicedAmount,
 		FromCurrency:   com.fromCurrency.String(),
 		ToCurrency:     com.toCurrency.String(),
+		FromNetwork:    com.orderData.fromNetwork,
+		ToNetwork:      com.orderData.toNetwork,
+		Provider:       com.orderData.provider,
+		Signature:      com.orderData.signature,
 
 		RefundAddress:      com.refundAddress,
 		DestinationAddress: com.destinationAddress,

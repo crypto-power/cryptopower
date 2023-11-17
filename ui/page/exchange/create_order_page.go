@@ -76,6 +76,7 @@ type CreateOrderPage struct {
 
 	errMsg string
 
+	instantCurrencies []api.Currency
 	*orderData
 }
 
@@ -99,6 +100,11 @@ type orderData struct {
 
 	fromCurrency libutils.AssetType
 	toCurrency   libutils.AssetType
+
+	fromNetwork string
+	toNetwork   string
+	provider    string
+	signature   string
 
 	refundAddress      string
 	destinationAddress string
@@ -184,7 +190,12 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.exchange = exchange
 
 		go func() {
-			err := pg.getExchangeRateInfo()
+			err := pg.getInstantCurrencyInfos()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			err = pg.getExchangeRateInfo()
 			if err != nil {
 				log.Error(err)
 			}
@@ -1116,26 +1127,31 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	fromCur := pg.fromCurrency.String()
 	toCur := pg.toCurrency.String()
 	params := api.ExchangeRateRequest{
-		From:   fromCur,
-		To:     toCur,
-		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
+		From:        fromCur,
+		FromNetwork: getNetwork(fromCur, pg.instantCurrencies),
+		To:          toCur,
+		ToNetwork:   getNetwork(toCur, pg.instantCurrencies),
+		Amount:      libwallet.RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
+	pg.fetchingRate = false
 	if err != nil {
 		pg.exchangeRateInfo = values.String(values.StrFetchRateError)
 		pg.rateError = true
-		pg.fetchingRate = false
 		return err
 	}
+	pg.orderData.fromNetwork = params.FromNetwork
+	pg.orderData.toNetwork = params.ToNetwork
+	pg.orderData.provider = res.Provider
+	pg.orderData.signature = res.Signature
 
-	pg.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
+	pg.exchangeRate = res.ExchangeRate // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	pg.min = res.Min
 	pg.max = res.Max
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.updateAmount()
 
-	pg.fetchingRate = false
 	pg.rateError = false
 	return nil
 }
@@ -1308,4 +1324,13 @@ func (pg *CreateOrderPage) listenForNotifications() {
 
 func (pg *CreateOrderPage) stopNtfnListeners() {
 	pg.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
+}
+
+func (pg *CreateOrderPage) getInstantCurrencyInfos() error {
+	pg.fetchingRate = true
+	currencies, err := pg.exchange.GetCurrencies()
+	pg.instantCurrencies = currencies
+	pg.fetchingRate = false
+	pg.rateError = err != nil
+	return err
 }

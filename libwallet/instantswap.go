@@ -33,7 +33,22 @@ const (
 	DefaultConfirmations = 1
 	// DefaultRateRequestAmount is the amount used to perform the rate request query.
 	DefaultRateRequestAmount = 1
+	DefaultRateRequestBTC    = 0.01
+	DefaultRateRequestLTC    = 1
+	DefaultRateRequestDCR    = 10
 )
+
+func RateRequest(fromCurrency string) float64 {
+	switch fromCurrency {
+	case utils.BTCWalletAsset.String():
+		return DefaultRateRequestBTC
+	case utils.LTCWalletAsset.String():
+		return DefaultRateRequestLTC
+	case utils.DCRWalletAsset.String():
+		return DefaultRateRequestDCR
+	}
+	return DefaultRateRequestAmount
+}
 
 // StartScheduler starts the automatic order scheduler.
 func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap.SchedulerParams) error {
@@ -92,9 +107,11 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		fromCur := params.Order.FromCurrency
 		toCur := params.Order.ToCurrency
 		rateRequestParams := api.ExchangeRateRequest{
-			From:   fromCur,
-			To:     toCur,
-			Amount: DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
+			From:        fromCur,
+			To:          toCur,
+			Amount:      RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
+			FromNetwork: params.Order.FromNetwork,
+			ToNetwork:   params.Order.ToNetwork,
 		}
 		log.Info("Order Scheduler: getting exchange rate info")
 		res, err := mgr.InstantSwap.GetExchangeRateInfo(exchangeObject, rateRequestParams)
