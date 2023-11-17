@@ -22,6 +22,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page"
+	"github.com/crypto-power/cryptopower/ui/page/account"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/dcrdex"
 	"github.com/crypto-power/cryptopower/ui/page/exchange"
@@ -145,6 +146,7 @@ func init() {
 	spv.UseLogger(dcrSpv)
 	instantswap.UseLogger(sharedWLog)
 	dcrdex.UseLogger(winLog)
+	account.UseLogger(dcrLog)
 
 	logger.New(subsystemSLoggers, subsystemBLoggers)
 	// Neutrino loglevel will always be set to error to control excessive logging.
