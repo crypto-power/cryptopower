@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -46,7 +47,8 @@ type Page struct {
 	*app.GenericPageModal
 	*listeners.TxAndBlockNotificationListener
 
-	scroll *components.Scroll[*transactionItem]
+	scroll          *components.Scroll[*transactionItem]
+	scrollContainer *widget.List
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -80,6 +82,12 @@ func NewStakingPage(l *load.Load) *Page {
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
 		dcrImpl:          impl,
+		scrollContainer: &widget.List{
+			List: layout.List{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			},
+		},
 	}
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
@@ -205,20 +213,21 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) layoutDesktop(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(pg.stakePriceSection),
-		layout.Rigid(pg.stakeStatisticsSection),
-		layout.Flexed(1, func(gtx C) D {
-			if pg.showMaterialLoader {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Center.Layout(gtx, pg.materialLoader.Layout)
-			}
-			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-				return pg.ticketListLayout(gtx)
-			})
-		}),
-	)
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(pg.stakePriceSection),
+			layout.Rigid(pg.stakeStatisticsSection),
+			layout.Rigid(func(gtx C) D {
+				if pg.showMaterialLoader {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
+				}
+				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+					return pg.ticketListLayout(gtx)
+				})
+			}),
+		)
+	})
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
