@@ -23,7 +23,6 @@ type MixerComponent struct {
 }
 
 func (mc MixerComponent) MixerLayout(gtx C) D {
-	r := 8
 	return cryptomaterial.LinearLayout{
 		Width:       mc.Width,
 		Height:      mc.Height,
@@ -31,12 +30,7 @@ func (mc MixerComponent) MixerLayout(gtx C) D {
 		Padding:     layout.UniformInset(values.MarginPadding15),
 		Background:  mc.Theme.Color.Surface,
 		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
+			Radius: cryptomaterial.Radius(8),
 		},
 	}.Layout(gtx,
 		layout.Rigid(mc.topMixerLayout),
@@ -67,7 +61,6 @@ func (mc MixerComponent) topMixerLayout(gtx C) D {
 }
 
 func (mc MixerComponent) middleMixerLayout(gtx C) D {
-	r := gtx.Dp(7)
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.WrapContent,
 		Height:      cryptomaterial.WrapContent,
@@ -85,12 +78,7 @@ func (mc MixerComponent) middleMixerLayout(gtx C) D {
 		Background: mc.Theme.Color.LightBlue7,
 		Alignment:  layout.Middle,
 		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
+			Radius: cryptomaterial.Radius(7),
 		},
 	}.Layout(gtx,
 		layout.Rigid(mc.Theme.Icons.Alert.Layout20dp),
@@ -102,7 +90,6 @@ func (mc MixerComponent) middleMixerLayout(gtx C) D {
 }
 
 func (mc MixerComponent) bottomMixerLayout(gtx C) D {
-	r := 8
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.WrapContent,
 		Height:      cryptomaterial.WrapContent,
@@ -110,12 +97,7 @@ func (mc MixerComponent) bottomMixerLayout(gtx C) D {
 		Padding:     layout.UniformInset(values.MarginPadding15),
 		Background:  mc.Theme.Color.Gray4,
 		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
+			Radius: cryptomaterial.Radius(8),
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtc C) D {
@@ -131,7 +113,7 @@ func (mc MixerComponent) bottomMixerLayout(gtx C) D {
 				layout.Rigid(mc.Theme.Body1(values.String(values.StrUnmixedBalance)).Layout),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
-						return LayoutBalance(gtx, mc.Load, mc.UnmixedBalance)
+						return LayoutBalanceWithUnitSizeBoldText(gtx, mc.Load, mc.UnmixedBalance, values.TextSize14)
 					})
 				}),
 			)

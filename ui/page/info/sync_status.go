@@ -42,8 +42,8 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 				items = append(items, layout.Rigid(func(gtx C) D {
 					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Rigid(pg.syncStatusIcon),
-							layout.Rigid(pg.progressBarRow),
+							layout.Flexed(.9, pg.progressBarRow),
+							layout.Flexed(.1, pg.syncStatusIcon),
 						)
 					})
 				}))
@@ -123,7 +123,7 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 		icon = pg.Theme.Icons.SyncingIcon
 	}
 
-	i := layout.Inset{Right: values.MarginPadding16}
+	i := layout.Inset{Left: values.MarginPadding16}
 	return i.Layout(gtx, func(gtx C) D {
 		return icon.LayoutSize(gtx, values.MarginPadding20)
 	})
@@ -244,7 +244,7 @@ func (pg *WalletInfo) layoutAutoSyncSection(gtx C) D {
 
 // progressBarRow lays out the progress bar.
 func (pg *WalletInfo) progressBarRow(gtx C) D {
-	return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 		progress, _ := pg.progressStatusDetails()
 
 		p := pg.Theme.ProgressBar(progress)
@@ -254,7 +254,7 @@ func (pg *WalletInfo) progressBarRow(gtx C) D {
 		p.TrackColor = pg.Theme.Color.Gray2
 
 		progressTitleLabel := pg.Theme.Label(values.TextSize14, fmt.Sprintf("%v%%", progress))
-		progressTitleLabel.Color = pg.Theme.Color.InvText
+		progressTitleLabel.Color = pg.Theme.Color.Text
 		return p.TextLayout(gtx, progressTitleLabel.Layout)
 	})
 }

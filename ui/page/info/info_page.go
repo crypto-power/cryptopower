@@ -160,17 +160,21 @@ func (pg *WalletInfo) Layout(gtx C) D {
 
 func (pg *WalletInfo) walletInfoLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, "", func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		items := []layout.FlexChild{
 			layout.Rigid(pg.walletNameAndBackupInfo),
 			layout.Rigid(pg.syncStatusSection),
-			layout.Rigid(func(gtx C) D {
+		}
+
+		if len(pg.wallet.GetEncryptedSeed()) > 0 {
+			items = append(items, layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Flexed(1, func(gtx C) D {
 						return layout.E.Layout(gtx, pg.toBackup.Layout)
 					}),
 				)
-			}),
-		)
+			}))
+		}
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
 }
 
