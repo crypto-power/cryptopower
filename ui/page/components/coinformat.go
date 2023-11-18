@@ -22,7 +22,12 @@ var (
 )
 
 func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, col color.NRGBA, weight font.Weight, displayUnitText bool) D {
-
+	if amount == "" {
+		txt := l.Theme.Label(mainTextSize, "0")
+		txt.Color = col
+		txt.Font.Weight = weight
+		return txt.Layout(gtx)
+	}
 	startIndex := 0
 	stopIndex := 0
 

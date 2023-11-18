@@ -223,6 +223,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
 				}
 				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+					gtx.Constraints.Max.Y = 500
 					return pg.ticketListLayout(gtx)
 				})
 			}),
