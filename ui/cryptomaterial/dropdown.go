@@ -90,6 +90,10 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
+func (d *DropDown) SetDefaultToNone() {
+	d.selectedIndex = -1
+}
+
 func (d *DropDown) SelectedIndex() int {
 	return d.selectedIndex
 }
@@ -152,12 +156,18 @@ func (d *DropDown) layoutActiveIcon(gtx layout.Context, index int) D {
 }
 
 func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
-	item := d.items[itemIndex]
-	radius := Radius(0)
-	clickable := item.clickable
-	if !d.isOpen {
-		radius = Radius(8)
-		clickable = d.clickable
+	var item DropDownItem
+	if itemIndex > -1 {
+		item = d.items[itemIndex]
+	}
+
+	radius := Radius(8)
+	clickable := d.clickable
+	if d.isOpen {
+		radius = Radius(0)
+		if item.clickable != nil {
+			clickable = item.clickable
+		}
 	}
 
 	padding := values.MarginPadding10
@@ -193,11 +203,14 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 				Right: unit.Dp(5),
 				Left:  unit.Dp(5),
 			}.Layout(gtx, func(gtx C) D {
-				lbl := d.theme.Body2(item.Text)
-				if !d.isOpen && len(item.Text) > 14 {
-					lbl.Text = item.Text[:14] + "..."
+				txt := item.Text
+				if !d.isOpen && len(txt) > 14 {
+					txt = item.Text[:14] + "..."
+				} else if txt == "" {
+					txt = "Select a wallet"
 				}
-				return lbl.Layout(gtx)
+
+				return d.theme.Body2(txt).Layout(gtx)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {

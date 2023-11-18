@@ -661,7 +661,7 @@ func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[s
 			values.String(values.StrSent),
 			values.String(values.StrReceived),
 		}
-	case wType == libutils.DCRWalletAsset, wType == libutils.NilAsset && tabIndex == 0:
+	case tabIndex == 0 && wType == libutils.DCRWalletAsset, wType == libutils.NilAsset:
 		// DCR Transactions Activities dropdown fields.
 		mapInfo = map[string]int32{
 			values.String(values.StrAll):         libutils.TxFilterAllTx,
