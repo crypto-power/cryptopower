@@ -144,8 +144,8 @@ func (pg *TransactionsPage) pageTitle(gtx C) D {
 
 func (pg *TransactionsPage) getAssetType() utils.AssetType {
 	wal := pg.selectedWallet
-
 	var assetType utils.AssetType
+
 	if wal == nil {
 		assetType = utils.NilAsset
 		if pg.txCategoryTab.SelectedSegment() != values.String(values.StrTxOverview) {
@@ -158,8 +158,6 @@ func (pg *TransactionsPage) getAssetType() utils.AssetType {
 }
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
-	wal := pg.selectedWallet
-
 	items := []cryptomaterial.DropDownItem{}
 	_, keysinfo := components.TxPageDropDownFields(pg.getAssetType(), pg.selectedTxCategoryTab)
 	for _, name := range keysinfo {
@@ -169,6 +167,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 
 	if pg.selectedTxCategoryTab == 0 { // this is only needed for tx and not staking
 		pg.showLoader = true
+		wal := pg.selectedWallet
 
 		// Do this in background to prevent the app from freezing when counting
 		// wallet txs. This is needed in situations where the wallet has lots of
@@ -540,7 +539,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err := pg.selectedWallet.Wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
+	err := pg.selectedWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -548,7 +547,10 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 }
 
 func (pg *TransactionsPage) stopTxNotificationsListener() {
-	pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
+	if pg.selectedWallet == nil {
+		return
+	}
+	pg.selectedWallet.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
