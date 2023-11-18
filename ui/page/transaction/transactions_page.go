@@ -30,6 +30,11 @@ type (
 	D = layout.Dimensions
 )
 
+type multiWalletTx struct {
+	*sharedW.Transaction
+	walletID int
+}
+
 var txTabs = []string{
 	values.String(values.StrTxOverview),
 	values.String(values.StrStakingActivity),
@@ -52,7 +57,7 @@ type TransactionsPage struct {
 
 	transactionList  *cryptomaterial.ClickableList
 	previousTxFilter int32
-	scroll           *components.Scroll[*components.MultiWalletTx]
+	scroll           *components.Scroll[*multiWalletTx]
 
 	txCategoryTab *cryptomaterial.SegmentedControl
 
@@ -203,7 +208,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	pg.ParentWindow().Reload()
 }
 
-func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*components.MultiWalletTx, totalTxs int, isReset bool, err error) {
+func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*multiWalletTx, totalTxs int, isReset bool, err error) {
 	wal := pg.selectedWallet
 	if wal == nil {
 		txs, totalTxs, isReset, err = pg.multiWalletTxns(offset, pageSize)
@@ -214,8 +219,8 @@ func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*co
 	return txs, totalTxs, isReset, err
 }
 
-func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32) ([]*components.MultiWalletTx, int, bool, error) {
-	allTxs := make([]*components.MultiWalletTx, 0)
+func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32) ([]*multiWalletTx, int, bool, error) {
+	allTxs := make([]*multiWalletTx, 0)
 	var isReset bool
 
 	for _, wal := range pg.assetWallets {
@@ -245,7 +250,7 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32) ([]*componen
 	return allTxs, len(allTxs), isReset, nil
 }
 
-func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize int32) ([]*components.MultiWalletTx, int, bool, error) {
+func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize int32) ([]*multiWalletTx, int, bool, error) {
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTxCategoryTab)
 	if len(mapinfo) < 1 {
 		err := fmt.Errorf("asset type(%v) and txCategoryTab index(%d) found", wal.GetAssetType(), pg.selectedTxCategoryTab)
@@ -272,9 +277,9 @@ func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize
 		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
 
-	txs := make([]*components.MultiWalletTx, 0)
+	txs := make([]*multiWalletTx, 0)
 	for _, tx := range tempTxs {
-		txs = append(txs, &components.MultiWalletTx{tx, wal.GetWalletID()})
+		txs = append(txs, &multiWalletTx{tx, wal.GetWalletID()})
 	}
 
 	return txs, len(txs), isReset, err
@@ -325,7 +330,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 
 						wallTxs := pg.scroll.FetchedData()
 						return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-							tx, wal := components.TxAndWallet(pg.WL.AssetsManager, wallTxs[index])
+							tx, wal := pg.txAndWallet(wallTxs[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									isHiddenAssetsInfo := true
@@ -448,7 +453,7 @@ func (pg *TransactionsPage) layoutMobile(gtx C) D {
 									}
 									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-										tx, wal := components.TxAndWallet(pg.WL.AssetsManager, wallTxs[index])
+										tx, wal := pg.txAndWallet(wallTxs[index])
 										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
 												showAssets := true
@@ -488,6 +493,10 @@ func (pg *TransactionsPage) layoutMobile(gtx C) D {
 	return components.UniformMobile(gtx, false, true, container)
 }
 
+func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
+	return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -507,7 +516,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
 		transactions := pg.scroll.FetchedData()
-		tx, wal := components.TxAndWallet(pg.WL.AssetsManager, transactions[selectedItem])
+		tx, wal := pg.txAndWallet(transactions[selectedItem])
 		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, wal, tx, false))
 	}
 

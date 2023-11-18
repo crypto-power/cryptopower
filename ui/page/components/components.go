@@ -21,7 +21,6 @@ import (
 
 	"github.com/ararog/timeago"
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
@@ -66,11 +65,6 @@ type (
 
 	DexServer struct {
 		SavedHosts map[string][]byte
-	}
-
-	MultiWalletTx struct {
-		*sharedW.Transaction
-		WalletID int
 	}
 )
 
@@ -1009,8 +1003,4 @@ func InputsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
-}
-
-func TxAndWallet(assetManager *libwallet.AssetsManager, mtx *MultiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
-	return mtx.Transaction, assetManager.WalletWithID(mtx.WalletID)
 }
