@@ -9,6 +9,13 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
+type SegmentType int
+
+const (
+	Group SegmentType = iota
+	Split
+)
+
 type SegmentedControl struct {
 	theme *Theme
 	list  *ClickableList
@@ -21,22 +28,66 @@ type SegmentedControl struct {
 
 	changed bool
 	mu      sync.Mutex
+
+	isEnableSwipe bool
+	sliceAction   SliceAction
+	segmentType   SegmentType
 }
 
-func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
+func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
 	list := t.NewClickableList(layout.Horizontal)
 	list.IsHoverable = false
 
-	return &SegmentedControl{
+	sc := &SegmentedControl{
 		list:          list,
 		theme:         t,
 		segmentTitles: segmentTitles,
 		leftNavBtn:    t.NewClickable(false),
 		rightNavBtn:   t.NewClickable(false),
+		isEnableSwipe: true,
+		segmentType:   segmentType,
 	}
+
+	sc.sliceAction.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeLeft
+		sc.handleActionEvent(isNext)
+	})
+
+	return sc
 }
 
-func (sc *SegmentedControl) Layout(gtx C) D {
+func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
+	sc.isEnableSwipe = enable
+}
+
+func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
+	return UniformPadding(gtx, func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				if sc.segmentType == Group {
+					return sc.GroupTileLayout(gtx)
+				} else {
+					return sc.splitTileLayout(gtx)
+				}
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					if sc.isEnableSwipe {
+						return sc.sliceAction.DragLayout(gtx, func(gtx C) D {
+							return sc.sliceAction.TransformLayout(gtx, body)
+						}, true)
+					}
+					return body(gtx)
+				})
+			}),
+		)
+	})
+}
+
+func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 	sc.handleEvents()
 
 	return LinearLayout{
@@ -71,10 +122,10 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 	)
 }
 
-func (sc *SegmentedControl) TransparentLayout(gtx C) D {
+func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 	sc.handleEvents()
 	return LinearLayout{
-		Width:       gtx.Dp(values.MarginPadding600),
+		Width:       gtx.Dp(values.MarginPadding700),
 		Height:      WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
@@ -175,4 +226,24 @@ func (sc *SegmentedControl) SetSelectedSegment(segment string) {
 			break
 		}
 	}
+}
+
+func (s *SegmentedControl) handleActionEvent(isNext bool) {
+	l := len(s.segmentTitles) - 1 // index starts at 0
+	if isNext {
+		if s.selectedIndex == l {
+			s.selectedIndex = 0
+		} else {
+			s.selectedIndex++
+		}
+		s.sliceAction.PushLeft()
+	} else {
+		if s.selectedIndex == 0 {
+			s.selectedIndex = l
+		} else {
+			s.selectedIndex--
+		}
+		s.sliceAction.PushRight()
+	}
+	s.changed = true
 }

@@ -9,18 +9,19 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 )
 
 const defaultDuration = 300 * time.Millisecond
 
-type DragDirection int
+type SwipeDirection int
 
 const (
-	SlideLeft DragDirection = iota
-	SlideRight
+	SwipeLeft SwipeDirection = iota
+	SwipeRight
 )
 
-type Dragged func(dragDirection DragDirection)
+type Dragged func(dragDirection SwipeDirection)
 
 type SliceAction struct {
 	duration time.Duration
@@ -50,7 +51,7 @@ func (s *SliceAction) Draged(drag Dragged) {
 	s.draged = drag
 }
 
-func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
+func (s *SliceAction) DragLayout(gtx C, w layout.Widget, isWrapContent bool) D {
 	for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
 		switch event.Type {
 		case pointer.Press:
@@ -61,12 +62,12 @@ func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
 			if newOffset > 100 {
 				if !s.isPushing && s.draged != nil {
 					s.isPushing = true
-					s.draged(SlideLeft)
+					s.draged(SwipeLeft)
 				}
 			} else if newOffset < -100 {
 				if !s.isPushing && s.draged != nil {
 					s.isPushing = true
-					s.draged(SlideRight)
+					s.draged(SwipeRight)
 				}
 			}
 			s.dragOffset = newOffset
@@ -77,7 +78,13 @@ func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
 		}
 	}
 
-	s.drag.Add(gtx.Ops)
+	if isWrapContent {
+		area := clip.Rect(image.Rect(0, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops)
+		s.drag.Add(gtx.Ops)
+		defer area.Pop()
+	} else {
+		s.drag.Add(gtx.Ops)
+	}
 
 	return w(gtx)
 }

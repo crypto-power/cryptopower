@@ -148,7 +148,7 @@ func (mp *MainPage) initTabOptions() {
 		commonTabs = append(commonTabs[:4], append(dcrSpecificTabs, commonTabs[4:]...)...)
 	}
 
-	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs)
+	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs, cryptomaterial.Split)
 }
 
 func (mp *MainPage) isGovernanceAPIAllowed() bool {
@@ -352,15 +352,10 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(mp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       gtx.Dp(values.MarginPadding550),
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Vertical,
-						Alignment:   layout.Middle,
-						Margin:      layout.Inset{Top: values.MarginPadding28},
-					}.Layout(gtx,
-						layout.Rigid(mp.pageTabLayout),
-						layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return mp.pageNavigationTab.Layout(gtx, func(gtx C) D {
 							if mp.CurrentPage() == nil {
 								return D{}
 							}
@@ -376,8 +371,8 @@ func (mp *MainPage) layoutDesktop(gtx C) D {
 							default:
 								return mp.CurrentPage().Layout(gtx)
 							}
-						}),
-					)
+						})
+					})
 				}),
 			)
 		}),
@@ -482,10 +477,6 @@ func (mp *MainPage) LayoutTopBar(gtx C) D {
 			return mp.Theme.Separator().Layout(gtx)
 		}),
 	)
-}
-
-func (mp *MainPage) pageTabLayout(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, mp.pageNavigationTab.TransparentLayout)
 }
 
 func (mp *MainPage) LayoutUSDBalance(gtx C) D {

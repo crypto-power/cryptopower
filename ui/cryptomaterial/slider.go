@@ -49,8 +49,8 @@ func (t *Theme) Slider() *Slider {
 	sl.card = sl.t.Card()
 	sl.card.Radius = Radius(8)
 
-	sl.sliceAction.Draged(func(dragDirection DragDirection) {
-		isNext := dragDirection == SlideLeft
+	sl.sliceAction.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeLeft
 		sl.handleActionEvent(isNext)
 	})
 
@@ -107,7 +107,7 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 						}),
 					)
 				})
-			})
+			}, false)
 		}),
 	)
 }
