@@ -14,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -203,8 +202,8 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 }
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
-	proposalSyncCallback := func(propName string, status utils.ProposalStatus) {
-		if status == utils.ProposalStatusSynced {
+	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
+		if status == libutils.ProposalStatusSynced {
 			proposal, err := pg.WL.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
 			if err == nil {
 				pg.proposal = &libwallet.Proposal{Proposal: *proposal}
@@ -588,46 +587,43 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		}()
 	}
 
-	body := func(gtx C) D {
-		page := components.SubPage{
-			Load:       pg.Load,
-			Title:      components.TruncateString(proposal.Name, 40),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return pg.layoutDescription(gtx)
-			},
-			ExtraHeader: func(gtx layout.Context) layout.Dimensions {
-				return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
-			},
-			ExtraItem: pg.tempRightHead,
-			Extra: func(gtx C) D {
-				grayCol := pg.Load.Theme.Color.GrayText2
-				timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
-				timeAgoLabel.Color = grayCol
+	page := components.SubPage{
+		Load:       pg.Load,
+		Title:      components.TruncateString(proposal.Name, 40),
+		BackButton: pg.backButton,
+		Back: func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		},
+		Body: func(gtx C) D {
+			return pg.layoutDescription(gtx)
+		},
+		ExtraHeader: func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
+		},
+		ExtraItem: pg.tempRightHead,
+		Extra: func(gtx C) D {
+			grayCol := pg.Load.Theme.Color.GrayText2
+			timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
+			timeAgoLabel.Color = grayCol
 
-				dotLabel := pg.Load.Theme.H4(" . ")
-				dotLabel.Color = grayCol
+			dotLabel := pg.Load.Theme.H4(" . ")
+			dotLabel.Color = grayCol
 
-				categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
-				return layout.Inset{}.Layout(gtx, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(categoryLabel.Layout),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-							}),
-							layout.Rigid(timeAgoLabel.Layout),
-						)
-					})
+			categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
+			return layout.Inset{}.Layout(gtx, func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(categoryLabel.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+						}),
+						layout.Rigid(timeAgoLabel.Layout),
+					)
 				})
-			},
-		}
-		return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
+			})
+		},
 	}
-	return components.UniformPadding(gtx, body)
+	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
 }
 
 func (pg *ProposalDetails) layoutMobile(gtx layout.Context) layout.Dimensions {
