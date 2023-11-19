@@ -905,4 +905,5 @@ const (
 	StrTokenTit                        = "tokenTit"
 	StrNoWalletsAvailable              = "noWalletsAvailable"
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
+	StrFound                           = "found"
 )

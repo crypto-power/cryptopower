@@ -188,6 +188,8 @@ func layoutProposalVoteBar(gtx C, item *ProposalItem) D {
 func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D {
 	var selectedCategory string
 	switch category {
+	case libwallet.ProposalCategoryAll:
+		selectedCategory = values.String(values.StrFound)
 	case libwallet.ProposalCategoryApproved:
 		selectedCategory = values.String(values.StrApproved)
 	case libwallet.ProposalCategoryRejected:

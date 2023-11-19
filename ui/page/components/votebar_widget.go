@@ -203,7 +203,7 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 		},
 		Max: image.Point{
 			X: int(thumbLeftPos) + voteBarThumbWidth,
-			Y: 24,
+			Y: gtx.Dp(24),
 		},
 	}
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
