@@ -90,7 +90,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -118,7 +118,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, _
 		shadowBox:                 l.Theme.Shadow(),
 
 		transaction:          transaction,
-		wallet:               l.WL.SelectedWallet.Wallet,
+		wallet:               wallet,
 		rebroadcast:          rebroadcast,
 		rebroadcastClickable: l.Theme.NewClickable(true),
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
@@ -249,7 +249,7 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 	}
 
 	pg.getTXSourceAccountAndDirection()
-	pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+	pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
 }
 
 func (pg *TxDetailsPage) getMoreItem() []moreItem {
@@ -292,7 +292,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 				}
 				pg.transaction = pg.txBackStack
 				pg.getTXSourceAccountAndDirection()
-				pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+				pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
 				pg.txBackStack = nil
 				pg.ParentWindow().Reload()
 			},
@@ -692,17 +692,17 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						if pg.txConfirmations() == 0 {
 							txt.Text = caser.String(values.String(values.StrUnconfirmedTx))
 							txt.Color = pg.Theme.Color.GrayText2
-						} else if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						} else if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
 							txt.Text = caser.String(values.String(values.StrConfirmed))
 							txt.Color = pg.Theme.Color.Success
 						} else {
-							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), pg.WL.SelectedWallet.Wallet.RequiredConfirmations()))
+							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), pg.wallet.RequiredConfirmations()))
 							txt.Color = pg.Theme.Color.GrayText2
 						}
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
 							m := values.MarginPadding10
 							return layout.Inset{
 								Left:  m,
@@ -714,7 +714,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
 							txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
 							txt.Color = pg.Theme.Color.GrayText2
 							return txt.Layout(gtx)
@@ -940,7 +940,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
 			pg.getTXSourceAccountAndDirection()
-			pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+			pg.txnWidgets = initTxnWidgets(pg.Load, pg.wallet, pg.transaction)
 			pg.ParentWindow().Reload()
 		}
 	}
@@ -984,16 +984,16 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
 
-func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionWdg {
+func initTxnWidgets(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction) transactionWdg {
 	var txn transactionWdg
-	wal := l.WL.SelectedWallet.Wallet
+	wal := wallet
 
 	t := time.Unix(transaction.Timestamp, 0).UTC()
 	txn.time = l.Theme.Body2(t.Format(time.UnixDate))
 	txn.status = l.Theme.Body1("")
 	txn.wallet = l.Theme.Body2(wal.GetWalletName())
 
-	if components.TxConfirmations(wal, transaction) >= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+	if components.TxConfirmations(wal, transaction) >= wal.RequiredConfirmations() {
 		txn.status.Text = components.FormatDateOrTime(transaction.Timestamp)
 		txn.confirmationIcons = l.Theme.Icons.ConfirmIcon
 	} else {

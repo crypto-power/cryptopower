@@ -24,6 +24,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
+	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -46,8 +47,8 @@ type OverviewPage struct {
 	mobileMarketOverviewList layout.List
 	recentProposalList       layout.List
 	recentTradeList          layout.List
-	recentTransactions       layout.List
-	recentStakes             layout.List
+	recentTransactions       *cryptomaterial.ClickableList
+	recentStakes             *cryptomaterial.ClickableList
 
 	scrollContainer               *widget.List
 	mobileMarketOverviewContainer *widget.List
@@ -152,14 +153,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				image:     l.Theme.Icons.LTC,
 			},
 		},
-		recentTransactions: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
-		recentStakes: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
+		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 
 		assetBalanceSlider: l.Theme.Slider(),
 		card:               l.Theme.Card(),
@@ -227,6 +222,16 @@ func (pg *OverviewPage) HandleUserInteractions() {
 
 	if pg.forceRefreshRates.Clicked() {
 		go pg.WL.AssetsManager.RateSource.Refresh(true)
+	}
+
+	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.transactions[selectedItem])
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
+	}
+
+	if clicked, selectedItem := pg.recentStakes.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.stakes[selectedItem])
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
@@ -781,10 +786,6 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		axis = layout.Vertical
 	}
 
-	txAndWallet := func(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
-		return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
-	}
-
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -792,7 +793,6 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-
 			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
@@ -800,7 +800,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1("No recent transaction").Layout(gtx)
+									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
 								})
 							})
 						})
@@ -810,8 +810,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-									return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+									return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
 								})
 							})
 						})
@@ -831,7 +830,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							}
 
 							return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
-								tx, wal := txAndWallet(pg.transactions[index])
+								tx, wal := pg.txAndWallet(pg.transactions[index])
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
@@ -864,7 +863,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						}
 
 						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							tx, wal := txAndWallet(pg.stakes[index])
+							tx, wal := pg.txAndWallet(pg.stakes[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
@@ -945,6 +944,10 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 			)
 		})
 	})
+}
+
+func (pg *OverviewPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
+	return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
 }
 
 func (pg *OverviewPage) updateAssetsUSDBalance() {
