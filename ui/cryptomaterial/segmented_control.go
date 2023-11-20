@@ -69,9 +69,8 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
 			layout.Rigid(func(gtx C) D {
 				if sc.segmentType == Group {
 					return sc.GroupTileLayout(gtx)
-				} else {
-					return sc.splitTileLayout(gtx)
 				}
+				return sc.splitTileLayout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
@@ -228,22 +227,22 @@ func (sc *SegmentedControl) SetSelectedSegment(segment string) {
 	}
 }
 
-func (s *SegmentedControl) handleActionEvent(isNext bool) {
-	l := len(s.segmentTitles) - 1 // index starts at 0
+func (sc *SegmentedControl) handleActionEvent(isNext bool) {
+	l := len(sc.segmentTitles) - 1 // index starts at 0
 	if isNext {
-		if s.selectedIndex == l {
-			s.selectedIndex = 0
+		if sc.selectedIndex == l {
+			sc.selectedIndex = 0
 		} else {
-			s.selectedIndex++
+			sc.selectedIndex++
 		}
-		s.sliceAction.PushLeft()
+		sc.sliceAction.PushLeft()
 	} else {
-		if s.selectedIndex == 0 {
-			s.selectedIndex = l
+		if sc.selectedIndex == 0 {
+			sc.selectedIndex = l
 		} else {
-			s.selectedIndex--
+			sc.selectedIndex--
 		}
-		s.sliceAction.PushRight()
+		sc.sliceAction.PushRight()
 	}
-	s.changed = true
+	sc.changed = true
 }
