@@ -18,6 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/account"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
@@ -54,8 +55,7 @@ type MainPage struct {
 	isFetchingExchangeRate bool
 	isBalanceHidden        bool
 
-	currencyExchangeValue string
-	totalBalanceUSD       string
+	totalBalanceUSD string
 
 	showNavigationFunc func()
 }
@@ -135,6 +135,7 @@ func (mp *MainPage) initTabOptions() {
 		values.String(values.StrSend),
 		values.String(values.StrReceive),
 		values.String(values.StrTransactions),
+		values.String(values.StrAccounts),
 		values.String(values.StrSettings),
 	}
 
@@ -269,6 +270,8 @@ func (mp *MainPage) HandleUserInteractions() {
 			}
 		case values.String(values.StrStaking):
 			pg = staking.NewStakingPage(mp.Load)
+		case values.String(values.StrAccounts):
+			pg = account.NewAccountPage(mp.Load)
 		case values.String(values.StrSettings):
 			pg = NewWalletSettingsPage(mp.Load, mp.showNavigationFunc)
 		}

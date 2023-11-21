@@ -900,4 +900,6 @@ const (
 	StrAssets                          = "assets"
 	StrNoWalletsAvailable              = "noWalletsAvailable"
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
+	StrAccounts                        = "accounts"
+	StrAmountSpendable                 = "amountSpendable"
 )

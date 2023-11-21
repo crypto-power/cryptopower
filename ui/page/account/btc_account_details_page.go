@@ -1,4 +1,4 @@
-package settings
+package account
 
 import (
 	"fmt"
@@ -18,9 +18,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const LTCAccountDetailsPageID = "LTCAccountDetails"
+const BTCAccountDetailsPageID = "BTCAccountDetails"
 
-type LTCAcctDetailsPage struct {
+type BTCAcctDetailsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
 	// that helps this Page satisfy the app.Page interface. It also defines
@@ -47,8 +47,8 @@ type LTCAcctDetailsPage struct {
 	infoButton              cryptomaterial.IconButton
 }
 
-func NewAcctLTCDetailsPage(l *load.Load, account *sharedW.Account) *LTCAcctDetailsPage {
-	pg := &LTCAcctDetailsPage{
+func NewAcctBTCDetailsPage(l *load.Load, account *sharedW.Account) *BTCAcctDetailsPage {
+	pg := &BTCAcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
 		wallet:           l.WL.SelectedWallet.Wallet,
@@ -75,10 +75,10 @@ func NewAcctLTCDetailsPage(l *load.Load, account *sharedW.Account) *LTCAcctDetai
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *LTCAcctDetailsPage) OnNavigatedTo() {
+func (pg *BTCAcctDetailsPage) OnNavigatedTo() {
 	pg.totalBalance = pg.account.Balance.Total.String()
 
-	pg.hdPath = pg.WL.LTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
+	pg.hdPath = pg.WL.BTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount
@@ -91,7 +91,7 @@ func (pg *LTCAcctDetailsPage) OnNavigatedTo() {
 // Layout draws the page UI components into the provided C
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *LTCAcctDetailsPage) Layout(gtx C) D {
+func (pg *BTCAcctDetailsPage) Layout(gtx C) D {
 	m := values.MarginPadding10
 	widgets := []func(gtx C) D{
 		func(gtx C) D {
@@ -118,7 +118,7 @@ func (pg *LTCAcctDetailsPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx, widgets)
 }
 
-func (pg *LTCAcctDetailsPage) extendedPubkey(gtx C) D {
+func (pg *BTCAcctDetailsPage) extendedPubkey(gtx C) D {
 	return pg.pageSections(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -170,7 +170,7 @@ func (pg *LTCAcctDetailsPage) extendedPubkey(gtx C) D {
 	})
 }
 
-func (pg *LTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
+func (pg *BTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -188,7 +188,7 @@ func (pg *LTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 						return pg.theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 								return pg.acctDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-									return widgets[i](gtx)
+									return layout.Inset{}.Layout(gtx, widgets[i])
 								})
 							})
 						})
@@ -197,15 +197,18 @@ func (pg *LTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 			},
 			ExtraItem: pg.renameAccount,
 			Extra: func(gtx C) D {
-				return layout.E.Layout(gtx, pg.Theme.Icons.EditIcon.Layout24dp)
+				return layout.Inset{}.Layout(gtx, func(gtx C) D {
+					edit := pg.Theme.Icons.EditIcon
+					return layout.E.Layout(gtx, edit.Layout24dp)
+				})
 			},
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return body(gtx)
+	return components.UniformPadding(gtx, body)
 }
 
-func (pg *LTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
+func (pg *BTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {
 	body := func(gtx C) D {
 		sp := components.SubPage{
 			Load:       pg.Load,
@@ -223,7 +226,7 @@ func (pg *LTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gt
 						return pg.theme.Card().Layout(gtx, func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 								return pg.acctDetailsPageContainer.Layout(gtx, len(widgets), func(gtx C, i int) D {
-									return widgets[i](gtx)
+									return layout.Inset{}.Layout(gtx, widgets[i])
 								})
 							})
 						})
@@ -243,7 +246,7 @@ func (pg *LTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gt
 	return components.UniformMobile(gtx, false, true, body)
 }
 
-func (pg *LTCAcctDetailsPage) accountBalanceLayout(gtx C) D {
+func (pg *BTCAcctDetailsPage) accountBalanceLayout(gtx C) D {
 	return pg.pageSections(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -270,7 +273,7 @@ func (pg *LTCAcctDetailsPage) accountBalanceLayout(gtx C) D {
 	})
 }
 
-func (pg *LTCAcctDetailsPage) acctBalLayout(gtx C, balType string, balance string, isTotalBalance bool) D {
+func (pg *BTCAcctDetailsPage) acctBalLayout(gtx C, balType string, balance string, isTotalBalance bool) D {
 
 	marginTop := values.MarginPadding16
 	marginLeft := values.MarginPadding35
@@ -301,7 +304,7 @@ func (pg *LTCAcctDetailsPage) acctBalLayout(gtx C, balType string, balance strin
 	})
 }
 
-func (pg *LTCAcctDetailsPage) accountInfoLayout(gtx C) D {
+func (pg *BTCAcctDetailsPage) accountInfoLayout(gtx C) D {
 	return pg.pageSections(gtx, func(gtx C) D {
 		m := values.MarginPadding10
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -329,7 +332,7 @@ func (pg *LTCAcctDetailsPage) accountInfoLayout(gtx C) D {
 	})
 }
 
-func (pg *LTCAcctDetailsPage) acctInfoLayout(gtx C, leftText, rightText string) D {
+func (pg *BTCAcctDetailsPage) acctInfoLayout(gtx C, leftText, rightText string) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -346,7 +349,7 @@ func (pg *LTCAcctDetailsPage) acctInfoLayout(gtx C, leftText, rightText string) 
 	)
 }
 
-func (pg *LTCAcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
+func (pg *BTCAcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
 	m := values.MarginPadding20
 	mtb := values.MarginPadding5
 	return layout.Inset{Left: m, Right: m, Top: mtb, Bottom: mtb}.Layout(gtx, body)
@@ -357,7 +360,7 @@ func (pg *LTCAcctDetailsPage) pageSections(gtx C, body layout.Widget) D {
 // used to update the page's UI components shortly before they are
 // displayed.
 // Part of the load.Page interface.
-func (pg *LTCAcctDetailsPage) HandleUserInteractions() {
+func (pg *BTCAcctDetailsPage) HandleUserInteractions() {
 	if pg.renameAccount.Clicked() {
 		textModal := modal.NewTextInputModal(pg.Load).
 			Hint(values.String(values.StrAcctName)).
@@ -396,7 +399,7 @@ func (pg *LTCAcctDetailsPage) HandleUserInteractions() {
 
 }
 
-func (pg *LTCAcctDetailsPage) loadExtendedPubKey() {
+func (pg *BTCAcctDetailsPage) loadExtendedPubKey() {
 	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
@@ -411,4 +414,4 @@ func (pg *LTCAcctDetailsPage) loadExtendedPubKey() {
 // OnNavigatedTo() will be called again. This method should not destroy UI
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
-func (pg *LTCAcctDetailsPage) OnNavigatedFrom() {}
+func (pg *BTCAcctDetailsPage) OnNavigatedFrom() {}
