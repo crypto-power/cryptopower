@@ -21,6 +21,11 @@ A cross-platform desktop wallet built with [gio](https://gioui.org/).
 
 ## Building
 
+* Set up instant exchange private key: copy file `./libwallet/instantswap/instant_example.json`
+into `./libwallet/instantswap/instant.json`. Then replace with your own key. For now, 
+the supported instant exchange are: trocador, changenow, godex and flypme (flypme not require
+a private key)
+
 Note: You need to have [Go 1.19](https://golang.org/dl/) or above to build.
 
 Then `go build`.
