@@ -40,9 +40,8 @@ type Page struct {
 	accountsList  *cryptomaterial.ClickableList
 	accounts      []*sharedW.Account
 
-	exchangeRate           float64
-	isFetchingExchangeRate bool
-	usdExchangeSet         bool
+	exchangeRate   float64
+	usdExchangeSet bool
 }
 
 func NewAccountPage(l *load.Load) *Page {
@@ -60,37 +59,6 @@ func NewAccountPage(l *load.Load) *Page {
 	pg.loadWalletAccount()
 
 	return pg
-}
-
-func (pg *Page) fetchExchangeRate() {
-	if pg.isFetchingExchangeRate {
-		return
-	}
-	pg.isFetchingExchangeRate = true
-	var market string
-	switch pg.wallet.GetAssetType() {
-	case libutils.DCRWalletAsset:
-		market = values.DCRUSDTMarket
-	case libutils.BTCWalletAsset:
-		market = values.BTCUSDTMarket
-	case libutils.LTCWalletAsset:
-		market = values.LTCUSDTMarket
-	default:
-		log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
-		pg.isFetchingExchangeRate = false
-		return
-	}
-
-	rate := pg.WL.AssetsManager.RateSource.GetTicker(market)
-	if rate == nil || rate.LastTradePrice <= 0 {
-		pg.isFetchingExchangeRate = false
-		return
-	}
-
-	pg.exchangeRate = rate.LastTradePrice
-
-	pg.isFetchingExchangeRate = false
-	pg.ParentWindow().Reload()
 }
 
 func (pg *Page) loadWalletAccount() {
@@ -119,7 +87,15 @@ func (pg *Page) OnNavigatedTo() {
 	pg.usdExchangeSet = false
 	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
 		pg.usdExchangeSet = pg.WL.AssetsManager.RateSource.Ready()
-		go pg.fetchExchangeRate()
+		go func() {
+			rate, err := pg.Load.WL.FetchExchangeRate()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			pg.exchangeRate = rate
+			pg.ParentWindow().Reload()
+		}()
 	}
 }
 
@@ -144,16 +120,18 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) headerLayout(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			txt := pg.Theme.Label(values.TextSize20, values.String(values.StrAccounts))
-			txt.Font.Weight = font.SemiBold
-			return txt.Layout(gtx)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, pg.addAccountLayout)
-		}),
-	)
+	return layout.Inset{Bottom: values.MarginPaddingMinus12}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				txt := pg.Theme.Label(values.TextSize20, values.String(values.StrAccounts))
+				txt.Font.Weight = font.SemiBold
+				return txt.Layout(gtx)
+			}),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, pg.addAccountLayout)
+			}),
+		)
+	})
 }
 
 func (pg *Page) addAccountLayout(gtx C) D {
@@ -169,7 +147,7 @@ func (pg *Page) addAccountLayout(gtx C) D {
 			Clickable:  pg.addAccountBtn,
 			Alignment:  layout.Middle,
 		}.Layout(gtx,
-			layout.Rigid(pg.Theme.Icons.AddBlueIcon.Layout16dp),
+			layout.Rigid(pg.Theme.Icons.BlueAddIcon.Layout16dp),
 			layout.Rigid(func(gtx C) D {
 				txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddNewAccount))
 				txt.Color = pg.Theme.Color.DefaultThemeColors().Primary
@@ -182,7 +160,7 @@ func (pg *Page) addAccountLayout(gtx C) D {
 	})
 }
 
-func (pg *Page) accountItem(gtx C, account *sharedW.Account, disableLine bool) D {
+func (pg *Page) accountItem(gtx C, account *sharedW.Account, isHiddenLine bool) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding36}.Layout(gtx, func(gtx C) D {
@@ -231,15 +209,13 @@ func (pg *Page) accountItem(gtx C, account *sharedW.Account, disableLine bool) D
 				)
 			})
 		}),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			if disableLine {
+		layout.Rigid(func(gtx C) D {
+			if isHiddenLine {
 				return D{}
 			}
-			// return layout.Inset{Top: values.MarginPadding28}.Layout(gtx, func(gtx C) D {
 			line := pg.Theme.Line(1, 0)
 			line.Color = pg.Theme.Color.Gray9
 			return line.Layout(gtx)
-			// })
 		}),
 	)
 }

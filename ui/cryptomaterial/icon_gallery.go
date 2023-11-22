@@ -28,7 +28,7 @@ type Icons struct {
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon, Dot, AddBlueIcon *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot, BlueAddIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -202,7 +202,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.MultiWalletIcon = NewImage(decredIcons["multiWalletIcon"])
 	i.IntegratedExchangeIcon = NewImage(decredIcons["integratedExchangeIcon"])
 	i.CrossPlatformIcon = NewImage(decredIcons["crossPlatformIcon"])
-	i.AddBlueIcon = NewImage(decredIcons["add_blue_icon"])
+	i.BlueAddIcon = NewImage(decredIcons["add_blue_icon"])
 
 	return i
 }

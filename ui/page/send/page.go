@@ -296,27 +296,14 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 	pg.isFetchingExchangeRate = true
-	var market string
-	switch pg.selectedWallet.GetAssetType() {
-	case libUtil.DCRWalletAsset:
-		market = values.DCRUSDTMarket
-	case libUtil.BTCWalletAsset:
-		market = values.BTCUSDTMarket
-	case libUtil.LTCWalletAsset:
-		market = values.LTCUSDTMarket
-	default:
-		log.Errorf("Unsupported asset type: %s", pg.selectedWallet.GetAssetType())
+	rate, err := pg.WL.FetchExchangeRate()
+	if err != nil {
+		log.Error(err)
 		pg.isFetchingExchangeRate = false
 		return
 	}
 
-	rate := pg.WL.AssetsManager.RateSource.GetTicker(market)
-	if rate == nil || rate.LastTradePrice <= 0 {
-		pg.isFetchingExchangeRate = false
-		return
-	}
-
-	pg.exchangeRate = rate.LastTradePrice
+	pg.exchangeRate = rate
 	pg.amount.setExchangeRate(pg.exchangeRate)
 	pg.validateAndConstructTx() // convert estimates to usd
 
