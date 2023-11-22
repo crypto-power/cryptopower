@@ -125,7 +125,7 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 
 	m0 := unit.Dp(0)
 
-	edit := Editor{
+	newEditor := Editor{
 		t:            t,
 		EditorStyle:  m,
 		TitleLabel:   t.Body2(""),
@@ -160,9 +160,9 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 		CustomButton: t.Button(""),
 	}
 
-	edit.editorCard = Card{Color: edit.backgound}
-	edit.editorCard.Radius = Radius(8)
-	return edit
+	newEditor.editorCard = Card{Color: newEditor.backgound}
+	newEditor.editorCard.Radius = Radius(8)
+	return newEditor
 }
 
 func (e Editor) Layout(gtx layout.Context) layout.Dimensions {
