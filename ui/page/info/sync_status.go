@@ -41,9 +41,9 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 			if syncing || rescanning {
 				items = append(items, layout.Rigid(func(gtx C) D {
 					return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-							layout.Flexed(.9, pg.progressBarRow),
-							layout.Flexed(.1, pg.syncStatusIcon),
+						return layout.Flex{}.Layout(gtx,
+							layout.Flexed(.93, pg.progressBarRow),
+							layout.Rigid(pg.syncStatusIcon),
 						)
 					})
 				}))
@@ -74,9 +74,9 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 	}
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 		layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrWalletStatus)).Layout),
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			if pg.WL.SelectedWallet.Wallet.IsSyncShuttingDown() {
 				return layout.Inset{
 					Left: values.MarginPadding4,
@@ -232,14 +232,12 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 }
 
 func (pg *WalletInfo) layoutAutoSyncSection(gtx C) D {
-	return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.syncSwitch.Layout)
-			}),
-			layout.Rigid(pg.Theme.Body2(values.String(values.StrSync)).Layout),
-		)
-	})
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.syncSwitch.Layout)
+		}),
+		layout.Rigid(pg.Theme.Body2(values.String(values.StrSync)).Layout),
+	)
 }
 
 // progressBarRow lays out the progress bar.
