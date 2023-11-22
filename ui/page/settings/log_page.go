@@ -162,7 +162,7 @@ func (pg *LogPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if pg.title == values.String(values.StrWalletLog) {
 		return container(gtx)
 	}
-	return components.UniformPadding(gtx, container)
+	return cryptomaterial.UniformPadding(gtx, container)
 }
 
 func (pg *LogPage) layoutMobile(gtx layout.Context) layout.Dimensions {

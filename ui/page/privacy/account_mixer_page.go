@@ -332,7 +332,7 @@ func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (pg *AccountMixerPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		in := values.MarginPadding50
 		return layout.Inset{
 			Top:    values.MarginPadding25,

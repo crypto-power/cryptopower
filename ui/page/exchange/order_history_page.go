@@ -126,7 +126,7 @@ func (pg *OrderHistoryPage) Layout(gtx C) D {
 		})
 	}
 
-	return components.UniformPadding(gtx, container)
+	return cryptomaterial.UniformPadding(gtx, container)
 }
 
 func (pg *OrderHistoryPage) layout(gtx C) D {

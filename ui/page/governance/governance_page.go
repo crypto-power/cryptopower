@@ -120,10 +120,10 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if !pg.isGovernanceAPIAllowed() {
-		return components.UniformPadding(gtx, pg.splashScreen)
+		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
 
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.layoutPageTopNav),
 			layout.Rigid(pg.layoutTabs),

@@ -196,6 +196,7 @@ func (s *Slider) handleClickEvent() {
 			} else {
 				s.sliceAction.PushRight()
 			}
+			break
 		}
 	}
 }

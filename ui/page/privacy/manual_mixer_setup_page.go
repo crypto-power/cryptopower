@@ -180,7 +180,7 @@ func (pg *ManualMixerSetupPage) Layout(gtx layout.Context) layout.Dimensions {
 		return page.Layout(pg.ParentWindow(), gtx)
 	}
 
-	return components.UniformPadding(gtx, body)
+	return cryptomaterial.UniformPadding(gtx, body)
 }
 
 func (pg *ManualMixerSetupPage) mixerAccountSections(gtx layout.Context, title string, body layout.Widget) layout.Dimensions {

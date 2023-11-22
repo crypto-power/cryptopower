@@ -29,9 +29,9 @@ type SegmentedControl struct {
 	changed bool
 	mu      sync.Mutex
 
-	isEnableSwipe bool
-	sliceAction   SliceAction
-	segmentType   SegmentType
+	isSwipeActionEnabled bool
+	sliceAction          SliceAction
+	segmentType          SegmentType
 }
 
 func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
@@ -39,13 +39,13 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 	list.IsHoverable = false
 
 	sc := &SegmentedControl{
-		list:          list,
-		theme:         t,
-		segmentTitles: segmentTitles,
-		leftNavBtn:    t.NewClickable(false),
-		rightNavBtn:   t.NewClickable(false),
-		isEnableSwipe: true,
-		segmentType:   segmentType,
+		list:                 list,
+		theme:                t,
+		segmentTitles:        segmentTitles,
+		leftNavBtn:           t.NewClickable(false),
+		rightNavBtn:          t.NewClickable(false),
+		isSwipeActionEnabled: true,
+		segmentType:          segmentType,
 	}
 
 	sc.sliceAction.Draged(func(dragDirection SwipeDirection) {
@@ -57,7 +57,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 }
 
 func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
-	sc.isEnableSwipe = enable
+	sc.isSwipeActionEnabled = enable
 }
 
 func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
@@ -74,7 +74,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					if sc.isEnableSwipe {
+					if sc.isSwipeActionEnabled {
 						return sc.sliceAction.DragLayout(gtx, func(gtx C) D {
 							return sc.sliceAction.TransformLayout(gtx, body)
 						}, true)

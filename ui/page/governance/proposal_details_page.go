@@ -564,7 +564,7 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		}
 		return page.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformPadding(gtx, body)
+	return cryptomaterial.UniformPadding(gtx, body)
 }
 
 func (pg *ProposalDetails) layoutMobile(gtx layout.Context) layout.Dimensions {

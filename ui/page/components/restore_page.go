@@ -108,7 +108,7 @@ func (pg *Restore) layoutDesktop(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return UniformPadding(gtx, body)
+	return cryptomaterial.UniformPadding(gtx, body)
 }
 
 func (pg *Restore) layoutMobile(gtx C) D {
@@ -130,7 +130,7 @@ func (pg *Restore) layoutMobile(gtx C) D {
 }
 
 func (pg *Restore) restoreLayout(gtx layout.Context) layout.Dimensions {
-	return UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.tabLayout),
 			layout.Rigid(pg.Theme.Separator().Layout),

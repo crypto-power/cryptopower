@@ -194,5 +194,5 @@ func container(gtx C, isMobile bool, theme cryptomaterial.Theme, body layout.Wid
 	if isMobile {
 		return components.UniformMobile(gtx, false, false, bodyLayout)
 	}
-	return components.UniformPadding(gtx, bodyLayout)
+	return cryptomaterial.UniformPadding(gtx, bodyLayout)
 }

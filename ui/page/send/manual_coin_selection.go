@@ -14,7 +14,6 @@ import (
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -364,7 +363,7 @@ func (pg *ManualCoinSelectionPage) Layout(gtx C) D {
 		layout.Expanded(func(gtx C) D {
 			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
 				layout.Expanded(func(gtx C) D {
-					return components.UniformPadding(gtx, func(gtx C) D {
+					return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
 							Height:      cryptomaterial.WrapContent,

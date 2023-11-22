@@ -284,7 +284,7 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		pg.recentProposal,
 	}
 
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
@@ -306,7 +306,7 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 		pg.recentProposal,
 	}
 
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return pageContent[i](gtx)

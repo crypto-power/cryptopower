@@ -65,7 +65,7 @@ func (pg *SetupPrivacyPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SetupPrivacyPage) Layout(gtx layout.Context) layout.Dimensions {
-	return components.UniformPadding(gtx, pg.privacyIntroLayout)
+	return cryptomaterial.UniformPadding(gtx, pg.privacyIntroLayout)
 }
 
 func (pg *SetupPrivacyPage) privacyIntroLayout(gtx layout.Context) layout.Dimensions {
