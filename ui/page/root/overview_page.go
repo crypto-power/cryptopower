@@ -1331,7 +1331,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 }
 
 func (pg *OverviewPage) loadTransactions() {
-	pg.transactions = make([]*multiWalletTx, 0)
+	transactions := make([]*multiWalletTx, 0)
 	wal := pg.WL.AllSortedWalletList()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
@@ -1341,17 +1341,18 @@ func (pg *OverviewPage) loadTransactions() {
 		}
 
 		for _, tx := range txs {
-			pg.transactions = append(pg.transactions, &multiWalletTx{tx, w.GetWalletID()})
+			transactions = append(transactions, &multiWalletTx{tx, w.GetWalletID()})
 		}
 	}
 
-	sort.Slice(pg.transactions, func(i, j int) bool {
-		return pg.transactions[i].Timestamp > pg.transactions[j].Timestamp
+	sort.Slice(transactions, func(i, j int) bool {
+		return transactions[i].Timestamp > transactions[j].Timestamp
 	})
 
-	if len(pg.transactions) > 3 {
-		pg.transactions = pg.transactions[:3]
+	if len(transactions) > 3 {
+		transactions = transactions[:3]
 	}
+	pg.transactions = transactions
 
 	pg.loadStakes()
 }
