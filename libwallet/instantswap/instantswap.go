@@ -39,7 +39,7 @@ func init() {
 		panic(err)
 	}
 	// assign available key to privKeyMap
-	for key, _ := range privKeyMap {
+	for key := range privKeyMap {
 		if val, ok := newPrivKeyMap[key]; ok {
 			privKeyMap[key] = val
 		}
