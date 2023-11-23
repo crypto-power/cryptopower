@@ -179,6 +179,8 @@ func smooth(t float32) float32 {
 }
 
 // easeInOutCubic maps a linear value to a ease-in-out-cubic easing function.
+// It is a mathematical function that describes how a value changes over time.
+// It can be applied to adjusting the speed of animation
 func easeInOutCubic(t float32) float32 {
 	if t < 0.5 {
 		return 4 * t * t * t
