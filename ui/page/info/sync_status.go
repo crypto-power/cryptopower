@@ -270,7 +270,7 @@ func (pg *WalletInfo) progressStatusDetails() (int, string) {
 	}
 
 	if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() {
-		timeLeftLabel = values.StringF(values.StrTimeLeft, timeLeft)
+		timeLeftLabel = values.StringF(values.StrTimeLeftFmt, timeLeft)
 		if progress == 0 {
 			timeLeftLabel = values.String(values.StrLoading)
 		}

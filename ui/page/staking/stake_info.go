@@ -46,10 +46,6 @@ func (pg *Page) pageHead(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						icon := pg.Theme.Icons.HeaderSettingsIcon
-						// Todo -- darkmode icons
-						// if pg.ticketBuyerWallet.IsAutoTicketsPurchaseActive() {
-						// 	icon = pg.Theme.Icons.SettingsInactiveIcon
-						// }
 						return pg.stakeSettings.Layout(gtx, icon.Layout24dp)
 					}),
 				)
@@ -70,23 +66,28 @@ func (pg *Page) stakePriceSection(gtx C) D {
 					leftWg := func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										title := pg.Theme.Label(values.TextSize16, values.String(values.StrTicketPrice)+": ")
-										title.Color = col
-										return title.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Center.Layout(gtx, func(gtx C) D {
-											if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
-												title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
-												title.Color = col
-												return title.Layout(gtx)
-											}
-											return components.LayoutBalanceSemiBold(gtx, pg.Load, pg.ticketPrice)
-										})
-									}),
-								)
+								return layout.Inset{
+									Top:    values.MarginPadding6,
+									Bottom: values.MarginPadding6,
+								}.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											title := pg.Theme.Label(values.TextSize16, values.String(values.StrTicketPrice)+": ")
+											title.Color = col
+											return title.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.Center.Layout(gtx, func(gtx C) D {
+												if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
+													title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
+													title.Color = col
+													return title.Layout(gtx)
+												}
+												return components.LayoutBalanceSemiBold(gtx, pg.Load, pg.ticketPrice)
+											})
+										}),
+									)
+								})
 							}),
 							layout.Rigid(func(gtx C) D {
 								live := fmt.Sprintf("%d", pg.ticketOverview.Live)
@@ -100,7 +101,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								secs, _ := pg.dcrImpl.NextTicketPriceRemaining()
 								timeleft := nextTicketRemaining(int(secs))
-								return pg.dataRows(gtx, values.String(values.StrTimeLeftTitle), timeleft)
+								return pg.dataRows(gtx, values.String(values.StrTimeLeft), timeleft)
 							}),
 							layout.Rigid(func(gtx C) D {
 								canBuy := fmt.Sprintf("%d", pg.CalculateTotalTicketsCanBuy())
@@ -115,13 +116,16 @@ func (pg *Page) stakePriceSection(gtx C) D {
 					)
 				})
 			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding11, Bottom: values.MarginPadding14}.Layout(gtx, pg.Theme.Separator().Layout)
+			}),
 			layout.Rigid(pg.balanceProgressBarLayout),
 		)
 	})
 }
 
 func (pg *Page) dataRows(gtx C, title1, value1 string) D {
-	return layout.Inset{Top: values.MarginPadding7}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Top: values.MarginPadding6, Bottom: values.MarginPadding6}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				label := pg.Theme.Label(values.TextSize16, title1)

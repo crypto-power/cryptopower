@@ -708,7 +708,7 @@ const (
 	StrTickets                         = "tickets"
 	StrTicketSettingSaved              = "ticketSettingSaved"
 	StrTicketVotedTitle                = "ticketVotedTitle"
-	StrTimeLeft                        = "timeLeft"
+	StrTimeLeftFmt                     = "timeLeftFmt"
 	StrTo                              = "to"
 	StrToken                           = "token"
 	StrTotal                           = "total"
@@ -901,6 +901,6 @@ const (
 	StrNoWalletsAvailable              = "noWalletsAvailable"
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
 	StrStakingInfo                     = "stakingInfo"
-	StrTimeLeftTitle                   = "timeLeftTitle"
+	StrTimeLeft                        = "timeLeft"
 	StrTotalReward                     = "totalReward"
 )

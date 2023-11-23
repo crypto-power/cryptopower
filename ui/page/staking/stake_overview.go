@@ -36,6 +36,9 @@ const (
 
 	// pageSize define the maximum number of items fetched for the list scroll view.
 	pageSize int32 = 20
+
+	// The ticket height limit helps separate the scrolling of the ticket list and the page
+	ticketHeight = 500
 )
 
 type Page struct {
@@ -223,7 +226,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
 				}
 				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-					gtx.Constraints.Max.Y = 500
+					gtx.Constraints.Max.Y = ticketHeight
 					return pg.ticketListLayout(gtx)
 				})
 			}),

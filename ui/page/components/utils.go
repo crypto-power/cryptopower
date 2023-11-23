@@ -112,10 +112,6 @@ func checksumByte(data []byte) byte {
 }
 
 func LayoutIconAndTextWithSize(l *load.Load, gtx C, text string, col color.NRGBA, size unit.Sp, iconSize unit.Dp) D {
-	return layoutIconAndText(l, gtx, text, col, size, iconSize)
-}
-
-func layoutIconAndText(l *load.Load, gtx C, text string, col color.NRGBA, size unit.Sp, iconSize unit.Dp) D {
 	return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
