@@ -266,7 +266,6 @@ func clamp1(v float32) float32 {
 		return 1
 	} else if v <= 0 {
 		return 0
-	} else {
-		return v
 	}
+	return v
 }

@@ -6,7 +6,7 @@ import (
 	"gioui.org/text"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	"github.com/crypto-power/cryptopower/listeners"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -15,33 +15,23 @@ func (pg *Page) initTicketList() {
 }
 
 func (pg *Page) listenForTxNotifications() {
-	if pg.TxAndBlockNotificationListener != nil {
-		return
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			pg.ParentWindow().Reload()
+		},
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			pg.ParentWindow().Reload()
+		},
 	}
-
-	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err := pg.dcrImpl.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, OverviewPageID)
+	err := pg.dcrImpl.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, OverviewPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.TxAndBlockNotifChan():
-				if n.Type == listeners.BlockAttached || n.Type == listeners.NewTransaction {
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
-				pg.CloseTxAndBlockChan()
-				pg.TxAndBlockNotificationListener = nil
-
-				return
-			}
-		}
-	}()
+func (pg *Page) stopTxNotificationsListener() {
+	pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
 }
 
 func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, bool, error) {

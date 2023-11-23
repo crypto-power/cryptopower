@@ -728,10 +728,9 @@ func GetTicketPurchaseAccount(selectedWallet *dcr.Asset) (acct *sharedW.Account,
 		} else if isSpendUnmixedAllowed && err == nil {
 			// Spending from unmixed account is allowed. Choose the set account whether its mixed or not.
 			return
-		} else {
-			// invalid account found. Set it to nil
-			acct = nil
 		}
+		// invalid account found. Set it to nil
+		acct = nil
 	}
 	return
 }

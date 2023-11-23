@@ -224,7 +224,7 @@ func (sp *startPage) Layout(gtx C) D {
 
 // Desktop layout
 func (sp *startPage) layoutDesktop(gtx C) D {
-	if sp.currentPage < 0 {
+	if sp.currentPage < 0 || sp.isQuitting {
 		return sp.loadingSection(gtx)
 	}
 

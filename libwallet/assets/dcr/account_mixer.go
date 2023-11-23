@@ -25,15 +25,15 @@ const (
 	MixedAccountBranch = int32(udb.ExternalBranch)
 )
 
-func (asset *Asset) AddAccountMixerNotificationListener(accountMixerNotificationListener AccountMixerNotificationListener, uniqueIdentifier string) error {
+func (asset *Asset) AddAccountMixerNotificationListener(accountMixerNotificationListener *AccountMixerNotificationListener, uniqueIdentifier string) error {
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
-	if _, ok := asset.accountMixerNotificationListener[uniqueIdentifier]; ok {
+	if _, ok := asset.accountMixerNotificationListeners[uniqueIdentifier]; ok {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
 
-	asset.accountMixerNotificationListener[uniqueIdentifier] = accountMixerNotificationListener
+	asset.accountMixerNotificationListeners[uniqueIdentifier] = accountMixerNotificationListener
 	return nil
 }
 
@@ -41,7 +41,7 @@ func (asset *Asset) RemoveAccountMixerNotificationListener(uniqueIdentifier stri
 	asset.notificationListenersMu.Lock()
 	defer asset.notificationListenersMu.Unlock()
 
-	delete(asset.accountMixerNotificationListener, uniqueIdentifier)
+	delete(asset.accountMixerNotificationListeners, uniqueIdentifier)
 }
 
 // CreateMixerAccounts creates the two accounts needed for the account mixer. This function
@@ -183,7 +183,7 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 
 	go func() {
 		log.Info("Running account mixer")
-		if asset.accountMixerNotificationListener != nil {
+		if asset.accountMixerNotificationListeners != nil {
 			asset.publishAccountMixerStarted(asset.ID)
 		}
 
@@ -195,7 +195,7 @@ func (asset *Asset) StartAccountMixer(walletPassphrase string) error {
 		}
 
 		asset.cancelAccountMixer = nil
-		if asset.accountMixerNotificationListener != nil {
+		if asset.accountMixerNotificationListeners != nil {
 			asset.publishAccountMixerEnded(asset.ID)
 		}
 	}()
@@ -309,8 +309,10 @@ func (asset *Asset) publishAccountMixerStarted(walletID int) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
-	for _, accountMixerNotificationListener := range asset.accountMixerNotificationListener {
-		accountMixerNotificationListener.OnAccountMixerStarted(walletID)
+	for _, accountMixerNotificationListener := range asset.accountMixerNotificationListeners {
+		if accountMixerNotificationListener.OnAccountMixerStarted != nil {
+			accountMixerNotificationListener.OnAccountMixerStarted(walletID)
+		}
 	}
 }
 
@@ -318,7 +320,9 @@ func (asset *Asset) publishAccountMixerEnded(walletID int) {
 	asset.notificationListenersMu.RLock()
 	defer asset.notificationListenersMu.RUnlock()
 
-	for _, accountMixerNotificationListener := range asset.accountMixerNotificationListener {
-		accountMixerNotificationListener.OnAccountMixerEnded(walletID)
+	for _, accountMixerNotificationListener := range asset.accountMixerNotificationListeners {
+		if accountMixerNotificationListener.OnAccountMixerEnded != nil {
+			accountMixerNotificationListener.OnAccountMixerEnded(walletID)
+		}
 	}
 }

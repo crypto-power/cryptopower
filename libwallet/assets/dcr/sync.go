@@ -22,7 +22,7 @@ import (
 type SyncData struct {
 	mu sync.RWMutex
 
-	syncProgressListeners map[string]sharedW.SyncProgressListener
+	syncProgressListeners map[string]*sharedW.SyncProgressListener
 	showLogs              bool
 
 	synced       bool
@@ -111,7 +111,7 @@ func (asset *Asset) IsSyncProgressListenerRegisteredFor(uniqueIdentifier string)
 	return exists
 }
 
-func (asset *Asset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
+func (asset *Asset) AddSyncProgressListener(syncProgressListener *sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	if asset.IsSyncProgressListenerRegisteredFor(uniqueIdentifier) {
 		return errors.New(utils.ErrListenerAlreadyExist)
 	}
@@ -130,11 +130,11 @@ func (asset *Asset) RemoveSyncProgressListener(uniqueIdentifier string) {
 	asset.syncData.mu.Unlock()
 }
 
-func (asset *Asset) syncProgressListeners() []sharedW.SyncProgressListener {
+func (asset *Asset) syncProgressListeners() []*sharedW.SyncProgressListener {
 	asset.syncData.mu.RLock()
 	defer asset.syncData.mu.RUnlock()
 
-	listeners := make([]sharedW.SyncProgressListener, 0, len(asset.syncData.syncProgressListeners))
+	listeners := make([]*sharedW.SyncProgressListener, 0, len(asset.syncData.syncProgressListeners))
 	for _, listener := range asset.syncData.syncProgressListeners {
 		listeners = append(listeners, listener)
 	}
@@ -154,11 +154,19 @@ func (asset *Asset) PublishLastSyncProgress(uniqueIdentifier string) error {
 	if asset.syncData.syncing && asset.syncData.activeSyncData != nil {
 		switch asset.syncData.activeSyncData.syncStage {
 		case HeadersFetchSyncStage:
-			syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+			if syncProgressListener.OnHeadersFetchProgress != nil {
+				syncProgressListener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+			}
+
 		case AddressDiscoverySyncStage:
-			syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
+			if syncProgressListener.OnAddressDiscoveryProgress != nil {
+				syncProgressListener.OnAddressDiscoveryProgress(&asset.syncData.addressDiscoveryProgress)
+			}
+
 		case HeadersRescanSyncStage:
-			syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
+			if syncProgressListener.OnHeadersRescanProgress != nil {
+				syncProgressListener.OnHeadersRescanProgress(&asset.syncData.headersRescanProgress)
+			}
 		}
 	}
 
@@ -249,7 +257,9 @@ func (asset *Asset) SpvSync() error {
 	asset.syncData.mu.Unlock()
 
 	for _, listener := range asset.syncProgressListeners() {
-		listener.OnSyncStarted()
+		if listener.OnSyncStarted != nil {
+			listener.OnSyncStarted()
+		}
 	}
 
 	// syncer.Run uses a wait group to block the thread until the sync context

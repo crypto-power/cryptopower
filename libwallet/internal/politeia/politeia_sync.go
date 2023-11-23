@@ -14,6 +14,7 @@ import (
 	"decred.org/dcrwallet/v3/wallet"
 	"decred.org/dcrwallet/v3/wallet/udb"
 	"github.com/asdine/storm"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/txscript/v4/stdaddr"
 	tkv1 "github.com/decred/politeia/politeiawww/api/ticketvote/v1"
@@ -212,7 +213,7 @@ func (p *Politeia) updateProposalDetails(oldProposal, updatedProposal Proposal) 
 		return nil
 	}
 
-	var callback func(interface{})
+	var callback func(*Proposal)
 
 	if oldProposal.Status != updatedProposal.Status && www.PropStatusT(updatedProposal.Status) == www.PropStatusAbandoned {
 		updatedProposal.Category = ProposalCategoryAbandoned
@@ -575,61 +576,58 @@ func (p *Politeia) CastVotes(ctx context.Context, wallet *wallet.Wallet, eligibl
 	return p.client.sendVotes(votes)
 }
 
-func (p *Politeia) AddNotificationListener(notificationListener ProposalNotificationListener, uniqueIdentifier string) error {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+func (p *Politeia) AddSyncCallback(syncCallback proposalSyncCallback, uniqueIdentifier string) error {
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	if _, ok := p.notificationListeners[uniqueIdentifier]; ok {
+	if _, ok := p.syncCallbacks[uniqueIdentifier]; ok {
 		return errors.New(ErrListenerAlreadyExist)
 	}
 
-	p.notificationListeners[uniqueIdentifier] = notificationListener
+	p.syncCallbacks[uniqueIdentifier] = syncCallback
 	return nil
 }
 
-func (p *Politeia) RemoveNotificationListener(uniqueIdentifier string) {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+func (p *Politeia) RemoveSyncCallback(uniqueIdentifier string) {
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	delete(p.notificationListeners, uniqueIdentifier)
+	delete(p.syncCallbacks, uniqueIdentifier)
 }
 
 func (p *Politeia) publishSynced() {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	for _, notificationListener := range p.notificationListeners {
-		notificationListener.OnProposalsSynced()
+	for _, syncCallback := range p.syncCallbacks {
+		syncCallback("", utils.ProposalStatusSynced)
 	}
 }
 
-func (p *Politeia) publishNewProposal(proposal interface{}) {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+func (p *Politeia) publishNewProposal(proposal *Proposal) {
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	for _, notificationListener := range p.notificationListeners {
-		data, _ := proposal.(*Proposal)
-		notificationListener.OnNewProposal(data)
+	for _, syncCallback := range p.syncCallbacks {
+		syncCallback(proposal.Name, utils.ProposalStatusNewProposal)
 	}
 }
 
-func (p *Politeia) publishVoteStarted(proposal interface{}) {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+func (p *Politeia) publishVoteStarted(proposal *Proposal) {
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	for _, notificationListener := range p.notificationListeners {
-		data, _ := proposal.(*Proposal)
-		notificationListener.OnProposalVoteStarted(data)
+	for _, syncCallback := range p.syncCallbacks {
+		syncCallback(proposal.Name, utils.ProposalStatusVoteStarted)
 	}
 }
 
-func (p *Politeia) publishVoteFinished(proposal interface{}) {
-	p.notificationListenersMu.Lock()
-	defer p.notificationListenersMu.Unlock()
+func (p *Politeia) publishVoteFinished(proposal *Proposal) {
+	p.syncCallbacksMtx.Lock()
+	defer p.syncCallbacksMtx.Unlock()
 
-	for _, notificationListener := range p.notificationListeners {
-		data, _ := proposal.(*Proposal)
-		notificationListener.OnProposalVoteFinished(data)
+	for _, syncCallback := range p.syncCallbacks {
+		syncCallback(proposal.Name, utils.ProposalStatusVoteFinished)
 	}
 }
 

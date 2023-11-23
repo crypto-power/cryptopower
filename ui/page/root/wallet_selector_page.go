@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"sync"
 
 	"gioui.org/font"
@@ -44,11 +43,6 @@ type WalletSelectorPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	isListenerAdded bool
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	scrollContainer        *widget.List
 	assetDropdownContainer *widget.List
@@ -107,8 +101,6 @@ func NewWalletSelectorPage(l *load.Load) *WalletSelectorPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	pg.showNavigationFunc(false)
 
 	for _, asset := range pg.WL.AssetsManager.AllAssetTypes() {
@@ -151,7 +143,7 @@ func (pg *WalletSelectorPage) OnNavigatedTo() {
 		pg.ParentWindow().Reload()
 	}()
 
-	pg.listenForNotifications()
+	pg.listenForSyncProgressNotifications() // sync progress listener is stopped in OnNavigatedFrom()
 	pg.loadWallets()
 	pg.loadBadWallets()
 }
@@ -213,7 +205,7 @@ func (pg *WalletSelectorPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.stopSyncProgressListeners()
 }
 
 // Layout draws the page UI components into the provided C

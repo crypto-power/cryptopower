@@ -17,7 +17,7 @@ import (
 )
 
 // SetBlocksRescanProgressListener sets the blocks rescan progress listener.
-func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener sharedW.BlocksRescanProgressListener) {
+func (asset *Asset) SetBlocksRescanProgressListener(blocksRescanProgressListener *sharedW.BlocksRescanProgressListener) {
 	asset.blocksRescanProgressListener = blocksRescanProgressListener
 }
 
@@ -351,7 +351,7 @@ func (asset *Asset) getblockStamp(height int32) (*waddrmgr.BlockStamp, error) {
 // regardless thus avoid handling the possible scenario where ltcwallet might miss
 // the syncedto store trigger event.
 func (asset *Asset) updateSyncedToBlock(height int32) {
-	// Ignore blocks notifications recieved during the wallet recovery phase.
+	// Ignore blocks notifications received during the wallet recovery phase.
 	if !asset.IsSynced() || asset.IsRescanning() {
 		return
 	}

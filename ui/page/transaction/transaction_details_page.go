@@ -569,7 +569,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			// hide section for recieved transactions
+			// hide section for received transactions
 			if pg.transaction.Type == txhelper.TxTypeRegular && pg.transaction.Direction == txhelper.TxDirectionReceived {
 				return D{}
 			}
@@ -949,7 +949,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 		go func() {
 			pg.rebroadcastClickable.SetEnabled(false, nil)
 			if !pg.wallet.IsConnectedToNetwork() {
-				// if user is not conected to the network, notify the user
+				// if user is not connected to the network, notify the user
 				errModal := modal.NewErrorModal(pg.Load, values.String(values.StrNotConnected), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errModal)
 				if !pg.rebroadcastClickable.Enabled() {

@@ -17,7 +17,7 @@ import (
 
 const (
 	// syncIntervalGap defines the interval at which to publish and log progress
-	// without unnecessarily spamming the reciever.
+	// without unnecessarily spamming the receiver.
 	syncIntervalGap = time.Second * 3
 
 	// start helps to synchronously execute compare-and-swap operation when
@@ -48,7 +48,7 @@ type SyncData struct {
 	wg sync.WaitGroup
 
 	// Listeners
-	syncProgressListeners map[string]sharedW.SyncProgressListener
+	syncProgressListeners map[string]*sharedW.SyncProgressListener
 
 	*activeSyncData
 }
@@ -116,7 +116,7 @@ func (asset *Asset) resetSyncProgressData() {
 }
 
 // AddSyncProgressListener registers a sync progress listener to the asset.
-func (asset *Asset) AddSyncProgressListener(syncProgressListener sharedW.SyncProgressListener, uniqueIdentifier string) error {
+func (asset *Asset) AddSyncProgressListener(syncProgressListener *sharedW.SyncProgressListener, uniqueIdentifier string) error {
 	asset.syncData.mu.Lock()
 	defer asset.syncData.mu.Unlock()
 
@@ -194,7 +194,9 @@ func (asset *Asset) updateSyncProgress(rawBlockHeight int32) {
 
 	// publish the sync progress results to all listeners.
 	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+		if listener.OnHeadersFetchProgress != nil {
+			listener.OnHeadersFetchProgress(&asset.syncData.headersFetchProgress)
+		}
 	}
 }
 
@@ -210,7 +212,9 @@ func (asset *Asset) publishHeadersFetchComplete() {
 
 func (asset *Asset) handleSyncUIUpdate() {
 	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnSyncCompleted()
+		if listener.OnSyncCompleted != nil {
+			listener.OnSyncCompleted()
+		}
 	}
 }
 
@@ -540,7 +544,7 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
-	// If this is an imported wallet and address dicovery has not been performed,
+	// If this is an imported wallet and address discovery has not been performed,
 	// We want to set the assets birtday to the genesis block.
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		asset.forceRescan()
@@ -607,13 +611,15 @@ func (asset *Asset) SpvSync() (err error) {
 	asset.syncData.mu.Unlock()
 
 	for _, listener := range asset.syncData.syncProgressListeners {
-		listener.OnSyncStarted()
+		if listener.OnSyncStarted != nil {
+			listener.OnSyncStarted()
+		}
 	}
 
 	go func() {
 		err = asset.startWallet()
 		if err != nil {
-			log.Warn("error occured when starting BTC sync: ", err)
+			log.Warn("error occurred when starting BTC sync: ", err)
 		}
 	}()
 

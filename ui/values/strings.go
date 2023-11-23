@@ -748,7 +748,7 @@ const (
 	StrUnmixed                         = "unmixed"
 	StrUnmixedAccount                  = "unmixedAccount"
 	StrUnmixedBalance                  = "unmixedBalance"
-	StrUpcoming                        = "upcomming"
+	StrUpcoming                        = "upcoming"
 	StrUpdated                         = "updated"
 	StrUpdatePreference                = "updatePreference"
 	StrUpdatevotePref                  = "updateVotePref"

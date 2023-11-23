@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,14 +18,12 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 
 	api "github.com/crypto-power/instantswap/instantswap"
 )
@@ -45,13 +42,6 @@ type CreateOrderPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	*listeners.OrderNotificationListener
-	// TODO: add rate listener when price cache has been implemented for
-	// exchanges.
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	scroll           *components.Scroll[*instantswap.Order]
 	ordersList       *cryptomaterial.ClickableList
@@ -253,8 +243,6 @@ func (pg *CreateOrderPage) ID() string {
 }
 
 func (pg *CreateOrderPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.initPage()
 	}
@@ -271,9 +259,7 @@ func (pg *CreateOrderPage) initPage() {
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
-	if pg.ctxCancel != nil {
-		pg.ctxCancel()
-	}
+	pg.stopNtfnListeners()
 }
 
 func (pg *CreateOrderPage) HandleUserInteractions() {
@@ -397,7 +383,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync(context.Background())
+		go pg.WL.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
 	if pg.scheduler.Changed() {
@@ -1297,40 +1283,38 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 	pg.WL.AssetsManager.SetExchangeConfig(configInfo)
 }
 
+// listenForNotifications registers order status change and exchange rate update
+// (TODO) listeners and reloads the page when relevant updates are received. The
+// listeners MUST be unregistered using pg.stopNtfnListeners() when they're no
+// longer needed or when this page is exited.
 func (pg *CreateOrderPage) listenForNotifications() {
-	if pg.OrderNotificationListener != nil {
-		return
-	}
+	// TODO: Looks hacky. If there was a listener registered for this page, we
+	// should allow InstantSwap.AddNotificationListener to error and fix the
+	// problem.
+	// pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID) // clear if any
 
-	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID) // clear if any
-	pg.OrderNotificationListener = listeners.NewOrderNotificationListener()
-	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(pg.OrderNotificationListener, CreateOrderPageID)
+	orderNotificationListener := &instantswap.OrderNotificationListener{
+		OnExchangeOrdersSynced: func() {
+			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.ParentWindow().Reload()
+		},
+		OnOrderCreated: func(order *instantswap.Order) {
+			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.ParentWindow().Reload()
+		},
+		OnOrderSchedulerStarted: func() {
+			pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+		},
+		OnOrderSchedulerEnded: func() {
+			pg.scheduler.SetChecked(false)
+		},
+	}
+	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, CreateOrderPageID)
 	if err != nil {
-		log.Errorf("Error adding instantswap notification listener: %v", err)
-		return
+		log.Errorf("CreateOrderPage.listenForNotifications error: %v", err)
 	}
+}
 
-	go func() {
-		for {
-			select {
-			case n := <-pg.OrderNotifChan:
-				switch n.OrderStatus {
-				case wallet.OrderStatusSynced, wallet.OrderCreated:
-					pg.scroll.FetchScrollData(false, pg.ParentWindow())
-					pg.ParentWindow().Reload()
-				case wallet.OrderSchedulerStarted:
-					pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
-				case wallet.OrderSchedulerEnded:
-					pg.scheduler.SetChecked(false)
-				}
-			case <-pg.ctx.Done():
-				pg.WL.AssetsManager.RateSource.RemoveRateListener(CreateOrderPageID)
-				pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
-				close(pg.OrderNotifChan)
-				pg.OrderNotificationListener = nil
-
-				return
-			}
-		}
-	}()
+func (pg *CreateOrderPage) stopNtfnListeners() {
+	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 }

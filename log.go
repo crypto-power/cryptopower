@@ -17,7 +17,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/logger"
 	"github.com/crypto-power/cryptopower/ui"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -33,7 +32,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/staking"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
-	"github.com/crypto-power/cryptopower/wallet"
 
 	"decred.org/dcrwallet/v3/p2p"
 	"decred.org/dcrwallet/v3/spv"
@@ -93,10 +91,8 @@ var (
 
 	log          = backendLog.Logger("CRPW")
 	sharedWLog   = backendLog.Logger("SHWL")
-	walletLog    = backendLog.Logger("WALL")
 	winLog       = backendLog.Logger("UI")
 	dlwlLog      = backendLog.Logger("DLWL")
-	lstnersLog   = backendLog.Logger("LSTN")
 	extLog       = backendLog.Logger("EXT")
 	amgrLog      = backendLog.Logger("AMGR")
 	cmgrLog      = backendLog.Logger("CMGR")
@@ -115,14 +111,12 @@ var (
 func init() {
 	sharedW.UseLogger(sharedWLog)
 	page.UseLogger(winLog)
-	wallet.UseLogger(walletLog)
 	ui.UseLogger(winLog)
 	send.UseLogger(winLog)
 	root.UseLogger(winLog)
 	libwallet.UseLogger(dlwlLog)
 	dcr.UseLogger(dcrLog)
 	load.UseLogger(log)
-	listeners.UseLogger(lstnersLog)
 	components.UseLogger(winLog)
 	transaction.UseLogger(winLog)
 	governance.UseLogger(winLog)
@@ -163,12 +157,10 @@ func init() {
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemSLoggers = map[string]slog.Logger{
-	"WALL": walletLog,
 	"DLWL": dlwlLog,
 	"DCR":  dcrLog,
 	"UI":   winLog,
 	"CRPW": log,
-	"LSTN": lstnersLog,
 	"EXT":  extLog,
 	"AMGR": amgrLog,
 	"CMGR": cmgrLog,

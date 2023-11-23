@@ -67,8 +67,8 @@ type Asset struct {
 	notificationListenersMu sync.RWMutex
 
 	syncData                        *SyncData
-	txAndBlockNotificationListeners map[string]sharedW.TxAndBlockNotificationListener
-	blocksRescanProgressListener    sharedW.BlocksRescanProgressListener
+	txAndBlockNotificationListeners map[string]*sharedW.TxAndBlockNotificationListener
+	blocksRescanProgressListener    *sharedW.BlocksRescanProgressListener
 }
 
 const (
@@ -107,9 +107,9 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := ltcWallet.prepareChain(); err != nil {
@@ -177,9 +177,9 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := ltcWallet.prepareChain(); err != nil {
@@ -214,9 +214,9 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
 	if err := ltcWallet.prepareChain(); err != nil {
@@ -249,9 +249,9 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 		Wallet:      w,
 		chainParams: chainParams,
 		syncData: &SyncData{
-			syncProgressListeners: make(map[string]sharedW.SyncProgressListener),
+			syncProgressListeners: make(map[string]*sharedW.SyncProgressListener),
 		},
-		txAndBlockNotificationListeners: make(map[string]sharedW.TxAndBlockNotificationListener),
+		txAndBlockNotificationListeners: make(map[string]*sharedW.TxAndBlockNotificationListener),
 	}
 
 	err = ltcWallet.Prepare(ldr, params)
@@ -268,7 +268,7 @@ func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset,
 	return ltcWallet, nil
 }
 
-// SafelyCancelSync shuts down all the upstream processes. If not explicity
+// SafelyCancelSync shuts down all the upstream processes. If not explicitly
 // deleting a wallet use asset.CancelSync() instead.
 func (asset *Asset) SafelyCancelSync() {
 	if asset.IsConnectedToNetwork() {

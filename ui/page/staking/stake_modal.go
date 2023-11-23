@@ -21,9 +21,6 @@ type ticketBuyerModal struct {
 	*load.Load
 	*cryptomaterial.Modal
 
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
-
 	settingsSaved func()
 	onCancel      func()
 
@@ -84,8 +81,7 @@ func (tb *ticketBuyerModal) OnResume() {
 	}
 
 	tb.initializeAccountSelector()
-	tb.ctx, tb.ctxCancel = context.WithCancel(context.TODO())
-	tb.accountSelector.ListenForTxNotifications(tb.ctx, tb.ParentWindow())
+	tb.accountSelector.ListenForTxNotifications(tb.ParentWindow()) // listener is stopped in OnDismissed()
 
 	if len(tb.dcrImpl.KnownVSPs()) == 0 {
 		// TODO: Does this modal need this list?
@@ -213,7 +209,7 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {
-	tb.ctxCancel()
+	tb.accountSelector.StopTxNtfnListener()
 }
 
 func (tb *ticketBuyerModal) Handle() {

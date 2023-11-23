@@ -14,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -48,13 +47,9 @@ type Page struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-	*listeners.TxAndBlockNotificationListener
 
 	scroll          *components.Scroll[*transactionItem]
 	scrollContainer *widget.List
-
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
 
 	ticketOverview *dcr.StakingOverview
 
@@ -109,16 +104,11 @@ func NewStakingPage(l *load.Load) *Page {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
-	// pg.ctx is used to load known vsps in background and
-	// canceled in OnNavigatedFrom().
-
 	// If staking is disabled no startup func should be called
 	// Layout will draw an overlay to show that stacking is disabled.
 
 	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	if pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
-		pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 		pg.fetchTicketPrice()
 
 		pg.loadPageData() // starts go routines to refresh the display which is just about to be displayed, ok?
@@ -127,7 +117,8 @@ func (pg *Page) OnNavigatedTo() {
 
 		pg.setStakingButtonsState()
 
-		pg.listenForTxNotifications()
+		pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
+
 		go func() {
 			pg.showMaterialLoader = true
 			pg.scroll.FetchScrollData(false, pg.ParentWindow())
@@ -158,9 +149,7 @@ func (pg *Page) loadPageData() {
 	go func() {
 		if len(pg.dcrImpl.KnownVSPs()) == 0 {
 			// TODO: Does this page need this list?
-			if pg.ctx != nil {
-				pg.dcrImpl.ReloadVSPList(pg.ctx)
-			}
+			pg.dcrImpl.ReloadVSPList(context.TODO())
 		}
 
 		totalRewards, err := pg.dcrImpl.TotalStakingRewards()
@@ -191,7 +180,7 @@ func (pg *Page) isTicketsPurchaseAllowed() bool {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	// If Tickets Purcahse API is not allowed, display the overlay with the message.
+	// If Tickets Purchase API is not allowed, display the overlay with the message.
 	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
@@ -200,7 +189,7 @@ func (pg *Page) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 
@@ -358,7 +347,7 @@ func (pg *Page) HandleUserInteractions() {
 				}
 
 				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(pg.ctx, txHash, pg.dcrImpl.GetvspPolicy(account))
+				err = ticketInfo.Client.ProcessTicket(context.TODO(), txHash, pg.dcrImpl.GetvspPolicy(account))
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}
@@ -478,10 +467,5 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedFrom() {
-	// There are cases where context was never created in the first place
-	// for instance if VSP is disabled will not be created, so context cancellation
-	// should be ignored.
-	if pg.ctxCancel != nil {
-		pg.ctxCancel()
-	}
+	pg.stopTxNotificationsListener()
 }

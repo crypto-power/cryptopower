@@ -1,8 +1,6 @@
 package info
 
 import (
-	"context"
-
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -11,13 +9,11 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/listeners"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/crypto-power/cryptopower/wallet"
 )
 
 const InfoID = "Info"
@@ -35,14 +31,9 @@ type WalletInfo struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	*listeners.SyncProgressListener
-	*listeners.BlocksRescanProgressListener
-	*listeners.TxAndBlockNotificationListener
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
-
 	assetsManager *libwallet.AssetsManager
-	rescanUpdate  *wallet.RescanUpdate
+
+	rescanUpdate *sharedW.HeadersRescanProgressReport
 
 	container *widget.List
 
@@ -59,7 +50,6 @@ type progressInfo struct {
 	headersToFetchOrScan int32
 	stepFetchProgress    int32
 	syncProgress         int
-	syncStep             int
 }
 
 // SyncProgressInfo is made independent of the walletInfo struct so that once
@@ -96,12 +86,10 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
 	autoSync := pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false)
 	pg.syncSwitch.SetChecked(autoSync)
 
-	pg.listenForNotifications()
+	pg.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -194,104 +182,86 @@ func (pg *WalletInfo) HandleUserInteractions() {
 // every set interval. Other sync updates that affect the UI but occur outside
 // of an active sync requires a display refresh.
 func (pg *WalletInfo) listenForNotifications() {
-	switch {
-	case pg.SyncProgressListener != nil:
-		return
-	case pg.TxAndBlockNotificationListener != nil:
-		return
-	case pg.BlocksRescanProgressListener != nil:
-		return
+	updateSyncProgress := func(progress progressInfo) {
+		// Update sync progress fields which will be displayed
+		// when the next UI invalidation occurs.
+
+		previousProgress := pg.fetchSyncProgress()
+		// headers to fetch cannot be less than the previously fetched.
+		// Page refresh only needed if there is new data to update the UI.
+		if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
+			currentAsset := pg.WL.SelectedWallet.Wallet
+			// set the new progress against the associated asset.
+			syncProgressInfo[currentAsset] = progress
+
+			// We only care about sync state changes here, to
+			// refresh the window display.
+			pg.ParentWindow().Reload()
+		}
 	}
 
-	selectedWallet := pg.WL.SelectedWallet.Wallet
+	syncProgressListener := &sharedW.SyncProgressListener{
+		OnHeadersFetchProgress: func(t *sharedW.HeadersFetchProgressReport) {
+			progress := progressInfo{}
+			progress.stepFetchProgress = t.HeadersFetchProgress
+			progress.headersToFetchOrScan = t.TotalHeadersToFetch
+			progress.syncProgress = int(t.TotalSyncProgress)
+			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			updateSyncProgress(progress)
+		},
+		OnAddressDiscoveryProgress: func(t *sharedW.AddressDiscoveryProgressReport) {
+			progress := progressInfo{}
+			progress.syncProgress = int(t.TotalSyncProgress)
+			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			progress.stepFetchProgress = t.AddressDiscoveryProgress
+			updateSyncProgress(progress)
+		},
+		OnHeadersRescanProgress: func(t *sharedW.HeadersRescanProgressReport) {
+			progress := progressInfo{}
+			progress.headersToFetchOrScan = t.TotalHeadersToScan
+			progress.syncProgress = int(t.TotalSyncProgress)
+			progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
+			progress.stepFetchProgress = t.RescanProgress
+			updateSyncProgress(progress)
+		},
+		OnSyncCompleted: func() {
+			pg.ParentWindow().Reload()
+		},
+	}
 
-	pg.SyncProgressListener = listeners.NewSyncProgress()
-	err := selectedWallet.AddSyncProgressListener(pg.SyncProgressListener, InfoID)
+	err := pg.WL.SelectedWallet.Wallet.AddSyncProgressListener(syncProgressListener, InfoID)
 	if err != nil {
 		log.Errorf("Error adding sync progress listener: %v", err)
 		return
 	}
 
-	pg.TxAndBlockNotificationListener = listeners.NewTxAndBlockNotificationListener()
-	err = selectedWallet.AddTxAndBlockNotificationListener(pg.TxAndBlockNotificationListener, true, InfoID)
+	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
+		OnTransaction: func(transaction *sharedW.Transaction) {
+			pg.ParentWindow().Reload()
+		},
+		OnBlockAttached: func(walletID int, blockHeight int32) {
+			pg.ParentWindow().Reload()
+		},
+	}
+	err = pg.WL.SelectedWallet.Wallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, InfoID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
 	}
 
-	pg.BlocksRescanProgressListener = listeners.NewBlocksRescanProgressListener()
-	selectedWallet.SetBlocksRescanProgressListener(pg.BlocksRescanProgressListener)
-
-	go func() {
-		for {
-			select {
-			case n := <-pg.SyncStatusChan:
-				// Update sync progress fields which will be displayed
-				// when the next UI invalidation occurs.
-
-				progress := progressInfo{}
-				switch t := n.ProgressReport.(type) {
-				case *sharedW.HeadersFetchProgressReport:
-					progress.stepFetchProgress = t.HeadersFetchProgress
-					progress.headersToFetchOrScan = t.TotalHeadersToFetch
-					progress.syncProgress = int(t.TotalSyncProgress)
-					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					progress.syncStep = wallet.FetchHeadersSteps
-				case *sharedW.AddressDiscoveryProgressReport:
-					progress.syncProgress = int(t.TotalSyncProgress)
-					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					progress.syncStep = wallet.AddressDiscoveryStep
-					progress.stepFetchProgress = t.AddressDiscoveryProgress
-				case *sharedW.HeadersRescanProgressReport:
-					progress.headersToFetchOrScan = t.TotalHeadersToScan
-					progress.syncProgress = int(t.TotalSyncProgress)
-					progress.remainingSyncTime = components.TimeFormat(int(t.TotalTimeRemainingSeconds), true)
-					progress.syncStep = wallet.RescanHeadersStep
-					progress.stepFetchProgress = t.RescanProgress
-				}
-
-				previousProgress := pg.fetchSyncProgress()
-				// headers to fetch cannot be less than the previously fetched.
-				// Page refresh only needed if there is new data to update the UI.
-				if progress.headersToFetchOrScan >= previousProgress.headersToFetchOrScan {
-					currentAsset := pg.WL.SelectedWallet.Wallet
-					// set the new progress against the associated asset.
-					syncProgressInfo[currentAsset] = progress
-
-					// We only care about sync state changes here, to
-					// refresh the window display.
-					pg.ParentWindow().Reload()
-				}
-
-			case n := <-pg.TxAndBlockNotifChan():
-				switch n.Type {
-				case listeners.NewTransaction:
-					pg.ParentWindow().Reload()
-				case listeners.BlockAttached:
-					pg.ParentWindow().Reload()
-				}
-			case n := <-pg.BlockRescanChan:
-				pg.rescanUpdate = &n
-				if n.Stage == wallet.RescanEnded {
-					pg.ParentWindow().Reload()
-				}
-			case <-pg.ctx.Done():
-				selectedWallet.RemoveSyncProgressListener(InfoID)
-				selectedWallet.RemoveTxAndBlockNotificationListener(InfoID)
-				selectedWallet.SetBlocksRescanProgressListener(nil)
-
-				close(pg.SyncStatusChan)
-				pg.CloseTxAndBlockChan()
-				close(pg.BlockRescanChan)
-
-				pg.SyncProgressListener = nil
-				pg.TxAndBlockNotificationListener = nil
-				pg.BlocksRescanProgressListener = nil
-
-				return
-			}
-		}
-	}()
+	blocksRescanProgressListener := &sharedW.BlocksRescanProgressListener{
+		OnBlocksRescanStarted: func(walletID int) {
+			pg.rescanUpdate = nil
+		},
+		OnBlocksRescanProgress: func(progress *sharedW.HeadersRescanProgressReport) {
+			pg.rescanUpdate = progress
+		},
+		OnBlocksRescanEnded: func(walletID int, err error) {
+			pg.rescanUpdate = nil
+			pg.ParentWindow().Reload()
+		},
+	}
+	pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(blocksRescanProgressListener)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -302,5 +272,7 @@ func (pg *WalletInfo) listenForNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *WalletInfo) OnNavigatedFrom() {
-	pg.ctxCancel()
+	pg.WL.SelectedWallet.Wallet.RemoveSyncProgressListener(InfoID)
+	pg.WL.SelectedWallet.Wallet.RemoveTxAndBlockNotificationListener(InfoID)
+	pg.WL.SelectedWallet.Wallet.SetBlocksRescanProgressListener(nil)
 }
