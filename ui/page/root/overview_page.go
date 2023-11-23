@@ -224,13 +224,13 @@ func (pg *OverviewPage) HandleUserInteractions() {
 		go pg.WL.AssetsManager.RateSource.Refresh(true)
 	}
 
-	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
-		tx, wal := pg.txAndWallet(pg.transactions[selectedItem])
+	if clicked, selectedTxIndex := pg.recentTransactions.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.transactions[selectedTxIndex])
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
 	}
 
-	if clicked, selectedItem := pg.recentStakes.ItemClicked(); clicked {
-		tx, wal := pg.txAndWallet(pg.stakes[selectedItem])
+	if clicked, selectedTxIndex := pg.recentStakes.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.stakes[selectedTxIndex])
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
 	}
 
@@ -1247,7 +1247,7 @@ func (pg *OverviewPage) loadTransactions() {
 }
 
 func (pg *OverviewPage) loadStakes() {
-	pg.stakes = make([]*multiWalletTx, 0)
+	stakes := make([]*multiWalletTx, 0)
 	wal := pg.WL.AssetsManager.AllDCRWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
@@ -1257,16 +1257,18 @@ func (pg *OverviewPage) loadStakes() {
 		}
 		for _, stakeTx := range txs {
 			if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
-				pg.stakes = append(pg.stakes, &multiWalletTx{stakeTx, w.GetWalletID()})
+				stakes = append(stakes, &multiWalletTx{stakeTx, w.GetWalletID()})
 			}
 		}
 	}
 
-	sort.Slice(pg.stakes, func(i, j int) bool {
-		return pg.stakes[i].Timestamp > pg.stakes[j].Timestamp
+	sort.Slice(stakes, func(i, j int) bool {
+		return stakes[i].Timestamp > stakes[j].Timestamp
 	})
 
-	if len(pg.stakes) > 3 {
-		pg.stakes = pg.stakes[:3]
+	if len(stakes) > 3 {
+		stakes = stakes[:3]
 	}
+
+	pg.stakes = stakes
 }
