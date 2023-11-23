@@ -226,24 +226,8 @@ func (pg *WalletInfo) recentTransactionLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), func(gtx C) D {
 		return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
 			tx := pg.transactions[index]
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
-				}),
-				layout.Rigid(func(gtx C) D {
-					// No divider for last row
-					if index == len(pg.transactions)-1 {
-						return D{}
-					}
-
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					separator := pg.Theme.Separator()
-					return layout.E.Layout(gtx, func(gtx C) D {
-						// Show bottom divider for all rows except last
-						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
-					})
-				}),
-			)
+			isHiddenSeparator := index == len(pg.transactions)-1
+			return pg.walletTxWrapper(gtx, tx, isHiddenSeparator)
 		})
 	})
 }
@@ -252,24 +236,8 @@ func (pg *WalletInfo) recentStakeLayout(gtx C) D {
 	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), func(gtx C) D {
 		return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
 			tx := pg.stakes[index]
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
-				}),
-				layout.Rigid(func(gtx C) D {
-					// No divider for last row
-					if index == len(pg.stakes)-1 {
-						return D{}
-					}
-
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					separator := pg.Theme.Separator()
-					return layout.E.Layout(gtx, func(gtx C) D {
-						// Show bottom divider for all rows except last
-						return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
-					})
-				}),
-			)
+			isHiddenSeparator := index == len(pg.stakes)-1
+			return pg.walletTxWrapper(gtx, tx, isHiddenSeparator)
 		})
 	})
 }
@@ -298,6 +266,25 @@ func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, body layout
 			})
 		})
 	})
+}
+
+func (pg *WalletInfo) walletTxWrapper(gtx C, tx *sharedW.Transaction, isHiddenSeparator bool) D {
+	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, false)
+	})}
+
+	if !isHiddenSeparator {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		separator := pg.Theme.Separator()
+		items = append(items, layout.Rigid(func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D {
+				// Show bottom divider for all rows except last
+				return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+			})
+		}))
+	}
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
