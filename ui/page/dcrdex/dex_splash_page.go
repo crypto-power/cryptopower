@@ -13,7 +13,6 @@ import (
 
 func (pg *DEXPage) initSplashPageWidgets() {
 	_, pg.splashPageInfoButton = components.SubpageHeaderButtons(pg.Load)
-	pg.enableDEXBtn = pg.Theme.Button(values.String(values.StrBack))
 }
 
 func (pg *DEXPage) splashPage(gtx layout.Context) layout.Dimensions {
@@ -58,7 +57,7 @@ func (pg *DEXPage) splashPage(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{
 				Top:   values.MarginPadding24,
 				Right: values.MarginPadding16,
-			}.Layout(gtx, pg.navigateToSettingsBtn.Layout)
+			}.Layout(gtx, pg.finalizeOnboardingBtn.Layout)
 		}),
 	)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const DCRDEXID = "DCRDEXID"
+const DCRDEXPageID = "DCRDEXPageID"
 
 type (
 	C = layout.Context
@@ -28,20 +28,20 @@ type DEXPage struct {
 
 	openTradeMainPage     *cryptomaterial.Clickable
 	splashPageInfoButton  cryptomaterial.IconButton
-	enableDEXBtn          cryptomaterial.Button
-	navigateToSettingsBtn cryptomaterial.Button
-	inited                bool // TODO: Set value
+	finalizeOnboardingBtn cryptomaterial.Button
+	isDexFirstVisit       bool
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
 		Load:              l,
-		MasterPage:        app.NewMasterPage(DCRDEXID),
+		MasterPage:        app.NewMasterPage(DCRDEXPageID),
 		openTradeMainPage: l.Theme.NewClickable(false),
+		isDexFirstVisit:   true,
 	}
 
 	dp.initSplashPageWidgets()
-	dp.navigateToSettingsBtn = dp.Theme.Button(values.String(values.StrStartTrading))
+	dp.finalizeOnboardingBtn = dp.Theme.Button(values.String(values.StrStartTrading))
 	return dp
 }
 
@@ -49,7 +49,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 // differentiate this page from other pages.
 // Part of the load.Page interface.
 func (pg *DEXPage) ID() string {
-	return DCRDEXID
+	return DCRDEXPageID
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and may be
@@ -70,7 +70,7 @@ func (pg *DEXPage) OnNavigatedTo() {
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	if !pg.AssetsManager.IsDexFirstVisit() {
+	if pg.isDexFirstVisit {
 		return components.UniformPadding(gtx, pg.splashPage)
 	}
 	return layout.Stack{}.Layout(gtx,
@@ -100,8 +100,8 @@ func (pg *DEXPage) HandleUserInteractions() {
 	if pg.splashPageInfoButton.Button.Clicked() {
 		pg.showInfoModal()
 	}
-	if pg.navigateToSettingsBtn.Button.Clicked() {
-		pg.AssetsManager.SetDexFirstVisit(true)
+	if pg.finalizeOnboardingBtn.Button.Clicked() {
+		pg.isDexFirstVisit = false
 	}
 }
 
