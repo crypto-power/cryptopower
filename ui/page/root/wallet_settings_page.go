@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -159,11 +160,6 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 func (pg *WalletSettingsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
-			func(gtx C) D {
-				return layout.Inset{
-					Bottom: values.MarginPadding26,
-				}.Layout(gtx, pg.Theme.Label(values.TextSize20, values.String(values.StrSettings)).Layout)
-			},
 			pg.generalSection(),
 			pg.account(),
 			pg.securityTools(),
@@ -230,8 +226,8 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				)
 			}),
 		)
-	}
 
+	}
 	return func(gtx C) D {
 		return pg.pageSections(gtx, values.String(values.StrGeneral), dim)
 	}
@@ -249,7 +245,7 @@ func (pg *WalletSettingsPage) account() layout.Widget {
 }
 
 func (pg *WalletSettingsPage) debug() layout.Widget {
-	dims := func(gtx C) D {
+	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.rescan, values.String(values.StrRescanBlockchain))),
 			layout.Rigid(func(gtx C) D {
@@ -262,73 +258,75 @@ func (pg *WalletSettingsPage) debug() layout.Widget {
 			layout.Rigid(pg.sectionContent(pg.checkStats, values.String(values.StrCheckStatistics))),
 		)
 	}
-
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrDebug), dims)
+		return pg.pageSections(gtx, values.String(values.StrDebug), dim)
 	}
 }
 
 func (pg *WalletSettingsPage) securityTools() layout.Widget {
-	dims := func(gtx C) D {
+	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.sectionContent(pg.verifyMessage, values.String(values.StrVerifyMessage))),
 			layout.Rigid(pg.sectionContent(pg.validateAddr, values.String(values.StrValidateMsg))),
 			layout.Rigid(pg.sectionContent(pg.signMessage, values.String(values.StrSignMessage))),
 		)
 	}
-
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrSecurityTools), dims)
+		return pg.pageSections(gtx, values.String(values.StrSecurityTools), dim)
 	}
 }
 
 func (pg *WalletSettingsPage) dangerZone() layout.Widget {
 	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrDangerZone),
-			pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)),
-		)
+		return pg.pageSections(gtx, values.String(values.StrDangerZone), pg.sectionContent(pg.deleteWallet, values.String(values.StrRemoveWallet)))
 	}
 }
 
 func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widget) D {
 	dims := func(gtx C, title string, body layout.Widget) D {
-		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Label(values.TextSize14, title)
-							txt.Color = pg.Theme.Color.GrayText2
-							return txt.Layout(gtx)
-						}),
-						layout.Flexed(1, func(gtx C) D {
-							if title == values.String(values.StrSecurityTools) {
-								pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
+		return cryptomaterial.LinearLayout{
+			Orientation: layout.Vertical,
+			Width:       cryptomaterial.MatchParent,
+			Height:      cryptomaterial.WrapContent,
+			Background:  pg.Theme.Color.Surface,
+			Direction:   layout.Center,
+			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+			Padding: layout.Inset{
+				Top:   values.MarginPadding24,
+				Left:  values.MarginPadding24,
+				Right: values.MarginPadding24,
+			},
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						txt := pg.Theme.Label(values.TextSize20, title)
+						txt.Color = pg.Theme.Color.DeepBlue
+						txt.Font.Weight = font.SemiBold
+						return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, txt.Layout)
+					}),
+					layout.Flexed(1, func(gtx C) D {
+						if title == values.String(values.StrSecurityTools) {
+							return layout.E.Layout(gtx, func(gtx C) D {
 								pg.infoButton.Size = values.MarginPadding16
-								return layout.E.Layout(gtx, pg.infoButton.Layout)
-							}
-							if title == values.String(values.StrAccount) {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-										return D{}
-									}
-									return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
-								})
-							}
+								return pg.infoButton.Layout(gtx)
+							})
+						}
+						if title == values.String(values.StrAccount) {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+									return D{}
+								}
+								return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
+							})
+						}
 
-							return D{}
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding10,
-						Top:    values.MarginPadding7,
-					}.Layout(gtx, pg.Theme.Separator().Layout)
-				}),
-				layout.Rigid(body),
-			)
-		})
+						return D{}
+					}),
+				)
+			}),
+			layout.Rigid(body),
+		)
 	}
 
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -349,7 +347,7 @@ func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.
 			textLabel.Color = pg.Theme.Color.Danger
 		}
 		return layout.Inset{
-			Bottom: values.MarginPadding20,
+			Bottom: values.MarginPadding24,
 		}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(textLabel.Layout),
