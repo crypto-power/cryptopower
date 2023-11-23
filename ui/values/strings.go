@@ -777,6 +777,7 @@ const (
 	StrVerifySeed                      = "verifySeed"
 	StrVerifySeedInfo                  = "verifySeedInfo"
 	StrVersion                         = "version"
+	StrViewAll                         = "viewAll"
 	StrViewAllOrders                   = "viewAllOrders"
 	StrViewAppLog                      = "viewAppLog"
 	StrViewDetails                     = "viewDetails"

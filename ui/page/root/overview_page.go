@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -432,7 +431,15 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
 				sliderWidget = append(sliderWidget, func(gtx C) D {
-					return pg.mixerLayout(gtx, slideData)
+					return components.MixerComponent{
+						Load:           pg.Load,
+						WalletName:     slideData.GetWalletName(),
+						UnmixedBalance: slideData.unmixedBalance.String(),
+						ForwardButton:  pg.forwardButton,
+						InfoButton:     pg.infoButton,
+						Width:          gtx.Constraints.Max.X,
+						Height:         gtx.Dp(values.MarginPadding221),
+					}.MixerLayout(gtx)
 				})
 			}
 		}
@@ -440,127 +447,6 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 	}
 
 	return pg.mixerSlider.Layout(gtx, sliderWidget)
-}
-
-func (pg *OverviewPage) mixerLayout(gtx C, data *mixerData) D {
-	r := 8
-	return cryptomaterial.LinearLayout{
-		Width:       gtx.Constraints.Max.X,
-		Height:      gtx.Dp(values.MarginPadding221),
-		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding15),
-		Background:  pg.Theme.Color.Surface,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(pg.topMixerLayout),
-		layout.Rigid(pg.middleMixerLayout),
-		layout.Rigid(
-			func(gtx C) D {
-				return pg.bottomMixerLayout(gtx, data)
-			},
-		),
-	)
-}
-
-func (pg *OverviewPage) topMixerLayout(gtx C) D {
-	return layout.Flex{
-		Axis:      layout.Horizontal,
-		Alignment: layout.Middle,
-	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.Mixer.Layout24dp),
-		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Body1(values.String(values.StrMixerRunning))
-			lbl.Font.Weight = font.SemiBold
-			return layout.Inset{
-				Left:  values.MarginPadding8,
-				Right: values.MarginPadding8,
-			}.Layout(gtx, lbl.Layout)
-		}),
-		layout.Rigid(pg.infoButton.Layout),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, pg.forwardButton.Layout)
-		}),
-	)
-}
-
-func (pg *OverviewPage) middleMixerLayout(gtx C) D {
-	r := gtx.Dp(7)
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.WrapContent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Padding: layout.Inset{
-			Left:   values.MarginPadding10,
-			Right:  values.MarginPadding10,
-			Top:    values.MarginPadding4,
-			Bottom: values.MarginPadding4,
-		},
-		Margin: layout.Inset{
-			Top:    values.MarginPadding10,
-			Bottom: values.MarginPadding10,
-		},
-		Background: pg.Theme.Color.LightBlue7,
-		Alignment:  layout.Middle,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.Alert.Layout20dp),
-		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2(values.String(values.StrKeepAppOpen))
-			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
-		}),
-	)
-}
-
-func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
-	r := 8
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.WrapContent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding15),
-		Background:  pg.Theme.Color.Gray4,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2(data.GetWalletName())
-			lbl.Font.Weight = font.SemiBold
-			return lbl.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{
-				Axis:      layout.Horizontal,
-				Alignment: layout.Middle,
-			}.Layout(gtx,
-				layout.Rigid(pg.Theme.Body1(values.String(values.StrUnmixedBalance)).Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return components.LayoutBalance(gtx, pg.Load, data.unmixedBalance.String())
-					})
-				}),
-			)
-		}),
-	)
 }
 
 func (pg *OverviewPage) marketOverview(gtx C) D {
@@ -911,7 +797,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									return pg.Theme.Body1("No recent transaction").Layout(gtx)
@@ -921,7 +807,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 
@@ -960,7 +846,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 										separator := pg.Theme.Separator()
 										return layout.E.Layout(gtx, func(gtx C) D {
 											// Show bottom divider for all rows except last
-											return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 										})
 									}),
 								)
@@ -978,7 +864,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						}
 
 						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							tx, wal := txAndWallet(pg.transactions[index])
+							tx, wal := txAndWallet(pg.stakes[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
@@ -993,7 +879,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 									separator := pg.Theme.Separator()
 									return layout.E.Layout(gtx, func(gtx C) D {
 										// Show bottom divider for all rows except last
-										return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+										return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 									})
 								}),
 							)
