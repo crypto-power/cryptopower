@@ -90,7 +90,7 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
-func (d *DropDown) SetDefaultToNone() {
+func (d *DropDown) ClearSelection() {
 	d.selectedIndex = -1
 }
 
