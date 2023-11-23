@@ -1,6 +1,7 @@
 package info
 
 import (
+	"image/color"
 	"strings"
 
 	"gioui.org/font"
@@ -17,6 +18,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/seedbackup"
+	"github.com/crypto-power/cryptopower/ui/page/staking"
+	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/decred/dcrd/dcrutil/v3"
 )
@@ -58,6 +61,9 @@ type WalletInfo struct {
 	mixerRedirectButton cryptomaterial.IconButton
 	unmixedBalance sharedW.AssetAmount
 
+	viewAllTxButton,
+	viewAllStakeButton cryptomaterial.Button
+
 	isStatusConnected bool
 }
 
@@ -96,6 +102,18 @@ func NewInfoPage(l *load.Load) *WalletInfo {
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = values.TextSize14
+
+	pg.viewAllTxButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllTxButton.Font.Weight = font.Medium
+	pg.viewAllTxButton.TextSize = values.TextSize16
+	pg.viewAllTxButton.Inset = layout.UniformInset(0)
+	pg.viewAllTxButton.HighlightColor = color.NRGBA{}
+
+	pg.viewAllStakeButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
+	pg.viewAllStakeButton.Font.Weight = font.Medium
+	pg.viewAllStakeButton.TextSize = values.TextSize16
+	pg.viewAllStakeButton.Inset = layout.UniformInset(0)
+	pg.viewAllTxButton.HighlightColor = color.NRGBA{}
 
 	pg.mixerRedirectButton, pg.mixerInfoButton = components.SubpageHeaderButtons(l)
 	pg.mixerRedirectButton.Icon = pg.Theme.Icons.NavigationArrowForward
@@ -159,7 +177,7 @@ func (pg *WalletInfo) Layout(gtx C) D {
 }
 
 func (pg *WalletInfo) walletInfoLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, "", func(gtx C) D {
+	return pg.pageContentWrapper(gtx, "", nil, func(gtx C) D {
 		items := []layout.FlexChild{
 			layout.Rigid(pg.walletNameAndBackupInfo),
 			layout.Rigid(pg.syncStatusSection),
@@ -223,7 +241,7 @@ func (pg *WalletInfo) mixerLayout(gtx C) D {
 }
 
 func (pg *WalletInfo) recentTransactionLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), func(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), pg.viewAllTxButton.Layout, func(gtx C) D {
 		return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
 			tx := pg.transactions[index]
 			isHiddenSeparator := index == len(pg.transactions)-1
@@ -233,7 +251,7 @@ func (pg *WalletInfo) recentTransactionLayout(gtx C) D {
 }
 
 func (pg *WalletInfo) recentStakeLayout(gtx C) D {
-	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), func(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), pg.viewAllStakeButton.Layout, func(gtx C) D {
 		return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
 			tx := pg.stakes[index]
 			isHiddenSeparator := index == len(pg.stakes)-1
@@ -242,7 +260,7 @@ func (pg *WalletInfo) recentStakeLayout(gtx C) D {
 	})
 }
 
-func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, body layout.Widget) D {
+func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, redirectBtn, body layout.Widget) D {
 	return layout.Inset{
 		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
@@ -250,15 +268,26 @@ func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, body layout
 			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if sectionTitle == "" {
-							return D{}
-						}
 						return layout.Inset{
-							Bottom: values.MarginPadding24,
+							Bottom: values.MarginPadding16,
 						}.Layout(gtx, func(gtx C) D {
-							txt := pg.Theme.Body1(sectionTitle)
-							txt.Font.Weight = font.SemiBold
-							return txt.Layout(gtx)
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									if sectionTitle == "" {
+										return D{}
+									}
+
+									txt := pg.Theme.Body1(sectionTitle)
+									txt.Font.Weight = font.SemiBold
+									return txt.Layout(gtx)
+								}),
+								layout.Flexed(1, func(gtx C) D {
+									if redirectBtn != nil {
+										return layout.E.Layout(gtx, redirectBtn)
+									}
+									return D{}
+								}),
+							)
 						})
 					}),
 					layout.Rigid(body),
@@ -269,22 +298,23 @@ func (pg *WalletInfo) pageContentWrapper(gtx C, sectionTitle string, body layout
 }
 
 func (pg *WalletInfo) walletTxWrapper(gtx C, tx *sharedW.Transaction, isHiddenSeparator bool) D {
-	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-		return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, false)
-	})}
-
 	if !isHiddenSeparator {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		separator := pg.Theme.Separator()
-		items = append(items, layout.Rigid(func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				// Show bottom divider for all rows except last
-				return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
-			})
-		}))
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					// Show bottom divider for all rows except last
+					return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
+				})
+			}),
+		)
 	}
 
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+	return components.LayoutTransactionRow(gtx, pg.Load, pg.wallet, tx, true)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -324,6 +354,14 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
 	if pg.mixerRedirectButton.Button.Clicked() {
 		pg.ParentNavigator().Display(privacy.NewAccountMixerPage(pg.Load))
+	}
+
+	if pg.viewAllTxButton.Button.Clicked() {
+		pg.ParentNavigator().Display(transaction.NewTransactionsPage(pg.Load))
+	}
+
+	if pg.viewAllStakeButton.Button.Clicked() {
+		pg.ParentNavigator().Display(staking.NewStakingPage(pg.Load))
 	}
 }
 

@@ -844,7 +844,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 										separator := pg.Theme.Separator()
 										return layout.E.Layout(gtx, func(gtx C) D {
 											// Show bottom divider for all rows except last
-											return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 										})
 									}),
 								)
@@ -877,7 +877,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 									separator := pg.Theme.Separator()
 									return layout.E.Layout(gtx, func(gtx C) D {
 										// Show bottom divider for all rows except last
-										return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+										return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 									})
 								}),
 							)
