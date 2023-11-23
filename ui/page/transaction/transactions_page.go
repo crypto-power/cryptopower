@@ -305,34 +305,34 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return card.Layout(gtx, func(gtx C) D {
 						return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-						wallTxs := pg.scroll.FetchedData()
-						return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-							tx, wal := pg.txAndWallet(wallTxs[index])
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									isHiddenAssetsInfo := true
-									if pg.selectedWallet == nil {
-										isHiddenAssetsInfo = !isHiddenAssetsInfo
-									}
-									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, isHiddenAssetsInfo)
-								}),
-								layout.Rigid(func(gtx C) D {
-									// No divider for last row
-									if index == len(wallTxs)-1 {
-										return layout.Dimensions{}
-									}
+							wallTxs := pg.scroll.FetchedData()
+							return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
+								tx, wal := pg.txAndWallet(wallTxs[index])
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										isHiddenAssetsInfo := true
+										if pg.selectedWallet == nil {
+											isHiddenAssetsInfo = !isHiddenAssetsInfo
+										}
+										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, isHiddenAssetsInfo)
+									}),
+									layout.Rigid(func(gtx C) D {
+										// No divider for last row
+										if index == len(wallTxs)-1 {
+											return layout.Dimensions{}
+										}
 
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									separator := pg.Theme.Separator()
-									return layout.E.Layout(gtx, func(gtx C) D {
-										// Show bottom divider for all rows except last
-										return layout.Inset{Left: values.MarginPadding56}.Layout(gtx, separator.Layout)
-									})
-								}),
-							)
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										separator := pg.Theme.Separator()
+										return layout.E.Layout(gtx, func(gtx C) D {
+											// Show bottom divider for all rows except last
+											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
+										})
+									}),
+								)
+							})
 						})
 					})
-				})
 				})
 			})
 		})
