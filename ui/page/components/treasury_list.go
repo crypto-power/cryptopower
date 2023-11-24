@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -66,7 +65,7 @@ func layoutItems(l *load.Load, treasuryItem *TreasuryItem) []layout.FlexChild {
 }
 
 func layoutPolicyVoteAction(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(values.MarginPadding100)), gtx.Dp(unit.Dp(values.MarginPadding150))
+	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding100), gtx.Dp(values.MarginPadding150)
 	treasuryItem.SetChoiceButton.Background = l.Theme.Color.Gray3
 	treasuryItem.SetChoiceButton.SetEnabled(false)
 
