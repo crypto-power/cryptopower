@@ -39,6 +39,13 @@ func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 				}
 				return D{}
 			}),
+			layout.Rigid(func(gtx C) D {
+				if proposal.Type != libwallet.RFPSubmission {
+					return D{}
+				}
+				// TODO Pass proposal name of RFP proposal
+				return layoutProposalSubmission(gtx, l, "", nil)
+			}),
 		)
 	})
 }
@@ -84,9 +91,38 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Flexed(0.7, func(gtx C) D {
-			lbl := l.Theme.H6(proposal.Name)
-			lbl.Font.Weight = font.SemiBold
-			return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if proposal.Type != libwallet.RFPProposal {
+						return D{}
+					}
+					return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Background:  l.Theme.Color.Primary,
+							Orientation: layout.Horizontal,
+							Direction:   layout.Center,
+							Border: cryptomaterial.Border{
+								Radius: cryptomaterial.Radius(5),
+							},
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								lb := l.Theme.Label(values.TextSize16, values.String(values.StrRFP))
+								lb.Color = l.Theme.Color.White
+								lb.Font.Weight = font.SemiBold
+								u4 := values.MarginPadding4
+								return layout.Inset{Right: u4, Left: u4}.Layout(gtx, lb.Layout)
+							}),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					lbl := l.Theme.H6(proposal.Name)
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+			)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -110,21 +146,58 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 							}
 							return D{}
 						}),
-						layout.Rigid(func(gtx C) D {
-							if proposal.Category == libwallet.ProposalCategoryActive {
-								return layout.Inset{
-									Right: values.MarginPadding4,
-									Top:   values.MarginPadding3,
-								}.Layout(gtx, l.Theme.Icons.TimerIcon.Layout12dp)
-							}
-							return D{}
-						}),
 						layout.Rigid(timeAgoLabel.Layout),
 					)
 				}),
 			)
 		}),
 	)
+}
+
+func layoutProposalSubmission(gtx C, l *load.Load, title string, click *cryptomaterial.Clickable) D {
+	card := l.Theme.Card()
+	card.Radius = cryptomaterial.Radius(8)
+	card.Color = l.Theme.Color.Gray4
+	return card.Layout(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			Top:    values.MarginPadding12,
+			Bottom: values.MarginPadding12,
+			Left:   values.MarginPadding16,
+			Right:  values.MarginPadding16,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							lb := l.Theme.Label(values.TextSize14, values.String(values.StrProposedFor))
+							lb.Color = l.Theme.Color.GrayText1
+							return lb.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							txt := fmt.Sprintf("RFP: %s", title)
+							lb := l.Theme.Label(values.TextSize14, txt)
+							lb.Font.Weight = font.SemiBold
+							return lb.Layout(gtx)
+						}),
+					)
+				}),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   click,
+						}.Layout(gtx,
+							layout.Rigid(l.Theme.Icons.ChevronRight.Layout24dp),
+						)
+					})
+				}),
+			)
+		})
+	})
 }
 
 func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {

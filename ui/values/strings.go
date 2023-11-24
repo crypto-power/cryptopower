@@ -906,4 +906,6 @@ const (
 	StrNoWalletsAvailable              = "noWalletsAvailable"
 	StrCreateAssetWalletToSwapMsg      = "createAssetWalletToSwapMsg"
 	StrFound                           = "found"
+	StrRFP                             = "rfp"
+	StrProposedFor                     = "proposedFor"
 )

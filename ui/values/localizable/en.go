@@ -796,4 +796,6 @@ const EN = `
 "noWalletsAvailable" = "You cannot spend from a watch only wallet, try creating another wallet."
 "createAssetWalletToSwapMsg" = "You need to create a %s wallet to swap."
 "found" = "found"
+"rfp" = "RFP"
+"proposedFor" = "Proposed for "
 `
