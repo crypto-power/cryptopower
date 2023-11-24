@@ -68,7 +68,11 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 	}
 	s.mu.Unlock()
 
-	s.fetchScrollData(isReverse, window)
+	// set isReset  to true here since all the callers of FetchScrollData()
+	// needs the data to be refreashed and data reset.
+	// TODO: set isreverse to default false all the callers of this
+	// FetchScrollData() is not initiating a reverse scroll action.
+	s.fetchScrollData(isReverse, true, window)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -76,8 +80,13 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNavigator) {
 	s.mu.Lock()
+
+	if isReset {
+		// resets the values for use on the next iteration.
+		s.isReset()
+	}
 
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
 		return
@@ -90,7 +99,7 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 	} else {
 		s.list.Position.Offset = 1
 		s.list.Position.OffsetLast = s.scrollView*-1 + 1
-		if s.data != nil {
+		if s.data != nil && !isReset {
 			s.offset += s.pageSize
 		}
 	}
@@ -102,12 +111,13 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 
 	s.mu.Unlock()
 
-	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
-	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
-	}
+	// keep fetching data until the last item.
+	// TODO. for inifinte scroll will implement fetching data in advance while
+	// having enough data on the page for reverse scroll. No need for making
+	// 2 queries to determine if there is enough tx. This approach will also
+	// prevent the app from freezing when the last item on the list is reached.
+	// TODO: deprecate isReset in a follow up PR as it cuts across multliple files.
+	items, itemsLen, _, err := s.queryFunc(offset, tempSize)
 
 	s.mu.Lock()
 
@@ -120,8 +130,9 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 		return
 	}
 
-	if itemsLen > int(tempSize) {
-		// Since this is the last page set of items, prevent further scroll down queries.
+	if itemsLen < int(tempSize) {
+		// we know whe are at the last item when the item returned is less than the
+		// the page size.
 		s.loadedAllItems = true
 	}
 
@@ -129,11 +140,6 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
 	s.mu.Unlock()
-
-	if isReset {
-		// resets the values for use on the next iteration.
-		s.resetList()
-	}
 }
 
 // FetchedData returns the latest queried data.
@@ -163,9 +169,9 @@ func (s *Scroll[T]) List() *cryptomaterial.ListStyle {
 	return s.listStyle
 }
 
-func (s *Scroll[T]) resetList() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Scroll[T]) isReset() {
+	// s.mu.Lock()
+	// defer s.mu.Unlock()
 
 	s.offset = 0
 	s.loadedAllItems = false
@@ -231,7 +237,7 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 		s.mu.Unlock()
 
-		go s.fetchScrollData(false, window)
+		go s.fetchScrollData(false, false, window)
 	}
 
 	if isScrollingUp {
@@ -241,7 +247,7 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 		s.mu.Unlock()
 
-		go s.fetchScrollData(true, window)
+		go s.fetchScrollData(true, false, window)
 	}
 
 	if !isScrollingUp && !isScrollingDown {

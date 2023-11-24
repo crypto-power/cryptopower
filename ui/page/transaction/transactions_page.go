@@ -96,6 +96,7 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 	pg.transactionList.IsShadowEnabled = true
 
 	pg.materialLoader = material.Loader(pg.Theme.Base)
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 
 	return pg
 }
@@ -108,7 +109,6 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
 
 	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
 // initWalletSelector initializes the wallet selector dropdown to enable
@@ -390,11 +390,12 @@ func (pg *TransactionsPage) desktopLayoutContent(gtx C) D {
 		return pg.txListLayout(gtx) // nothing else to display on this page at this time
 	}
 
-	pageElements := []layout.StackChild{
-		layout.Expanded(pg.txListLayout),
-		layout.Expanded(func(gtx C) D {
+	pageElements := []layout.StackChild{layout.Expanded(pg.txListLayout)}
+
+	if pg.walletDropDown != nil {
+		pageElements = append(pageElements, layout.Expanded(func(gtx C) D {
 			return pg.walletDropDown.Layout(gtx, 0, false)
-		}),
+		}))
 	}
 
 	// display tx dropdown if selected wallet is ready and showLoader is false
