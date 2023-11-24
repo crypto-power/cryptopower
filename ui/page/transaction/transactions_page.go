@@ -195,18 +195,18 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 }
 
 func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*multiWalletTx, totalTxs int, isReset bool, err error) {
-	wal := pg.selectedWallet
-	if wal == nil {
-		txs, totalTxs, err = pg.multiWalletTxns(offset, pageSize)
-	} else {
-		txs, totalTxs, err = pg.loadTransactions(wal, offset, pageSize)
-	}
-
 	isReset = pg.previousTxFilter != pg.txFilter
 	if isReset {
 		// reset the offset to zero
 		offset = 0
 		pg.previousTxFilter = pg.txFilter
+	}
+
+	wal := pg.selectedWallet
+	if wal == nil {
+		txs, totalTxs, err = pg.multiWalletTxns(offset, pageSize)
+	} else {
+		txs, totalTxs, err = pg.loadTransactions(wal, offset, pageSize)
 	}
 
 	return txs, totalTxs, isReset, err
