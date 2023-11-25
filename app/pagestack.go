@@ -32,12 +32,11 @@ func (pageStack *PageStack) Top() Page {
 	return nil
 }
 
-// Push pushes the specified page to the top of the stack, removing all other
-// instances of the same page from the stack. An about-to-display signal is sent
-// to the new page via newPage.OnNavigatedTo() while page.OnNavigatedFrom() is
-// called on the current page to signal that the current page is no longer the
-// displayed page.
-func (pageStack *PageStack) Push(newPage Page, navigator PageNavigator) bool {
+// PushAndNavigate pushes the specified page to the top of the stack, removing
+// all other instances of the same page from the stack and executes the
+// OnNavigatedTo() on the newPage while page.OnNavigatedFrom() is called on the
+// current page to signal that the current page is no longer the displayed page.
+func (pageStack *PageStack) PushAndNavigate(newPage Page, navigator PageNavigator) bool {
 	pageStack.mtx.Lock()
 	defer pageStack.mtx.Unlock()
 
