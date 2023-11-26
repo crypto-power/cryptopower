@@ -182,12 +182,12 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, error) {
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
 		err := fmt.Errorf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
-		return nil, -1, err
+		return nil, err
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
@@ -195,14 +195,14 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW
 	if !ok {
 		err := fmt.Errorf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)
-		return nil, -1, err
+		return nil, err
 	}
 
 	tempTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, true)
 	if err != nil {
 		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
-	return tempTxs, len(tempTxs), err
+	return tempTxs, err
 }
 
 // Layout draws the page UI components into the provided layout context

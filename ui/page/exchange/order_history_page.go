@@ -216,7 +216,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 	})
 }
 
-func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, error) {
+func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, error) {
 	selectedStatus := pg.statusDropdown.Selected()
 	var statusFilter api.Status
 	switch selectedStatus {
@@ -237,7 +237,7 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 	}
 
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
-	return orders, len(orders), nil
+	return orders, nil
 }
 
 func (pg *OrderHistoryPage) layoutHistory(gtx C) D {

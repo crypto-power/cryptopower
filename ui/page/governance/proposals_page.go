@@ -113,7 +113,7 @@ func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
 // UI update with the new proposals list.
-func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.ProposalItem, int, error) {
+func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.ProposalItem, error) {
 	var proposalFilter int32
 	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
@@ -142,7 +142,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		listItems = proposalItems
 	}
 
-	return listItems, len(listItems), nil
+	return listItems, nil
 }
 
 // HandleUserInteractions is called just before Layout() to determine

@@ -13,8 +13,8 @@ import (
 )
 
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
-// returns data interface, count of the items in the data interface and an error.
-type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, err error)
+// returns data interface and an error.
+type ScrollFunc[T any] func(offset, pageSize int32) (data []T, err error)
 
 type Scroll[T any] struct {
 	load      *load.Load
@@ -90,25 +90,20 @@ func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNa
 	}
 
 	if isReverse {
-		s.list.Position.Offset = s.scrollView*-1 + 1
-		s.list.Position.OffsetLast = 1
 		s.offset -= s.pageSize
 	} else {
-		s.list.Position.Offset = 1
-		s.list.Position.OffsetLast = s.scrollView*-1 + 1
-		if s.data != nil {
+		if s.data != nil && !isReset {
 			s.offset += s.pageSize
 		}
 	}
 
 	s.isLoadingItems = true
-	s.itemsCount = -1 // should trigger loading icon
 	offset := s.offset
 	tempSize := s.pageSize
 
 	s.mu.Unlock()
 
-	items, itemsLen, err := s.queryFunc(offset, tempSize)
+	items, err := s.queryFunc(offset, tempSize)
 
 	s.mu.Lock()
 
@@ -121,12 +116,24 @@ func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNa
 		return
 	}
 
+	itemsLen := len(items)
 	if itemsLen < int(tempSize) {
 		// Since this is the last page set of items, prevent further scroll down queries.
 		s.loadedAllItems = true
 	}
 
-	s.data = items
+	if isReverse {
+		// TODO. Prepend and trim list from the bottom when list gets to an accepted list size.
+		// s.data = append(items, s.data...)
+		// s.data = s.data[:len(s.data)-int(s.pageSize)]
+	} else {
+		s.data = append(s.data, items...) // append to existing record
+		// TODO. trim list from the top when list gets to an accepted list size.
+		// if itemsLen == int(tempSize) {
+		// 	s.data = s.data[len(s.data)-int(s.pageSize):]
+		// }
+	}
+
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
 	s.mu.Unlock()
@@ -222,8 +229,8 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 	if isScrollingDown {
 		// Enforce the first item to be at the list top.
-		s.list.ScrollToEnd = false
-		s.list.Position.BeforeEnd = false
+		// s.list.ScrollToEnd = false
+		// s.list.Position.BeforeEnd = false
 
 		s.mu.Unlock()
 
@@ -232,8 +239,8 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 	if isScrollingUp {
 		// Enforce the first item to be at the list bottom.
-		s.list.ScrollToEnd = true
-		s.list.Position.BeforeEnd = true
+		// s.list.ScrollToEnd = true
+		// s.list.Position.BeforeEnd = true
 
 		s.mu.Unlock()
 

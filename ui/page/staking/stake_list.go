@@ -33,16 +33,16 @@ func (pg *Page) stopTxNotificationsListener() {
 	pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
 }
 
-func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, error) {
+func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, error) {
 	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
-		return nil, -1, err
+		return nil, err
 	}
 
 	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
 		return filter == dcr.TxFilterTickets
 	})
-	return tickets, len(tickets), err
+	return tickets, err
 }
 
 func (pg *Page) ticketListLayout(gtx C) D {
