@@ -24,8 +24,7 @@ type OrderHistoryPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	scroll         *components.Scroll[*instantswap.Order]
-	previousStatus api.Status
+	scroll *components.Scroll[*instantswap.Order]
 
 	ordersList *cryptomaterial.ClickableList
 
@@ -82,7 +81,8 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
 	if pg.statusDropdown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// reset order history list when the status is changed
+		pg.scroll.FetchScrollData(true, pg.ParentWindow())
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
@@ -216,7 +216,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 	})
 }
 
-func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
+func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, error) {
 	selectedStatus := pg.statusDropdown.Selected()
 	var statusFilter api.Status
 	switch selectedStatus {
@@ -236,15 +236,8 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 		statusFilter = api.OrderStatusUnknown
 	}
 
-	isReset := pg.previousStatus != statusFilter
-	if isReset {
-		// Since the status has changed we need to reset the offset.
-		offset = 0
-		pg.previousStatus = statusFilter
-	}
-
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
-	return orders, len(orders), isReset, nil
+	return orders, len(orders), nil
 }
 
 func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
@@ -280,7 +273,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 func (pg *OrderHistoryPage) listenForSyncNotifications() {
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.ParentWindow().Reload()
 		},
 	}

@@ -182,12 +182,12 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	}()
 }
 
-func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, bool, error) {
+func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW.Transaction, int, error) {
 	wal := pg.WL.SelectedWallet.Wallet
 	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTabIndex)
 	if len(mapinfo) < 1 {
 		err := fmt.Errorf("asset type(%v) and tab index(%d) found", wal.GetAssetType(), pg.selectedTabIndex)
-		return nil, -1, false, err
+		return nil, -1, err
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
@@ -195,21 +195,14 @@ func (pg *TransactionsPage) loadTransactions(offset, pageSize int32) ([]*sharedW
 	if !ok {
 		err := fmt.Errorf("unsupported field(%v) for asset type(%v) and tab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTabIndex)
-		return nil, -1, false, err
-	}
-
-	isReset := pg.previousTxFilter != txFilter
-	if isReset {
-		// reset the offset to zero
-		offset = 0
-		pg.previousTxFilter = txFilter
+		return nil, -1, err
 	}
 
 	tempTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, true)
 	if err != nil {
 		err = fmt.Errorf("Error loading transactions: %v", err)
 	}
-	return tempTxs, len(tempTxs), isReset, err
+	return tempTxs, len(tempTxs), err
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -369,7 +362,7 @@ func (pg *TransactionsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(true, pg.ParentWindow())
 		break
 	}
 
@@ -382,14 +375,14 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if tabItemClicked, clickedTabIndex := pg.tabs.ItemClicked(); tabItemClicked {
 		pg.selectedTabIndex = clickedTabIndex
 		pg.refreshAvailableTxType()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(true, pg.ParentWindow())
 	}
 }
 
 func (pg *TransactionsPage) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(transaction *sharedW.Transaction) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.ParentWindow().Reload()
 		},
 	}

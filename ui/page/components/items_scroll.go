@@ -13,9 +13,8 @@ import (
 )
 
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
-// returns data interface, count of the items in the data interface, isReset and an error.
-// isReset is used to reset the offset value.
-type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, isReset bool, err error)
+// returns data interface, count of the items in the data interface and an error.
+type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, err error)
 
 type Scroll[T any] struct {
 	load      *load.Load
@@ -58,7 +57,8 @@ func NewScroll[T any](load *load.Load, pageSize int32, queryFunc ScrollFunc[T]) 
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) {
+// isReset is used to reset the offset value.
+func (s *Scroll[T]) FetchScrollData(isReset bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -67,8 +67,9 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 		s.offset -= s.pageSize
 	}
 	s.mu.Unlock()
-
-	s.fetchScrollData(isReverse, window)
+	// set isReverse to default false as callers of this method are not
+	// perform a reverse scroll action
+	s.fetchScrollData(false, isReset, window)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -76,8 +77,13 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNavigator) {
 	s.mu.Lock()
+
+	if isReset {
+		// resets the values for use on the next iteration.
+		s.resetList()
+	}
 
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
 		return
@@ -102,12 +108,7 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 
 	s.mu.Unlock()
 
-	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
-	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
-	}
+	items, itemsLen, err := s.queryFunc(offset, tempSize)
 
 	s.mu.Lock()
 
@@ -120,7 +121,7 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 		return
 	}
 
-	if itemsLen > int(tempSize) {
+	if itemsLen < int(tempSize) {
 		// Since this is the last page set of items, prevent further scroll down queries.
 		s.loadedAllItems = true
 	}
@@ -129,11 +130,6 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
 	s.mu.Unlock()
-
-	if isReset {
-		// resets the values for use on the next iteration.
-		s.resetList()
-	}
 }
 
 // FetchedData returns the latest queried data.
@@ -231,7 +227,7 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 		s.mu.Unlock()
 
-		go s.fetchScrollData(false, window)
+		go s.fetchScrollData(false, false, window)
 	}
 
 	if isScrollingUp {
@@ -241,7 +237,7 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 
 		s.mu.Unlock()
 
-		go s.fetchScrollData(true, window)
+		go s.fetchScrollData(true, false, window)
 	}
 
 	if !isScrollingUp && !isScrollingDown {

@@ -1022,9 +1022,9 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	)
 }
 
-func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
+func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, error) {
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
-	return orders, len(orders), false, nil
+	return orders, len(orders), nil
 }
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
@@ -1295,11 +1295,11 @@ func (pg *CreateOrderPage) listenForNotifications() {
 
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.ParentWindow().Reload()
 		},
 		OnOrderCreated: func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.ParentWindow().Reload()
 		},
 		OnOrderSchedulerStarted: func() {

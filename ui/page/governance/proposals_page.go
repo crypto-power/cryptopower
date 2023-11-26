@@ -113,7 +113,7 @@ func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
 // UI update with the new proposals list.
-func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.ProposalItem, int, bool, error) {
+func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.ProposalItem, int, error) {
 	var proposalFilter int32
 	selectedType := pg.statusDropDown.Selected()
 	switch selectedType {
@@ -125,13 +125,6 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		proposalFilter = libwallet.ProposalCategoryAbandoned
 	default:
 		proposalFilter = libwallet.ProposalCategoryAll
-	}
-
-	isReset := pg.previousFilter != proposalFilter
-	if isReset {
-		// reset the offset to zero
-		offset = 0
-		pg.previousFilter = proposalFilter
 	}
 
 	proposalItems := components.LoadProposals(pg.Load, proposalFilter, offset, pageSize, true)
@@ -149,7 +142,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		listItems = proposalItems
 	}
 
-	return listItems, len(listItems), isReset, nil
+	return listItems, len(listItems), nil
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -159,7 +152,8 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 // Part of the load.Page interface.
 func (pg *ProposalsPage) HandleUserInteractions() {
 	if pg.statusDropDown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		// Reset list items when filter is changed
+		pg.scroll.FetchScrollData(true, pg.ParentWindow())
 	}
 
 	pg.searchEditor.EditorIconButtonEvent = func() {
@@ -367,7 +361,8 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 			pg.syncCompleted = true
 			pg.isSyncing = false
 
-			go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			// reset list when sync completes
+			go pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.ParentWindow().Reload()
 		}
 	}
