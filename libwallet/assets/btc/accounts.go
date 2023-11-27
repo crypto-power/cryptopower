@@ -54,7 +54,7 @@ func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 
 	accounts := make([]*sharedW.Account, len(resp.Accounts))
 	for i, a := range resp.Accounts {
-		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
+		balance, err := asset.GetAccountBalance(int32(a.AccountNumber), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -99,12 +99,19 @@ func (asset *Asset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 }
 
 // GetAccountBalance returns the balance for the provided account number.
-func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
+// requiredConfirmations is optional.
+func (asset *Asset) GetAccountBalance(accountNumber int32, confirms *int32) (*sharedW.Balance, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrBTCNotInitialized
 	}
 
-	balance, err := asset.Internal().BTC.CalculateAccountBalances(uint32(accountNumber), asset.RequiredConfirmations())
+	var confs int32
+	if confirms != nil {
+		confs = *confirms
+	} else {
+		confs = asset.RequiredConfirmations()
+	}
+	balance, err := asset.Internal().BTC.CalculateAccountBalances(uint32(accountNumber), confs)
 	if err != nil {
 		return nil, err
 	}

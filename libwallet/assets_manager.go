@@ -25,11 +25,11 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	dexDcr "decred.org/dcrdex/client/asset/dcr"
-	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	dcrcfg "github.com/decred/dcrd/chaincfg/v3"
 )
 
 // TODO: This is the main app's log filename, should probably be defined

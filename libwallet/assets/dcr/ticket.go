@@ -378,7 +378,7 @@ func (asset *Asset) runTicketBuyer(ctx context.Context, passphrase string, cfg *
 			}
 
 			// Get the account balance to determine how many tickets to buy
-			bal, err := asset.GetAccountBalance(cfg.PurchaseAccount)
+			bal, err := asset.GetAccountBalance(cfg.PurchaseAccount, nil)
 			if err != nil {
 				return err
 			}

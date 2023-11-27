@@ -69,7 +69,7 @@ type Asset interface {
 	RenameAccount(accountNumber int32, newName string) error
 	AccountNumber(accountName string) (int32, error)
 	AccountNameRaw(accountNumber uint32) (string, error)
-	GetAccountBalance(accountNumber int32) (*Balance, error)
+	GetAccountBalance(accountNumber int32, confirms *int32) (*Balance, error)
 	GetWalletBalance() (*Balance, error)
 	UnspentOutputs(account int32) ([]*UnspentOutput, error)
 

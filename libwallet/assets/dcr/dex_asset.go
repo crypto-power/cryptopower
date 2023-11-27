@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	dexasset "decred.org/dcrdex/client/asset"
-	"decred.org/dcrdex/client/asset/dcr"
+	dexdcr "decred.org/dcrdex/client/asset/dcr"
 	"decred.org/dcrdex/dex"
 	walleterrors "decred.org/dcrwallet/v3/errors"
 	walletjson "decred.org/dcrwallet/v3/rpc/jsonrpc/types"
@@ -36,13 +36,15 @@ const (
 	walletTypeSPV = "SPV"
 )
 
-// DEXAsset wraps *Asset and implements dexasset.Wallet.
+// DEXAsset wraps *Asset and implements dexdcr.Wallet.
 type DEXAsset struct {
 	asset *Asset
 
 	dexAccountNumber uint32
 	dexAccountName   string
 }
+
+var _ dexdcr.Wallet = (*DEXAsset)(nil)
 
 // NewDEXAsset returns a new *DEXAsset.
 func NewDEXAsset(asset *Asset, accountNumber uint32, accountName string) *DEXAsset {
@@ -55,7 +57,7 @@ func NewDEXAsset(asset *Asset, accountNumber uint32, accountName string) *DEXAss
 
 // Connect establishes a connection to the wallet.
 // Part of the Wallet interface.
-func (da *DEXAsset) Connect(ctx context.Context) error {
+func (da *DEXAsset) Connect(_ context.Context) error {
 	return nil
 }
 
@@ -76,7 +78,7 @@ func (da *DEXAsset) SpvMode() bool {
 // notification is unimplemented, monitorBlocks should be used to track
 // tip changes. TODO: Use tipFeed if it's exported.
 // Part of the Wallet interface.
-func (da *DEXAsset) NotifyOnTipChange(ctx context.Context, cb dcr.TipChangeCallback) bool {
+func (da *DEXAsset) NotifyOnTipChange(ctx context.Context, cb dexdcr.TipChangeCallback) bool {
 	const dexAssetOnTipCallbackIdentifier = "dex-asset-on-tip-change"
 	listener := &wallet.TxAndBlockNotificationListener{
 		OnBlockAttached: func(walletID int, blockHeight int32) {
@@ -92,7 +94,7 @@ func (da *DEXAsset) NotifyOnTipChange(ctx context.Context, cb dcr.TipChangeCallb
 // AddressInfo returns information for the provided address. It is an error
 // if the address is not owned by the wallet.
 // Part of the Wallet interface.
-func (da *DEXAsset) AddressInfo(ctx context.Context, address string) (*dcr.AddressInfo, error) {
+func (da *DEXAsset) AddressInfo(ctx context.Context, address string) (*dexdcr.AddressInfo, error) {
 	addr, err := stdaddr.DecodeAddress(address, da.asset.chainParams)
 	if err != nil {
 		return nil, err
@@ -104,7 +106,7 @@ func (da *DEXAsset) AddressInfo(ctx context.Context, address string) (*dcr.Addre
 
 	if ka, ok := ka.(dcrwallet.BIP0044Address); ok {
 		_, branch, _ := ka.Path()
-		return &dcr.AddressInfo{Account: ka.AccountName(), Branch: branch}, nil
+		return &dexdcr.AddressInfo{Account: ka.AccountName(), Branch: branch}, nil
 	}
 	return nil, fmt.Errorf("unsupported address type %T", ka)
 }
@@ -131,8 +133,8 @@ func (da *DEXAsset) AccountOwnsAddress(ctx context.Context, addr stdaddr.Address
 
 // AccountBalance returns the balance breakdown for the specified account.
 // Part of the Wallet interface.
-func (da *DEXAsset) AccountBalance(ctx context.Context, confirms int32, _ string) (*walletjson.GetAccountBalanceResult, error) {
-	bal, err := da.asset.GetAccountBalance(int32(da.dexAccountNumber))
+func (da *DEXAsset) AccountBalance(_ context.Context, confirms int32, _ string) (*walletjson.GetAccountBalanceResult, error) {
+	bal, err := da.asset.GetAccountBalance(int32(da.dexAccountNumber), &confirms)
 	if err != nil {
 		return nil, err
 	}
@@ -151,19 +153,19 @@ func (da *DEXAsset) AccountBalance(ctx context.Context, confirms int32, _ string
 
 // LockedOutputs fetches locked outputs for the Wallet.
 // Part of the Wallet interface.
-func (da *DEXAsset) LockedOutputs(ctx context.Context, acctName string) ([]chainjson.TransactionInput, error) {
-	return da.asset.Internal().DCR.LockedOutpoints(ctx, acctName)
+func (da *DEXAsset) LockedOutputs(ctx context.Context, _ string) ([]chainjson.TransactionInput, error) {
+	return da.asset.Internal().DCR.LockedOutpoints(ctx, da.dexAccountName)
 }
 
 // Unspents fetches unspent outputs for the Wallet.
 // Part of the Wallet interface.
-func (da *DEXAsset) Unspents(ctx context.Context, acctName string) ([]*walletjson.ListUnspentResult, error) {
+func (da *DEXAsset) Unspents(ctx context.Context, _ string) ([]*walletjson.ListUnspentResult, error) {
 	return da.asset.Internal().DCR.ListUnspent(ctx, 0, math.MaxInt32, nil, da.dexAccountName)
 }
 
 // LockUnspent locks or unlocks the specified outpoint.
 // Part of the Wallet interface.
-func (da *DEXAsset) LockUnspent(ctx context.Context, unlock bool, ops []*wire.OutPoint) error {
+func (da *DEXAsset) LockUnspent(_ context.Context, unlock bool, ops []*wire.OutPoint) error {
 	fun := da.asset.Internal().DCR.LockOutpoint
 	if unlock {
 		fun = da.asset.Internal().DCR.UnlockOutpoint
@@ -183,7 +185,7 @@ func (da *DEXAsset) LockUnspent(ctx context.Context, unlock bool, ops []*wire.Ou
 // for non-wallet outputs. Returns da.asset.CoinNotFoundError if the unspent
 // output cannot be located.
 // Part of the Wallet interface.
-func (da *DEXAsset) UnspentOutput(ctx context.Context, txHash *chainhash.Hash, index uint32, _ int8) (*dcr.TxOutput, error) {
+func (da *DEXAsset) UnspentOutput(ctx context.Context, txHash *chainhash.Hash, index uint32, _ int8) (*dexdcr.TxOutput, error) {
 	w := da.asset.Internal().DCR
 	txd, err := dcrwallet.UnstableAPI(w).TxDetails(ctx, txHash)
 	if errors.Is(err, walleterrors.NotExist) {
@@ -233,7 +235,7 @@ func (da *DEXAsset) UnspentOutput(ctx context.Context, txHash *chainhash.Hash, i
 		return nil, dexasset.CoinNotFoundError
 	}
 
-	return &dcr.TxOutput{
+	return &dexdcr.TxOutput{
 		TxOut:         txd.MsgTx.TxOut[index],
 		Tree:          tree,
 		Addresses:     []string{addrStr},
@@ -292,7 +294,7 @@ func (da *DEXAsset) GetBestBlock(ctx context.Context) (*chainhash.Hash, int64, e
 // returned block header is a wire.BlockHeader with the addition of the
 // block's median time.
 // Part of the Wallet interface.
-func (da *DEXAsset) GetBlockHeader(ctx context.Context, blockHash *chainhash.Hash) (*dcr.BlockHeader, error) {
+func (da *DEXAsset) GetBlockHeader(ctx context.Context, blockHash *chainhash.Hash) (*dexdcr.BlockHeader, error) {
 	w := da.asset.Internal().DCR
 	hdr, err := w.BlockHeader(ctx, blockHash)
 	if err != nil {
@@ -326,7 +328,7 @@ func (da *DEXAsset) GetBlockHeader(ctx context.Context, blockHash *chainhash.Has
 		}
 	}
 
-	return &dcr.BlockHeader{
+	return &dexdcr.BlockHeader{
 		BlockHeader:   hdr,
 		MedianTime:    medianTime,
 		Confirmations: confirmations,
@@ -375,7 +377,7 @@ func (da *DEXAsset) GetBlock(ctx context.Context, blockHash *chainhash.Hash) (*w
 // GetTransaction returns the details of a wallet tx, if the wallet contains a
 // tx with the provided hash. Returns da.asset.CoinNotFoundError if the tx is not
 // found in the wallet.
-func (da *DEXAsset) GetTransaction(ctx context.Context, txHash *chainhash.Hash) (*dcr.WalletTransaction, error) {
+func (da *DEXAsset) GetTransaction(ctx context.Context, txHash *chainhash.Hash) (*dexdcr.WalletTransaction, error) {
 	// copy-pasted from dcrwallet/internal/rpc/jsonrpc/methods.go
 	w := da.asset.Internal().DCR
 	txd, err := dcrwallet.UnstableAPI(w).TxDetails(ctx, txHash)
@@ -394,7 +396,7 @@ func (da *DEXAsset) GetTransaction(ctx context.Context, txHash *chainhash.Hash) 
 		return nil, err
 	}
 
-	ret := dcr.WalletTransaction{
+	ret := dexdcr.WalletTransaction{
 		Hex: b.String(),
 	}
 
@@ -459,15 +461,15 @@ func (da *DEXAsset) MatchAnyScript(ctx context.Context, blockHash *chainhash.Has
 
 // AccountUnlocked returns true if the account is unlocked.
 // Part of the Wallet interface.
-func (da *DEXAsset) AccountUnlocked(ctx context.Context, _ string) (bool, error) {
+func (da *DEXAsset) AccountUnlocked(_ context.Context, _ string) (bool, error) {
 	return !da.asset.IsLocked(), nil
 }
 
 // LockAccount locks the specified account.
 // Part of the Wallet interface.
-func (da *DEXAsset) LockAccount(ctx context.Context, _ string) error {
+func (da *DEXAsset) LockAccount(_ context.Context, _ string) error {
 	// Cryptopower does not offer an account by account lock for a single wallet
-	// so lock the wallet.
+	// so lock the entire wallet.
 	da.asset.LockWallet()
 	return nil
 }
@@ -475,13 +477,13 @@ func (da *DEXAsset) LockAccount(ctx context.Context, _ string) error {
 // UnlockAccount unlocks the specified account or the wallet if account is not
 // encrypted.
 // Part of the Wallet interface.
-func (da *DEXAsset) UnlockAccount(ctx context.Context, passphrase []byte, _ string) error {
+func (da *DEXAsset) UnlockAccount(_ context.Context, passphrase []byte, _ string) error {
 	return da.asset.UnlockWallet(string(passphrase))
 }
 
 // SyncStatus returns the wallet's sync status.
 // Part of the Wallet interface.
-func (da *DEXAsset) SyncStatus(ctx context.Context) (synced bool, progress float32, err error) {
+func (da *DEXAsset) SyncStatus(_ context.Context) (synced bool, progress float32, err error) {
 	syncProgress := da.asset.GeneralSyncProgress()
 	if syncProgress != nil {
 		progress = float32(syncProgress.TotalSyncProgress)
@@ -492,7 +494,7 @@ func (da *DEXAsset) SyncStatus(ctx context.Context) (synced bool, progress float
 // PeerCount returns the number of network peers to which the wallet or its
 // backing node are connected.
 // Part of the Wallet interface.
-func (da *DEXAsset) PeerCount(ctx context.Context) (uint32, error) {
+func (da *DEXAsset) PeerCount(_ context.Context) (uint32, error) {
 	return uint32(da.asset.ConnectedPeers()), nil
 }
 
@@ -504,6 +506,6 @@ func (da *DEXAsset) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (*
 }
 
 // Part of the Wallet interface.
-func (da *DEXAsset) Reconfigure(ctx context.Context, cfg *dexasset.WalletConfig, net dex.Network, currentAddress, depositAccount string) (restart bool, err error) {
+func (da *DEXAsset) Reconfigure(_ context.Context, cfg *dexasset.WalletConfig, _ dex.Network, _, _ string) (restart bool, err error) {
 	return cfg.Type != walletTypeSPV, nil
 }
