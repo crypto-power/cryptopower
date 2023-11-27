@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/widget"
+
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -85,6 +86,11 @@ func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNa
 	if isReset {
 		// resets the values for use on the next iteration.
 		s.resetList()
+	}
+
+	// reset loaded items if we have loaded all items and we are scrolling back to the top
+	if isReverse && s.loadedAllItems {
+		s.loadedAllItems = false
 	}
 
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
@@ -190,11 +196,6 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	}
 
 	scrollPos := s.list.Position
-	// Ignore if the query hasn't been invoked to fetch list items.
-	if s.itemsCount < int(s.pageSize) && s.itemsCount != -1 {
-		s.mu.Unlock()
-		return
-	}
 
 	// Ignore if the query is in theprocess of fetching the list items.
 	if s.itemsCount == -1 && s.isLoadingItems {
@@ -231,20 +232,17 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	s.prevScrollView = s.scrollView
 
 	if isScrollingDown {
-		// Enforce the first item to be at the list top.
-		// s.list.ScrollToEnd = false
-		// s.list.Position.BeforeEnd = false
-
 		s.mu.Unlock()
+		// returning here prevents the application from freezing when the
+		// last item is reached.
+		if s.loadedAllItems {
+			return
+		}
 
 		go s.fetchScrollData(false, false, window)
 	}
 
 	if isScrollingUp {
-		// Enforce the first item to be at the list bottom.
-		// s.list.ScrollToEnd = true
-		// s.list.Position.BeforeEnd = true
-
 		s.mu.Unlock()
 
 		go s.fetchScrollData(true, false, window)
