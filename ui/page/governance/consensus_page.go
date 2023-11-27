@@ -265,10 +265,6 @@ func (pg *ConsensusPage) FetchAgendas() {
 		orderNewest = false
 	}
 
-	if !pg.orderDropDown.IsIndexChanged() || !pg.statusDropDown.IsIndexChanged() {
-		return
-	}
-
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {

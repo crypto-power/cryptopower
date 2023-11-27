@@ -532,9 +532,7 @@ func (pg *ProposalDetails) layoutRedirect(text string, icon *cryptomaterial.Imag
 							return layout.E.Layout(gtx, icon.Layout24dp)
 						})
 					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.Theme.Body1(text).Layout(gtx)
-					}),
+					layout.Rigid(pg.Theme.Body1(text).Layout),
 				)
 			})
 		})
