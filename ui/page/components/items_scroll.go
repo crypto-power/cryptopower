@@ -12,6 +12,8 @@ import (
 	"github.com/crypto-power/cryptopower/ui/modal"
 )
 
+const maxListSize = 150
+
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
 // returns data interface and an error.
 type ScrollFunc[T any] func(offset, pageSize int32) (data []T, err error)
@@ -123,16 +125,17 @@ func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNa
 	}
 
 	if isReverse {
-		// TODO. Prepend and trim list from the bottom when list gets to an accepted list size.
-		// s.data = append(items, s.data...)
-		// s.data = s.data[:len(s.data)-int(s.pageSize)]
+		s.data = append(items, s.data...)
+		s.data = s.data[:len(s.data)-int(s.pageSize)]
 	} else {
 		s.data = append(s.data, items...) // append to existing record
-		// TODO. trim list from the top when list gets to an accepted list size.
-		// if itemsLen == int(tempSize) {
-		// 	s.data = s.data[len(s.data)-int(s.pageSize):]
-		// }
+		if len(s.data) > maxListSize {
+			s.data = s.data[int(s.pageSize):]
+		}
 	}
+
+	// set default scroll position to half the page to make navigation fluid
+	s.list.Position.Offset = int(float32(s.list.Position.Length) * 0.5)
 
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
