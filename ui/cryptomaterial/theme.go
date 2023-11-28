@@ -14,10 +14,11 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
-
 	"gioui.org/widget/material"
 
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
+
 	"golang.org/x/exp/shiny/materialdesign/icons"
 )
 
@@ -306,4 +307,28 @@ func SwitchEditors(event *key.Event, editors ...*widget.Editor) {
 			}
 		}
 	}
+}
+
+func (t *Theme) AssetIcon(asset utils.AssetType) *Image {
+	var icon *Image
+	switch asset {
+	case utils.DCRWalletAsset:
+		icon = t.Icons.DCR
+	case utils.LTCWalletAsset:
+		icon = t.Icons.LTC
+	case utils.BTCWalletAsset:
+		icon = t.Icons.BTC
+	default:
+		icon = nil
+	}
+	return icon
+}
+
+func CentralizeWidget(gtx C, widget layout.Widget) D {
+	return LinearLayout{
+		Width:       MatchParent,
+		Height:      WrapContent,
+		Orientation: layout.Horizontal,
+		Direction:   layout.Center,
+	}.Layout2(gtx, widget)
 }

@@ -357,7 +357,7 @@ func (pg *WalletInfo) HandleUserInteractions() {
 	}
 
 	if pg.viewAllTxButton.Button.Clicked() {
-		pg.ParentNavigator().Display(transaction.NewTransactionsPage(pg.Load))
+		pg.ParentNavigator().Display(transaction.NewTransactionsPage(pg.Load, false))
 	}
 
 	if pg.viewAllStakeButton.Button.Clicked() {

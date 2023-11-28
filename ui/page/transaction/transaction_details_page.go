@@ -557,6 +557,7 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 }
 
 func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
+	reqConf := pg.wallet.RequiredConfirmations()
 	transaction := pg.transaction
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -692,17 +693,17 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						if pg.txConfirmations() == 0 {
 							txt.Text = caser.String(values.String(values.StrUnconfirmedTx))
 							txt.Color = pg.Theme.Color.GrayText2
-						} else if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
+						} else if pg.txConfirmations() >= reqConf {
 							txt.Text = caser.String(values.String(values.StrConfirmed))
 							txt.Color = pg.Theme.Color.Success
 						} else {
-							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), pg.wallet.RequiredConfirmations()))
+							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), reqConf))
 							txt.Color = pg.Theme.Color.GrayText2
 						}
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= reqConf {
 							m := values.MarginPadding10
 							return layout.Inset{
 								Left:  m,
@@ -714,7 +715,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= reqConf {
 							txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
 							txt.Color = pg.Theme.Color.GrayText2
 							return txt.Layout(gtx)
