@@ -23,6 +23,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
@@ -45,7 +46,7 @@ type OverviewPage struct {
 	pageContainer            layout.List
 	marketOverviewList       layout.List
 	mobileMarketOverviewList layout.List
-	recentProposalList       layout.List
+	recentProposalList       *cryptomaterial.ClickableList
 	recentTradeList          layout.List
 	recentTransactions       *cryptomaterial.ClickableList
 	recentStakes             *cryptomaterial.ClickableList
@@ -126,10 +127,7 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
-		recentProposalList: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentProposalList: l.Theme.NewClickableList(layout.Vertical),
 		scrollContainer: &widget.List{
 			List: layout.List{
 				Axis:      layout.Vertical,
@@ -232,6 +230,10 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	if clicked, selectedTxIndex := pg.recentStakes.ItemClicked(); clicked {
 		tx, wal := pg.txAndWallet(pg.stakes[selectedTxIndex])
 		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
+	}
+
+	if clicked, selectedTxIndex := pg.recentProposalList.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(governance.NewProposalDetailsPage(pg.Load, &pg.proposalItems[selectedTxIndex].Proposal))
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
