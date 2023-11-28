@@ -60,8 +60,8 @@ func NewScroll[T any](load *load.Load, pageSize int32, queryFunc ScrollFunc[T]) 
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-// isReset is used to reset the offset value.
-func (s *Scroll[T]) FetchScrollData(isReset bool, window app.WindowNavigator) {
+// If reset is true, the offset value will be reset to 0.
+func (s *Scroll[T]) FetchScrollData(reset bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -70,9 +70,8 @@ func (s *Scroll[T]) FetchScrollData(isReset bool, window app.WindowNavigator) {
 		s.offset -= s.pageSize
 	}
 	s.mu.Unlock()
-	// set isReverse to default false as callers of this method are not
-	// perform a reverse scroll action
-	s.fetchScrollData(false, isReset, window)
+	// set isReverse = false since this method is only called when scrolling down
+	s.fetchScrollData(false, reset, window)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -80,11 +79,10 @@ func (s *Scroll[T]) FetchScrollData(isReset bool, window app.WindowNavigator) {
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNavigator) {
+func (s *Scroll[T]) fetchScrollData(isReverse, reset bool, window app.WindowNavigator) {
 	s.mu.Lock()
 
-	if isReset {
-		// resets the values for use on the next iteration.
+	if reset {
 		s.resetList()
 	}
 
@@ -100,7 +98,7 @@ func (s *Scroll[T]) fetchScrollData(isReverse, isReset bool, window app.WindowNa
 	if isReverse {
 		s.offset -= s.pageSize
 	} else {
-		if s.data != nil && !isReset {
+		if s.data != nil && !reset {
 			s.offset += s.pageSize
 		}
 	}
