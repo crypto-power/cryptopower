@@ -64,7 +64,6 @@ type TransactionsPage struct {
 
 	materialLoader material.LoaderStyle
 
-	walletSelector *components.WalletAndAccountSelector
 	assetWallets   []sharedW.Asset
 	selectedWallet sharedW.Asset
 

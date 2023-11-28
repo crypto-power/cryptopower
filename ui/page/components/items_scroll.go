@@ -68,10 +68,6 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 	}
 	s.mu.Unlock()
 
-	// set isReset  to true here since all the callers of FetchScrollData()
-	// needs the data to be refreashed and data reset.
-	// TODO: set isreverse to default false all the callers of this
-	// FetchScrollData() is not initiating a reverse scroll action.
 	s.fetchScrollData(isReverse, window)
 }
 
