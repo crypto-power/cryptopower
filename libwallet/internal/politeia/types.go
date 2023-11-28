@@ -5,9 +5,9 @@ import "github.com/crypto-power/cryptopower/libwallet/utils"
 type ProposalType int
 
 const (
-	Normal ProposalType = iota
-	RFPProposal
-	RFPSubmission
+	ProposalTypeNormal ProposalType = iota
+	ProposalTypeRFPProposal
+	ProposalTypeRFPSubmission
 )
 
 type Proposal struct {
@@ -15,7 +15,6 @@ type Proposal struct {
 	Token            string `json:"token" storm:"unique"`
 	Category         int32  `json:"category" storm:"index"`
 	Name             string `json:"name"`
-	LowerName        string `json:"lower_name"`
 	State            int32  `json:"state"`
 	Status           int32  `json:"status"`
 	Timestamp        int64  `json:"timestamp"`

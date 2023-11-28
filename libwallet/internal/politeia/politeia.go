@@ -95,41 +95,20 @@ func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFi
 	return p.getProposalsRaw(category, offset, limit, newestFirst, false, key)
 }
 
-func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool, searchKey string) ([]Proposal, error) {
-	var query storm.Query
-	searchKey = strings.TrimSpace(strings.ToLower(searchKey))
-	switch category {
-	case ProposalCategoryAll:
-
+func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool, searchPhrase string) ([]Proposal, error) {
+	searchPhrase = strings.TrimSpace(strings.ToLower(searchPhrase))
+	matcher := q.Eq("Category", category)
+	if category == ProposalCategoryAll {
 		if skipAbandoned {
-			if searchKey != "" {
-				query = p.db.Select(
-					q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
-					q.Re("LowerName", "^"+searchKey),
-				)
-			} else {
-				query = p.db.Select(
-					q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
-				)
-			}
+			matcher = q.Not(q.Eq("Category", ProposalCategoryAbandoned))
 		} else {
-			if searchKey != "" {
-				query = p.db.Select(
-					q.True(),
-					q.Re("LowerName", "^"+searchKey),
-				)
-			} else {
-				query = p.db.Select(
-					q.True(),
-				)
-			}
+			matcher = q.True()
 		}
-	default:
-		if searchKey != "" {
-			query = p.db.Select(q.Eq("Category", category), q.Re("LowerName", "^"+searchKey))
-		} else {
-			query = p.db.Select(q.Eq("Category", category))
-		}
+	}
+
+	query := p.db.Select(matcher)
+	if searchPhrase != "" {
+		query = p.db.Select(matcher, q.Re("Name", "(?i)"+searchPhrase))
 	}
 
 	if offset > 0 {

@@ -40,7 +40,7 @@ func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 				return D{}
 			}),
 			layout.Rigid(func(gtx C) D {
-				if proposal.Type != libwallet.RFPSubmission {
+				if proposal.Type != libwallet.ProposalTypeRFPSubmission {
 					return D{}
 				}
 				// TODO Pass proposal name of RFP proposal
@@ -93,7 +93,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 		layout.Flexed(0.7, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					if proposal.Type != libwallet.RFPProposal {
+					if proposal.Type != libwallet.ProposalTypeRFPProposal {
 						return D{}
 					}
 					return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {

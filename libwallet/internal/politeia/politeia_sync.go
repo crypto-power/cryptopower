@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 
 	"decred.org/dcrwallet/v3/wallet"
@@ -334,8 +333,6 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 			if p.ctx.Err() != nil {
 				return p.ctx.Err()
 			}
-
-			proposals[i].LowerName = strings.ToLower(proposals[i].Name)
 			proposals[i].Category = category
 			if voteSummary, ok := votesSummaries[proposals[i].Token]; ok {
 				proposals[i].VoteStatus = int32(voteSummary.Status)
@@ -400,7 +397,6 @@ func (p *Politeia) FetchProposalDescription(token string) (string, error) {
 			// index file version will be used to determine if the
 			// saved file is out of date when compared to version.
 			proposal.IndexFileVersion = proposal.Version
-			proposal.LowerName = strings.ToLower(proposal.Name)
 			err = p.saveOrOverwiteProposal(proposal)
 			if err != nil {
 				log.Errorf("error saving new proposal: %s", err.Error())

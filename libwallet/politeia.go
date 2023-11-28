@@ -42,9 +42,9 @@ const (
 )
 
 const (
-	Normal        = politeia.Normal
-	RFPProposal   = politeia.RFPProposal
-	RFPSubmission = politeia.RFPSubmission
+	ProposalTypeNormal        = politeia.ProposalTypeNormal
+	ProposalTypeRFPProposal   = politeia.ProposalTypeRFPProposal
+	ProposalTypeRFPSubmission = politeia.ProposalTypeRFPSubmission
 )
 
 type Proposal struct {

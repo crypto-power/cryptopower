@@ -135,7 +135,7 @@ func getProposalType(payload string) ProposalType {
 	decodedBytes, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		fmt.Println("error decoding proposalmetadata:", err)
-		return Normal
+		return ProposalTypeNormal
 	}
 
 	var meta metadataProposal
@@ -145,11 +145,11 @@ func getProposalType(payload string) ProposalType {
 	}
 
 	if meta.LinkTo != "" {
-		return RFPSubmission
+		return ProposalTypeRFPSubmission
 	} else if meta.LinkBy != 0 {
-		return RFPProposal
+		return ProposalTypeRFPProposal
 	} else {
-		return Normal
+		return ProposalTypeNormal
 	}
 }
 
