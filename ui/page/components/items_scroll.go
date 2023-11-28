@@ -132,7 +132,7 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 
 	if isReset {
 		// resets the values for use on the next iteration.
-		s.isReset()
+		s.resetList()
 	}
 }
 
@@ -163,7 +163,7 @@ func (s *Scroll[T]) List() *cryptomaterial.ListStyle {
 	return s.listStyle
 }
 
-func (s *Scroll[T]) isReset() {
+func (s *Scroll[T]) resetList() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
