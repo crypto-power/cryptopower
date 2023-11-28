@@ -116,9 +116,6 @@ func (pg *Page) stakePriceSection(gtx C) D {
 					)
 				})
 			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding11, Bottom: values.MarginPadding14}.Layout(gtx, pg.Theme.Separator().Layout)
-			}),
 			layout.Rigid(pg.balanceProgressBarLayout),
 		)
 	})
@@ -203,7 +200,14 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 	pb := pg.Theme.MultiLayerProgressBar(pg.WL.SelectedWallet.Wallet.ToAmount(total).ToCoin(), items)
 	pb.ShowOtherWidgetFirst = true
 	pb.Height = values.MarginPadding16
-	return pb.Layout(gtx, labelWdg)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding11, Bottom: values.MarginPadding14}.Layout(gtx, pg.Theme.Separator().Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pb.Layout(gtx, labelWdg)
+		}),
+	)
 }
 
 func (pg *Page) stakingRecordStatistics(gtx C) D {
