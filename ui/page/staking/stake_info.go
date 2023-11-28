@@ -83,7 +83,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 													title.Color = col
 													return title.Layout(gtx)
 												}
-												return components.LayoutBalanceSemiBold(gtx, pg.Load, pg.ticketPrice)
+												return components.LayoutBalanceWithUnitSizeBoldText(gtx, pg.Load, pg.ticketPrice, values.TextSize16)
 											})
 										}),
 									)

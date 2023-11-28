@@ -314,7 +314,7 @@ func (pg *Page) HandleUserInteractions() {
 	if clicked, selectedItem := pg.ticketsList.ItemClicked(); clicked {
 		tickets := pg.scroll.FetchedData()
 		ticketTx := tickets[selectedItem].transaction
-		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
+		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, pg.WL.SelectedWallet.Wallet, ticketTx, true))
 
 		// Check if this ticket is fully registered with a VSP
 		// and log any discrepancies.

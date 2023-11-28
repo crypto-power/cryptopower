@@ -34,7 +34,7 @@ func (pg *Page) stakeStatisticsSection(gtx C) D {
 							if pg.totalRewards == "" {
 								return D{}
 							}
-							return components.LayoutBalanceSemiBold(gtx, pg.Load, pg.totalRewards)
+							return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, pg.totalRewards)
 						}
 						item1 := &statisticsItem{Icon: pg.Theme.Icons.StakeyIcon, Title: values.String(values.StrTotalReward), ValueText: pg.totalRewards, ValueWidget: totalRewardDim}
 						item2 := &statisticsItem{Icon: pg.Theme.Icons.TicketRevokedIcon, Title: values.String(values.StrRevoke), ValueText: fmt.Sprintf("%d", pg.ticketOverview.Revoked)}

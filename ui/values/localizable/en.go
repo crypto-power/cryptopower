@@ -667,6 +667,7 @@ const EN = `
 "verifySeed" = "Verify Seed Phrase"
 "verifySeedInfo" = "Verify your seed phrase backup so you can recover your funds when needed."
 "version" = "Version"
+"viewAll" = "View All"
 "viewAllOrders" = "View all orders"
 "viewAppLog" = "View Application Log"
 "viewDetails" = "View details"

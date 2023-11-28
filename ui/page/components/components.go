@@ -240,25 +240,25 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 
 	insetLeft := values.MarginPadding16
-	insetRight := values.MarginPadding16
-
 	if !isTxPage {
 		insetLeft = values.MarginPadding8
-		insetRight = values.MarginPadding8
 	}
 
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Horizontal,
 		Width:       cryptomaterial.MatchParent,
-		Height:      gtx.Dp(values.MarginPadding56),
+		Height:      cryptomaterial.WrapContent,
 		Alignment:   layout.Middle,
-		Padding:     layout.Inset{Right: insetRight, Left: insetLeft},
+		Padding: layout.Inset{
+			Top:    values.MarginPadding16,
+			Bottom: values.MarginPadding10,
+		},
 	}.Layout(gtx,
 		layout.Rigid(txStatus.Icon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
 				Width:       cryptomaterial.WrapContent,
-				Height:      cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
 				Orientation: layout.Vertical,
 				Padding:     layout.Inset{Left: insetLeft},
 				Direction:   layout.Center,
@@ -448,7 +448,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						if !isTxPage {
 							return cryptomaterial.LinearLayout{
 								Width:       cryptomaterial.WrapContent,
-								Height:      cryptomaterial.MatchParent,
+								Height:      cryptomaterial.WrapContent,
 								Orientation: layout.Vertical,
 								Alignment:   layout.End,
 								Direction:   layout.Center,
