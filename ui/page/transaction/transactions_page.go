@@ -70,7 +70,7 @@ type TransactionsPage struct {
 
 	isHomepageLayout,
 	showLoader,
-	DCRWalletExist bool
+	dcrWalletExists bool
 }
 
 func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage {
@@ -85,7 +85,7 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 
 	// init the asset selector
 	if isHomepageLayout {
-		pg.initWalletDropdown()
+		pg.initWalletSelector()
 	} else {
 		pg.selectedWallet = pg.WL.SelectedWallet.Wallet
 	}
@@ -96,7 +96,6 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 	pg.transactionList.IsShadowEnabled = true
 
 	pg.materialLoader = material.Loader(pg.Theme.Base)
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 
 	return pg
 }
@@ -109,12 +108,13 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
 
 	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
 }
 
 // initWalletSelector initializes the wallet selector dropdown to enable
 // filtering transactions for a specific wallet when this page is used to
 // display transactions for multiple wallets.
-func (pg *TransactionsPage) initWalletDropdown() {
+func (pg *TransactionsPage) initWalletSelector() {
 	pg.assetWallets = pg.WL.AllSortedWalletList()
 	if pg.txCategoryTab.SelectedSegment() != values.String(values.StrTxOverview) {
 		pg.assetWallets = pg.WL.SortedWalletList(utils.DCRWalletAsset)
@@ -123,8 +123,8 @@ func (pg *TransactionsPage) initWalletDropdown() {
 	if len(pg.assetWallets) > 1 {
 		items := []cryptomaterial.DropDownItem{}
 		for _, wal := range pg.assetWallets {
-			if !pg.DCRWalletExist && wal.GetAssetType() == utils.DCRWalletAsset {
-				pg.DCRWalletExist = true
+			if !pg.dcrWalletExists && wal.GetAssetType() == utils.DCRWalletAsset {
+				pg.dcrWalletExists = true
 			}
 			item := cryptomaterial.DropDownItem{
 				Text: wal.GetWalletName(),
@@ -134,7 +134,7 @@ func (pg *TransactionsPage) initWalletDropdown() {
 		}
 
 		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
-		pg.walletDropDown.ClearSelection()
+		pg.walletDropDown.ClearSelection("Select a wallet")
 	} else {
 		pg.selectedWallet = pg.assetWallets[0]
 	}
@@ -162,7 +162,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
 
 	// only show tx count for regular txs, not staking
-	if pg.selectedTxCategoryTab == 0 {
+	if pg.txCategoryTab.SelectedSegment() == values.String(values.StrTxOverview) {
 		pg.showLoader = true
 
 		wallets := pg.assetWallets
@@ -229,6 +229,11 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32) ([]*multiWal
 	sort.Slice(allTxs, func(i, j int) bool {
 		return allTxs[i].Timestamp > allTxs[j].Timestamp
 	})
+
+	// TODO: remove after PR 268  // Improve infinite scroll list functionality is merged
+	if len(allTxs) > int(pageSize) {
+		allTxs = allTxs[:int(pageSize)]
+	}
 
 	return allTxs, len(allTxs), nil
 }
@@ -365,7 +370,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 	items := []layout.FlexChild{}
 	isDCRAssetSelected := pg.selectedWallet != nil && pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset
-	if isDCRAssetSelected || (pg.DCRWalletExist && pg.selectedWallet == nil) {
+	if isDCRAssetSelected || (pg.dcrWalletExists && pg.selectedWallet == nil) {
 		// Only show tx category navigation txCategoryTab for DCR wallets.
 		items = append(items, layout.Rigid(pg.txCategoriesNav))
 	}
@@ -510,7 +515,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if pg.txCategoryTab.Changed() {
 		pg.selectedTxCategoryTab = pg.txCategoryTab.SelectedIndex()
 		if pg.isHomepageLayout {
-			pg.initWalletDropdown()
+			pg.initWalletSelector()
 		}
 		if pg.walletDropDown.SelectedIndex() < 0 {
 			pg.selectedWallet = nil

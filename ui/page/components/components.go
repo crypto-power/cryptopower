@@ -227,11 +227,11 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 }
 
 // LayoutTransactionRow is a single transaction row on the transactions and overview
-// page. It lays out a transaction's direction, balance, status. isHiddenTxAssetInfo
+// page. It lays out a transaction's direction, balance, status. hideTxAssetInfo
 // determines if the transaction should display additional information about the tx
 // such as the wallet the tx belong to etc. This is usefil on pages where
 // the tx is displayed from multi wallets.
-func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, isHiddenTxAssetInfo bool) layout.Dimensions {
+func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool) layout.Dimensions {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if wal == nil {
 		return D{}
@@ -243,7 +243,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 
 	insetLeft := values.MarginPadding16
-	if !isHiddenTxAssetInfo {
+	if !hideTxAssetInfo {
 		insetLeft = values.MarginPadding8
 	}
 
@@ -284,7 +284,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 					}.Layout(gtx,
 						layout.Rigid(l.Theme.Label(values.TextSize18, txStatus.Title).Layout),
 						layout.Rigid(func(gtx C) D {
-							if isHiddenTxAssetInfo {
+							if hideTxAssetInfo {
 								return D{}
 							}
 							return layout.E.Layout(gtx, func(gtx C) D {
@@ -301,7 +301,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 					)
 				}),
 				layout.Rigid(func(gtx C) D {
-					if !isHiddenTxAssetInfo && tx.Type == txhelper.TxTypeRegular {
+					if !hideTxAssetInfo && tx.Type == txhelper.TxTypeRegular {
 						return cryptomaterial.LinearLayout{
 							Width:       cryptomaterial.WrapContent,
 							Height:      cryptomaterial.WrapContent,
@@ -323,7 +323,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						Direction:   layout.W,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if isHiddenTxAssetInfo {
+							if hideTxAssetInfo {
 								return D{}
 							}
 
@@ -358,7 +358,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 							return walBalTxt.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if dcrAsset, ok := wal.(*dcr.Asset); ok && !isHiddenTxAssetInfo {
+							if dcrAsset, ok := wal.(*dcr.Asset); ok && !hideTxAssetInfo {
 								if ok, _ := dcrAsset.TicketHasVotedOrRevoked(tx.Hash); ok {
 									return layout.Inset{
 										Left: values.MarginPadding4,
@@ -377,7 +377,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 								ticketSpender, _ = dcrAsset.TicketSpender(tx.Hash)
 							}
 
-							if ticketSpender == nil || isHiddenTxAssetInfo {
+							if ticketSpender == nil || hideTxAssetInfo {
 								return D{}
 							}
 							amnt := wal.ToAmount(ticketSpender.VoteReward).ToCoin()
@@ -393,7 +393,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			txSize := values.TextSize16
-			if !isHiddenTxAssetInfo {
+			if !hideTxAssetInfo {
 				txSize = values.TextSize12
 			}
 			status := l.Theme.Label(txSize, values.String(values.StrUnknown))
@@ -416,7 +416,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 				return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						voteOrRevocationTx := tx.Type == txhelper.TxTypeVote || tx.Type == txhelper.TxTypeRevocation
-						if isHiddenTxAssetInfo && voteOrRevocationTx {
+						if hideTxAssetInfo && voteOrRevocationTx {
 							title := values.String(values.StrRevoke)
 							if tx.Type == txhelper.TxTypeVote {
 								title = values.String(values.StrVote)
@@ -444,7 +444,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !isHiddenTxAssetInfo {
+						if !hideTxAssetInfo {
 							return cryptomaterial.LinearLayout{
 								Width:       cryptomaterial.WrapContent,
 								Height:      cryptomaterial.WrapContent,
@@ -482,14 +482,14 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if isHiddenTxAssetInfo {
+						if hideTxAssetInfo {
 							return status.Layout(gtx)
 						}
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
 						isMixedOrRegular := tx.Type == txhelper.TxTypeMixed || tx.Type == txhelper.TxTypeRegular
-						if !isHiddenTxAssetInfo && !isMixedOrRegular {
+						if !hideTxAssetInfo && !isMixedOrRegular {
 							return D{}
 						}
 						statusIcon := l.Theme.Icons.ConfirmIcon
@@ -498,7 +498,7 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 							statusIcon = l.Theme.Icons.PendingIcon
 						}
 
-						if isHiddenTxAssetInfo {
+						if hideTxAssetInfo {
 							return layout.Inset{
 								Left: values.MarginPadding15,
 								Top:  values.MarginPadding5,
@@ -628,7 +628,7 @@ func TimeFormat(secs int, long bool) string {
 
 // TxPageDropDownFields returns the fields for the required drop down with the
 // transactions view page. Since maps access of items order is always random
-// an array of keys is provided guarantee the dropdown order will always be
+// an array of keys is provided to guarantee the dropdown order will always be
 // maintained.
 func TxPageDropDownFields(wType libutils.AssetType, tabIndex int) (mapInfo map[string]int32, keysInfo []string) {
 	switch {

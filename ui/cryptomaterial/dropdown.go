@@ -36,6 +36,8 @@ type DropDown struct {
 	linearLayout        *LinearLayout
 	padding             layout.Inset
 	shadow              *Shadow
+
+	noSelectedItemText string
 }
 
 type DropDownItem struct {
@@ -90,8 +92,9 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
-func (d *DropDown) ClearSelection() {
+func (d *DropDown) ClearSelection(text string) {
 	d.selectedIndex = -1
+	d.noSelectedItemText = text
 }
 
 func (d *DropDown) SelectedIndex() int {
@@ -156,22 +159,22 @@ func (d *DropDown) layoutActiveIcon(gtx layout.Context, index int) D {
 }
 
 func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
-	var item DropDownItem
+	var item *DropDownItem
 	if itemIndex > -1 {
-		item = d.items[itemIndex]
+		item = &d.items[itemIndex]
 	}
 
 	radius := Radius(8)
 	clickable := d.clickable
 	if d.isOpen {
 		radius = Radius(0)
-		if item.clickable != nil {
+		if item != nil {
 			clickable = item.clickable
 		}
 	}
 
 	padding := values.MarginPadding10
-	if item.Icon != nil {
+	if item != nil && item.Icon != nil {
 		padding = values.MarginPadding8
 	}
 
@@ -189,7 +192,7 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 		Border:    Border{Radius: radius},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if item.Icon == nil {
+			if item == nil || item.Icon == nil {
 				return layout.Dimensions{}
 			}
 
@@ -203,11 +206,13 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 				Right: unit.Dp(5),
 				Left:  unit.Dp(5),
 			}.Layout(gtx, func(gtx C) D {
-				txt := item.Text
-				if !d.isOpen && len(txt) > 14 {
+				var txt string
+				if item == nil {
+					txt = d.noSelectedItemText
+				} else if !d.isOpen && len(txt) > 14 {
 					txt = item.Text[:14] + "..."
-				} else if txt == "" {
-					txt = "Select a wallet"
+				} else {
+					txt = item.Text
 				}
 
 				return d.theme.Body2(txt).Layout(gtx)
