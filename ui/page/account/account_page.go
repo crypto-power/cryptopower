@@ -109,8 +109,10 @@ func (pg *Page) Layout(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.headerLayout),
 					layout.Rigid(func(gtx C) D {
-						return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
-							return pg.accountItem(gtx, pg.accounts[i], i == len(pg.accounts)-1)
+						return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+							return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
+								return pg.accountItem(gtx, pg.accounts[i], i == len(pg.accounts)-1)
+							})
 						})
 					}),
 				)
@@ -120,7 +122,10 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) headerLayout(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPaddingMinus12}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{
+		Top:    values.MarginPaddingMinus24,
+		Bottom: values.MarginPaddingMinus12,
+	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				txt := pg.Theme.Label(values.TextSize20, values.String(values.StrAccounts))
@@ -135,29 +140,23 @@ func (pg *Page) headerLayout(gtx C) D {
 }
 
 func (pg *Page) addAccountLayout(gtx C) D {
-	return layout.Inset{
-		Left:   values.MarginPadding24,
-		Top:    values.MarginPadding16,
-		Bottom: values.MarginPadding24,
-	}.Layout(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:      cryptomaterial.WrapContent,
-			Height:     cryptomaterial.WrapContent,
-			Background: pg.Theme.Color.DefaultThemeColors().SurfaceHighlight,
-			Clickable:  pg.addAccountBtn,
-			Alignment:  layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(pg.Theme.Icons.BlueAddIcon.Layout16dp),
-			layout.Rigid(func(gtx C) D {
-				txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddNewAccount))
-				txt.Color = pg.Theme.Color.DefaultThemeColors().Primary
-				txt.Font.Weight = font.SemiBold
-				return layout.Inset{
-					Left: values.MarginPadding8,
-				}.Layout(gtx, txt.Layout)
-			}),
-		)
-	})
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.WrapContent,
+		Height:     cryptomaterial.WrapContent,
+		Background: pg.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+		Clickable:  pg.addAccountBtn,
+		Alignment:  layout.Middle,
+	}.Layout(gtx,
+		layout.Rigid(pg.Theme.Icons.AddIcon.Layout16dp),
+		layout.Rigid(func(gtx C) D {
+			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddNewAccount))
+			txt.Color = pg.Theme.Color.DefaultThemeColors().Primary
+			txt.Font.Weight = font.SemiBold
+			return layout.Inset{
+				Left: values.MarginPadding8,
+			}.Layout(gtx, txt.Layout)
+		}),
+	)
 }
 
 func (pg *Page) accountItem(gtx C, account *sharedW.Account, isHiddenLine bool) D {
