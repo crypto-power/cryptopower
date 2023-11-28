@@ -598,7 +598,7 @@ const EN = `
 "tickets" = "Tickets"
 "ticketSettingSaved" = "Auto ticket purchase setting saved successfully."
 "ticketVotedTitle" = "Ticket, Voted"
-"timeLeft" = "%v left"
+"timeLeftFmt" = "%v left"
 "to" = "To"
 "token" = "Token:   %s"
 "total" = "Total"
@@ -791,4 +791,7 @@ const EN = `
 "assets" = "Assets"
 "noWalletsAvailable" = "You cannot spend from a watch only wallet, try creating another wallet."
 "createAssetWalletToSwapMsg" = "You need to create a %s wallet to swap."
+"stakingInfo" = "Staking Info"
+"timeLeft" = "Time Left"
+"totalReward" = "Total Reward"
 `

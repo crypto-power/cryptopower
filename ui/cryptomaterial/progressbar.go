@@ -38,13 +38,13 @@ type ProgressBarItem struct {
 type MultiLayerProgressBar struct {
 	t *Theme
 
-	items            []ProgressBarItem
-	Radius           CornerRadius
-	Height           unit.Dp
-	Width            unit.Dp
-	total            float64
-	ShowLedger       bool
-	ShowOverLayValue bool
+	items                []ProgressBarItem
+	Radius               CornerRadius
+	Height               unit.Dp
+	Width                unit.Dp
+	total                float64
+	ShowOverLayValue     bool
+	ShowOtherWidgetFirst bool
 }
 
 func (t *Theme) ProgressBar(progress int) ProgressBarStyle {
@@ -221,18 +221,35 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 	)
 }
 
-func (mp *MultiLayerProgressBar) Layout(gtx C, labelWdg layout.Widget) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+func (mp *MultiLayerProgressBar) Layout(gtx C, additionalWidget layout.Widget) D {
+	if additionalWidget == nil {
+		// We're only displaying the progress bar, no need for flex layout to wrap it.
+		// TODO: Verify if a top padding is necessary if we're only displaying the progressbar.
+		return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
+	}
+
+	progressBarTopPadding, otherWidget := values.MarginPadding24, additionalWidget
+	if !mp.ShowOtherWidgetFirst {
+		// reduce the top padding if we're showing the progress bar before the other widget
+		progressBarTopPadding = values.MarginPadding5
+		otherWidget = func(gtx C) D {
+			return layout.Center.Layout(gtx, additionalWidget)
+		}
+	}
+
+	flexWidgets := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, mp.progressBarLayout)
+			return layout.Inset{Top: progressBarTopPadding}.Layout(gtx, mp.progressBarLayout)
 		}),
-		layout.Rigid(func(gtx C) D {
-			if mp.ShowLedger {
-				return layout.Center.Layout(gtx, labelWdg)
-			}
-			return D{}
-		}),
-	)
+		layout.Rigid(otherWidget),
+	}
+
+	if mp.ShowOtherWidgetFirst {
+		// Swap the label and progress bar...
+		flexWidgets[0], flexWidgets[1] = flexWidgets[1], flexWidgets[0]
+	}
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexWidgets...)
 }
 
 func (t *Theme) ProgressBarCirle(progress int) ProgressCircleStyle {
