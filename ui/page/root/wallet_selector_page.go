@@ -213,7 +213,7 @@ func (pg *WalletSelectorPage) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) Layout(gtx C) D {
 	pg.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -233,7 +233,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
 			top := values.MarginPadding15
 			bottom := values.MarginPadding0
-			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			if pg.Load.IsMobileView() {
 				top = values.MarginPadding0
 				bottom = values.MarginPadding15
 			}
@@ -251,7 +251,7 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		width := gtx.Dp(values.MarginPadding550)
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		if pg.Load.IsMobileView() {
 			width = pg.Load.GetCurrentAppWidth()
 		}
 		return cryptomaterial.LinearLayout{
