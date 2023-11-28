@@ -34,8 +34,9 @@ func (pageStack *PageStack) Top() Page {
 
 // PushAndNavigate pushes the specified page to the top of the stack, removing
 // all other instances of the same page from the stack and executes the
-// OnNavigatedTo() on the newPage while page.OnNavigatedFrom() is called on the
-// current page to signal that the current page is no longer the displayed page.
+// OnNavigatedTo() method on the newPage while page.OnNavigatedFrom() is called
+// on the current page to signal that the current page is no longer the
+// displayed page.
 func (pageStack *PageStack) PushAndNavigate(newPage Page, navigator PageNavigator) bool {
 	pageStack.mtx.Lock()
 	defer pageStack.mtx.Unlock()
