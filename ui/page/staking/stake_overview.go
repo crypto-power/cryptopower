@@ -110,7 +110,7 @@ func (pg *Page) OnNavigatedTo() {
 
 		go func() {
 			pg.showMaterialLoader = true
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(true, pg.ParentWindow())
 			pg.showMaterialLoader = false
 		}()
 	}

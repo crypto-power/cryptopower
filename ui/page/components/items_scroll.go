@@ -6,16 +6,18 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/widget"
+
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 )
 
+const maxListSize = 150
+
 // ScrollFunc is a query function that accepts offset and pagesize parameters and
-// returns data interface, count of the items in the data interface, isReset and an error.
-// isReset is used to reset the offset value.
-type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, isReset bool, err error)
+// returns data interface and an error.
+type ScrollFunc[T any] func(offset, pageSize int32) (data []T, err error)
 
 type Scroll[T any] struct {
 	load      *load.Load
@@ -58,7 +60,8 @@ func NewScroll[T any](load *load.Load, pageSize int32, queryFunc ScrollFunc[T]) 
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) {
+// If reset is true, the offset value will be reset to 0.
+func (s *Scroll[T]) FetchScrollData(reset bool, window app.WindowNavigator) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -67,8 +70,8 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 		s.offset -= s.pageSize
 	}
 	s.mu.Unlock()
-
-	s.fetchScrollData(isReverse, window)
+	// set isReverse = false since this method is only called when scrolling down
+	s.fetchScrollData(false, reset, window)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -76,38 +79,37 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) fetchScrollData(isReverse, reset bool, window app.WindowNavigator) {
 	s.mu.Lock()
+
+	if reset {
+		s.resetList()
+	}
+
+	// reset loaded items if we have loaded all items and we are scrolling back to the top
+	if isReverse && s.loadedAllItems {
+		s.loadedAllItems = false
+	}
 
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
 		return
 	}
 
 	if isReverse {
-		s.list.Position.Offset = s.scrollView*-1 + 1
-		s.list.Position.OffsetLast = 1
 		s.offset -= s.pageSize
 	} else {
-		s.list.Position.Offset = 1
-		s.list.Position.OffsetLast = s.scrollView*-1 + 1
-		if s.data != nil {
+		if s.data != nil && !reset {
 			s.offset += s.pageSize
 		}
 	}
 
 	s.isLoadingItems = true
-	s.itemsCount = -1 // should trigger loading icon
 	offset := s.offset
 	tempSize := s.pageSize
 
 	s.mu.Unlock()
 
-	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
-	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
-	}
+	items, err := s.queryFunc(offset, tempSize)
 
 	s.mu.Lock()
 
@@ -120,20 +122,28 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 		return
 	}
 
-	if itemsLen > int(tempSize) {
+	itemsLen := len(items)
+	if itemsLen < int(tempSize) {
 		// Since this is the last page set of items, prevent further scroll down queries.
 		s.loadedAllItems = true
 	}
 
-	s.data = items
+	if isReverse {
+		s.data = append(items, s.data...)
+		s.data = s.data[:len(s.data)-int(s.pageSize)]
+	} else {
+		s.data = append(s.data, items...) // append to existing record
+		if len(s.data) > maxListSize {
+			s.data = s.data[int(s.pageSize):]
+		}
+	}
+
+	// set default scroll position to half the page to make navigation fluid
+	s.list.Position.Offset = int(float32(s.list.Position.Length) * 0.5)
+
 	s.itemsCount = itemsLen
 	s.isLoadingItems = false
 	s.mu.Unlock()
-
-	if isReset {
-		// resets the values for use on the next iteration.
-		s.resetList()
-	}
 }
 
 // FetchedData returns the latest queried data.
@@ -184,11 +194,6 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	}
 
 	scrollPos := s.list.Position
-	// Ignore if the query hasn't been invoked to fetch list items.
-	if s.itemsCount < int(s.pageSize) && s.itemsCount != -1 {
-		s.mu.Unlock()
-		return
-	}
 
 	// Ignore if the query is in theprocess of fetching the list items.
 	if s.itemsCount == -1 && s.isLoadingItems {
@@ -225,23 +230,20 @@ func (s *Scroll[T]) OnScrollChangeListener(window app.WindowNavigator) {
 	s.prevScrollView = s.scrollView
 
 	if isScrollingDown {
-		// Enforce the first item to be at the list top.
-		s.list.ScrollToEnd = false
-		s.list.Position.BeforeEnd = false
-
 		s.mu.Unlock()
+		// returning here prevents the application from freezing when the
+		// last item is reached.
+		if s.loadedAllItems {
+			return
+		}
 
-		go s.fetchScrollData(false, window)
+		go s.fetchScrollData(false, false, window)
 	}
 
 	if isScrollingUp {
-		// Enforce the first item to be at the list bottom.
-		s.list.ScrollToEnd = true
-		s.list.Position.BeforeEnd = true
-
 		s.mu.Unlock()
 
-		go s.fetchScrollData(true, window)
+		go s.fetchScrollData(true, false, window)
 	}
 
 	if !isScrollingUp && !isScrollingDown {
