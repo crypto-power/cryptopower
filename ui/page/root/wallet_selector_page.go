@@ -208,11 +208,10 @@ func (pg *WalletSelectorPage) OnNavigatedFrom() {
 	pg.stopSyncProgressListeners()
 }
 
-// Layout draws the page UI components into the provided C
+// Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) Layout(gtx C) D {
-	pg.SetCurrentAppWidth(gtx.Constraints.Max.X)
 	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
@@ -250,12 +249,12 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		width := gtx.Dp(values.MarginPadding550)
+		width := values.MarginPadding550
 		if pg.Load.IsMobileView() {
-			width = pg.Load.GetCurrentAppWidth()
+			width = pg.Load.CurrentAppWidth()
 		}
 		return cryptomaterial.LinearLayout{
-			Width:  width,
+			Width:  gtx.Dp(width),
 			Height: cryptomaterial.MatchParent,
 			Margin: layout.Inset{
 				Bottom: values.MarginPadding30,

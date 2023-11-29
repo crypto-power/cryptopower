@@ -212,6 +212,8 @@ func (win *Window) HandleEvents() {
 // describes what to display and how to handle input. This operations list
 // is returned to the caller for displaying on screen.
 func (win *Window) handleFrameEvent(evt system.FrameEvent) *op.Ops {
+	win.load.SetCurrentAppWidth(evt.Size.X, evt.Metric)
+
 	switch {
 	case win.navigator.CurrentPage() == nil:
 		// Prepare to display the StartPage if no page is currently displayed.

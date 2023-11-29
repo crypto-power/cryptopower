@@ -29,10 +29,9 @@ type Load struct {
 
 	Theme *cryptomaterial.Theme
 
-	WL              *WalletLoad
-	Printer         *message.Printer
-	Network         string
-	CurrentAppWidth int
+	WL      *WalletLoad
+	Printer *message.Printer
+	Network string
 
 	Toast *notification.Toast
 

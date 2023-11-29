@@ -218,7 +218,7 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)

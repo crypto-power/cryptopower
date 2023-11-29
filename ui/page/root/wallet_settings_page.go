@@ -172,7 +172,7 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 		})
 	}
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)
