@@ -362,8 +362,7 @@ func (hp *HomePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (hp *HomePage) Layout(gtx C) D {
-	hp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if hp.Load.IsMobileView() {
 		return hp.layoutMobile(gtx)
 	}
 	return hp.layoutDesktop(gtx)
@@ -438,7 +437,7 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(hp.totalBalanceLayout),
 		layout.Rigid(func(gtx C) D {
-			if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			if hp.Load.IsMobileView() {
 				return D{}
 			}
 
@@ -513,7 +512,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			Orientation: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				if hp.Load.IsMobileView() {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(hp.totalBalanceTextAndIconButtonLayout),
 						layout.Rigid(hp.notificationSettingsLayout),
@@ -523,7 +522,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			}),
 			layout.Rigid(hp.balanceLayout),
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.GetCurrentAppWidth() > gtx.Dp(values.StartMobileView) {
+				if hp.Load.IsMobileView() {
 					return D{}
 				}
 				card := hp.Theme.Card()
@@ -675,7 +674,7 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 					Alignment:   layout.Middle,
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+						if hp.Load.IsMobileView() {
 							return D{}
 						}
 						return hp.drawerNav.LayoutTopBar(gtx)

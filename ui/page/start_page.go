@@ -215,8 +215,7 @@ func (sp *startPage) OnNavigatedFrom() {}
 // Part of the load.Page interface.
 func (sp *startPage) Layout(gtx C) D {
 	gtx.Constraints.Min = gtx.Constraints.Max // use maximum height & width
-	sp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if sp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if sp.Load.IsMobileView() {
 		return sp.layoutMobile(gtx)
 	}
 	return sp.layoutDesktop(gtx)

@@ -112,7 +112,7 @@ func (pg *LTCAcctDetailsPage) Layout(gtx C) D {
 			return layout.Inset{Bottom: m}.Layout(gtx, pg.extendedPubkey)
 		},
 	}
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, widgets)
 	}
 	return pg.layoutDesktop(gtx, widgets)

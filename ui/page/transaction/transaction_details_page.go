@@ -320,7 +320,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 		return sp.CombinedLayout(pg.ParentWindow(), gtx)
 	}
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)

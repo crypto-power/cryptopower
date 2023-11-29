@@ -364,9 +364,8 @@ func (mp *MainPage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (mp *MainPage) Layout(gtx C) D {
-	mp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
 	// TODO: mobile layout
-	// if mp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	// if mp.Load.IsMobileView() {
 	// 	return mp.layoutMobile(gtx)
 	// }
 	return mp.layoutDesktop(gtx)

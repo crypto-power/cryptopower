@@ -275,7 +275,7 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		if pg.Load.IsMobileView() {
 			return pg.layoutMobile(gtx)
 		}
 		return pg.layoutDesktop(gtx)
