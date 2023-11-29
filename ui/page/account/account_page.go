@@ -123,10 +123,10 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) headerLayout(gtx C) D {
 	return layout.Inset{
-		Top:    values.MarginPaddingMinus24,
-		Bottom: values.MarginPaddingMinus12,
+		Top:    values.MarginPadding24,
+		Bottom: values.MarginPadding12,
 	}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				txt := pg.Theme.Label(values.TextSize20, values.String(values.StrAccounts))
 				txt.Font.Weight = font.SemiBold

@@ -78,8 +78,8 @@ func (c Container) Layout(gtx layout.Context, w layout.Widget) layout.Dimensions
 	return c.Padding.Layout(gtx, w)
 }
 
-// UniformInset returns an Inset with a single inset applied to horizontal
-// edges.
+// UniformHorizontalInset creates an inset with the specified amount applied uniformly to both the left and right edges.
+// This function is useful for ensuring consistent horizontal padding or margin around elements, without affecting the vertical spacing.
 func UniformHorizontalInset(v unit.Dp) layout.Inset {
 	return layout.Inset{Right: v, Left: v}
 }
