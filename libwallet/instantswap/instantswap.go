@@ -184,7 +184,6 @@ func (instantSwap *InstantSwap) GetOrderByIDRaw(orderID int) (*Order, error) {
 }
 
 func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params Order) (*Order, error) {
-	const op errors.Op = "instantSwap.CreateOrder"
 
 	data := instantswap.CreateOrder{
 		RefundAddress:  params.RefundAddress,      // if the trading fails, the exchange will refund coins here
@@ -200,7 +199,7 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 
 	res, err := exchangeObject.CreateOrder(data)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	order := &Order{
