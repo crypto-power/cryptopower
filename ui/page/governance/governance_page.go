@@ -112,7 +112,7 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 func (pg *Page) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)

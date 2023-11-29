@@ -140,7 +140,7 @@ func (pg *BackupInstructionsPage) Layout(gtx layout.Context) layout.Dimensions {
 	layout := func(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	isMobile := pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView)
+	isMobile := pg.Load.IsMobileView()
 	return container(gtx, isMobile, *pg.Theme, layout, "", pg.viewSeedBtn, true)
 }
 

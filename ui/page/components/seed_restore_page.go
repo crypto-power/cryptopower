@@ -144,8 +144,7 @@ func (pg *SeedRestore) setEditorFocus() {
 func (pg *SeedRestore) Layout(gtx C) D {
 	var body D
 
-	pg.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		body = pg.restoreMobile(gtx)
 	} else {
 		body = pg.restore(gtx)
