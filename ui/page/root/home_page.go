@@ -19,6 +19,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
+	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -60,6 +61,7 @@ type HomePage struct {
 
 var navigationTabTitles = []string{
 	values.String(values.StrOverview),
+	values.String(values.StrTransactions),
 	values.String(values.StrWallets),
 	values.String(values.StrTrade),
 	values.String(values.StrGovernance),
@@ -200,6 +202,8 @@ func (hp *HomePage) HandleUserInteractions() {
 		switch hp.navigationTab.SelectedTab() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+		case values.String(values.StrTransactions):
+			pg = transaction.NewTransactionsPage(hp.Load, true)
 		case values.String(values.StrWallets):
 			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
@@ -277,6 +281,8 @@ func (hp *HomePage) HandleUserInteractions() {
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
+			case values.String(values.StrGovernance):
+				pg = governance.NewGovernancePage(hp.Load)
 			}
 
 			if pg == nil || hp.ID() == hp.CurrentPageID() {

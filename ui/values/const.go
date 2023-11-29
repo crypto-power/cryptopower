@@ -7,4 +7,5 @@ const (
 	ConsensusDropdownGroup
 	OrderStatusDropdownGroup
 	DEXServerDropdownGroup
+	WalletsDropdownGroup
 )

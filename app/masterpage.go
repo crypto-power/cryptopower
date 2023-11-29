@@ -43,7 +43,7 @@ func (masterPage *MasterPage) CurrentPageID() string {
 // from the backstack.
 // Part of the PageNavigator interface.
 func (masterPage *MasterPage) Display(newPage Page) {
-	pushed := masterPage.subPages.Push(newPage, masterPage)
+	pushed := masterPage.subPages.PushAndNavigate(newPage, masterPage)
 	if pushed {
 		masterPage.ParentWindow().Reload()
 	}

@@ -35,6 +35,16 @@ const (
 	MainPageID = "Main"
 )
 
+var PageNavigationMap = map[string]string{
+	values.String(values.StrInfo):         info.InfoID,
+	values.String(values.StrSend):         send.SendPageID,
+	values.String(values.StrReceive):      ReceivePageID,
+	values.String(values.StrTransactions): transaction.TransactionsPageID,
+	values.String(values.StrSettings):     WalletSettingsPageID,
+	values.String(values.StrStakeShuffle): privacy.AccountMixerPageID,
+	values.String(values.StrStaking):      staking.OverviewPageID,
+}
+
 type MainPage struct {
 	*app.MasterPage
 	*load.Load
@@ -57,6 +67,9 @@ type MainPage struct {
 
 	totalBalanceUSD string
 
+	activeTab         map[string]string
+	PageNavigationMap map[string]string
+
 	showNavigationFunc func()
 }
 
@@ -67,6 +80,8 @@ func NewMainPage(l *load.Load, showNavigationFunc func()) *MainPage {
 		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 		showNavigationFunc: showNavigationFunc,
 	}
+
+	mp.activeTab = make(map[string]string)
 
 	mp.selectedWallet = mp.WL.SelectedWallet.Wallet
 
@@ -115,6 +130,8 @@ func (mp *MainPage) OnNavigatedTo() {
 	} else {
 		mp.CurrentPage().OnNavigatedTo()
 	}
+	// set active tab value
+	mp.activeTab[mp.pageNavigationTab.SelectedSegment()] = mp.CurrentPageID()
 
 	mp.listenForNotifications() // ntfn listeners are stopped in OnNavigatedFrom().
 
@@ -245,7 +262,7 @@ func (mp *MainPage) HandleUserInteractions() {
 		case values.String(values.StrInfo):
 			pg = info.NewInfoPage(mp.Load)
 		case values.String(values.StrTransactions):
-			pg = transaction.NewTransactionsPage(mp.Load)
+			pg = transaction.NewTransactionsPage(mp.Load, false)
 		case values.String(values.StrStakeShuffle):
 			dcrUniqueImpl := mp.selectedWallet.(*dcr.Asset)
 			if dcrUniqueImpl != nil {
@@ -263,7 +280,21 @@ func (mp *MainPage) HandleUserInteractions() {
 			pg = NewWalletSettingsPage(mp.Load, mp.showNavigationFunc)
 		}
 
+		mp.activeTab[mp.pageNavigationTab.SelectedSegment()] = pg.ID()
+
 		displayPage(pg)
+	}
+
+	// update active page tab. This is needed for scenarios where a page is
+	// navigated to without using the page navigation tab. An example is
+	// the redirection action from the info page to the mixer page.
+	if mp.CurrentPageID() != mp.activeTab[mp.pageNavigationTab.SelectedSegment()] {
+		for tabTitle, pageID := range PageNavigationMap {
+			if mp.CurrentPageID() == pageID {
+				mp.activeTab[tabTitle] = mp.CurrentPageID()
+				mp.pageNavigationTab.SetSelectedSegment(tabTitle)
+			}
+		}
 	}
 
 	for mp.hideBalanceButton.Clicked() {

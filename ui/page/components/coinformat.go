@@ -21,7 +21,7 @@ var (
 	noDecimal                 = regexp.MustCompile(`([0-9]{1,3},*)+`)
 )
 
-func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, scale float32, col color.NRGBA, displayUnitText bool) D {
+func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, col color.NRGBA, isBoldText, displayUnitText bool) D {
 
 	startIndex := 0
 	stopIndex := 0
@@ -45,29 +45,36 @@ func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, sca
 
 	mainText, subText, unitText := amount[:startIndex], amount[startIndex:stopIndex], amount[stopIndex:]
 
-	subTextSize := unit.Sp(float32(mainTextSize) * scale)
+	subTextSize := unit.Sp(float32(mainTextSize) * defaultScale)
+
+	lblWidget := func(size unit.Sp, text string) D {
+		lbl := l.Theme.Label(size, text)
+		lbl.Color = col
+
+		if isBoldText {
+			lbl.Font.Weight = font.SemiBold
+		}
+
+		return lbl.Layout(gtx)
+	}
 
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			txt := l.Theme.Label(mainTextSize, mainText)
-			txt.Color = col
-			return txt.Layout(gtx)
+			return lblWidget(mainTextSize, mainText)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := l.Theme.Label(subTextSize, subText)
-			txt.Color = col
-			return txt.Layout(gtx)
+			return lblWidget(subTextSize, subText)
 		}),
 		layout.Rigid(func(gtx C) D {
 			if displayUnitText {
-				return l.Theme.Label(mainTextSize, unitText).Layout(gtx)
+				return lblWidget(mainTextSize, unitText)
 			}
-			return l.Theme.Label(subTextSize, unitText).Layout(gtx)
+			return lblWidget(subTextSize, unitText)
 		}),
 	)
 }
 
-func formatBalanceWithHiden(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, textFont font.Weight, col color.NRGBA, isUSD bool) D {
+func formatBalanceWithHidden(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, textFont font.Weight, col color.NRGBA, isUSD bool) D {
 	isBalanceHidden := l.WL.AssetsManager.IsTotalBalanceVisible()
 	txt := l.Theme.Label(mainTextSize, amount)
 	if isUSD {
@@ -108,45 +115,45 @@ func getIndexUnit(amount string) int {
 // LayoutBalance aligns the main and sub DCR balances horizontally, putting the sub
 // balance at the baseline of the row.
 func LayoutBalance(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
-	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, l.Theme.Color.Text, false)
+	return formatBalance(gtx, l, amount, values.TextSize20, l.Theme.Color.Text, false, false)
 }
 
 func LayoutBalanceWithUnit(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
-	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, l.Theme.Color.PageNavText, true)
+	return formatBalance(gtx, l, amount, values.TextSize20, l.Theme.Color.PageNavText, false, true)
 }
 
 func LayoutBalanceWithUnitSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
-	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.PageNavText, true)
+	return formatBalance(gtx, l, amount, mainTextSize, l.Theme.Color.PageNavText, false, true)
+}
+
+func LayoutBalanceWithUnitSizeBoldText(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
+	return formatBalance(gtx, l, amount, mainTextSize, l.Theme.Color.PageNavText, true, true)
 }
 
 func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp) layout.Dimensions {
-	return formatBalance(gtx, l, amount, mainTextSize, defaultScale, l.Theme.Color.Text, false)
-}
-
-func LayoutBalanceSizeScale(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, scale float32) layout.Dimensions {
-	return formatBalance(gtx, l, amount, mainTextSize, scale, l.Theme.Color.Text, false)
+	return formatBalance(gtx, l, amount, mainTextSize, l.Theme.Color.Text, false, false)
 }
 
 func LayoutBalanceColor(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
-	return formatBalance(gtx, l, amount, values.TextSize20, defaultScale, color, false)
+	return formatBalance(gtx, l, amount, values.TextSize20, color, false, false)
 }
 
 func LayoutBalanceWithState(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
-	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, false)
+	return formatBalanceWithHidden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, false)
 }
 
 func LayoutBalanceColorWithState(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
-	return formatBalanceWithHiden(gtx, l, amount, values.TextSize20, font.Normal, color, false)
+	return formatBalanceWithHidden(gtx, l, amount, values.TextSize20, font.Normal, color, false)
 }
 
 func LayoutBalanceWithStateSemiBold(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
-	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.SemiBold, l.Theme.Color.Text, false)
+	return formatBalanceWithHidden(gtx, l, amount, values.TextSize16, font.SemiBold, l.Theme.Color.Text, false)
 }
 
 func LayoutBalanceWithStateUSD(gtx layout.Context, l *load.Load, amount string) layout.Dimensions {
-	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, true)
+	return formatBalanceWithHidden(gtx, l, amount, values.TextSize16, font.Normal, l.Theme.Color.Text, true)
 }
 
 func LayoutBalanceColorWithStateUSD(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
-	return formatBalanceWithHiden(gtx, l, amount, values.TextSize16, font.Normal, color, true)
+	return formatBalanceWithHidden(gtx, l, amount, values.TextSize16, font.Normal, color, true)
 }

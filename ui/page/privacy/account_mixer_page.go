@@ -165,10 +165,12 @@ func (pg *AccountMixerPage) mixerProgressBarLayout(gtx C) D {
 		return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.LayoutIconAndText(pg.Load, gtx, "", pg.mixedBalance.String(), items[0].Color)
+					text := pg.mixedBalance.String()
+					return components.LayoutIconAndTextWithSize(pg.Load, gtx, text, items[0].Color, values.TextSize14, values.MarginPadding8)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return components.LayoutIconAndText(pg.Load, gtx, "", pg.unmixedBalance.String(), items[1].Color)
+					text := pg.unmixedBalance.String()
+					return components.LayoutIconAndTextWithSize(pg.Load, gtx, text, items[1].Color, values.TextSize14, values.MarginPadding8)
 				}),
 			)
 		})
