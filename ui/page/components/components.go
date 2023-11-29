@@ -66,6 +66,13 @@ type (
 	DexServer struct {
 		SavedHosts map[string][]byte
 	}
+
+	FlexOptions struct {
+		Axis      layout.Axis
+		Spacing   layout.Spacing
+		Alignment layout.Alignment
+		WeightSum float32
+	}
 )
 
 // Container is simply a wrapper for the Inset type. Its purpose is to differentiate the use of an inset as a padding or
@@ -1002,4 +1009,16 @@ func InputsNotEmpty(editors ...*widget.Editor) bool {
 		}
 	}
 	return true
+}
+
+func FlexLayout(gtx C, options FlexOptions, widgets []func(gtx C) D) D {
+	flexChildren := make([]layout.FlexChild, len(widgets))
+	for i, widget := range widgets {
+		flexChildren[i] = layout.Rigid(widget)
+	}
+
+	return layout.Flex{
+		Axis:      options.Axis,
+		Alignment: options.Alignment,
+	}.Layout(gtx, flexChildren...)
 }
