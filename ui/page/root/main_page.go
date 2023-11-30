@@ -149,6 +149,7 @@ func (mp *MainPage) OnNavigatedTo() {
 func (mp *MainPage) initTabOptions() {
 	commonTabs := []string{
 		values.String(values.StrInfo),
+		values.String(values.StrReceive),
 		values.String(values.StrTransactions),
 		values.String(values.StrSettings),
 	}
@@ -156,7 +157,6 @@ func (mp *MainPage) initTabOptions() {
 	if !mp.selectedWallet.IsWatchingOnlyWallet() {
 		restrictedAccessTabs := []string{
 			values.String(values.StrSend),
-			values.String(values.StrReceive),
 		}
 
 		// update the tab options with additional items at specific index
@@ -170,8 +170,8 @@ func (mp *MainPage) initTabOptions() {
 		}
 
 		insertIndex := 4
-		if len(commonTabs) == 3 {
-			insertIndex = 2
+		if len(commonTabs) == 4 {
+			insertIndex = 3
 		}
 
 		// update the tab options with additional items at specific index
