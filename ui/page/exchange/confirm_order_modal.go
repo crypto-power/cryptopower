@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"fmt"
+
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"

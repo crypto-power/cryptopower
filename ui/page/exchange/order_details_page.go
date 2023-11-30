@@ -15,7 +15,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-
 	api "github.com/crypto-power/instantswap/instantswap"
 )
 
