@@ -149,10 +149,18 @@ func (mp *MainPage) OnNavigatedTo() {
 func (mp *MainPage) initTabOptions() {
 	commonTabs := []string{
 		values.String(values.StrInfo),
-		values.String(values.StrSend),
 		values.String(values.StrReceive),
 		values.String(values.StrTransactions),
 		values.String(values.StrSettings),
+	}
+
+	if !mp.selectedWallet.IsWatchingOnlyWallet() {
+		restrictedAccessTabs := []string{
+			values.String(values.StrSend),
+		}
+
+		// update the tab options with additional items at specific index
+		commonTabs = append(commonTabs[:1], append(restrictedAccessTabs, commonTabs[1:]...)...)
 	}
 
 	if mp.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
@@ -161,8 +169,13 @@ func (mp *MainPage) initTabOptions() {
 			values.String(values.StrStaking),
 		}
 
+		insertIndex := 4
+		if len(commonTabs) == 4 {
+			insertIndex = 3
+		}
+
 		// update the tab options with additional items at specific index
-		commonTabs = append(commonTabs[:4], append(dcrSpecificTabs, commonTabs[4:]...)...)
+		commonTabs = append(commonTabs[:insertIndex], append(dcrSpecificTabs, commonTabs[insertIndex:]...)...)
 	}
 
 	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs)
