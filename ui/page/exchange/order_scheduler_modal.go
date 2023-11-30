@@ -526,7 +526,7 @@ func getNetwork(coinName string, currencies []api.Currency) string {
 	}
 	for _, network := range currency.Networks {
 		var lowerNetwork = strings.ToLower(network)
-		if lowerNetwork == "mainnet" {
+		if lowerNetwork == string(libutils.Mainnet) {
 			return network
 		}
 		if lowerNetwork == lowerName {
