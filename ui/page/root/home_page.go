@@ -522,9 +522,10 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			}),
 			layout.Rigid(hp.balanceLayout),
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.IsMobileView() {
+				if !hp.Load.IsMobileView() {
 					return D{}
 				}
+
 				card := hp.Theme.Card()
 				radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
 				card.Radius = cryptomaterial.Radius(8)
