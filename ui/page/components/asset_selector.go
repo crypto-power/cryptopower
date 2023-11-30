@@ -179,7 +179,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			}.Layout(gtx, ats.selectedAssetType.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := ats.Theme.Label(values.TextSize16, ats.hint)
+			txt := ats.Theme.Label(values.TextSize14, ats.hint)
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
 				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Type.String())

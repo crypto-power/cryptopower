@@ -132,7 +132,7 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)

@@ -90,7 +90,7 @@ type TxDetailsPage struct {
 	moreOptionIsOpen bool
 }
 
-func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
+func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *sharedW.Transaction, _ /*isTicket*/ bool) *TxDetailsPage {
 	rebroadcast := l.Theme.Label(values.TextSize14, values.String(values.StrRebroadcast))
 	rebroadcast.TextSize = values.TextSize14
 	rebroadcast.Color = l.Theme.Color.Text
@@ -118,7 +118,7 @@ func NewTransactionDetailsPage(l *load.Load, transaction *sharedW.Transaction, _
 		shadowBox:                 l.Theme.Shadow(),
 
 		transaction:          transaction,
-		wallet:               l.WL.SelectedWallet.Wallet,
+		wallet:               wallet,
 		rebroadcast:          rebroadcast,
 		rebroadcastClickable: l.Theme.NewClickable(true),
 		rebroadcastIcon:      l.Theme.Icons.Rebroadcast,
@@ -249,7 +249,7 @@ func (pg *TxDetailsPage) OnNavigatedTo() {
 	}
 
 	pg.getTXSourceAccountAndDirection()
-	pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+	pg.txnWidgets = pg.initTxnWidgets()
 }
 
 func (pg *TxDetailsPage) getMoreItem() []moreItem {
@@ -292,7 +292,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 				}
 				pg.transaction = pg.txBackStack
 				pg.getTXSourceAccountAndDirection()
-				pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+				pg.txnWidgets = pg.initTxnWidgets()
 				pg.txBackStack = nil
 				pg.ParentWindow().Reload()
 			},
@@ -320,7 +320,7 @@ func (pg *TxDetailsPage) Layout(gtx C) D {
 		return sp.CombinedLayout(pg.ParentWindow(), gtx)
 	}
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)
@@ -557,6 +557,7 @@ func (pg *TxDetailsPage) txConfirmations() int32 {
 }
 
 func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
+	reqConf := pg.wallet.RequiredConfirmations()
 	transaction := pg.transaction
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -692,17 +693,17 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						if pg.txConfirmations() == 0 {
 							txt.Text = caser.String(values.String(values.StrUnconfirmedTx))
 							txt.Color = pg.Theme.Color.GrayText2
-						} else if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						} else if pg.txConfirmations() >= reqConf {
 							txt.Text = caser.String(values.String(values.StrConfirmed))
 							txt.Color = pg.Theme.Color.Success
 						} else {
-							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), pg.WL.SelectedWallet.Wallet.RequiredConfirmations()))
+							txt.Text = caser.String(values.StringF(values.StrTxStatusPending, pg.txConfirmations(), reqConf))
 							txt.Color = pg.Theme.Color.GrayText2
 						}
 						return txt.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= reqConf {
 							m := values.MarginPadding10
 							return layout.Inset{
 								Left:  m,
@@ -714,7 +715,7 @@ func (pg *TxDetailsPage) txnTypeAndID(gtx C) D {
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.txConfirmations() >= pg.WL.SelectedWallet.Wallet.RequiredConfirmations() {
+						if pg.txConfirmations() >= reqConf {
 							txt := pg.Theme.Body2(values.StringF(values.StrNConfirmations, pg.txConfirmations()))
 							txt.Color = pg.Theme.Color.GrayText2
 							return txt.Layout(gtx)
@@ -940,7 +941,7 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 			pg.txBackStack = pg.transaction
 			pg.transaction = pg.ticketSpent
 			pg.getTXSourceAccountAndDirection()
-			pg.txnWidgets = initTxnWidgets(pg.Load, pg.transaction)
+			pg.txnWidgets = pg.initTxnWidgets()
 			pg.ParentWindow().Reload()
 		}
 	}
@@ -975,6 +976,35 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 	}
 }
 
+func (pg *TxDetailsPage) initTxnWidgets() transactionWdg {
+	var txn transactionWdg
+
+	t := time.Unix(pg.transaction.Timestamp, 0).UTC()
+	txn.time = pg.Theme.Body2(t.Format(time.UnixDate))
+	txn.status = pg.Theme.Body1("")
+	txn.wallet = pg.Theme.Body2(pg.wallet.GetWalletName())
+
+	if components.TxConfirmations(pg.wallet, pg.transaction) >= pg.wallet.RequiredConfirmations() {
+		txn.status.Text = components.FormatDateOrTime(pg.transaction.Timestamp)
+		txn.confirmationIcons = pg.Theme.Icons.ConfirmIcon
+	} else {
+		txn.status.Text = values.String(values.StrPending)
+		txn.status.Color = pg.Theme.Color.GrayText2
+		txn.confirmationIcons = pg.Theme.Icons.PendingIcon
+	}
+
+	txStatus := components.TransactionTitleIcon(pg.Load, pg.wallet, pg.transaction)
+	txn.txStatus = txStatus
+
+	x := len(pg.transaction.Inputs) + len(pg.transaction.Outputs)
+	txn.copyTextButtons = make([]*cryptomaterial.Clickable, x)
+	for i := 0; i < x; i++ {
+		txn.copyTextButtons[i] = pg.Theme.NewClickable(false)
+	}
+
+	return txn
+}
+
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable
 // features that are irrelevant when the page is NOT displayed.
@@ -983,36 +1013,6 @@ func (pg *TxDetailsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *TxDetailsPage) OnNavigatedFrom() {}
-
-func initTxnWidgets(l *load.Load, transaction *sharedW.Transaction) transactionWdg {
-	var txn transactionWdg
-	wal := l.WL.SelectedWallet.Wallet
-
-	t := time.Unix(transaction.Timestamp, 0).UTC()
-	txn.time = l.Theme.Body2(t.Format(time.UnixDate))
-	txn.status = l.Theme.Body1("")
-	txn.wallet = l.Theme.Body2(wal.GetWalletName())
-
-	if components.TxConfirmations(wal, transaction) >= l.WL.SelectedWallet.Wallet.RequiredConfirmations() {
-		txn.status.Text = components.FormatDateOrTime(transaction.Timestamp)
-		txn.confirmationIcons = l.Theme.Icons.ConfirmIcon
-	} else {
-		txn.status.Text = values.String(values.StrPending)
-		txn.status.Color = l.Theme.Color.GrayText2
-		txn.confirmationIcons = l.Theme.Icons.PendingIcon
-	}
-
-	txStatus := components.TransactionTitleIcon(l, wal, transaction)
-	txn.txStatus = txStatus
-
-	x := len(transaction.Inputs) + len(transaction.Outputs)
-	txn.copyTextButtons = make([]*cryptomaterial.Clickable, x)
-	for i := 0; i < x; i++ {
-		txn.copyTextButtons[i] = l.Theme.NewClickable(false)
-	}
-
-	return txn
-}
 
 func timeString(timestamp int64) string {
 	return time.Unix(timestamp, 0).Format("Jan 2, 2006 15:04:05 PM")

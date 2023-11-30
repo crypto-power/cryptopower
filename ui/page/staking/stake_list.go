@@ -1,6 +1,7 @@
 package staking
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
 
@@ -58,8 +59,8 @@ func (pg *Page) ticketListLayout(gtx C) D {
 			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Body1(values.String(values.StrTickets))
-						txt.Color = pg.Theme.Color.GrayText2
+						txt := pg.Theme.Label(values.TextSize20, values.String(values.StrTickets))
+						txt.Font.Weight = font.SemiBold
 						return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, txt.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {

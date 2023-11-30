@@ -76,7 +76,7 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 

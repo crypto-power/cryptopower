@@ -102,7 +102,7 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 	return LinearLayout{
 		Width:      WrapContent,
 		Height:     WrapContent,
-		Background: sc.theme.Color.Background,
+		Background: sc.theme.Color.Gray2,
 		Border:     Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

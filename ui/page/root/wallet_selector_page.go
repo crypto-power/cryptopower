@@ -208,12 +208,11 @@ func (pg *WalletSelectorPage) OnNavigatedFrom() {
 	pg.stopSyncProgressListeners()
 }
 
-// Layout draws the page UI components into the provided C
+// Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSelectorPage) Layout(gtx C) D {
-	pg.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -231,7 +230,13 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 	assetDropdown := func(gtx C) D {
 		supportedAssets := pg.WL.AssetsManager.AllAssetTypes()
 		return pg.Theme.List(pg.assetDropdownContainer).Layout(gtx, len(supportedAssets), func(gtx C, i int) D {
-			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, pg.assetDropdown(supportedAssets[i]))
+			top := values.MarginPadding15
+			bottom := values.MarginPadding0
+			if pg.Load.IsMobileView() {
+				top = values.MarginPadding0
+				bottom = values.MarginPadding15
+			}
+			return layout.Inset{Top: top, Bottom: bottom}.Layout(gtx, pg.assetDropdown(supportedAssets[i]))
 		})
 	}
 
@@ -243,14 +248,18 @@ func (pg *WalletSelectorPage) pageContentLayout(gtx C) D {
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
-		Padding:   layout.UniformInset(values.MarginPadding20),
 	}.Layout2(gtx, func(gtx C) D {
+		width := values.MarginPadding550
+		if pg.Load.IsMobileView() {
+			width = pg.Load.CurrentAppWidth()
+		}
 		return cryptomaterial.LinearLayout{
-			Width:  gtx.Dp(values.MarginPadding550),
+			Width:  gtx.Dp(width),
 			Height: cryptomaterial.MatchParent,
 			Margin: layout.Inset{
 				Bottom: values.MarginPadding30,
 			},
+			Padding: layout.Inset{Left: values.MarginPadding16, Right: values.MarginPadding16},
 		}.Layout2(gtx, func(gtx C) D {
 			return pg.Theme.List(pg.scrollContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return pageContent[i](gtx)
