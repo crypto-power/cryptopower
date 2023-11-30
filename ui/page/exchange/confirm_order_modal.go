@@ -126,7 +126,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		order, err := com.createOrder()
 		if err != nil {
 			log.Error(errors.E(errors.Op("instantSwap.CreateOrder"), err))
-			com.SetError(fmt.Sprintf("%s \nHint: min and max order sometime is not always correct", err.Error()))
+			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
 		}
