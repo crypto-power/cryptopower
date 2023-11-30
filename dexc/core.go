@@ -17,8 +17,7 @@ type DEXClient struct {
 	*core.Core
 
 	shutdownChan    <-chan struct{}
-	bondBufMtx      sync.Mutex
-	bondBufferCache map[uint32]valStamp
+	bondBufferCache sync.Map
 	log             dex.Logger
 }
 
@@ -47,14 +46,18 @@ type valStamp struct {
 // asset are cached for 45 minutes. These values are meant to provide a sensible
 // but well-padded fee buffer for bond transactions now and well into the
 // future, so a long expiry is appropriate.
-func (dc *DEXClient) BondsFeeBuffer(assetID uint32) (feeBuffer uint64) {
+func (dc *DEXClient) BondsFeeBuffer(assetID uint32) uint64 {
 	const expiry = 45 * time.Minute
-	dc.bondBufMtx.Lock()
-	defer dc.bondBufMtx.Unlock()
-	if buf, ok := dc.bondBufferCache[assetID]; ok && time.Since(buf.stamp) < expiry {
-		dc.log.Tracef("Using cached bond fee buffer (%v old): %d",
-			time.Since(buf.stamp), feeBuffer)
-		return buf.val
+
+	buf, ok := dc.bondBufferCache.Load(assetID)
+	var cachedFeeBuffer valStamp
+	if ok {
+		cachedFeeBuffer = buf.(valStamp)
+	}
+
+	if ok && time.Since(cachedFeeBuffer.stamp) > expiry {
+		dc.log.Tracef("Using cached bond fee buffer (%v old): %d", time.Since(cachedFeeBuffer.stamp), cachedFeeBuffer.val)
+		return cachedFeeBuffer.val
 	}
 
 	feeBuffer, err := dc.Core.BondsFeeBuffer(assetID)
@@ -64,8 +67,7 @@ func (dc *DEXClient) BondsFeeBuffer(assetID uint32) (feeBuffer uint64) {
 	}
 
 	dc.log.Tracef("Obtained fresh bond fee buffer: %d", feeBuffer)
-	dc.bondBufferCache[assetID] = valStamp{feeBuffer, time.Now()}
-
+	dc.bondBufferCache.Store(assetID, valStamp{feeBuffer, time.Now()})
 	return feeBuffer
 }
 
@@ -96,10 +98,9 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 
 	shutdownChan := make(chan struct{})
 	dc := &DEXClient{
-		Core:            clientCore,
-		bondBufferCache: make(map[uint32]valStamp),
-		shutdownChan:    shutdownChan,
-		log:             logger,
+		Core:         clientCore,
+		shutdownChan: shutdownChan,
+		log:          logger,
 	}
 
 	// Use a goroutine to start dex core as it'll block until dex core exits.

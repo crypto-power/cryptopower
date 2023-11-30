@@ -883,11 +883,8 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	return assetsTotalUSDBalance, nil
 }
 
-func (mgr *AssetsManager) IsAssetTypeSupported(assetType utils.AssetType) bool {
-	switch assetType {
-	case utils.DCRWalletAsset, utils.BTCWalletAsset, utils.LTCWalletAsset:
-		return true
-	default:
-		return false
-	}
+// IsAssetTypeSupported is a convenience function that checks if the provided
+// utils.AssetType is supported by Cryptopower.
+func IsAssetTypeSupported(assetType utils.AssetType) bool {
+	return assetType == utils.DCRWalletAsset || utils.DCRWalletAsset == utils.BTCWalletAsset || assetType == utils.LTCWalletAsset
 }
