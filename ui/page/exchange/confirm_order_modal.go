@@ -1,15 +1,14 @@
 package exchange
 
 import (
-	"decred.org/dcrwallet/v3/errors"
 	"fmt"
-
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"

@@ -12,8 +12,6 @@ import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/crypto-power/instantswap/instantswap"
-
-	// Initialize exchange servers.
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/changelly"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/changenow"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/flypme"
