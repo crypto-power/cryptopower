@@ -12,7 +12,10 @@ import (
 	"gioui.org/op/clip"
 )
 
-const defaultDuration = 300 * time.Millisecond
+const (
+	defaultDuration   = 500 * time.Millisecond
+	defaultdragEffect = 100
+)
 
 type SwipeDirection int
 
@@ -24,16 +27,18 @@ const (
 type Dragged func(dragDirection SwipeDirection)
 
 type SliceAction struct {
-	duration time.Duration
-	push     int
-	next     *op.Ops
-	nextCall op.CallOp
-	lastCall op.CallOp
+	Duration  time.Duration
+	IsReverse bool
+	push      int
+	next      *op.Ops
+	nextCall  op.CallOp
+	lastCall  op.CallOp
 
 	t0     time.Time
 	offset float32
 
 	// animation state
+	dragEffect  int
 	dragStarted f32.Point
 	dragOffset  int
 	drag        gesture.Drag
@@ -41,11 +46,20 @@ type SliceAction struct {
 	isPushing   bool
 }
 
+func NewSliceAction() *SliceAction {
+	return &SliceAction{
+		Duration:   defaultDuration,
+		dragEffect: defaultdragEffect,
+	}
+}
+
 // PushLeft pushes the existing widget to the left.
 func (s *SliceAction) PushLeft() { s.push = 1 }
 
 // PushRight pushes the existing widget to the right.
 func (s *SliceAction) PushRight() { s.push = -1 }
+
+func (s *SliceAction) SetDragEffect(offset int) { s.dragEffect = offset }
 
 func (s *SliceAction) Draged(drag Dragged) {
 	s.draged = drag
@@ -59,12 +73,12 @@ func (s *SliceAction) DragLayout(gtx C, w layout.Widget, isWrapContent bool) D {
 			s.dragOffset = 0
 		case pointer.Drag:
 			newOffset := int(s.dragStarted.X - event.Position.X)
-			if newOffset > 100 {
+			if newOffset > s.dragEffect {
 				if !s.isPushing && s.draged != nil {
 					s.isPushing = true
 					s.draged(SwipeLeft)
 				}
-			} else if newOffset < -100 {
+			} else if newOffset < -s.dragEffect {
 				if !s.isPushing && s.draged != nil {
 					s.isPushing = true
 					s.draged(SwipeRight)
@@ -106,7 +120,7 @@ func (s *SliceAction) TransformLayout(gtx C, w layout.Widget) D {
 	}
 
 	if s.offset != 0 {
-		duration := s.duration
+		duration := s.Duration
 		if duration == 0 {
 			duration = defaultDuration
 		}
@@ -146,24 +160,29 @@ func (s *SliceAction) TransformLayout(gtx C, w layout.Widget) D {
 
 	offset := smooth(s.offset)
 
+	reverse := 1
+	if s.IsReverse {
+		reverse = -1
+	}
+
 	if s.offset > 0 {
 		defer op.Offset(image.Point{
-			X: int(float32(dims.Size.X) * (offset - 1)),
+			X: int(float32(dims.Size.X)*(offset-1)) * reverse,
 		}).Push(gtx.Ops).Pop()
 		s.lastCall.Add(gtx.Ops)
 
 		defer op.Offset(image.Point{
-			X: dims.Size.X,
+			X: dims.Size.X * reverse,
 		}).Push(gtx.Ops).Pop()
 		s.nextCall.Add(gtx.Ops)
 	} else {
 		defer op.Offset(image.Point{
-			X: int(float32(dims.Size.X) * (offset + 1)),
+			X: int(float32(dims.Size.X)*(offset+1)) * reverse,
 		}).Push(gtx.Ops).Pop()
 		s.lastCall.Add(gtx.Ops)
 
 		defer op.Offset(image.Point{
-			X: -dims.Size.X,
+			X: -dims.Size.X * reverse,
 		}).Push(gtx.Ops).Pop()
 		s.nextCall.Add(gtx.Ops)
 	}

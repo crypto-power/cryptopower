@@ -29,7 +29,7 @@ type Slider struct {
 	ButtonBackgroundColor    color.NRGBA
 	IndicatorBackgroundColor color.NRGBA
 	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
-	sliceAction              SliceAction
+	sliceAction              *SliceAction
 }
 
 var m4 = values.MarginPadding4
@@ -44,6 +44,7 @@ func (t *Theme) Slider() *Slider {
 		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
 		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
 		SelectedIndicatorColor:   t.Color.White,
+		sliceAction:              NewSliceAction(),
 	}
 
 	sl.card = sl.t.Card()

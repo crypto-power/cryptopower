@@ -30,7 +30,8 @@ type SegmentedControl struct {
 	mu      sync.Mutex
 
 	isSwipeActionEnabled bool
-	sliceAction          SliceAction
+	sliceAction          *SliceAction
+	sliceActionTitle     *SliceAction
 	segmentType          SegmentType
 }
 
@@ -46,9 +47,18 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		rightNavBtn:          t.NewClickable(false),
 		isSwipeActionEnabled: true,
 		segmentType:          segmentType,
+		sliceAction:          NewSliceAction(),
+		sliceActionTitle:     NewSliceAction(),
 	}
 
 	sc.sliceAction.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeLeft
+		sc.handleActionEvent(isNext)
+	})
+
+	sc.sliceActionTitle.SetDragEffect(50)
+
+	sc.sliceActionTitle.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeLeft
 		sc.handleActionEvent(isNext)
 	})
@@ -96,27 +106,29 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 		Border:     Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
-				isSelectedSegment := sc.SelectedIndex() == i
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					bg := sc.theme.Color.SurfaceHighlight
-					txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
-					border := Border{Radius: Radius(0)}
-					if isSelectedSegment {
-						bg = sc.theme.Color.Surface
-						txt.Color = sc.theme.Color.Text
-						border = Border{Radius: Radius(8)}
-					}
-					return LinearLayout{
-						Width:      WrapContent,
-						Height:     WrapContent,
-						Padding:    layout.UniformInset(values.MarginPadding8),
-						Background: bg,
-						Margin:     layout.UniformInset(values.MarginPadding5),
-						Border:     border,
-					}.Layout2(gtx, txt.Layout)
+			return sc.sliceActionTitle.DragLayout(gtx, func(gtx C) D {
+				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+					isSelectedSegment := sc.SelectedIndex() == i
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						bg := sc.theme.Color.SurfaceHighlight
+						txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						border := Border{Radius: Radius(0)}
+						if isSelectedSegment {
+							bg = sc.theme.Color.Surface
+							txt.Color = sc.theme.Color.Text
+							border = Border{Radius: Radius(8)}
+						}
+						return LinearLayout{
+							Width:      WrapContent,
+							Height:     WrapContent,
+							Padding:    layout.UniformInset(values.MarginPadding8),
+							Background: bg,
+							Margin:     layout.UniformInset(values.MarginPadding5),
+							Border:     border,
+						}.Layout2(gtx, txt.Layout)
+					})
 				})
-			})
+			}, true)
 		}),
 	)
 }
@@ -236,6 +248,7 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 			sc.selectedIndex++
 		}
 		sc.sliceAction.PushLeft()
+		sc.sliceActionTitle.PushLeft()
 	} else {
 		if sc.selectedIndex == 0 {
 			sc.selectedIndex = l
@@ -243,6 +256,7 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 			sc.selectedIndex--
 		}
 		sc.sliceAction.PushRight()
+		sc.sliceActionTitle.PushRight()
 	}
 	sc.changed = true
 }
