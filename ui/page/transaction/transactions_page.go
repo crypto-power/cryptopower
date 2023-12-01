@@ -40,6 +40,8 @@ var txTabs = []string{
 	values.String(values.StrStakingActivity),
 }
 
+// TransactionsPage shows transactions for a specific wallet or for all wallets.
+// TODO: Add support for showing all wallet txs.
 type TransactionsPage struct {
 	*load.Load
 	// GenericPageModal defines methods such as ID() and OnAttachedToNavigator()
@@ -64,29 +66,28 @@ type TransactionsPage struct {
 
 	materialLoader material.LoaderStyle
 
-	assetWallets   []sharedW.Asset
-	selectedWallet sharedW.Asset
+	multiwalletLayout bool
+	assetWallets      []sharedW.Asset
+	selectedWallet    sharedW.Asset
 
-	isHomepageLayout,
 	showLoader,
 	dcrWalletExists bool
 }
 
-func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage {
+func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 	pg := &TransactionsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TransactionsPageID),
 		separator:        l.Theme.Separator(),
 		transactionList:  l.Theme.NewClickableList(layout.Vertical),
-		isHomepageLayout: isHomepageLayout,
 		txCategoryTab:    l.Theme.SegmentedControl(txTabs, cryptomaterial.SegmentTypeGroup),
+		selectedWallet:   wallet,
 	}
 
-	// init the asset selector
-	if isHomepageLayout {
+	// init the wallet selector if no wallet was pre-selected
+	if pg.selectedWallet == nil {
+		pg.multiwalletLayout = true
 		pg.initWalletSelector()
-	} else {
-		pg.selectedWallet = pg.WL.SelectedWallet.Wallet
 	}
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTransactions)
@@ -114,9 +115,9 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 // filtering transactions for a specific wallet when this page is used to
 // display transactions for multiple wallets.
 func (pg *TransactionsPage) initWalletSelector() {
-	pg.assetWallets = pg.WL.AllSortedWalletList()
+	pg.assetWallets = pg.AssetsManager.AllWallets()
 	if pg.txCategoryTab.SelectedSegment() != values.String(values.StrTxOverview) {
-		pg.assetWallets = pg.WL.SortedWalletList(utils.DCRWalletAsset)
+		pg.assetWallets = pg.AssetsManager.AllDCRWallets()
 	}
 
 	if len(pg.assetWallets) > 1 {
@@ -342,7 +343,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 		})
 	}
 
-	showOverlay := pg.walletNotReady() && pg.isHomepageLayout
+	showOverlay := pg.walletNotReady() && pg.multiwalletLayout
 	if !showOverlay {
 		return txListWidget(gtx)
 	}
@@ -373,20 +374,13 @@ func (pg *TransactionsPage) layoutDesktop(gtx C) D {
 		return pg.txCategoryTab.Layout(gtx, pg.layoutBody)
 	}
 
-	items := []layout.FlexChild{}
-	items = append(items, layout.Rigid(pg.desktopLayoutContent))
-	if pg.isHomepageLayout {
-		return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		})
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+	return pg.layoutBody(gtx)
 }
 
 func (pg *TransactionsPage) layoutBody(gtx C) D {
 	items := []layout.FlexChild{}
 	items = append(items, layout.Rigid(pg.desktopLayoutContent))
-	if pg.isHomepageLayout {
+	if pg.multiwalletLayout {
 		return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 		})
@@ -484,7 +478,7 @@ func (pg *TransactionsPage) layoutMobile(gtx C) D {
 }
 
 func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
-	return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
+	return mtx.Transaction, pg.AssetsManager.WalletWithID(mtx.walletID)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -507,7 +501,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
 		transactions := pg.scroll.FetchedData()
 		tx, wal := pg.txAndWallet(transactions[selectedItem])
-		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, wal, tx, false))
+		pg.ParentNavigator().Display(NewTransactionDetailsPage(pg.Load, wal, tx))
 	}
 
 	dropDownList := []*cryptomaterial.DropDown{pg.txTypeDropDown}
@@ -518,7 +512,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	if pg.txCategoryTab.Changed() {
 		pg.selectedTxCategoryTab = pg.txCategoryTab.SelectedIndex()
-		if pg.isHomepageLayout {
+		if pg.multiwalletLayout {
 			pg.initWalletSelector()
 		}
 		if pg.walletDropDown.SelectedIndex() < 0 {

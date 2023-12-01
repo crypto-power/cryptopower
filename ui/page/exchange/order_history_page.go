@@ -91,7 +91,7 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
+		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 }
 
@@ -153,12 +153,12 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
 													var text string
-													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+													if pg.AssetsManager.InstantSwap.IsSyncing() {
 														text = values.String(values.StrSyncingState)
 													} else {
-														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
 
-														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+														if pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
 															text = values.String(values.StrNeverSynced)
 														}
 													}
@@ -177,7 +177,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 														Margin:    layout.Inset{Left: values.MarginPadding10},
 													}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
-															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+															if pg.AssetsManager.InstantSwap.IsSyncing() {
 																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
 																gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
@@ -284,7 +284,7 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, OrderHistoryPageID)
+	err := pg.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, OrderHistoryPageID)
 	if err != nil {
 		log.Errorf("Error adding instanswap notification listener: %v", err)
 		return
@@ -292,5 +292,5 @@ func (pg *OrderHistoryPage) listenForSyncNotifications() {
 }
 
 func (pg *OrderHistoryPage) stopSyncNtfnListener() {
-	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
+	pg.AssetsManager.InstantSwap.RemoveNotificationListener(OrderHistoryPageID)
 }

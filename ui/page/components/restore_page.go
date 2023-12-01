@@ -369,7 +369,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		return
 	}
 
-	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex)
+	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, seedOrHex)
 	if err != nil {
 		log.Error(err)
 		errMsg := values.String(values.StrInvalidHex)
@@ -395,7 +395,7 @@ func (pg *Restore) restoreFromSeedEditor() {
 		ShowWalletInfoTip(true).
 		SetParent(pg).
 		SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-			_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass)
+			_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, seedOrHex, password, sharedW.PassphraseTypePass)
 			if err != nil {
 				errString := err.Error()
 				if err.Error() == libutils.ErrExist {

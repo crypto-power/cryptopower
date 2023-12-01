@@ -95,11 +95,11 @@ func NewListPreference(l *load.Load, preferenceKey, defaultValue string, items [
 func (lp *ListPreferenceModal) ReadPreferenceKeyedValue() string {
 	switch lp.preferenceKey {
 	case sharedW.CurrencyConversionConfigKey:
-		return lp.WL.AssetsManager.GetCurrencyConversionExchange()
+		return lp.AssetsManager.GetCurrencyConversionExchange()
 	case sharedW.LanguagePreferenceKey:
-		return lp.WL.AssetsManager.GetLanguagePreference()
+		return lp.AssetsManager.GetLanguagePreference()
 	case sharedW.LogLevelConfigKey:
-		return lp.WL.AssetsManager.GetLogLevels()
+		return lp.AssetsManager.GetLogLevels()
 	default:
 		return ""
 	}
@@ -109,11 +109,11 @@ func (lp *ListPreferenceModal) SavePreferenceKeyedValue() {
 	val := lp.optionsRadioGroup.Value
 	switch lp.preferenceKey {
 	case sharedW.CurrencyConversionConfigKey:
-		lp.WL.AssetsManager.SetCurrencyConversionExchange(val)
+		lp.AssetsManager.SetCurrencyConversionExchange(val)
 	case sharedW.LanguagePreferenceKey:
-		lp.WL.AssetsManager.SetLanguagePreference(val)
+		lp.AssetsManager.SetLanguagePreference(val)
 	case sharedW.LogLevelConfigKey:
-		lp.WL.AssetsManager.SetLogLevels(val)
+		lp.AssetsManager.SetLogLevels(val)
 	}
 }
 

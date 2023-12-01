@@ -87,7 +87,7 @@ func NewReceiveModal(l *load.Load) *ReceiveModal {
 func (rm *ReceiveModal) OnResume() {
 	rm.ctx, rm.ctxCancel = context.WithCancel(context.TODO())
 
-	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	rm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 }
@@ -135,7 +135,7 @@ func (rm *ReceiveModal) generateQRForAddress() {
 	rm.addressEditor.Editor.SetText(rm.currentAddress)
 
 	var imgOpt qrcode.ImageOption
-	switch rm.sourceWalletSelector.selectedWallet.Asset.GetAssetType() {
+	switch rm.sourceWalletSelector.selectedWallet.GetAssetType() {
 	case "DCR":
 		imgOpt = qrcode.WithLogoImage(rm.Theme.Icons.DCR)
 	case "BTC":
@@ -396,7 +396,7 @@ func (rm *ReceiveModal) initWalletSelectors() {
 		})
 	rm.sourceAccountSelector.SelectFirstValidAccount(rm.sourceWalletSelector.SelectedWallet())
 
-	rm.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	rm.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		rm.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 		rm.generateAddressAndQRCode()
 	})

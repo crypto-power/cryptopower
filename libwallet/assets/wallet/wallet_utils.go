@@ -253,3 +253,19 @@ func backupFile(fileName string, suffix int) (newName string, err error) {
 
 	return newName, nil
 }
+
+// Balances returns the spendable balance and total balance of the wallet.
+func Balances(w Asset) (AssetAmount, AssetAmount, error) {
+	accountsResult, err := w.GetAccountsRaw()
+	if err != nil {
+		return w.ToAmount(0), w.ToAmount(0), err
+	}
+
+	var totalSpendable, totalBalance int64
+	for _, account := range accountsResult.Accounts {
+		totalSpendable += account.Balance.Spendable.ToInt()
+		totalBalance += account.Balance.Total.ToInt()
+	}
+
+	return w.ToAmount(totalSpendable), w.ToAmount(totalBalance), nil
+}

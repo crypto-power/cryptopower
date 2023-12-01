@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 
@@ -490,6 +491,15 @@ func (mgr *AssetsManager) sortWallets(assetType utils.AssetType) []sharedW.Asset
 			normalWallets = append(normalWallets, wallet)
 		}
 	}
+
+	// Sort both lists by wallet ID.
+	sort.Slice(normalWallets, func(i, j int) bool {
+		return normalWallets[i].GetWalletID() < normalWallets[j].GetWalletID()
+	})
+	sort.Slice(watchOnlyWallets, func(i, j int) bool {
+		return watchOnlyWallets[i].GetWalletID() < watchOnlyWallets[j].GetWalletID()
+	})
+
 	return append(normalWallets, watchOnlyWallets...)
 }
 
@@ -779,4 +789,97 @@ func (mgr *AssetsManager) BlockExplorerURLForTx(assetType utils.AssetType, txHas
 
 func (mgr *AssetsManager) LogFile() string {
 	return filepath.Join(mgr.params.LogDir, LogFilename)
+}
+
+func (mgr *AssetsManager) DCRHDPrefix() string {
+	switch mgr.NetType() {
+	case utils.Testnet:
+		return dcr.TestnetHDPath
+	case utils.Mainnet:
+		return dcr.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
+func (mgr *AssetsManager) BTCHDPrefix() string {
+	switch mgr.NetType() {
+	case utils.Testnet:
+		return btc.TestnetHDPath
+	case utils.Mainnet:
+		return btc.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
+// LTC HDPrefix returns the HD path prefix for the Litecoin wallet network.
+func (mgr *AssetsManager) LTCHDPrefix() string {
+	switch mgr.NetType() {
+	case utils.Testnet:
+		return ltc.TestnetHDPath
+	case utils.Mainnet:
+		return ltc.MainnetHDPath
+	default:
+		return ""
+	}
+}
+
+func (mgr *AssetsManager) CalculateTotalAssetsBalance() (map[utils.AssetType]sharedW.AssetAmount, error) {
+	assetsTotalBalance := make(map[utils.AssetType]sharedW.AssetAmount)
+
+	wallets := mgr.AllWallets()
+	for _, wal := range wallets {
+		if wal.IsWatchingOnlyWallet() {
+			continue
+		}
+
+		accountsResult, err := wal.GetAccountsRaw()
+		if err != nil {
+			return nil, err
+		}
+
+		assetType := wal.GetAssetType()
+		for _, account := range accountsResult.Accounts {
+			assetTotal, ok := assetsTotalBalance[assetType]
+			if ok {
+				assetTotal = wal.ToAmount(assetTotal.ToInt() + account.Balance.Total.ToInt())
+			} else {
+				assetTotal = account.Balance.Total
+			}
+			assetsTotalBalance[assetType] = assetTotal
+		}
+	}
+
+	return assetsTotalBalance, nil
+}
+
+func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType]sharedW.AssetAmount) (map[utils.AssetType]float64, error) {
+	if !mgr.ExchangeRateFetchingEnabled() {
+		return nil, fmt.Errorf("USD exchange rate is disabled")
+	}
+
+	usdBalance := func(bal sharedW.AssetAmount, market string) (float64, error) {
+		rate := mgr.RateSource.GetTicker(market)
+		if rate == nil || rate.LastTradePrice <= 0 {
+			return 0, fmt.Errorf("No rate information available")
+		}
+
+		return bal.MulF64(rate.LastTradePrice).ToCoin(), nil
+	}
+
+	assetsTotalUSDBalance := make(map[utils.AssetType]float64)
+	for assetType, balance := range balances {
+		marketValue, exist := values.AssetExchangeMarketValue[assetType]
+		if !exist {
+			return nil, fmt.Errorf("Unsupported asset type: %s", assetType)
+		}
+		usdBal, err := usdBalance(balance, marketValue)
+		if err != nil {
+			return nil, err
+		}
+		assetsTotalUSDBalance[assetType] = usdBal
+	}
+
+	return assetsTotalUSDBalance, nil
 }

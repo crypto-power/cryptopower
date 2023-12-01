@@ -132,7 +132,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		err = com.constructTx(order.DepositAddress, order.InvoicedAmount)
 		if err != nil {
-			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
+			com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -141,7 +141,7 @@ func (com *confirmOrderModal) confirmOrder() {
 		// FOR DEVELOPMENT: Comment this block to prevent debit of account
 		_, err = com.sourceWalletSelector.SelectedWallet().Broadcast(password, "")
 		if err != nil {
-			com.WL.AssetsManager.InstantSwap.DeleteOrder(order)
+			com.AssetsManager.InstantSwap.DeleteOrder(order)
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -210,7 +210,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 																	return components.LayoutOrderAmount(com.Load, gtx, com.orderData.fromCurrency.String(), com.orderData.invoicedAmount)
 																}),
 																layout.Rigid(func(gtx C) D {
-																	sourceWallet := com.WL.AssetsManager.WalletWithID(com.orderData.sourceWalletID)
+																	sourceWallet := com.AssetsManager.WalletWithID(com.orderData.sourceWalletID)
 																	sourceWalletName := sourceWallet.GetWalletName()
 																	sourceAccount, _ := sourceWallet.GetAccount(com.orderData.sourceAccountNumber)
 																	fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
@@ -246,7 +246,7 @@ func (com *confirmOrderModal) Layout(gtx layout.Context) D {
 																	return components.LayoutOrderAmount(com.Load, gtx, com.orderData.toCurrency.String(), com.orderData.orderedAmount)
 																}),
 																layout.Rigid(func(gtx C) D {
-																	destinationWallet := com.WL.AssetsManager.WalletWithID(com.orderData.destinationWalletID)
+																	destinationWallet := com.AssetsManager.WalletWithID(com.orderData.destinationWalletID)
 																	destinationWalletName := destinationWallet.GetWalletName()
 																	destinationAccount, _ := destinationWallet.GetAccount(com.orderData.destinationAccountNumber)
 																	toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
@@ -338,7 +338,7 @@ func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 		DestinationAddress: com.destinationAddress,
 	}
 
-	order, err := com.WL.AssetsManager.InstantSwap.CreateOrder(com.exchange, data)
+	order, err := com.AssetsManager.InstantSwap.CreateOrder(com.exchange, data)
 	if err != nil {
 		return nil, err
 	}

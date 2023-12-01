@@ -176,7 +176,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.selectedExchange = es
 
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchangeServer(pg.selectedExchange.Server)
+		exchange, err := pg.AssetsManager.InstantSwap.NewExchangeServer(pg.selectedExchange.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -252,7 +252,7 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 // once after it has been displayed.
 func (pg *CreateOrderPage) initPage() {
 	pg.inited = true
-	pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+	pg.scheduler.SetChecked(pg.AssetsManager.IsOrderSchedulerRunning())
 	pg.listenForNotifications()
 	pg.loadOrderConfig()
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
@@ -383,7 +383,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 	}
 
 	if pg.refreshClickable.Clicked() {
-		go pg.WL.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
+		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
 
 	if pg.scheduler.Changed() {
@@ -416,7 +416,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 				})
 			pg.ParentWindow().ShowModal(orderSettingsModal)
 		} else {
-			pg.WL.AssetsManager.StopScheduler()
+			pg.AssetsManager.StopScheduler()
 		}
 	}
 
@@ -501,7 +501,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 		// If the to and from asset are the same, select a new to asset.
 		if selectedAsset == pg.toCurrency {
 			// Get all available assets.
-			allAssets := pg.WL.AssetsManager.AllAssetTypes()
+			allAssets := pg.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
 				if asset != selectedAsset {
 
@@ -534,7 +534,7 @@ func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetT
 		if selectedAsset == pg.fromCurrency {
 
 			// Get all available assets.
-			allAssets := pg.WL.AssetsManager.AllAssetTypes()
+			allAssets := pg.AssetsManager.AllAssetTypes()
 			for _, asset := range allAssets {
 				if asset != selectedAsset {
 
@@ -602,7 +602,7 @@ func (pg *CreateOrderPage) swapCurrency() {
 }
 
 func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	isAllowed := pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
+	isAllowed := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
 	if !isAllowed {
 		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
 	}
@@ -614,10 +614,10 @@ func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
 // functionality is disable till different asset type wallets are created.
 func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 	pg.errMsg = values.String(values.StrMinimumAssetType)
-	allWallets := len(pg.WL.AssetsManager.AllWallets())
-	btcWallets := len(pg.WL.AssetsManager.AllBTCWallets())
-	dcrWallets := len(pg.WL.AssetsManager.AllDCRWallets())
-	ltcWallets := len(pg.WL.AssetsManager.AllLTCWallets())
+	allWallets := len(pg.AssetsManager.AllWallets())
+	btcWallets := len(pg.AssetsManager.AllBTCWallets())
+	dcrWallets := len(pg.AssetsManager.AllDCRWallets())
+	ltcWallets := len(pg.AssetsManager.AllLTCWallets())
 	if allWallets == 0 {
 		// no wallets exist
 		return false
@@ -642,7 +642,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	var overlaySet bool
 	var navBtn *cryptomaterial.Button
 
-	isTestNet := pg.Load.WL.AssetsManager.NetType() != libutils.Mainnet
+	isTestNet := pg.Load.AssetsManager.NetType() != libutils.Mainnet
 	switch {
 	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
@@ -736,7 +736,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											return title.Layout(gtx)
 										}),
 										layout.Rigid(func(gtx C) D {
-											if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+											if pg.AssetsManager.IsOrderSchedulerRunning() {
 												return layout.Flex{
 													Axis: layout.Horizontal,
 												}.Layout(gtx,
@@ -747,7 +747,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
 													}),
 													layout.Rigid(func(gtx C) D {
-														title := pg.Theme.Label(values.TextSize16, pg.WL.AssetsManager.GetShedulerRuntime())
+														title := pg.Theme.Label(values.TextSize16, pg.AssetsManager.GetShedulerRuntime())
 														title.Color = pg.Theme.Color.GrayText2
 														return title.Layout(gtx)
 													}),
@@ -764,7 +764,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}.Layout(gtx, pg.scheduler.Layout)
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.WL.AssetsManager.IsOrderSchedulerRunning() {
+									if pg.AssetsManager.IsOrderSchedulerRunning() {
 										return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
 											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -904,7 +904,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
-									ticker := pg.WL.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+									ticker := pg.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
 									if ticker == nil || ticker.LastTradePrice <= 0 {
 										return D{}
 									}
@@ -919,7 +919,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 										rate = 1 / ticker.LastTradePrice
 									}
 
-									binanceRate := values.StringF(values.StrCurrencyConverterRate, pg.WL.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
+									binanceRate := values.StringF(values.StrCurrencyConverterRate, pg.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
 									txt := pg.Theme.Label(values.TextSize14, binanceRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
@@ -959,12 +959,12 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
 													var text string
-													if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+													if pg.AssetsManager.InstantSwap.IsSyncing() {
 														text = values.String(values.StrSyncingState)
 													} else {
-														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
 
-														if pg.WL.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+														if pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
 															text = values.String(values.StrNeverSynced)
 														}
 													}
@@ -983,7 +983,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														Margin:    layout.Inset{Left: values.MarginPadding10},
 													}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
-															if pg.WL.AssetsManager.InstantSwap.IsSyncing() {
+															if pg.AssetsManager.InstantSwap.IsSyncing() {
 																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
 																gtx.Constraints.Min.X = gtx.Constraints.Max.X
 																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
@@ -1120,7 +1120,7 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 		To:     toCur,
 		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
-	res, err := pg.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
+	res, err := pg.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	if err != nil {
 		pg.exchangeRateInfo = values.String(values.StrFetchRateError)
 		pg.rateError = true
@@ -1144,36 +1144,32 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 // one if none existed before.
 func (pg *CreateOrderPage) loadOrderConfig() {
 	sourceAccount, destinationAccount := int32(-1), int32(-1)
-	var sourceWallet, destinationWallet *load.WalletMapping
+	var sourceWallet, destinationWallet sharedW.Asset
 
 	// isConfigUpdateRequired is set to true when updating the configuration is
 	// necessary.
 	var isConfigUpdateRequired bool
 
-	if pg.WL.AssetsManager.IsExchangeConfigSet() {
+	if pg.AssetsManager.IsExchangeConfigSet() {
 		// Use preset exchange configuration.
-		exchangeConfig := pg.WL.AssetsManager.GetExchangeConfig()
+		exchangeConfig := pg.AssetsManager.GetExchangeConfig()
 		pg.fromCurrency = exchangeConfig.SourceAsset
 		pg.toCurrency = exchangeConfig.DestinationAsset
 
-		sourceWallet = &load.WalletMapping{
-			Asset: pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID)),
-		}
-		destinationWallet = &load.WalletMapping{
-			Asset: pg.WL.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID)),
-		}
+		sourceWallet = pg.AssetsManager.WalletWithID(int(exchangeConfig.SourceWalletID))
+		destinationWallet = pg.AssetsManager.WalletWithID(int(exchangeConfig.DestinationWalletID))
 
 		sourceAccount = exchangeConfig.SourceAccountNumber
 		destinationAccount = exchangeConfig.DestinationAccountNumber
 	}
 
-	noSourceWallet := sourceWallet == nil || sourceWallet.Asset == nil
-	noDestinationWallet := destinationWallet == nil || destinationWallet.Asset == nil
+	noSourceWallet := sourceWallet == nil
+	noDestinationWallet := destinationWallet == nil
 	if noSourceWallet || noDestinationWallet {
 		// New exchange configuration will be generated using the set asset
 		// types since none existed before. It two distinct asset type wallet
 		// don't exist execution does get here.
-		wallets := pg.WL.AssetsManager.AllWallets()
+		wallets := pg.AssetsManager.AllWallets()
 		if noSourceWallet {
 			pg.fromCurrency = wallets[0].GetAssetType()
 		}
@@ -1220,7 +1216,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		pg.sourceAccountSelector.SelectFirstValidAccount(sourceWallet)
 	}
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.sourceAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
@@ -1256,7 +1252,7 @@ func (pg *CreateOrderPage) loadOrderConfig() {
 		pg.destinationAccountSelector.SelectFirstValidAccount(destinationWallet)
 	}
 
-	pg.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	pg.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 	})
 
@@ -1280,7 +1276,7 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 		DestinationAccountNumber: pg.destinationAccountSelector.SelectedAccount().Number,
 	}
 
-	pg.WL.AssetsManager.SetExchangeConfig(configInfo)
+	pg.AssetsManager.SetExchangeConfig(configInfo)
 }
 
 // listenForNotifications registers order status change and exchange rate update
@@ -1288,11 +1284,6 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 // listeners MUST be unregistered using pg.stopNtfnListeners() when they're no
 // longer needed or when this page is exited.
 func (pg *CreateOrderPage) listenForNotifications() {
-	// TODO: Looks hacky. If there was a listener registered for this page, we
-	// should allow InstantSwap.AddNotificationListener to error and fix the
-	// problem.
-	// pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID) // clear if any
-
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
 			pg.scroll.FetchScrollData(false, pg.ParentWindow())
@@ -1303,18 +1294,18 @@ func (pg *CreateOrderPage) listenForNotifications() {
 			pg.ParentWindow().Reload()
 		},
 		OnOrderSchedulerStarted: func() {
-			pg.scheduler.SetChecked(pg.WL.AssetsManager.IsOrderSchedulerRunning())
+			pg.scheduler.SetChecked(pg.AssetsManager.IsOrderSchedulerRunning())
 		},
 		OnOrderSchedulerEnded: func() {
 			pg.scheduler.SetChecked(false)
 		},
 	}
-	err := pg.WL.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, CreateOrderPageID)
+	err := pg.AssetsManager.InstantSwap.AddNotificationListener(orderNotificationListener, CreateOrderPageID)
 	if err != nil {
 		log.Errorf("CreateOrderPage.listenForNotifications error: %v", err)
 	}
 }
 
 func (pg *CreateOrderPage) stopNtfnListeners() {
-	pg.WL.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
+	pg.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 }

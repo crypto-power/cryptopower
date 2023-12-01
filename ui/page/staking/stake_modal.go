@@ -35,21 +35,15 @@ type ticketBuyerModal struct {
 	dcrImpl *dcr.Asset
 }
 
-func newTicketBuyerModal(l *load.Load) *ticketBuyerModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
+func newTicketBuyerModal(l *load.Load, wallet *dcr.Asset) *ticketBuyerModal {
 	tb := &ticketBuyerModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("staking_modal"),
 
 		cancel:          l.Theme.OutlineButton(values.String(values.StrCancel)),
 		saveSettingsBtn: l.Theme.Button(values.String(values.StrSave)),
-		vspSelector:     components.NewVSPSelector(l).Title(values.String(values.StrSelectVSP)),
-		dcrImpl:         impl,
+		vspSelector:     components.NewVSPSelector(l, wallet).Title(values.String(values.StrSelectVSP)),
+		dcrImpl:         wallet,
 	}
 
 	tb.balToMaintainEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrBalToMaintain))
@@ -88,8 +82,6 @@ func (tb *ticketBuyerModal) OnResume() {
 		go tb.dcrImpl.ReloadVSPList(context.TODO())
 	}
 
-	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
-
 	// loop through all available wallets and select the one with ticket buyer config.
 	// if non, set the selected wallet to the first.
 	// temporary work around for only one wallet.
@@ -106,19 +98,19 @@ func (tb *ticketBuyerModal) OnResume() {
 			tb.accountSelector.SetSelectedAccount(account)
 		} else {
 			// If a valid account is not set, choose one from available the valid accounts.
-			if err := tb.accountSelector.SelectFirstValidAccount(wl); err != nil {
+			if err := tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl); err != nil {
 				errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 				tb.ParentWindow().ShowModal(errModal)
 			}
 		}
 
 		tb.vspSelector.SelectVSP(tbConfig.VspHost)
-		w := tb.WL.SelectedWallet.Wallet
+		w := tb.dcrImpl
 		tb.balToMaintainEditor.Editor.SetText(strconv.FormatFloat(w.ToAmount(tbConfig.BalanceToMaintain).ToCoin(), 'f', 0, 64))
 	}
 
 	if tb.accountSelector.SelectedAccount() == nil {
-		err := tb.accountSelector.SelectFirstValidAccount(wl)
+		err := tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
 		if err != nil {
 			errModal := modal.NewErrorModal(tb.Load, err.Error(), modal.DefaultClickFunc())
 			tb.ParentWindow().ShowModal(errModal)
@@ -193,19 +185,17 @@ func (tb *ticketBuyerModal) initializeAccountSelector() {
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
 			// Imported and watch only wallet accounts are invalid for sending
-			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet()
+			accountIsValid := account.Number != dcr.ImportedAccountNumber && !tb.dcrImpl.IsWatchingOnlyWallet()
 
-			if tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-				!tb.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
+			if tb.dcrImpl.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
+				!tb.dcrImpl.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) {
 				// Spending from unmixed accounts is disabled for the selected wallet
-				dcrImpl := tb.WL.SelectedWallet.Wallet.(*dcr.Asset)
-				accountIsValid = account.Number == dcrImpl.MixedAccountNumber()
+				accountIsValid = account.Number == tb.dcrImpl.MixedAccountNumber()
 			}
 
 			return accountIsValid
 		})
-	wl := load.NewWalletMapping(tb.WL.SelectedWallet.Wallet)
-	tb.accountSelector.SelectFirstValidAccount(wl)
+	tb.accountSelector.SelectFirstValidAccount(tb.dcrImpl)
 }
 
 func (tb *ticketBuyerModal) OnDismiss() {
