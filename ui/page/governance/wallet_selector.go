@@ -11,6 +11,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -33,14 +34,14 @@ type WalletSelector struct {
 }
 
 // TODO: merge this into the account selector modal.
-func NewWalletSelector(l *load.Load) *WalletSelector {
+func NewDCRWalletSelector(l *load.Load) *WalletSelector {
 	return &WalletSelector{
 		Load:               l,
-		assetsManager:      l.WL.AssetsManager,
+		assetsManager:      l.AssetsManager,
 		walletIsValid:      func(sharedW.Asset) bool { return true },
 		openSelectorDialog: l.Theme.NewClickable(true),
 
-		wallets: l.WL.SortedWalletList(),
+		wallets: l.AssetsManager.AssetWallets(utils.DCRWalletAsset),
 	}
 }
 
@@ -92,13 +93,13 @@ func (as *WalletSelector) SelectFirstValidWallet() error {
 }
 
 func (as *WalletSelector) setupSelectedWallet(wallet sharedW.Asset) {
-	totalBalance, err := as.WL.TotalWalletBalance(wallet.GetWalletID())
+	_, walletTotalBalance, err := sharedW.Balances(wallet)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	as.totalBalance = totalBalance.String()
+	as.totalBalance = walletTotalBalance.String()
 }
 
 func (as *WalletSelector) SelectedWallet() sharedW.Asset {
@@ -164,13 +165,13 @@ type WalletSelectorModal struct {
 	filteredWallets       []sharedW.Asset
 }
 
-func newWalletSelectorModal(l *load.Load, currentSelectedAccount sharedW.Asset) *WalletSelectorModal {
+func newWalletSelectorModal(l *load.Load, currentSelectedWallet sharedW.Asset) *WalletSelectorModal {
 	asm := &WalletSelectorModal{
 		Load:        l,
 		Modal:       l.Theme.ModalFloatTitle("WalletSelectorModal"),
 		walletsList: l.Theme.NewClickableList(layout.Vertical),
 
-		currentSelectedWallet: currentSelectedAccount,
+		currentSelectedWallet: currentSelectedWallet,
 		isCancelable:          true,
 	}
 
@@ -178,15 +179,16 @@ func newWalletSelectorModal(l *load.Load, currentSelectedAccount sharedW.Asset) 
 }
 
 func (asm *WalletSelectorModal) OnResume() {
-	wallets := make([]sharedW.Asset, 0)
+	wallets := asm.AssetsManager.AssetWallets(asm.currentSelectedWallet.GetAssetType())
 
-	for _, wal := range asm.WL.SortedWalletList() {
+	validWallets := make([]sharedW.Asset, 0)
+	for _, wal := range wallets {
 		if asm.walletIsValid(wal) {
-			wallets = append(wallets, wal)
+			validWallets = append(validWallets, wal)
 		}
 	}
 
-	asm.filteredWallets = wallets
+	asm.filteredWallets = validWallets
 }
 
 func (asm *WalletSelectorModal) Handle() {
@@ -255,8 +257,7 @@ func (asm *WalletSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 }
 
 func (asm *WalletSelectorModal) walletAccountLayout(gtx layout.Context, wallet sharedW.Asset) layout.Dimensions {
-	walletTotalBalance, _ := asm.WL.TotalWalletBalance(wallet.GetWalletID())
-	walletSpendableBalance, _ := asm.WL.SpendableWalletBalance(wallet.GetWalletID())
+	walletSpendableBalance, walletTotalBalance, _ := sharedW.Balances(wallet)
 
 	return layout.Inset{
 		Bottom: values.MarginPadding20,

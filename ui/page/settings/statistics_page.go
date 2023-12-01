@@ -30,26 +30,26 @@ type StatPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	wallet   sharedW.Asset
 	txs      []*sharedW.Transaction
 	accounts *sharedW.Accounts
 
 	l             layout.List
 	scrollbarList *widget.List
 	startupTime   string
-	netType       string
 
 	backButton cryptomaterial.IconButton
 }
 
-func NewStatPage(l *load.Load) *StatPage {
+func NewStatPage(l *load.Load, wallet sharedW.Asset) *StatPage {
 	pg := &StatPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(StatisticsPageID),
+		wallet:           wallet,
 		l:                layout.List{Axis: layout.Vertical},
 		scrollbarList: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		netType: l.WL.AssetsManager.NetType().Display(),
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -62,25 +62,25 @@ func NewStatPage(l *load.Load) *StatPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *StatPage) OnNavigatedTo() {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(0, 0, dcr.TxFilterAll, true)
+	txs, err := pg.wallet.GetTransactionsRaw(0, 0, dcr.TxFilterAll, true)
 	if err != nil {
 		log.Errorf("Error getting txs: %s", err.Error())
 	} else {
 		pg.txs = txs
 	}
 
-	acc, err := pg.WL.SelectedWallet.Wallet.GetAccountsRaw()
+	acc, err := pg.wallet.GetAccountsRaw()
 	if err != nil {
 		log.Errorf("Error getting wallet accounts: %s", err.Error())
 	} else {
 		// Filter imported account.
 		accounts := make([]*sharedW.Account, 0)
 		for _, v := range acc.Accounts {
-			if pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.BTCWalletAsset && v.AccountNumber != btc.ImportedAccountNumber {
+			if pg.wallet.GetAssetType() == libutils.BTCWalletAsset && v.AccountNumber != btc.ImportedAccountNumber {
 				accounts = append(accounts, v)
 			}
 
-			if pg.WL.SelectedWallet.Wallet.GetAssetType() == libutils.DCRWalletAsset && v.Number != dcr.ImportedAccountNumber {
+			if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && v.Number != dcr.ImportedAccountNumber {
 				accounts = append(accounts, v)
 			}
 
@@ -113,21 +113,28 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		}
 	}
 
-	bestBlock := pg.WL.SelectedWallet.Wallet.GetBestBlockHeight()
-	bestBlockTime := time.Unix(pg.WL.SelectedWallet.Wallet.GetBestBlockTimeStamp(), 0)
+	bestBlock := pg.wallet.GetBestBlockHeight()
+	bestBlockTime := time.Unix(pg.wallet.GetBestBlockTimeStamp(), 0)
 	secondsSinceBestBlock := int64(time.Since(bestBlockTime).Seconds())
+
+	walletDataSize := "Unknown"
+	v, err := pg.AssetsManager.RootDirFileSizeInBytes(pg.wallet.DataDir())
+	if err != nil {
+		walletDataSize = fmt.Sprintf("%f GB", float64(v)*1e-9)
+	}
 
 	line := pg.Theme.Separator()
 	line.Color = pg.Theme.Color.Gray2
 
+	netType := pg.AssetsManager.NetType().Display()
 	items := []layout.Widget{
-		item(values.String(values.StrBuild), pg.netType+", "+time.Now().Format("2006-01-02")),
+		item(values.String(values.StrBuild), netType+", "+time.Now().Format("2006-01-02")),
 		line.Layout,
-		item(values.String(values.StrPeersConnected), strconv.Itoa(int(pg.WL.SelectedWallet.Wallet.ConnectedPeers()))),
+		item(values.String(values.StrPeersConnected), strconv.Itoa(int(pg.wallet.ConnectedPeers()))),
 		line.Layout,
 		item(values.String(values.StrUptime), pg.startupTime),
 		line.Layout,
-		item(values.String(values.StrNetwork), pg.netType),
+		item(values.String(values.StrNetwork), netType),
 		line.Layout,
 		item(values.String(values.StrBestBlocks), fmt.Sprintf("%d", bestBlock)),
 		line.Layout,
@@ -135,9 +142,9 @@ func (pg *StatPage) layoutStats(gtx C) D {
 		line.Layout,
 		item(values.String(values.StrBestBlockAge), components.SecondsToDays(secondsSinceBestBlock)),
 		line.Layout,
-		item(values.String(values.StrWalletDirectory), pg.WL.WalletDirectory()),
+		item(values.String(values.StrWalletDirectory), pg.wallet.DataDir()),
 		line.Layout,
-		item(values.String(values.StrDateSize), pg.WL.DataSize()),
+		item(values.String(values.StrDateSize), walletDataSize),
 		line.Layout,
 		item(values.String(values.StrTransactions), fmt.Sprintf("%d", len(pg.txs))),
 		line.Layout,
@@ -212,7 +219,7 @@ func (pg *StatPage) appStartTime() {
 		m := (v - h*3600) / 60
 		s := v - h*3600 - m*60
 		return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
-	}(pg.Load.StartupTime())
+	}(pg.AppInfo.StartupTime())
 }
 
 // HandleUserInteractions is called just before Layout() to determine

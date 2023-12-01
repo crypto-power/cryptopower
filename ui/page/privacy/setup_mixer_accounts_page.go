@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
@@ -24,6 +25,7 @@ type SetupMixerAccountsPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	dcrWallet *dcr.Asset
 
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
@@ -35,10 +37,11 @@ type SetupMixerAccountsPage struct {
 	autoSetupIcon, nextIcon *cryptomaterial.Icon
 }
 
-func NewSetupMixerAccountsPage(l *load.Load) *SetupMixerAccountsPage {
+func NewSetupMixerAccountsPage(l *load.Load, dcrWallet *dcr.Asset) *SetupMixerAccountsPage {
 	pg := &SetupMixerAccountsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SetupMixerAccountsPageID),
+		dcrWallet:        dcrWallet,
 	}
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -231,11 +234,11 @@ func (pg *SetupMixerAccountsPage) HandleUserInteractions() {
 			window:        pg.ParentWindow(),
 			pageNavigator: pg.ParentNavigator(),
 			checkBox:      pg.Theme.CheckBox(new(widget.Bool), values.String(values.StrMoveFundsFrmDefaultToUnmixed)),
-		})
+		}, pg.dcrWallet)
 	}
 
 	if pg.manualSetupClickable.Clicked() {
-		pg.ParentNavigator().Display(NewManualMixerSetupPage(pg.Load))
+		pg.ParentNavigator().Display(NewManualMixerSetupPage(pg.Load, pg.dcrWallet))
 	}
 }
 

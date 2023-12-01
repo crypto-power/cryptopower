@@ -21,6 +21,7 @@ import (
 
 type VSPSelector struct {
 	*load.Load
+	dcrWallet *dcr.Asset
 
 	dialogTitle string
 
@@ -29,9 +30,10 @@ type VSPSelector struct {
 	selectedVSP  *dcr.VSP
 }
 
-func NewVSPSelector(l *load.Load) *VSPSelector {
+func NewVSPSelector(l *load.Load, dcrWallet *dcr.Asset) *VSPSelector {
 	v := &VSPSelector{
 		Load:         l,
+		dcrWallet:    dcrWallet,
 		showVSPModal: l.Theme.NewClickable(true),
 	}
 	return v
@@ -49,7 +51,7 @@ func (v *VSPSelector) Changed() bool {
 }
 
 func (v *VSPSelector) SelectVSP(vspHost string) {
-	for _, vsp := range v.WL.SelectedWallet.Wallet.(*dcr.Asset).KnownVSPs() {
+	for _, vsp := range v.dcrWallet.KnownVSPs() {
 		if vsp.Host == vspHost {
 			v.changed = true
 			v.selectedVSP = vsp
@@ -64,7 +66,7 @@ func (v *VSPSelector) SelectedVSP() *dcr.VSP {
 
 func (v *VSPSelector) handle(window app.WindowNavigator) {
 	if v.showVSPModal.Clicked() {
-		modal := newVSPSelectorModal(v.Load).
+		modal := newVSPSelectorModal(v.Load, v.dcrWallet).
 			title(values.String(values.StrVotingServiceProvider)).
 			vspSelected(func(info *dcr.VSP) {
 				v.SelectVSP(info.Host)
@@ -143,13 +145,7 @@ type vspSelectorModal struct {
 	isLoadingVSP   bool
 }
 
-func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
+func newVSPSelectorModal(l *load.Load, dcrWallet *dcr.Asset) *vspSelectorModal {
 	v := &vspSelectorModal{
 		Load:  l,
 		Modal: l.Theme.ModalFloatTitle("VSPSelectorModal"),
@@ -157,7 +153,7 @@ func newVSPSelectorModal(l *load.Load) *vspSelectorModal {
 		inputVSP:       l.Theme.Editor(new(widget.Editor), values.String(values.StrAddVSP)),
 		addVSP:         l.Theme.Button(values.String(values.StrSave)),
 		vspList:        l.Theme.NewClickableList(layout.Vertical),
-		dcrImpl:        impl,
+		dcrImpl:        dcrWallet,
 		materialLoader: material.Loader(l.Theme.Base),
 	}
 	v.inputVSP.Editor.SingleLine = true

@@ -493,7 +493,7 @@ func (pg *SeedRestore) verifySeeds() bool {
 
 	// Compare seed with existing wallets seed. On positive match abort import
 	// to prevent duplicate wallet. walletWithSameSeed >= 0 if there is a match.
-	walletWithSameSeed, err := pg.WL.AssetsManager.WalletWithSeed(pg.walletType, pg.seedPhrase)
+	walletWithSameSeed, err := pg.AssetsManager.WalletWithSeed(pg.walletType, pg.seedPhrase)
 	if err != nil {
 		log.Error(err)
 		return false
@@ -565,7 +565,7 @@ func (pg *SeedRestore) HandleUserInteractions() {
 			ShowWalletInfoTip(true).
 			SetParent(pg).
 			SetPositiveButtonCallback(func(walletName, password string, m *modal.CreatePasswordModal) bool {
-				_, err := pg.WL.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
+				_, err := pg.AssetsManager.RestoreWallet(pg.walletType, pg.walletName, pg.seedPhrase, password, sharedW.PassphraseTypePass)
 				if err != nil {
 					errString := err.Error()
 					if err.Error() == libutils.ErrExist {

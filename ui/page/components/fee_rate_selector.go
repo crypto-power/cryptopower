@@ -11,6 +11,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -106,7 +107,7 @@ func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 }
 
 func (fs *FeeRateSelector) isFeerateAPIApproved() bool {
-	return fs.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI)
+	return fs.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI)
 }
 
 // Layout draws the UI components.
@@ -245,7 +246,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 }
 
 // FetchFeeRate will fetch the fee rate from the HTTP API.
-func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet *load.WalletMapping) {
+func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet sharedW.Asset) {
 	if fs.fetchingRate {
 		return
 	}
@@ -254,7 +255,7 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 		fs.fetchingRate = false
 	}()
 
-	feeRates, err := selectedWallet.GetAPIFeeRate()
+	feeRates, err := load.GetAPIFeeRate(selectedWallet)
 	if err != nil {
 		return
 	}
@@ -289,7 +290,7 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 			fields := strings.Fields(radiogroupbtns.Value)
 			index, _ := strconv.Atoi(fields[0])
 			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-			rateInt, err := selectedWallet.SetAPIFeeRate(rate)
+			rateInt, err := load.SetAPIFeeRate(selectedWallet, rate)
 			if err != nil {
 				log.Error(err)
 				return false
@@ -309,13 +310,13 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
-func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet *load.WalletMapping) {
+func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet sharedW.Asset) {
 	fs.rateEditMode = !fs.rateEditMode
 	if fs.rateEditMode {
 		fs.EditRates.Text = values.String(values.StrSave)
 	} else {
 		rateStr := fs.ratesEditor.Editor.Text()
-		rateInt, err := selectedWallet.SetAPIFeeRate(rateStr)
+		rateInt, err := load.SetAPIFeeRate(selectedWallet, rateStr)
 		if err != nil {
 			fs.feeRateText = " - "
 		} else {

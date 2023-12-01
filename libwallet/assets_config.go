@@ -156,6 +156,16 @@ func (mgr *AssetsManager) SetCurrencyConversionExchange(xc string) {
 	}()
 }
 
+// ExchangeRateFetchingEnabled returns true if privacy mode isn't turned on and
+// a valid exchange rate source is configured.
+func (mgr *AssetsManager) ExchangeRateFetchingEnabled() bool {
+	if mgr.IsPrivacyModeOn() {
+		return false
+	}
+	xc := mgr.GetCurrencyConversionExchange()
+	return xc != "" && xc != values.DefaultExchangeValue
+}
+
 // GetLanguagePreference returns the language preference.
 func (mgr *AssetsManager) GetLanguagePreference() string {
 	var lang string

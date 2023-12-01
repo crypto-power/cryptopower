@@ -98,7 +98,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 
 	osm.exchangeSelector.ExchangeSelected(func(es *Exchange) {
 		// Initialize a new exchange using the selected exchange server
-		exchange, err := osm.WL.AssetsManager.InstantSwap.NewExchangeServer(es.Server)
+		exchange, err := osm.AssetsManager.InstantSwap.NewExchangeServer(es.Server)
 		if err != nil {
 			log.Error(err)
 			return
@@ -285,7 +285,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																							return txt.Layout(gtx)
 																						}),
 																						layout.Rigid(func(gtx C) D {
-																							ticker := osm.WL.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
+																							ticker := osm.AssetsManager.RateSource.GetTicker(fromCur + ext.MktSep + toCur)
 																							if ticker == nil || ticker.LastTradePrice <= 0 {
 																								return D{}
 																							}
@@ -300,7 +300,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																								rate = 1 / ticker.LastTradePrice
 																							}
 
-																							binanceRate := values.StringF(values.StrCurrencyConverterRate, osm.WL.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
+																							binanceRate := values.StringF(values.StrCurrencyConverterRate, osm.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
 																							txt := osm.Theme.Label(values.TextSize14, binanceRate)
 																							txt.Font.Weight = font.SemiBold
 																							txt.Color = osm.Theme.Color.Gray1
@@ -389,7 +389,7 @@ func (osm *orderSchedulerModal) Layout(gtx layout.Context) D {
 																	txt := osm.Theme.Label(values.TextSize14, msg)
 																	txt.Alignment = text.Middle
 																	txt.Color = osm.Theme.Color.GrayText3
-																	if osm.WL.AssetsManager.IsDarkModeOn() {
+																	if osm.AssetsManager.IsDarkModeOn() {
 																		txt.Color = osm.Theme.Color.Gray3
 																	}
 																	return txt.Layout(gtx)
@@ -485,7 +485,7 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 			SpendingPassphrase: osm.passwordEditor.Editor.Text(),
 		}
 
-		go osm.WL.AssetsManager.StartScheduler(context.Background(), params)
+		go osm.AssetsManager.StartScheduler(context.Background(), params)
 
 		osm.Dismiss()
 		osm.orderSchedulerStarted()
@@ -503,7 +503,7 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 		To:     toCur,
 		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
 	}
-	res, err := osm.WL.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
+	res, err := osm.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
 	if err != nil {
 		osm.rateError = true
 		osm.fetchingRate = false
