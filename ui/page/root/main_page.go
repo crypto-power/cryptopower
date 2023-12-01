@@ -165,7 +165,7 @@ func (mp *MainPage) initTabOptions() {
 		commonTabs = append(commonTabs[:4], append(dcrSpecificTabs, commonTabs[4:]...)...)
 	}
 
-	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs, cryptomaterial.Split)
+	mp.pageNavigationTab = mp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
 }
 
 func (mp *MainPage) isGovernanceAPIAllowed() bool {

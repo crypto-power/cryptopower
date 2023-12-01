@@ -87,13 +87,12 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	}
 
 	s.handleClickEvent()
-	gtx.Constraints.Max = s.slideItems[s.selected].widgetItem(gtx).Size
-	return layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return s.sliceAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
-		}),
-		layout.Stacked(func(gtx C) D {
-			return s.sliceAction.DragLayout(gtx, func(gtx C) D {
+	return s.sliceAction.DragLayout(gtx, func(gtx C) D {
+		return layout.Stack{Alignment: layout.S}.Layout(gtx,
+			layout.Expanded(func(gtx C) D {
+				return s.sliceAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
+			}),
+			layout.Stacked(func(gtx C) D {
 				return layout.Inset{
 					Right:  values.MarginPadding15,
 					Left:   values.MarginPadding15,
@@ -108,9 +107,9 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 						}),
 					)
 				})
-			}, false)
-		}),
-	)
+			}),
+		)
+	})
 }
 
 func (s *Slider) buttonLayout(gtx C) D {

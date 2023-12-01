@@ -49,7 +49,7 @@ func NewTradePage(l *load.Load) *TradePage {
 		},
 	}
 
-	pg.tab = l.Theme.SegmentedControl(tabTitles, cryptomaterial.Group)
+	pg.tab = l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup)
 
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)

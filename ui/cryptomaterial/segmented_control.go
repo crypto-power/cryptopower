@@ -12,8 +12,8 @@ import (
 type SegmentType int
 
 const (
-	Group SegmentType = iota
-	Split
+	SegmentTypeGroup SegmentType = iota
+	SegmentTypeSplit
 )
 
 type SegmentedControl struct {
@@ -77,7 +77,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
 			Alignment: layout.Middle,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if sc.segmentType == Group {
+				if sc.segmentType == SegmentTypeGroup {
 					return sc.GroupTileLayout(gtx)
 				}
 				return sc.splitTileLayout(gtx)
@@ -87,7 +87,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
 					if sc.isSwipeActionEnabled {
 						return sc.sliceAction.DragLayout(gtx, func(gtx C) D {
 							return sc.sliceAction.TransformLayout(gtx, body)
-						}, true)
+						})
 					}
 					return body(gtx)
 				})
@@ -128,7 +128,7 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 						}.Layout2(gtx, txt.Layout)
 					})
 				})
-			}, true)
+			})
 		}),
 	)
 }

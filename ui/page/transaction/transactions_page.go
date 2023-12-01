@@ -79,7 +79,7 @@ func NewTransactionsPage(l *load.Load, isHomepageLayout bool) *TransactionsPage 
 		separator:        l.Theme.Separator(),
 		transactionList:  l.Theme.NewClickableList(layout.Vertical),
 		isHomepageLayout: isHomepageLayout,
-		txCategoryTab:    l.Theme.SegmentedControl(txTabs),
+		txCategoryTab:    l.Theme.SegmentedControl(txTabs, cryptomaterial.SegmentTypeGroup),
 	}
 
 	// init the asset selector
@@ -367,26 +367,31 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 }
 
 func (pg *TransactionsPage) layoutDesktop(gtx C) D {
-	items := []layout.FlexChild{}
 	isDCRAssetSelected := pg.selectedWallet != nil && pg.selectedWallet.GetAssetType() == utils.DCRWalletAsset
 	if isDCRAssetSelected || (pg.dcrWalletExists && pg.selectedWallet == nil) {
 		// Only show tx category navigation txCategoryTab for DCR wallets.
-		items = append(items, layout.Rigid(pg.txCategoriesNav))
+		return pg.txCategoryTab.Layout(gtx, pg.layoutBody)
 	}
 
+	items := []layout.FlexChild{}
 	items = append(items, layout.Rigid(pg.desktopLayoutContent))
 	if pg.isHomepageLayout {
-		return components.UniformPadding(gtx, func(gtx C) D {
+		return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 		})
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
-func (pg *TransactionsPage) txCategoriesNav(gtx C) D {
-	return cryptomaterial.CentralizeWidget(gtx, func(gtx C) D {
-		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.txCategoryTab.Layout)
-	})
+func (pg *TransactionsPage) layoutBody(gtx C) D {
+	items := []layout.FlexChild{}
+	items = append(items, layout.Rigid(pg.desktopLayoutContent))
+	if pg.isHomepageLayout {
+		return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
+		})
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 }
 
 func (pg *TransactionsPage) desktopLayoutContent(gtx C) D {

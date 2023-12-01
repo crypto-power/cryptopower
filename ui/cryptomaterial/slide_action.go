@@ -65,42 +65,48 @@ func (s *SliceAction) Draged(drag Dragged) {
 	s.draged = drag
 }
 
-func (s *SliceAction) DragLayout(gtx C, w layout.Widget, isWrapContent bool) D {
-	for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
-		switch event.Type {
-		case pointer.Press:
-			s.dragStarted = event.Position
-			s.dragOffset = 0
-		case pointer.Drag:
-			newOffset := int(s.dragStarted.X - event.Position.X)
-			if newOffset > s.dragEffect {
-				if !s.isPushing && s.draged != nil {
-					s.isPushing = true
-					s.draged(SwipeLeft)
+func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
+	if gtx.Queue != nil {
+		for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
+			switch event.Type {
+			case pointer.Press:
+				s.dragStarted = event.Position
+				s.dragOffset = 0
+			case pointer.Drag:
+				newOffset := int(s.dragStarted.X - event.Position.X)
+				if newOffset > s.dragEffect {
+					if !s.isPushing && s.draged != nil {
+						s.isPushing = true
+						s.draged(SwipeLeft)
+					}
+				} else if newOffset < -s.dragEffect {
+					if !s.isPushing && s.draged != nil {
+						s.isPushing = true
+						s.draged(SwipeRight)
+					}
 				}
-			} else if newOffset < -s.dragEffect {
-				if !s.isPushing && s.draged != nil {
-					s.isPushing = true
-					s.draged(SwipeRight)
-				}
+				s.dragOffset = newOffset
+			case pointer.Release:
+				fallthrough
+			case pointer.Cancel:
+				s.isPushing = false
 			}
-			s.dragOffset = newOffset
-		case pointer.Release:
-			fallthrough
-		case pointer.Cancel:
-			s.isPushing = false
 		}
 	}
-
-	if isWrapContent {
-		area := clip.Rect(image.Rect(0, 0, gtx.Constraints.Max.X, gtx.Constraints.Max.Y)).Push(gtx.Ops)
-		s.drag.Add(gtx.Ops)
-		defer area.Pop()
-	} else {
-		s.drag.Add(gtx.Ops)
+	var dims layout.Dimensions
+	var call op.CallOp
+	{
+		m := op.Record(gtx.Ops)
+		dims = w(gtx)
+		call = m.Stop()
 	}
 
-	return w(gtx)
+	area := clip.Rect(image.Rect(0, 0, dims.Size.X, dims.Size.Y)).Push(gtx.Ops)
+	s.drag.Add(gtx.Ops)
+	defer area.Pop()
+
+	call.Add(gtx.Ops)
+	return dims
 }
 
 func (s *SliceAction) TransformLayout(gtx C, w layout.Widget) D {
