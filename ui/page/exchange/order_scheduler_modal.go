@@ -109,7 +109,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		osm.exchange = exchange
 
 		go func() {
-			err := osm.instantExchangeCurrencyInfos()
+			err := osm.fetchInstantExchangeCurrencies()
 			if err != nil {
 				log.Error(err)
 				return
@@ -503,7 +503,7 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 	}()
 }
 
-func (osm *orderSchedulerModal) instantExchangeCurrencyInfos() error {
+func (osm *orderSchedulerModal) fetchInstantExchangeCurrencies() error {
 	osm.fetchingRate = true
 	currencies, err := osm.exchange.GetCurrencies()
 	osm.instantCurrencies = currencies

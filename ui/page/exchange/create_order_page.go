@@ -190,7 +190,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.exchange = exchange
 
 		go func() {
-			err := pg.instantExchangeCurrencyInfos()
+			err := pg.fetchInstantExchangeCurrencies()
 			if err != nil {
 				log.Error(err)
 				return
@@ -1326,7 +1326,7 @@ func (pg *CreateOrderPage) stopNtfnListeners() {
 	pg.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 }
 
-func (pg *CreateOrderPage) instantExchangeCurrencyInfos() error {
+func (pg *CreateOrderPage) fetchInstantExchangeCurrencies() error {
 	pg.fetchingRate = true
 	currencies, err := pg.exchange.GetCurrencies()
 	pg.instantExchangeCurrencies = currencies
