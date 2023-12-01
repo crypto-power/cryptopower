@@ -38,7 +38,7 @@ const (
 	DefaultRateRequestDCR    = 10
 )
 
-func RateRequest(fromCurrency string) float64 {
+func DefaultRateRequestAmt(fromCurrency string) float64 {
 	switch fromCurrency {
 	case utils.BTCWalletAsset.String():
 		return DefaultRateRequestBTC
@@ -109,7 +109,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 		rateRequestParams := api.ExchangeRateRequest{
 			From:        fromCur,
 			To:          toCur,
-			Amount:      RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
+			Amount:      DefaultRateRequestAmt(fromCur), // amount needs to be greater than 0 to get the exchange rate
 			FromNetwork: params.Order.FromNetwork,
 			ToNetwork:   params.Order.ToNetwork,
 		}

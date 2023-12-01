@@ -76,7 +76,7 @@ type CreateOrderPage struct {
 
 	errMsg string
 
-	instantCurrencies []api.Currency
+	instantExchangeCurrencies []api.Currency
 	*orderData
 }
 
@@ -190,7 +190,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.exchange = exchange
 
 		go func() {
-			err := pg.getInstantCurrencyInfos()
+			err := pg.instantExchangeCurrencyInfos()
 			if err != nil {
 				log.Error(err)
 				return
@@ -1128,10 +1128,10 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	toCur := pg.toCurrency.String()
 	params := api.ExchangeRateRequest{
 		From:        fromCur,
-		FromNetwork: getNetwork(fromCur, pg.instantCurrencies),
+		FromNetwork: getNetwork(fromCur, pg.instantExchangeCurrencies),
 		To:          toCur,
-		ToNetwork:   getNetwork(toCur, pg.instantCurrencies),
-		Amount:      libwallet.RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
+		ToNetwork:   getNetwork(toCur, pg.instantExchangeCurrencies),
+		Amount:      libwallet.DefaultRateRequestAmt(fromCur), // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
 	pg.fetchingRate = false
@@ -1326,10 +1326,10 @@ func (pg *CreateOrderPage) stopNtfnListeners() {
 	pg.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
 }
 
-func (pg *CreateOrderPage) getInstantCurrencyInfos() error {
+func (pg *CreateOrderPage) instantExchangeCurrencyInfos() error {
 	pg.fetchingRate = true
 	currencies, err := pg.exchange.GetCurrencies()
-	pg.instantCurrencies = currencies
+	pg.instantExchangeCurrencies = currencies
 	pg.fetchingRate = false
 	pg.rateError = err != nil
 	return err

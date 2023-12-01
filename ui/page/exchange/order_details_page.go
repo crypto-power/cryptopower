@@ -53,7 +53,7 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	// attempting to open legacy orders
 	nilExchangeServer := instantswap.ExchangeServer{}
 	if order.ExchangeServer == nilExchangeServer {
-		key, _ := instantswap.GetInstantPrivKey(order.Server)
+		key, _ := instantswap.GetInstantExchangePrivKey(order.Server)
 		order.ExchangeServer.Server = order.Server
 		order.ExchangeServer.Config = instantswap.ExchangeConfig{
 			APIKey: key,

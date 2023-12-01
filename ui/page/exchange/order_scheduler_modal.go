@@ -109,7 +109,7 @@ func newOrderSchedulerModalModal(l *load.Load, data *orderData) *orderSchedulerM
 		osm.exchange = exchange
 
 		go func() {
-			err := osm.getInstantCurrencyInfos()
+			err := osm.instantExchangeCurrencyInfos()
 			if err != nil {
 				log.Error(err)
 				return
@@ -503,7 +503,7 @@ func (osm *orderSchedulerModal) startOrderScheduler() {
 	}()
 }
 
-func (osm *orderSchedulerModal) getInstantCurrencyInfos() error {
+func (osm *orderSchedulerModal) instantExchangeCurrencyInfos() error {
 	osm.fetchingRate = true
 	currencies, err := osm.exchange.GetCurrencies()
 	osm.instantCurrencies = currencies
@@ -547,7 +547,7 @@ func (osm *orderSchedulerModal) getExchangeRateInfo() error {
 		FromNetwork: getNetwork(fromCur, osm.instantCurrencies),
 		To:          toCur,
 		ToNetwork:   getNetwork(toCur, osm.instantCurrencies),
-		Amount:      libwallet.RateRequest(fromCur), // amount needs to be greater than 0 to get the exchange rate
+		Amount:      libwallet.DefaultRateRequestAmt(fromCur), // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := osm.AssetsManager.InstantSwap.GetExchangeRateInfo(osm.exchange, params)
 	osm.fetchingRate = false

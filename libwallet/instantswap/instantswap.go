@@ -54,7 +54,7 @@ func init() {
 	privKeyMap[FlypMe] = ""
 }
 
-func GetInstantPrivKey(server Server) (string, bool) {
+func GetInstantExchangePrivKey(server Server) (string, bool) {
 	key, ok := privKeyMap[server]
 	return key, ok
 }
