@@ -1,4 +1,4 @@
-package account
+package accounts
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const AccountID = "Account"
+const AccountsPageID = "Accounts"
 
 type (
 	C = layout.Context
@@ -47,7 +47,7 @@ type Page struct {
 func NewAccountPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
 		Load:             l,
-		GenericPageModal: app.NewGenericPageModal(AccountID),
+		GenericPageModal: app.NewGenericPageModal(AccountsPageID),
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -55,8 +55,6 @@ func NewAccountPage(l *load.Load, wallet sharedW.Asset) *Page {
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 		wallet:        wallet,
 	}
-
-	pg.loadWalletAccount()
 
 	return pg
 }
@@ -84,14 +82,22 @@ func (pg *Page) loadWalletAccount() {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
+	pg.loadWalletAccount()
 	pg.usdExchangeSet = false
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
 		pg.usdExchangeSet = pg.AssetsManager.RateSource.Ready()
-		go func() {
-			pg.fetchExchangeRate()
-		}()
+		go pg.fetchExchangeRate()
 	}
 }
+
+// OnNavigatedFrom is called when the page is about to be removed from
+// the displayed window. This method should ideally be used to disable
+// features that are irrelevant when the page is NOT displayed.
+// NOTE: The page may be re-displayed on the app's window, in which case
+// OnNavigatedTo() will be called again. This method should not destroy UI
+// components unless they'll be recreated in the OnNavigatedTo() method.
+// Part of the load.Page interface.
+func (pg *Page) OnNavigatedFrom() {}
 
 func (pg *Page) fetchExchangeRate() {
 	var market string
@@ -126,9 +132,20 @@ func (pg *Page) Layout(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.headerLayout),
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+						return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
 							return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
-								return pg.accountItem(gtx, pg.accounts[i], i == len(pg.accounts)-1)
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return pg.accountItemLayout(gtx, pg.accounts[i])
+									}),
+									layout.Rigid(func(gtx C) D {
+										isLastItem := i == len(pg.accounts)-1
+										if isLastItem {
+											return D{}
+										}
+										return pg.itemLine(gtx)
+									}),
+								)
 							})
 						})
 					}),
@@ -140,8 +157,7 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) headerLayout(gtx C) D {
 	return layout.Inset{
-		Top:    values.MarginPadding24,
-		Bottom: values.MarginPadding12,
+		Top: values.MarginPadding24,
 	}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -150,13 +166,13 @@ func (pg *Page) headerLayout(gtx C) D {
 				return txt.Layout(gtx)
 			}),
 			layout.Flexed(1, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.addAccountLayout)
+				return layout.E.Layout(gtx, pg.addAccountBtnLayout)
 			}),
 		)
 	})
 }
 
-func (pg *Page) addAccountLayout(gtx C) D {
+func (pg *Page) addAccountBtnLayout(gtx C) D {
 	return cryptomaterial.LinearLayout{
 		Width:      cryptomaterial.WrapContent,
 		Height:     cryptomaterial.WrapContent,
@@ -176,10 +192,18 @@ func (pg *Page) addAccountLayout(gtx C) D {
 	)
 }
 
-func (pg *Page) accountItem(gtx C, account *sharedW.Account, isHiddenLine bool) D {
+func (pg *Page) itemLine(gtx C) D {
+	return layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
+		line := pg.Theme.Line(1, 0)
+		line.Color = pg.Theme.Color.Gray9
+		return line.Layout(gtx)
+	})
+}
+
+func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding36}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						txt := pg.Theme.Label(values.TextSize18, account.AccountName)
@@ -201,7 +225,7 @@ func (pg *Page) accountItem(gtx C, account *sharedW.Account, isHiddenLine bool) 
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding28}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAmountSpendable))
@@ -224,14 +248,6 @@ func (pg *Page) accountItem(gtx C, account *sharedW.Account, isHiddenLine bool) 
 					}),
 				)
 			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			if isHiddenLine {
-				return D{}
-			}
-			line := pg.Theme.Line(1, 0)
-			line.Color = pg.Theme.Color.Gray9
-			return line.Layout(gtx)
 		}),
 	)
 }
@@ -278,12 +294,3 @@ func (pg *Page) HandleUserInteractions() {
 		}
 	}
 }
-
-// OnNavigatedFrom is called when the page is about to be removed from
-// the displayed window. This method should ideally be used to disable
-// features that are irrelevant when the page is NOT displayed.
-// NOTE: The page may be re-displayed on the app's window, in which case
-// OnNavigatedTo() will be called again. This method should not destroy UI
-// components unless they'll be recreated in the OnNavigatedTo() method.
-// Part of the load.Page interface.
-func (pg *Page) OnNavigatedFrom() {}

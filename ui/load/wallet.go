@@ -11,7 +11,6 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
-	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type WalletItem struct {
@@ -186,26 +185,4 @@ func (wl *WalletLoad) getAssetSpendablebalance(accountsResult *sharedW.Accounts)
 		totalBalance += account.Balance.Spendable.ToInt()
 	}
 	return wl.SelectedWallet.Wallet.ToAmount(totalBalance)
-}
-
-func (wl *WalletLoad) FetchExchangeRate() (float64, error) {
-	var market string
-	assetType := wl.SelectedWallet.Wallet.GetAssetType()
-	switch assetType {
-	case utils.DCRWalletAsset:
-		market = values.DCRUSDTMarket
-	case utils.BTCWalletAsset:
-		market = values.BTCUSDTMarket
-	case utils.LTCWalletAsset:
-		market = values.LTCUSDTMarket
-	default:
-		return 0, fmt.Errorf("unsupported asset type: %s", assetType)
-	}
-
-	rate := wl.AssetsManager.RateSource.GetTicker(market)
-	if rate == nil || rate.LastTradePrice <= 0 {
-		return 0, nil
-	}
-
-	return rate.LastTradePrice, nil
 }

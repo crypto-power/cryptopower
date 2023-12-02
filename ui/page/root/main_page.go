@@ -18,7 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
-	"github.com/crypto-power/cryptopower/ui/page/account"
+	"github.com/crypto-power/cryptopower/ui/page/accounts"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
@@ -309,7 +309,7 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 				pg = staking.NewStakingPage(swmp.Load, dcrW)
 			}
 		case values.String(values.StrAccounts):
-			pg = account.NewAccountPage(swmp.Load, swmp.selectedWallet)
+			pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrSettings):
 			pg = NewWalletSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
 		}
