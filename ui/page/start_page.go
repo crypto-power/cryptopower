@@ -86,12 +86,12 @@ func (sp *startPage) OnNavigatedTo() {
 		return
 	}
 
-	if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
+	if sp.AssetsManager.LoadedWalletsCount() > 0 {
 		sp.currentPage = -1
 		sp.setLanguageSetting()
 		// Set the log levels.
-		sp.WL.AssetsManager.GetLogLevels()
-		if sp.WL.AssetsManager.IsStartupSecuritySet() {
+		sp.AssetsManager.GetLogLevels()
+		if sp.AssetsManager.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
 			go sp.openWallets("")
@@ -132,7 +132,7 @@ func (sp *startPage) unlock() {
 		PasswordHint(values.String(values.StrStartupPassword)).
 		SetNegativeButtonText(values.String(values.StrExit)).
 		SetNegativeButtonCallback(func() {
-			sp.WL.AssetsManager.Shutdown()
+			sp.AssetsManager.Shutdown()
 			os.Exit(0)
 		}).
 		SetCancelable(false).
@@ -152,7 +152,7 @@ func (sp *startPage) unlock() {
 }
 
 func (sp *startPage) openWallets(password string) error {
-	err := sp.WL.AssetsManager.OpenWallets(password)
+	err := sp.AssetsManager.OpenWallets(password)
 	if err != nil {
 		log.Errorf("Error opening wallet: %v", err)
 		// show err dialog
@@ -170,9 +170,10 @@ func (sp *startPage) openWallets(password string) error {
 // Part of the load.Page interface.
 func (sp *startPage) HandleUserInteractions() {
 	if sp.addWalletButton.Clicked() {
-		sp.ParentNavigator().Display(components.NewCreateWallet(sp.Load, func() {
+		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
-		}))
+		})
+		sp.ParentNavigator().Display(createWalletPage)
 	}
 
 	if sp.skipButton.Clicked() {
@@ -260,7 +261,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				netType := sp.WL.AssetsManager.NetType().Display()
+				netType := sp.AssetsManager.NetType().Display()
 				nType := sp.Theme.Label(values.TextSize20, netType)
 				nType.Font.Weight = font.Medium
 				return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, nType.Layout)
@@ -268,7 +269,7 @@ func (sp *startPage) loadingSection(gtx C) D {
 			layout.Rigid(func(gtx C) D {
 				if sp.loading {
 					loadStatus := sp.Theme.Label(values.TextSize20, values.String(values.StrLoading))
-					if sp.WL.AssetsManager.LoadedWalletsCount() > 0 {
+					if sp.AssetsManager.LoadedWalletsCount() > 0 {
 						switch {
 						case sp.isQuitting:
 							loadStatus.Text = values.String(values.StrClosingWallet)
@@ -407,9 +408,9 @@ func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
 }
 
 func (sp *startPage) setLanguageSetting() {
-	langPre := sp.WL.AssetsManager.GetLanguagePreference()
+	langPre := sp.AssetsManager.GetLanguagePreference()
 	if langPre == "" {
-		sp.WL.AssetsManager.SetLanguagePreference(values.DefaultLangauge)
+		sp.AssetsManager.SetLanguagePreference(values.DefaultLangauge)
 	}
 	values.SetUserLanguage(langPre)
 }

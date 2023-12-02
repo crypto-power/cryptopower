@@ -29,7 +29,7 @@ func (pg *Page) pageHead(gtx C) D {
 		return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 			layout.Rigid(txt.Layout),
 			layout.Rigid(func(gtx C) D {
-				if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				if pg.dcrWallet.IsWatchingOnlyWallet() {
 					return D{}
 				}
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -78,7 +78,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Center.Layout(gtx, func(gtx C) D {
-												if pg.WL.SelectedWallet.Wallet.IsSyncing() || pg.WL.SelectedWallet.Wallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
+												if pg.dcrWallet.IsSyncing() || pg.dcrWallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
 													title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
 													title.Color = col
 													return title.Layout(gtx)
@@ -99,7 +99,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 					rightWg := func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								secs, _ := pg.dcrImpl.NextTicketPriceRemaining()
+								secs, _ := pg.dcrWallet.NextTicketPriceRemaining()
 								timeleft := nextTicketRemaining(int(secs))
 								return pg.dataRows(gtx, values.String(values.StrTimeLeft), timeleft)
 							}),
@@ -142,17 +142,17 @@ func (pg *Page) dataRows(gtx C, title1, value1 string) D {
 }
 
 func (pg *Page) CalculateTotalTicketsCanBuy() int {
-	if !pg.dcrImpl.Synced() {
+	if !pg.dcrWallet.Synced() {
 		return 0
 	}
 
-	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrWallet)
 	if err != nil {
 		log.Debugf("missing set mixed account error: %v", err)
 		return 0
 	}
 
-	ticketPrice, err := pg.dcrImpl.TicketPrice()
+	ticketPrice, err := pg.dcrWallet.TicketPrice()
 	if err != nil {
 		log.Errorf("ticketPrice error: %v", err)
 		return 0
@@ -166,7 +166,7 @@ func (pg *Page) CalculateTotalTicketsCanBuy() int {
 }
 
 func (pg *Page) balanceProgressBarLayout(gtx C) D {
-	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrImpl)
+	totalBalance, err := components.CalculateMixedAccountBalance(pg.dcrWallet)
 	if err != nil {
 		return D{}
 	}
@@ -197,7 +197,7 @@ func (pg *Page) balanceProgressBarLayout(gtx C) D {
 		})
 	}
 	total := totalBalance.Spendable.ToInt() + totalBalance.LockedByTickets.ToInt()
-	pb := pg.Theme.MultiLayerProgressBar(pg.WL.SelectedWallet.Wallet.ToAmount(total).ToCoin(), items)
+	pb := pg.Theme.MultiLayerProgressBar(pg.dcrWallet.ToAmount(total).ToCoin(), items)
 	pb.ShowOtherWidgetFirst = true
 	pb.Height = values.MarginPadding16
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

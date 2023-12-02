@@ -44,7 +44,7 @@ type Page struct {
 	usdExchangeSet bool
 }
 
-func NewAccountPage(l *load.Load) *Page {
+func NewAccountPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountID),
@@ -53,7 +53,7 @@ func NewAccountPage(l *load.Load) *Page {
 		},
 		addAccountBtn: l.Theme.NewClickable(false),
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
-		wallet:        l.WL.SelectedWallet.Wallet,
+		wallet:        wallet,
 	}
 
 	pg.loadWalletAccount()
@@ -85,18 +85,35 @@ func (pg *Page) loadWalletAccount() {
 // Part of the load.Page interface.
 func (pg *Page) OnNavigatedTo() {
 	pg.usdExchangeSet = false
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		pg.usdExchangeSet = pg.WL.AssetsManager.RateSource.Ready()
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		pg.usdExchangeSet = pg.AssetsManager.RateSource.Ready()
 		go func() {
-			rate, err := pg.Load.WL.FetchExchangeRate()
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			pg.exchangeRate = rate
-			pg.ParentWindow().Reload()
+			pg.fetchExchangeRate()
 		}()
 	}
+}
+
+func (pg *Page) fetchExchangeRate() {
+	var market string
+	switch pg.wallet.GetAssetType() {
+	case libutils.DCRWalletAsset:
+		market = values.DCRUSDTMarket
+	case libutils.BTCWalletAsset:
+		market = values.BTCUSDTMarket
+	case libutils.LTCWalletAsset:
+		market = values.LTCUSDTMarket
+	default:
+		log.Errorf("Unsupported asset type: %s", pg.wallet.GetAssetType())
+		return
+	}
+
+	rate := pg.AssetsManager.RateSource.GetTicker(market)
+	if rate == nil || rate.LastTradePrice <= 0 {
+		return
+	}
+
+	pg.exchangeRate = rate.LastTradePrice
+	pg.ParentWindow().Reload()
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -253,11 +270,11 @@ func (pg *Page) HandleUserInteractions() {
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
 		switch pg.wallet.GetAssetType() {
 		case libutils.BTCWalletAsset:
-			pg.ParentNavigator().Display(NewAcctBTCDetailsPage(pg.Load, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewAcctBTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		case libutils.DCRWalletAsset:
-			pg.ParentNavigator().Display(NewAcctDetailsPage(pg.Load, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		case libutils.LTCWalletAsset:
-			pg.ParentNavigator().Display(NewAcctLTCDetailsPage(pg.Load, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewAcctLTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		}
 	}
 }

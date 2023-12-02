@@ -92,7 +92,7 @@ func NewSettingsPage(l *load.Load) *SettingPage {
 
 	_, pg.networkInfoButton = components.SubpageHeaderButtons(l)
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
-	pg.isDarkModeOn = pg.WL.AssetsManager.IsDarkModeOn()
+	pg.isDarkModeOn = pg.AssetsManager.IsDarkModeOn()
 
 	return pg
 }
@@ -247,7 +247,7 @@ func (pg *SettingPage) general() layout.Widget {
 					languageRow := row{
 						title:     values.String(values.StrLanguage),
 						clickable: pg.language,
-						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLanguagePreference()),
+						label:     pg.Theme.Body2(pg.AssetsManager.GetLanguagePreference()),
 					}
 					return pg.clickableRow(gtx, languageRow)
 				}),
@@ -262,12 +262,12 @@ func (pg *SettingPage) general() layout.Widget {
 func (pg *SettingPage) networkSettings() layout.Widget {
 	return func(gtx C) D {
 		return pg.wrapSection(gtx, values.String(values.StrPrivacySettings), func(gtx C) D {
-			if pg.WL.AssetsManager.IsPrivacyModeOn() {
+			if pg.AssetsManager.IsPrivacyModeOn() {
 				return D{}
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					lKey := pg.WL.AssetsManager.GetCurrencyConversionExchange()
+					lKey := pg.AssetsManager.GetCurrencyConversionExchange()
 					l := preference.GetKeyValue(lKey, preference.ExchOptions)
 					exchangeRate := row{
 						title:     values.String(values.StrExchangeRate),
@@ -349,7 +349,7 @@ func (pg *SettingPage) debug() layout.Widget {
 					logLevel := row{
 						title:     values.String(values.StrLogLevel),
 						clickable: pg.logLevel,
-						label:     pg.Theme.Body2(pg.WL.AssetsManager.GetLogLevels()),
+						label:     pg.Theme.Body2(pg.AssetsManager.GetLogLevels()),
 					}
 					return pg.clickableRow(gtx, logLevel)
 				}),
@@ -411,7 +411,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 			sharedW.LanguagePreferenceKey, values.DefaultLangauge, preference.LangOptions).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
-				values.SetUserLanguage(pg.WL.AssetsManager.GetLanguagePreference())
+				values.SetUserLanguage(pg.AssetsManager.GetLanguagePreference())
 			})
 		pg.ParentWindow().ShowModal(langSelectorModal)
 		break
@@ -433,28 +433,28 @@ func (pg *SettingPage) HandleUserInteractions() {
 
 	for pg.appearanceMode.Clicked() {
 		pg.isDarkModeOn = !pg.isDarkModeOn
-		pg.WL.AssetsManager.SetDarkMode(pg.isDarkModeOn)
+		pg.AssetsManager.SetDarkMode(pg.isDarkModeOn)
 		pg.RefreshTheme(pg.ParentWindow())
 	}
 
 	if pg.transactionNotification.Changed() {
-		pg.WL.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
+		pg.AssetsManager.SetTransactionsNotifications(pg.transactionNotification.IsChecked())
 	}
 	if pg.governanceAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHTTPAPI, pg.governanceAPI.IsChecked())
+		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHTTPAPI, pg.governanceAPI.IsChecked())
 	}
 	if pg.exchangeAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, pg.exchangeAPI.IsChecked())
+		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, pg.exchangeAPI.IsChecked())
 	}
 	if pg.feeRateAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, pg.feeRateAPI.IsChecked())
+		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, pg.feeRateAPI.IsChecked())
 	}
 	if pg.vspAPI.Changed() {
-		pg.WL.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, pg.vspAPI.IsChecked())
+		pg.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, pg.vspAPI.IsChecked())
 	}
 
 	if pg.privacyActive.Changed() {
-		pg.WL.AssetsManager.SetPrivacyMode(pg.privacyActive.IsChecked())
+		pg.AssetsManager.SetPrivacyMode(pg.privacyActive.IsChecked())
 		pg.updatePrivacySettings()
 	}
 
@@ -495,7 +495,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 	}
 
 	if pg.viewLog.Clicked() {
-		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.WL.AssetsManager.LogFile(), values.String(values.StrAppLog)))
+		pg.ParentNavigator().Display(NewLogPage(pg.Load, pg.AssetsManager.LogFile(), values.String(values.StrAppLog)))
 	}
 
 	for pg.changeStartupPass.Clicked() {
@@ -510,7 +510,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 					pm.SetLoading(false)
 					return false
 				}
-				err := pg.WL.AssetsManager.VerifyStartupPassphrase(password)
+				err := pg.AssetsManager.VerifyStartupPassphrase(password)
 				if err != nil {
 					pm.SetError(err.Error())
 					pm.SetLoading(false)
@@ -530,7 +530,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 							m.SetLoading(false)
 							return false
 						}
-						err := pg.WL.AssetsManager.ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
+						err := pg.AssetsManager.ChangeStartupPassphrase(password, newPassword, sharedW.PassphraseTypePass)
 						if err != nil {
 							m.SetError(err.Error())
 							m.SetLoading(false)
@@ -561,7 +561,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 						m.SetLoading(false)
 						return false
 					}
-					err := pg.WL.AssetsManager.SetStartupPassphrase(password, sharedW.PassphraseTypePass)
+					err := pg.AssetsManager.SetStartupPassphrase(password, sharedW.PassphraseTypePass)
 					if err != nil {
 						m.SetError(err.Error())
 						m.SetLoading(false)
@@ -584,7 +584,7 @@ func (pg *SettingPage) HandleUserInteractions() {
 				Title(values.String(values.StrConfirmRemoveStartupPass)).
 				PasswordHint(values.String(values.StrStartupPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.AssetsManager.RemoveStartupPassphrase(password)
+					err := pg.AssetsManager.RemoveStartupPassphrase(password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -609,7 +609,7 @@ func (pg *SettingPage) showNoticeSuccess(title string) {
 }
 
 func (pg *SettingPage) updateSettingOptions() {
-	isPassword := pg.WL.AssetsManager.IsStartupSecuritySet()
+	isPassword := pg.AssetsManager.IsStartupSecuritySet()
 	pg.startupPassword.SetChecked(false)
 	pg.isStartupPassword = false
 	if isPassword {
@@ -621,20 +621,14 @@ func (pg *SettingPage) updateSettingOptions() {
 }
 
 func (pg *SettingPage) updatePrivacySettings() {
-	pg.setInitialSwitchStatus(pg.privacyActive, pg.WL.AssetsManager.IsPrivacyModeOn())
-	if !pg.WL.AssetsManager.IsPrivacyModeOn() {
-		pg.setInitialSwitchStatus(pg.transactionNotification, pg.WL.AssetsManager.IsTransactionNotificationsOn())
-		pg.setInitialSwitchStatus(pg.governanceAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI))
-		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI))
-		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI))
-		pg.setInitialSwitchStatus(pg.vspAPI, pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI))
-	} else {
-		if pg.WL.SelectedWallet != nil {
-			go func() {
-				// Clear all the peers saved if the privacy mode is on.
-				pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
-			}()
-		}
+	privacyOn := pg.AssetsManager.IsPrivacyModeOn()
+	pg.setInitialSwitchStatus(pg.privacyActive, privacyOn)
+	if !privacyOn {
+		pg.setInitialSwitchStatus(pg.transactionNotification, pg.AssetsManager.IsTransactionNotificationsOn())
+		pg.setInitialSwitchStatus(pg.governanceAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI))
+		pg.setInitialSwitchStatus(pg.exchangeAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI))
+		pg.setInitialSwitchStatus(pg.feeRateAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.FeeRateHTTPAPI))
+		pg.setInitialSwitchStatus(pg.vspAPI, pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI))
 	}
 }
 

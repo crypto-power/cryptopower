@@ -76,7 +76,7 @@ func (dst *destination) destinationAddress() (string, error) {
 		return "", fmt.Errorf(values.String(values.StrInvalidAddress))
 	}
 
-	wal := dst.WL.AssetsManager.WalletWithID(destinationAccount.WalletID)
+	wal := dst.AssetsManager.WalletWithID(destinationAccount.WalletID)
 	return wal.CurrentAddress(destinationAccount.Number)
 }
 

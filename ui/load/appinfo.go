@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"gioui.org/unit"
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -17,14 +18,17 @@ type AppInfo struct {
 
 	currentAppWidth unit.Dp
 	isMobileView    bool
+
+	AssetsManager *libwallet.AssetsManager
 }
 
 // StartApp returns an instance of AppInfo with the startUpTime set to the current time.
-func StartApp(version string, buildDate time.Time) *AppInfo {
+func StartApp(version string, buildDate time.Time, assetsManager *libwallet.AssetsManager) *AppInfo {
 	return &AppInfo{
-		version:     version,
-		buildDate:   buildDate,
-		startUpTime: time.Now(),
+		version:       version,
+		buildDate:     buildDate,
+		startUpTime:   time.Now(),
+		AssetsManager: assetsManager,
 	}
 }
 

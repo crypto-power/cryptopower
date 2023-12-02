@@ -36,21 +36,15 @@ type ManualMixerSetupPage struct {
 	infoButton     cryptomaterial.IconButton
 	toPrivacySetup cryptomaterial.Button
 
-	dcrImpl *dcr.Asset
+	dcrWallet *dcr.Asset
 }
 
-func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
+func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSetupPage {
 	pg := &ManualMixerSetupPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ManualMixerSetupPageID),
 		toPrivacySetup:   l.Theme.Button(values.String(values.StrSetUp)),
-		dcrImpl:          impl,
+		dcrWallet:        dcrWallet,
 	}
 
 	// Mixed account picker
@@ -58,7 +52,7 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 		Title(values.String(values.StrMixedAccount)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.AssetsManager.WalletWithID(account.WalletID)
+			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
 			var unmixedAccNo int32 = -1
 			if unmixedAcc := pg.unmixedAccountSelector.SelectedAccount(); unmixedAcc != nil {
@@ -74,14 +68,13 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	wl := load.NewWalletMapping(l.WL.SelectedWallet.Wallet)
 
 	// Unmixed account picker
 	pg.unmixedAccountSelector = components.NewWalletAndAccountSelector(l).
 		Title(values.String(values.StrUnmixedAccount)).
 		AccountSelected(func(selectedAccount *sharedW.Account) {}).
 		AccountValidator(func(account *sharedW.Account) bool {
-			wal := pg.Load.WL.AssetsManager.WalletWithID(account.WalletID)
+			wal := pg.Load.AssetsManager.WalletWithID(account.WalletID)
 
 			var mixedAccNo int32 = -1
 			if mixedAcc := pg.mixedAccountSelector.SelectedAccount(); mixedAcc != nil {
@@ -98,8 +91,9 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 
 			return true
 		})
-	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
+
+	pg.mixedAccountSelector.SelectFirstValidAccount(dcrWallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(dcrWallet)
 
 	pg.backButton, pg.infoButton = components.SubpageHeaderButtons(l)
 
@@ -113,9 +107,8 @@ func NewManualMixerSetupPage(l *load.Load) *ManualMixerSetupPage {
 func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 
-	wl := load.NewWalletMapping(pg.WL.SelectedWallet.Wallet)
-	pg.mixedAccountSelector.SelectFirstValidAccount(wl)
-	pg.unmixedAccountSelector.SelectFirstValidAccount(wl)
+	pg.mixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
+	pg.unmixedAccountSelector.SelectFirstValidAccount(pg.dcrWallet)
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -217,27 +210,27 @@ func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
 			}
 			mixedAcctNumber := pg.mixedAccountSelector.SelectedAccount().Number
 			unmixedAcctNumber := pg.unmixedAccountSelector.SelectedAccount().Number
-			err := pg.dcrImpl.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
+			err := pg.dcrWallet.SetAccountMixerConfig(mixedAcctNumber, unmixedAcctNumber, password)
 			if err != nil {
 				return errfunc(err)
 			}
-			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
+			pg.dcrWallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			// rename mixed account
-			err = pg.WL.SelectedWallet.Wallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))
+			err = pg.dcrWallet.RenameAccount(mixedAcctNumber, values.String(values.StrMixed))
 			if err != nil {
 				return errfunc(err)
 			}
 
 			// rename unmixed account
-			err = pg.WL.SelectedWallet.Wallet.RenameAccount(unmixedAcctNumber, values.String(values.StrUnmixed))
+			err = pg.dcrWallet.RenameAccount(unmixedAcctNumber, values.String(values.StrUnmixed))
 			if err != nil {
 				return errfunc(err)
 			}
 
 			pm.Dismiss()
 
-			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load))
+			pg.ParentNavigator().Display(NewAccountMixerPage(pg.Load, pg.dcrWallet))
 
 			return true
 		})

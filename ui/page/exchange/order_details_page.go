@@ -70,13 +70,13 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 			order.ExchangeServer.Config = instantswap.ExchangeConfig{}
 		}
 
-		err := pg.WL.AssetsManager.InstantSwap.UpdateOrder(order)
+		err := pg.AssetsManager.InstantSwap.UpdateOrder(order)
 		if err != nil {
 			log.Errorf("Error updating legacy order: %v", err)
 		}
 	}
 
-	exchange, err := pg.WL.AssetsManager.InstantSwap.NewExchangeServer(order.ExchangeServer)
+	exchange, err := pg.AssetsManager.InstantSwap.NewExchangeServer(order.ExchangeServer)
 	if err != nil {
 		log.Error(err)
 	}
@@ -197,7 +197,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.FromCurrency, pg.orderInfo.InvoicedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						sourceWallet := pg.WL.AssetsManager.WalletWithID(pg.orderInfo.SourceWalletID)
+																						sourceWallet := pg.AssetsManager.WalletWithID(pg.orderInfo.SourceWalletID)
 																						sourceWalletName := sourceWallet.GetWalletName()
 																						sourceAccount, _ := sourceWallet.GetAccount(pg.orderInfo.SourceAccountNumber)
 																						fromText := fmt.Sprintf(values.String(values.StrOrderSendingFrom), sourceWalletName, sourceAccount.Name)
@@ -232,7 +232,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 																						return components.LayoutOrderAmount(pg.Load, gtx, pg.orderInfo.ToCurrency, pg.orderInfo.OrderedAmount)
 																					}),
 																					layout.Rigid(func(gtx C) D {
-																						destinationWallet := pg.WL.AssetsManager.WalletWithID(pg.orderInfo.DestinationWalletID)
+																						destinationWallet := pg.AssetsManager.WalletWithID(pg.orderInfo.DestinationWalletID)
 																						destinationWalletName := destinationWallet.GetWalletName()
 																						destinationAccount, _ := destinationWallet.GetAccount(pg.orderInfo.DestinationAccountNumber)
 																						toText := fmt.Sprintf(values.String(values.StrOrderReceivingTo), destinationWalletName, destinationAccount.Name)
@@ -299,7 +299,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 }
 
 func (pg *OrderDetailsPage) getOrderInfo(UUID string) (*instantswap.Order, error) {
-	orderInfo, err := pg.WL.AssetsManager.InstantSwap.GetOrderInfo(pg.exchange, UUID)
+	orderInfo, err := pg.AssetsManager.InstantSwap.GetOrderInfo(pg.exchange, UUID)
 	if err != nil {
 		return nil, err
 	}

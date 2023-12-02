@@ -122,7 +122,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 		currentStep:           onboardingSetPassword,
 		passwordEditor:        newPasswordEditor(th, values.String(values.StrNewPassword)),
 		confirmPasswordEditor: newPasswordEditor(th, values.String(values.StrConfirmPassword)),
-		serverDropDown:        th.DropDown(knownDEXServers[l.WL.AssetsManager.NetType()], values.DEXServerDropdownGroup, 0),
+		serverDropDown:        th.DropDown(knownDEXServers[l.AssetsManager.NetType()], values.DEXServerDropdownGroup, 0),
 		addServerBtn:          th.NewClickable(false),
 		serverURLEditor:       newTextEditor(th, values.String(values.StrServerURL), values.String(values.StrInputURL), false),
 		serverCertEditor:      newTextEditor(th, values.String(values.StrCertificateOPtional), values.String(values.StrInputCertificate), true),
@@ -875,7 +875,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.currentStep = onBoardingStepAddServer
-			knownServers, ok := knownDEXServers[pg.WL.AssetsManager.NetType()]
+			knownServers, ok := knownDEXServers[pg.AssetsManager.NetType()]
 			if ok && len(knownServers) > 0 && !pg.wantCustomServer {
 				pg.currentStep = onboardingChooseServer
 			}
@@ -907,7 +907,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			pg.currentStep = onboardingPostBond
 			pg.bondSourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load /*, supportedAssets...  TODO: Use assets provided by selected DEX server. */).
 				Title(values.String(values.StrSelectWallet)).
-				WalletSelected(func(wm *load.WalletMapping) {
+				WalletSelected(func(wm sharedW.Asset) {
 					if err := pg.bondSourceAccountSelector.SelectFirstValidAccount(wm); err != nil {
 						log.Error(err)
 					}

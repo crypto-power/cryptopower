@@ -107,14 +107,9 @@ func (win *Window) NewLoad(mw *libwallet.AssetsManager, version string, buildDat
 	th.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 
 	l := &load.Load{
-		AppInfo: load.StartApp(version, buildDate),
+		AppInfo: load.StartApp(version, buildDate, mw),
 
 		Theme: th,
-
-		WL: &load.WalletLoad{
-			AssetsManager: mw,
-			TxAuthor:      win.txAuthor,
-		},
 
 		// NB: Toasts implementation is maintained here for the cases where its
 		// very essential to have a toast UI component implementation otherwise

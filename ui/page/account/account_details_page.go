@@ -54,11 +54,11 @@ type AcctDetailsPage struct {
 	isHiddenExtendedxPubkey bool
 }
 
-func NewAcctDetailsPage(l *load.Load, account *sharedW.Account) *AcctDetailsPage {
+func NewAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *AcctDetailsPage {
 	pg := &AcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
-		wallet:           l.WL.SelectedWallet.Wallet,
+		wallet:           wallet,
 		account:          account,
 
 		theme:                    l.Theme,
@@ -98,7 +98,7 @@ func (pg *AcctDetailsPage) OnNavigatedTo() {
 	pg.votingAuthority = balance.VotingAuthority.String()
 	pg.immatureStakeGen = balance.ImmatureStakeGeneration.String()
 
-	pg.hdPath = pg.WL.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
+	pg.hdPath = pg.AssetsManager.DCRHDPrefix() + strconv.Itoa(int(pg.account.Number)) + "'"
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount
@@ -438,7 +438,7 @@ func (pg *AcctDetailsPage) HandleUserInteractions() {
 }
 
 func (pg *AcctDetailsPage) loadExtendedPubKey() {
-	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	xpub, err := pg.wallet.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 	}

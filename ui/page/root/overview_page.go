@@ -198,8 +198,8 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		go pg.WL.AssetsManager.RateSource.Refresh(false)
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		go pg.AssetsManager.RateSource.Refresh(false)
 	}
 
 	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
@@ -219,17 +219,17 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	if pg.forceRefreshRates.Clicked() {
-		go pg.WL.AssetsManager.RateSource.Refresh(true)
+		go pg.AssetsManager.RateSource.Refresh(true)
 	}
 
 	if clicked, selectedTxIndex := pg.recentTransactions.ItemClicked(); clicked {
 		tx, wal := pg.txAndWallet(pg.transactions[selectedTxIndex])
-		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx))
 	}
 
 	if clicked, selectedTxIndex := pg.recentStakes.ItemClicked(); clicked {
 		tx, wal := pg.txAndWallet(pg.stakes[selectedTxIndex])
-		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx, false))
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx))
 	}
 
 	if clicked, selectedTxIndex := pg.recentProposalList.ItemClicked(); clicked {
@@ -240,18 +240,16 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	if pg.forwardButton.Button.Clicked() {
 		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
 		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
-		pg.WL.SelectedWallet = &load.WalletItem{
-			Wallet: mixerData.Asset,
-		}
+		selectedWallet := mixerData.Asset
 
 		pg.showNavigationFunc(true)
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
 		}
-		mp := NewMainPage(pg.Load, walletCallbackFunc)
-		pg.ParentNavigator().Display(mp)
-		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
-		mp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+		swmp := NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
+		pg.ParentNavigator().Display(swmp)
+		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
+		swmp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
@@ -687,13 +685,13 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
 	marketRates := make(map[string]*ext.Ticker)
 
-	if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+	if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
 		return marketRates
 	}
 
 	for i := range pg.mktValues {
 		asset := pg.mktValues[i]
-		rate := pg.WL.AssetsManager.RateSource.GetTicker(asset.market)
+		rate := pg.AssetsManager.RateSource.GetTicker(asset.market)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			continue
 		}
@@ -948,12 +946,12 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 }
 
 func (pg *OverviewPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
-	return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
+	return mtx.Transaction, pg.AssetsManager.WalletWithID(mtx.walletID)
 }
 
 func (pg *OverviewPage) updateAssetsUSDBalance() {
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(pg.Load, pg.assetsTotalBalance)
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		assetsTotalUSDBalance, err := pg.AssetsManager.CalculateAssetsUSDBalance(pg.assetsTotalBalance)
 		if err != nil {
 			log.Error(err)
 			return
@@ -983,7 +981,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 }
 
 func (pg *OverviewPage) updateAssetsSliders() {
-	assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
+	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
 	if err != nil {
 		log.Error(err)
 		return
@@ -1080,7 +1078,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 		},
 	}
 
-	wallets := pg.WL.AssetsManager.AllWallets()
+	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		if w, ok := wal.(*dcr.Asset); ok {
 			// Only dcr wallets have mixing support currently.
@@ -1102,7 +1100,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 	rateListener := &ext.RateListener{
 		OnRateUpdated: pg.ParentWindow().Reload,
 	}
-	err := pg.WL.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
+	err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
 	if err != nil {
 		log.Error("RateSource.AddRateListener error: %v", err)
 	}
@@ -1135,14 +1133,14 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 }
 
 func (pg *OverviewPage) stopNtfnListeners() {
-	wallets := pg.WL.AssetsManager.AllWallets()
+	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		if w, ok := wal.(*dcr.Asset); ok {
 			w.RemoveAccountMixerNotificationListener(OverviewPageID)
 		}
 		wal.RemoveTxAndBlockNotificationListener(OverviewPageID)
 	}
-	pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
+	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {
@@ -1183,14 +1181,14 @@ func (pg *OverviewPage) reloadBalances() {
 
 func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 	return func(gtx layout.Context) layout.Dimensions {
-		refreshing := pg.WL.AssetsManager.RateSource.Refreshing()
+		refreshing := pg.AssetsManager.RateSource.Refreshing()
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				var text string
 				if refreshing {
 					text = values.String(values.StrRefreshState)
 				} else {
-					lastUpdatedTimestamp := pg.WL.AssetsManager.RateSource.LastUpdate().Unix()
+					lastUpdatedTimestamp := pg.AssetsManager.RateSource.LastUpdate().Unix()
 					text = values.String(values.StrUpdated) + " " + components.TimeAgo(lastUpdatedTimestamp)
 				}
 				lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
@@ -1222,7 +1220,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 
 func (pg *OverviewPage) loadTransactions() {
 	transactions := make([]*multiWalletTx, 0)
-	wal := pg.WL.AllSortedWalletList()
+	wal := pg.AssetsManager.AllWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
 		if err != nil {
@@ -1249,7 +1247,7 @@ func (pg *OverviewPage) loadTransactions() {
 
 func (pg *OverviewPage) loadStakes() {
 	stakes := make([]*multiWalletTx, 0)
-	wal := pg.WL.AssetsManager.AllDCRWallets()
+	wal := pg.AssetsManager.AllDCRWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
 		if err != nil {

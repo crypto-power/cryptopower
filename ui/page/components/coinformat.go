@@ -75,10 +75,10 @@ func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, col
 }
 
 func formatBalanceWithHidden(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, textFont font.Weight, col color.NRGBA, isUSD bool) D {
-	isBalanceHidden := l.WL.AssetsManager.IsTotalBalanceVisible()
+	isBalanceHidden := l.AssetsManager.IsTotalBalanceVisible()
 	txt := l.Theme.Label(mainTextSize, amount)
 	if isUSD {
-		if !IsFetchExchangeRateAPIAllowed(l.WL) {
+		if !l.AssetsManager.ExchangeRateFetchingEnabled() {
 			txt.Text = "$ --"
 		}
 	}

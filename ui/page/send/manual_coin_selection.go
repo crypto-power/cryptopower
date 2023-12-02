@@ -145,7 +145,7 @@ func NewManualCoinSelectionPage(l *load.Load, sendPage *Page) *ManualCoinSelecti
 	pg.confirmationsClickable = pg.Theme.NewClickable(true)
 	pg.dateClickable = pg.Theme.NewClickable(false)
 
-	pg.strAssetType = pg.WL.SelectedWallet.Wallet.GetAssetType().String()
+	pg.strAssetType = sendPage.selectedWallet.GetAssetType().String()
 	name := fmt.Sprintf("%v(%v)", values.String(values.StrAmount), pg.strAssetType)
 
 	// UTXO table view titles.
@@ -212,7 +212,7 @@ func (pg *ManualCoinSelectionPage) OnNavigatedTo() {
 
 func (pg *ManualCoinSelectionPage) fetchAccountsInfo() error {
 	account := pg.sendPage.sourceAccountSelector.SelectedAccount()
-	info, err := pg.WL.SelectedWallet.Wallet.UnspentOutputs(int32(account.AccountNumber))
+	info, err := pg.sendPage.selectedWallet.UnspentOutputs(int32(account.AccountNumber))
 	if err != nil {
 		return fmt.Errorf("querying the account (%v) info failed: %v", account.AccountNumber, err)
 	}
@@ -334,7 +334,7 @@ func (pg *ManualCoinSelectionPage) updateSummaryInfo() {
 }
 
 func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
-	wallet := pg.WL.SelectedWallet.Wallet
+	wallet := pg.sendPage.selectedWallet
 
 	// Access to coin selection page is restricted unless destination address is selected.
 	destination, _ := pg.sendPage.sendDestination.destinationAddress()

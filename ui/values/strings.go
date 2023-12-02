@@ -831,7 +831,6 @@ const (
 	StrWalletStatus                    = "walletStatus"
 	StrWalletSyncing                   = "walletSyncing"
 	StrWalletToPurchaseFrom            = "walletToPurchaseFrom"
-	StrWarningVote                     = "warningVote"
 	StrWarningWatchWallet              = "warningWatchWallet"
 	StrWatchOnly                       = "watchOnly"
 	StrWatchOnlyWalletImported         = "watchOnlyWalletImported"

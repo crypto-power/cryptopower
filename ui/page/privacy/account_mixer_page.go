@@ -27,7 +27,7 @@ type AccountMixerPage struct {
 	*app.GenericPageModal
 
 	pageContainer layout.List
-	wallet        sharedW.Asset
+	dcrWallet     *dcr.Asset
 
 	settingsCollapsible *cryptomaterial.Collapsible
 	unmixedAccount      *cryptomaterial.Clickable
@@ -43,20 +43,13 @@ type AccountMixerPage struct {
 	MixerAccounts []preference.ItemPreference
 
 	mixerCompleted bool
-	dcrImpl        *dcr.Asset
 }
 
-func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Warn(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
-	pg := &AccountMixerPage{
+func NewAccountMixerPage(l *load.Load, wallet *dcr.Asset) *AccountMixerPage {
+	return &AccountMixerPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(AccountMixerPageID),
-		wallet:              l.WL.SelectedWallet.Wallet,
+		dcrWallet:           wallet,
 		toggleMixer:         l.Theme.Switch(),
 		mixerProgress:       l.Theme.ProgressBar(0),
 		settingsCollapsible: l.Theme.Collapsible(),
@@ -64,11 +57,7 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 		mixedAccount:        l.Theme.NewClickable(false),
 		coordinationServer:  l.Theme.NewClickable(false),
 		pageContainer:       layout.List{Axis: layout.Vertical},
-
-		dcrImpl: impl,
 	}
-
-	return pg
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -76,22 +65,22 @@ func NewAccountMixerPage(l *load.Load) *AccountMixerPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) OnNavigatedTo() {
-	if pg.WL.SelectedWallet.Wallet.IsSynced() {
+	if pg.dcrWallet.IsSynced() {
 		// Listen for notifications only when the wallet is fully synced.
 		pg.listenForMixerNotifications() // listener is stopped in OnNavigatedFrom().
 	}
 
-	pg.toggleMixer.SetChecked(pg.dcrImpl.IsAccountMixerActive())
+	pg.toggleMixer.SetChecked(pg.dcrWallet.IsAccountMixerActive())
 	pg.mixerProgress.Height = values.MarginPadding18
 	pg.mixerProgress.Radius = cryptomaterial.Radius(2)
-	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.Load) // TODO - handle error
+	totalBalance, _ := components.CalculateTotalWalletsBalance(pg.dcrWallet) // TODO - handle error
 	pg.totalWalletBalance = totalBalance.Total
 	// get balance information
 	pg.getMixerBalance()
 }
 
 func (pg *AccountMixerPage) getMixerBalance() {
-	accounts, err := pg.wallet.GetAccountsRaw()
+	accounts, err := pg.dcrWallet.GetAccountsRaw()
 	if err != nil {
 		log.Error("could not load mixer account information. Please try again.")
 	}
@@ -103,9 +92,9 @@ func (pg *AccountMixerPage) getMixerBalance() {
 			vm = append(vm, preference.ItemPreference{Key: acct.Name, Value: acct.Name})
 		}
 
-		if acct.Number == pg.dcrImpl.MixedAccountNumber() {
+		if acct.Number == pg.dcrWallet.MixedAccountNumber() {
 			pg.mixedBalance = acct.Balance.Total
-		} else if acct.Number == pg.dcrImpl.UnmixedAccountNumber() {
+		} else if acct.Number == pg.dcrWallet.UnmixedAccountNumber() {
 			pg.unmixedBalance = acct.Balance.Total
 		}
 	}
@@ -214,7 +203,7 @@ func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
 				}.Layout(gtx, pg.Theme.Separator().Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				if !pg.dcrImpl.IsAccountMixerActive() {
+				if !pg.dcrWallet.IsAccountMixerActive() {
 					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 						return D{}
 					})
@@ -373,7 +362,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 				SetPositiveButtonText(values.String(values.StrYes)).
 				SetPositiveButtonCallback(func(_ bool, _ *modal.InfoModal) bool {
 					pg.toggleMixer.SetChecked(false)
-					go pg.dcrImpl.StopAccountMixer()
+					go pg.dcrWallet.StopAccountMixer()
 					return true
 				})
 			pg.ParentWindow().ShowModal(info)
@@ -388,7 +377,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 
 	// get account number for the selected wallet name
 	acctNum := func(val string) int32 {
-		num, err := pg.wallet.AccountNumber(val)
+		num, err := pg.dcrWallet.AccountNumber(val)
 		if err != nil {
 			log.Error(err.Error())
 			return -1
@@ -397,7 +386,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 
 	for pg.mixedAccount.Clicked() {
-		name, err := pg.wallet.AccountName(pg.dcrImpl.MixedAccountNumber())
+		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.MixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -417,7 +406,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, acctNum(val))
+					pg.dcrWallet.SetInt32ConfigValueForKey(sharedW.AccountMixerMixedAccount, acctNum(val))
 					pg.getMixerBalance()
 				}
 			})
@@ -425,7 +414,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 	}
 
 	for pg.unmixedAccount.Clicked() {
-		name, err := pg.wallet.AccountName(pg.dcrImpl.UnmixedAccountNumber())
+		name, err := pg.dcrWallet.AccountName(pg.dcrWallet.UnmixedAccountNumber())
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -445,7 +434,7 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 			IsWallet(true).
 			UpdateValues(func(val string) {
 				if acctNum(val) != -1 {
-					pg.wallet.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, acctNum(val))
+					pg.dcrWallet.SetInt32ConfigValueForKey(sharedW.AccountMixerUnmixedAccount, acctNum(val))
 					pg.getMixerBalance()
 				}
 			})
@@ -469,12 +458,12 @@ func (pg *AccountMixerPage) HandleUserInteractions() {
 }
 
 func (pg *AccountMixerPage) getMixerAccounts(isFilterMixed bool) []preference.ItemPreference {
-	filterAccountNumber := pg.dcrImpl.UnmixedAccountNumber()
+	filterAccountNumber := pg.dcrWallet.UnmixedAccountNumber()
 	if isFilterMixed {
-		filterAccountNumber = pg.dcrImpl.MixedAccountNumber()
+		filterAccountNumber = pg.dcrWallet.MixedAccountNumber()
 	}
 
-	accountFilter, err := pg.wallet.AccountName(filterAccountNumber)
+	accountFilter, err := pg.dcrWallet.AccountName(filterAccountNumber)
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -496,7 +485,7 @@ func (pg *AccountMixerPage) showModalPasswordStartAccountMixer() {
 		}).
 		PositiveButton(values.String(values.StrConfirm), func(password string, pm *modal.PasswordModal) bool {
 			go func() {
-				err := pg.dcrImpl.StartAccountMixer(password)
+				err := pg.dcrWallet.StartAccountMixer(password)
 				if err != nil {
 					pg.Toast.NotifyError(err.Error())
 					pm.SetLoading(false)
@@ -523,7 +512,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err := pg.dcrImpl.AddAccountMixerNotificationListener(accountMixerNotificationListener, AccountMixerPageID)
+	err := pg.dcrWallet.AddAccountMixerNotificationListener(accountMixerNotificationListener, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding account mixer notification listener: %+v", err)
 		return
@@ -536,7 +525,7 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err = pg.dcrImpl.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, AccountMixerPageID)
+	err = pg.dcrWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, AccountMixerPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -544,8 +533,8 @@ func (pg *AccountMixerPage) listenForMixerNotifications() {
 }
 
 func (pg *AccountMixerPage) stopMixerNtfnListeners() {
-	pg.dcrImpl.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
-	pg.dcrImpl.RemoveAccountMixerNotificationListener(AccountMixerPageID)
+	pg.dcrWallet.RemoveTxAndBlockNotificationListener(AccountMixerPageID)
+	pg.dcrWallet.RemoveAccountMixerNotificationListener(AccountMixerPageID)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

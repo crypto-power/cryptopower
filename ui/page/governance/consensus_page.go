@@ -33,6 +33,9 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	// TODO: Currently always nil. Implement a dcr wallet selector.
+	selectedDCRWallet *dcr.Asset
+
 	consensusItems []*components.ConsensusItem
 
 	listContainer       *widget.List
@@ -90,14 +93,14 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
-	consensusItems := components.LoadAgendas(pg.Load, nil, false)
+	consensusItems := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, false)
 	if len(consensusItems) > 0 {
 		consensusItem := consensusItems[0]
 		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
@@ -129,7 +132,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 		SetPositiveButtonText(values.String(values.StrSave)).
 		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
 			im.Dismiss()
-			voteModal := newAgendaVoteModal(pg.Load, agenda, radiogroupbtns.Value, func() {
+			voteModal := newAgendaVoteModal(pg.Load, pg.selectedDCRWallet, agenda, radiogroupbtns.Value, func() {
 				pg.FetchAgendas() // re-fetch agendas when modal is dismissed
 			})
 			pg.ParentWindow().ShowModal(voteModal)
@@ -149,7 +152,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for _, item := range pg.consensusItems {
 		if item.VoteButton.Clicked() {
-			pg.agendaVoteChoiceModal(&item.Agenda)
+			pg.agendaVoteChoiceModal(item.Agenda)
 		}
 	}
 
@@ -168,7 +171,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for pg.viewVotingDashboard.Clicked() {
 		host := "https://voting.decred.org"
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
+		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://voting.decred.org/testnet"
 		}
 
@@ -227,17 +230,16 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	//TODO implement wallet selector. Currently, we are fetching and
-	// displaying all agenda. we will need to add some form of filter
-	// to switch between all agendas' or just agenda's for the selected
-	// wallet
-	// selectedWallet := pg.WL.SelectedWallet.Wallet
+	// TODO: pg.selectedDCRWallet is currently always nil. Implement wallet
+	// selector. It is impossible to vote on an agenda without a dcr wallet.
+	// Also, when the selected wallet changes, this method should be re-called,
+	// to fetch and display the newly selected wallet's vote choices.
 	pg.isSyncing = true
 
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, nil, true)
+		items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, true)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {
@@ -421,7 +423,10 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
 						}.
 							Layout2(gtx, func(gtx C) D {
-								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i])
+								// TODO: Implement dcr wallet selector to enable
+								// voting.
+								hasVotingWallet := pg.selectedDCRWallet != nil // Vote button will be disabled if nil.
+								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i], hasVotingWallet)
 							})
 					})
 				})

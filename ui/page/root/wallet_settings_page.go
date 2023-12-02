@@ -66,11 +66,11 @@ type WalletSettingsPage struct {
 	peerAddr string
 }
 
-func NewWalletSettingsPage(l *load.Load, walletCallbackFunc func()) *WalletSettingsPage {
+func NewWalletSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFunc func()) *WalletSettingsPage {
 	pg := &WalletSettingsPage{
 		Load:                l,
 		GenericPageModal:    app.NewGenericPageModal(WalletSettingsPageID),
-		wallet:              l.WL.SelectedWallet.Wallet,
+		wallet:              wallet,
 		changePass:          l.Theme.NewClickable(false),
 		rescan:              l.Theme.NewClickable(false),
 		setGapLimit:         l.Theme.NewClickable(false),
@@ -114,16 +114,16 @@ func (pg *WalletSettingsPage) OnNavigatedTo() {
 }
 
 func (pg *WalletSettingsPage) readBool(key string) bool {
-	return pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(key, false)
+	return pg.wallet.ReadBoolConfigValueForKey(key, false)
 }
 
 func (pg *WalletSettingsPage) isPrivacyModeOn() bool {
-	return pg.WL.AssetsManager.IsPrivacyModeOn()
+	return pg.AssetsManager.IsPrivacyModeOn()
 }
 
 func (pg *WalletSettingsPage) loadPeerAddress() {
 	if !pg.isPrivacyModeOn() {
-		pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+		pg.peerAddr = pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 		pg.connectToPeer.SetChecked(false)
 		if pg.peerAddr != "" {
 			pg.connectToPeer.SetChecked(true)
@@ -187,7 +187,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 	dim := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+				if pg.wallet.IsWatchingOnlyWallet() {
 					return D{}
 				}
 				return layout.Inset{}.Layout(gtx, pg.sectionContent(pg.changePass, values.String(values.StrSpendingPassword)))
@@ -209,7 +209,7 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.subSectionSwitch(values.String(values.StrConnectToSpecificPeer), pg.connectToPeer)),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
+						if pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "") == "" && pg.isPrivacyModeOn() {
 							return D{}
 						}
 
@@ -300,7 +300,7 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 						}
 						if title == values.String(values.StrAccount) {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+								if pg.wallet.IsWatchingOnlyWallet() {
 									return D{}
 								}
 								return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
@@ -414,10 +414,10 @@ func (pg *WalletSettingsPage) changeSpendingPasswordModal() {
 func (pg *WalletSettingsPage) deleteWalletModal() {
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrWalletName)).
-		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.WL.SelectedWallet.Wallet.GetWalletName()).
+		SetTextWithTemplate(modal.RemoveWalletInfoTemplate, pg.wallet.GetWalletName()).
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonCallback(func(walletName string, m *modal.TextInputModal) bool {
-			if walletName != pg.WL.SelectedWallet.Wallet.GetWalletName() {
+			if walletName != pg.wallet.GetWalletName() {
 				m.SetError(values.String(values.StrWalletNameMismatch))
 				m.SetLoading(false)
 				return false
@@ -425,7 +425,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			walletDeleted := func() {
 				m.Dismiss()
-				if pg.WL.AssetsManager.LoadedWalletsCount() > 0 {
+				if pg.AssetsManager.LoadedWalletsCount() > 0 {
 					pg.walletCallbackFunc()
 				} else {
 					pg.ParentWindow().CloseAllPages()
@@ -434,7 +434,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 
 			if pg.wallet.IsWatchingOnlyWallet() {
 				// no password is required for watching only wallets.
-				err := pg.WL.AssetsManager.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), "")
+				err := pg.AssetsManager.DeleteWallet(pg.wallet.GetWalletID(), "")
 				if err != nil {
 					m.SetError(err.Error())
 					m.SetLoading(false)
@@ -452,7 +452,7 @@ func (pg *WalletSettingsPage) deleteWalletModal() {
 					m.SetLoading(false)
 				}).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := pg.WL.AssetsManager.DeleteWallet(pg.WL.SelectedWallet.Wallet.GetWalletID(), password)
+					err := pg.AssetsManager.DeleteWallet(pg.wallet.GetWalletID(), password)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -483,7 +483,7 @@ func (pg *WalletSettingsPage) renameWalletModal() {
 				return false
 			}
 
-			err := pg.WL.SelectedWallet.Wallet.RenameWallet(name)
+			err := pg.wallet.RenameWallet(name)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -509,7 +509,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 				return false
 			}
 			if ipAddress != "" {
-				pg.WL.SelectedWallet.Wallet.SetSpecificPeer(ipAddress)
+				pg.wallet.SetSpecificPeer(ipAddress)
 				pg.loadPeerAddress()
 			}
 			return true
@@ -518,7 +518,7 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 		SetPositiveButtonText(values.String(values.StrConfirm)).
 		SetNegativeButtonText(values.String(values.StrCancel)).
 		SetNegativeButtonCallback(func() {
-			pg.peerAddr = pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
+			pg.peerAddr = pg.wallet.ReadStringConfigValueForKey(sharedW.SpvPersistentPeerAddressesConfigKey, "")
 			pg.connectToPeer.SetChecked(pg.peerAddr != "")
 		})
 	pg.ParentWindow().ShowModal(textModal)
@@ -554,7 +554,7 @@ func (pg *WalletSettingsPage) showWarningModalDialog(title, msg string) {
 			// TODO: Check if deletion happened successfully
 			// Since only one peer is available at time, the single peer key can
 			// be set to empty string to delete its entry..
-			pg.WL.SelectedWallet.Wallet.RemovePeers()
+			pg.wallet.RemovePeers()
 			pg.peerAddr = ""
 			return true
 		})
@@ -581,7 +581,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 				PositiveButtonStyle(pg.Theme.Color.Primary, pg.Theme.Color.Surface).
 				SetPositiveButtonText(values.String(values.StrRescan)).
 				SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
-					err := pg.WL.SelectedWallet.Wallet.RescanBlocks()
+					err := pg.wallet.RescanBlocks()
 					if err != nil {
 						errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 						pg.ParentWindow().ShowModal(errorModal)
@@ -622,7 +622,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.spendUnconfirmed.Changed() {
-		pg.WL.SelectedWallet.Wallet.SaveUserConfigValue(sharedW.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
+		pg.wallet.SaveUserConfigValue(sharedW.SpendUnconfirmedConfigKey, pg.spendUnconfirmed.IsChecked())
 	}
 
 	if pg.spendUnmixedFunds.Changed() {
@@ -636,7 +636,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 						tim.SetError(values.String(values.StrConfirmPending))
 						tim.SetLoading(false)
 					} else {
-						pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
+						pg.wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, true)
 						tim.Dismiss()
 					}
 					return false
@@ -649,7 +649,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			pg.ParentWindow().ShowModal(textModal)
 
 		} else {
-			pg.WL.SelectedWallet.Wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
+			pg.wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
 		}
 	}
 
@@ -669,15 +669,15 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.verifyMessage.Clicked() {
-		pg.ParentNavigator().Display(security.NewVerifyMessagePage(pg.Load))
+		pg.ParentNavigator().Display(security.NewVerifyMessagePage(pg.Load, pg.wallet))
 	}
 
 	if pg.validateAddr.Clicked() {
-		pg.ParentNavigator().Display(security.NewValidateAddressPage(pg.Load))
+		pg.ParentNavigator().Display(security.NewValidateAddressPage(pg.Load, pg.wallet))
 	}
 
 	if pg.signMessage.Clicked() {
-		pg.ParentNavigator().Display(security.NewSignMessagePage(pg.Load))
+		pg.ParentNavigator().Display(security.NewSignMessagePage(pg.Load, pg.wallet))
 	}
 
 	if pg.checklog.Clicked() {
@@ -685,7 +685,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 	}
 
 	if pg.checkStats.Clicked() {
-		pg.ParentNavigator().Display(s.NewStatPage(pg.Load))
+		pg.ParentNavigator().Display(s.NewStatPage(pg.Load, pg.wallet))
 	}
 
 	for pg.addAccount.Clicked() {
@@ -716,7 +716,7 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 }
 
 func (pg *WalletSettingsPage) gapLimitModal() {
-	walGapLim := pg.WL.SelectedWallet.Wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
+	walGapLim := pg.wallet.ReadStringConfigValueForKey(load.GapLimitConfigKey, "20")
 	textModal := modal.NewTextInputModal(pg.Load).
 		Hint(values.String(values.StrGapLimit)).
 		SetTextWithTemplate(modal.SetGapLimitTemplate).
@@ -738,7 +738,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			gLimit := uint32(val)
 			tm.SetLoading(true)
 
-			err = pg.WL.SelectedWallet.Wallet.(*dcr.Asset).DiscoverUsage(gLimit)
+			err = pg.wallet.(*dcr.Asset).DiscoverUsage(gLimit)
 			if err != nil {
 				tm.SetError(err.Error())
 				tm.SetLoading(false)
@@ -748,7 +748,7 @@ func (pg *WalletSettingsPage) gapLimitModal() {
 			info := modal.NewSuccessModal(pg.Load, values.String(values.StrAddressDiscoveryStarted), modal.DefaultClickFunc()).
 				Body(values.String(values.StrAddressDiscoveryStartedBody))
 			pg.ParentWindow().ShowModal(info)
-			pg.WL.SelectedWallet.Wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
+			pg.wallet.SetStringConfigValueForKey(load.GapLimitConfigKey, gapLimit)
 			return true
 		})
 	textModal.Title(values.String(values.StrDiscoverAddressUsage)).

@@ -721,7 +721,6 @@ const EN = `
 "walletStatus" = "Wallet Status:"
 "walletSyncing" = "Wallet is syncing, please wait"
 "walletToPurchaseFrom" = "Wallet to purchase from: %s"
-"warningVote" = "You cannot vote with a watch only wallet"
 "warningWatchWallet" = "You would be receiving to a read only wallet"
 "watchOnly" = "Watch-Only"
 "watchOnlyWalletImported" = "Watch only wallet imported"
