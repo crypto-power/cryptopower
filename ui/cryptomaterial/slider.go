@@ -44,7 +44,7 @@ func (t *Theme) Slider() *Slider {
 		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
 		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
 		SelectedIndicatorColor:   t.Color.White,
-		slideAction:              NewSliceAction(),
+		slideAction:              NewSlideAction(),
 	}
 
 	sl.card = sl.t.Card()

@@ -46,7 +46,7 @@ type SlideAction struct {
 	isPushing   bool
 }
 
-func NewSliceAction() *SlideAction {
+func NewSlideAction() *SlideAction {
 	return &SlideAction{
 		Duration:   defaultDuration,
 		dragEffect: defaultdragEffect,

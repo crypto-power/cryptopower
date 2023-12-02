@@ -47,8 +47,8 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		rightNavBtn:          t.NewClickable(false),
 		isSwipeActionEnabled: true,
 		segmentType:          segmentType,
-		slideAction:          NewSliceAction(),
-		slideActionTitle:     NewSliceAction(),
+		slideAction:          NewSlideAction(),
+		slideActionTitle:     NewSlideAction(),
 	}
 
 	sc.slideAction.Draged(func(dragDirection SwipeDirection) {
