@@ -15,7 +15,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -36,7 +35,6 @@ type ReceivePage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	assetsManager     *libwallet.AssetsManager
 	pageContainer     layout.List
 	scrollContainer   *widget.List
 	isNewAddr, isInfo bool
@@ -52,14 +50,13 @@ type ReceivePage struct {
 	isCopying      bool
 	backdrop       *widget.Clickable
 	infoButton     cryptomaterial.IconButton
-	selectedWallet *load.WalletMapping
+	selectedWallet sharedW.Asset
 }
 
-func NewReceivePage(l *load.Load) *ReceivePage {
+func NewReceivePage(l *load.Load, wallet sharedW.Asset) *ReceivePage {
 	pg := &ReceivePage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ReceivePageID),
-		assetsManager:    l.WL.AssetsManager,
 		pageContainer: layout.List{
 			Axis: layout.Vertical,
 		},
@@ -73,9 +70,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 		receiveAddress: l.Theme.Label(values.TextSize20, ""),
 		card:           l.Theme.Card(),
 		backdrop:       new(widget.Clickable),
-	}
-	pg.selectedWallet = &load.WalletMapping{
-		Asset: l.WL.SelectedWallet.Wallet,
+		selectedWallet: wallet,
 	}
 
 	pg.info.Inset, pg.info.Size = layout.UniformInset(values.MarginPadding5), values.MarginPadding20
@@ -116,7 +111,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 			if account.Number == load.MaxInt32 {
 				return false
 			}
-			if account.Number != pg.selectedWallet.MixedAccountNumber() {
+			if account.Number != load.MixedAccountNumber(pg.selectedWallet) {
 				return true
 			}
 			return false
@@ -131,7 +126,7 @@ func NewReceivePage(l *load.Load) *ReceivePage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ReceivePage) OnNavigatedTo() {
-	if !pg.WL.SelectedWallet.Wallet.IsSynced() {
+	if !pg.selectedWallet.IsSynced() {
 		// Events are disabled until the wallet is fully synced.
 		return
 	}
@@ -139,7 +134,7 @@ func (pg *ReceivePage) OnNavigatedTo() {
 	pg.selector.ListenForTxNotifications(pg.ParentWindow()) // listener is stopped in OnNavigatedFrom()
 	pg.selector.SelectFirstValidAccount(pg.selectedWallet)  // Want to reset the user's selection everytime this page appears?
 	// might be better to track the last selection in a variable and reselect it.
-	currentAddress, err := pg.WL.SelectedWallet.Wallet.CurrentAddress(pg.selector.SelectedAccount().Number)
+	currentAddress, err := pg.selectedWallet.CurrentAddress(pg.selector.SelectedAccount().Number)
 	if err != nil {
 		errStr := fmt.Sprintf("Error getting current address: %v", err)
 		errModal := modal.NewErrorModal(pg.Load, errStr, modal.DefaultClickFunc())
@@ -180,7 +175,7 @@ func (pg *ReceivePage) Layout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -203,7 +198,7 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						return pg.titleLayout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
+						if pg.selectedWallet.IsWatchingOnlyWallet() {
 							warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningWatchWallet))
 							warning.Color = pg.Theme.Color.Danger
 							return layout.Center.Layout(gtx, warning.Layout)
@@ -217,14 +212,14 @@ func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 								Alignment: layout.Middle,
 							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									if pg.currentAddress != "" && pg.WL.SelectedWallet.Wallet.IsSynced() {
+									if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
 										// Display generated address only on a synced wallet
 										return pg.addressLayout(gtx)
 									}
 									return D{}
 								}),
 								layout.Rigid(func(gtx C) D {
-									if pg.qrImage == nil || !pg.WL.SelectedWallet.Wallet.IsSynced() {
+									if pg.qrImage == nil || !pg.selectedWallet.IsSynced() {
 										// Display generated address only on a synced wallet
 										return D{}
 									}
@@ -358,7 +353,7 @@ func (pg *ReceivePage) topNav(gtx C) D {
 	// m := values.MarginPadding0
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
+			textWithUnit := values.String(values.StrReceive) + " " + string(pg.selectedWallet.GetAssetType())
 			return /*layout.Inset{Left: m}.Layout(gtx, */ pg.Theme.H6(textWithUnit).Layout(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
@@ -454,7 +449,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 	}
 
 	if pg.infoButton.Button.Clicked() {
-		textWithUnit := values.String(values.StrReceive) + " " + string(pg.WL.SelectedWallet.Wallet.GetAssetType())
+		textWithUnit := values.String(values.StrReceive) + " " + string(pg.selectedWallet.GetAssetType())
 		info := modal.NewCustomModal(pg.Load).
 			Title(textWithUnit).
 			Body(values.String(values.StrReceiveInfo)).
@@ -465,7 +460,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 
 func (pg *ReceivePage) generateNewAddress() (string, error) {
 	selectedAccount := pg.selector.SelectedAccount()
-	selectedWallet := pg.assetsManager.WalletWithID(selectedAccount.WalletID)
+	selectedWallet := pg.AssetsManager.WalletWithID(selectedAccount.WalletID)
 
 generateAddress:
 	newAddr, err := selectedWallet.NextAddress(selectedAccount.Number)

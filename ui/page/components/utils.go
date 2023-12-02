@@ -111,23 +111,20 @@ func checksumByte(data []byte) byte {
 	return sha256.Sum256(intermediateHash[:])[0]
 }
 
-func LayoutIconAndText(l *load.Load, gtx C, title string, val string, col color.NRGBA) D {
+func LayoutIconAndTextWithSize(l *load.Load, gtx C, text string, col color.NRGBA, size unit.Sp, iconSize unit.Dp) D {
 	return layout.Inset{Right: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Right: values.MarginPadding5, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{
+					Right: values.MarginPadding5,
+				}.Layout(gtx, func(gtx C) D {
 					ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
 					ic.Color = col
-					return ic.Layout(gtx, values.MarginPadding8)
+					return ic.Layout(gtx, iconSize)
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				txt := l.Theme.Label(values.TextSize14, title)
-				txt.Color = l.Theme.Color.GrayText2
-				return txt.Layout(gtx)
-			}),
-			layout.Rigid(func(gtx C) D {
-				txt := l.Theme.Label(values.TextSize14, val)
+				txt := l.Theme.Label(size, text)
 				txt.Color = l.Theme.Color.GrayText2
 				return txt.Layout(gtx)
 			}),

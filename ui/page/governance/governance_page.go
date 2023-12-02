@@ -71,7 +71,7 @@ func (pg *Page) OnNavigatedTo() {
 }
 
 func (pg *Page) isGovernanceAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *Page) sectionNavTab(gtx C) D {
@@ -132,7 +132,7 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 func (pg *Page) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)

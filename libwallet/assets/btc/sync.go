@@ -17,7 +17,7 @@ import (
 
 const (
 	// syncIntervalGap defines the interval at which to publish and log progress
-	// without unnecessarily spamming the reciever.
+	// without unnecessarily spamming the receiver.
 	syncIntervalGap = time.Second * 3
 
 	// start helps to synchronously execute compare-and-swap operation when
@@ -544,7 +544,7 @@ func (asset *Asset) IsConnectedToBitcoinNetwork() bool {
 // startWallet initializes the *btcwallet.Wallet and its supporting players and
 // starts syncing.
 func (asset *Asset) startWallet() (err error) {
-	// If this is an imported wallet and address dicovery has not been performed,
+	// If this is an imported wallet and address discovery has not been performed,
 	// We want to set the assets birtday to the genesis block.
 	if asset.IsRestored && !asset.ContainsDiscoveredAccounts() {
 		asset.forceRescan()
@@ -619,7 +619,7 @@ func (asset *Asset) SpvSync() (err error) {
 	go func() {
 		err = asset.startWallet()
 		if err != nil {
-			log.Warn("error occured when starting BTC sync: ", err)
+			log.Warn("error occurred when starting BTC sync: ", err)
 		}
 	}()
 

@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/layout"
 	"gioui.org/text"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -34,6 +35,9 @@ const (
 
 	// pageSize define the maximum number of items fetched for the list scroll view.
 	pageSize int32 = 20
+
+	// The ticket height limit helps separate the scrolling of the ticket list and the page
+	ticketHeight = 500
 )
 
 type Page struct {
@@ -44,7 +48,8 @@ type Page struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	scroll *components.Scroll[*transactionItem]
+	scroll          *components.Scroll[*transactionItem]
+	scrollContainer *widget.List
 
 	ticketOverview *dcr.StakingOverview
 
@@ -61,20 +66,20 @@ type Page struct {
 	navToSettingsBtn cryptomaterial.Button
 	processingTicket uint32
 
-	dcrImpl *dcr.Asset
+	dcrWallet *dcr.Asset
 }
 
-func NewStakingPage(l *load.Load) *Page {
-	impl := l.WL.SelectedWallet.Wallet.(*dcr.Asset)
-	if impl == nil {
-		log.Error(values.ErrDCRSupportedOnly)
-		return nil
-	}
-
+func NewStakingPage(l *load.Load, dcrWallet *dcr.Asset) *Page {
 	pg := &Page{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(OverviewPageID),
-		dcrImpl:          impl,
+		scrollContainer: &widget.List{
+			List: layout.List{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			},
+		},
+		dcrWallet: dcrWallet,
 	}
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTickets)
@@ -96,13 +101,13 @@ func (pg *Page) OnNavigatedTo() {
 	// If staking is disabled no startup func should be called
 	// Layout will draw an overlay to show that stacking is disabled.
 
-	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	isSyncingOrRescanning := !pg.dcrWallet.IsSynced() || pg.dcrWallet.IsRescanning()
 	if pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
 		pg.fetchTicketPrice()
 
 		pg.loadPageData() // starts go routines to refresh the display which is just about to be displayed, ok?
 
-		pg.stake.SetChecked(pg.dcrImpl.IsAutoTicketsPurchaseActive())
+		pg.stake.SetChecked(pg.dcrWallet.IsAutoTicketsPurchaseActive())
 
 		pg.setStakingButtonsState()
 
@@ -118,8 +123,8 @@ func (pg *Page) OnNavigatedTo() {
 
 // fetch ticket price only when the wallet is synced
 func (pg *Page) fetchTicketPrice() {
-	ticketPrice, err := pg.dcrImpl.TicketPrice()
-	if err != nil && !pg.WL.SelectedWallet.Wallet.IsSynced() {
+	ticketPrice, err := pg.dcrWallet.TicketPrice()
+	if err != nil && !pg.dcrWallet.IsSynced() {
 		log.Error(err)
 		pg.ticketPrice = dcrutil.Amount(0).String()
 		errModal := modal.NewErrorModal(pg.Load, values.String(values.StrWalletNotSynced), modal.DefaultClickFunc())
@@ -131,17 +136,17 @@ func (pg *Page) fetchTicketPrice() {
 
 func (pg *Page) setStakingButtonsState() {
 	// disable auto ticket purchase if wallet is not synced
-	pg.stake.SetEnabled(pg.WL.SelectedWallet.Wallet.IsSynced() || !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet())
+	pg.stake.SetEnabled(pg.dcrWallet.IsSynced() || !pg.dcrWallet.IsWatchingOnlyWallet())
 }
 
 func (pg *Page) loadPageData() {
 	go func() {
-		if len(pg.dcrImpl.KnownVSPs()) == 0 {
+		if len(pg.dcrWallet.KnownVSPs()) == 0 {
 			// TODO: Does this page need this list?
-			pg.dcrImpl.ReloadVSPList(context.TODO())
+			pg.dcrWallet.ReloadVSPList(context.TODO())
 		}
 
-		totalRewards, err := pg.dcrImpl.TotalStakingRewards()
+		totalRewards, err := pg.dcrWallet.TotalStakingRewards()
 		if err != nil {
 			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
@@ -149,7 +154,7 @@ func (pg *Page) loadPageData() {
 			pg.totalRewards = dcrutil.Amount(totalRewards).String()
 		}
 
-		overview, err := pg.dcrImpl.StakingOverview()
+		overview, err := pg.dcrWallet.StakingOverview()
 		if err != nil {
 			errModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
@@ -162,15 +167,15 @@ func (pg *Page) loadPageData() {
 }
 
 func (pg *Page) isTicketsPurchaseAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.VspAPI)
 }
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
-	// If Tickets Purcahse API is not allowed, display the overlay with the message.
-	isSyncingOrRescanning := !pg.WL.SelectedWallet.Wallet.IsSynced() || pg.WL.SelectedWallet.Wallet.IsRescanning()
+	// If Tickets Purchase API is not allowed, display the overlay with the message.
+	isSyncingOrRescanning := !pg.dcrWallet.IsSynced() || pg.dcrWallet.IsRescanning()
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
 	if !pg.isTicketsPurchaseAllowed() && !isSyncingOrRescanning {
 		gtxCopy := gtx
@@ -178,12 +183,12 @@ func (pg *Page) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrVsp))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		if pg.Load.IsMobileView() {
 			return pg.layoutMobile(gtx)
 		}
 		return pg.layoutDesktop(gtx)
@@ -194,21 +199,22 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) layoutDesktop(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(pg.stakePriceSection),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(pg.stakePriceSection),
+			layout.Rigid(pg.stakeStatisticsSection),
+			layout.Rigid(func(gtx C) D {
 				if pg.showMaterialLoader {
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
 					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
 				}
 				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+					gtx.Constraints.Max.Y = ticketHeight
 					return pg.ticketListLayout(gtx)
 				})
-			})
-		}),
-	)
+			}),
+		)
+	})
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -228,11 +234,11 @@ func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
 
 func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{
-		Bottom: values.MarginPadding8,
+		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.UniformInset(values.MarginPadding26).Layout(gtx, body)
+			return layout.UniformInset(values.MarginPadding24).Layout(gtx, body)
 		})
 	})
 }
@@ -251,15 +257,15 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.stake.Changed() {
 		if pg.stake.IsChecked() {
-			if pg.dcrImpl.TicketBuyerConfigIsSet() {
+			if pg.dcrWallet.TicketBuyerConfigIsSet() {
 				// get ticket buyer config to check if the saved wallet account is mixed
 				// check if mixer is set, if yes check if allow spend from unmixed account
 				// if not set, check if the saved account is mixed before opening modal
 				// if it is not, open stake config modal
-				tbConfig := pg.dcrImpl.AutoTicketsBuyerConfig()
-				if pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
-					!pg.WL.SelectedWallet.Wallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
-					(tbConfig.PurchaseAccount == pg.dcrImpl.MixedAccountNumber()) {
+				tbConfig := pg.dcrWallet.AutoTicketsBuyerConfig()
+				if pg.dcrWallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false) &&
+					!pg.dcrWallet.ReadBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false) &&
+					(tbConfig.PurchaseAccount == pg.dcrWallet.MixedAccountNumber()) {
 					pg.startTicketBuyerPasswordModal()
 				} else {
 					pg.ticketBuyerSettingsModal()
@@ -268,18 +274,18 @@ func (pg *Page) HandleUserInteractions() {
 				pg.ticketBuyerSettingsModal()
 			}
 		} else {
-			pg.dcrImpl.StopAutoTicketsPurchase()
+			pg.dcrWallet.StopAutoTicketsPurchase()
 		}
 	}
 
-	if pg.stakeSettings.Clicked() && !pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-		if pg.dcrImpl.IsAutoTicketsPurchaseActive() {
+	if pg.stakeSettings.Clicked() && !pg.dcrWallet.IsWatchingOnlyWallet() {
+		if pg.dcrWallet.IsAutoTicketsPurchaseActive() {
 			errModal := modal.NewErrorModal(pg.Load, values.String(values.StrAutoTicketWarn), modal.DefaultClickFunc())
 			pg.ParentWindow().ShowModal(errModal)
 			return
 		}
 
-		ticketBuyerModal := newTicketBuyerModal(pg.Load).
+		ticketBuyerModal := newTicketBuyerModal(pg.Load, pg.dcrWallet).
 			OnSettingsSaved(func() {
 				infoModal := modal.NewSuccessModal(pg.Load, values.String(values.StrTicketSettingSaved), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(infoModal)
@@ -290,19 +296,19 @@ func (pg *Page) HandleUserInteractions() {
 		pg.ParentWindow().ShowModal(ticketBuyerModal)
 	}
 
-	secs, _ := pg.dcrImpl.NextTicketPriceRemaining()
+	secs, _ := pg.dcrWallet.NextTicketPriceRemaining()
 	if secs <= 0 {
 		pg.fetchTicketPrice()
 	}
 
-	if pg.WL.SelectedWallet.Wallet.IsSynced() {
+	if pg.dcrWallet.IsSynced() {
 		pg.fetchTicketPrice()
 	}
 
 	if clicked, selectedItem := pg.ticketsList.ItemClicked(); clicked {
 		tickets := pg.scroll.FetchedData()
 		ticketTx := tickets[selectedItem].transaction
-		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, ticketTx, true))
+		pg.ParentNavigator().Display(tpage.NewTransactionDetailsPage(pg.Load, pg.dcrWallet, ticketTx))
 
 		// Check if this ticket is fully registered with a VSP
 		// and log any discrepancies.
@@ -312,7 +318,7 @@ func (pg *Page) HandleUserInteractions() {
 		// but where it is necessary to display vsp-stored info, the
 		// wallet passphrase should be requested and used to unlock
 		// the wallet before calling this method.
-		ticketInfo, err := pg.dcrImpl.VSPTicketInfo(ticketTx.Hash)
+		ticketInfo, err := pg.dcrWallet.VSPTicketInfo(ticketTx.Hash)
 		if err != nil {
 			log.Errorf("VSPTicketInfo error: %v", err)
 		} else {
@@ -335,7 +341,7 @@ func (pg *Page) HandleUserInteractions() {
 				}
 
 				account := ticketTx.Inputs[0].AccountNumber
-				err = ticketInfo.Client.ProcessTicket(context.TODO(), txHash, pg.dcrImpl.GetvspPolicy(account))
+				err = ticketInfo.Client.ProcessTicket(context.TODO(), txHash, pg.dcrWallet.GetvspPolicy(account))
 				if err != nil {
 					log.Errorf("processing the unconfirmed tx fee failed: %v", err)
 				}
@@ -359,7 +365,7 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 func (pg *Page) ticketBuyerSettingsModal() {
-	ticketBuyerModal := newTicketBuyerModal(pg.Load).
+	ticketBuyerModal := newTicketBuyerModal(pg.Load, pg.dcrWallet).
 		OnCancel(func() {
 			pg.stake.SetChecked(false)
 		}).
@@ -372,9 +378,9 @@ func (pg *Page) ticketBuyerSettingsModal() {
 }
 
 func (pg *Page) startTicketBuyerPasswordModal() {
-	tbConfig := pg.dcrImpl.AutoTicketsBuyerConfig()
-	balToMaintain := pg.WL.SelectedWallet.Wallet.ToAmount(tbConfig.BalanceToMaintain).ToCoin()
-	name, err := pg.WL.SelectedWallet.Wallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
+	tbConfig := pg.dcrWallet.AutoTicketsBuyerConfig()
+	balToMaintain := pg.dcrWallet.ToAmount(tbConfig.BalanceToMaintain).ToCoin()
+	name, err := pg.dcrWallet.AccountNameRaw(uint32(tbConfig.PurchaseAccount))
 	if err != nil {
 		errModal := modal.NewErrorModal(pg.Load, values.StringF(values.StrTicketError, err), modal.DefaultClickFunc())
 		pg.ParentWindow().ShowModal(errModal)
@@ -388,7 +394,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		SetCancelable(false).
 		UseCustomWidget(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrWalletToPurchaseFrom, pg.WL.SelectedWallet.Wallet.GetWalletName())).Layout),
+				layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrWalletToPurchaseFrom, pg.dcrWallet.GetWalletName())).Layout),
 				layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrSelectedAccount, name)).Layout),
 				layout.Rigid(pg.Theme.Label(values.TextSize14, values.StringF(values.StrBalToMaintainValue, balToMaintain)).Layout), layout.Rigid(func(gtx C) D {
 					label := pg.Theme.Label(values.TextSize14, fmt.Sprintf("VSP: %s", tbConfig.VspHost))
@@ -412,7 +418,7 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 							txt := pg.Theme.Label(values.TextSize14, msg)
 							txt.Alignment = text.Middle
 							txt.Color = pg.Theme.Color.GrayText3
-							if pg.WL.AssetsManager.IsDarkModeOn() {
+							if pg.AssetsManager.IsDarkModeOn() {
 								txt.Color = pg.Theme.Color.Gray3
 							}
 							return txt.Layout(gtx)
@@ -423,21 +429,21 @@ func (pg *Page) startTicketBuyerPasswordModal() {
 		}).
 		SetNegativeButtonCallback(func() { pg.stake.SetChecked(false) }).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-			if !pg.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
+			if !pg.dcrWallet.IsConnectedToNetwork() {
 				pm.SetError(values.String(values.StrNotConnected))
 				pm.SetLoading(false)
 				pg.stake.SetChecked(false)
 				return false
 			}
 
-			err := pg.dcrImpl.StartTicketBuyer(password)
+			err := pg.dcrWallet.StartTicketBuyer(password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
 
-			pg.stake.SetChecked(pg.dcrImpl.IsAutoTicketsPurchaseActive())
+			pg.stake.SetChecked(pg.dcrWallet.IsAutoTicketsPurchaseActive())
 			pg.ParentWindow().Reload()
 
 			pm.Dismiss()

@@ -19,6 +19,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
+	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -32,9 +33,9 @@ type HomePage struct {
 
 	*load.Load
 
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-	drawerNav components.NavDrawer
+	ctx                 context.Context
+	ctxCancel           context.CancelFunc
+	sendReceiveNavItems []components.NavBarItem
 
 	navigationTab          *cryptomaterial.Tab
 	appLevelSettingsButton *cryptomaterial.Clickable
@@ -60,6 +61,7 @@ type HomePage struct {
 
 var navigationTabTitles = []string{
 	values.String(values.StrOverview),
+	values.String(values.StrTransactions),
 	values.String(values.StrWallets),
 	values.String(values.StrTrade),
 	values.String(values.StrGovernance),
@@ -81,22 +83,18 @@ func NewHomePage(l *load.Load) *HomePage {
 	_, hp.infoButton = components.SubpageHeaderButtons(l)
 	hp.infoButton.Size = values.MarginPadding15
 
-	hp.drawerNav = components.NavDrawer{
-		Load:        hp.Load,
-		CurrentPage: hp.CurrentPageID(),
-		AppNavBarItems: []components.NavHandler{
-			{
-				Clickable: hp.Theme.NewClickable(true),
-				Image:     hp.Theme.Icons.SendIcon,
-				Title:     values.String(values.StrSend),
-				PageID:    send.SendPageID,
-			},
-			{
-				Clickable: hp.Theme.NewClickable(true),
-				Image:     hp.Theme.Icons.ReceiveIcon,
-				Title:     values.String(values.StrReceive),
-				PageID:    ReceivePageID,
-			},
+	hp.sendReceiveNavItems = []components.NavBarItem{
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.SendIcon,
+			Title:     values.String(values.StrSend),
+			PageID:    send.SendPageID,
+		},
+		{
+			Clickable: hp.Theme.NewClickable(true),
+			Image:     hp.Theme.Icons.ReceiveIcon,
+			Title:     values.String(values.StrReceive),
+			PageID:    ReceivePageID,
 		},
 	}
 
@@ -105,12 +103,12 @@ func NewHomePage(l *load.Load) *HomePage {
 	}()
 
 	// init shared page functions
-	toggleSync := func(unlock load.NeedUnlockRestore) {
-		if hp.WL.SelectedWallet.Wallet.IsConnectedToNetwork() {
-			go hp.WL.SelectedWallet.Wallet.CancelSync()
+	toggleSync := func(wallet sharedW.Asset, unlock load.NeedUnlockRestore) {
+		if wallet.IsConnectedToNetwork() {
+			go wallet.CancelSync()
 			unlock(false)
 		} else {
-			hp.startSyncing(hp.WL.SelectedWallet.Wallet, unlock)
+			hp.startSyncing(wallet, unlock)
 		}
 	}
 	l.ToggleSync = toggleSync
@@ -148,28 +146,15 @@ func (hp *HomePage) OnNavigatedTo() {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
 	}
 
-	// Initiate the auto sync for all the DCR wallets with set autosync.
-	for _, wallet := range hp.WL.SortedWalletList(libutils.DCRWalletAsset) {
+	// Initiate the auto sync for all wallets with autosync set.
+	allWallets := hp.AssetsManager.AllWallets()
+	for _, wallet := range allWallets {
 		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
 			hp.startSyncing(wallet, func(isUnlock bool) {})
 		}
 	}
 
-	// Initiate the auto sync for all the BTC wallets with set autosync.
-	for _, wallet := range hp.WL.SortedWalletList(libutils.BTCWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			hp.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	// Initiate the auto sync for all the LTC wallets with set autosync.
-	for _, wallet := range hp.WL.SortedWalletList(libutils.LTCWalletAsset) {
-		if wallet.ReadBoolConfigValueForKey(sharedW.AutoSyncConfigKey, false) {
-			hp.startSyncing(wallet, func(isUnlock bool) {})
-		}
-	}
-
-	hp.isBalanceHidden = hp.WL.AssetsManager.IsTotalBalanceVisible()
+	hp.isBalanceHidden = hp.AssetsManager.IsTotalBalanceVisible()
 }
 
 // OnDarkModeChanged is triggered whenever the dark mode setting is changed
@@ -200,6 +185,8 @@ func (hp *HomePage) HandleUserInteractions() {
 		switch hp.navigationTab.SelectedTab() {
 		case values.String(values.StrOverview):
 			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+		case values.String(values.StrTransactions):
+			pg = transaction.NewTransactionsPage(hp.Load, nil)
 		case values.String(values.StrWallets):
 			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
@@ -219,13 +206,14 @@ func (hp *HomePage) HandleUserInteractions() {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
 	}
 
-	for _, item := range hp.drawerNav.AppNavBarItems {
+	for _, item := range hp.sendReceiveNavItems {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
 				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
+
 			case values.StrSend:
-				allWallets := hp.WL.AssetsManager.AllWallets()
+				allWallets := hp.AssetsManager.AllWallets()
 				isSendAvailable := false
 				for _, wallet := range allWallets {
 					if !wallet.IsWatchingOnlyWallet() {
@@ -236,7 +224,7 @@ func (hp *HomePage) HandleUserInteractions() {
 					hp.showWarningNoWallet()
 					return
 				}
-				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, true))
+				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, nil))
 			}
 		}
 	}
@@ -262,7 +250,7 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	for hp.hideBalanceButton.Clicked() {
 		hp.isBalanceHidden = !hp.isBalanceHidden
-		hp.WL.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
+		hp.AssetsManager.SetTotalBalanceVisibility(hp.isBalanceHidden)
 	}
 
 	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
@@ -277,6 +265,8 @@ func (hp *HomePage) HandleUserInteractions() {
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
+			case values.String(values.StrGovernance):
+				pg = governance.NewGovernancePage(hp.Load)
 			}
 
 			if pg == nil || hp.ID() == hp.CurrentPageID() {
@@ -356,8 +346,7 @@ func (hp *HomePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (hp *HomePage) Layout(gtx C) D {
-	hp.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if hp.Load.IsMobileView() {
 		return hp.layoutMobile(gtx)
 	}
 	return hp.layoutDesktop(gtx)
@@ -432,7 +421,7 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(hp.totalBalanceLayout),
 		layout.Rigid(func(gtx C) D {
-			if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			if hp.Load.IsMobileView() {
 				return D{}
 			}
 
@@ -507,7 +496,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			Orientation: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+				if hp.Load.IsMobileView() {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(hp.totalBalanceTextAndIconButtonLayout),
 						layout.Rigid(hp.notificationSettingsLayout),
@@ -517,9 +506,10 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			}),
 			layout.Rigid(hp.balanceLayout),
 			layout.Rigid(func(gtx C) D {
-				if hp.Load.GetCurrentAppWidth() > gtx.Dp(values.StartMobileView) {
+				if !hp.Load.IsMobileView() {
 					return D{}
 				}
+
 				card := hp.Theme.Card()
 				radius := cryptomaterial.CornerRadius{TopLeft: 20, BottomLeft: 20, TopRight: 20, BottomRight: 20}
 				card.Radius = cryptomaterial.Radius(8)
@@ -608,7 +598,7 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 }
 
 func (hp *HomePage) balanceLayout(gtx C) D {
-	if components.IsFetchExchangeRateAPIAllowed(hp.WL) && hp.totalBalanceUSD != "" {
+	if hp.AssetsManager.ExchangeRateFetchingEnabled() && hp.totalBalanceUSD != "" {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(hp.LayoutUSDBalance),
 			layout.Rigid(func(gtx C) D {
@@ -669,10 +659,10 @@ func (hp *HomePage) notificationSettingsLayout(gtx C) D {
 					Alignment:   layout.Middle,
 				}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if hp.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+						if hp.Load.IsMobileView() {
 							return D{}
 						}
-						return hp.drawerNav.LayoutTopBar(gtx)
+						return components.LayoutNavigationBar(gtx, hp.Theme, hp.sendReceiveNavItems)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
@@ -733,9 +723,9 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 						log.Debugf("Error starting sync: %v", err)
 					}
 
-					if hp.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
-						hp.WL.AssetsManager.InstantSwap.StopSync() // in case it was syncing before losing network connection
-						hp.WL.AssetsManager.InstantSwap.Sync()
+					if hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
+						hp.AssetsManager.InstantSwap.StopSync() // in case it was syncing before losing network connection
+						hp.AssetsManager.InstantSwap.Sync()
 					}
 
 					// Trigger UI update
@@ -786,14 +776,14 @@ func (hp *HomePage) unlockWalletForSyncing(wal sharedW.Asset, unlock load.NeedUn
 }
 
 func (hp *HomePage) CalculateAssetsUSDBalance() {
-	if components.IsFetchExchangeRateAPIAllowed(hp.WL) {
-		assetsBalance, err := components.CalculateTotalAssetsBalance(hp.Load)
+	if hp.AssetsManager.ExchangeRateFetchingEnabled() {
+		assetsBalance, err := hp.AssetsManager.CalculateTotalAssetsBalance()
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(hp.Load, assetsBalance)
+		assetsTotalUSDBalance, err := hp.AssetsManager.CalculateAssetsUSDBalance(assetsBalance)
 		if err != nil {
 			log.Error(err)
 			return

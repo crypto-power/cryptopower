@@ -51,7 +51,7 @@ type SignMessagePage struct {
 	infoButton cryptomaterial.IconButton
 }
 
-func NewSignMessagePage(l *load.Load) *SignMessagePage {
+func NewSignMessagePage(l *load.Load, wallet sharedW.Asset) *SignMessagePage {
 	addressEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
 	addressEditor.Editor.SingleLine, addressEditor.Editor.Submit = true, true
 	messageEditor := l.Theme.Editor(new(widget.Editor), values.String(values.StrMessage))
@@ -70,7 +70,7 @@ func NewSignMessagePage(l *load.Load) *SignMessagePage {
 	pg := &SignMessagePage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(SignMessagePageID),
-		wallet:           l.WL.SelectedWallet.Wallet,
+		wallet:           wallet,
 		container: layout.List{
 			Axis: layout.Vertical,
 		},
@@ -132,7 +132,7 @@ func (pg *SignMessagePage) Layout(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
 
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)
@@ -333,7 +333,7 @@ func (pg *SignMessagePage) validateAddress() bool {
 	switch {
 	case !uiUtils.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
-	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
+	case !pg.wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)
 	case !pg.wallet.HaveAddress(address):
 		errorMessage = values.String(values.StrAddrNotOwned)

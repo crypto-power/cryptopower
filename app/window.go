@@ -46,7 +46,7 @@ func (window *SimpleWindowNavigator) CurrentPageID() string {
 // instances of this same page will be closed and removed from the backstack.
 // Part of the PageNavigator interface.
 func (window *SimpleWindowNavigator) Display(newPage Page) {
-	pushed := window.subPages.Push(newPage, window)
+	pushed := window.subPages.PushAndNavigate(newPage, window)
 	if pushed {
 		window.Reload()
 	}

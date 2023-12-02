@@ -6,6 +6,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -30,6 +31,7 @@ type ValidateAddressPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	wallet sharedW.Asset
 
 	addressEditor         cryptomaterial.Editor
 	clearBtn, validateBtn cryptomaterial.Button
@@ -37,10 +39,11 @@ type ValidateAddressPage struct {
 	backButton            cryptomaterial.IconButton
 }
 
-func NewValidateAddressPage(l *load.Load) *ValidateAddressPage {
+func NewValidateAddressPage(l *load.Load, wallet sharedW.Asset) *ValidateAddressPage {
 	pg := &ValidateAddressPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ValidateAddressPageID),
+		wallet:           wallet,
 	}
 
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
@@ -92,7 +95,7 @@ func (pg *ValidateAddressPage) Layout(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)
@@ -197,11 +200,11 @@ func (pg *ValidateAddressPage) validateAddress() {
 	var verifyMsgAddr string
 	var info *modal.InfoModal
 
-	if !pg.WL.SelectedWallet.Wallet.IsAddressValid(address) {
+	if !pg.wallet.IsAddressValid(address) {
 		verifyMsgAddr = values.String(values.StrInvalidAddress)
 		info = modal.NewErrorModal(pg.Load, verifyMsgAddr, modal.DefaultClickFunc())
 	} else {
-		if !pg.WL.SelectedWallet.Wallet.HaveAddress(address) {
+		if !pg.wallet.HaveAddress(address) {
 			verifyMsgAddr = values.String(values.StrNotOwned)
 		} else {
 			verifyMsgAddr = values.String(values.StrOwned)

@@ -14,6 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -117,14 +118,14 @@ func (pg *ProposalDetails) initWalletSelector() {
 		Title(values.String(values.StrSelectWallet))
 	pg.sourceWalletSelector.SetHideBalance(true)
 	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
 	}
 
 	pg.sourceWalletSelector.SetLeftAlignment(true)
 	pg.sourceWalletSelector.SetBorder(false)
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet.Asset
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedWallet = selectedWallet
 		//TODO: implement when selected wallet
 	})
 }
@@ -149,7 +150,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 
 	for pg.viewInPoliteiaBtn.Clicked() {
 		host := "https://proposals.decred.org/record/" + pg.proposal.Token
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
+		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://test-proposals.decred.org/record/" + pg.proposal.Token
 		}
 
@@ -203,15 +204,15 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
 	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
-		if status == libutils.ProposalStatusSynced {
-			proposal, err := pg.WL.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
+		if status == utils.ProposalStatusSynced {
+			proposal, err := pg.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
 			if err == nil {
 				pg.proposal = &libwallet.Proposal{Proposal: *proposal}
 				pg.ParentWindow().Reload()
 			}
 		}
 	}
-	err := pg.WL.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalDetailsPageID)
+	err := pg.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalDetailsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return
@@ -226,7 +227,7 @@ func (pg *ProposalDetails) listenForSyncNotifications() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedFrom() {
-	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalDetailsPageID)
+	pg.AssetsManager.Politeia.RemoveSyncCallback(ProposalDetailsPageID)
 }
 
 // - Layout
@@ -422,12 +423,6 @@ func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 				return D{}
 			}
 
-			if pg.WL.SelectedWallet.Wallet.IsWatchingOnlyWallet() {
-				warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningVote))
-				warning.Color = pg.Theme.Color.Danger
-				return warning.Layout(gtx)
-			}
-
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
 				layout.Rigid(pg.layoutProposalVoteAction),
@@ -549,7 +544,7 @@ func (pg *ProposalDetails) lineSeparator(inset layout.Inset) layout.Widget {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -566,7 +561,7 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				proposalDescription = proposal.IndexFile
 			} else {
 				var err error
-				proposalDescription, err = pg.WL.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
+				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
 				if err != nil {
 					log.Errorf("Error loading proposal description: %v", err)
 					time.Sleep(7 * time.Second)
@@ -635,7 +630,7 @@ func (pg *ProposalDetails) layoutMobile(gtx layout.Context) layout.Dimensions {
 				proposalDescription = proposal.IndexFile
 			} else {
 				var err error
-				proposalDescription, err = pg.WL.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
+				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
 				if err != nil {
 					log.Errorf("Error loading proposal description: %v", err)
 					time.Sleep(7 * time.Second)

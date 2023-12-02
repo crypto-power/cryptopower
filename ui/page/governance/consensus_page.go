@@ -34,6 +34,8 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	selectedDCRWallet *dcr.Asset
+
 	consensusItems []*components.ConsensusItem
 
 	listContainer       *widget.List
@@ -47,7 +49,6 @@ type ConsensusPage struct {
 	consensusList  *cryptomaterial.ClickableList
 
 	sourceWalletSelector *components.WalletAndAccountSelector
-	selectedWallet       sharedW.Asset
 
 	infoButton            cryptomaterial.IconButton
 	navigateToSettingsBtn cryptomaterial.Button
@@ -110,21 +111,21 @@ func (pg *ConsensusPage) initWalletSelector() {
 	pg.sourceWalletSelector.SetLeftAlignment(true)
 	pg.sourceWalletSelector.SetBorder(false)
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet.Asset
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedDCRWallet = selectedWallet.(*dcr.Asset)
 		pg.FetchAgendas()
 	})
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *ConsensusPage) OnNavigatedFrom() {}
 
 func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 	var voteChoices []string
-	consensusItems := components.LoadAgendas(pg.Load, nil, false)
+	consensusItems := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, false)
 	if len(consensusItems) > 0 {
 		consensusItem := consensusItems[0]
 		voteChoices = make([]string, len(consensusItem.Agenda.Choices))
@@ -156,7 +157,7 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 		SetPositiveButtonText(values.String(values.StrSave)).
 		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
 			im.Dismiss()
-			voteModal := newAgendaVoteModal(pg.Load, agenda, radiogroupbtns.Value, func() {
+			voteModal := newAgendaVoteModal(pg.Load, pg.selectedDCRWallet, agenda, radiogroupbtns.Value, func() {
 				pg.FetchAgendas() // re-fetch agendas when modal is dismissed
 			})
 			pg.ParentWindow().ShowModal(voteModal)
@@ -180,7 +181,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for _, item := range pg.consensusItems {
 		if item.VoteButton.Clicked() {
-			pg.agendaVoteChoiceModal(&item.Agenda)
+			pg.agendaVoteChoiceModal(item.Agenda)
 		}
 	}
 
@@ -199,7 +200,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 	for pg.viewVotingDashboard.Clicked() {
 		host := "https://voting.decred.org"
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
+		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://voting.decred.org/testnet"
 		}
 
@@ -268,7 +269,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, pg.selectedWallet, orderNewest)
+		items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, orderNewest)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {
@@ -301,12 +302,12 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+		if pg.Load.IsMobileView() {
 			return pg.layoutMobile(gtx)
 		}
 		return pg.layoutDesktop(gtx)
@@ -471,7 +472,10 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
 						}.
 							Layout2(gtx, func(gtx C) D {
-								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i])
+								// TODO: Implement dcr wallet selector to enable
+								// voting.
+								hasVotingWallet := pg.selectedDCRWallet != nil // Vote button will be disabled if nil.
+								return components.AgendaItemWidget(gtx, pg.Load, pg.consensusItems[i], hasVotingWallet)
 							})
 					})
 				})

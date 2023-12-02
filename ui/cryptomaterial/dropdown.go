@@ -36,6 +36,8 @@ type DropDown struct {
 	linearLayout        *LinearLayout
 	padding             layout.Inset
 	shadow              *Shadow
+
+	noSelectedItemText string
 }
 
 type DropDownItem struct {
@@ -88,6 +90,11 @@ func (t *Theme) DropDown(items []DropDownItem, group uint, pos uint) *DropDown {
 
 func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
+}
+
+func (d *DropDown) ClearSelection(text string) {
+	d.selectedIndex = -1
+	d.noSelectedItemText = text
 }
 
 func (d *DropDown) SelectedIndex() int {
@@ -153,16 +160,22 @@ func (d *DropDown) layoutActiveIcon(gtx layout.Context, index int) D {
 }
 
 func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
-	item := d.items[itemIndex]
-	radius := Radius(0)
-	clickable := item.clickable
-	if !d.isOpen {
-		radius = Radius(8)
-		clickable = d.clickable
+	var item *DropDownItem
+	if itemIndex > -1 {
+		item = &d.items[itemIndex]
+	}
+
+	radius := Radius(8)
+	clickable := d.clickable
+	if d.isOpen {
+		radius = Radius(0)
+		if item != nil {
+			clickable = item.clickable
+		}
 	}
 
 	padding := values.MarginPadding10
-	if item.Icon != nil {
+	if item != nil && item.Icon != nil {
 		padding = values.MarginPadding8
 	}
 
@@ -180,12 +193,12 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 		Border:    Border{Radius: radius},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if item.Icon == nil {
+			if item == nil || item.Icon == nil {
 				return layout.Dimensions{}
 			}
 
 			dropdownItemWidth -= gtx.Dp(values.MarginPadding24) // account for the dropdown Icon
-			return item.Icon.Layout24dp(gtx)
+			return item.Icon.Layout20dp(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.X = dropdownItemWidth - gtx.Dp(values.MarginPadding50) // give some space for the dropdown Icon
@@ -194,11 +207,16 @@ func (d *DropDown) layoutOption(gtx layout.Context, itemIndex int) D {
 				Right: unit.Dp(5),
 				Left:  unit.Dp(5),
 			}.Layout(gtx, func(gtx C) D {
-				lbl := d.theme.Body2(item.Text)
-				if !d.isOpen && len(item.Text) > 14 {
-					lbl.Text = item.Text[:14] + "..."
+				var txt string
+				if item == nil {
+					txt = d.noSelectedItemText
+				} else if !d.isOpen && len(txt) > 14 {
+					txt = item.Text[:14] + "..."
+				} else {
+					txt = item.Text
 				}
-				return lbl.Layout(gtx)
+
+				return d.theme.Body2(txt).Layout(gtx)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {

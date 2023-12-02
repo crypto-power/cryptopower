@@ -52,9 +52,10 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 				layout.Rigid(func(gtx C) D {
 					list := layout.List{Axis: layout.Horizontal}
 					return list.Layout(gtx, len(bottomNavigationbar.BottomNaigationItems), func(gtx C, i int) D {
+						appWidth := gtx.Dp(bottomNavigationbar.Load.CurrentAppWidth())
 						return cryptomaterial.LinearLayout{
 							Orientation: bottomNavigationbar.axis,
-							Width:       bottomNavigationbar.Load.GetCurrentAppWidth() / len(bottomNavigationbar.BottomNaigationItems), // Divide each cell equally
+							Width:       appWidth / len(bottomNavigationbar.BottomNaigationItems), // Divide each cell equally
 							Height:      cryptomaterial.WrapContent,
 							Padding:     layout.Inset{Bottom: values.MarginPadding10},
 							Alignment:   bottomNavigationbar.alignment,
@@ -67,7 +68,7 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 									layout.Stacked(func(gtx C) D {
 										if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
 											tabHeight := gtx.Dp(values.MarginPadding4)
-											selectedTabDimsWidth := bottomNavigationbar.Load.GetCurrentAppWidth() / (len(bottomNavigationbar.BottomNaigationItems) * 8)
+											selectedTabDimsWidth := appWidth / (len(bottomNavigationbar.BottomNaigationItems) * 8)
 											tabRect := image.Rect(0, 0, 100+selectedTabDimsWidth, tabHeight)
 											defer clip.RRect{Rect: tabRect, SE: 10, SW: 10, NW: 0, NE: 0}.Push(gtx.Ops).Pop()
 

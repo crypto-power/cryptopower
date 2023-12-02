@@ -1,5 +1,5 @@
 // This file contains the toast UI component implementation which should be used
-// sparingly unless explicity defined and used in a given the UI design.
+// sparingly unless explicitly defined and used in a given the UI design.
 // TODO: Add Toast UI Components usage policy URL.
 
 package notification

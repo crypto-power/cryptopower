@@ -184,7 +184,7 @@ func (pg *VerifySeedPage) verifySeed() {
 			if !pg.toggleSeedInput.IsChecked() {
 				seed = pg.selectedSeedPhrase()
 			}
-			_, err := pg.WL.SelectedWallet.Wallet.VerifySeedForWallet(seed, password)
+			_, err := pg.wallet.VerifySeedForWallet(seed, password)
 			if err != nil {
 				if err.Error() == utils.ErrInvalid {
 					msg := values.String(values.StrSeedValidationFailed)
@@ -248,7 +248,7 @@ func (pg *VerifySeedPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *VerifySeedPage) Layout(gtx C) D {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)

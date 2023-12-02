@@ -1,6 +1,7 @@
 package staking
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/text"
 
@@ -22,7 +23,7 @@ func (pg *Page) listenForTxNotifications() {
 			pg.ParentWindow().Reload()
 		},
 	}
-	err := pg.dcrImpl.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, OverviewPageID)
+	err := pg.dcrWallet.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, OverviewPageID)
 	if err != nil {
 		log.Errorf("Error adding tx and block notification listener: %v", err)
 		return
@@ -30,16 +31,16 @@ func (pg *Page) listenForTxNotifications() {
 }
 
 func (pg *Page) stopTxNotificationsListener() {
-	pg.dcrImpl.RemoveTxAndBlockNotificationListener(OverviewPageID)
+	pg.dcrWallet.RemoveTxAndBlockNotificationListener(OverviewPageID)
 }
 
 func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, bool, error) {
-	txs, err := pg.WL.SelectedWallet.Wallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
+	txs, err := pg.dcrWallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
 	if err != nil {
 		return nil, -1, false, err
 	}
 
-	tickets, err := stakeToTransactionItems(pg.Load, txs, true, func(filter int32) bool {
+	tickets, err := pg.stakeToTransactionItems(txs, true, func(filter int32) bool {
 		return filter == dcr.TxFilterTickets
 	})
 	return tickets, len(tickets), false, err
@@ -58,8 +59,8 @@ func (pg *Page) ticketListLayout(gtx C) D {
 			}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Body1(values.String(values.StrTickets))
-						txt.Color = pg.Theme.Color.GrayText2
+						txt := pg.Theme.Label(values.TextSize20, values.String(values.StrTickets))
+						txt.Font.Weight = font.SemiBold
 						return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, txt.Layout)
 					}),
 					layout.Rigid(func(gtx C) D {
@@ -96,7 +97,7 @@ func (pg *Page) ticketListLayout(gtx C) D {
 									return layout.Inset{
 										Bottom: values.MarginPadding5,
 									}.Layout(gtx, func(gtx C) D {
-										return ticketListLayout(gtx, pg.Load, ticket)
+										return ticketListLayout(gtx, pg.Load, pg.dcrWallet, ticket)
 									})
 								}),
 							)

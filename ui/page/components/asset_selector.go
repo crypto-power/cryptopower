@@ -74,7 +74,7 @@ func NewAssetTypeSelector(l *load.Load) *AssetTypeSelector {
 // SupportedAssetTypes returns a slice containing all the asset types
 // Currently supported.
 func (ats *AssetTypeSelector) SupportedAssetTypes() []*AssetTypeItem {
-	assetTypes := ats.WL.AssetsManager.AllAssetTypes()
+	assetTypes := ats.AssetsManager.AllAssetTypes()
 
 	var assetType []*AssetTypeItem
 	for _, at := range assetTypes {
@@ -179,7 +179,7 @@ func (ats *AssetTypeSelector) Layout(window app.WindowNavigator, gtx C) D {
 			}.Layout(gtx, ats.selectedAssetType.Icon.Layout24dp)
 		}),
 		layout.Rigid(func(gtx C) D {
-			txt := ats.Theme.Label(values.TextSize16, ats.hint)
+			txt := ats.Theme.Label(values.TextSize14, ats.hint)
 			txt.Color = ats.Theme.Color.Gray7
 			if ats.selectedAssetType != nil {
 				txt = ats.Theme.Label(values.TextSize16, ats.selectedAssetType.Type.String())

@@ -47,11 +47,11 @@ type LTCAcctDetailsPage struct {
 	infoButton              cryptomaterial.IconButton
 }
 
-func NewAcctLTCDetailsPage(l *load.Load, account *sharedW.Account) *LTCAcctDetailsPage {
+func NewAcctLTCDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *LTCAcctDetailsPage {
 	pg := &LTCAcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),
-		wallet:           l.WL.SelectedWallet.Wallet,
+		wallet:           wallet,
 		account:          account,
 
 		theme:                    l.Theme,
@@ -78,7 +78,7 @@ func NewAcctLTCDetailsPage(l *load.Load, account *sharedW.Account) *LTCAcctDetai
 func (pg *LTCAcctDetailsPage) OnNavigatedTo() {
 	pg.totalBalance = pg.account.Balance.Total.String()
 
-	pg.hdPath = pg.WL.LTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
+	pg.hdPath = pg.AssetsManager.LTCHDPrefix() + strconv.Itoa(int(pg.account.AccountNumber)) + "'"
 
 	ext := pg.account.ExternalKeyCount
 	internal := pg.account.InternalKeyCount
@@ -112,7 +112,7 @@ func (pg *LTCAcctDetailsPage) Layout(gtx C) D {
 			return layout.Inset{Bottom: m}.Layout(gtx, pg.extendedPubkey)
 		},
 	}
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, widgets)
 	}
 	return pg.layoutDesktop(gtx, widgets)
@@ -397,7 +397,7 @@ func (pg *LTCAcctDetailsPage) HandleUserInteractions() {
 }
 
 func (pg *LTCAcctDetailsPage) loadExtendedPubKey() {
-	xpub, err := pg.WL.SelectedWallet.Wallet.GetExtendedPubKey(pg.account.Number)
+	xpub, err := pg.wallet.GetExtendedPubKey(pg.account.Number)
 	if err != nil {
 		pg.Toast.NotifyError(err.Error())
 	}

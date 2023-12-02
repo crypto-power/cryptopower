@@ -17,13 +17,3 @@ const (
 	KnownDexServersConfigKey         = "known_dex_servers"
 	GapLimitConfigKey                = "gap_limit_key"
 )
-
-// SetCurrentAppWidth stores the current width of the app's window.
-func (l *Load) SetCurrentAppWidth(appWidth int) {
-	l.CurrentAppWidth = appWidth
-}
-
-// GetCurrentAppWidth returns the current width of the app's window.
-func (l *Load) GetCurrentAppWidth() int {
-	return l.CurrentAppWidth
-}

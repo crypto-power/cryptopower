@@ -7,7 +7,6 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
-	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/utils"
@@ -20,8 +19,8 @@ func (pg *WalletSelectorPage) initWalletSelectorOptions() {
 
 func (pg *WalletSelectorPage) loadWallets() {
 
-	wallets := pg.WL.AllSortedWalletList()
-	walletsList := make(map[libutils.AssetType][]*load.WalletItem)
+	wallets := pg.AssetsManager.AllWallets()
+	walletsList := make(map[libutils.AssetType][]*walletWithBalance)
 
 	for _, wal := range wallets {
 		balance, err := wal.GetWalletBalance()
@@ -29,9 +28,9 @@ func (pg *WalletSelectorPage) loadWallets() {
 			log.Errorf("wallet (%v) balance was ignored : %v", wal.GetWalletName(), err)
 		}
 
-		listItem := &load.WalletItem{
-			Wallet:       wal,
-			TotalBalance: balance.Total,
+		listItem := &walletWithBalance{
+			wallet:       wal,
+			totalBalance: balance.Total,
 		}
 
 		walletsList[wal.GetAssetType()] = append(walletsList[wal.GetAssetType()], listItem)
@@ -47,9 +46,9 @@ func (pg *WalletSelectorPage) loadWallets() {
 func (pg *WalletSelectorPage) loadBadWallets() {
 	pg.badWalletsList = make(map[libutils.AssetType][]*badWalletListItem)
 
-	dcrBadWallets := pg.WL.AssetsManager.DCRBadWallets()
-	btcBadWallets := pg.WL.AssetsManager.BTCBadWallets()
-	ltcBadWallets := pg.WL.AssetsManager.LTCBadWallets()
+	dcrBadWallets := pg.AssetsManager.DCRBadWallets()
+	btcBadWallets := pg.AssetsManager.BTCBadWallets()
+	ltcBadWallets := pg.AssetsManager.LTCBadWallets()
 
 	populateBadWallets := func(assetType libutils.AssetType, badWallets map[int]*sharedW.Wallet) {
 		for _, badWallet := range badWallets {
@@ -76,7 +75,7 @@ func (pg *WalletSelectorPage) deleteBadWallet(badWalletID int) {
 		PositiveButtonStyle(pg.Load.Theme.Color.Surface, pg.Load.Theme.Color.Danger).
 		SetPositiveButtonText(values.String(values.StrRemove)).
 		SetPositiveButtonCallback(func(_ bool, im *modal.InfoModal) bool {
-			err := pg.WL.AssetsManager.DeleteBadWallet(badWalletID)
+			err := pg.AssetsManager.DeleteBadWallet(badWalletID)
 			if err != nil {
 				errorModal := modal.NewErrorModal(pg.Load, err.Error(), modal.DefaultClickFunc())
 				pg.ParentWindow().ShowModal(errorModal)
@@ -91,7 +90,7 @@ func (pg *WalletSelectorPage) deleteBadWallet(badWalletID int) {
 	pg.ParentWindow().ShowModal(warningModal)
 }
 
-func (pg *WalletSelectorPage) syncStatusIcon(gtx C, wallet sharedW.Asset) D {
+func (pg *WalletSelectorPage) syncStatusIconAndText(wallet sharedW.Asset) (*cryptomaterial.Image, string) {
 	var (
 		syncStatusIcon *cryptomaterial.Image
 		syncStatus     string
@@ -109,14 +108,7 @@ func (pg *WalletSelectorPage) syncStatusIcon(gtx C, wallet sharedW.Asset) D {
 		syncStatus = values.String(values.StrWalletNotSynced)
 	}
 
-	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(syncStatusIcon.Layout16dp),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Left: values.MarginPadding5,
-			}.Layout(gtx, pg.Theme.Label(values.TextSize16, syncStatus).Layout)
-		}),
-	)
+	return syncStatusIcon, syncStatus
 }
 
 func (pg *WalletSelectorPage) walletListLayout(gtx C, assetType libutils.AssetType) D {
@@ -141,7 +133,7 @@ func (pg *WalletSelectorPage) walletListLayout(gtx C, assetType libutils.AssetTy
 	})
 }
 
-func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.WalletItem) D {
+func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*walletWithBalance) D {
 	pg.listLock.RLock()
 	defer pg.listLock.RUnlock()
 
@@ -149,13 +141,13 @@ func (pg *WalletSelectorPage) walletSection(gtx C, mainWalletList []*load.Wallet
 	for i, wallet := range mainWalletList {
 		globalIndex := len(itemIDs)
 		itemIDs = append(itemIDs, walletIndexTuple{
-			AssetType: wallet.Wallet.GetAssetType(),
+			AssetType: wallet.wallet.GetAssetType(),
 			Index:     globalIndex,
 		})
 
 		// Populate the mapping here
 		pg.indexMapping[globalIndex] = walletIndexTuple{
-			AssetType: wallet.Wallet.GetAssetType(),
+			AssetType: wallet.wallet.GetAssetType(),
 			Index:     i,
 		}
 	}
@@ -240,14 +232,14 @@ func (pg *WalletSelectorPage) badWalletsWrapper(gtx C, badWalletsList []*badWall
 	)
 }
 
-func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
+func (pg *WalletSelectorPage) walletWrapper(gtx C, item *walletWithBalance) D {
 	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     cryptomaterial.WrapContent,
-		Padding:    layout.UniformInset(values.MarginPadding16),
-		Background: pg.Theme.Color.Surface,
-		Alignment:  layout.Middle,
-		Shadow:     pg.shadowBox,
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Padding:     layout.UniformInset(values.MarginPadding16),
+		Background:  pg.Theme.Color.Surface,
+		Shadow:      pg.shadowBox,
+		Orientation: layout.Vertical,
 		Margin: layout.Inset{
 			Top:    values.MarginPadding8,
 			Bottom: values.MarginPadding4,
@@ -256,87 +248,87 @@ func (pg *WalletSelectorPage) walletWrapper(gtx C, item *load.WalletItem) D {
 		Border: cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{
-				Axis:      layout.Vertical,
-				Alignment: layout.Start,
-			}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{
-						Axis:      layout.Horizontal,
-						Alignment: layout.Middle,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							txt := pg.Theme.Label(values.TextSize16, item.Wallet.GetWalletName())
-							txt.Color = pg.Theme.Color.Text
-							txt.Font.Weight = font.SemiBold
-							return txt.Layout(gtx)
-						}),
-						layout.Rigid(func(gtx C) D {
-							if item.Wallet.IsWatchingOnlyWallet() {
-								return layout.Inset{
-									Left: values.MarginPadding8,
-								}.Layout(gtx, func(gtx C) D {
-									return components.WalletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
-								})
-							}
-							return D{}
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{
-						Axis:      layout.Horizontal,
-						Alignment: layout.Middle,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return pg.syncStatusIcon(gtx, item.Wallet)
-						}),
-						layout.Rigid(func(gtx C) D {
-							if len(item.Wallet.GetEncryptedSeed()) > 0 {
-								return layout.Flex{
-									Axis:      layout.Horizontal,
-									Alignment: layout.Middle,
-								}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Left:  values.MarginPadding8,
-											Right: values.MarginPadding8,
-										}.Layout(gtx, pg.Theme.Icons.Dot.Layout8dp)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.Inset{
-											Right: values.MarginPadding4,
-										}.Layout(gtx, pg.Theme.Icons.RedAlert.Layout16dp)
-									}),
-									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout),
-								)
-							}
-							return D{}
-						}),
-					)
-				}),
-			)
+			return pg.layoutNameAndBalance(gtx, item)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.layoutUSDBalance(gtx, item)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.layoutSyncStatus(gtx, item)
+		}),
+	)
+}
+
+func (pg *WalletSelectorPage) layoutNameAndBalance(gtx C, item *walletWithBalance) D {
+	return layout.Flex{
+		Axis: layout.Horizontal,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			txt := pg.Theme.Label(values.TextSize18, item.wallet.GetWalletName())
+			txt.Color = pg.Theme.Color.Text
+			txt.Font.Weight = font.SemiBold
+			return txt.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if item.wallet.IsWatchingOnlyWallet() {
+				return layout.Inset{
+					Left: values.MarginPadding8,
+				}.Layout(gtx, func(gtx C) D {
+					return components.WalletHightlighLabel(pg.Theme, gtx, values.TextSize12, values.String(values.StrWatchOnly))
+				})
+			}
+			return D{}
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{
-					Axis:      layout.Vertical,
-					Alignment: layout.End,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.TotalBalance.String())
-					}),
-					layout.Rigid(func(gtx C) D {
-						usdBalance := ""
-						if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-							usdBalance = utils.FormatAsUSDString(pg.Printer, item.TotalBalance.MulF64(pg.assetRate[item.Wallet.GetAssetType()]).ToCoin())
-						}
-						return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
-					}),
-				)
+				return components.LayoutBalanceWithStateSemiBold(gtx, pg.Load, item.totalBalance.String())
 			})
 		}),
 	)
+}
+
+func (pg *WalletSelectorPage) layoutUSDBalance(gtx C, item *walletWithBalance) D {
+	if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		return layout.Spacer{Height: values.MarginPadding8}.Layout(gtx)
+	}
+
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X // full-width, so we can align the usd balance text to the right
+	return layout.E.Layout(gtx, func(gtx C) D {
+		usdBalance := utils.FormatAsUSDString(pg.Printer, item.totalBalance.MulF64(pg.assetRate[item.wallet.GetAssetType()]).ToCoin())
+		return components.LayoutBalanceWithStateUSD(gtx, pg.Load, usdBalance)
+	})
+}
+
+func (pg *WalletSelectorPage) layoutSyncStatus(gtx C, item *walletWithBalance) D {
+	syncStatusIcon, syncStatus := pg.syncStatusIconAndText(item.wallet)
+
+	widgets := []layout.FlexChild{
+		layout.Rigid(syncStatusIcon.Layout16dp),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{
+				Left: values.MarginPadding5,
+			}.Layout(gtx, pg.Theme.Label(values.TextSize16, syncStatus).Layout)
+		}),
+	}
+
+	if len(item.wallet.GetEncryptedSeed()) > 0 {
+		widgets = append(widgets,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Left:  values.MarginPadding8,
+					Right: values.MarginPadding8,
+				}.Layout(gtx, pg.Theme.Icons.Dot.Layout8dp)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Right: values.MarginPadding4,
+				}.Layout(gtx, pg.Theme.Icons.RedAlert.Layout16dp)
+			}),
+			layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrNotBackedUp)).Layout),
+		)
+	}
+
+	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx, widgets...)
 }
 
 // start sync listener
@@ -347,7 +339,7 @@ func (pg *WalletSelectorPage) listenForSyncProgressNotifications() {
 		},
 	}
 
-	allWallets := pg.WL.AllSortedWalletList()
+	allWallets := pg.AssetsManager.AllWallets()
 	for _, w := range allWallets {
 		err := w.AddSyncProgressListener(syncListener, WalletSelectorPageID)
 		if err != nil {
@@ -358,7 +350,7 @@ func (pg *WalletSelectorPage) listenForSyncProgressNotifications() {
 }
 
 func (pg *WalletSelectorPage) stopSyncProgressListeners() {
-	allWallets := pg.WL.AllSortedWalletList()
+	allWallets := pg.AssetsManager.AllWallets()
 	for _, w := range allWallets {
 		w.RemoveSyncProgressListener(WalletSelectorPageID)
 	}

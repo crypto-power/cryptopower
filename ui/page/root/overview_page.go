@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -24,7 +23,9 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
+	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -45,10 +46,10 @@ type OverviewPage struct {
 	pageContainer            layout.List
 	marketOverviewList       layout.List
 	mobileMarketOverviewList layout.List
-	recentProposalList       layout.List
+	recentProposalList       *cryptomaterial.ClickableList
 	recentTradeList          layout.List
-	recentTransactions       layout.List
-	recentStakes             layout.List
+	recentTransactions       *cryptomaterial.ClickableList
+	recentStakes             *cryptomaterial.ClickableList
 
 	scrollContainer               *widget.List
 	mobileMarketOverviewContainer *widget.List
@@ -126,10 +127,7 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
-		recentProposalList: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentProposalList: l.Theme.NewClickableList(layout.Vertical),
 		scrollContainer: &widget.List{
 			List: layout.List{
 				Axis:      layout.Vertical,
@@ -153,14 +151,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				image:     l.Theme.Icons.LTC,
 			},
 		},
-		recentTransactions: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
-		recentStakes: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
+		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 
 		assetBalanceSlider: l.Theme.Slider(),
 		card:               l.Theme.Card(),
@@ -206,8 +198,8 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true, "")
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		go pg.WL.AssetsManager.RateSource.Refresh(false)
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		go pg.AssetsManager.RateSource.Refresh(false)
 	}
 
 	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
@@ -227,25 +219,37 @@ func (pg *OverviewPage) HandleUserInteractions() {
 	}
 
 	if pg.forceRefreshRates.Clicked() {
-		go pg.WL.AssetsManager.RateSource.Refresh(true)
+		go pg.AssetsManager.RateSource.Refresh(true)
+	}
+
+	if clicked, selectedTxIndex := pg.recentTransactions.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.transactions[selectedTxIndex])
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx))
+	}
+
+	if clicked, selectedTxIndex := pg.recentStakes.ItemClicked(); clicked {
+		tx, wal := pg.txAndWallet(pg.stakes[selectedTxIndex])
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, wal, tx))
+	}
+
+	if clicked, selectedTxIndex := pg.recentProposalList.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(governance.NewProposalDetailsPage(pg.Load, &pg.proposalItems[selectedTxIndex].Proposal))
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
 	if pg.forwardButton.Button.Clicked() {
 		curSliderIndex := pg.mixerSlider.GetSelectedIndex()
 		mixerData := pg.mixerSliderData[pg.sortedMixerSlideKeys[curSliderIndex]]
-		pg.WL.SelectedWallet = &load.WalletItem{
-			Wallet: mixerData.Asset,
-		}
+		selectedWallet := mixerData.Asset
 
 		pg.showNavigationFunc(true)
 		walletCallbackFunc := func() {
 			pg.showNavigationFunc(false)
 		}
-		mp := NewMainPage(pg.Load, walletCallbackFunc)
-		pg.ParentNavigator().Display(mp)
-		mp.Display(privacy.NewAccountMixerPage(pg.Load)) // Display mixer page on the main page.
-		mp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
+		swmp := NewSingleWalletMasterPage(pg.Load, selectedWallet, walletCallbackFunc)
+		pg.ParentNavigator().Display(swmp)
+		swmp.Display(privacy.NewAccountMixerPage(pg.Load, selectedWallet)) // Display mixer page on the main page.
+		swmp.pageNavigationTab.SetSelectedSegment(values.String(values.StrStakeShuffle))
 	}
 }
 
@@ -268,8 +272,7 @@ func (pg *OverviewPage) OnCurrencyChanged() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *OverviewPage) Layout(gtx C) D {
-	pg.Load.SetCurrentAppWidth(gtx.Constraints.Max.X)
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -317,7 +320,7 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {
 	axis := layout.Horizontal
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		axis = layout.Vertical
 	}
 
@@ -334,7 +337,7 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 				return pg.assetBalanceSliderLayout(gtx)
 			}
 
-			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			if pg.Load.IsMobileView() {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(pg.assetBalanceSliderLayout),
 					layout.Rigid(func(gtx C) D {
@@ -357,24 +360,26 @@ func (pg *OverviewPage) assetBalanceSliderLayout(gtx C) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.dcr))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.dcr))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.btc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.btc))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(*pg.ltc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.ltc))
 	}
 
 	return pg.assetBalanceSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) assetBalanceItemLayout(item assetBalanceSliderItem) layout.Widget {
+func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem) layout.Widget {
 	return func(gtx C) D {
 		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
 			return layout.Stack{}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
-					return item.backgroundImage.LayoutSize2(gtx, unit.Dp(gtx.Constraints.Max.X), values.MarginPadding221)
+					width := gtx.Constraints.Max.X
+					height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
+					return item.backgroundImage.LayoutSizeWithRadius(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height), 8)
 				}),
 				layout.Expanded(func(gtx C) D {
 					col := pg.Theme.Color.InvText
@@ -430,7 +435,15 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
 				sliderWidget = append(sliderWidget, func(gtx C) D {
-					return pg.mixerLayout(gtx, slideData)
+					return components.MixerComponent{
+						Load:           pg.Load,
+						WalletName:     slideData.GetWalletName(),
+						UnmixedBalance: slideData.unmixedBalance.String(),
+						ForwardButton:  pg.forwardButton,
+						InfoButton:     pg.infoButton,
+						Width:          gtx.Constraints.Max.X,
+						Height:         gtx.Dp(values.MarginPadding221),
+					}.MixerLayout(gtx)
 				})
 			}
 		}
@@ -438,127 +451,6 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 	}
 
 	return pg.mixerSlider.Layout(gtx, sliderWidget)
-}
-
-func (pg *OverviewPage) mixerLayout(gtx C, data *mixerData) D {
-	r := 8
-	return cryptomaterial.LinearLayout{
-		Width:       gtx.Constraints.Max.X,
-		Height:      gtx.Dp(values.MarginPadding221),
-		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding15),
-		Background:  pg.Theme.Color.Surface,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(pg.topMixerLayout),
-		layout.Rigid(pg.middleMixerLayout),
-		layout.Rigid(
-			func(gtx C) D {
-				return pg.bottomMixerLayout(gtx, data)
-			},
-		),
-	)
-}
-
-func (pg *OverviewPage) topMixerLayout(gtx C) D {
-	return layout.Flex{
-		Axis:      layout.Horizontal,
-		Alignment: layout.Middle,
-	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.Mixer.Layout24dp),
-		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Body1(values.String(values.StrMixerRunning))
-			lbl.Font.Weight = font.SemiBold
-			return layout.Inset{
-				Left:  values.MarginPadding8,
-				Right: values.MarginPadding8,
-			}.Layout(gtx, lbl.Layout)
-		}),
-		layout.Rigid(pg.infoButton.Layout),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, pg.forwardButton.Layout)
-		}),
-	)
-}
-
-func (pg *OverviewPage) middleMixerLayout(gtx C) D {
-	r := gtx.Dp(7)
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.WrapContent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Horizontal,
-		Padding: layout.Inset{
-			Left:   values.MarginPadding10,
-			Right:  values.MarginPadding10,
-			Top:    values.MarginPadding4,
-			Bottom: values.MarginPadding4,
-		},
-		Margin: layout.Inset{
-			Top:    values.MarginPadding10,
-			Bottom: values.MarginPadding10,
-		},
-		Background: pg.Theme.Color.LightBlue7,
-		Alignment:  layout.Middle,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.Alert.Layout20dp),
-		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2(values.String(values.StrKeepAppOpen))
-			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, lbl.Layout)
-		}),
-	)
-}
-
-func (pg *OverviewPage) bottomMixerLayout(gtx C, data *mixerData) D {
-	r := 8
-	return cryptomaterial.LinearLayout{
-		Width:       cryptomaterial.WrapContent,
-		Height:      cryptomaterial.WrapContent,
-		Orientation: layout.Vertical,
-		Padding:     layout.UniformInset(values.MarginPadding15),
-		Background:  pg.Theme.Color.Gray4,
-		Border: cryptomaterial.Border{
-			Radius: cryptomaterial.CornerRadius{
-				TopLeft:     r,
-				TopRight:    r,
-				BottomRight: r,
-				BottomLeft:  r,
-			},
-		},
-	}.Layout(gtx,
-		layout.Rigid(func(gtc C) D {
-			lbl := pg.Theme.Body2(data.GetWalletName())
-			lbl.Font.Weight = font.SemiBold
-			return lbl.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{
-				Axis:      layout.Horizontal,
-				Alignment: layout.Middle,
-			}.Layout(gtx,
-				layout.Rigid(pg.Theme.Body1(values.String(values.StrUnmixedBalance)).Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return components.LayoutBalance(gtx, pg.Load, data.unmixedBalance.String())
-					})
-				}),
-			)
-		}),
-	)
 }
 
 func (pg *OverviewPage) marketOverview(gtx C) D {
@@ -793,13 +685,13 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 func (pg *OverviewPage) marketRates() map[string]*ext.Ticker {
 	marketRates := make(map[string]*ext.Ticker)
 
-	if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+	if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
 		return marketRates
 	}
 
 	for i := range pg.mktValues {
 		asset := pg.mktValues[i]
-		rate := pg.WL.AssetsManager.RateSource.GetTicker(asset.market)
+		rate := pg.AssetsManager.RateSource.GetTicker(asset.market)
 		if rate == nil || rate.LastTradePrice <= 0 {
 			continue
 		}
@@ -889,12 +781,8 @@ func (pg *OverviewPage) assetTableLabel(title string, col color.NRGBA) layout.Wi
 
 func (pg *OverviewPage) txStakingSection(gtx C) D {
 	axis := layout.Horizontal
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		axis = layout.Vertical
-	}
-
-	txAndWallet := func(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
-		return mtx.Transaction, pg.WL.AssetsManager.WalletWithID(mtx.walletID)
 	}
 
 	return cryptomaterial.LinearLayout{
@@ -904,26 +792,24 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-
-			if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+			if pg.Load.IsMobileView() {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Recent Transactions", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1("No recent transaction").Layout(gtx)
+									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
 								})
 							})
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, "Staking Activity", nil, func(gtx C) D {
+							return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
 								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-
-									return pg.Theme.Body1("No recent Staking Activity").Layout(gtx)
+									return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
 								})
 							})
 						})
@@ -943,7 +829,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 							}
 
 							return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
-								tx, wal := txAndWallet(pg.transactions[index])
+								tx, wal := pg.txAndWallet(pg.transactions[index])
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
@@ -958,7 +844,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 										separator := pg.Theme.Separator()
 										return layout.E.Layout(gtx, func(gtx C) D {
 											// Show bottom divider for all rows except last
-											return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 										})
 									}),
 								)
@@ -976,7 +862,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 						}
 
 						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							tx, wal := txAndWallet(pg.transactions[index])
+							tx, wal := pg.txAndWallet(pg.stakes[index])
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
@@ -991,7 +877,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 									separator := pg.Theme.Separator()
 									return layout.E.Layout(gtx, func(gtx C) D {
 										// Show bottom divider for all rows except last
-										return layout.Inset{Left: values.MarginPadding8}.Layout(gtx, separator.Layout)
+										return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 									})
 								}),
 							)
@@ -1059,9 +945,13 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 	})
 }
 
+func (pg *OverviewPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transaction, sharedW.Asset) {
+	return mtx.Transaction, pg.AssetsManager.WalletWithID(mtx.walletID)
+}
+
 func (pg *OverviewPage) updateAssetsUSDBalance() {
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		assetsTotalUSDBalance, err := components.CalculateAssetsUSDBalance(pg.Load, pg.assetsTotalBalance)
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		assetsTotalUSDBalance, err := pg.AssetsManager.CalculateAssetsUSDBalance(pg.assetsTotalBalance)
 		if err != nil {
 			log.Error(err)
 			return
@@ -1091,7 +981,7 @@ func (pg *OverviewPage) updateAssetsUSDBalance() {
 }
 
 func (pg *OverviewPage) updateAssetsSliders() {
-	assetsBalance, err := components.CalculateTotalAssetsBalance(pg.Load)
+	assetsBalance, err := pg.AssetsManager.CalculateTotalAssetsBalance()
 	if err != nil {
 		log.Error(err)
 		return
@@ -1188,7 +1078,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 		},
 	}
 
-	wallets := pg.WL.AssetsManager.AllWallets()
+	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		if w, ok := wal.(*dcr.Asset); ok {
 			// Only dcr wallets have mixing support currently.
@@ -1210,7 +1100,7 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 	rateListener := &ext.RateListener{
 		OnRateUpdated: pg.ParentWindow().Reload,
 	}
-	err := pg.WL.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
+	err := pg.AssetsManager.RateSource.AddRateListener(rateListener, OverviewPageID)
 	if err != nil {
 		log.Error("RateSource.AddRateListener error: %v", err)
 	}
@@ -1243,14 +1133,14 @@ func (pg *OverviewPage) listenForMixerNotifications() {
 }
 
 func (pg *OverviewPage) stopNtfnListeners() {
-	wallets := pg.WL.AssetsManager.AllWallets()
+	wallets := pg.AssetsManager.AllWallets()
 	for _, wal := range wallets {
 		if w, ok := wal.(*dcr.Asset); ok {
 			w.RemoveAccountMixerNotificationListener(OverviewPageID)
 		}
 		wal.RemoveTxAndBlockNotificationListener(OverviewPageID)
 	}
-	pg.WL.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
+	pg.AssetsManager.RateSource.RemoveRateListener(OverviewPageID)
 }
 
 func (pg *OverviewPage) setUnMixedBalance(id int) {
@@ -1291,14 +1181,14 @@ func (pg *OverviewPage) reloadBalances() {
 
 func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 	return func(gtx layout.Context) layout.Dimensions {
-		refreshing := pg.WL.AssetsManager.RateSource.Refreshing()
+		refreshing := pg.AssetsManager.RateSource.Refreshing()
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				var text string
 				if refreshing {
 					text = values.String(values.StrRefreshState)
 				} else {
-					lastUpdatedTimestamp := pg.WL.AssetsManager.RateSource.LastUpdate().Unix()
+					lastUpdatedTimestamp := pg.AssetsManager.RateSource.LastUpdate().Unix()
 					text = values.String(values.StrUpdated) + " " + components.TimeAgo(lastUpdatedTimestamp)
 				}
 				lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
@@ -1329,8 +1219,8 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 }
 
 func (pg *OverviewPage) loadTransactions() {
-	pg.transactions = make([]*multiWalletTx, 0)
-	wal := pg.WL.AllSortedWalletList()
+	transactions := make([]*multiWalletTx, 0)
+	wal := pg.AssetsManager.AllWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
 		if err != nil {
@@ -1339,24 +1229,25 @@ func (pg *OverviewPage) loadTransactions() {
 		}
 
 		for _, tx := range txs {
-			pg.transactions = append(pg.transactions, &multiWalletTx{tx, w.GetWalletID()})
+			transactions = append(transactions, &multiWalletTx{tx, w.GetWalletID()})
 		}
 	}
 
-	sort.Slice(pg.transactions, func(i, j int) bool {
-		return pg.transactions[i].Timestamp > pg.transactions[j].Timestamp
+	sort.Slice(transactions, func(i, j int) bool {
+		return transactions[i].Timestamp > transactions[j].Timestamp
 	})
 
-	if len(pg.transactions) > 3 {
-		pg.transactions = pg.transactions[:3]
+	if len(transactions) > 3 {
+		transactions = transactions[:3]
 	}
+	pg.transactions = transactions
 
 	pg.loadStakes()
 }
 
 func (pg *OverviewPage) loadStakes() {
-	pg.stakes = make([]*multiWalletTx, 0)
-	wal := pg.WL.AssetsManager.AllDCRWallets()
+	stakes := make([]*multiWalletTx, 0)
+	wal := pg.AssetsManager.AllDCRWallets()
 	for _, w := range wal {
 		txs, err := w.GetTransactionsRaw(0, 6, libutils.TxFilterStaking, true)
 		if err != nil {
@@ -1365,16 +1256,18 @@ func (pg *OverviewPage) loadStakes() {
 		}
 		for _, stakeTx := range txs {
 			if (stakeTx.Type == dcr.TxTypeTicketPurchase) || (stakeTx.Type == dcr.TxTypeRevocation) {
-				pg.stakes = append(pg.stakes, &multiWalletTx{stakeTx, w.GetWalletID()})
+				stakes = append(stakes, &multiWalletTx{stakeTx, w.GetWalletID()})
 			}
 		}
 	}
 
-	sort.Slice(pg.stakes, func(i, j int) bool {
-		return pg.stakes[i].Timestamp > pg.stakes[j].Timestamp
+	sort.Slice(stakes, func(i, j int) bool {
+		return stakes[i].Timestamp > stakes[j].Timestamp
 	})
 
-	if len(pg.stakes) > 3 {
-		pg.stakes = pg.stakes[:3]
+	if len(stakes) > 3 {
+		stakes = stakes[:3]
 	}
+
+	pg.stakes = stakes
 }

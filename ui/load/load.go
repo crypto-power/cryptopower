@@ -9,6 +9,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/notification"
@@ -29,21 +30,21 @@ type Load struct {
 
 	Theme *cryptomaterial.Theme
 
-	WL              *WalletLoad
-	Printer         *message.Printer
-	Network         string
-	CurrentAppWidth int
+	Printer *message.Printer
+	Network string
 
 	Toast *notification.Toast
 
 	DarkModeSettingChanged func(bool)
 	LanguageSettingChanged func()
 	CurrencySettingChanged func()
-	ToggleSync             func(NeedUnlockRestore)
+
+	// TODO: Kill this property!
+	ToggleSync func(sharedW.Asset, NeedUnlockRestore)
 }
 
 func (l *Load) RefreshTheme(window app.WindowNavigator) {
-	isDarkModeOn := l.WL.AssetsManager.IsDarkModeOn()
+	isDarkModeOn := l.AssetsManager.IsDarkModeOn()
 	l.Theme.SwitchDarkMode(isDarkModeOn, assets.DecredIcons)
 	l.DarkModeSettingChanged(isDarkModeOn)
 	l.LanguageSettingChanged()

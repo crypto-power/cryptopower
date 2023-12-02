@@ -39,9 +39,10 @@ type Page struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
-
-	modalLayout   *cryptomaterial.Modal
-	isModalLayout bool
+	// modalLayout is initialized if this page will be displayed as a modal
+	// rather than a full page. A modal display is used and a wallet selector is
+	// displayed if this send page is opened from the home page.
+	modalLayout *cryptomaterial.Modal
 
 	pageContainer *widget.List
 
@@ -67,7 +68,7 @@ type Page struct {
 	txLabelInputEditor cryptomaterial.Editor
 
 	*authoredTxData
-	selectedWallet  *load.WalletMapping
+	selectedWallet  sharedW.Asset
 	feeRateSelector *components.FeeRateSelector
 
 	toCoinSelection *cryptomaterial.Clickable
@@ -95,26 +96,26 @@ type selectedUTXOsInfo struct {
 	totalUTXOsAmount int64
 }
 
-func NewSendPage(l *load.Load, isModalLayout bool) *Page {
+func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 	pg := &Page{
 		Load: l,
 
 		authoredTxData: &authoredTxData{},
 		shadowBox:      l.Theme.Shadow(),
 		backdrop:       new(widget.Clickable),
-		isModalLayout:  isModalLayout,
 		exchangeRate:   -1,
 	}
 
-	if isModalLayout {
+	if wallet == nil {
+		// When this page is opened from the home page, the wallet to use is not
+		// specified. This page will be opened as a modal and a wallet selector
+		// will be displayed.
 		pg.modalLayout = l.Theme.ModalFloatTitle(values.String(values.StrSend))
 		pg.GenericPageModal = pg.modalLayout.GenericPageModal
-		pg.initWalletSelector()
+		pg.initWalletSelector() // will auto select the first wallet in the dropdown as pg.selectedWallet
 	} else {
 		pg.GenericPageModal = app.NewGenericPageModal(SendPageID)
-		pg.selectedWallet = &load.WalletMapping{
-			Asset: l.WL.SelectedWallet.Wallet,
-		}
+		pg.selectedWallet = wallet
 	}
 
 	pg.amount = newSendAmount(l.Theme, pg.selectedWallet.GetAssetType())
@@ -151,7 +152,7 @@ func (pg *Page) initWalletSelector() {
 	pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
 
 	// Source wallet picker
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.selectedWallet = selectedWallet
 		pg.amount.setAssetType(selectedWallet.GetAssetType())
 		pg.sendDestination.initDestinationWalletSelector(selectedWallet.GetAssetType())
@@ -188,11 +189,11 @@ func (pg *Page) initializeAccountSelectors() {
 				// only mixed accounts can send to address/wallets for wallet with privacy setup
 				switch pg.sendDestination.accountSwitch.SelectedIndex() {
 				case sendToAddress:
-					accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+					accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
 				case SendToWallet:
 					destinationWalletID := pg.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
 					if destinationWalletID != pg.selectedWallet.GetWalletID() {
-						accountIsValid = account.Number == pg.selectedWallet.MixedAccountNumber()
+						accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
 					}
 				}
 			}
@@ -209,7 +210,7 @@ func (pg *Page) initializeAccountSelectors() {
 		accountIsValid := account.Number != load.MaxInt32
 		// Filter mixed wallet
 		destinationWallet := pg.sendDestination.destinationAccountSelector.SelectedWallet()
-		isMixedAccount := destinationWallet.MixedAccountNumber() == account.Number
+		isMixedAccount := load.MixedAccountNumber(destinationWallet) == account.Number
 		// Filter the sending account.
 		sourceWalletID := pg.sourceAccountSelector.SelectedAccount().WalletID
 		isSameAccount := sourceWalletID == account.WalletID && account.Number == pg.sourceAccountSelector.SelectedAccount().Number
@@ -223,7 +224,7 @@ func (pg *Page) initializeAccountSelectors() {
 		pg.validateAndConstructTx()
 	})
 
-	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
+	pg.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		pg.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
 		if pg.selectedWallet.GetAssetType() == libUtil.DCRWalletAsset {
 			pg.sourceAccountSelector.SelectFirstValidAccount(pg.selectedWallet)
@@ -269,8 +270,8 @@ func (pg *Page) OnNavigatedTo() {
 	pg.sendDestination.destinationAddressEditor.Editor.Focus()
 
 	pg.usdExchangeSet = false
-	if components.IsFetchExchangeRateAPIAllowed(pg.WL) {
-		pg.usdExchangeSet = pg.WL.AssetsManager.RateSource.Ready()
+	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
+		pg.usdExchangeSet = pg.AssetsManager.RateSource.Ready()
 		go pg.fetchExchangeRate()
 	} else {
 		// If exchange rate is not supported, validate and construct the TX.
@@ -280,7 +281,7 @@ func (pg *Page) OnNavigatedTo() {
 	if pg.selectedWallet.GetAssetType() == libUtil.BTCWalletAsset && pg.isFeerateAPIApproved() {
 		// This API call may take sometime to return. Call this before and cache
 		// results.
-		go pg.selectedWallet.GetAPIFeeRate()
+		go load.GetAPIFeeRate(pg.selectedWallet)
 	}
 }
 
@@ -310,7 +311,7 @@ func (pg *Page) fetchExchangeRate() {
 		return
 	}
 
-	rate := pg.WL.AssetsManager.RateSource.GetTicker(market)
+	rate := pg.AssetsManager.RateSource.GetTicker(market)
 	if rate == nil || rate.LastTradePrice <= 0 {
 		pg.isFetchingExchangeRate = false
 		return
@@ -530,14 +531,14 @@ func (pg *Page) HandleUserInteractions() {
 
 	if pg.nextButton.Clicked() {
 		if pg.selectedWallet.IsUnsignedTxExist() {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, *pg.selectedWallet)
+			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
 			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
 			pg.confirmTxModal.txLabel = pg.txLabelInputEditor.Editor.Text()
 
 			pg.confirmTxModal.txSent = func() {
 				pg.resetFields()
 				pg.clearEstimates()
-				if pg.isModalLayout {
+				if pg.modalLayout != nil {
 					pg.modalLayout.Dismiss()
 				}
 			}
@@ -549,7 +550,7 @@ func (pg *Page) HandleUserInteractions() {
 	// if destination switch is equal to Address
 	if pg.sendDestination.sendToAddress {
 		if pg.sendDestination.validate() {
-			if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+			if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
 				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 					pg.amount.SendMax = false
 				}
@@ -561,7 +562,7 @@ func (pg *Page) HandleUserInteractions() {
 			}
 		}
 	} else {
-		if !components.IsFetchExchangeRateAPIAllowed(pg.WL) {
+		if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
 			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
 				pg.amount.SendMax = false
 			}
@@ -648,5 +649,5 @@ func (pg *Page) OnNavigatedFrom() {
 }
 
 func (pg *Page) isFeerateAPIApproved() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libUtil.FeeRateHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libUtil.FeeRateHTTPAPI)
 }

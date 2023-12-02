@@ -45,7 +45,6 @@ type ProposalsPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	assetsManager  *libwallet.AssetsManager
 	scroll         *components.Scroll[*components.ProposalItem]
 	previousFilter pFilter
 	statusDropDown *cryptomaterial.DropDown
@@ -69,7 +68,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg := &ProposalsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(ProposalsPageID),
-		assetsManager:    l.WL.AssetsManager,
 	}
 
 	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
@@ -118,15 +116,15 @@ func (pg *ProposalsPage) OnNavigatedTo() {
 }
 
 func (pg *ProposalsPage) syncAndUpdateProposals() {
-	go pg.WL.AssetsManager.Politeia.Sync(context.Background())
+	go pg.AssetsManager.Politeia.Sync(context.Background())
 	// Only proceed if allowed make Proposals API call.
 	pg.listenForSyncNotifications()
 	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
-	pg.isSyncing = pg.assetsManager.Politeia.IsSyncing()
+	pg.isSyncing = pg.AssetsManager.Politeia.IsSyncing()
 }
 
 func (pg *ProposalsPage) isGovernanceAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 // fetchProposals is thread safe and on completing proposals fetch it triggers
@@ -198,7 +196,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 	}
 
 	for pg.syncButton.Clicked() {
-		go pg.assetsManager.Politeia.Sync(context.Background())
+		go pg.AssetsManager.Politeia.Sync(context.Background())
 		pg.isSyncing = true
 
 		// TODO: check after 1min if sync does not start, set isSyncing to false and cancel sync
@@ -244,7 +242,7 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *ProposalsPage) OnNavigatedFrom() {
-	pg.WL.AssetsManager.Politeia.RemoveSyncCallback(ProposalsPageID)
+	pg.AssetsManager.Politeia.RemoveSyncCallback(ProposalsPageID)
 }
 
 func (pg *ProposalsPage) initWalletSelector() {
@@ -253,14 +251,14 @@ func (pg *ProposalsPage) initWalletSelector() {
 		Title(values.String(values.StrSelectWallet))
 	pg.sourceWalletSelector.SetHideBalance(true)
 	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
 	}
 
 	pg.sourceWalletSelector.SetLeftAlignment(true)
 	pg.sourceWalletSelector.SetBorder(false)
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet.Asset
+	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedWallet = selectedWallet
 		//TODO: Implement action when selected wallet
 	})
 }
@@ -270,7 +268,7 @@ func (pg *ProposalsPage) initWalletSelector() {
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -357,7 +355,7 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 						if pg.scroll.ItemsCount() <= 0 {
-							isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
+							isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
 							return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
 						}
 						proposalItems := pg.scroll.FetchedData()
@@ -379,7 +377,7 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutSyncSection(gtx C) D {
-	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
+	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
 	if isProposalSyncing {
 		return pg.layoutIsSyncingSection(gtx)
 	} else if pg.syncCompleted {
@@ -402,7 +400,7 @@ func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
 }
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
-	isProposalSyncing := pg.assetsManager.Politeia.IsSyncing()
+	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
 	return layout.Inset{Left: values.MarginPadding24,
 		Top:   values.MarginPadding16,
 		Right: values.MarginPadding24,
@@ -426,7 +424,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 							} else if pg.syncCompleted {
 								text = values.String(values.StrUpdated)
 							} else {
-								text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.assetsManager.Politeia.GetLastSyncedTimeStamp())
+								text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
 							}
 
 							lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
@@ -456,7 +454,7 @@ func (pg *ProposalsPage) listenForSyncNotifications() {
 			pg.ParentWindow().Reload()
 		}
 	}
-	err := pg.WL.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalsPageID)
+	err := pg.AssetsManager.Politeia.AddSyncCallback(proposalSyncCallback, ProposalsPageID)
 	if err != nil {
 		log.Errorf("Error adding politeia notification listener: %v", err)
 		return

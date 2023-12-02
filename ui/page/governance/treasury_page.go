@@ -35,10 +35,8 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	assetsManager *libwallet.AssetsManager
-
-	sourceWalletSelector *components.WalletAndAccountSelector
-	selectedWallet       sharedW.Asset
+	dcrWalletSelector *components.WalletAndAccountSelector
+	selectedDCRWallet *dcr.Asset
 
 	treasuryItems []*components.TreasuryItem
 
@@ -60,7 +58,6 @@ func NewTreasuryPage(l *load.Load) *TreasuryPage {
 	pg := &TreasuryPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(TreasuryPageID),
-		assetsManager:    l.WL.AssetsManager,
 		listContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
@@ -88,9 +85,9 @@ func (pg *TreasuryPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
 	// Fetch (or re-fetch) treasury policies in background as this makes
 	// a network call. Refresh the window once the call completes.
-	pg.PiKey = hex.EncodeToString(pg.WL.AssetsManager.PiKeys()[0])
+	pg.PiKey = hex.EncodeToString(pg.AssetsManager.PiKeys()[0])
 
-	if pg.isTreasuryAPIAllowed() && pg.selectedWallet != nil {
+	if pg.isTreasuryAPIAllowed() && pg.selectedDCRWallet != nil {
 		pg.FetchPolicies()
 	}
 }
@@ -102,7 +99,7 @@ func (pg *TreasuryPage) OnNavigatedFrom() {
 }
 
 func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
-	return pg.WL.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -127,7 +124,7 @@ func (pg *TreasuryPage) HandleUserInteractions() {
 
 	for pg.viewGovernanceKeys.Clicked() {
 		host := "https://github.com/decred/dcrd/blob/master/chaincfg/mainnetparams.go#L477"
-		if pg.WL.AssetsManager.NetType() == libwallet.Testnet {
+		if pg.AssetsManager.NetType() == libwallet.Testnet {
 			host = "https://github.com/decred/dcrd/blob/master/chaincfg/testnetparams.go#L390"
 		}
 
@@ -157,7 +154,7 @@ func (pg *TreasuryPage) FetchPolicies() {
 	pg.isPolicyFetchInProgress = true
 
 	go func() {
-		pg.treasuryItems = components.LoadPolicies(pg.Load, pg.selectedWallet, pg.PiKey)
+		pg.treasuryItems = components.LoadPolicies(pg.Load, pg.selectedDCRWallet, pg.PiKey)
 		pg.isPolicyFetchInProgress = true
 		pg.ParentWindow().Reload()
 	}()
@@ -182,7 +179,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
 			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
 		})
-		// Disable main page from recieving events
+		// Disable main page from receiving events
 		gtx = gtx.Disabled()
 	}
 
@@ -190,7 +187,7 @@ func (pg *TreasuryPage) Layout(gtx C) D {
 }
 
 func (pg *TreasuryPage) layout(gtx C) D {
-	if pg.selectedWallet == nil {
+	if pg.selectedDCRWallet == nil {
 		return pg.decredWalletRequired(gtx)
 	}
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
@@ -226,7 +223,7 @@ func (pg *TreasuryPage) layout(gtx C) D {
 							layout.Expanded(func(gtx C) D {
 								return layout.W.Layout(gtx, func(gtx C) D {
 									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+									return pg.dcrWalletSelector.Layout(pg.ParentWindow(), gtx)
 								})
 							}),
 							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.MarginPadding55})),
@@ -291,7 +288,7 @@ func (pg *TreasuryPage) layoutContent(gtx C) D {
 
 func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 	backgroundColor := pg.Theme.Color.LightBlue
-	if pg.WL.AssetsManager.IsDarkModeOn() {
+	if pg.AssetsManager.IsDarkModeOn() {
 		backgroundColor = pg.Theme.Color.Background
 	}
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
@@ -328,7 +325,7 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 		Title(values.String(values.StrConfirmVote)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 			votingPreference := treasuryItem.OptionsRadioGroup.Value
-			err := pg.selectedWallet.(*dcr.Asset).SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
+			err := pg.selectedDCRWallet.SetTreasuryPolicy(treasuryItem.Policy.PiKey, votingPreference, "", password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
@@ -347,17 +344,17 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 
 func (pg *TreasuryPage) initWalletSelector() {
 	// Source wallet picker
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
+	pg.dcrWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
 		Title(values.String(values.StrSelectWallet))
 
-	pg.sourceWalletSelector.SetLeftAlignment(true)
-	pg.sourceWalletSelector.SetBorder(false)
-	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet().Asset
+	pg.dcrWalletSelector.SetLeftAlignment(true)
+	pg.dcrWalletSelector.SetBorder(false)
+	if pg.dcrWalletSelector.SelectedWallet() != nil {
+		pg.selectedDCRWallet = pg.dcrWalletSelector.SelectedWallet().(*dcr.Asset)
 	}
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet *load.WalletMapping) {
-		pg.selectedWallet = selectedWallet.Asset
+	pg.dcrWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
+		pg.selectedDCRWallet = selectedWallet.(*dcr.Asset)
 		pg.FetchPolicies()
 	})
 }

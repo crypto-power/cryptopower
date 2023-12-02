@@ -76,11 +76,11 @@ func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 
-	if pg.isModalLayout {
+	if pg.modalLayout != nil {
 		modalContent := []layout.Widget{pg.layoutDesktop}
 		return pg.modalLayout.Layout(gtx, modalContent, 450)
 	}
@@ -93,7 +93,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) D {
 			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						if pg.isModalLayout {
+						if pg.modalLayout != nil {
 							return layout.Inset{
 								Bottom: values.MarginPadding16,
 							}.Layout(gtx, func(gtx C) D {
@@ -120,13 +120,14 @@ func (pg *Page) layoutDesktop(gtx layout.Context) D {
 		func(gtx C) D {
 			// disable this section if the layout is a modal layout
 			// and the selected wallet is not synced.
-			if pg.isModalLayout && !pg.selectedWallet.IsSynced() {
+			if pg.modalLayout != nil && !pg.selectedWallet.IsSynced() {
 				gtx = gtx.Disabled()
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.toSection),
 				layout.Rigid(func(gtx C) D {
-					if pg.isModalLayout {
+					if pg.modalLayout != nil {
+						// coin selection not allowed on the send modal
 						return D{}
 					}
 					return pg.coinSelectionSection(gtx)

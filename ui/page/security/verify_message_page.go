@@ -7,6 +7,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
@@ -24,6 +25,7 @@ type VerifyMessagePage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	wallet sharedW.Asset
 
 	addressEditor          cryptomaterial.Editor
 	messageEditor          cryptomaterial.Editor
@@ -32,15 +34,14 @@ type VerifyMessagePage struct {
 	backButton             cryptomaterial.IconButton
 	infoButton             cryptomaterial.IconButton
 
-	addressIsValid     bool
-	EnableEditorSwitch bool
+	addressIsValid bool
 }
 
-func NewVerifyMessagePage(l *load.Load) *VerifyMessagePage {
+func NewVerifyMessagePage(l *load.Load, wallet sharedW.Asset) *VerifyMessagePage {
 	pg := &VerifyMessagePage{
-		Load:               l,
-		GenericPageModal:   app.NewGenericPageModal(VerifyMessagePageID),
-		EnableEditorSwitch: false,
+		Load:             l,
+		GenericPageModal: app.NewGenericPageModal(VerifyMessagePageID),
+		wallet:           wallet,
 	}
 
 	pg.addressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrAddress))
@@ -105,7 +106,7 @@ func (pg *VerifyMessagePage) Layout(gtx C) D {
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	if pg.Load.GetCurrentAppWidth() <= gtx.Dp(values.StartMobileView) {
+	if pg.Load.IsMobileView() {
 		return pg.layoutMobile(gtx, body)
 	}
 	return pg.layoutDesktop(gtx, body)
@@ -170,7 +171,7 @@ func (pg *VerifyMessagePage) HandleUserInteractions() {
 		var verifyMessageText string
 		var info *modal.InfoModal
 
-		valid, err := pg.WL.SelectedWallet.Wallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
+		valid, err := pg.wallet.VerifyMessage(pg.addressEditor.Editor.Text(), pg.messageEditor.Editor.Text(), pg.signatureEditor.Editor.Text())
 		if err != nil || !valid {
 			verifyMessageText = values.String(values.StrInvalidAddress)
 			if !valid {
@@ -246,7 +247,7 @@ func (pg *VerifyMessagePage) validateAddress() bool {
 	switch {
 	case !utils.StringNotEmpty(address):
 		errorMessage = values.String(values.StrEnterValidAddress)
-	case !pg.WL.SelectedWallet.Wallet.IsAddressValid(address):
+	case !pg.wallet.IsAddressValid(address):
 		errorMessage = values.String(values.StrInvalidAddress)
 	default:
 		valid = true
