@@ -16,22 +16,6 @@ func (pg *Page) initSplashScreenWidgets() {
 	pg.enableGovernanceBtn = pg.Theme.Button(values.String(values.StrFetchProposals))
 }
 
-func (pg *Page) splashScreenLayout(gtx C) D {
-	// If Proposals API is not allowed, display the overlay with the message.
-	overlay := layout.Stacked(func(gtx C) D { return D{} })
-	if !pg.isGovernanceAPIAllowed() {
-		gtxCopy := gtx
-		overlay = layout.Stacked(func(gtx C) D {
-			str := values.StringF(values.StrNotAllowed, values.String(values.StrGovernance))
-			return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, str, &pg.navigateToSettingsBtn)
-		})
-		// Disable main page from receiving events
-		gtx = gtx.Disabled()
-	}
-
-	return layout.Stack{}.Layout(gtx, layout.Expanded(pg.splashScreen), overlay)
-}
-
 func (pg *Page) splashScreen(gtx layout.Context) layout.Dimensions {
 	return cryptomaterial.LinearLayout{
 		Orientation: layout.Vertical,

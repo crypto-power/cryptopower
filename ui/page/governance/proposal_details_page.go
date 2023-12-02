@@ -14,7 +14,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -204,7 +203,7 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 
 func (pg *ProposalDetails) listenForSyncNotifications() {
 	proposalSyncCallback := func(propName string, status libutils.ProposalStatus) {
-		if status == utils.ProposalStatusSynced {
+		if status == libutils.ProposalStatusSynced {
 			proposal, err := pg.AssetsManager.Politeia.GetProposalRaw(pg.proposal.Token)
 			if err == nil {
 				pg.proposal = &libwallet.Proposal{Proposal: *proposal}
