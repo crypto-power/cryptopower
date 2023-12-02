@@ -26,7 +26,7 @@ const (
 
 type Dragged func(dragDirection SwipeDirection)
 
-type SliceAction struct {
+type SlideAction struct {
 	Duration  time.Duration
 	IsReverse bool
 	push      int
@@ -46,26 +46,26 @@ type SliceAction struct {
 	isPushing   bool
 }
 
-func NewSliceAction() *SliceAction {
-	return &SliceAction{
+func NewSliceAction() *SlideAction {
+	return &SlideAction{
 		Duration:   defaultDuration,
 		dragEffect: defaultdragEffect,
 	}
 }
 
 // PushLeft pushes the existing widget to the left.
-func (s *SliceAction) PushLeft() { s.push = 1 }
+func (s *SlideAction) PushLeft() { s.push = 1 }
 
 // PushRight pushes the existing widget to the right.
-func (s *SliceAction) PushRight() { s.push = -1 }
+func (s *SlideAction) PushRight() { s.push = -1 }
 
-func (s *SliceAction) SetDragEffect(offset int) { s.dragEffect = offset }
+func (s *SlideAction) SetDragEffect(offset int) { s.dragEffect = offset }
 
-func (s *SliceAction) Draged(drag Dragged) {
+func (s *SlideAction) Draged(drag Dragged) {
 	s.draged = drag
 }
 
-func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
+func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
 	if gtx.Queue != nil {
 		for _, event := range s.drag.Events(gtx.Metric, gtx.Queue, gesture.Horizontal) {
 			switch event.Type {
@@ -109,7 +109,7 @@ func (s *SliceAction) DragLayout(gtx C, w layout.Widget) D {
 	return dims
 }
 
-func (s *SliceAction) TransformLayout(gtx C, w layout.Widget) D {
+func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 	if s.push != 0 {
 		s.next = nil
 		s.lastCall = s.nextCall

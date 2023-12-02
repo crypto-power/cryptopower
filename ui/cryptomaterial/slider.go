@@ -29,7 +29,7 @@ type Slider struct {
 	ButtonBackgroundColor    color.NRGBA
 	IndicatorBackgroundColor color.NRGBA
 	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
-	sliceAction              *SliceAction
+	slideAction              *SlideAction
 }
 
 var m4 = values.MarginPadding4
@@ -44,13 +44,13 @@ func (t *Theme) Slider() *Slider {
 		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
 		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
 		SelectedIndicatorColor:   t.Color.White,
-		sliceAction:              NewSliceAction(),
+		slideAction:              NewSliceAction(),
 	}
 
 	sl.card = sl.t.Card()
 	sl.card.Radius = Radius(8)
 
-	sl.sliceAction.Draged(func(dragDirection SwipeDirection) {
+	sl.slideAction.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeLeft
 		sl.handleActionEvent(isNext)
 	})
@@ -63,7 +63,7 @@ func (s *Slider) GetSelectedIndex() int {
 	return s.selected
 }
 
-func (s *Slider) getSliceItems(items []layout.Widget) []*sliderItem {
+func (s *Slider) sliderItems(items []layout.Widget) []*sliderItem {
 	slideItems := make([]*sliderItem, 0)
 	for _, item := range items {
 		slideItems = append(slideItems, &sliderItem{
@@ -78,7 +78,7 @@ func (s *Slider) getSliceItems(items []layout.Widget) []*sliderItem {
 func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	// set slider items once since layout is drawn multiple times per sec.
 	if !s.isSliderItemsSet {
-		s.slideItems = s.getSliceItems(items)
+		s.slideItems = s.sliderItems(items)
 		s.isSliderItemsSet = true
 	}
 
@@ -87,10 +87,10 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	}
 
 	s.handleClickEvent()
-	return s.sliceAction.DragLayout(gtx, func(gtx C) D {
+	return s.slideAction.DragLayout(gtx, func(gtx C) D {
 		return layout.Stack{Alignment: layout.S}.Layout(gtx,
 			layout.Expanded(func(gtx C) D {
-				return s.sliceAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
+				return s.slideAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
 			}),
 			layout.Stacked(func(gtx C) D {
 				return layout.Inset{
@@ -192,9 +192,9 @@ func (s *Slider) handleClickEvent() {
 			lastSelected := s.selected
 			s.selected = i
 			if lastSelected < i {
-				s.sliceAction.PushLeft()
+				s.slideAction.PushLeft()
 			} else {
-				s.sliceAction.PushRight()
+				s.slideAction.PushRight()
 			}
 			break
 		}
@@ -202,6 +202,9 @@ func (s *Slider) handleClickEvent() {
 }
 
 func (s *Slider) handleActionEvent(isNext bool) {
+	if len(s.slideItems) == 1 {
+		return
+	}
 	l := len(s.slideItems) - 1 // index starts at 0
 	if isNext {
 		if s.selected == l {
@@ -209,13 +212,13 @@ func (s *Slider) handleActionEvent(isNext bool) {
 		} else {
 			s.selected++
 		}
-		s.sliceAction.PushLeft()
+		s.slideAction.PushLeft()
 	} else {
 		if s.selected == 0 {
 			s.selected = l
 		} else {
 			s.selected--
 		}
-		s.sliceAction.PushRight()
+		s.slideAction.PushRight()
 	}
 }

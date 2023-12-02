@@ -30,8 +30,8 @@ type SegmentedControl struct {
 	mu      sync.Mutex
 
 	isSwipeActionEnabled bool
-	sliceAction          *SliceAction
-	sliceActionTitle     *SliceAction
+	slideAction          *SlideAction
+	slideActionTitle     *SlideAction
 	segmentType          SegmentType
 }
 
@@ -47,18 +47,18 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		rightNavBtn:          t.NewClickable(false),
 		isSwipeActionEnabled: true,
 		segmentType:          segmentType,
-		sliceAction:          NewSliceAction(),
-		sliceActionTitle:     NewSliceAction(),
+		slideAction:          NewSliceAction(),
+		slideActionTitle:     NewSliceAction(),
 	}
 
-	sc.sliceAction.Draged(func(dragDirection SwipeDirection) {
+	sc.slideAction.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeLeft
 		sc.handleActionEvent(isNext)
 	})
 
-	sc.sliceActionTitle.SetDragEffect(50)
+	sc.slideActionTitle.SetDragEffect(50)
 
-	sc.sliceActionTitle.Draged(func(dragDirection SwipeDirection) {
+	sc.slideActionTitle.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeLeft
 		sc.handleActionEvent(isNext)
 	})
@@ -84,12 +84,12 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					if sc.isSwipeActionEnabled {
-						return sc.sliceAction.DragLayout(gtx, func(gtx C) D {
-							return sc.sliceAction.TransformLayout(gtx, body)
-						})
+					if !sc.isSwipeActionEnabled {
+						return body(gtx)
 					}
-					return body(gtx)
+					return sc.slideAction.DragLayout(gtx, func(gtx C) D {
+						return sc.slideAction.TransformLayout(gtx, body)
+					})
 				})
 			}),
 		)
@@ -106,7 +106,7 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 		Border:     Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return sc.sliceActionTitle.DragLayout(gtx, func(gtx C) D {
+			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
 				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
 					return layout.Center.Layout(gtx, func(gtx C) D {
@@ -247,16 +247,16 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 		} else {
 			sc.selectedIndex++
 		}
-		sc.sliceAction.PushLeft()
-		sc.sliceActionTitle.PushLeft()
+		sc.slideAction.PushLeft()
+		sc.slideActionTitle.PushLeft()
 	} else {
 		if sc.selectedIndex == 0 {
 			sc.selectedIndex = l
 		} else {
 			sc.selectedIndex--
 		}
-		sc.sliceAction.PushRight()
-		sc.sliceActionTitle.PushRight()
+		sc.slideAction.PushRight()
+		sc.slideActionTitle.PushRight()
 	}
 	sc.changed = true
 }
