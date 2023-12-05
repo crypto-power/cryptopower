@@ -9,7 +9,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 )
 
-const DCRDEXID = "DCRDEXID"
+const DCRDEXPageID = "DCRDEXID"
 
 type (
 	C = layout.Context
@@ -31,7 +31,7 @@ type DEXPage struct {
 func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
 		Load:              l,
-		MasterPage:        app.NewMasterPage(DCRDEXID),
+		MasterPage:        app.NewMasterPage(DCRDEXPageID, nil),
 		openTradeMainPage: l.Theme.NewClickable(false),
 	}
 	return dp
@@ -41,7 +41,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 // differentiate this page from other pages.
 // Part of the load.Page interface.
 func (pg *DEXPage) ID() string {
-	return DCRDEXID
+	return DCRDEXPageID
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and may be
@@ -54,9 +54,9 @@ func (pg *DEXPage) OnNavigatedTo() {
 	if pg.CurrentPage() == nil {
 		// TODO: Handle pg.inited
 		pg.Display(NewDEXOnboarding(pg.Load))
+	} else {
+		pg.CurrentPage().OnNavigatedTo()
 	}
-
-	pg.CurrentPage().OnNavigatedTo()
 }
 
 // Layout draws the page UI components into the provided layout context to be

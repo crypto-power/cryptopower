@@ -38,7 +38,7 @@ type TradePage struct {
 func NewTradePage(l *load.Load) *TradePage {
 	pg := &TradePage{
 		Load:       l,
-		MasterPage: app.NewMasterPage(TradePageID),
+		MasterPage: app.NewMasterPage(TradePageID, dcrdex.NewDEXPage(l)),
 
 		shadowBox: l.Theme.Shadow(),
 		scrollContainer: &widget.List{
@@ -73,11 +73,7 @@ func (pg *TradePage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedTo() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedTo()
-	} else {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
-	}
+	pg.CurrentPage().OnNavigatedTo()
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -86,16 +82,15 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.HandleUserInteractions()
+	if pg.tab.Changed() {
+		if pg.tab.SelectedIndex() == 1 {
+			pg.Display(exchange.NewCreateOrderPage(pg.Load))
+		} else if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
+			pg.Display(dcrdex.NewDEXPage(pg.Load))
+		}
 	}
 
-	if pg.tab.SelectedIndex() == 0 {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
-	}
-	if pg.tab.SelectedIndex() == 1 {
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
-	}
+	pg.CurrentPage().HandleUserInteractions()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -106,9 +101,7 @@ func (pg *TradePage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedFrom() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
-		activeTab.OnNavigatedFrom()
-	}
+	pg.CurrentPage().OnNavigatedFrom()
 }
 
 // Layout draws the page UI components into the provided layout context

@@ -203,7 +203,6 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	}
 
 	pg.listenForMixerNotifications() // listeners are stopped in OnNavigatedFrom().
-
 }
 
 // HandleUserInteractions is called just before Layout() to determine

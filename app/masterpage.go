@@ -13,12 +13,20 @@ type MasterPage struct {
 	subPages *PageStack
 }
 
-// NewMasterPage returns an instance of MasterPage.
-func NewMasterPage(id string) *MasterPage {
-	return &MasterPage{
+// NewMasterPage returns an instance of MasterPage. startPage is optional.
+func NewMasterPage(id string, startPage Page) *MasterPage {
+	mp := &MasterPage{
 		GenericPageModal: NewGenericPageModal(id),
-		subPages:         NewPageStack(id),
 	}
+
+	if startPage != nil {
+		// Bind the navigator to the page.
+		startPage.OnAttachedToNavigator(mp)
+	}
+
+	mp.subPages = NewPageStack(id, startPage)
+
+	return mp
 }
 
 // CurrentPage returns the page that is at the top of the stack. Returns nil if
