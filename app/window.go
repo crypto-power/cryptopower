@@ -50,11 +50,6 @@ func (window *SimpleWindowNavigator) Display(newPage Page) {
 	if pushed {
 		window.Reload()
 	}
-
-	// Page is ready to be displayed.
-	newPage.OnAttachedToNavigator(window)
-	newPage.OnNavigatedTo()
-	window.Reload()
 }
 
 // CloseCurrentPage dismisses the page at the top of the stack and gets the next

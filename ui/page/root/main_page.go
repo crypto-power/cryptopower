@@ -83,9 +83,9 @@ func NewSingleWalletMasterPage(l *load.Load, wallet sharedW.Asset, showNavigatio
 	swmp := &SingleWalletMasterPage{
 		Load:               l,
 		MasterPage:         app.NewMasterPage(MainPageID, info.NewInfoPage(l, wallet)),
+		selectedWallet:     wallet,
 		checkBox:           l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 		showNavigationFunc: showNavigationFunc,
-		selectedWallet:     wallet,
 	}
 
 	swmp.activeTab = make(map[string]string)

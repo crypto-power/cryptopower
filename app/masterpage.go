@@ -22,7 +22,6 @@ func NewMasterPage(id string, startPage Page) *MasterPage {
 	if startPage != nil {
 		// Bind the navigator to the page.
 		startPage.OnAttachedToNavigator(mp)
-		mp.subPages.pages = append(mp.subPages.pages, startPage)
 	}
 
 	mp.subPages = NewPageStack(id, startPage)
@@ -56,11 +55,6 @@ func (masterPage *MasterPage) Display(newPage Page) {
 	if pushed {
 		masterPage.ParentWindow().Reload()
 	}
-
-	// Page is ready to be displayed.
-	newPage.OnAttachedToNavigator(masterPage)
-	newPage.OnNavigatedTo()
-	masterPage.ParentWindow().Reload()
 }
 
 // CloseCurrentPage dismisses the page at the top of the stack and gets the next
