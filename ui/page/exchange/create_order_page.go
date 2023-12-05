@@ -69,7 +69,7 @@ type CreateOrderPage struct {
 	viewAllButton          cryptomaterial.Button
 	navToSettingsBtn       cryptomaterial.Button
 	splashPageInfoButton   cryptomaterial.IconButton
-	enableDEXBtn           cryptomaterial.Button
+	splashPageContainer    *widget.List
 
 	min          float64
 	max          float64
@@ -117,10 +117,15 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
+		navToSettingsBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		splashPageContainer: &widget.List{List: layout.List{
+			Alignment: layout.Middle,
+			Axis:      layout.Vertical,
+		}},
 	}
 
-	pg.initSplashPageWidgets()
-	pg.navToSettingsBtn = pg.Theme.Button(values.String(values.StrStartTrading))
+	// Init splash page more info widget
+	_, pg.splashPageInfoButton = components.SubpageHeaderButtons(pg.Load)
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -642,6 +647,12 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
+	if !pg.isExchangeAPIAllowed() {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.splashPage(gtx)
+		})
+	}
+
 	var msg string
 	var overlaySet bool
 	var navBtn *cryptomaterial.Button
@@ -690,9 +701,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) layout(gtx C) D {
-	if !pg.isExchangeAPIAllowed() {
-		return components.UniformPadding(gtx, pg.splashPage)
-	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -28,20 +29,26 @@ type DEXPage struct {
 
 	openTradeMainPage     *cryptomaterial.Clickable
 	splashPageInfoButton  cryptomaterial.IconButton
+	splashPageContainer   *widget.List
 	finalizeOnboardingBtn cryptomaterial.Button
 	isDexFirstVisit       bool
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
-		Load:              l,
-		MasterPage:        app.NewMasterPage(DCRDEXPageID),
-		openTradeMainPage: l.Theme.NewClickable(false),
-		isDexFirstVisit:   true,
+		MasterPage:            app.NewMasterPage(DCRDEXPageID),
+		Load:                  l,
+		openTradeMainPage:     l.Theme.NewClickable(false),
+		finalizeOnboardingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		splashPageContainer: &widget.List{List: layout.List{
+			Alignment: layout.Middle,
+			Axis:      layout.Vertical,
+		}},
+		isDexFirstVisit: true,
 	}
 
-	dp.initSplashPageWidgets()
-	dp.finalizeOnboardingBtn = dp.Theme.Button(values.String(values.StrStartTrading))
+	// Init splash page more info widget.
+	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
 	return dp
 }
 
@@ -71,7 +78,9 @@ func (pg *DEXPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
 	if pg.isDexFirstVisit {
-		return components.UniformPadding(gtx, pg.splashPage)
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.splashPage(gtx)
+		})
 	}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {

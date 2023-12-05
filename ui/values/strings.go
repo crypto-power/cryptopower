@@ -288,7 +288,7 @@ const (
 	StrDexContent                      = "dexContent"
 	StrDexDataReset                    = "dexDataReset"
 	StrDexDataResetFalse               = "dexDataResetFalse"
-	StrDexInfo                         = "dexInfo"
+	StrTradeSettingsMsg                = "tradeSettingsMsg"
 	StrDexResetInfo                    = "dexResetInfo"
 	StrDexStartupErr                   = "dexStartupErr"
 	StrDisable                         = "disable"
