@@ -1149,6 +1149,8 @@ github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.4/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.7/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
+github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c h1:wblz/dKdN+jClbB8Tw1q3sF3PIRxuystc7N9mwfAy40=
+github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/vmihailenco/msgpack v4.0.1+incompatible h1:RMF1enSPeKTlXrXdOcqjFUElywVZjjC6pqse21bKbEU=
 github.com/vmihailenco/msgpack v4.0.1+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/xanzy/go-gitlab v0.31.0/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=

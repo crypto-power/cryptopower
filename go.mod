@@ -156,3 +156,5 @@ require (
 // the android OS using gomobile. This replace can be removed once any
 // of those projects update their github.com/lib/pq dependency.
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
+
+replace github.com/crypto-power/instantswap => github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c
