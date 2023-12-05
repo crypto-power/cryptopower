@@ -28,7 +28,7 @@ type Icons struct {
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon, Dot *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -133,6 +133,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.ConcealIcon = NewImage(decredIcons["reveal"])
 	i.RevealIcon = NewImage(decredIcons["hide"])
 	i.AddExchange = NewImage(decredIcons["add_exchange"])
+	i.TradeExchangeIcon = NewImage(decredIcons["trade_exchange_icon"])
 
 	i.SettingsActiveIcon = NewImage(decredIcons["settings_active"])
 	i.SettingsInactiveIcon = NewImage(decredIcons["settings_inactive"])
