@@ -93,6 +93,9 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 				return s.slideAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
 			}),
 			layout.Stacked(func(gtx C) D {
+				if len(s.slideItems) == 1 {
+					return D{}
+				}
 				return layout.Inset{
 					Right:  values.MarginPadding15,
 					Left:   values.MarginPadding15,

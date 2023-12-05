@@ -109,6 +109,7 @@ func (s *SlideAction) DragLayout(gtx C, w layout.Widget) D {
 	return dims
 }
 
+// TransformLayout perform transition effects between 2 widgets
 func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 	if s.push != 0 {
 		s.next = nil
@@ -125,6 +126,7 @@ func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 		s.t0 = now
 	}
 
+	// Calculate the duration of transition effects
 	if s.offset != 0 {
 		duration := s.Duration
 		if duration == 0 {
@@ -146,6 +148,7 @@ func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 		op.InvalidateOp{}.Add(gtx.Ops)
 	}
 
+	// Record the widget presentation
 	var dims layout.Dimensions
 	{
 		if s.next == nil {
@@ -171,6 +174,7 @@ func (s *SlideAction) TransformLayout(gtx C, w layout.Widget) D {
 		reverse = -1
 	}
 
+	// Implement transition effects for widgets
 	if s.offset > 0 {
 		defer op.Offset(image.Point{
 			X: int(float32(dims.Size.X)*(offset-1)) * reverse,

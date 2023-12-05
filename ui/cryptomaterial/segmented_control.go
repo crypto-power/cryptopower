@@ -33,6 +33,8 @@ type SegmentedControl struct {
 	slideAction          *SlideAction
 	slideActionTitle     *SlideAction
 	segmentType          SegmentType
+
+	IsAllowsCycle bool
 }
 
 func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
@@ -243,6 +245,9 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 	l := len(sc.segmentTitles) - 1 // index starts at 0
 	if isNext {
 		if sc.selectedIndex == l {
+			if !sc.IsAllowsCycle {
+				return
+			}
 			sc.selectedIndex = 0
 		} else {
 			sc.selectedIndex++
@@ -251,6 +256,9 @@ func (sc *SegmentedControl) handleActionEvent(isNext bool) {
 		sc.slideActionTitle.PushLeft()
 	} else {
 		if sc.selectedIndex == 0 {
+			if !sc.IsAllowsCycle {
+				return
+			}
 			sc.selectedIndex = l
 		} else {
 			sc.selectedIndex--
