@@ -182,7 +182,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.InfoAction = NewImage(decredIcons["info_icon"])
 	i.DarkMode = NewImage(decredIcons["ic_moon"])
 	i.LightMode = NewImage(decredIcons["ic_sun"])
-	i.AddIcon = NewImage(decredIcons["addIcon"])
+	i.AddIcon = NewImage(decredIcons["add_icon"])
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
 	i.Notification = NewImage(decredIcons["notification"])

@@ -47,7 +47,6 @@ type WalletSettingsPage struct {
 	accounts []*accountData
 
 	pageContainer *widget.List
-	accountsList  *cryptomaterial.ClickableList
 
 	changePass, rescan                         *cryptomaterial.Clickable
 	changeAccount, checklog, checkStats        *cryptomaterial.Clickable
@@ -93,7 +92,6 @@ func NewWalletSettingsPage(l *load.Load, wallet sharedW.Asset, walletCallbackFun
 		pageContainer: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		accountsList:       l.Theme.NewClickableList(layout.Vertical),
 		walletCallbackFunc: walletCallbackFunc,
 	}
 
@@ -161,7 +159,6 @@ func (pg *WalletSettingsPage) Layout(gtx C) D {
 	body := func(gtx C) D {
 		w := []func(gtx C) D{
 			pg.generalSection(),
-			pg.account(),
 			pg.securityTools(),
 			pg.debug(),
 			pg.dangerZone(),
@@ -230,17 +227,6 @@ func (pg *WalletSettingsPage) generalSection() layout.Widget {
 	}
 	return func(gtx C) D {
 		return pg.pageSections(gtx, values.String(values.StrGeneral), dim)
-	}
-}
-
-func (pg *WalletSettingsPage) account() layout.Widget {
-	dim := func(gtx C) D {
-		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, a int) D {
-			return pg.subSection(gtx, pg.accounts[a].Name, pg.Theme.Icons.ChevronRight.Layout24dp)
-		})
-	}
-	return func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrAccount), dim)
 	}
 }
 
@@ -726,17 +712,6 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			})
 		pg.ParentWindow().ShowModal(newPasswordModal)
 		break
-	}
-
-	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
-		switch pg.wallet.GetAssetType() {
-		case libutils.BTCWalletAsset:
-			pg.ParentNavigator().Display(s.NewAcctBTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem].Account))
-		case libutils.DCRWalletAsset:
-			pg.ParentNavigator().Display(s.NewAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem].Account))
-		case libutils.LTCWalletAsset:
-			pg.ParentNavigator().Display(s.NewAcctLTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem].Account))
-		}
 	}
 }
 
