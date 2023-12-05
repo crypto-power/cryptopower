@@ -54,7 +54,7 @@ type AcctDetailsPage struct {
 	isHiddenExtendedxPubkey bool
 }
 
-func NewAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *AcctDetailsPage {
+func NewDCRAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *AcctDetailsPage {
 	pg := &AcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),

@@ -47,7 +47,7 @@ type LTCAcctDetailsPage struct {
 	infoButton              cryptomaterial.IconButton
 }
 
-func NewAcctLTCDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *LTCAcctDetailsPage {
+func NewLTCAcctDetailsPage(l *load.Load, wallet sharedW.Asset, account *sharedW.Account) *LTCAcctDetailsPage {
 	pg := &LTCAcctDetailsPage{
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(AccountDetailsPageID),

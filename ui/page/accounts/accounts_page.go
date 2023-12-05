@@ -131,26 +131,28 @@ func (pg *Page) Layout(gtx C) D {
 			return components.UniformHorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.headerLayout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-							return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return pg.accountItemLayout(gtx, pg.accounts[i])
-									}),
-									layout.Rigid(func(gtx C) D {
-										isLastItem := i == len(pg.accounts)-1
-										if isLastItem {
-											return D{}
-										}
-										return pg.itemLine(gtx)
-									}),
-								)
-							})
-						})
-					}),
+					layout.Rigid(pg.bodyLayout),
 				)
 			})
+		})
+	})
+}
+
+func (pg *Page) bodyLayout(gtx C) D {
+	return layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.accountItemLayout(gtx, pg.accounts[i])
+				}),
+				layout.Rigid(func(gtx C) D {
+					isLastItem := i == len(pg.accounts)-1
+					if isLastItem {
+						return D{}
+					}
+					return pg.itemLine(gtx)
+				}),
+			)
 		})
 	})
 }
@@ -286,11 +288,11 @@ func (pg *Page) HandleUserInteractions() {
 	if clicked, selectedItem := pg.accountsList.ItemClicked(); clicked {
 		switch pg.wallet.GetAssetType() {
 		case libutils.BTCWalletAsset:
-			pg.ParentNavigator().Display(NewAcctBTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewBTCAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		case libutils.DCRWalletAsset:
-			pg.ParentNavigator().Display(NewAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewDCRAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		case libutils.LTCWalletAsset:
-			pg.ParentNavigator().Display(NewAcctLTCDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
+			pg.ParentNavigator().Display(NewLTCAcctDetailsPage(pg.Load, pg.wallet, pg.accounts[selectedItem]))
 		}
 	}
 }
