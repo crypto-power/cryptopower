@@ -26,7 +26,7 @@ type Icons struct {
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
-	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
+	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
 	IntegratedExchangeIcon, MultiWalletIcon, Dot *Image
 
@@ -197,6 +197,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.GodexIcon = NewImage(decredIcons["godex"])
 	i.CoinSwitchIcon = NewImage(decredIcons["coinswitch"])
 	i.ChangeNowIcon = NewImage(decredIcons["changenow"])
+	i.TrocadorIcon = NewImage(decredIcons["trocador"])
 	/* End exchange icons */
 
 	i.MultiWalletIcon = NewImage(decredIcons["multiWalletIcon"])

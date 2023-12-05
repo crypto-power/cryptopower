@@ -1,0 +1,5 @@
+{
+  "trocador": "your_trocador_api_key",
+  "changenow": "your_changenow_api_key",
+  "godex": "your_godex_api_key"
+}

@@ -19,6 +19,10 @@ jobs:
           sudo apt update
           sudo apt install libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
 
+      - name: Copy needed files
+        run: |
+          cp "./libwallet/instantswap/instant_example.json" "./libwallet/instantswap/instant.json"
+
       - name: Cache (dependencies)
         uses: actions/cache@v1
         id: cache

@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"decred.org/dcrwallet/v3/errors"
 	"github.com/crypto-power/cryptopower/libwallet/assets/btc"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	"github.com/crypto-power/cryptopower/libwallet/assets/ltc"
@@ -124,7 +125,7 @@ func (com *confirmOrderModal) confirmOrder() {
 
 		order, err := com.createOrder()
 		if err != nil {
-			log.Error(err)
+			log.Error(errors.E(errors.Op("instantSwap.CreateOrder"), err))
 			com.SetError(err.Error())
 			com.SetLoading(false)
 			return
@@ -333,6 +334,10 @@ func (com *confirmOrderModal) createOrder() (*instantswap.Order, error) {
 		InvoicedAmount: com.invoicedAmount,
 		FromCurrency:   com.fromCurrency.String(),
 		ToCurrency:     com.toCurrency.String(),
+		FromNetwork:    com.orderData.fromNetwork,
+		ToNetwork:      com.orderData.toNetwork,
+		Provider:       com.orderData.provider,
+		Signature:      com.orderData.signature,
 
 		RefundAddress:      com.refundAddress,
 		DestinationAddress: com.destinationAddress,

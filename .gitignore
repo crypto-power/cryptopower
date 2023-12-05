@@ -11,3 +11,4 @@ makefile
 
 vendor
 bin
+libwallet/instantswap/instant.json

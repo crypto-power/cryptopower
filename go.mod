@@ -20,7 +20,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
-	github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf
+	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
 	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/addrmgr/v2 v2.0.2
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0

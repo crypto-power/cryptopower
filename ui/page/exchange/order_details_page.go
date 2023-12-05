@@ -15,7 +15,6 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
-
 	api "github.com/crypto-power/instantswap/instantswap"
 )
 
@@ -54,20 +53,10 @@ func NewOrderDetailsPage(l *load.Load, order *instantswap.Order) *OrderDetailsPa
 	// attempting to open legacy orders
 	nilExchangeServer := instantswap.ExchangeServer{}
 	if order.ExchangeServer == nilExchangeServer {
-		switch order.Server {
-		case instantswap.ChangeNow:
-			order.ExchangeServer.Server = order.Server
-			order.ExchangeServer.Config = instantswap.ExchangeConfig{
-				APIKey: instantswap.API_KEY_CHANGENOW,
-			}
-		case instantswap.GoDex:
-			order.ExchangeServer.Server = order.Server
-			order.ExchangeServer.Config = instantswap.ExchangeConfig{
-				APIKey: instantswap.API_KEY_GODEX,
-			}
-		default:
-			order.ExchangeServer.Server = order.Server
-			order.ExchangeServer.Config = instantswap.ExchangeConfig{}
+		key, _ := instantswap.GetInstantExchangePrivKey(order.Server)
+		order.ExchangeServer.Server = order.Server
+		order.ExchangeServer.Config = instantswap.ExchangeConfig{
+			APIKey: key,
 		}
 
 		err := pg.AssetsManager.InstantSwap.UpdateOrder(order)

@@ -2,6 +2,8 @@ package instantswap
 
 import (
 	"context"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -11,23 +13,51 @@ import (
 	"github.com/asdine/storm/q"
 	"github.com/crypto-power/instantswap/instantswap"
 
-	// Initialize exchange servers.
+	// load instantswap exchange packages
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/changelly"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/changenow"
-	_ "github.com/crypto-power/instantswap/instantswap/exchange/coinswitch"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/flypme"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/godex"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/simpleswap"
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/swapzone"
+	_ "github.com/crypto-power/instantswap/instantswap/exchange/trocador"
 )
 
-const (
-	// API_KEY_CHANGENOW is the changenow API key.
-	API_KEY_CHANGENOW = "249665653f1bbc620a70b4a6d25d0f8be126552e30c253df87685b880183be93" //nolint:revive
-	// API_KEY_GODEX is the godex API key.
-	API_KEY_GODEX = "lPM1O83kxGXJn9CpMhVRc8Yx22Z3h2/1EWyZ3lDoqtqEPYJqimHxysLKm7" + //nolint:revive
-		"RN5HO3QyH9PMXZy7n3CUQhF40cYWY2zg==a44e77479feb30c28481c020bce2a3b3"
-)
+//go:embed instant.json
+var instants []byte
+var privKeyMap = map[Server]string{
+	Trocador:  "",
+	ChangeNow: "",
+	GoDex:     "",
+}
+
+func init() {
+	// init private key map and ensure only supported exchange is filled
+	var newPrivKeyMap = make(map[Server]string)
+	err := json.Unmarshal(instants, &newPrivKeyMap)
+	if err != nil {
+		panic(err)
+	}
+	// assign available key to privKeyMap
+	for key := range privKeyMap {
+		if val, ok := newPrivKeyMap[key]; ok {
+			privKeyMap[key] = val
+		}
+	}
+	// delete instant exchange with no key
+	for key, val := range privKeyMap {
+		if val == "" {
+			delete(privKeyMap, key)
+		}
+	}
+	// add flypme to privKeyMap because it does not requires private key to access
+	privKeyMap[FlypMe] = ""
+}
+
+func GetInstantExchangePrivKey(server Server) (string, bool) {
+	key, ok := privKeyMap[server]
+	return key, ok
+}
 
 func NewInstantSwap(db *storm.DB) (*InstantSwap, error) {
 	if err := db.Init(&Order{}); err != nil {
@@ -154,7 +184,6 @@ func (instantSwap *InstantSwap) GetOrderByIDRaw(orderID int) (*Order, error) {
 }
 
 func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchange, params Order) (*Order, error) {
-	const op errors.Op = "instantSwap.CreateOrder"
 
 	data := instantswap.CreateOrder{
 		RefundAddress:  params.RefundAddress,      // if the trading fails, the exchange will refund coins here
@@ -162,11 +191,15 @@ func (instantSwap *InstantSwap) CreateOrder(exchangeObject instantswap.IDExchang
 		FromCurrency:   params.FromCurrency,
 		ToCurrency:     params.ToCurrency,
 		InvoicedAmount: params.InvoicedAmount, // use InvoicedAmount or InvoicedAmount
+		FromNetwork:    params.FromNetwork,
+		ToNetwork:      params.ToNetwork,
+		Signature:      params.Signature,
+		Provider:       params.Provider,
 	}
 
 	res, err := exchangeObject.CreateOrder(data)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	order := &Order{
@@ -236,29 +269,20 @@ func (instantSwap *InstantSwap) GetExchangeRateInfo(exchangeObject instantswap.I
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-
 	return &res, nil
 }
 
 func (instantSwap *InstantSwap) ExchangeServers() []ExchangeServer {
-	return []ExchangeServer{
-		{
-			ChangeNow,
-			ExchangeConfig{
-				APIKey: API_KEY_CHANGENOW,
+	var exchanges []ExchangeServer
+	for exchangeName, privKey := range privKeyMap {
+		exchanges = append(exchanges, ExchangeServer{
+			Server: exchangeName,
+			Config: ExchangeConfig{
+				APIKey: privKey,
 			},
-		},
-		{
-			FlypMe,
-			ExchangeConfig{},
-		},
-		{
-			GoDex,
-			ExchangeConfig{
-				APIKey: API_KEY_GODEX,
-			},
-		},
+		})
 	}
+	return exchanges
 }
 
 // DeleteOrders deletes all orders saved to the DB.
