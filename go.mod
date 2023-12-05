@@ -20,7 +20,7 @@ require (
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3
 	github.com/btcsuite/btcwallet/walletdb v1.4.0
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0
-	github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6
+	github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4
 	github.com/dcrlabs/neutrino-ltc v0.0.0-20221031001456-55ef06cefead
 	github.com/decred/dcrd/addrmgr/v2 v2.0.2
 	github.com/decred/dcrd/blockchain/stake/v5 v5.0.0
@@ -156,5 +156,3 @@ require (
 // the android OS using gomobile. This replace can be removed once any
 // of those projects update their github.com/lib/pq dependency.
 replace github.com/lib/pq => github.com/lib/pq v1.10.4
-
-replace github.com/crypto-power/instantswap => github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c

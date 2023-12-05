@@ -294,6 +294,8 @@ github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188 h1:F8e4iA
 github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6 h1:MYjQZGr8ngIyLh+02aIo7ykr4k6TgCDKwGN4pFvrhyc=
 github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4 h1:rILnjlNzcN1d3I3+9NZaAHQ8mb0sIrpef3MPTxnCyoA=
+github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/davecgh/go-spew v0.0.0-20161028175848-04cdfd42973b/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v0.0.0-20171005155431-ecdeabc65495/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
