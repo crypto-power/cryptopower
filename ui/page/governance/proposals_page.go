@@ -74,13 +74,19 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUnderReview)},
 		{Text: values.String(values.StrApproved)},
 		{Text: values.String(values.StrRejected)},
 		{Text: values.String(values.StrAbandoned)},
-	}, values.ProposalDropdownGroup, 0)
+	}, values.ProposalDropdownGroup, 0, 0, true)
+
+	if pg.statusDropDown.Reversed() {
+		pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
+	} else {
+		pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
+	}
 
 	return pg
 }
@@ -232,7 +238,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 10, true)
+						return pg.statusDropDown.Layout(gtx)
 					}),
 				)
 			})
@@ -264,7 +270,12 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 55, true)
+						if pg.statusDropDown.Reversed() {
+							pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
+						} else {
+							pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
+						}
+						return pg.statusDropDown.Layout(gtx)
 					}),
 				)
 			})
