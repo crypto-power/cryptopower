@@ -64,8 +64,6 @@ type ProposalsPage struct {
 	syncCompleted    bool
 	isSyncing        bool
 	proposalsFetched bool
-
-	dcrWalletExists bool
 }
 
 func NewProposalsPage(l *load.Load) *ProposalsPage {
@@ -260,9 +258,6 @@ func (pg *ProposalsPage) initWalletSelector() {
 
 	items := []cryptomaterial.DropDownItem{}
 	for _, wal := range pg.assetWallets {
-		if !pg.dcrWalletExists && wal.GetAssetType() == libutils.DCRWalletAsset {
-			pg.dcrWalletExists = true
-		}
 		item := cryptomaterial.DropDownItem{
 			Text: wal.GetWalletName(),
 			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),

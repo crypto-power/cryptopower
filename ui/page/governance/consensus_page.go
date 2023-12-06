@@ -34,6 +34,7 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
+	assetWallets      []sharedW.Asset
 	selectedDCRWallet *dcr.Asset
 
 	consensusItems []*components.ConsensusItem
@@ -46,9 +47,8 @@ type ConsensusPage struct {
 
 	orderDropDown  *cryptomaterial.DropDown
 	statusDropDown *cryptomaterial.DropDown
+	walletDropDown *cryptomaterial.DropDown
 	consensusList  *cryptomaterial.ClickableList
-
-	sourceWalletSelector *components.WalletAndAccountSelector
 
 	infoButton            cryptomaterial.IconButton
 	navigateToSettingsBtn cryptomaterial.Button
@@ -103,18 +103,19 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 }
 
 func (pg *ConsensusPage) initWalletSelector() {
-	// Source wallet picker
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
-		Title(values.String(values.StrSelectWallet))
+	pg.assetWallets = pg.AssetsManager.AllDCRWallets()
 
-	pg.sourceWalletSelector.SetHideBalance(true)
-	pg.sourceWalletSelector.SetLeftAlignment(true)
-	pg.sourceWalletSelector.SetBorder(false)
+	items := []cryptomaterial.DropDownItem{}
+	for _, wal := range pg.assetWallets {
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
+		}
+		items = append(items, item)
+	}
 
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedDCRWallet = selectedWallet.(*dcr.Asset)
-		pg.FetchAgendas()
-	})
+	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
@@ -172,6 +173,11 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 	}
 
 	for pg.orderDropDown.Changed() {
+		pg.FetchAgendas()
+	}
+
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
 		pg.FetchAgendas()
 	}
 
@@ -348,9 +354,12 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 								}.Layout(gtx, pg.layoutContent)
 							}),
 							layout.Expanded(func(gtx C) D {
+								if pg.walletDropDown == nil {
+									return D{}
+								}
 								return layout.W.Layout(gtx, func(gtx C) D {
 									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+									return pg.walletDropDown.Layout(gtx, 0, false)
 								})
 							}),
 							layout.Expanded(func(gtx C) D {

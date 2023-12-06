@@ -35,7 +35,9 @@ type TreasuryPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	dcrWalletSelector *components.WalletAndAccountSelector
+	walletDropDown *cryptomaterial.DropDown
+
+	assetWallets      []sharedW.Asset
 	selectedDCRWallet *dcr.Asset
 
 	treasuryItems []*components.TreasuryItem
@@ -102,11 +104,35 @@ func (pg *TreasuryPage) isTreasuryAPIAllowed() bool {
 	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
 }
 
+func (pg *TreasuryPage) initWalletSelector() {
+	pg.assetWallets = pg.AssetsManager.AllDCRWallets()
+
+	items := []cryptomaterial.DropDownItem{}
+	for _, wal := range pg.assetWallets {
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
+		}
+		items = append(items, item)
+	}
+
+	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	if len(pg.assetWallets) > 0 {
+		pg.selectedDCRWallet = pg.assetWallets[0].(*dcr.Asset)
+	}
+
+}
+
 func (pg *TreasuryPage) HandleUserInteractions() {
 	for i := range pg.treasuryItems {
 		if pg.treasuryItems[i].SetChoiceButton.Clicked() {
 			pg.updatePolicyPreference(pg.treasuryItems[i])
 		}
+	}
+
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
+		pg.FetchPolicies()
 	}
 
 	if pg.navigateToSettingsBtn.Button.Clicked() {
@@ -220,13 +246,17 @@ func (pg *TreasuryPage) layout(gtx C) D {
 									Top: values.MarginPadding60,
 								}.Layout(gtx, pg.layoutContent)
 							}),
+							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.MarginPadding55})),
 							layout.Expanded(func(gtx C) D {
+								if pg.walletDropDown == nil {
+									return D{}
+								}
 								return layout.W.Layout(gtx, func(gtx C) D {
 									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.dcrWalletSelector.Layout(pg.ParentWindow(), gtx)
+									return pg.walletDropDown.Layout(gtx, 0, false)
+
 								})
 							}),
-							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.MarginPadding55})),
 						)
 					})
 				}),
@@ -340,23 +370,6 @@ func (pg *TreasuryPage) updatePolicyPreference(treasuryItem *components.Treasury
 			return true
 		})
 	pg.ParentWindow().ShowModal(passwordModal)
-}
-
-func (pg *TreasuryPage) initWalletSelector() {
-	// Source wallet picker
-	pg.dcrWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
-		Title(values.String(values.StrSelectWallet))
-
-	pg.dcrWalletSelector.SetLeftAlignment(true)
-	pg.dcrWalletSelector.SetBorder(false)
-	if pg.dcrWalletSelector.SelectedWallet() != nil {
-		pg.selectedDCRWallet = pg.dcrWalletSelector.SelectedWallet().(*dcr.Asset)
-	}
-
-	pg.dcrWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedDCRWallet = selectedWallet.(*dcr.Asset)
-		pg.FetchPolicies()
-	})
 }
 
 // TODO: Temporary UI. Pending when new designs will be ready for this feature
