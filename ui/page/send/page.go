@@ -13,7 +13,7 @@ import (
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
+	// "github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/utils"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -494,96 +494,96 @@ func (pg *Page) resetFields() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *Page) HandleUserInteractions() {
-	if pg.feeRateSelector.FetchRates.Clicked() {
-		go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
-	}
+	// if pg.feeRateSelector.FetchRates.Clicked() {
+	// 	go pg.feeRateSelector.FetchFeeRate(pg.ParentWindow(), pg.selectedWallet)
+	// }
 
-	if pg.feeRateSelector.EditRates.Clicked() {
-		pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
-	}
+	// if pg.feeRateSelector.EditRates.Clicked() {
+	// 	pg.feeRateSelector.OnEditRateClicked(pg.selectedWallet)
+	// }
 
-	pg.nextButton.SetEnabled(pg.validate())
-	pg.sendDestination.handle()
-	pg.amount.handle()
+	// pg.nextButton.SetEnabled(pg.validate())
+	// pg.sendDestination.handle()
+	// pg.amount.handle()
 
-	if pg.infoButton.Button.Clicked() {
-		textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
-		info := modal.NewCustomModal(pg.Load).
-			Title(textWithUnit).
-			Body(values.String(values.StrSendInfo)).
-			SetPositiveButtonText(values.String(values.StrGotIt))
-		pg.ParentWindow().ShowModal(info)
-	}
+	// if pg.infoButton.Button.Clicked() {
+	// 	textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())
+	// 	info := modal.NewCustomModal(pg.Load).
+	// 		Title(textWithUnit).
+	// 		Body(values.String(values.StrSendInfo)).
+	// 		SetPositiveButtonText(values.String(values.StrGotIt))
+	// 	pg.ParentWindow().ShowModal(info)
+	// }
 
-	if pg.retryExchange.Clicked() {
-		go pg.fetchExchangeRate()
-	}
+	// if pg.retryExchange.Clicked() {
+	// 	go pg.fetchExchangeRate()
+	// }
 
-	if pg.toCoinSelection.Clicked() {
-		_, err := pg.sendDestination.destinationAddress()
-		if err != nil {
-			pg.addressValidationError(err.Error())
-			pg.sendDestination.destinationAddressEditor.Editor.Focus()
-		} else {
-			pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
-		}
-	}
+	// if pg.toCoinSelection.Clicked() {
+	// 	_, err := pg.sendDestination.destinationAddress()
+	// 	if err != nil {
+	// 		pg.addressValidationError(err.Error())
+	// 		pg.sendDestination.destinationAddressEditor.Editor.Focus()
+	// 	} else {
+	// 		pg.ParentNavigator().Display(NewManualCoinSelectionPage(pg.Load, pg))
+	// 	}
+	// }
 
-	if pg.nextButton.Clicked() {
-		if pg.selectedWallet.IsUnsignedTxExist() {
-			pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
-			pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
-			pg.confirmTxModal.txLabel = pg.txLabelInputEditor.Editor.Text()
+	// if pg.nextButton.Clicked() {
+	// 	if pg.selectedWallet.IsUnsignedTxExist() {
+	// 		pg.confirmTxModal = newSendConfirmModal(pg.Load, pg.authoredTxData, pg.selectedWallet)
+	// 		pg.confirmTxModal.exchangeRateSet = pg.exchangeRate != -1 && pg.usdExchangeSet
+	// 		pg.confirmTxModal.txLabel = pg.txLabelInputEditor.Editor.Text()
 
-			pg.confirmTxModal.txSent = func() {
-				pg.resetFields()
-				pg.clearEstimates()
-				if pg.modalLayout != nil {
-					pg.modalLayout.Dismiss()
-				}
-			}
+	// 		pg.confirmTxModal.txSent = func() {
+	// 			pg.resetFields()
+	// 			pg.clearEstimates()
+	// 			if pg.modalLayout != nil {
+	// 				pg.modalLayout.Dismiss()
+	// 			}
+	// 		}
 
-			pg.ParentWindow().ShowModal(pg.confirmTxModal)
-		}
-	}
+	// 		pg.ParentWindow().ShowModal(pg.confirmTxModal)
+	// 	}
+	// }
 
-	// if destination switch is equal to Address
-	if pg.sendDestination.sendToAddress {
-		if pg.sendDestination.validate() {
-			if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
-				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
-					pg.amount.SendMax = false
-				}
-			} else {
-				if len(pg.amount.amountEditor.Editor.Text()) == 0 {
-					pg.amount.usdAmountEditor.Editor.SetText("")
-					pg.amount.SendMax = false
-				}
-			}
-		}
-	} else {
-		if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
-			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
-				pg.amount.SendMax = false
-			}
-		} else {
-			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
-				pg.amount.usdAmountEditor.Editor.SetText("")
-				pg.amount.SendMax = false
-			}
-		}
-	}
+	// // if destination switch is equal to Address
+	// if pg.sendDestination.sendToAddress {
+	// 	if pg.sendDestination.validate() {
+	// 		if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
+	// 			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
+	// 				pg.amount.SendMax = false
+	// 			}
+	// 		} else {
+	// 			if len(pg.amount.amountEditor.Editor.Text()) == 0 {
+	// 				pg.amount.usdAmountEditor.Editor.SetText("")
+	// 				pg.amount.SendMax = false
+	// 			}
+	// 		}
+	// 	}
+	// } else {
+	// 	if !pg.AssetsManager.ExchangeRateFetchingEnabled() {
+	// 		if len(pg.amount.amountEditor.Editor.Text()) == 0 {
+	// 			pg.amount.SendMax = false
+	// 		}
+	// 	} else {
+	// 		if len(pg.amount.amountEditor.Editor.Text()) == 0 {
+	// 			pg.amount.usdAmountEditor.Editor.SetText("")
+	// 			pg.amount.SendMax = false
+	// 		}
+	// 	}
+	// }
 
-	if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
-		pg.amount.validateAmount()
-		pg.validateAndConstructTxAmountOnly()
-	}
+	// if len(pg.amount.amountEditor.Editor.Text()) > 0 && pg.sourceAccountSelector.Changed() {
+	// 	pg.amount.validateAmount()
+	// 	pg.validateAndConstructTxAmountOnly()
+	// }
 
-	if pg.amount.IsMaxClicked() {
-		pg.amount.setError("")
-		pg.amount.SendMax = true
-		pg.amount.amountChanged()
-	}
+	// if pg.amount.IsMaxClicked() {
+	// 	pg.amount.setError("")
+	// 	pg.amount.SendMax = true
+	// 	pg.amount.amountChanged()
+	// }
 }
 
 // Handle is like HandleUserInteractions but Handle is called if this page is

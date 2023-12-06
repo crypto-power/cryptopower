@@ -100,7 +100,8 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 				return sc.splitTileLayout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+				gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding650) // align page content to the navigation bar as designed.
+				return layout.Inset{Top: values.MarginPadding32}.Layout(gtx, func(gtx C) D {
 					if !sc.isSwipeActionEnabled {
 						return body(gtx)
 					}
