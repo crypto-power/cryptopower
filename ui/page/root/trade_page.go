@@ -49,7 +49,7 @@ func NewTradePage(l *load.Load) *TradePage {
 		},
 	}
 
-	pg.tab = l.Theme.SegmentedControl(tabTitles)
+	pg.tab = l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup)
 
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)
@@ -122,19 +122,7 @@ func (pg *TradePage) Layout(gtx C) D {
 }
 
 func (pg *TradePage) layoutDesktop(gtx C) D {
-	return components.UniformPadding(gtx, func(gtx C) D {
-		return layout.Flex{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(pg.sectionNavTab),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
-	})
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
 }
 
 func (pg *TradePage) layoutMobile(gtx C) D {
@@ -154,5 +142,5 @@ func (pg *TradePage) layoutMobile(gtx C) D {
 }
 
 func (pg *TradePage) sectionNavTab(gtx C) D {
-	return pg.tab.Layout(gtx)
+	return pg.tab.GroupTileLayout(gtx)
 }

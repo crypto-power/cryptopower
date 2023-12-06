@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -289,7 +290,7 @@ func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		pg.recentProposal,
 	}
 
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return layout.Center.Layout(gtx, func(gtx C) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
@@ -311,7 +312,7 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 		pg.recentProposal,
 	}
 
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
 				return pageContent[i](gtx)
@@ -336,95 +337,123 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			// Only show mixer slider if mixer is running
 			if len(pg.mixerSliderData) == 0 {
-				return pg.assetBalanceSliderLayout(gtx)
+				return pg.assetBalanceSliderLayout(gtx, 0)
 			}
 
 			if pg.Load.IsMobileView() {
 				return layout.Flex{Axis: axis}.Layout(gtx,
-					layout.Rigid(pg.assetBalanceSliderLayout),
+					layout.Rigid(func(gtx C) D {
+						return pg.assetBalanceSliderLayout(gtx, 0)
+					}),
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
 					}),
 				)
 			}
+			cgtx := gtx
+			cgtx.Constraints.Max.X = gtx.Constraints.Max.X/2 - cgtx.Dp(10)
+			macro := op.Record(cgtx.Ops)
+			mixerSliderDims := pg.mixerSliderLayout(cgtx)
+			call := macro.Stop()
 
 			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(.5, pg.assetBalanceSliderLayout),
 				layout.Flexed(.5, func(gtx C) D {
-					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+					return pg.assetBalanceSliderLayout(gtx, mixerSliderDims.Size.Y)
+				}),
+				layout.Flexed(.5, func(gtx C) D {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						call.Add(gtx.Ops)
+						return mixerSliderDims
+					})
 				}),
 			)
 		}),
 	)
 }
 
-func (pg *OverviewPage) assetBalanceSliderLayout(gtx C) D {
+func (pg *OverviewPage) assetBalanceSliderLayout(gtx C, rowHeigh int) D {
 	var sliderWidget []layout.Widget
 
 	if pg.dcr != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.dcr))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.dcr, rowHeigh))
 	}
 	if pg.btc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.btc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.btc, rowHeigh))
 	}
 	if pg.ltc != nil {
-		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.ltc))
+		sliderWidget = append(sliderWidget, pg.assetBalanceItemLayout(pg.ltc, rowHeigh))
 	}
 
 	return pg.assetBalanceSlider.Layout(gtx, sliderWidget)
 }
 
-func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem) layout.Widget {
+func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, rowHeigh int) layout.Widget {
 	return func(gtx C) D {
-		return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
-			return layout.Stack{}.Layout(gtx,
-				layout.Stacked(func(gtx C) D {
-					width := gtx.Constraints.Max.X
-					height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
-					return item.backgroundImage.LayoutSizeWithRadius(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height), 8)
-				}),
-				layout.Expanded(func(gtx C) D {
-					col := pg.Theme.Color.InvText
-					return layout.Flex{
-						Axis:      layout.Vertical,
-						Alignment: layout.Middle,
-					}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							lbl := pg.Theme.Body1(item.assetType)
-							lbl.Color = col
-							return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
-						}),
-						layout.Rigid(func(gtx C) D {
-							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-								return item.image.LayoutSize(gtx, values.MarginPadding65)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-								return components.LayoutBalanceColorWithState(gtx, pg.Load, item.totalBalance.String(), col)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							card := pg.Theme.Card()
-							card.Radius = cryptomaterial.Radius(12)
-							card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
-							return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
-								return card.Layout(gtx, func(gtx C) D {
-									return layout.Inset{
-										Top:    values.MarginPadding4,
-										Bottom: values.MarginPadding4,
-										Right:  values.MarginPadding8,
-										Left:   values.MarginPadding8,
-									}.Layout(gtx, func(gtx C) D {
-										return components.LayoutBalanceColorWithStateUSD(gtx, pg.Load, item.totalBalanceUSD, col)
-									})
-								})
-							})
-						}),
-					)
-				}),
-			)
+		return utils.RadiusLayout(gtx, 8, func(gtx C) D {
+			return pg.sliderRedirectBtn.Layout(gtx, func(gtx C) D {
+				size := pg.contentSliderLayout(item)(gtx).Size
+				if size.Y < rowHeigh {
+					size.Y = rowHeigh
+				}
+				return layout.Stack{}.Layout(gtx,
+					layout.Stacked(func(gtx C) D {
+						width := gtx.Constraints.Max.X
+						height := width / item.backgroundImage.AspectRatio() // maintain aspect ratio
+						if height < size.Y {
+							height = size.Y
+							width = height * item.backgroundImage.AspectRatio()
+						}
+						return item.backgroundImage.LayoutSize2(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height))
+					}),
+					layout.Expanded(func(gtx C) D {
+						return layout.Center.Layout(gtx, pg.contentSliderLayout(item))
+					}),
+				)
+			})
 		})
+	}
+}
+
+func (pg *OverviewPage) contentSliderLayout(item *assetBalanceSliderItem) layout.Widget {
+	col := pg.Theme.Color.InvText
+	return func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				lbl := pg.Theme.Body1(item.assetType)
+				lbl.Color = col
+				return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+					return item.image.LayoutSize(gtx, values.MarginPadding65)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+					return components.LayoutBalanceColorWithState(gtx, pg.Load, item.totalBalance.String(), col)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				card := pg.Theme.Card()
+				card.Radius = cryptomaterial.Radius(12)
+				card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
+				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
+					return card.Layout(gtx, func(gtx C) D {
+						return layout.Inset{
+							Top:    values.MarginPadding4,
+							Bottom: values.MarginPadding4,
+							Right:  values.MarginPadding8,
+							Left:   values.MarginPadding8,
+						}.Layout(gtx, func(gtx C) D {
+							return components.LayoutBalanceColorWithStateUSD(gtx, pg.Load, item.totalBalanceUSD, col)
+						})
+					})
+				})
+			}),
+		)
 	}
 }
 

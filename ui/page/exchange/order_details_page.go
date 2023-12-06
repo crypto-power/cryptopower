@@ -135,7 +135,7 @@ func (pg *OrderDetailsPage) Layout(gtx C) D {
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
 
-	return components.UniformPadding(gtx, container)
+	return cryptomaterial.UniformPadding(gtx, container)
 }
 
 func (pg *OrderDetailsPage) layout(gtx C) D {

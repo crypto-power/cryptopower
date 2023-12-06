@@ -6,7 +6,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -67,7 +66,7 @@ func (pg *BackupSuccessPage) OnNavigatedFrom() {}
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *BackupSuccessPage) Layout(gtx C) D {
-	return components.UniformPadding(gtx, func(gtx C) D {
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
 			Height:      cryptomaterial.MatchParent,
