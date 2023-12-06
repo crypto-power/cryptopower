@@ -23,6 +23,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
@@ -47,7 +48,7 @@ type OverviewPage struct {
 	marketOverviewList       layout.List
 	mobileMarketOverviewList layout.List
 	recentProposalList       *cryptomaterial.ClickableList
-	recentTradeList          layout.List
+	recentTradeList          *cryptomaterial.ClickableList
 	recentTransactions       *cryptomaterial.ClickableList
 	recentStakes             *cryptomaterial.ClickableList
 
@@ -123,11 +124,6 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				Alignment: layout.Start,
 			},
 		},
-		recentTradeList: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
-		recentProposalList: l.Theme.NewClickableList(layout.Vertical),
 		scrollContainer: &widget.List{
 			List: layout.List{
 				Axis:      layout.Vertical,
@@ -151,6 +147,8 @@ func NewOverviewPage(l *load.Load, showNavigationFunc showNavigationFunc) *Overv
 				image:     l.Theme.Icons.LTC,
 			},
 		},
+		recentTradeList:    l.Theme.NewClickableList(layout.Vertical),
+		recentProposalList: l.Theme.NewClickableList(layout.Vertical),
 		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 
@@ -234,6 +232,10 @@ func (pg *OverviewPage) HandleUserInteractions() {
 
 	if clicked, selectedTxIndex := pg.recentProposalList.ItemClicked(); clicked {
 		pg.ParentNavigator().Display(governance.NewProposalDetailsPage(pg.Load, &pg.proposalItems[selectedTxIndex].Proposal))
+	}
+
+	if clicked, selectedTxIndex := pg.recentTradeList.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(exchange.NewOrderDetailsPage(pg.Load, pg.orders[selectedTxIndex]))
 	}
 
 	// Navigate to mixer page when wallet mixer slider forward button is clicked.
@@ -890,15 +892,16 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 }
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Trade", nil, func(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTrades), nil, func(gtx C) D {
 		if len(pg.orders) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				return pg.Theme.Body1("No recent trades").Layout(gtx)
+				return pg.Theme.Body1(values.String(values.StrNoRecentTrades)).Layout(gtx)
 			})
 		}
 
 		return pg.recentTradeList.Layout(gtx, len(pg.orders), func(gtx C, i int) D {
+
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
@@ -920,11 +923,11 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
-	return pg.pageContentWrapper(gtx, "Recent Proposals", nil, func(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrRecentProposals), nil, func(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-				return pg.Theme.Body1("No proposals").Layout(gtx)
+				return pg.Theme.Body1(values.String(values.StrNoProposals)).Layout(gtx)
 			})
 		}
 
