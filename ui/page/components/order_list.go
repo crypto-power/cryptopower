@@ -17,11 +17,10 @@ import (
 func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return cryptomaterial.LinearLayout{
-		Width:      cryptomaterial.WrapContent,
-		Height:     cryptomaterial.WrapContent,
-		Background: l.Theme.Color.Surface,
-		Alignment:  layout.Middle,
-		Border:     cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+		Width:     cryptomaterial.WrapContent,
+		Height:    cryptomaterial.WrapContent,
+		Alignment: layout.Middle,
+		Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 		Margin: layout.Inset{
 			Top:    values.MarginPadding8,
 			Bottom: values.MarginPadding10,

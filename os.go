@@ -5,4 +5,4 @@ package main
 
 // OS-specific variables for non-android OS.
 
-var isAndroidOS = false
+const isAndroidOS = false

@@ -901,6 +901,7 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 		}
 
 		return pg.recentTradeList.Layout(gtx, len(pg.orders), func(gtx C, i int) D {
+
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
