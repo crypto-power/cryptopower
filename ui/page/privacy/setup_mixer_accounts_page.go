@@ -151,7 +151,7 @@ func (pg *SetupMixerAccountsPage) Layout(gtx layout.Context) layout.Dimensions {
 		return page.Layout(pg.ParentWindow(), gtx)
 	}
 
-	return components.UniformPadding(gtx, body)
+	return cryptomaterial.UniformPadding(gtx, body)
 }
 
 func (pg *SetupMixerAccountsPage) autoSetupLayout(gtx C) D {

@@ -9,6 +9,13 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
+type SegmentType int
+
+const (
+	SegmentTypeGroup SegmentType = iota
+	SegmentTypeSplit
+)
+
 type SegmentedControl struct {
 	theme *Theme
 	list  *ClickableList
@@ -23,23 +30,78 @@ type SegmentedControl struct {
 
 	changed bool
 	mu      sync.Mutex
+
+	isSwipeActionEnabled bool
+	slideAction          *SlideAction
+	slideActionTitle     *SlideAction
+	segmentType          SegmentType
+
+	allowCycle bool
 }
 
-func (t *Theme) SegmentedControl(segmentTitles []string) *SegmentedControl {
+func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
 	list := t.NewClickableList(layout.Horizontal)
 	list.IsHoverable = false
 
-	return &SegmentedControl{
-		list:          list,
-		theme:         t,
-		segmentTitles: segmentTitles,
-		leftNavBtn:    t.NewClickable(false),
-		rightNavBtn:   t.NewClickable(false),
-		Padding:       layout.UniformInset(values.MarginPadding8),
+	sc := &SegmentedControl{
+		list:                 list,
+		theme:                t,
+		segmentTitles:        segmentTitles,
+		leftNavBtn:           t.NewClickable(false),
+		rightNavBtn:          t.NewClickable(false),
+		isSwipeActionEnabled: true,
+		segmentType:          segmentType,
+		slideAction:          NewSlideAction(),
+		slideActionTitle:     NewSlideAction(),
+		Padding:              layout.UniformInset(values.MarginPadding8),
 	}
+
+	sc.slideAction.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeLeft
+		sc.handleActionEvent(isNext)
+	})
+
+	sc.slideActionTitle.SetDragEffect(50)
+
+	sc.slideActionTitle.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeRight
+		sc.handleActionEvent(isNext)
+	})
+
+	return sc
 }
 
-func (sc *SegmentedControl) Layout(gtx C) D {
+func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
+	sc.isSwipeActionEnabled = enable
+}
+
+func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
+	return UniformPadding(gtx, func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Vertical,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				if sc.segmentType == SegmentTypeGroup {
+					return sc.GroupTileLayout(gtx)
+				}
+				return sc.splitTileLayout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					if !sc.isSwipeActionEnabled {
+						return body(gtx)
+					}
+					return sc.slideAction.DragLayout(gtx, func(gtx C) D {
+						return sc.slideAction.TransformLayout(gtx, body)
+					})
+				})
+			}),
+		)
+	})
+}
+
+func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 	sc.handleEvents()
 
 	return LinearLayout{
@@ -49,38 +111,37 @@ func (sc *SegmentedControl) Layout(gtx C) D {
 		Border:     Border{Radius: Radius(8)},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
-				isSelectedSegment := sc.SelectedIndex() == i
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					bg := sc.theme.Color.SurfaceHighlight
-					txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
-					border := Border{Radius: Radius(0)}
-					if isSelectedSegment {
-						bg = sc.theme.Color.Surface
-						txt.Color = sc.theme.Color.Text
-						border = Border{Radius: Radius(8)}
-					}
-
-					ll := LinearLayout{
-						Width:      WrapContent,
-						Height:     WrapContent,
-						Background: bg,
-						Margin:     layout.UniformInset(values.MarginPadding5),
-						Border:     border,
-						Padding:    sc.Padding,
-					}
-
-					return ll.Layout2(gtx, txt.Layout)
+			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
+				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+					isSelectedSegment := sc.SelectedIndex() == i
+					return layout.Center.Layout(gtx, func(gtx C) D {
+						bg := sc.theme.Color.SurfaceHighlight
+						txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						border := Border{Radius: Radius(0)}
+						if isSelectedSegment {
+							bg = sc.theme.Color.Surface
+							txt.Color = sc.theme.Color.Text
+							border = Border{Radius: Radius(8)}
+						}
+						return LinearLayout{
+							Width:      WrapContent,
+							Height:     WrapContent,
+							Background: bg,
+							Margin:     layout.UniformInset(values.MarginPadding5),
+							Border:     border,
+							Padding:    sc.Padding,
+						}.Layout2(gtx, txt.Layout)
+					})
 				})
 			})
 		}),
 	)
 }
 
-func (sc *SegmentedControl) TransparentLayout(gtx C) D {
+func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 	sc.handleEvents()
 	return LinearLayout{
-		Width:       gtx.Dp(values.MarginPadding600),
+		Width:       gtx.Dp(values.MarginPadding700),
 		Height:      WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
@@ -181,4 +242,32 @@ func (sc *SegmentedControl) SetSelectedSegment(segment string) {
 			break
 		}
 	}
+}
+
+func (sc *SegmentedControl) handleActionEvent(isNext bool) {
+	l := len(sc.segmentTitles) - 1 // index starts at 0
+	if isNext {
+		if sc.selectedIndex == l {
+			if !sc.allowCycle {
+				return
+			}
+			sc.selectedIndex = 0
+		} else {
+			sc.selectedIndex++
+		}
+		sc.slideAction.PushLeft()
+		sc.slideActionTitle.PushLeft()
+	} else {
+		if sc.selectedIndex == 0 {
+			if !sc.allowCycle {
+				return
+			}
+			sc.selectedIndex = l
+		} else {
+			sc.selectedIndex--
+		}
+		sc.slideAction.PushRight()
+		sc.slideActionTitle.PushRight()
+	}
+	sc.changed = true
 }

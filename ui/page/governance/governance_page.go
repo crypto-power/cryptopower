@@ -25,7 +25,6 @@ type Page struct {
 
 	modal *cryptomaterial.Modal
 
-	// selectedTabIdx int
 	tab *cryptomaterial.SegmentedControl
 
 	tabCategoryList        *cryptomaterial.ClickableList
@@ -48,7 +47,7 @@ func NewGovernancePage(l *load.Load) *Page {
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
 
-	pg.tab = l.Theme.SegmentedControl(governanceTabTitles)
+	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroup)
 
 	pg.tabCategoryList.IsHoverable = false
 
@@ -72,10 +71,6 @@ func (pg *Page) OnNavigatedTo() {
 
 func (pg *Page) isGovernanceAPIAllowed() bool {
 	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI)
-}
-
-func (pg *Page) sectionNavTab(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.tab.Layout)
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -140,22 +135,11 @@ func (pg *Page) Layout(gtx C) D {
 
 func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if !pg.isGovernanceAPIAllowed() {
-		return components.UniformPadding(gtx, pg.splashScreen)
+		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
 
 	return components.UniformPadding(gtx, func(gtx C) D {
-		proposalListView := layout.Flexed(1, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Flexed(1, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				}),
-			)
-		})
-
-		items := []layout.FlexChild{}
-		items = append(items, layout.Rigid(pg.sectionNavTab))
-		items = append(items, proposalListView)
-		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, items...)
+		return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
 	})
 }
 

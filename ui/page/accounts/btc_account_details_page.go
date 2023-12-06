@@ -205,7 +205,7 @@ func (pg *BTCAcctDetailsPage) layoutDesktop(gtx layout.Context, widgets []func(g
 		}
 		return sp.Layout(pg.ParentWindow(), gtx)
 	}
-	return components.UniformPadding(gtx, body)
+	return cryptomaterial.UniformPadding(gtx, body)
 }
 
 func (pg *BTCAcctDetailsPage) layoutMobile(gtx layout.Context, widgets []func(gtx C) D) layout.Dimensions {

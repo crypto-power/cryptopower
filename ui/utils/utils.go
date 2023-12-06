@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"image"
 	"net"
 	"net/url"
 	"os"
@@ -14,6 +15,9 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/widget"
 	"golang.org/x/text/message"
 )
@@ -159,4 +163,13 @@ func StringNotEmpty(texts ...string) bool {
 	}
 
 	return true
+}
+
+func RadiusLayout(gtx layout.Context, radius int, w layout.Widget) layout.Dimensions {
+	m := op.Record(gtx.Ops)
+	dims := w(gtx)
+	call := m.Stop()
+	defer clip.UniformRRect(image.Rectangle{Max: dims.Size}, radius).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return dims
 }

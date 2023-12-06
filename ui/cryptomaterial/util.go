@@ -14,7 +14,9 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 func drawInk(gtx layout.Context, c widget.Press, highlightColor color.NRGBA) {
@@ -135,4 +137,22 @@ func AnyKeyWithOptionalModifier(modifier key.Modifiers, keys ...string) key.Set 
 	keysCombined := strings.Join(keys, ",")
 	keysWithModifier := fmt.Sprintf("(%s)-[%s]", modifier, keysCombined)
 	return key.Set(keysWithModifier)
+}
+
+func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
+	width := gtx.Constraints.Max.X
+
+	padding := values.MarginPadding24
+
+	if (width - 2*gtx.Dp(padding)) > gtx.Dp(values.AppWidth) {
+		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 4
+		padding = unit.Dp(paddingValue)
+	}
+
+	return layout.Inset{
+		Top:    values.MarginPadding24,
+		Right:  padding,
+		Bottom: values.MarginPadding24,
+		Left:   padding,
+	}.Layout(gtx, body)
 }

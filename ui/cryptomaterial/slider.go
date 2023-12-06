@@ -10,13 +10,18 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
+type sliderItem struct {
+	widgetItem layout.Widget
+	button     *Clickable
+}
+
 type Slider struct {
 	t *Theme
 
 	nextButton *Clickable
 	prevButton *Clickable
 	card       Card
-	items      []layout.Widget
+	slideItems []*sliderItem
 
 	selected         int
 	isSliderItemsSet bool
@@ -24,24 +29,31 @@ type Slider struct {
 	ButtonBackgroundColor    color.NRGBA
 	IndicatorBackgroundColor color.NRGBA
 	SelectedIndicatorColor   color.NRGBA // this is a full color no opacity
+	slideAction              *SlideAction
 }
 
 var m4 = values.MarginPadding4
 
 func (t *Theme) Slider() *Slider {
 	sl := &Slider{
-		t:     t,
-		items: make([]layout.Widget, 0),
+		t:          t,
+		slideItems: make([]*sliderItem, 0),
 
 		nextButton:               t.NewClickable(false),
 		prevButton:               t.NewClickable(false),
 		ButtonBackgroundColor:    values.TransparentColor(values.TransparentWhite, 0.2),
 		IndicatorBackgroundColor: values.TransparentColor(values.TransparentWhite, 0.2),
 		SelectedIndicatorColor:   t.Color.White,
+		slideAction:              NewSlideAction(),
 	}
 
 	sl.card = sl.t.Card()
 	sl.card.Radius = Radius(8)
+
+	sl.slideAction.Draged(func(dragDirection SwipeDirection) {
+		isNext := dragDirection == SwipeLeft
+		sl.handleActionEvent(isNext)
+	})
 
 	return sl
 }
@@ -51,38 +63,56 @@ func (s *Slider) GetSelectedIndex() int {
 	return s.selected
 }
 
+func (s *Slider) sliderItems(items []layout.Widget) []*sliderItem {
+	slideItems := make([]*sliderItem, 0)
+	for _, item := range items {
+		slideItems = append(slideItems, &sliderItem{
+			widgetItem: item,
+			button:     s.t.NewClickable(false),
+		})
+	}
+
+	return slideItems
+}
+
 func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 	// set slider items once since layout is drawn multiple times per sec.
 	if !s.isSliderItemsSet {
-		s.items = items
+		s.slideItems = s.sliderItems(items)
 		s.isSliderItemsSet = true
 	}
 
-	if len(s.items) == 0 {
+	if len(s.slideItems) == 0 {
 		return D{}
 	}
 
 	s.handleClickEvent()
-	gtx.Constraints.Max = s.items[s.selected](gtx).Size
-	return layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(s.items[s.selected]),
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{
-				Right:  values.MarginPadding15,
-				Left:   values.MarginPadding15,
-				Bottom: values.MarginPadding10,
-			}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{
-					Axis: layout.Horizontal,
-				}.Layout(gtx,
-					layout.Rigid(s.selectedItemIndicatorLayout),
-					layout.Flexed(1, func(gtx C) D {
-						return layout.E.Layout(gtx, s.buttonLayout)
-					}),
-				)
-			})
-		}),
-	)
+	return s.slideAction.DragLayout(gtx, func(gtx C) D {
+		return layout.Stack{Alignment: layout.S}.Layout(gtx,
+			layout.Expanded(func(gtx C) D {
+				return s.slideAction.TransformLayout(gtx, s.slideItems[s.selected].widgetItem)
+			}),
+			layout.Stacked(func(gtx C) D {
+				if len(s.slideItems) == 1 {
+					return D{}
+				}
+				return layout.Inset{
+					Right:  values.MarginPadding15,
+					Left:   values.MarginPadding15,
+					Bottom: values.MarginPadding10,
+				}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{
+						Axis: layout.Horizontal,
+					}.Layout(gtx,
+						layout.Rigid(s.selectedItemIndicatorLayout),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, s.buttonLayout)
+						}),
+					)
+				})
+			}),
+		)
+	})
 }
 
 func (s *Slider) buttonLayout(gtx C) D {
@@ -119,7 +149,7 @@ func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 			Left:  m4,
 		}.Layout(gtx, func(gtx C) D {
 			list := &layout.List{Axis: layout.Horizontal}
-			return list.Layout(gtx, len(s.items), func(gtx C, i int) D {
+			return list.Layout(gtx, len(s.slideItems), func(gtx C, i int) D {
 				ic := NewIcon(s.t.Icons.ImageBrightness1)
 				ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
 				if i == s.selected {
@@ -131,7 +161,9 @@ func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 					Right:  m4,
 					Left:   m4,
 				}.Layout(gtx, func(gtx C) D {
-					return ic.Layout(gtx, values.MarginPadding12)
+					return s.slideItems[i].button.Layout(gtx, func(gtx C) D {
+						return ic.Layout(gtx, values.MarginPadding12)
+					})
 				})
 			})
 		})
@@ -147,20 +179,49 @@ func (s *Slider) RefreshItems() {
 }
 
 func (s *Slider) handleClickEvent() {
-	l := len(s.items) - 1 // index starts at 0
 	if s.nextButton.Clicked() {
+		s.handleActionEvent(true)
+	}
+
+	if s.prevButton.Clicked() {
+		s.handleActionEvent(false)
+	}
+
+	for i, item := range s.slideItems {
+		if item.button.Clicked() {
+			if i == s.selected {
+				continue
+			}
+			lastSelected := s.selected
+			s.selected = i
+			if lastSelected < i {
+				s.slideAction.PushLeft()
+			} else {
+				s.slideAction.PushRight()
+			}
+			break
+		}
+	}
+}
+
+func (s *Slider) handleActionEvent(isNext bool) {
+	if len(s.slideItems) == 1 {
+		return
+	}
+	l := len(s.slideItems) - 1 // index starts at 0
+	if isNext {
 		if s.selected == l {
 			s.selected = 0
 		} else {
 			s.selected++
 		}
-	}
-
-	if s.prevButton.Clicked() {
+		s.slideAction.PushLeft()
+	} else {
 		if s.selected == 0 {
 			s.selected = l
 		} else {
 			s.selected--
 		}
+		s.slideAction.PushRight()
 	}
 }

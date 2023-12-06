@@ -113,7 +113,7 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 		immediateOrderInfoBtn:              th.NewClickable(false),
 		addServerBtn:                       th.NewClickable(false),
 		seeFullOrderBookBtn:                th.Button(values.String(values.StrSeeMore)),
-		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings),
+		toggleBuyAndSellBtn:                th.SegmentedControl(buyAndSellBtnStrings, cryptomaterial.SegmentTypeGroup),
 		openOrdersBtn:                      th.Button(values.String(values.StrOpenOrders)),
 		orderHistoryBtn:                    th.Button(values.String(values.StrTradeHistory)),
 		openOrdersDisplayed:                true,
@@ -531,7 +531,9 @@ func (pg *DEXMarketPage) orderForm(gtx C) D {
 			}),
 			layout.Stacked(func(gtx C) D {
 				return layout.Flex{Axis: horizontal}.Layout(gtx,
-					layout.Rigid(pg.toggleBuyAndSellBtn.Layout),
+					layout.Rigid(func(gtx C) D {
+						return pg.toggleBuyAndSellBtn.GroupTileLayout(gtx)
+					}),
 					layout.Flexed(1, func(gtx C) D {
 						pg.orderTypesDropdown.Background = &pg.Theme.Color.Surface
 						return layout.Inset{Bottom: dp5, Top: dp5}.Layout(gtx, pg.orderTypesDropdown.Layout)

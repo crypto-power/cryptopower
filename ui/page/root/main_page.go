@@ -182,7 +182,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 		commonTabs = append(commonTabs[:insertIndex], append(dcrSpecificTabs, commonTabs[insertIndex:]...)...)
 	}
 
-	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs)
+	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
 }
 
 func (swmp *SingleWalletMasterPage) isGovernanceAPIAllowed() bool {
@@ -406,15 +406,10 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 			}.Layout(gtx,
 				layout.Rigid(swmp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
-					return cryptomaterial.LinearLayout{
-						Width:       gtx.Dp(values.MarginPadding550),
-						Height:      cryptomaterial.WrapContent,
-						Orientation: layout.Vertical,
-						Alignment:   layout.Middle,
-						Margin:      layout.Inset{Top: values.MarginPadding28},
-					}.Layout(gtx,
-						layout.Rigid(swmp.pageTabLayout),
-						layout.Rigid(func(gtx C) D {
+					return layout.Inset{
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return swmp.pageNavigationTab.Layout(gtx, func(gtx C) D {
 							if swmp.CurrentPage() == nil {
 								return D{}
 							}
@@ -430,8 +425,8 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 							default:
 								return swmp.CurrentPage().Layout(gtx)
 							}
-						}),
-					)
+						})
+					})
 				}),
 			)
 		}),
@@ -536,10 +531,6 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 			return swmp.Theme.Separator().Layout(gtx)
 		}),
 	)
-}
-
-func (swmp *SingleWalletMasterPage) pageTabLayout(gtx C) D {
-	return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, swmp.pageNavigationTab.TransparentLayout)
 }
 
 func (swmp *SingleWalletMasterPage) LayoutUSDBalance(gtx C) D {
