@@ -408,7 +408,7 @@ func (pg *SettingPage) subSectionLabel(title string) layout.Widget {
 func (pg *SettingPage) HandleUserInteractions() {
 	for pg.language.Clicked() {
 		langSelectorModal := preference.NewListPreference(pg.Load,
-			sharedW.LanguagePreferenceKey, values.DefaultLangauge, preference.LangOptions).
+			sharedW.LanguagePreferenceKey, values.DefaultLanguage, preference.LangOptions).
 			Title(values.StrLanguage).
 			UpdateValues(func(_ string) {
 				values.SetUserLanguage(pg.AssetsManager.GetLanguagePreference())
@@ -641,9 +641,9 @@ func (pg *SettingPage) updatePrivacySettings() {
 // Part of the load.Page interface.
 func (pg *SettingPage) OnNavigatedFrom() {}
 
-func (pg *SettingPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, ischecked bool) {
+func (pg *SettingPage) setInitialSwitchStatus(switchComponent *cryptomaterial.Switch, isChecked bool) {
 	switchComponent.SetChecked(false)
-	if ischecked {
-		switchComponent.SetChecked(ischecked)
+	if isChecked {
+		switchComponent.SetChecked(isChecked)
 	}
 }

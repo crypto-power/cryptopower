@@ -221,7 +221,7 @@ func (hp *HomePage) HandleUserInteractions() {
 					}
 				}
 				if !isSendAvailable {
-					hp.showWarningNoWallet()
+					hp.showWarningNoSpendableWallet()
 					return
 				}
 				hp.ParentWindow().ShowModal(send.NewSendPage(hp.Load, nil))
@@ -288,12 +288,12 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 }
 
-func (hp *HomePage) showWarningNoWallet() {
+func (hp *HomePage) showWarningNoSpendableWallet() {
 	go func() {
 		info := modal.NewCustomModal(hp.Load).
 			PositiveButtonStyle(hp.Theme.Color.Primary, hp.Theme.Color.Surface).
 			SetContentAlignment(layout.W, layout.W, layout.Center).
-			Body(values.String(values.StrNoWalletsAvailable))
+			Body(values.String(values.StrCannotSpendWatchOnlyWallet))
 		hp.ParentWindow().ShowModal(info)
 	}()
 }
