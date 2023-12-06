@@ -54,7 +54,7 @@ func NewDEXPage(l *load.Load, dexc *dexc.DEXClient) *DEXPage {
 
 	// Init splash page more info widget.
 	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
-	dp.inited = true // TODO: Set value
+	dp.inited = dexc != nil && len(dexc.Exchanges()) > 0
 	return dp
 }
 

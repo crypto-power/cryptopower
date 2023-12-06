@@ -165,6 +165,7 @@ func NewDEXOnboarding(l *load.Load, core clientCore) *DEXOnboarding {
 
 	pg.bondStrengthEditor.IsTitleLabel = false
 	pg.serverDropDown.Width = formWidth
+	pg.serverDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
 
 	pg.onBoardingSteps = map[onboardingStep]dexOnboardingStep{
 		onboardingSetPassword: {
