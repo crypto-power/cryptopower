@@ -23,7 +23,7 @@ import (
 	_ "github.com/crypto-power/instantswap/instantswap/exchange/trocador"
 )
 
-//go:embed instant.json
+// go:embed instant.json
 var instants []byte
 var privKeyMap = map[Server]string{
 	Trocador:  "",
@@ -36,8 +36,10 @@ func init() {
 	var newPrivKeyMap = make(map[Server]string)
 	err := json.Unmarshal(instants, &newPrivKeyMap)
 	if err != nil {
-		panic(err)
+		log.Errorf("Error initializing instantSwap: %s", err.Error())
+		return
 	}
+
 	// assign available key to privKeyMap
 	for key := range privKeyMap {
 		if val, ok := newPrivKeyMap[key]; ok {
