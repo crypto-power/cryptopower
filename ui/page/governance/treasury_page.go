@@ -116,7 +116,7 @@ func (pg *TreasuryPage) initWalletSelector() {
 		items = append(items, item)
 	}
 
-	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
 	if len(pg.assetWallets) > 0 {
 		pg.selectedDCRWallet = pg.assetWallets[0].(*dcr.Asset)
 	}
@@ -246,14 +246,14 @@ func (pg *TreasuryPage) layout(gtx C) D {
 									Top: values.MarginPadding60,
 								}.Layout(gtx, pg.layoutContent)
 							}),
-							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.MarginPadding55})),
+							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.DP55})),
 							layout.Expanded(func(gtx C) D {
 								if pg.walletDropDown == nil {
 									return D{}
 								}
 								return layout.W.Layout(gtx, func(gtx C) D {
 									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.walletDropDown.Layout(gtx, 0, false)
+									return pg.walletDropDown.Layout(gtx)
 
 								})
 							}),

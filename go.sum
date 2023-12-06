@@ -288,6 +288,14 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/creack/pty v1.1.11/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf h1:8dd0iV9EMNiMOaZD2U3UjmMNmYTNbXz8L58NLWlFjWk=
 github.com/crypto-power/instantswap v0.0.0-20230619161136-95ecf47d5ebf/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231117043956-f4a664ce5a63 h1:lG4ZX5eAGW7BRCFgac82UuS8cYxTdoRlDAhv6MQI+/M=
+github.com/crypto-power/instantswap v0.0.0-20231117043956-f4a664ce5a63/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188 h1:F8e4iACvL2Xdos+/ptOpXl9D2UzrJ3mLC6vRnKmdgz8=
+github.com/crypto-power/instantswap v0.0.0-20231117152958-8105fa603188/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6 h1:MYjQZGr8ngIyLh+02aIo7ykr4k6TgCDKwGN4pFvrhyc=
+github.com/crypto-power/instantswap v0.0.0-20231129170512-36f01a6f27f6/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
+github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4 h1:rILnjlNzcN1d3I3+9NZaAHQ8mb0sIrpef3MPTxnCyoA=
+github.com/crypto-power/instantswap v0.0.0-20231205171529-1a958b193aa4/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/davecgh/go-spew v0.0.0-20161028175848-04cdfd42973b/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v0.0.0-20171005155431-ecdeabc65495/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -1143,6 +1151,8 @@ github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.4/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.7/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
+github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c h1:wblz/dKdN+jClbB8Tw1q3sF3PIRxuystc7N9mwfAy40=
+github.com/vibros68/instantswap v0.0.0-20231205093815-045a3f9f0a0c/go.mod h1:Yey9HyCagUlBLZfnUV4zTixvNrLvowj89BV5wVDVVXE=
 github.com/vmihailenco/msgpack v4.0.1+incompatible h1:RMF1enSPeKTlXrXdOcqjFUElywVZjjC6pqse21bKbEU=
 github.com/vmihailenco/msgpack v4.0.1+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/xanzy/go-gitlab v0.31.0/go.mod h1:sPLojNBn68fMUWSxIJtdVVIP8uSBYqesTfDUseX11Ug=

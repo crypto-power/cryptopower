@@ -143,20 +143,10 @@ func (instantSwap *InstantSwap) checkForUpdates(exchangeObject instantswap.IDExc
 			// attempting to open legacy orders
 			nilExchangeServer := ExchangeServer{}
 			if order.ExchangeServer == nilExchangeServer {
-				switch order.Server {
-				case ChangeNow:
-					order.ExchangeServer.Server = order.Server
-					order.ExchangeServer.Config = ExchangeConfig{
-						APIKey: API_KEY_CHANGENOW,
-					}
-				case GoDex:
-					order.ExchangeServer.Server = order.Server
-					order.ExchangeServer.Config = ExchangeConfig{
-						APIKey: API_KEY_GODEX,
-					}
-				default:
-					order.ExchangeServer.Server = order.Server
-					order.ExchangeServer.Config = ExchangeConfig{}
+				privKey := privKeyMap[order.Server]
+				order.ExchangeServer.Server = order.Server
+				order.ExchangeServer.Config = ExchangeConfig{
+					APIKey: privKey,
 				}
 
 				err = instantSwap.updateOrder(order)

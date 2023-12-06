@@ -87,18 +87,24 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
-	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUnderReview)},
 		{Text: values.String(values.StrApproved)},
 		{Text: values.String(values.StrRejected)},
 		{Text: values.String(values.StrAbandoned)},
-	}, values.ProposalDropdownGroup, 1)
+	}, values.ProposalDropdownGroup, 1, 0, true)
 
-	pg.orderDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ProposalDropdownGroup, 0)
+	}, values.ProposalDropdownGroup, 1, 0, true)
+
+	if pg.statusDropDown.Reversed() {
+		pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
+	} else {
+		pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
+	}
 
 	pg.initWalletSelector()
 
@@ -265,7 +271,7 @@ func (pg *ProposalsPage) initWalletSelector() {
 		items = append(items, item)
 	}
 
-	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 2, 0, false)
 	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
 }
 
@@ -290,6 +296,7 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					Right: values.MarginPadding24,
 					Left:  values.MarginPadding24,
 				}.Layout(gtx, func(gtx C) D {
+					statusDropdownWidth := 0
 					return layout.Stack{}.Layout(gtx,
 						layout.Expanded(func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding120}.Layout(gtx, pg.layoutContent)
@@ -305,17 +312,18 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 								return D{}
 							}
 							return layout.W.Layout(gtx, func(gtx C) D {
-								gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-								return pg.walletDropDown.Layout(gtx, 0, false)
+								return pg.walletDropDown.Layout(gtx)
 							})
 						}),
 						layout.Expanded(func(gtx C) D {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								return pg.orderDropDown.Layout(gtx, pg.orderDropDown.Width+30, true)
+								dropdown := pg.orderDropDown.Layout(gtx)
+								statusDropdownWidth = dropdown.Size.X
+								return dropdown
 							})
 						}),
 						layout.Expanded(func(gtx C) D {
-							return pg.statusDropDown.Layout(gtx, 10, true)
+							return layout.Inset{Right: gtx.Metric.PxToDp(statusDropdownWidth)}.Layout(gtx, pg.statusDropDown.Layout)
 						}),
 					)
 				})
@@ -349,7 +357,12 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 55, true)
+						if pg.statusDropDown.Reversed() {
+							pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
+						} else {
+							pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
+						}
+						return pg.statusDropDown.Layout(gtx)
 					}),
 				)
 			})

@@ -10,14 +10,14 @@ import (
 )
 
 const (
-	DefaultLangauge = localizable.ENGLISH
+	DefaultLanguage = localizable.ENGLISH
 	commentPrefix   = "/"
 )
 
 var (
 	rex           = regexp.MustCompile(`(?m)("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*")`) // "key"="value"
 	Languages     = []string{localizable.ENGLISH, localizable.CHINESE, localizable.FRENCH, localizable.SPANISH}
-	UserLanguages = []string{DefaultLangauge} // order of preference
+	UserLanguages = []string{DefaultLanguage} // order of preference
 )
 
 var languageStrings map[string]map[string]string
@@ -77,8 +77,8 @@ func hasLanguage(language string) bool {
 func SetUserLanguage(lang string) {
 	if hasLanguage(lang) {
 		languages := []string{lang}
-		if lang != DefaultLangauge {
-			languages = append(languages, DefaultLangauge)
+		if lang != DefaultLanguage {
+			languages = append(languages, DefaultLanguage)
 		}
 
 		UserLanguages = languages
@@ -139,6 +139,8 @@ const (
 	StrAddVSP                          = "addVSP"
 	StrAddWallet                       = "addWallet"
 	StrAdminToTriggerVoting            = "adminToTriggerVoting"
+	StrAdvanced                        = "advanced"
+	StrAdvancedSettingsMsg             = "advancedSettingsMsg"
 	StrAgendas                         = "agendas"
 	StrAgo                             = "ago"
 	StrAll                             = "all"
@@ -189,6 +191,8 @@ const (
 	StrCanceling                       = "canceling"
 	StrCancelMixer                     = "cancelMixer"
 	StrCentralizedExchange             = "centralizedExchange"
+	StrCentralizedExchangeCex          = "centralExchangeCex"
+	StrCexContent                      = "cexContent"
 	StrChangeAccount                   = "changeAccount"
 	StrChangeSpecificPeer              = "changeSpecificPeer"
 	StrChangeSpendingPass              = "changeSpendingPass"
@@ -199,6 +203,7 @@ const (
 	StrCheckMixerStatus                = "checkMixerStatus"
 	StrCheckStatistics                 = "checkStatistics"
 	StrCheckWalletLog                  = "checkWalletLog"
+	StrChooseSetupType                 = "chooseSetupType"
 	StrClear                           = "clear"
 	StrClearAll                        = "clearAll"
 	StrClearSelection                  = "clearSelection"
@@ -273,6 +278,7 @@ const (
 	StrDcrDex                          = "dcrDex"
 	StrDcrReceived                     = "dcrReceived"
 	StrDebug                           = "debug"
+	StrDecentralized                   = "decentralized"
 	StrDefault                         = "default"
 	StrDeleted                         = "delete"
 	StrDescriptionNote                 = "descriptionNote"
@@ -282,8 +288,10 @@ const (
 	StrDestinationModalInfo            = "destinationModalInfo"
 	StrDestinationWalletNotSynced      = "destinationWalletNotSynced"
 	StrDex                             = "dex"
+	StrDexContent                      = "dexContent"
 	StrDexDataReset                    = "dexDataReset"
 	StrDexDataResetFalse               = "dexDataResetFalse"
+	StrTradeSettingsMsg                = "tradeSettingsMsg"
 	StrDexResetInfo                    = "dexResetInfo"
 	StrDexStartupErr                   = "dexStartupErr"
 	StrDisable                         = "disable"
@@ -496,6 +504,7 @@ const (
 	StrNoTickets                       = "noTickets"
 	StrNotifications                   = "notifications"
 	StrNotOwned                        = "notOwned"
+	StrNoRecentTrades                  = "noRecentTrades"
 	StrNoTransactions                  = "noTransactions"
 	StrNotSameAccoutMixUnmix           = "notSameAccoutMixUnmix"
 	StrNotSupported                    = "notSupported"
@@ -565,6 +574,9 @@ const (
 	StrRecentOrders                    = "recentOrders"
 	StrRecentProposals                 = "recentProposals"
 	StrRecentTransactions              = "recentTransactions"
+	StrRecommended                     = "recommended"
+	StrRecommendedSettingsMsg          = "recommendedSettingsMsg"
+	StrRecentTrades                    = "recentTrades"
 	StrReconnect                       = "reconnect"
 	StrRefresh                         = "refresh"
 	StrRejected                        = "rejected"
@@ -674,6 +686,7 @@ const (
 	StrStaking                         = "staking"
 	StrStakingActivity                 = "stakingActivity"
 	StrStart                           = "start"
+	StrStartTrading                    = "startTrading"
 	StrStartupPassConfirm              = "startupPassConfirm"
 	StrStartupPassword                 = "startupPassword"
 	StrStartupPasswordEnabled          = "startupPasswordEnabled"
@@ -841,8 +854,11 @@ const (
 	StrWeekAgo                         = "weekAgo"
 	StrWeeksAgo                        = "weeksAgo"
 	StrWelcomeNote                     = "welcomeNote"
+	StrWhatIsDex                       = "whatIsDex"
+	StrWhatIsCex                       = "whatIsCex"
 	StrWhatToCallWallet                = "whatToCallWallet"
 	StrWord                            = "word"
+	StrWouldTradeCex                   = "wouldTradeCex"
 	StrWriteDownAll33Words             = "writeDownAll33Words"
 	StrWriteDownSeed                   = "writeDownSeed"
 	StrWroteAllWords                   = "wroteAllWords"
@@ -880,7 +896,7 @@ const (
 	StrName                            = "name"
 	StrPrice                           = "price"
 	StrRefreshState                    = "refreshState"
-	Str24HChange                       = "24hChange"
+	Str24hChange                       = "24hChange"
 	StrBack                            = "back"
 	StrSelectBondWalletMsg             = "selectBondWalletMsg"
 	StrSupportedWallets                = "supportedWallets"
@@ -908,7 +924,43 @@ const (
 	StrFound                           = "found"
 	StrRFP                             = "rfp"
 	StrProposedFor                     = "proposedFor"
+	StrAccounts                        = "accounts"
+	StrAmountSpendable                 = "amountSpendable"
 	StrStakingInfo                     = "stakingInfo"
 	StrTimeLeft                        = "timeLeft"
 	StrTotalReward                     = "totalReward"
+	StrMarket                          = "market"
+	Str24hLow                          = "24hLow"
+	Str24hVolume                       = "24hVolume"
+	Str24hHigh                         = "24hHigh"
+	StrLots                            = "lots"
+	StrInvalidLot                      = "invalidLot"
+	StrInvalidPrice                    = "invalidPrice"
+	StrBuy                             = "buy"
+	StrSell                            = "sell"
+	StrImmediate                       = "immediate"
+	StrImmediateOrder                  = "immediateOrder"
+	StrImmediateExplanation            = "immediateExplanation"
+	StrLimit                           = "limit"
+	StrEstimatedFee                    = "estimatedFee"
+	StrEpoch                           = "epoch"
+	StrAge                             = "age"
+	StrFilled                          = "filled"
+	StrSettled                         = "settled"
+	StrOpenOrders                      = "openOrders"
+	StrTradeHistory                    = "tradeHistory"
+	StrNoOpenOrdersMsg                 = "noOpenOrdersMsg"
+	StrNoTradeHistoryMsg               = "noTradeHistoryMsg"
+	StrCurrencyPair                    = "currencyPair"
+	StrPair                            = "pair"
+	StrMaxBuy                          = "maxBuy"
+	StrMaxSell                         = "maxSell"
+	StrMaxLots                         = "maxLots"
+	StrOrderBooks                      = "orderBooks"
+	StrSeeMore                         = "seeMore"
+	StrAssetPrice                      = "assetPrice"
+	StrAssetAmount                     = "assetAmount"
+	StrBooked                          = "booked"
+	StrExecuted                        = "executed"
+	StrCannotSpendWatchOnlyWallet      = "cannotSpendWatchOnlyWallet"
 )

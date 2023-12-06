@@ -85,6 +85,12 @@ func (c Container) Layout(gtx layout.Context, w layout.Widget) layout.Dimensions
 	return c.Padding.Layout(gtx, w)
 }
 
+// UniformHorizontalInset creates an inset with the specified amount applied uniformly to both the left and right edges.
+// This function is useful for ensuring consistent horizontal padding or margin around elements, without affecting the vertical spacing.
+func UniformHorizontalInset(v unit.Dp) layout.Inset {
+	return layout.Inset{Right: v, Left: v}
+}
+
 func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
 	width := gtx.Constraints.Max.X
 
@@ -849,7 +855,7 @@ func BrowserURLWidget(gtx C, l *load.Load, url string, copyRedirect *cryptomater
 				})
 			})
 		}),
-		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		layout.Stacked(func(gtx C) D {
 			return layout.Inset{
 				Top:  values.MarginPaddingMinus10,
 				Left: values.MarginPadding10,
@@ -939,4 +945,32 @@ func FlexLayout(gtx C, options FlexOptions, widgets []func(gtx C) D) D {
 		Axis:      options.Axis,
 		Alignment: options.Alignment,
 	}.Layout(gtx, flexChildren...)
+}
+
+// IconButton creates the display for an icon button. The default icon and text
+// color is Theme.Color.Primary.
+func IconButton(icon *widget.Icon, txt string, inset layout.Inset, th *cryptomaterial.Theme, clickable *cryptomaterial.Clickable) func(gtx C) D {
+	return func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D {
+			color := th.Color.Primary
+			return cryptomaterial.LinearLayout{
+				Width:       cryptomaterial.MatchParent,
+				Height:      cryptomaterial.WrapContent,
+				Orientation: layout.Horizontal,
+				Alignment:   layout.Start,
+				Clickable:   clickable,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return icon.Layout(gtx, color)
+				}),
+				layout.Rigid(layout.Spacer{Width: values.MarginPadding5}.Layout),
+				layout.Rigid(func(gtx C) D {
+					label := th.Label(values.TextSize16, txt)
+					label.Color = color
+					label.Font.Weight = font.SemiBold
+					return label.Layout(gtx)
+				}),
+			)
+		})
+	}
 }

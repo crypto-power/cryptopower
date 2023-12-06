@@ -36,6 +36,7 @@ const (
 	GoDex      Server = "godex"
 	SimpleSwap Server = "simpleswap"
 	SwapZone   Server = "swapzone"
+	Trocador   Server = "trocador"
 )
 
 func (es Server) ToString() string {
@@ -88,6 +89,9 @@ type Order struct {
 
 	FromCurrency string `json:"fromCurrency"`
 	ToCurrency   string `json:"toCurrency"`
+	FromNetwork  string `json:"fromNetwork"`
+	ToNetwork    string `json:"toNetwork"`
+	Provider     string `json:"provider"`
 
 	DepositAddress     string  `json:"depositAddress"`     // Address where funds that need to be exchanged should be sent to
 	RefundAddress      string  `json:"refundAddress"`      // Address where funds are returned to if the exchange fails

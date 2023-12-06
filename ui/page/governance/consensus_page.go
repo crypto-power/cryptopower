@@ -76,22 +76,26 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
-	pg.orderDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
-	}, values.ConsensusDropdownGroup, 0)
+	}, values.ConsensusDropdownGroup, 1, 10, true)
 
-	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUpcoming)},
 		{Text: values.String(values.StrInProgress)},
 		{Text: values.String(values.StrFailed)},
 		{Text: values.String(values.StrLockedIn)},
 		{Text: values.String(values.StrFinished)},
-	}, values.ConsensusDropdownGroup, 1)
+	}, values.ConsensusDropdownGroup, 1, 10, true)
+	if pg.statusDropDown.Reversed() {
+		pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
+	} else {
+		pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
+	}
 
 	pg.initWalletSelector()
-
 	return pg
 }
 
@@ -113,8 +117,7 @@ func (pg *ConsensusPage) initWalletSelector() {
 		}
 		items = append(items, item)
 	}
-
-	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 1, 0, false)
 	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
 }
 
@@ -347,6 +350,7 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 				}),
 				layout.Flexed(1, func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						statusDropdownWidth := 0
 						return layout.Stack{}.Layout(gtx,
 							layout.Expanded(func(gtx C) D {
 								return layout.Inset{
@@ -358,17 +362,23 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 									return D{}
 								}
 								return layout.W.Layout(gtx, func(gtx C) D {
-									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.walletDropDown.Layout(gtx, 0, false)
+									return pg.walletDropDown.Layout(gtx)
 								})
 							}),
 							layout.Expanded(func(gtx C) D {
 								return layout.E.Layout(gtx, func(gtx C) D {
-									return pg.orderDropDown.Layout(gtx, pg.orderDropDown.Width+30, true)
+									dropdown := pg.orderDropDown.Layout(gtx)
+									statusDropdownWidth = dropdown.Size.X
+									return dropdown
 								})
 							}),
 							layout.Expanded(func(gtx C) D {
-								return pg.statusDropDown.Layout(gtx, 0, true)
+								if pg.statusDropDown.Reversed() {
+									pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
+								} else {
+									pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
+								}
+								return layout.Inset{Right: gtx.Metric.PxToDp(statusDropdownWidth)}.Layout(gtx, pg.statusDropDown.Layout)
 							}),
 						)
 					})
@@ -412,9 +422,7 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 							})
 						})
 					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 55, true)
-					}),
+					layout.Expanded(pg.statusDropDown.Layout),
 				)
 			})
 		}),

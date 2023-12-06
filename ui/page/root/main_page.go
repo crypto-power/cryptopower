@@ -18,6 +18,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
+	"github.com/crypto-power/cryptopower/ui/page/accounts"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/info"
 	"github.com/crypto-power/cryptopower/ui/page/privacy"
@@ -70,8 +71,7 @@ type SingleWalletMasterPage struct {
 	isFetchingExchangeRate bool
 	isBalanceHidden        bool
 
-	currencyExchangeValue string
-	totalBalanceUSD       string
+	totalBalanceUSD string
 
 	activeTab         map[string]string
 	PageNavigationMap map[string]string
@@ -154,6 +154,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 		values.String(values.StrInfo),
 		values.String(values.StrReceive),
 		values.String(values.StrTransactions),
+		values.String(values.StrAccounts),
 		values.String(values.StrSettings),
 	}
 
@@ -307,6 +308,8 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 			} else {
 				pg = staking.NewStakingPage(swmp.Load, dcrW)
 			}
+		case values.String(values.StrAccounts):
+			pg = accounts.NewAccountPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrSettings):
 			pg = NewWalletSettingsPage(swmp.Load, swmp.selectedWallet, swmp.showNavigationFunc)
 		}

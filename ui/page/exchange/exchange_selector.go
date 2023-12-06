@@ -120,6 +120,9 @@ func (es *ExSelector) setServerIcon(serverName string) *cryptomaterial.Image {
 		return es.Theme.Icons.SimpleSwapIcon
 	case instantswap.SwapZone.ToString():
 		return es.Theme.Icons.SwapzoneIcon
+	case instantswap.Trocador.ToString():
+		return es.Theme.Icons.TrocadorIcon
+
 	default:
 		return es.Theme.Icons.AddExchange
 	}

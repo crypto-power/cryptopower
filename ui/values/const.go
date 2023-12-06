@@ -8,4 +8,7 @@ const (
 	OrderStatusDropdownGroup
 	DEXServerDropdownGroup
 	WalletsDropdownGroup
+	DEXCurrencyPairGroup
+	DEXOrderTypes
+	StartPageDropdownGroup
 )
