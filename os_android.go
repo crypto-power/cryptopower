@@ -5,4 +5,4 @@ package main
 
 // OS-specific variables for android OS.
 
-var isAndroidOS = true
+const isAndroidOS = true

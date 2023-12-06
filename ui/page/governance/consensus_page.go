@@ -73,14 +73,20 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
-	pg.statusDropDown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUpcoming)},
 		{Text: values.String(values.StrInProgress)},
 		{Text: values.String(values.StrFailed)},
 		{Text: values.String(values.StrLockedIn)},
 		{Text: values.String(values.StrFinished)},
-	}, values.ConsensusDropdownGroup, 0)
+	}, values.ConsensusDropdownGroup, 0, 10, true)
+
+	if pg.statusDropDown.Reversed() {
+		pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
+	} else {
+		pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
+	}
 
 	return pg
 }
@@ -312,7 +318,12 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 						}.Layout(gtx, pg.layoutContent)
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 10, true)
+						if pg.statusDropDown.Reversed() {
+							pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
+						} else {
+							pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
+						}
+						return pg.statusDropDown.Layout(gtx)
 					}),
 				)
 			})
@@ -354,9 +365,7 @@ func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 							})
 						})
 					}),
-					layout.Expanded(func(gtx C) D {
-						return pg.statusDropDown.Layout(gtx, 55, true)
-					}),
+					layout.Expanded(pg.statusDropDown.Layout),
 				)
 			})
 		}),

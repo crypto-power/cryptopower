@@ -23,6 +23,8 @@ type SegmentedControl struct {
 	leftNavBtn,
 	rightNavBtn *Clickable
 
+	Padding layout.Inset
+
 	selectedIndex int
 	segmentTitles []string
 
@@ -51,6 +53,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		segmentType:          segmentType,
 		slideAction:          NewSlideAction(),
 		slideActionTitle:     NewSlideAction(),
+		Padding:              layout.UniformInset(values.MarginPadding8),
 	}
 
 	sc.slideAction.Draged(func(dragDirection SwipeDirection) {
@@ -123,10 +126,10 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 						return LinearLayout{
 							Width:      WrapContent,
 							Height:     WrapContent,
-							Padding:    layout.UniformInset(values.MarginPadding8),
 							Background: bg,
 							Margin:     layout.UniformInset(values.MarginPadding5),
 							Border:     border,
+							Padding:    sc.Padding,
 						}.Layout2(gtx, txt.Layout)
 					})
 				})

@@ -56,13 +56,13 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	pg.ordersList = pg.Theme.NewClickableList(layout.Vertical)
 	pg.ordersList.IsShadowEnabled = true
 
-	pg.statusDropdown = l.Theme.DropDown([]cryptomaterial.DropDownItem{
+	pg.statusDropdown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: api.OrderStatusWaitingForDeposit.String()},
 		{Text: api.OrderStatusDepositReceived.String()},
 		{Text: api.OrderStatusNew.String()},
 		{Text: api.OrderStatusCompleted.String()},
 		{Text: api.OrderStatusExpired.String()},
-	}, values.OrderStatusDropdownGroup, 0)
+	}, values.OrderStatusDropdownGroup, 0, 10, true)
 
 	return pg
 }
@@ -202,9 +202,7 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 												Top: values.MarginPadding60,
 											}.Layout(gtx, pg.layoutHistory)
 										}),
-										layout.Expanded(func(gtx C) D {
-											return pg.statusDropdown.Layout(gtx, 10, true)
-										}),
+										layout.Expanded(pg.statusDropdown.Layout),
 									)
 								})
 							}),

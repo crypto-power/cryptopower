@@ -133,7 +133,7 @@ func (pg *TransactionsPage) initWalletSelector() {
 			items = append(items, item)
 		}
 
-		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
 		pg.walletDropDown.ClearSelection("Select a wallet")
 	} else {
 		pg.selectedWallet = pg.assetWallets[0]
@@ -159,7 +159,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 	for _, name := range keysinfo {
 		items = append(items, cryptomaterial.DropDownItem{Text: name})
 	}
-	pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
+	pg.txTypeDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, true)
 
 	// only show tx count for regular txs, not staking
 	if pg.txCategoryTab.SelectedSegment() == values.String(values.StrTxOverview) {
@@ -187,7 +187,7 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 				})
 			}
 
-			pg.txTypeDropDown = pg.Theme.DropDown(items, values.TxDropdownGroup, 2)
+			pg.txTypeDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, true)
 			pg.showLoader = false
 			pg.ParentWindow().Reload()
 		}()
@@ -397,7 +397,7 @@ func (pg *TransactionsPage) desktopLayoutContent(gtx C) D {
 
 	if pg.walletDropDown != nil {
 		pageElements = append(pageElements, layout.Expanded(func(gtx C) D {
-			return pg.walletDropDown.Layout(gtx, 0, false)
+			return pg.walletDropDown.Layout(gtx)
 		}))
 	}
 
@@ -406,7 +406,7 @@ func (pg *TransactionsPage) desktopLayoutContent(gtx C) D {
 		pg.ParentWindow().Reload() //refresh UI to display updated txType dropdown
 
 		txDropdownWidget := layout.Expanded(func(gtx C) D {
-			return pg.txTypeDropDown.Layout(gtx, 0, true)
+			return pg.txTypeDropDown.Layout(gtx)
 		})
 		pageElements = append(pageElements, txDropdownWidget)
 	}
@@ -466,9 +466,7 @@ func (pg *TransactionsPage) layoutMobile(gtx C) D {
 						})
 					}),
 					layout.Expanded(func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.txTypeDropDown.Layout(gtx, 0, true)
-						})
+						return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.txTypeDropDown.Layout)
 					}),
 				)
 			}),

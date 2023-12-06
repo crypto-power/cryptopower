@@ -216,17 +216,17 @@ func mulAlpha(c color.NRGBA, alpha uint8) color.NRGBA {
 func (t *Theme) closeAllDropdownMenus(group uint) {
 	for _, dropDown := range t.dropDownMenus {
 		if dropDown.group == group {
-			dropDown.isOpen = false
+			dropDown.expanded = false
 		}
 	}
 }
 
-// isOpenDropdownGroup iterate over Dropdowns registered as a member
+// isDropdownGroupCollapsed iterate over Dropdowns registered as a member
 // of {group}, returns true if any of the drop down state is open.
-func (t *Theme) isOpenDropdownGroup(group uint) bool {
+func (t *Theme) isDropdownGroupCollapsed(group uint) bool {
 	for _, dropDown := range t.dropDownMenus {
 		if dropDown.group == group {
-			if dropDown.isOpen {
+			if dropDown.expanded {
 				return true
 			}
 		}

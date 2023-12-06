@@ -26,9 +26,9 @@ type Icons struct {
 	LockinInactiveIcon, SuccessIcon, FailedIcon, ReceiveInactiveIcon, SendInactiveIcon, DarkmodeIcon,
 	ChevronExpand, ChevronCollapse, ChevronLeft, MixedTxIcon, UnmixedTxIcon, MixerIcon, NotSynced, ConcealIcon,
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
-	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, CaretUp, CaretDown,
+	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon, Dot *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -133,6 +133,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.ConcealIcon = NewImage(decredIcons["reveal"])
 	i.RevealIcon = NewImage(decredIcons["hide"])
 	i.AddExchange = NewImage(decredIcons["add_exchange"])
+	i.TradeExchangeIcon = NewImage(decredIcons["trade_exchange_icon"])
 
 	i.SettingsActiveIcon = NewImage(decredIcons["settings_active"])
 	i.SettingsInactiveIcon = NewImage(decredIcons["settings_inactive"])
@@ -182,7 +183,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.InfoAction = NewImage(decredIcons["info_icon"])
 	i.DarkMode = NewImage(decredIcons["ic_moon"])
 	i.LightMode = NewImage(decredIcons["ic_sun"])
-	i.AddIcon = NewImage(decredIcons["addIcon"])
+	i.AddIcon = NewImage(decredIcons["add_icon"])
 	i.EllipseVert = NewImage(decredIcons["elipsis_vert"])
 	i.EllipseHoriz = NewImage(decredIcons["elipsis"])
 	i.Notification = NewImage(decredIcons["notification"])
@@ -197,6 +198,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.GodexIcon = NewImage(decredIcons["godex"])
 	i.CoinSwitchIcon = NewImage(decredIcons["coinswitch"])
 	i.ChangeNowIcon = NewImage(decredIcons["changenow"])
+	i.TrocadorIcon = NewImage(decredIcons["trocador"])
 	/* End exchange icons */
 
 	i.MultiWalletIcon = NewImage(decredIcons["multiWalletIcon"])

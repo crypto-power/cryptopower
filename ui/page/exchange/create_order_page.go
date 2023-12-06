@@ -16,7 +16,6 @@ import (
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -69,6 +68,8 @@ type CreateOrderPage struct {
 	refreshIcon            *cryptomaterial.Image
 	viewAllButton          cryptomaterial.Button
 	navToSettingsBtn       cryptomaterial.Button
+	splashPageInfoButton   cryptomaterial.IconButton
+	splashPageContainer    *widget.List
 
 	min          float64
 	max          float64
@@ -76,6 +77,7 @@ type CreateOrderPage struct {
 
 	errMsg string
 
+	instantExchangeCurrencies []api.Currency
 	*orderData
 }
 
@@ -100,6 +102,11 @@ type orderData struct {
 	fromCurrency libutils.AssetType
 	toCurrency   libutils.AssetType
 
+	fromNetwork string
+	toNetwork   string
+	provider    string
+	signature   string
+
 	refundAddress      string
 	destinationAddress string
 
@@ -116,7 +123,15 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		refreshClickable: l.Theme.NewClickable(true),
 		iconClickable:    l.Theme.NewClickable(true),
 		refreshIcon:      l.Theme.Icons.Restore,
+		navToSettingsBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		splashPageContainer: &widget.List{List: layout.List{
+			Alignment: layout.Middle,
+			Axis:      layout.Vertical,
+		}},
 	}
+
+	// Init splash page more info widget
+	_, pg.splashPageInfoButton = components.SubpageHeaderButtons(pg.Load)
 
 	// pageSize defines the number of orders that can be fetched at ago.
 	pageSize := int32(5)
@@ -184,7 +199,12 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 		pg.exchange = exchange
 
 		go func() {
-			err := pg.getExchangeRateInfo()
+			err := pg.fetchInstantExchangeCurrencies()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			err = pg.getExchangeRateInfo()
 			if err != nil {
 				log.Error(err)
 			}
@@ -194,7 +214,7 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	return pg
 }
 
-func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) bool {
+func (pg *CreateOrderPage) updateWalletAndAccountSelector(selectedFromAsset []libutils.AssetType, selectedToAsset []libutils.AssetType) bool {
 	asset, ok := pg.updateAssetSelection(selectedFromAsset, selectedToAsset)
 	if !ok {
 		isSourceWallet := len(selectedFromAsset) != 0
@@ -246,6 +266,10 @@ func (pg *CreateOrderPage) OnNavigatedTo() {
 	if pg.isExchangeAPIAllowed() && pg.isMultipleAssetTypeWalletAvailable() {
 		pg.initPage()
 	}
+}
+
+func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
+	return pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
 }
 
 // initPage initializes required data on this page and should be called only
@@ -320,6 +344,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 			Body(values.String(values.StrCreateOrderPageInfo)).
 			PositiveButtonWidth(values.MarginPadding100)
 		pg.ParentWindow().ShowModal(info)
+	}
+
+	if pg.splashPageInfoButton.Button.Clicked() {
+		pg.showInfoModal()
 	}
 
 	for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
@@ -487,7 +515,7 @@ func (pg *CreateOrderPage) inputsNotEmpty(editors ...*widget.Editor) bool {
 	return true
 }
 
-func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []utils.AssetType, selectedToAsset []utils.AssetType) (libutils.AssetType, bool) {
+func (pg *CreateOrderPage) updateAssetSelection(selectedFromAsset []libutils.AssetType, selectedToAsset []libutils.AssetType) (libutils.AssetType, bool) {
 	if len(selectedFromAsset) > 0 {
 		selectedAsset := selectedFromAsset[0]
 		ok := pg.sourceWalletSelector.SetSelectedAsset(selectedAsset)
@@ -601,14 +629,6 @@ func (pg *CreateOrderPage) swapCurrency() {
 	pg.updateExchangeConfig()
 }
 
-func (pg *CreateOrderPage) isExchangeAPIAllowed() bool {
-	isAllowed := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI)
-	if !isAllowed {
-		pg.errMsg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
-	}
-	return isAllowed
-}
-
 // isMultipleAssetTypeWalletAvailable checks if multiple asset types are
 // available for exchange functionality to run smoothly. Otherwise exchange
 // functionality is disable till different asset type wallets are created.
@@ -638,6 +658,12 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
+	if !pg.isExchangeAPIAllowed() {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.splashPage(gtx)
+		})
+	}
+
 	var msg string
 	var overlaySet bool
 	var navBtn *cryptomaterial.Button
@@ -646,11 +672,6 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	switch {
 	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
-		overlaySet = true
-
-	case !pg.isExchangeAPIAllowed():
-		msg = pg.errMsg
-		navBtn = &pg.navToSettingsBtn
 		overlaySet = true
 
 	case !pg.isMultipleAssetTypeWalletAvailable():
@@ -670,10 +691,11 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		return cryptomaterial.LinearLayout{
-			Width:     gtx.Dp(values.MarginPadding600),
+			Width:     cryptomaterial.MatchParent,
 			Height:    cryptomaterial.MatchParent,
 			Alignment: layout.Middle,
-			Padding:   layout.Inset{Top: values.MarginPadding20},
+			Direction: layout.Center,
+			Padding:   layout.Inset{Top: values.MarginPadding0},
 		}.Layout2(gtx, func(gtx C) D {
 			overlay := layout.Stacked(func(gtx C) D { return D{} })
 			if overlaySet {
@@ -1116,26 +1138,31 @@ func (pg *CreateOrderPage) getExchangeRateInfo() error {
 	fromCur := pg.fromCurrency.String()
 	toCur := pg.toCurrency.String()
 	params := api.ExchangeRateRequest{
-		From:   fromCur,
-		To:     toCur,
-		Amount: libwallet.DefaultRateRequestAmount, // amount needs to be greater than 0 to get the exchange rate
+		From:        fromCur,
+		FromNetwork: getNetwork(fromCur, pg.instantExchangeCurrencies),
+		To:          toCur,
+		ToNetwork:   getNetwork(toCur, pg.instantExchangeCurrencies),
+		Amount:      libwallet.DefaultRateRequestAmt(fromCur), // amount needs to be greater than 0 to get the exchange rate
 	}
 	res, err := pg.AssetsManager.InstantSwap.GetExchangeRateInfo(pg.exchange, params)
+	pg.fetchingRate = false
 	if err != nil {
 		pg.exchangeRateInfo = values.String(values.StrFetchRateError)
 		pg.rateError = true
-		pg.fetchingRate = false
 		return err
 	}
+	pg.orderData.fromNetwork = params.FromNetwork
+	pg.orderData.toNetwork = params.ToNetwork
+	pg.orderData.provider = res.Provider
+	pg.orderData.signature = res.Signature
 
-	pg.exchangeRate = res.EstimatedAmount // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
+	pg.exchangeRate = res.ExchangeRate // estimated receivable value for libwallet.DefaultRateRequestAmount (1)
 	pg.min = res.Min
 	pg.max = res.Max
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.updateAmount()
 
-	pg.fetchingRate = false
 	pg.rateError = false
 	return nil
 }
@@ -1308,4 +1335,13 @@ func (pg *CreateOrderPage) listenForNotifications() {
 
 func (pg *CreateOrderPage) stopNtfnListeners() {
 	pg.AssetsManager.InstantSwap.RemoveNotificationListener(CreateOrderPageID)
+}
+
+func (pg *CreateOrderPage) fetchInstantExchangeCurrencies() error {
+	pg.fetchingRate = true
+	currencies, err := pg.exchange.GetCurrencies()
+	pg.instantExchangeCurrencies = currencies
+	pg.fetchingRate = false
+	pg.rateError = err != nil
+	return err
 }

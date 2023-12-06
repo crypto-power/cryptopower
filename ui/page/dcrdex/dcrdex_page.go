@@ -4,12 +4,15 @@ import (
 	"context"
 
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const DCRDEXID = "DCRDEXID"
+const DCRDEXPageID = "DCRDEXPageID"
 
 type (
 	C = layout.Context
@@ -24,16 +27,30 @@ type DEXPage struct {
 	ctx       context.Context // page context
 	ctxCancel context.CancelFunc
 
-	openTradeMainPage *cryptomaterial.Clickable
-	inited            bool // TODO: Set value
+	openTradeMainPage     *cryptomaterial.Clickable
+	splashPageInfoButton  cryptomaterial.IconButton
+	splashPageContainer   *widget.List
+	finalizeOnboardingBtn cryptomaterial.Button
+	isDexFirstVisit       bool
+	inited                bool
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
-		Load:              l,
-		MasterPage:        app.NewMasterPage(DCRDEXID),
-		openTradeMainPage: l.Theme.NewClickable(false),
+		MasterPage:            app.NewMasterPage(DCRDEXPageID),
+		Load:                  l,
+		openTradeMainPage:     l.Theme.NewClickable(false),
+		finalizeOnboardingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		splashPageContainer: &widget.List{List: layout.List{
+			Alignment: layout.Middle,
+			Axis:      layout.Vertical,
+		}},
+		isDexFirstVisit: true,
 	}
+
+	// Init splash page more info widget.
+	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
+	dp.inited = true // TODO: Set value
 	return dp
 }
 
@@ -41,7 +58,7 @@ func NewDEXPage(l *load.Load) *DEXPage {
 // differentiate this page from other pages.
 // Part of the load.Page interface.
 func (pg *DEXPage) ID() string {
-	return DCRDEXID
+	return DCRDEXPageID
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and may be
@@ -50,30 +67,25 @@ func (pg *DEXPage) ID() string {
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
 	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
-
-	if pg.CurrentPage() == nil {
-		// TODO: Handle pg.inited
+	if pg.CurrentPage() != nil {
+		pg.CurrentPage().OnNavigatedTo()
+	} else if pg.inited {
+		pg.Display(NewDEXMarketPage(pg.Load))
+	} else {
 		pg.Display(NewDEXOnboarding(pg.Load))
 	}
-
-	pg.CurrentPage().OnNavigatedTo()
 }
 
 // Layout draws the page UI components into the provided layout context to be
 // eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *DEXPage) Layout(gtx C) D {
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:       cryptomaterial.MatchParent,
-				Height:      cryptomaterial.MatchParent,
-				Orientation: layout.Vertical,
-			}.Layout(gtx,
-				layout.Flexed(1, pg.CurrentPage().Layout),
-			)
-		}),
-	)
+	if pg.isDexFirstVisit {
+		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return pg.splashPage(gtx)
+		})
+	}
+	return pg.CurrentPage().Layout(gtx)
 }
 
 // HandleUserInteractions is called just before Layout() to determine if any
@@ -86,6 +98,12 @@ func (pg *DEXPage) HandleUserInteractions() {
 	}
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions()
+	}
+	if pg.splashPageInfoButton.Button.Clicked() {
+		pg.showInfoModal()
+	}
+	if pg.finalizeOnboardingBtn.Button.Clicked() {
+		pg.isDexFirstVisit = false
 	}
 }
 
