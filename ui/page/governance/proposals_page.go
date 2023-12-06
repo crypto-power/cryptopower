@@ -12,7 +12,6 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -194,6 +193,10 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+		pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
+	}
+
 	if clicked, selectedItem := pg.proposalsList.ItemClicked(); clicked {
 		proposalItems := pg.scroll.FetchedData()
 		selectedProposal := proposalItems[selectedItem].Proposal
@@ -251,29 +254,24 @@ func (pg *ProposalsPage) OnNavigatedFrom() {
 }
 
 // initWalletSelector initializes the wallet selector dropdown to enable
-// filtering transactions for a specific wallet when this page is used to
-// display transactions for multiple wallets.
+// filtering proposals
 func (pg *ProposalsPage) initWalletSelector() {
 	pg.assetWallets = pg.AssetsManager.AllDCRWallets()
 
-	if len(pg.assetWallets) > 1 {
-		items := []cryptomaterial.DropDownItem{}
-		for _, wal := range pg.assetWallets {
-			if !pg.dcrWalletExists && wal.GetAssetType() == utils.DCRWalletAsset {
-				pg.dcrWalletExists = true
-			}
-			item := cryptomaterial.DropDownItem{
-				Text: wal.GetWalletName(),
-				Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
-			}
-			items = append(items, item)
+	items := []cryptomaterial.DropDownItem{}
+	for _, wal := range pg.assetWallets {
+		if !pg.dcrWalletExists && wal.GetAssetType() == libutils.DCRWalletAsset {
+			pg.dcrWalletExists = true
 		}
-
-		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
-		pg.walletDropDown.ClearSelection("Select a wallet")
-	} else {
-		pg.selectedWallet = pg.assetWallets[0]
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
+		}
+		items = append(items, item)
 	}
+
+	pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, 0)
+	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -308,10 +306,12 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 							}.Layout(gtx, pg.searchEditor.Layout)
 						}),
 						layout.Expanded(func(gtx C) D {
+							if pg.walletDropDown == nil {
+								return D{}
+							}
 							return layout.W.Layout(gtx, func(gtx C) D {
 								gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
 								return pg.walletDropDown.Layout(gtx, 0, false)
-								// return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
 							})
 						}),
 						layout.Expanded(func(gtx C) D {
