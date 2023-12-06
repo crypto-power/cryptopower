@@ -101,7 +101,7 @@ func NewDEXMarketPage(l *load.Load) *DEXMarketPage {
 	pg := &DEXMarketPage{
 		Load:                               l,
 		openOrdersAndOrderHistoryContainer: &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
-		GenericPageModal:                   app.NewGenericPageModal(DEXAccountOnboardingID),
+		GenericPageModal:                   app.NewGenericPageModal(DEXOnboardingPageID),
 		scrollContainer:                    &widget.List{List: layout.List{Axis: vertical, Alignment: layout.Middle}},
 		priceEditor:                        newTextEditor(l.Theme, values.String(values.StrPrice), "0", false),
 		totalEditor:                        newTextEditor(th, values.String(values.StrTotal), "", false),
@@ -359,7 +359,7 @@ func (pg *DEXMarketPage) priceAndVolumeDetail(gtx C) D {
 		}),
 		layout.Flexed(0.33, func(gtx C) D {
 			return pg.priceAndVolumeColume(gtx,
-				values.String(values.Str24hChange),
+				values.String(values.Str24HChange),
 				func(gtx C) D {
 					// TODO: Use real values.
 					priceChange := 0.0010353
