@@ -229,16 +229,17 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if proposal.Category == libwallet.ProposalCategoryPre {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(stateLabel.Layout),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-					}),
-					layout.Rigid(timeAgoLabel.Layout),
-				)
+			if proposal.Category != libwallet.ProposalCategoryPre {
+				return D{}
 			}
-			return D{}
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(stateLabel.Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+				}),
+				layout.Rigid(timeAgoLabel.Layout),
+			)
+
 		}),
 	)
 }

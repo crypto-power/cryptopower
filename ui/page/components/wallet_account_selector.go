@@ -291,7 +291,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 									layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
 								)
 							}
-							return ws.Theme.LabelSemiBold(ws.SelectedWallet().GetWalletName()).Layout(gtx)
+							return ws.Theme.SemiBoldLabel(ws.SelectedWallet().GetWalletName()).Layout(gtx)
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							dim := func(gtx C) D {

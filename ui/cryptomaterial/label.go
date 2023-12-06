@@ -61,13 +61,13 @@ func (t *Theme) Label(size unit.Sp, txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
 }
 
-func (t *Theme) LabelSemiBoldSize(size unit.Sp, txt string) Label {
+func (t *Theme) SemiBoldLabelWithSize(size unit.Sp, txt string) Label {
 	lb := t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
 	lb.Font.Weight = font.SemiBold
 	return lb
 }
 
-func (t *Theme) LabelSemiBold(txt string) Label {
+func (t *Theme) SemiBoldLabel(txt string) Label {
 	lb := t.labelWithDefaultColor(Label{material.Label(t.Base, values.TextSize16, txt)})
 	lb.Font.Weight = font.SemiBold
 	return lb
