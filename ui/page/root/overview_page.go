@@ -406,7 +406,7 @@ func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, row
 						return item.backgroundImage.LayoutSize2(gtx, gtx.Metric.PxToDp(width), gtx.Metric.PxToDp(height))
 					}),
 					layout.Expanded(func(gtx C) D {
-						return pg.contentSliderLayout(item)(gtx)
+						return layout.Center.Layout(gtx, pg.contentSliderLayout(item))
 					}),
 				)
 			})
