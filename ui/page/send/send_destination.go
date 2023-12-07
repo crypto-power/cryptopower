@@ -42,6 +42,7 @@ func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination 
 	dst.destinationAddressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrDestAddr))
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")
+	dst.destinationAddressEditor.IsTitleLabel = false
 
 	dst.initDestinationWalletSelector(assetType)
 	return dst
@@ -126,9 +127,7 @@ func (dst *destination) clearAddressInput() {
 }
 
 func (dst *destination) handle() {
-	if dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress) {
-		dst.sendToAddress = true
-	}
+	dst.sendToAddress = dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
 
 	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
