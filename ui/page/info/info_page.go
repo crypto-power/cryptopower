@@ -422,7 +422,7 @@ func (pg *WalletInfo) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
 			pg.ParentWindow().Reload()
 		},
 		OnBlockAttached: func(walletID int, blockHeight int32) {

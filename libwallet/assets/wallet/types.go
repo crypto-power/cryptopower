@@ -280,7 +280,7 @@ type HeadersRescanProgressReport struct {
 /** begin tx-related types */
 
 type TxAndBlockNotificationListener struct {
-	OnTransaction          func(transaction *Transaction)
+	OnTransaction          func(walletID int, transaction *Transaction)
 	OnBlockAttached        func(walletID int, blockHeight int32)
 	OnTransactionConfirmed func(walletID int, hash string, blockHeight int32)
 }

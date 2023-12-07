@@ -457,42 +457,44 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						return D{}
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !hideTxAssetInfo {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.WrapContent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Vertical,
-								Alignment:   layout.End,
-								Direction:   layout.Center,
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									tx := tx
-									if wal.TxMatchesFilter(tx, libutils.TxFilterStaking) {
-										durationPrefix := values.String(values.StrVoted)
-										if tx.Type == txhelper.TxTypeTicketPurchase {
-											if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
-												durationPrefix = values.String(values.StrUmined)
-											} else if wal.TxMatchesFilter(tx, libutils.TxFilterImmature) {
-												durationPrefix = values.String(values.StrImmature)
-											} else if wal.TxMatchesFilter(tx, libutils.TxFilterLive) {
-												durationPrefix = values.String(values.StrLive)
-											} else if wal.TxMatchesFilter(tx, libutils.TxFilterExpired) {
-												durationPrefix = values.String(values.StrExpired)
-											}
-										} else if tx.Type == txhelper.TxTypeRevocation {
-											durationPrefix = values.String(values.StrRevoked)
-										}
-
-										durationTxt := TimeAgo(tx.Timestamp)
-										durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
-										return l.Theme.Label(values.TextSize12, durationTxt).Layout(gtx)
-									}
-									return D{}
-								}),
-								layout.Rigid(status.Layout),
-							)
+						if hideTxAssetInfo {
+							return D{}
 						}
-						return D{}
+
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Vertical,
+							Alignment:   layout.End,
+							Direction:   layout.Center,
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								tx := tx
+								if !wal.TxMatchesFilter(tx, libutils.TxFilterStaking) {
+									return D{}
+								}
+
+								durationPrefix := values.String(values.StrVoted)
+								if tx.Type == txhelper.TxTypeTicketPurchase {
+									if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
+										durationPrefix = values.String(values.StrUmined)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterImmature) {
+										durationPrefix = values.String(values.StrImmature)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterLive) {
+										durationPrefix = values.String(values.StrLive)
+									} else if wal.TxMatchesFilter(tx, libutils.TxFilterExpired) {
+										durationPrefix = values.String(values.StrExpired)
+									}
+								} else if tx.Type == txhelper.TxTypeRevocation {
+									durationPrefix = values.String(values.StrRevoked)
+								}
+
+								durationTxt := TimeAgo(tx.Timestamp)
+								durationTxt = fmt.Sprintf("%s %s", durationPrefix, durationTxt)
+								return l.Theme.Label(values.TextSize12, durationTxt).Layout(gtx)
+							}),
+							layout.Rigid(status.Layout),
+						)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if hideTxAssetInfo {
@@ -512,15 +514,10 @@ func LayoutTransactionRow(gtx layout.Context, l *load.Load, wal sharedW.Asset, t
 						}
 
 						if hideTxAssetInfo {
-							return layout.Inset{
-								Left: values.MarginPadding15,
-								Top:  values.MarginPadding5,
-							}.Layout(gtx, statusIcon.Layout12dp)
+							return layout.Inset{Left: values.MarginPadding15, Top: values.MarginPadding5}.Layout(gtx, statusIcon.Layout12dp)
 						}
 
-						return layout.Inset{
-							Left: values.MarginPadding2,
-						}.Layout(gtx, statusIcon.Layout12dp)
+						return layout.Inset{Top: values.MarginPadding5, Left: values.MarginPadding7}.Layout(gtx, statusIcon.Layout12dp)
 					}),
 				)
 			})

@@ -62,7 +62,7 @@ type HomePage struct {
 var navigationTabTitles = []string{
 	values.String(values.StrOverview),
 	values.String(values.StrTransactions),
-	values.String(values.StrWallets),
+	values.String(values.StrAllWallets),
 	values.String(values.StrTrade),
 	values.String(values.StrGovernance),
 }
@@ -187,7 +187,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
 		case values.String(values.StrTransactions):
 			pg = transaction.NewTransactionsPage(hp.Load, nil)
-		case values.String(values.StrWallets):
+		case values.String(values.StrAllWallets):
 			pg = hp.walletSelectorPage
 		case values.String(values.StrTrade):
 			pg = NewTradePage(hp.Load)
@@ -200,8 +200,8 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	// set the page to the active nav, especially when navigating from over pages
 	// like the overview page slider.
-	if hp.CurrentPageID() == WalletSelectorPageID && hp.navigationTab.SelectedTab() != values.String(values.StrWallets) {
-		hp.navigationTab.SetSelectedTab(values.String(values.StrWallets))
+	if hp.CurrentPageID() == WalletSelectorPageID && hp.navigationTab.SelectedTab() != values.String(values.StrAllWallets) {
+		hp.navigationTab.SetSelectedTab(values.String(values.StrAllWallets))
 	} else if hp.CurrentPageID() == TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
 	}
@@ -261,7 +261,7 @@ func (hp *HomePage) HandleUserInteractions() {
 			switch item.Title {
 			case values.String(values.StrOverview):
 				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
-			case values.String(values.StrWallets):
+			case values.String(values.StrAllWallets):
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
 				pg = NewTradePage(hp.Load)
@@ -446,7 +446,7 @@ func (hp *HomePage) initBottomNavItems() {
 				Clickable:     hp.Theme.NewClickable(true),
 				Image:         hp.Theme.Icons.WalletIcon,
 				ImageInactive: hp.Theme.Icons.WalletIconInactive,
-				Title:         values.String(values.StrWallets),
+				Title:         values.String(values.StrAllWallets),
 				PageID:        WalletSelectorPageID,
 			},
 			{

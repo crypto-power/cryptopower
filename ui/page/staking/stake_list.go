@@ -16,7 +16,7 @@ func (pg *Page) initTicketList() {
 
 func (pg *Page) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
 			pg.ParentWindow().Reload()
 		},
 		OnBlockAttached: func(walletID int, blockHeight int32) {
