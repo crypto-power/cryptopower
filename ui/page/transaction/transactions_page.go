@@ -553,7 +553,6 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 			return
 		}
 	}
-	return
 }
 
 func (pg *TransactionsPage) stopTxNotificationsListener() {
