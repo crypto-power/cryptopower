@@ -9,13 +9,17 @@ import (
 	"gioui.org/layout"
 	"gioui.org/text"
 	"gioui.org/unit"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/crypto-power/cryptopower/app"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/root"
+	"github.com/crypto-power/cryptopower/ui/preference"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -23,11 +27,14 @@ const (
 	StartPageID = "start_page"
 	// startupSettingsPageIndex is the index of the settings setup page.
 	startupSettingsPageIndex = 3
+	// advancedSettingsOptionIndex is the index of the advanced settings option.
+	advancedSettingsOptionIndex = 1
 )
 
 // settingsOptionPageWidth is an arbitrary width for the settings setup
 // page.
 var settingsOptionPageWidth = values.MarginPadding570
+var titler = cases.Title(language.Und)
 
 type (
 	C = layout.Context
@@ -69,8 +76,8 @@ type startPage struct {
 	isQuitting       bool
 	displayStartPage bool
 
-	currentPageIndex    int
-	selectedSetupAction int
+	currentPageIndex            int
+	selectedSettingsOptionIndex int
 }
 
 func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
@@ -80,10 +87,9 @@ func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
 		loading:          true,
 		displayStartPage: true,
 
-		addWalletButton:     l.Theme.Button(values.String(values.StrAddWallet)),
-		nextButton:          l.Theme.Button(values.String(values.StrNext)),
-		backButton:          *l.Theme.NewClickable(true),
-		selectedSetupAction: -1,
+		addWalletButton: l.Theme.Button(values.String(values.StrAddWallet)),
+		nextButton:      l.Theme.Button(values.String(values.StrNext)),
+		backButton:      *l.Theme.NewClickable(true),
 	}
 
 	sp.nextButton.Inset = layout.UniformInset(values.MarginPadding15)
@@ -110,13 +116,13 @@ func (sp *startPage) OnNavigatedTo() {
 
 	if sp.AssetsManager.LoadedWalletsCount() > 0 {
 		sp.currentPageIndex = -1
-		sp.setLanguageSetting()
+		sp.setLanguagePref(true)
 		// Set the log levels.
 		sp.AssetsManager.GetLogLevels()
 		if sp.AssetsManager.IsStartupSecuritySet() {
 			sp.unlock()
 		} else {
-			go sp.openWallets("")
+			go sp.openWalletsAndDisplayHomePage("")
 		}
 	} else {
 		sp.loading = false
@@ -125,9 +131,9 @@ func (sp *startPage) OnNavigatedTo() {
 
 func (sp *startPage) initPage() {
 	sp.languageDropdown = sp.Theme.DropDown([]cryptomaterial.DropDownItem{
-		{Text: values.String(values.StrEnglish)},
-		{Text: values.String(values.StrSpanish)},
-		{Text: values.String(values.StrFrench)},
+		{Text: titler.String(values.StrEnglish)},
+		{Text: titler.String(values.StrFrench)},
+		{Text: titler.String(values.StrSpanish)},
 	}, values.StartPageDropdownGroup, true)
 
 	sp.languageDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
@@ -135,7 +141,6 @@ func (sp *startPage) initPage() {
 	sp.languageDropdown.FontWeight = font.SemiBold
 	sp.languageDropdown.SelectedItemIconColor = &sp.Theme.Color.Primary
 	sp.languageDropdown.BorderWidth = 2
-
 	sp.languageDropdown.Width = values.MarginPadding120
 	sp.languageDropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding50}
 	sp.languageDropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
@@ -193,7 +198,7 @@ func (sp *startPage) unlock() {
 		SetCancelable(false).
 		SetPositiveButtonText(values.String(values.StrUnlock)).
 		SetPositiveButtonCallback(func(_, password string, m *modal.CreatePasswordModal) bool {
-			err := sp.openWallets(password)
+			err := sp.openWalletsAndDisplayHomePage(password)
 			if err != nil {
 				m.SetError(err.Error())
 				m.SetLoading(false)
@@ -206,7 +211,7 @@ func (sp *startPage) unlock() {
 	sp.ParentWindow().ShowModal(startupPasswordModal)
 }
 
-func (sp *startPage) openWallets(password string) error {
+func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 	err := sp.AssetsManager.OpenWallets(password)
 	if err != nil {
 		log.Errorf("Error opening wallet: %v", err)
@@ -226,6 +231,8 @@ func (sp *startPage) openWallets(password string) error {
 func (sp *startPage) HandleUserInteractions() {
 	if sp.addWalletButton.Clicked() {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
+			sp.setLanguagePref(false)
+			sp.updateSettings()
 			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
 		})
 		sp.ParentNavigator().Display(createWalletPage)
@@ -243,8 +250,14 @@ func (sp *startPage) HandleUserInteractions() {
 
 	for i, item := range sp.settingsOptions {
 		for item.clickable.Clicked() {
-			sp.selectedSetupAction = i
+			sp.selectedSettingsOptionIndex = i
 		}
+	}
+
+	if sp.languageDropdown.Changed() {
+		// Refresh the user language now.
+		values.SetUserLanguage(sp.selectedLanguageKey())
+		sp.RefreshTheme(sp.ParentWindow())
 	}
 
 	for sp.backButton.Clicked() {
@@ -499,7 +512,7 @@ func (sp *startPage) settingsOptionsLayout(gtx C) D {
 				content.Alignment = text.Alignment(layout.Middle)
 
 				borderWidth := values.MarginPadding2
-				if sp.selectedSetupAction != i && !item.clickable.IsHovered() {
+				if sp.selectedSettingsOptionIndex != i && !item.clickable.IsHovered() {
 					borderWidth = 0
 				}
 
@@ -600,16 +613,40 @@ func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
 	})
 }
 
-func (sp *startPage) setLanguageSetting() {
-	langPre := sp.AssetsManager.GetLanguagePreference()
-	if langPre == "" {
-		sp.AssetsManager.SetLanguagePreference(values.DefaultLanguage)
+func (sp *startPage) setLanguagePref(useExistingUserPreference bool) {
+	var lang string
+	if useExistingUserPreference {
+		lang = sp.AssetsManager.GetLanguagePreference()
+	} else {
+		lang = sp.selectedLanguageKey()
 	}
-	values.SetUserLanguage(langPre)
+	if lang == "" {
+		lang = values.DefaultLanguage
+	}
+	sp.AssetsManager.SetLanguagePreference(lang)
+	values.SetUserLanguage(lang)
 }
 
-//func (sp *startPage) recommendedSettings() {
-// 	To be implemented after settings page refactor
-// Should set settings for USD exchange, Fee rate api,
-// exchange api, and transaction notifications to enabled.
-//}
+func (sp *startPage) selectedLanguageKey() string {
+	selectedLang := sp.languageDropdown.Selected()
+	for _, opt := range preference.LangOptions {
+		if strings.ToLower(selectedLang) == opt.Value {
+			return opt.Key
+		}
+	}
+	return values.DefaultLanguage
+}
+
+func (sp *startPage) updateSettings() {
+	wantAdvanced := sp.selectedSettingsOptionIndex == advancedSettingsOptionIndex
+	if wantAdvanced {
+		return // nothing to do?
+	}
+
+	sp.AssetsManager.SetTransactionsNotifications(true)
+	sp.AssetsManager.SetCurrencyConversionExchange(values.BinanceExchange)
+	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.GovernanceHTTPAPI, true)
+	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.ExchangeHTTPAPI, true)
+	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.FeeRateHTTPAPI, true)
+	sp.AssetsManager.SetHTTPAPIPrivacyMode(libutils.VspAPI, true)
+}
