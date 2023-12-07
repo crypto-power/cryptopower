@@ -17,7 +17,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -935,7 +934,8 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				for _, asset := range xc.BondAssets {
 					assetSym := dex.BipIDSymbol(asset.ID)
 					assetType := libutils.AssetType(capitalize.String(assetSym))
-					if !libwallet.IsAssetTypeSupported(assetType) {
+					// We only allow supported wallets to post bond.
+					if assetType != libutils.DCRWalletAsset && assetType != libutils.BTCWalletAsset && assetType != libutils.LTCWalletAsset {
 						continue
 					}
 					supportedBondAssets = append(supportedBondAssets, assetType)
