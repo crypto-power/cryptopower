@@ -398,11 +398,15 @@ func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
+			alignment := layout.Middle
+			if swmp.Load.IsMobileView() {
+				alignment = layout.Start
+			}
 			return cryptomaterial.LinearLayout{
 				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
-				Alignment:   layout.Middle,
+				Alignment:   alignment,
 			}.Layout(gtx,
 				layout.Rigid(swmp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
@@ -443,11 +447,15 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			h := values.MarginPadding24
 			v := values.MarginPadding8
+			orientation := layout.Horizontal
+			if swmp.Load.IsMobileView() {
+				orientation = layout.Vertical
+			}
 			return cryptomaterial.LinearLayout{
 				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.WrapContent,
-				Orientation: layout.Horizontal,
-				Alignment:   layout.Middle,
+				Orientation: orientation,
+				Alignment:   layout.Start,
 				Padding: layout.Inset{
 					Right:  h,
 					Left:   values.MarginPadding10,
@@ -456,73 +464,110 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 				},
 			}.GradientLayout(gtx, assetType,
 				layout.Rigid(func(gtx C) D {
-					isWatchOnlyWallet := swmp.selectedWallet.IsWatchingOnlyWallet()
-					return layout.W.Layout(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Horizontal,
-							Alignment:   layout.Middle,
-							Clickable:   swmp.openWalletSelector,
-						}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Left:  values.MarginPadding12,
-									Right: values.MarginPadding12,
-								}.Layout(gtx, swmp.Theme.Icons.ChevronLeft.Layout24dp)
-							}),
-							layout.Rigid(func(gtx C) D {
-								image := components.CoinImageBySymbol(swmp.Load, assetType, isWatchOnlyWallet)
-								if image != nil {
-									return image.Layout24dp(gtx)
+					clickable := swmp.openWalletSelector
+					return layout.Flex{
+						Axis: layout.Horizontal,
+					}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.WrapContent,
+								Orientation: orientation,
+								Clickable:   clickable,
+							}.Layout2(gtx, swmp.Theme.Icons.ChevronLeft.Layout24dp)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							isWatchOnlyWallet := swmp.selectedWallet.IsWatchingOnlyWallet()
+							return layout.Center.Layout(gtx, func(gtx C) D {
+								alignment := layout.Start
+								orientation := layout.Horizontal
+								if swmp.Load.IsMobileView() {
+									alignment = layout.Middle
+									orientation = layout.Vertical
+									clickable = nil
 								}
-								return D{}
-							}),
-							layout.Rigid(func(gtx C) D {
-								lbl := swmp.Theme.H6(swmp.selectedWallet.GetWalletName())
-								lbl.Color = swmp.Theme.Color.PageNavText
-								return layout.Inset{
-									Left: values.MarginPadding10,
-								}.Layout(gtx, lbl.Layout)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if isWatchOnlyWallet {
-									return layout.Inset{
-										Left: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return components.WalletHightlighLabel(swmp.Theme, gtx, values.TextSize16, values.String(values.StrWatchOnly))
-									})
-								}
-								return D{}
-							}),
-						)
-					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Flex{}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								icon := swmp.Theme.Icons.RevealIcon
-								if swmp.isBalanceHidden {
-									icon = swmp.Theme.Icons.ConcealIcon
-								}
-								return layout.Inset{
-									Top:   values.MarginPadding5,
-									Right: values.MarginPadding9,
-								}.Layout(gtx, func(gtx C) D {
-									return swmp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
-								})
-							}),
-							layout.Rigid(swmp.totalAssetBalance),
-							layout.Rigid(func(gtx C) D {
-								if !swmp.isBalanceHidden {
-									return swmp.LayoutUSDBalance(gtx)
-								}
-								return D{}
-							}),
-						)
-					})
+								return cryptomaterial.LinearLayout{
+									Width:       cryptomaterial.WrapContent,
+									Height:      cryptomaterial.WrapContent,
+									Orientation: orientation,
+									Alignment:   alignment,
+									Clickable:   clickable,
+								}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										return layout.Flex{
+											Axis:      layout.Horizontal,
+											Alignment: layout.Middle,
+										}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												image := components.CoinImageBySymbol(swmp.Load, assetType, isWatchOnlyWallet)
+												if image != nil {
+													if swmp.Load.IsMobileView() {
+														return image.Layout16dp(gtx)
+													}
+													return image.Layout24dp(gtx)
+												}
+												return D{}
+											}),
+											layout.Rigid(func(gtx C) D {
+												lbl := swmp.Theme.H6(swmp.selectedWallet.GetWalletName())
+												lbl.Color = swmp.Theme.Color.PageNavText
+												if swmp.Load.IsMobileView() {
+													lbl.TextSize = values.TextSize16
+												}
+												return layout.Inset{
+													Left: values.MarginPadding10,
+												}.Layout(gtx, lbl.Layout)
+											}),
+											layout.Rigid(func(gtx C) D {
+												if isWatchOnlyWallet {
+													return layout.Inset{
+														Left: values.MarginPadding10,
+													}.Layout(gtx, func(gtx C) D {
+														textSize := values.TextSize16
+														if swmp.Load.IsMobileView() {
+															textSize = values.TextSize12
+														}
+														return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
+													})
+												}
+												return D{}
+											}),
+										)
+									}),
+									layout.Rigid(func(gtx C) D {
+										gtx.Constraints.Min.X = gtx.Constraints.Max.X
+										layoutPosition := layout.E
+										if swmp.Load.IsMobileView() {
+											layoutPosition = layout.Center
+										}
+										return layoutPosition.Layout(gtx, func(gtx C) D {
+											return layout.Flex{}.Layout(gtx,
+												layout.Rigid(func(gtx C) D {
+													icon := swmp.Theme.Icons.RevealIcon
+													if swmp.isBalanceHidden {
+														icon = swmp.Theme.Icons.ConcealIcon
+													}
+													return layout.Inset{
+														Top:   values.MarginPadding5,
+														Right: values.MarginPadding9,
+													}.Layout(gtx, func(gtx C) D {
+														return swmp.hideBalanceButton.Layout(gtx, icon.Layout16dp)
+													})
+												}),
+												layout.Rigid(swmp.totalAssetBalance),
+												layout.Rigid(func(gtx C) D {
+													if !swmp.isBalanceHidden {
+														return swmp.LayoutUSDBalance(gtx)
+													}
+													return D{}
+												}),
+											)
+										})
+									}),
+								)
+							})
+						}),
+					)
 				}),
 			)
 		}),
@@ -558,7 +603,11 @@ func (swmp *SingleWalletMasterPage) LayoutUSDBalance(gtx C) D {
 			})
 		})
 	case len(swmp.totalBalanceUSD) > 0:
-		lbl := swmp.Theme.Label(values.TextSize20, fmt.Sprintf("/ %s", swmp.totalBalanceUSD))
+		textSize := values.TextSize20
+		if swmp.Load.IsMobileView() {
+			textSize = values.TextSize16
+		}
+		lbl := swmp.Theme.Label(textSize, fmt.Sprintf("/ %s", swmp.totalBalanceUSD))
 		lbl.Color = swmp.Theme.Color.PageNavText
 		inset := layout.Inset{Left: values.MarginPadding8}
 		return inset.Layout(gtx, lbl.Layout)
@@ -568,14 +617,18 @@ func (swmp *SingleWalletMasterPage) LayoutUSDBalance(gtx C) D {
 }
 
 func (swmp *SingleWalletMasterPage) totalAssetBalance(gtx C) D {
+	textSize := values.TextSize20
+	if swmp.Load.IsMobileView() {
+		textSize = values.TextSize16
+	}
 	if swmp.isBalanceHidden || swmp.walletBalance == nil {
-		hiddenBalanceText := swmp.Theme.Label(values.TextSize18*0.8, "*******************")
+		hiddenBalanceText := swmp.Theme.Label(textSize*0.8, "*******************")
 		return layout.Inset{Bottom: values.MarginPadding0, Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 			hiddenBalanceText.Color = swmp.Theme.Color.PageNavText
 			return hiddenBalanceText.Layout(gtx)
 		})
 	}
-	return components.LayoutBalanceWithUnit(gtx, swmp.Load, swmp.walletBalance.String())
+	return components.LayoutBalanceWithUnitSize(gtx, swmp.Load, swmp.walletBalance.String(), textSize)
 }
 
 func (swmp *SingleWalletMasterPage) postTransactionNotification(t *sharedW.Transaction) {
