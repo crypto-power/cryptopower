@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"net/url"
 	"strconv"
 
 	"decred.org/dcrdex/client/core"
@@ -895,27 +896,32 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				break
 			}
 
-			nextStep := func() {
-				serverInfo := new(bondServerInfo)
-				if pg.currentStep == onboardingChooseServer {
-					serverInfo.url = pg.serverDropDown.Selected()
-					cert, ok := CertStore[serverInfo.url]
-					if !ok {
-						log.Errorf("Selected DEX server's (%s) cert is missing", serverInfo.url)
-						return
-					}
-					serverInfo.cert = cert
-				} else if pg.currentStep == onBoardingStepAddServer {
-					if utils.EditorsNotEmpty(pg.serverURLEditor.Editor) {
-						serverInfo.url = pg.serverURLEditor.Editor.Text()
-						serverInfo.cert = []byte(pg.serverCertEditor.Editor.Text())
-					} else {
+			serverInfo := new(bondServerInfo)
+			if pg.currentStep == onboardingChooseServer {
+				serverInfo.url = pg.serverDropDown.Selected()
+				cert, ok := CertStore[serverInfo.url]
+				if !ok {
+					log.Errorf("Selected DEX server's (%s) cert is missing", serverInfo.url)
+					return
+				}
+				serverInfo.cert = cert
+			} else if pg.currentStep == onBoardingStepAddServer {
+				if utils.EditorsNotEmpty(pg.serverURLEditor.Editor) {
+					serverUrl := pg.serverURLEditor.Editor.Text()
+					if _, err := url.ParseRequestURI(serverUrl); err != nil {
 						pg.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
 						return
 					}
+					serverInfo.url = serverUrl
+					serverInfo.cert = []byte(pg.serverCertEditor.Editor.Text())
+				} else {
+					pg.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
+					return
 				}
-				pg.bondServer = serverInfo
+			}
+			pg.bondServer = serverInfo
 
+			nextStep := func() {
 				pg.isLoading = true
 				defer func() {
 					pg.isLoading = false
@@ -975,7 +981,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				pg.newTier = minimumBondStrength
 			}
 
+			// Proceed to next step if we already have the dex pass cached.
+			if len(pg.dexPass) > 0 {
+				go nextStep()
+				break
+			}
+
 			if !pg.core.IsDEXPasswordSet() {
+				// Fresh onboarding process.
 				pg.isLoading = true
 				go func() {
 					defer func() {
@@ -994,12 +1007,9 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				break
 			}
 
-			if len(pg.dexPass) > 0 {
-				go nextStep()
-				break
-			}
-
-			walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+			// User already has dex password set but did not finish the
+			// onboarding.
+			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 				EnableName(false).
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrDexPassword)).
@@ -1017,7 +1027,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					pg.ParentWindow().Reload()
 					return true
 				})
-			pg.ParentWindow().ShowModal(walletPasswordModal)
+			pg.ParentWindow().ShowModal(dexPasswordModal)
 		case onboardingPostBond:
 			if pg.isLoading {
 				break
