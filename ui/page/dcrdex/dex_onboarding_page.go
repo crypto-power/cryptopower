@@ -907,12 +907,12 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				serverInfo.cert = cert
 			} else if pg.currentStep == onBoardingStepAddServer {
 				if utils.EditorsNotEmpty(pg.serverURLEditor.Editor) {
-					serverUrl := pg.serverURLEditor.Editor.Text()
-					if _, err := url.ParseRequestURI(serverUrl); err != nil {
+					serverURL := pg.serverURLEditor.Editor.Text()
+					if _, err := url.ParseRequestURI(serverURL); err != nil {
 						pg.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
 						return
 					}
-					serverInfo.url = serverUrl
+					serverInfo.url = serverURL
 					serverInfo.cert = []byte(pg.serverCertEditor.Editor.Text())
 				} else {
 					pg.serverURLEditor.SetError(values.String(values.StrDEXServerAddrWarning))
