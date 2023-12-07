@@ -39,6 +39,7 @@ func (pg *Page) Layout(gtx C) D {
 func (pg *Page) layoutDesktop(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sendLayout,
+		pg.recipientsLayout,
 	}
 
 	return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
@@ -59,19 +60,12 @@ func (pg *Page) sendLayout(gtx C) D {
 	}.Layout(gtx,
 		layout.Rigid(pg.titleLayout),
 		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrFrom))
-			lbl.Color = pg.Theme.Color.GrayText2
-			return layout.Inset{
-				Top:    values.MarginPadding16,
-				Bottom: values.MarginPadding16,
-			}.Layout(gtx, lbl.Layout)
-		}),
-		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
+						Top:    values.MarginPadding16,
 						Bottom: values.MarginPadding4,
-					}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrAccount)).Layout)
+					}.Layout(gtx, pg.Theme.Label(values.TextSize16, "Source Account").Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
@@ -99,4 +93,21 @@ func (pg *Page) titleLayout(gtx C) D {
 		}),
 		layout.Rigid(pg.infoButton.Layout),
 	)
+}
+
+func (pg *Page) recipientsLayout(gtx C) D {
+	list := &layout.List{
+		Axis:      layout.Vertical,
+		Alignment: layout.Middle,
+	}
+
+	showIcon := len(pg.recipients) > 1
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+			return list.Layout(gtx, len(pg.recipients), func(gtx C, index int) D {
+				recipient := pg.recipients[index].recipientLayout(gtx, index, showIcon, pg.ParentWindow())
+				return layout.Inset{Bottom: values.MarginPadding32}.Layout(gtx, recipient)
+			})
+		})
+	})
 }

@@ -51,6 +51,8 @@ type Page struct {
 	sendDestination       *destination
 	amount                *sendAmount
 
+	recipients []*recipient
+
 	infoButton    cryptomaterial.IconButton
 	retryExchange cryptomaterial.Button
 	nextButton    cryptomaterial.Button
@@ -139,6 +141,8 @@ func NewSendPage(l *load.Load, wallet sharedW.Asset) *Page {
 		pg.validateAndConstructTxAmountOnly()
 	}
 
+	pg.recipients = append(pg.recipients, newRecipient(l, pg.selectedWallet.GetAssetType()))
+
 	pg.initLayoutWidgets()
 
 	return pg
@@ -187,10 +191,10 @@ func (pg *Page) initializeAccountSelectors() {
 				// Spending unmixed fund isn't permitted for the selected wallet
 
 				// only mixed accounts can send to address/wallets for wallet with privacy setup
-				switch pg.sendDestination.accountSwitch.SelectedIndex() {
-				case sendToAddress:
+				switch pg.sendDestination.accountSwitch.SelectedSegment() {
+				case values.String(values.StrAddress):
 					accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
-				case SendToWallet:
+				case values.String(values.StrWallets):
 					destinationWalletID := pg.sendDestination.destinationWalletSelector.SelectedWallet().GetWalletID()
 					if destinationWalletID != pg.selectedWallet.GetWalletID() {
 						accountIsValid = account.Number == load.MixedAccountNumber(pg.selectedWallet)
@@ -503,8 +507,8 @@ func (pg *Page) HandleUserInteractions() {
 	// }
 
 	// pg.nextButton.SetEnabled(pg.validate())
-	// pg.sendDestination.handle()
-	// pg.amount.handle()
+	pg.sendDestination.handle()
+	pg.amount.handle()
 
 	// if pg.infoButton.Button.Clicked() {
 	// 	textWithUnit := values.String(values.StrSend) + " " + string(pg.selectedWallet.GetAssetType())

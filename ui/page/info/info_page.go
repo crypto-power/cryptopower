@@ -52,7 +52,6 @@ type WalletInfo struct {
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
 	toBackup         cryptomaterial.Button
-	checkBox         cryptomaterial.CheckBoxStyle
 
 	mixerInfoButton,
 	mixerRedirectButton cryptomaterial.IconButton
@@ -93,7 +92,6 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
 		},
-		checkBox: l.Theme.CheckBox(new(widget.Bool), values.String(values.StrAwareOfRisk)),
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
