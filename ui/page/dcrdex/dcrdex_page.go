@@ -27,22 +27,22 @@ type DEXPage struct {
 	*load.Load
 
 	// Might be nil but interaction with this page will be disabled if it is.
-	dexc                  *dexc.DEXClient
-	generalSettingsBtn    cryptomaterial.Button
-	openTradeMainPage     *cryptomaterial.Clickable
-	splashPageInfoButton  cryptomaterial.IconButton
-	splashPageContainer   *widget.List
-	finalizeOnboardingBtn cryptomaterial.Button
-	isDexFirstVisit       bool
-	inited                bool
+	dexc                 *dexc.DEXClient
+	generalSettingsBtn   cryptomaterial.Button
+	openTradeMainPage    *cryptomaterial.Clickable
+	splashPageInfoButton cryptomaterial.IconButton
+	splashPageContainer  *widget.List
+	startTradingBtn      cryptomaterial.Button
+	isDexFirstVisit      bool
+	inited               bool
 }
 
 func NewDEXPage(l *load.Load, dexc *dexc.DEXClient) *DEXPage {
 	dp := &DEXPage{
-		MasterPage:            app.NewMasterPage(DCRDEXPageID),
-		Load:                  l,
-		openTradeMainPage:     l.Theme.NewClickable(false),
-		finalizeOnboardingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		MasterPage:        app.NewMasterPage(DCRDEXPageID),
+		Load:              l,
+		openTradeMainPage: l.Theme.NewClickable(false),
+		startTradingBtn:   l.Theme.Button(values.String(values.StrStartTrading)),
 		splashPageContainer: &widget.List{List: layout.List{
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
@@ -92,6 +92,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 			return pg.splashPage(gtx)
 		})
 	}
+
 	hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable()
 	privacyModeOff := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(utils.ExchangeHTTPAPI)
 	var msg string
@@ -142,7 +143,7 @@ func (pg *DEXPage) HandleUserInteractions() {
 	if pg.splashPageInfoButton.Button.Clicked() {
 		pg.showInfoModal()
 	}
-	if pg.finalizeOnboardingBtn.Button.Clicked() {
+	if pg.startTradingBtn.Button.Clicked() {
 		pg.isDexFirstVisit = false
 	}
 }

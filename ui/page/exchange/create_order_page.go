@@ -70,6 +70,8 @@ type CreateOrderPage struct {
 	navToSettingsBtn       cryptomaterial.Button
 	splashPageInfoButton   cryptomaterial.IconButton
 	splashPageContainer    *widget.List
+	startTradingBtn        cryptomaterial.Button
+	isFirstVisit           bool
 
 	min          float64
 	max          float64
@@ -128,6 +130,8 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
 		}},
+		startTradingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		isFirstVisit:    true,
 	}
 
 	// Init splash page more info widget
@@ -348,6 +352,10 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 	if pg.splashPageInfoButton.Button.Clicked() {
 		pg.showInfoModal()
+	}
+
+	if pg.startTradingBtn.Clicked() {
+		pg.isFirstVisit = false
 	}
 
 	for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
@@ -658,7 +666,7 @@ func (pg *CreateOrderPage) isMultipleAssetTypeWalletAvailable() bool {
 }
 
 func (pg *CreateOrderPage) Layout(gtx C) D {
-	if !pg.isExchangeAPIAllowed() {
+	if pg.isFirstVisit {
 		return pg.Theme.List(pg.splashPageContainer).Layout(gtx, 1, func(gtx C, i int) D {
 			return pg.splashPage(gtx)
 		})
@@ -673,6 +681,11 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 	case isTestNet:
 		msg = values.String(values.StrNoExchangeOnTestnet)
 		overlaySet = true
+
+	case !pg.isExchangeAPIAllowed():
+		msg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+		overlaySet = true
+		navBtn = &pg.navToSettingsBtn
 
 	case !pg.isMultipleAssetTypeWalletAvailable():
 		msg = pg.errMsg

@@ -53,7 +53,7 @@ func (pg *CreateOrderPage) splashPage(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding15, Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx, layout.Flexed(1, pg.navToSettingsBtn.Layout))
+				return layout.Flex{}.Layout(gtx, layout.Flexed(1, pg.startTradingBtn.Layout))
 			})
 		}),
 	)
