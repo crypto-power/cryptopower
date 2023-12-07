@@ -95,6 +95,12 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
 	}
 
+	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.Width = values.MarginPadding100
+	settingCommonDropdown(pg.Theme, pg.statusDropDown)
+	settingCommonDropdown(pg.Theme, pg.orderDropDown)
+
 	pg.initWalletSelector()
 	return pg
 }
@@ -118,7 +124,8 @@ func (pg *ConsensusPage) initWalletSelector() {
 		items = append(items, item)
 	}
 	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 1, 0, false)
-	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
+	pg.walletDropDown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
@@ -242,7 +249,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 							})
 						})
 					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+					layout.Stacked(func(gtx C) D {
 						return layout.Inset{
 							Top:  values.MarginPaddingMinus10,
 							Left: values.MarginPadding10,
@@ -325,7 +332,7 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
-func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *ConsensusPage) layoutDesktop(gtx C) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		return layout.Inset{
 			Left:  values.MarginPadding24,
@@ -349,37 +356,14 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						statusDropdownWidth := 0
+					return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
-							layout.Expanded(func(gtx C) D {
+							layout.Stacked(func(gtx C) D {
 								return layout.Inset{
 									Top: values.MarginPadding60,
 								}.Layout(gtx, pg.layoutContent)
 							}),
-							layout.Expanded(func(gtx C) D {
-								if pg.walletDropDown == nil {
-									return D{}
-								}
-								return layout.W.Layout(gtx, func(gtx C) D {
-									return pg.walletDropDown.Layout(gtx)
-								})
-							}),
-							layout.Expanded(func(gtx C) D {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									dropdown := pg.orderDropDown.Layout(gtx)
-									statusDropdownWidth = dropdown.Size.X
-									return dropdown
-								})
-							}),
-							layout.Expanded(func(gtx C) D {
-								if pg.statusDropDown.Reversed() {
-									pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
-								} else {
-									pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
-								}
-								return layout.Inset{Right: gtx.Metric.PxToDp(statusDropdownWidth)}.Layout(gtx, pg.statusDropDown.Layout)
-							}),
+							layout.Expanded(pg.dropdownLayout),
 						)
 					})
 				}),
@@ -388,7 +372,36 @@ func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *ConsensusPage) dropdownLayout(gtx C) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if pg.walletDropDown == nil {
+						return D{}
+					}
+					return layout.W.Layout(gtx, pg.walletDropDown.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(pg.statusDropDown.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.E.Layout(gtx, func(gtx C) D {
+								dropdown := pg.orderDropDown.Layout(gtx)
+								return dropdown
+							})
+						}),
+					)
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Separator().Layout)
+		}),
+	)
+}
+
+func (pg *ConsensusPage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

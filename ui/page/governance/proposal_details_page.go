@@ -13,6 +13,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
+	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -57,8 +58,10 @@ type ProposalDetails struct {
 	vote            cryptomaterial.Button
 	backButton      cryptomaterial.IconButton
 
-	sourceWalletSelector *components.WalletAndAccountSelector
-	selectedWallet       sharedW.Asset
+	assetWallets []sharedW.Asset
+
+	walletDropDown    *cryptomaterial.DropDown
+	selectedDCRWallet sharedW.Asset
 
 	voteBar            *components.VoteBar
 	loadingDescription bool
@@ -112,21 +115,23 @@ func (pg *ProposalDetails) OnNavigatedTo() {
 }
 
 func (pg *ProposalDetails) initWalletSelector() {
-	// Source wallet picker
-	pg.sourceWalletSelector = components.NewWalletAndAccountSelector(pg.Load, libutils.DCRWalletAsset).
-		Title(values.String(values.StrSelectWallet))
-	pg.sourceWalletSelector.SetHideBalance(true)
-	if pg.sourceWalletSelector.SelectedWallet() != nil {
-		pg.selectedWallet = pg.sourceWalletSelector.SelectedWallet()
+	pg.assetWallets = pg.AssetsManager.AllDCRWallets()
+
+	items := []cryptomaterial.DropDownItem{}
+	for _, wal := range pg.assetWallets {
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
+		}
+		items = append(items, item)
 	}
 
-	pg.sourceWalletSelector.SetLeftAlignment(true)
-	pg.sourceWalletSelector.SetBorder(false)
-
-	pg.sourceWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
-		pg.selectedWallet = selectedWallet
-		//TODO: implement when selected wallet
-	})
+	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 1, 0, false)
+	if len(pg.assetWallets) > 0 {
+		pg.selectedDCRWallet = pg.assetWallets[0].(*dcr.Asset)
+	}
+	pg.walletDropDown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -135,6 +140,11 @@ func (pg *ProposalDetails) initWalletSelector() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) HandleUserInteractions() {
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
+		//TODO: implement when selected wallet
+	}
+
 	for token := range pg.proposalItems {
 		for location, clickable := range pg.proposalItems[token].clickables {
 			if clickable.Clicked() {
@@ -410,23 +420,25 @@ func (pg *ProposalDetails) getCategoryText() string {
 func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 	proposal := pg.proposal
 
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-			return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+	return layout.Stack{}.Layout(gtx,
+		layout.Stacked(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
+					layout.Rigid(pg.layoutProposalVoteBar),
+					layout.Rigid(func(gtx C) D {
+						if proposal.Category != libwallet.ProposalCategoryActive {
+							return D{}
+						}
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
+							layout.Rigid(pg.layoutProposalVoteAction),
+						)
+					}),
+				)
+			})
 		}),
-		layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
-		layout.Rigid(pg.layoutProposalVoteBar),
-		layout.Rigid(func(gtx C) D {
-			if proposal.Category != libwallet.ProposalCategoryActive {
-				return D{}
-			}
-
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
-				layout.Rigid(pg.layoutProposalVoteAction),
-			)
-		}),
+		layout.Expanded(pg.walletDropDown.Layout),
 	)
 }
 
@@ -589,8 +601,8 @@ func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
 		Body: func(gtx C) D {
 			return pg.layoutDescription(gtx)
 		},
-		ExtraHeader: func(gtx layout.Context) layout.Dimensions {
-			return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
+		ExtraHeader: func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding16, Top: values.MarginPadding16}.Layout(gtx, pg.layoutTitle)
 		},
 		ExtraItem: pg.tempRightHead,
 		Extra: func(gtx C) D {

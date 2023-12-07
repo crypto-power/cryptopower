@@ -134,7 +134,9 @@ func (pg *TransactionsPage) initWalletSelector() {
 		}
 
 		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
-		pg.walletDropDown.ClearSelection("Select a wallet")
+		pg.walletDropDown.ClearWithSelectedItem(cryptomaterial.DropDownItem{
+			Text: values.String(values.StrSelectWallet),
+		})
 	} else {
 		pg.selectedWallet = pg.assetWallets[0]
 	}

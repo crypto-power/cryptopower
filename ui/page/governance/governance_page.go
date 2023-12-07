@@ -137,10 +137,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if !pg.isGovernanceAPIAllowed() {
 		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
-
-	return components.UniformPadding(gtx, func(gtx C) D {
-		return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
-	})
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {

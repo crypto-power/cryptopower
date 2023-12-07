@@ -101,6 +101,7 @@ func (t *Theme) SearchEditor(editor *widget.Editor, hint string, icon *widget.Ic
 	e.editorIcon = NewIcon(icon)
 	e.editorIcon.Color = t.Color.Gray1
 	e.editorIconButton.IconButtonStyle.Icon = icon
+	e.alignEditorIconEnd = false
 	e.IsTitleLabel = false
 	return e
 }

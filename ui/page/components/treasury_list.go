@@ -32,10 +32,10 @@ func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 				layout.Rigid(func(gtx C) D {
 					lbl := l.Theme.Label(values.TextSize18, values.String(values.StrSetTreasuryPolicy))
 					lbl.Font.Weight = font.SemiBold
-					return layout.Inset{Top: values.MarginPadding15, Right: values.MarginPadding16}.Layout(gtx, lbl.Layout)
+					return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding10, Left: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layoutItems(l, treasuryItem)...)
 					})
 				}),

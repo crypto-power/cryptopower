@@ -22,7 +22,10 @@ type ProposalItem struct {
 
 func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+	return layout.Inset{
+		Top:    values.MarginPadding8,
+		Bottom: values.MarginPadding8,
+	}.Layout(gtx, func(gtx C) D {
 		proposal := prop.Proposal
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

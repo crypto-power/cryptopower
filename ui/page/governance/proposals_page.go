@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -105,6 +106,11 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	} else {
 		pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
 	}
+	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.Width = values.MarginPadding100
+	settingCommonDropdown(pg.Theme, pg.statusDropDown)
+	settingCommonDropdown(pg.Theme, pg.orderDropDown)
 
 	pg.initWalletSelector()
 
@@ -272,7 +278,17 @@ func (pg *ProposalsPage) initWalletSelector() {
 	}
 
 	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 2, 0, false)
-	pg.walletDropDown.ClearSelection(values.String(values.StrSelectWallet))
+	pg.walletDropDown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.walletDropDown)
+}
+
+func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
+	drodown.FontWeight = font.SemiBold
+	drodown.Hoverable = false
+	drodown.SelectedItemIconColor = &t.Color.Primary
+	drodown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	drodown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	drodown.Background = &t.Color.Surface
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -288,49 +304,63 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 
 func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.layoutSectionHeader),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{
-					Top:   values.MarginPadding10,
-					Right: values.MarginPadding24,
-					Left:  values.MarginPadding24,
-				}.Layout(gtx, func(gtx C) D {
-					statusDropdownWidth := 0
-					return layout.Stack{}.Layout(gtx,
-						layout.Expanded(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding120}.Layout(gtx, pg.layoutContent)
-						}),
-						layout.Expanded(func(gtx C) D {
-							return layout.Inset{
-								Top:    values.MarginPadding60,
-								Bottom: values.MarginPadding20,
-							}.Layout(gtx, pg.searchEditor.Layout)
-						}),
-						layout.Expanded(func(gtx C) D {
-							if pg.walletDropDown == nil {
-								return D{}
-							}
-							return layout.W.Layout(gtx, func(gtx C) D {
-								return pg.walletDropDown.Layout(gtx)
-							})
-						}),
-						layout.Expanded(func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								dropdown := pg.orderDropDown.Layout(gtx)
-								statusDropdownWidth = dropdown.Size.X
-								return dropdown
-							})
-						}),
-						layout.Expanded(func(gtx C) D {
-							return layout.Inset{Right: gtx.Metric.PxToDp(statusDropdownWidth)}.Layout(gtx, pg.statusDropDown.Layout)
-						}),
-					)
-				})
-			}),
-		)
+		inset := layout.Inset{
+			Top:    values.MarginPadding16,
+			Right:  values.MarginPadding24,
+			Left:   values.MarginPadding24,
+			Bottom: values.MarginPadding16,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.layoutSectionHeader),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.Inset{
+						Top: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return layout.Stack{}.Layout(gtx,
+							layout.Expanded(func(gtx C) D {
+								return layout.Inset{Top: values.MarginPadding150}.Layout(gtx, pg.layoutContent)
+							}),
+							layout.Expanded(func(gtx C) D {
+								return layout.Inset{
+									Top: values.MarginPadding50,
+								}.Layout(gtx, pg.searchEditor.Layout)
+							}),
+							layout.Expanded(func(gtx C) D {
+								return pg.dropdownLayout(gtx)
+							}),
+						)
+					})
+				}),
+			)
+		})
 	})
+}
 
+func (pg *ProposalsPage) dropdownLayout(gtx layout.Context) layout.Dimensions {
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if pg.walletDropDown == nil {
+				return D{}
+			}
+			return layout.W.Layout(gtx, func(gtx C) D {
+				return pg.walletDropDown.Layout(gtx)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.statusDropDown.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						dropdown := pg.orderDropDown.Layout(gtx)
+						return dropdown
+					})
+				}),
+			)
+		}),
+	)
 }
 
 func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -342,7 +372,7 @@ func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
 			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 				return layout.Stack{}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding60}.Layout(gtx, pg.layoutContent)
+						return layout.Inset{Top: values.MarginPadding70}.Layout(gtx, pg.layoutContent)
 					}),
 					layout.Expanded(func(gtx C) D {
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -375,22 +405,23 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 		layout.Expanded(func(gtx C) D {
 			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-						if pg.scroll.ItemsCount() <= 0 {
-							isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
-							return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
-						}
-						proposalItems := pg.scroll.FetchedData()
-						return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return components.ProposalsList(gtx, pg.Load, proposalItems[i])
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.Theme.Separator().Layout(gtx)
-								}),
-							)
-						})
+					if pg.scroll.ItemsCount() <= 0 {
+						isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
+						return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
+					}
+					proposalItems := pg.scroll.FetchedData()
+					return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return components.ProposalsList(gtx, pg.Load, proposalItems[i])
+							}),
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{
+									Top:    values.MarginPadding7,
+									Bottom: values.MarginPadding7,
+								}.Layout(gtx, pg.Theme.Separator().Layout)
+							}),
+						)
 					})
 				})
 			})
@@ -423,47 +454,41 @@ func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
-	return layout.Inset{Left: values.MarginPadding24,
-		Top:   values.MarginPadding16,
-		Right: values.MarginPadding24,
-	}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+				}),
+			)
+		}),
+		layout.Flexed(1, func(gtx C) D {
+			body := func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+						var text string
+						if isProposalSyncing {
+							text = values.String(values.StrSyncingState)
+						} else if pg.syncCompleted {
+							text = values.String(values.StrUpdated)
+						} else {
+							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
+						}
+
+						lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
+						lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+						if pg.syncCompleted {
+							lastUpdatedInfo.Color = pg.Theme.Color.Success
+						}
+
+						return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 					}),
 				)
-			}),
-			layout.Flexed(1, func(gtx C) D {
-				body := func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							var text string
-							if isProposalSyncing {
-								text = values.String(values.StrSyncingState)
-							} else if pg.syncCompleted {
-								text = values.String(values.StrUpdated)
-							} else {
-								text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
-							}
-
-							lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
-							lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-							if pg.syncCompleted {
-								lastUpdatedInfo.Color = pg.Theme.Color.Success
-							}
-
-							return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
-						}),
-					)
-				}
-				return layout.E.Layout(gtx, body)
-			}),
-		)
-	})
-
+			}
+			return layout.E.Layout(gtx, body)
+		}),
+	)
 }
 
 func (pg *ProposalsPage) listenForSyncNotifications() {

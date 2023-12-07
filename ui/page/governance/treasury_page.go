@@ -121,6 +121,8 @@ func (pg *TreasuryPage) initWalletSelector() {
 		pg.selectedDCRWallet = pg.assetWallets[0].(*dcr.Asset)
 	}
 
+	pg.walletDropDown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -190,12 +192,6 @@ func (pg *TreasuryPage) FetchPolicies() {
 	pg.ParentWindow().Reload()
 }
 
-func (pg *TreasuryPage) lineSeparator(inset layout.Inset) layout.Widget {
-	return func(gtx C) D {
-		return inset.Layout(gtx, pg.Theme.Separator().Layout)
-	}
-}
-
 func (pg *TreasuryPage) Layout(gtx C) D {
 	// If proposals API is not allowed, display the overlay with the message.
 	overlay := layout.Stacked(func(gtx C) D { return D{} })
@@ -239,30 +235,36 @@ func (pg *TreasuryPage) layout(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
 							layout.Expanded(func(gtx C) D {
 								return layout.Inset{
 									Top: values.MarginPadding60,
 								}.Layout(gtx, pg.layoutContent)
 							}),
-							layout.Expanded(pg.lineSeparator(layout.Inset{Top: values.DP55})),
-							layout.Expanded(func(gtx C) D {
-								if pg.walletDropDown == nil {
-									return D{}
-								}
-								return layout.W.Layout(gtx, func(gtx C) D {
-									gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding200)
-									return pg.walletDropDown.Layout(gtx)
-
-								})
-							}),
+							layout.Expanded(pg.dropdownLayout),
 						)
 					})
 				}),
 			)
 		})
 	})
+}
+
+func (pg *TreasuryPage) dropdownLayout(gtx layout.Context) layout.Dimensions {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if pg.walletDropDown == nil {
+				return D{}
+			}
+			return layout.W.Layout(gtx, func(gtx C) D {
+				return pg.walletDropDown.Layout(gtx)
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Separator().Layout)
+		}),
+	)
 }
 
 func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
@@ -285,35 +287,23 @@ func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
 }
 
 func (pg *TreasuryPage) layoutContent(gtx C) D {
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			list := layout.List{Axis: layout.Vertical}
-			return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
-				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return list.Layout(gtx, len(pg.treasuryItems), func(gtx C, i int) D {
-						return cryptomaterial.LinearLayout{
-							Orientation: layout.Vertical,
-							Width:       cryptomaterial.MatchParent,
-							Height:      cryptomaterial.WrapContent,
-							Background:  pg.Theme.Color.Surface,
-							Direction:   layout.W,
-							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-							Padding:     layout.UniformInset(values.MarginPadding15),
-							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
-						}.
-							Layout(gtx,
-								layout.Rigid(pg.layoutPiKey),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-										return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
-									})
-								}),
-							)
-					})
+	return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+		list := layout.List{Axis: layout.Vertical}
+		return pg.Theme.List(pg.listContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return list.Layout(gtx, len(pg.treasuryItems), func(gtx C, i int) D {
+				return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(pg.layoutPiKey),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
+								return components.TreasuryItemWidget(gtx, pg.Load, pg.treasuryItems[i])
+							})
+						}),
+					)
 				})
 			})
-		}),
-	)
+		})
+	})
 }
 
 func (pg *TreasuryPage) layoutPiKey(gtx C) D {
@@ -325,7 +315,7 @@ func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			lbl := pg.Theme.Label(values.TextSize18, values.String(values.StrPiKey))
 			lbl.Font.Weight = font.SemiBold
-			return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, lbl.Layout)
+			return lbl.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
