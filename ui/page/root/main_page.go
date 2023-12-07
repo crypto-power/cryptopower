@@ -429,7 +429,7 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 							default:
 								return swmp.CurrentPage().Layout(gtx)
 							}
-						})
+						}, swmp.Load.IsMobileView())
 					})
 				}),
 			)

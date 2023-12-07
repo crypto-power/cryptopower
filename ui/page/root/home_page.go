@@ -261,6 +261,8 @@ func (hp *HomePage) HandleUserInteractions() {
 			switch item.Title {
 			case values.String(values.StrOverview):
 				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+			case values.String(values.StrTransactions):
+				pg = transaction.NewTransactionsPage(hp.Load, nil)
 			case values.String(values.StrWallets):
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
@@ -456,6 +458,13 @@ func (hp *HomePage) initBottomNavItems() {
 				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
 				Title:         values.String(values.StrOverview),
 				PageID:        OverviewPageID,
+			},
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.TransactionsIcon,
+				ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
+				Title:         values.String(values.StrTransactions),
+				PageID:        transaction.TransactionsPageID,
 			},
 			{
 				Clickable:     hp.Theme.NewClickable(true),
