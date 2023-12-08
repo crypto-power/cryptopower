@@ -279,7 +279,7 @@ func (pg *CreateOrderPage) initPage() {
 	pg.scheduler.SetChecked(pg.AssetsManager.IsOrderSchedulerRunning())
 	pg.listenForNotifications()
 	pg.loadOrderConfig()
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 func (pg *CreateOrderPage) OnNavigatedFrom() {
@@ -1098,7 +1098,7 @@ func (pg *CreateOrderPage) showConfirmOrderModal() {
 
 	confirmOrderModal := newConfirmOrderModal(pg.Load, pg.orderData).
 		OnOrderCompleted(func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			successModal := modal.NewCustomModal(pg.Load).
 				Title(values.String(values.StrOrderSubmitted)).
 				SetCancelable(true).
@@ -1313,11 +1313,11 @@ func (pg *CreateOrderPage) updateExchangeConfig() {
 func (pg *CreateOrderPage) listenForNotifications() {
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
 		OnOrderCreated: func(order *instantswap.Order) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
 		OnOrderSchedulerStarted: func() {

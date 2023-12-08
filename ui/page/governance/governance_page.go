@@ -25,6 +25,8 @@ type Page struct {
 
 	modal *cryptomaterial.Modal
 
+	tab *cryptomaterial.SegmentedControl
+
 	tabCategoryList        *cryptomaterial.ClickableList
 	splashScreenInfoButton cryptomaterial.IconButton
 	enableGovernanceBtn    cryptomaterial.Button
@@ -44,6 +46,8 @@ func NewGovernancePage(l *load.Load) *Page {
 		modal:           l.Theme.ModalFloatTitle(values.String(values.StrSettings)),
 		tabCategoryList: l.Theme.NewClickableList(layout.Horizontal),
 	}
+
+	pg.tab = l.Theme.SegmentedControl(governanceTabTitles, cryptomaterial.SegmentTypeGroup)
 
 	pg.tabCategoryList.IsHoverable = false
 
@@ -109,6 +113,17 @@ func (pg *Page) HandleUserInteractions() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.HandleUserInteractions()
 	}
+
+	if pg.tab.Changed() {
+		selectedTabIdx := pg.tab.SelectedIndex()
+		if selectedTabIdx == 0 {
+			pg.Display(NewProposalsPage(pg.Load)) // Display should do nothing if the page is already displayed.
+		} else if selectedTabIdx == 1 {
+			pg.Display(NewConsensusPage(pg.Load))
+		} else {
+			pg.Display(NewTreasuryPage(pg.Load))
+		}
+	}
 }
 
 func (pg *Page) Layout(gtx C) D {
@@ -122,19 +137,7 @@ func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if !pg.isGovernanceAPIAllowed() {
 		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
-
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.layoutPageTopNav),
-			layout.Rigid(pg.layoutTabs),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
-	})
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
 }
 
 func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
@@ -215,7 +218,6 @@ func (pg *Page) layoutTabs(gtx C) D {
 
 func (pg *Page) layoutPageTopNav(gtx C) D {
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-		layout.Rigid(pg.Theme.Icons.GovernanceActiveIcon.Layout24dp),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Left: values.MarginPadding20,

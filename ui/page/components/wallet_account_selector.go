@@ -31,6 +31,10 @@ type WalletAndAccountSelector struct {
 
 	errorLabel cryptomaterial.Label
 	HideLogo   bool
+
+	hideBalance     bool
+	isLeftalignment bool
+	isHaveBoder     bool
 }
 
 type selectorModal struct {
@@ -64,6 +68,9 @@ func NewWalletAndAccountSelector(l *load.Load, assetType ...utils.AssetType) *Wa
 	ws := &WalletAndAccountSelector{
 		openSelectorDialog: l.Theme.NewClickable(true),
 		errorLabel:         l.Theme.ErrorLabel(""),
+		hideBalance:        false,
+		isLeftalignment:    false,
+		isHaveBoder:        true,
 	}
 
 	ws.selectorModal = newSelectorModal(l, assetType...).
@@ -233,6 +240,18 @@ func (ws *WalletAndAccountSelector) SetError(errMsg string) {
 	ws.errorLabel.Text = errMsg
 }
 
+func (ws *WalletAndAccountSelector) SetHideBalance(isHide bool) {
+	ws.hideBalance = isHide
+}
+
+func (ws *WalletAndAccountSelector) SetLeftAlignment(isLeft bool) {
+	ws.isLeftalignment = isLeft
+}
+
+func (ws *WalletAndAccountSelector) SetBorder(isHaveBoder bool) {
+	ws.isHaveBoder = isHaveBoder
+}
+
 func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D {
 	ws.Handle(window)
 
@@ -241,19 +260,25 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		borderColor = ws.errorLabel.Color
 	}
 
+	boder := cryptomaterial.Border{}
+
+	if ws.isHaveBoder {
+		boder = cryptomaterial.Border{
+			Width:  values.MarginPadding2,
+			Color:  borderColor,
+			Radius: cryptomaterial.Radius(8),
+		}
+	}
+
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return cryptomaterial.LinearLayout{
-						Width:   cryptomaterial.MatchParent,
-						Height:  cryptomaterial.WrapContent,
-						Padding: layout.UniformInset(values.MarginPadding12),
-						Border: cryptomaterial.Border{
-							Width:  values.MarginPadding2,
-							Color:  borderColor,
-							Radius: cryptomaterial.Radius(8),
-						},
+						Width:     cryptomaterial.MatchParent,
+						Height:    cryptomaterial.WrapContent,
+						Padding:   layout.UniformInset(values.MarginPadding12),
+						Border:    boder,
 						Clickable: ws.Clickable(),
 					}.Layout(gtx,
 						layout.Rigid(ws.setWalletLogo),
@@ -266,12 +291,15 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 									layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
 								)
 							}
-							return ws.Theme.Body1(ws.SelectedWallet().GetWalletName()).Layout(gtx)
+							return ws.Theme.SemiBoldLabel(ws.SelectedWallet().GetWalletName()).Layout(gtx)
 						}),
 						layout.Flexed(1, func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
+							dim := func(gtx C) D {
 								return layout.Flex{}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
+										if ws.hideBalance {
+											return D{}
+										}
 										if ws.accountSelector {
 											if ws.selectedAccount == nil {
 												return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)
@@ -293,7 +321,11 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 										})
 									}),
 								)
-							})
+							}
+							if ws.isLeftalignment {
+								return dim(gtx)
+							}
+							return layout.E.Layout(gtx, dim)
 						}),
 					)
 				}), layout.Rigid(func(gtx C) D {

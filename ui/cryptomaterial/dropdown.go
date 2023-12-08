@@ -41,11 +41,12 @@ type DropDown struct {
 	shadow                   *Shadow
 	expandedViewAlignment    layout.Direction
 
-	noSelectedItemText string
-	FontWeight         font.Weight
-	BorderWidth        unit.Dp
-	BorderColor        *color.NRGBA
-	Background         *color.NRGBA
+	noSelectedItem DropDownItem
+
+	FontWeight  font.Weight
+	BorderWidth unit.Dp
+	BorderColor *color.NRGBA
+	Background  *color.NRGBA
 	// SelectedItemIconColor is a custom color that will be applied to the icon
 	// use in identifying selected item when this dropdown is expanded.
 	SelectedItemIconColor        *color.NRGBA
@@ -139,9 +140,9 @@ func (d *DropDown) Selected() string {
 	return d.items[d.SelectedIndex()].Text
 }
 
-func (d *DropDown) ClearSelection(text string) {
+func (d *DropDown) ClearWithSelectedItem(item DropDownItem) {
 	d.selectedIndex = -1
-	d.noSelectedItemText = text
+	d.noSelectedItem = item
 }
 
 func (d *DropDown) SelectedIndex() int {
@@ -247,8 +248,7 @@ func (d *DropDown) collapsedAndExpandedLayout(gtx C) D {
 		return display
 	})}
 
-	// No need to display expanded view when there is only one item.
-	if d.expanded && len(d.items) > 1 {
+	if d.expanded {
 		layoutContents = append(layoutContents, layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			// Adding d.ExpandedLayoutInset.Top accounts for the the extra
 			// shift in vertical space set by d.ExpandedLayoutInset.Top to
@@ -294,10 +294,7 @@ func (d *DropDown) collapsedLayout(gtx C) D {
 			if len(d.items) > 0 && d.selectedIndex > -1 {
 				selectedItem = d.items[d.selectedIndex]
 			} else {
-				selectedItem = DropDownItem{
-					Text:             d.noSelectedItemText,
-					PreventSelection: true,
-				}
+				selectedItem = d.noSelectedItem
 			}
 
 			bodyLayout := LinearLayout{
@@ -332,8 +329,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 			if item.Icon == nil {
 				return D{}
 			}
-
-			return item.Icon.Layout24dp(gtx)
+			return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, item.Icon.Layout24dp)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			if item.DisplayFn != nil {
@@ -350,7 +346,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			if !item.PreventSelection && len(d.items) > 1 {
+			if !item.PreventSelection {
 				return d.layoutActiveIcon(gtx, index)
 			}
 			return D{}

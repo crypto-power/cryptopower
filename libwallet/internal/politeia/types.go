@@ -2,6 +2,14 @@ package politeia
 
 import "github.com/crypto-power/cryptopower/libwallet/utils"
 
+type ProposalType int
+
+const (
+	ProposalTypeNormal ProposalType = iota
+	ProposalTypeRFPProposal
+	ProposalTypeRFPSubmission
+)
+
 type Proposal struct {
 	ID               int    `storm:"id,increment"`
 	Token            string `json:"token" storm:"unique"`
@@ -24,6 +32,7 @@ type Proposal struct {
 	EligibleTickets  int32  `json:"eligibletickets"`
 	QuorumPercentage int32  `json:"quorumpercentage"`
 	PassPercentage   int32  `json:"passpercentage"`
+	Type             ProposalType
 }
 
 type ProposalOverview struct {

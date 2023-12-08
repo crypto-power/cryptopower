@@ -108,7 +108,7 @@ func (pg *TransactionsPage) OnNavigatedTo() {
 	pg.refreshAvailableTxType()
 
 	pg.listenForTxNotifications() // tx ntfn listener is stopped in OnNavigatedFrom().
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 // initWalletSelector initializes the wallet selector dropdown to enable
@@ -134,7 +134,9 @@ func (pg *TransactionsPage) initWalletSelector() {
 		}
 
 		pg.walletDropDown = pg.Theme.DropDown(items, values.WalletsDropdownGroup, false)
-		pg.walletDropDown.ClearSelection("Select a wallet")
+		pg.walletDropDown.ClearWithSelectedItem(cryptomaterial.DropDownItem{
+			Text: values.String(values.StrSelectWallet),
+		})
 	} else {
 		pg.selectedWallet = pg.assetWallets[0]
 	}
@@ -486,14 +488,14 @@ func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transactio
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
 	for pg.txTypeDropDown.Changed() {
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 		break
 	}
 
 	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
 		pg.selectedWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 		pg.refreshAvailableTxType()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	if clicked, selectedItem := pg.transactionList.ItemClicked(); clicked {
@@ -518,7 +520,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		}
 
 		pg.refreshAvailableTxType()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	}
 }
 
@@ -530,7 +532,7 @@ func (pg *TransactionsPage) listenForTxNotifications() {
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(transaction *sharedW.Transaction) {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
 	}

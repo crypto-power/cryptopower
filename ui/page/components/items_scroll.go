@@ -17,6 +17,13 @@ import (
 // isReset is used to reset the offset value.
 type ScrollFunc[T any] func(offset, pageSize int32) (data []T, count int, isReset bool, err error)
 
+type scrollDerection int
+
+const (
+	down scrollDerection = 1
+	up   scrollDerection = 2
+)
+
 type Scroll[T any] struct {
 	load      *load.Load
 	list      *widget.List
@@ -33,9 +40,12 @@ type Scroll[T any] struct {
 
 	// scrollView defines the scroll view length in pixels.
 	scrollView int
+	direction  scrollDerection
 
 	isLoadingItems bool
 	loadedAllItems bool
+
+	isHaveKeySearch bool
 
 	mu sync.RWMutex
 }
@@ -53,12 +63,17 @@ func NewScroll[T any](load *load.Load, pageSize int32, queryFunc ScrollFunc[T]) 
 		queryFunc:      queryFunc,
 		itemsCount:     -1,
 		prevListOffset: -1,
+		direction:      down,
 	}
+}
+
+func (s *Scroll[T]) SetIsHaveKeySearch(isHaveKeySearch bool) {
+	s.isHaveKeySearch = isHaveKeySearch
 }
 
 // FetchScrollData is a mutex protected fetchScrollData function. At the end of
 // the function call a window reload is triggered. Returns that latest records.
-func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) {
+func (s *Scroll[T]) FetchScrollData(isScrollUp bool, window app.WindowNavigator, isResetList bool) {
 	s.mu.Lock()
 	// s.data is not nil when moving from details page to list page.
 	if s.data != nil {
@@ -66,9 +81,16 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 		// offset will be added back so that the earlier page is recreated.
 		s.offset -= s.pageSize
 	}
+	if isResetList {
+		s.loadedAllItems = false
+		s.isLoadingItems = false
+		s.offset = 0
+		s.itemsCount = 0
+		s.data = nil
+	}
 	s.mu.Unlock()
 
-	s.fetchScrollData(isReverse, window)
+	s.fetchScrollData(isScrollUp, window)
 }
 
 // fetchScrollData fetchs the scroll data and manages data returned depending on
@@ -76,14 +98,23 @@ func (s *Scroll[T]) FetchScrollData(isReverse bool, window app.WindowNavigator) 
 // the page, all the old data is replaced by the new fetched data making it
 // easier and smoother to scroll on the UI. At the end of the function call
 // a window reload is triggered.
-func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) {
-	s.mu.Lock()
+func (s *Scroll[T]) fetchScrollData(isScrollUp bool, window app.WindowNavigator) {
+	temDirection := down
+	if isScrollUp {
+		s.direction = up
+	}
+	if s.loadedAllItems && temDirection != s.direction {
+		s.loadedAllItems = false
+	}
 
+	s.direction = temDirection
+	s.mu.Lock()
 	if s.isLoadingItems || s.loadedAllItems || s.queryFunc == nil {
+		s.mu.Unlock()
 		return
 	}
 
-	if isReverse {
+	if isScrollUp {
 		s.list.Position.Offset = s.scrollView*-1 + 1
 		s.list.Position.OffsetLast = 1
 		s.offset -= s.pageSize
@@ -96,18 +127,14 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 	}
 
 	s.isLoadingItems = true
+	itemsCountTemp := s.itemsCount
 	s.itemsCount = -1 // should trigger loading icon
 	offset := s.offset
 	tempSize := s.pageSize
 
 	s.mu.Unlock()
 
-	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize*2)
-	// Check if enough list items exists to fill the next page. If they do only query
-	// enough items to fit the current page otherwise return all the queried items.
-	if itemsLen > int(tempSize) && itemsLen%int(tempSize) == 0 {
-		items, itemsLen, isReset, err = s.queryFunc(offset, tempSize)
-	}
+	items, itemsLen, isReset, err := s.queryFunc(offset, tempSize)
 
 	s.mu.Lock()
 
@@ -116,17 +143,20 @@ func (s *Scroll[T]) fetchScrollData(isReverse bool, window app.WindowNavigator) 
 		window.ShowModal(errModal)
 		s.isLoadingItems = false
 		s.mu.Unlock()
-
 		return
 	}
 
-	if itemsLen > int(tempSize) {
+	if itemsLen < int(tempSize) || itemsLen == 0 {
 		// Since this is the last page set of items, prevent further scroll down queries.
 		s.loadedAllItems = true
 	}
 
-	s.data = items
-	s.itemsCount = itemsLen
+	if itemsLen > 0 {
+		s.data = items
+		s.itemsCount = itemsLen
+	} else {
+		s.itemsCount = itemsCountTemp
+	}
 	s.isLoadingItems = false
 	s.mu.Unlock()
 

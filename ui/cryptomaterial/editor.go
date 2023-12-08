@@ -43,7 +43,10 @@ type Editor struct {
 	// isPassword if true, displays the show and hide button.
 	isPassword bool
 	// If showEditorIcon is true, displays the editor widget Icon of choice
-	showEditorIcon bool
+	showEditorIcon     bool
+	alignEditorIconEnd bool
+	background         color.NRGBA
+	editorCard         Card
 
 	// isEditorButtonClickable passes a clickable icon button if true and regular icon if false
 	isEditorButtonClickable bool
@@ -92,6 +95,17 @@ func (t *Theme) IconEditor(editor *widget.Editor, hint string, icon *widget.Icon
 	return e
 }
 
+func (t *Theme) SearchEditor(editor *widget.Editor, hint string, icon *widget.Icon) Editor {
+	e := t.Editor(editor, hint)
+	e.showEditorIcon = true
+	e.editorIcon = NewIcon(icon)
+	e.editorIcon.Color = t.Color.Gray1
+	e.editorIconButton.IconButtonStyle.Icon = icon
+	e.alignEditorIconEnd = false
+	e.IsTitleLabel = false
+	return e
+}
+
 func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 	errorLabel := t.Caption("")
 	errorLabel.Color = t.Color.Danger
@@ -104,12 +118,15 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 
 	m0 := unit.Dp(0)
 
-	return Editor{
+	newEditor := Editor{
 		t:            t,
 		EditorStyle:  m,
 		TitleLabel:   t.Body2(""),
 		IsTitleLabel: true,
 		Bordered:     true,
+
+		alignEditorIconEnd: true,
+		background:         t.Color.Surface,
 
 		errorLabel:        errorLabel,
 		requiredErrorText: "Field is required",
@@ -135,9 +152,13 @@ func (t *Theme) Editor(editor *widget.Editor, hint string) Editor {
 		},
 		CustomButton: t.Button(""),
 	}
+
+	newEditor.editorCard = Card{Color: newEditor.background}
+	newEditor.editorCard.Radius = Radius(8)
+	return newEditor
 }
 
-func (e Editor) Layout(gtx layout.Context) layout.Dimensions {
+func (e Editor) Layout(gtx C) D {
 	e.handleEvents()
 
 	if e.Editor.Len() > 0 {
@@ -161,44 +182,40 @@ func (e Editor) Layout(gtx layout.Context) layout.Dimensions {
 	}
 
 	return layout.UniformInset(e.m2).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Stacked(func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return e.editorLayout(gtx)
-							}),
-							layout.Rigid(func(gtx C) D {
-								if e.errorLabel.Text != "" {
-									inset := layout.Inset{
-										Top:  e.m2,
-										Left: e.m5,
+		return e.editorCard.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Stack{}.Layout(gtx,
+						layout.Stacked(func(gtx C) D {
+							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+								layout.Rigid(e.editorLayout),
+								layout.Rigid(func(gtx C) D {
+									if e.errorLabel.Text != "" {
+										inset := layout.Inset{
+											Top:  e.m2,
+											Left: e.m5,
+										}
+										return inset.Layout(gtx, e.errorLabel.Layout)
 									}
-									return inset.Layout(gtx, func(gtx C) D {
-										return e.errorLabel.Layout(gtx)
-									})
-								}
-								return layout.Dimensions{}
-							}),
-						)
-					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-						if e.IsTitleLabel {
-							return layout.Inset{
-								Top:  values.MarginPaddingMinus10,
-								Left: values.MarginPadding10,
-							}.Layout(gtx, func(gtx C) D {
-								return Card{Color: e.t.Color.Surface}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-									return e.TitleLabel.Layout(gtx)
+									return D{}
+								}),
+							)
+						}),
+						layout.Stacked(func(gtx C) D {
+							if e.IsTitleLabel {
+								return layout.Inset{
+									Top:  values.MarginPaddingMinus10,
+									Left: values.MarginPadding10,
+								}.Layout(gtx, func(gtx C) D {
+									return Card{Color: e.t.Color.Surface}.Layout(gtx, e.TitleLabel.Layout)
 								})
-							})
-						}
-						return layout.Dimensions{}
-					}),
-				)
-			}),
-		)
+							}
+							return D{}
+						}),
+					)
+				}),
+			)
+		})
 	})
 }
 
@@ -212,17 +229,47 @@ func (e Editor) editorLayout(gtx C) D {
 				Left:   values.MarginPadding12,
 				Right:  values.MarginPadding12,
 			}
-			return inset.Layout(gtx, func(gtx C) D {
-				return e.editor(gtx)
-			})
+			return inset.Layout(gtx, e.editor)
 		})
 	}
 
-	return e.editor(gtx)
+	inset := layout.Inset{
+		Top:    values.MarginPadding3,
+		Bottom: values.MarginPadding3,
+		Left:   values.MarginPadding12,
+		Right:  values.MarginPadding12,
+	}
+
+	return inset.Layout(gtx, e.editor)
 }
 
-func (e Editor) editor(gtx layout.Context) layout.Dimensions {
+func (e Editor) layoutIconEditor(gtx C) D {
+	inset := layout.Inset{
+		Top: e.m2,
+	}
+
+	if e.alignEditorIconEnd {
+		inset.Left = e.m5
+	} else {
+		inset.Right = e.m5
+	}
+
+	return inset.Layout(gtx, func(gtx C) D {
+		if e.isEditorButtonClickable {
+			return e.editorIconButton.Layout(gtx)
+		}
+		return e.editorIcon.Layout(gtx, unit.Dp(25))
+	})
+}
+
+func (e Editor) editor(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if e.showEditorIcon && !e.alignEditorIconEnd {
+				return e.layoutIconEditor(gtx)
+			}
+			return D{}
+		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -235,17 +282,8 @@ func (e Editor) editor(gtx layout.Context) layout.Dimensions {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
-			if e.showEditorIcon {
-				inset := layout.Inset{
-					Top:  e.m2,
-					Left: e.m5,
-				}
-				return inset.Layout(gtx, func(gtx C) D {
-					if e.isEditorButtonClickable {
-						return e.editorIconButton.Layout(gtx)
-					}
-					return e.editorIcon.Layout(gtx, unit.Dp(25))
-				})
+			if e.showEditorIcon && e.alignEditorIconEnd {
+				return e.layoutIconEditor(gtx)
 			} else if e.isPassword {
 				inset := layout.Inset{
 					Top:  e.m2,
@@ -260,7 +298,7 @@ func (e Editor) editor(gtx layout.Context) layout.Dimensions {
 					return e.showHidePassword.Layout(gtx)
 				})
 			}
-			return layout.Dimensions{}
+			return D{}
 		}),
 		layout.Rigid(func(gtx C) D {
 			if e.HasCustomButton {
@@ -274,7 +312,7 @@ func (e Editor) editor(gtx layout.Context) layout.Dimensions {
 					return e.CustomButton.Layout(gtx)
 				})
 			}
-			return layout.Dimensions{}
+			return D{}
 		}),
 	)
 }
@@ -293,7 +331,7 @@ func (e Editor) handleEvents() {
 	}
 }
 
-func (re RestoreEditor) Layout(gtx layout.Context) layout.Dimensions {
+func (re RestoreEditor) Layout(gtx C) D {
 	width := int(gtx.Metric.PxPerDp * 2.0)
 	height := int(gtx.Metric.PxPerDp * float32(re.height))
 	l := re.t.SeparatorVertical(height, width)
@@ -307,14 +345,10 @@ func (re RestoreEditor) Layout(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding40)
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return re.TitleLabel.Layout(gtx)
-				})
+				return layout.Center.Layout(gtx, re.TitleLabel.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: unit.Dp(-3), Right: unit.Dp(5)}.Layout(gtx, func(gtx C) D {
-					return l.Layout(gtx)
-				})
+				return layout.Inset{Left: unit.Dp(-3), Right: unit.Dp(5)}.Layout(gtx, l.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				edit := re.Edit.Layout(gtx)

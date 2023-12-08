@@ -1,6 +1,7 @@
 package politeia
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,6 +17,12 @@ type politeiaClient struct {
 	version *www.VersionReply
 	policy  *www.PolicyReply
 	cookies []*http.Cookie
+}
+
+type metadataProposal struct {
+	Name   string `json:"name"`
+	LinkBy int64  `json:"linkby"`
+	LinkTo string `json:"linkto"`
 }
 
 const (
@@ -104,6 +111,13 @@ func (c *politeiaClient) batchProposals(tokens []string) ([]Proposal, error) {
 			PublishedAt: proposalRecord.PublishedAt,
 		}
 
+		for _, meta := range proposalRecord.Metadata {
+			if meta.Hint == "proposalmetadata" {
+				proposal.Type = getProposalType(meta.Payload)
+				break
+			}
+		}
+
 		for _, file := range proposalRecord.Files {
 			if file.Name == "index.md" {
 				proposal.IndexFile = file.Payload
@@ -115,6 +129,28 @@ func (c *politeiaClient) batchProposals(tokens []string) ([]Proposal, error) {
 	}
 
 	return proposals, nil
+}
+
+func getProposalType(payload string) ProposalType {
+	decodedBytes, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		fmt.Println("error decoding proposalmetadata:", err)
+		return ProposalTypeNormal
+	}
+
+	var meta metadataProposal
+	err = json.Unmarshal(decodedBytes, &meta)
+	if err != nil {
+		log.Error("error unmarshalling metadataProposal:", err)
+	}
+
+	if meta.LinkTo != "" {
+		return ProposalTypeRFPSubmission
+	} else if meta.LinkBy != 0 {
+		return ProposalTypeRFPProposal
+	} else {
+		return ProposalTypeNormal
+	}
 }
 
 func (c *politeiaClient) proposalDetails(token string) (*www.ProposalDetailsReply, error) {
@@ -133,6 +169,16 @@ func (c *politeiaClient) tokenInventory() (*www.TokenInventoryReply, error) {
 	var tokenInventoryReply www.TokenInventoryReply
 
 	err := c.makeRequest(http.MethodGet, apiPath, www.RouteTokenInventory, nil, &tokenInventoryReply)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tokenInventoryReply, nil
+}
+
+func (c *politeiaClient) getInventory() (*www.TokenInventoryReply, error) {
+	var tokenInventoryReply www.TokenInventoryReply
+	err := c.makeRequest(http.MethodGet, apiPath, tkv1.RouteInventory, nil, &tokenInventoryReply)
 	if err != nil {
 		return nil, err
 	}

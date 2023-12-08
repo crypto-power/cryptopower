@@ -73,7 +73,7 @@ func (pg *OrderHistoryPage) ID() string {
 
 func (pg *OrderHistoryPage) OnNavigatedTo() {
 	pg.listenForSyncNotifications() // listener stopped in OnNavigatedFrom().
-	go pg.scroll.FetchScrollData(false, pg.ParentWindow())
+	go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 }
 
 func (pg *OrderHistoryPage) OnNavigatedFrom() {
@@ -82,7 +82,7 @@ func (pg *OrderHistoryPage) OnNavigatedFrom() {
 
 func (pg *OrderHistoryPage) HandleUserInteractions() {
 	if pg.statusDropdown.Changed() {
-		pg.scroll.FetchScrollData(false, pg.ParentWindow())
+		pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 	}
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
@@ -278,7 +278,7 @@ func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 func (pg *OrderHistoryPage) listenForSyncNotifications() {
 	orderNotificationListener := &instantswap.OrderNotificationListener{
 		OnExchangeOrdersSynced: func() {
-			pg.scroll.FetchScrollData(false, pg.ParentWindow())
+			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
 			pg.ParentWindow().Reload()
 		},
 	}

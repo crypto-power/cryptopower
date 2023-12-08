@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"decred.org/dcrwallet/v3/errors"
@@ -90,28 +91,24 @@ func (p *Politeia) saveOrOverwiteProposal(proposal *Proposal) error {
 }
 
 // GetProposalsRaw fetches and returns a proposals from the db
-func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFirst bool) ([]Proposal, error) {
-	return p.getProposalsRaw(category, offset, limit, newestFirst, false)
+func (p *Politeia) GetProposalsRaw(category int32, offset, limit int32, newestFirst bool, key string) ([]Proposal, error) {
+	return p.getProposalsRaw(category, offset, limit, newestFirst, false, key)
 }
 
-func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool) ([]Proposal, error) {
-	var query storm.Query
-	switch category {
-	case ProposalCategoryAll:
-
+func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFirst bool, skipAbandoned bool, searchPhrase string) ([]Proposal, error) {
+	searchPhrase = strings.TrimSpace(strings.ToLower(searchPhrase))
+	matcher := q.Eq("Category", category)
+	if category == ProposalCategoryAll {
 		if skipAbandoned {
-			query = p.db.Select(
-				q.Not(q.Eq("Category", ProposalCategoryAbandoned)),
-			)
+			matcher = q.Not(q.Eq("Category", ProposalCategoryAbandoned))
 		} else {
-			query = p.db.Select(
-				q.True(),
-			)
+			matcher = q.True()
 		}
-	default:
-		query = p.db.Select(
-			q.Eq("Category", category),
-		)
+	}
+
+	query := p.db.Select(matcher)
+	if searchPhrase != "" {
+		query = p.db.Select(matcher, q.Re("Name", "(?i)"+searchPhrase))
 	}
 
 	if offset > 0 {
@@ -139,7 +136,7 @@ func (p *Politeia) getProposalsRaw(category int32, offset, limit int32, newestFi
 
 // GetProposals returns the result of GetProposalsRaw as a JSON string
 func (p *Politeia) GetProposals(category int32, offset, limit int32, newestFirst bool) (string, error) {
-	result, err := p.GetProposalsRaw(category, offset, limit, newestFirst)
+	result, err := p.GetProposalsRaw(category, offset, limit, newestFirst, "")
 	if err != nil {
 		return "", err
 	}

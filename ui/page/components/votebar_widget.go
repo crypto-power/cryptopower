@@ -12,11 +12,8 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -36,6 +33,8 @@ type VoteBar struct {
 	publishedAt int64
 	numComment  int32
 
+	isDisableInfoTitle bool
+
 	yesColor color.NRGBA
 	noColor  color.NRGBA
 
@@ -44,6 +43,8 @@ type VoteBar struct {
 
 	legendIcon *cryptomaterial.Icon
 	infoButton cryptomaterial.IconButton
+
+	BottomExtra layout.Widget
 }
 
 var voteBarThumbWidth = 2
@@ -75,6 +76,11 @@ func (v *VoteBar) SetYesNoVoteParams(yesVotes, noVotes float32) *VoteBar {
 	return v
 }
 
+func (v *VoteBar) SetDisableInfoTitle(isDisable bool) *VoteBar {
+	v.isDisableInfoTitle = isDisable
+	return v
+}
+
 func (v *VoteBar) SetVoteValidityParams(eligibleVotes, requiredPercentage, passPercentage float32) *VoteBar {
 	v.eligibleVotes = eligibleVotes
 	v.passPercentage = passPercentage
@@ -88,6 +94,11 @@ func (v *VoteBar) SetProposalDetails(numComment int32, publishedAt int64, token 
 	v.publishedAt = publishedAt
 	v.token = token
 
+	return v
+}
+
+func (v *VoteBar) SetBottomLayout(lay layout.Widget) *VoteBar {
+	v.BottomExtra = lay
 	return v
 }
 
@@ -109,7 +120,7 @@ func (v *VoteBar) votebarLayout(gtx C) D {
 
 	// progressScale represent the different progress bar layers
 	progressScale := func(width int, color color.NRGBA, layer int) layout.Dimensions {
-		maxHeight := values.MarginPadding8
+		maxHeight := values.MarginPadding17
 		rW, rE = 0, 0
 		if layer == 2 {
 			if width >= progressBarWidth {
@@ -192,7 +203,7 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 		},
 		Max: image.Point{
 			X: int(thumbLeftPos) + voteBarThumbWidth,
-			Y: 45,
+			Y: gtx.Dp(24),
 		},
 	}
 	defer clip.Rect(rect).Push(gtx.Ops).Pop()
@@ -204,7 +215,7 @@ func (v *VoteBar) requiredYesVotesIndicator(gtx C) D {
 	}
 }
 
-func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
+func (v *VoteBar) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
@@ -220,8 +231,14 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 								return v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
 							}),
 							layout.Flexed(1, func(gtx C) D {
+								if v.isDisableInfoTitle {
+									return D{}
+								}
+
 								return layout.E.Layout(gtx, func(gtx C) D {
-									return v.layoutInfo(window, gtx)
+									lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
+									lb.Font.Weight = font.SemiBold
+									return lb.Layout(gtx)
 								})
 							}),
 						)
@@ -229,25 +246,17 @@ func (v *VoteBar) Layout(window app.WindowNavigator, gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.votebarLayout)
 					}),
+
+					layout.Rigid(func(gtx C) D {
+						if v.BottomExtra == nil {
+							return D{}
+						}
+						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.BottomExtra)
+					}),
 				)
 			})
 		}),
 	)
-}
-
-func (v *VoteBar) infoButtonModal() *modal.InfoModal {
-	text1 := values.StringF(values.StrTotalVotes, v.totalVotes)
-	text2 := values.StringF(values.StrQuorumRequirement, (v.requiredPercentage/100)*v.eligibleVotes)
-	text3 := values.StringF(values.StrDiscussions, v.numComment)
-	text4 := values.StringF(values.StrPublished, utils.FormatUTCTime(v.publishedAt))
-	text5 := values.StringF(values.StrToken, v.token)
-
-	bodyText := fmt.Sprintf("%s\n %v\n %s\n %s\n %s", text1, text2, text3, text4, text5)
-	return modal.NewCustomModal(v.Load).
-		Title(values.String(values.StrProposalVoteDetails)).
-		Body(bodyText).
-		SetCancelable(true).
-		SetPositiveButtonText(values.String(values.StrGotIt))
 }
 
 func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, col color.NRGBA) D {
@@ -276,20 +285,4 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 			}),
 		)
 	})
-}
-
-func (v *VoteBar) layoutInfo(window app.WindowNavigator, gtx C) D {
-	dims := layout.Flex{}.Layout(gtx,
-		layout.Rigid(v.Theme.Body2(values.StringF(values.StrTotalVotesReverse, v.totalVotes)).Layout),
-		layout.Rigid(func(gtx C) D {
-			if v.infoButton.Button.Clicked() {
-				window.ShowModal(v.infoButtonModal())
-			}
-			return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-				return v.infoButton.Layout(gtx)
-			})
-		}),
-	)
-
-	return dims
 }

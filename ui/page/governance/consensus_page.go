@@ -14,6 +14,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
+	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -33,7 +34,7 @@ type ConsensusPage struct {
 	// and the root WindowNavigator.
 	*app.GenericPageModal
 
-	// TODO: Currently always nil. Implement a dcr wallet selector.
+	assetWallets      []sharedW.Asset
 	selectedDCRWallet *dcr.Asset
 
 	consensusItems []*components.ConsensusItem
@@ -44,7 +45,9 @@ type ConsensusPage struct {
 	copyRedirectURL     *cryptomaterial.Clickable
 	redirectIcon        *cryptomaterial.Image
 
+	orderDropDown  *cryptomaterial.DropDown
 	statusDropDown *cryptomaterial.DropDown
+	walletDropDown *cryptomaterial.DropDown
 	consensusList  *cryptomaterial.ClickableList
 
 	infoButton            cryptomaterial.IconButton
@@ -73,6 +76,11 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
 
+	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrNewest)},
+		{Text: values.String(values.StrOldest)},
+	}, values.ConsensusDropdownGroup, 1, 10, true)
+
 	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUpcoming)},
@@ -80,14 +88,20 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 		{Text: values.String(values.StrFailed)},
 		{Text: values.String(values.StrLockedIn)},
 		{Text: values.String(values.StrFinished)},
-	}, values.ConsensusDropdownGroup, 0, 10, true)
-
+	}, values.ConsensusDropdownGroup, 1, 10, true)
 	if pg.statusDropDown.Reversed() {
 		pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
 	} else {
 		pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
 	}
 
+	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropDown.Width = values.MarginPadding100
+	settingCommonDropdown(pg.Theme, pg.statusDropDown)
+	settingCommonDropdown(pg.Theme, pg.orderDropDown)
+
+	pg.initWalletSelector()
 	return pg
 }
 
@@ -96,6 +110,22 @@ func (pg *ConsensusPage) OnNavigatedTo() {
 		// Only query the agendas if the Agenda API is allowed.
 		pg.FetchAgendas()
 	}
+}
+
+func (pg *ConsensusPage) initWalletSelector() {
+	pg.assetWallets = pg.AssetsManager.AllDCRWallets()
+
+	items := []cryptomaterial.DropDownItem{}
+	for _, wal := range pg.assetWallets {
+		item := cryptomaterial.DropDownItem{
+			Text: wal.GetWalletName(),
+			Icon: pg.Theme.AssetIcon(wal.GetAssetType()),
+		}
+		items = append(items, item)
+	}
+	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 1, 0, false)
+	pg.walletDropDown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
@@ -149,6 +179,15 @@ func (pg *ConsensusPage) agendaVoteChoiceModal(agenda *dcr.Agenda) {
 
 func (pg *ConsensusPage) HandleUserInteractions() {
 	for pg.statusDropDown.Changed() {
+		pg.FetchAgendas()
+	}
+
+	for pg.orderDropDown.Changed() {
+		pg.FetchAgendas()
+	}
+
+	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
+		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()].(*dcr.Asset)
 		pg.FetchAgendas()
 	}
 
@@ -210,7 +249,7 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 							})
 						})
 					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+					layout.Stacked(func(gtx C) D {
 						return layout.Inset{
 							Top:  values.MarginPaddingMinus10,
 							Left: values.MarginPadding10,
@@ -236,16 +275,17 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 
 func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
-	// TODO: pg.selectedDCRWallet is currently always nil. Implement wallet
-	// selector. It is impossible to vote on an agenda without a dcr wallet.
-	// Also, when the selected wallet changes, this method should be re-called,
-	// to fetch and display the newly selected wallet's vote choices.
 	pg.isSyncing = true
+
+	orderNewest := true
+	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
+		orderNewest = false
+	}
 
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.
 	go func() {
-		items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, true)
+		items := components.LoadAgendas(pg.Load, pg.selectedDCRWallet, orderNewest)
 		agenda := dcr.AgendaStatusFromStr(selectedType)
 		listItems := make([]*components.ConsensusItem, 0)
 		if agenda == dcr.UnknownStatus {
@@ -292,46 +332,73 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx, mainChild, overlay)
 }
 
-func (pg *ConsensusPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+func (pg *ConsensusPage) layoutDesktop(gtx C) D {
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return layout.Inset{
+			Left:  values.MarginPadding24,
+			Top:   values.MarginPadding16,
+			Right: values.MarginPadding24,
+		}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
 						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+								}),
+							)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.E.Layout(gtx, pg.layoutRedirectVoting)
 						}),
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.layoutRedirectVoting)
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return layout.Stack{}.Layout(gtx,
+							layout.Stacked(func(gtx C) D {
+								return layout.Inset{
+									Top: values.MarginPadding60,
+								}.Layout(gtx, pg.layoutContent)
+							}),
+							layout.Expanded(pg.dropdownLayout),
+						)
+					})
+				}),
+			)
+		})
+	})
+}
+
+func (pg *ConsensusPage) dropdownLayout(gtx C) D {
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if pg.walletDropDown == nil {
+						return D{}
+					}
+					return layout.W.Layout(gtx, pg.walletDropDown.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(pg.statusDropDown.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.E.Layout(gtx, pg.orderDropDown.Layout)
+						}),
+					)
 				}),
 			)
 		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding60,
-						}.Layout(gtx, pg.layoutContent)
-					}),
-					layout.Expanded(func(gtx C) D {
-						if pg.statusDropDown.Reversed() {
-							pg.statusDropDown.ExpandedLayoutInset.Right = values.MarginPadding10
-						} else {
-							pg.statusDropDown.ExpandedLayoutInset.Left = values.MarginPadding10
-						}
-						return pg.statusDropDown.Layout(gtx)
-					}),
-				)
-			})
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Separator().Layout)
 		}),
 	)
 }
 
-func (pg *ConsensusPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *ConsensusPage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
@@ -428,7 +495,7 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 							Background:  pg.Theme.Color.Surface,
 							Direction:   layout.W,
 							Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
-							Padding:     layout.UniformInset(values.MarginPadding15),
+							Padding:     layout.Inset{Bottom: values.MarginPadding15, Top: values.MarginPadding15},
 							Margin:      layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4},
 						}.
 							Layout2(gtx, func(gtx C) D {

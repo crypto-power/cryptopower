@@ -41,6 +41,12 @@ const (
 	ProposalCategoryAbandoned = politeia.ProposalCategoryAbandoned
 )
 
+const (
+	ProposalTypeNormal        = politeia.ProposalTypeNormal
+	ProposalTypeRFPProposal   = politeia.ProposalTypeRFPProposal
+	ProposalTypeRFPSubmission = politeia.ProposalTypeRFPSubmission
+)
+
 type Proposal struct {
 	politeia.Proposal
 }

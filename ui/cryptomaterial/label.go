@@ -8,6 +8,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type Label struct {
@@ -58,6 +59,18 @@ func (t *Theme) ErrorLabel(txt string) Label {
 
 func (t *Theme) Label(size unit.Sp, txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
+}
+
+func (t *Theme) SemiBoldLabelWithSize(size unit.Sp, txt string) Label {
+	lb := t.labelWithDefaultColor(Label{material.Label(t.Base, size, txt)})
+	lb.Font.Weight = font.SemiBold
+	return lb
+}
+
+func (t *Theme) SemiBoldLabel(txt string) Label {
+	lb := t.labelWithDefaultColor(Label{material.Label(t.Base, values.TextSize16, txt)})
+	lb.Font.Weight = font.SemiBold
+	return lb
 }
 
 func (t *Theme) Label2(size unit.Sp, txt string) Label {

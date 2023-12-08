@@ -114,7 +114,7 @@ func (p *Politeia) checkForUpdates() error {
 			return p.ctx.Err()
 		}
 
-		proposals, err := p.getProposalsRaw(ProposalCategoryAll, int32(offset), limit, true, true)
+		proposals, err := p.getProposalsRaw(ProposalCategoryAll, int32(offset), limit, true, true, "")
 		if err != nil && err != storm.ErrNotFound {
 			return err
 		}
@@ -132,7 +132,7 @@ func (p *Politeia) checkForUpdates() error {
 	}
 
 	// include abandoned proposals
-	allProposals, err := p.getProposalsRaw(ProposalCategoryAll, 0, 0, true, false)
+	allProposals, err := p.getProposalsRaw(ProposalCategoryAll, 0, 0, true, false, "")
 	if err != nil && err != storm.ErrNotFound {
 		return err
 	}
@@ -333,7 +333,6 @@ func (p *Politeia) fetchBatchProposals(category int32, tokens []string, broadcas
 			if p.ctx.Err() != nil {
 				return p.ctx.Err()
 			}
-
 			proposals[i].Category = category
 			if voteSummary, ok := votesSummaries[proposals[i].Token]; ok {
 				proposals[i].VoteStatus = int32(voteSummary.Status)

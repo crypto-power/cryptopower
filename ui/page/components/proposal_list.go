@@ -2,13 +2,11 @@ package components
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 
-	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -22,44 +20,53 @@ type ProposalItem struct {
 	voteBar      *VoteBar
 }
 
-func ProposalsList(window app.WindowNavigator, gtx C, l *load.Load, prop *ProposalItem) D {
+func ProposalsList(gtx C, l *load.Load, prop *ProposalItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+	return layout.Inset{
+		Top:    values.MarginPadding8,
+		Bottom: values.MarginPadding8,
+	}.Layout(gtx, func(gtx C) D {
 		proposal := prop.Proposal
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layoutAuthorAndDate(gtx, l, prop)
+				return layoutTitleAndDate(gtx, l, prop)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layoutTitle(gtx, l, proposal)
+				return layoutAuthor(gtx, l, prop)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if proposal.Category == libwallet.ProposalCategoryActive ||
 					proposal.Category == libwallet.ProposalCategoryApproved ||
 					proposal.Category == libwallet.ProposalCategoryRejected {
-					return layoutProposalVoteBar(window, gtx, prop)
+					return layoutProposalVoteBar(gtx, prop)
 				}
 				return D{}
+			}),
+			layout.Rigid(func(gtx C) D {
+				if proposal.Type != libwallet.ProposalTypeRFPSubmission {
+					return D{}
+				}
+				// TODO Pass proposal name of RFP proposal
+				return layoutProposalSubmission(gtx, l, "", nil)
 			}),
 		)
 	})
 }
 
-func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
+func getStateLabel(l *load.Load, proposal libwallet.Proposal) cryptomaterial.Label {
+	grayCol := l.Theme.Color.GrayText2
+	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
+	stateLabel.Color = grayCol
+	return stateLabel
+}
+
+func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	proposal := item.Proposal
 	grayCol := l.Theme.Color.GrayText2
-
-	nameLabel := l.Theme.Body2(proposal.Username)
-	nameLabel.Color = grayCol
-
 	dotLabel := l.Theme.H4(" . ")
 	dotLabel.Color = grayCol
 
-	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
-	versionLabel.Color = grayCol
-
-	stateLabel := l.Theme.Body2(fmt.Sprintf("%v /2", proposal.VoteStatus))
-	stateLabel.Color = grayCol
+	stateLabel := getStateLabel(l, proposal)
 
 	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
 	timeAgoLabel.Color = grayCol
@@ -86,6 +93,135 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 	categoryLabel.Color = categoryLabelColor
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Flexed(0.7, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if proposal.Type != libwallet.ProposalTypeRFPProposal {
+						return D{}
+					}
+					return layout.Inset{Right: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Background:  l.Theme.Color.Primary,
+							Orientation: layout.Horizontal,
+							Direction:   layout.Center,
+							Border: cryptomaterial.Border{
+								Radius: cryptomaterial.Radius(5),
+							},
+						}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								lb := l.Theme.Label(values.TextSize16, values.String(values.StrRFP))
+								lb.Color = l.Theme.Color.White
+								lb.Font.Weight = font.SemiBold
+								u4 := values.MarginPadding4
+								return layout.Inset{Right: u4, Left: u4}.Layout(gtx, lb.Layout)
+							}),
+						)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					lbl := l.Theme.H6(proposal.Name)
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(categoryLabel.Layout),
+				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryPre {
+						return D{}
+					}
+					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					if proposal.Category == libwallet.ProposalCategoryPre {
+						return D{}
+					}
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							if proposal.Category == libwallet.ProposalCategoryPre {
+								return layout.Inset{
+									Right: values.MarginPadding4,
+								}.Layout(gtx, stateLabel.Layout)
+							}
+							return D{}
+						}),
+						layout.Rigid(timeAgoLabel.Layout),
+					)
+				}),
+			)
+		}),
+	)
+}
+
+func layoutProposalSubmission(gtx C, l *load.Load, title string, click *cryptomaterial.Clickable) D {
+	card := l.Theme.Card()
+	card.Radius = cryptomaterial.Radius(8)
+	card.Color = l.Theme.Color.Gray4
+	return card.Layout(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			Top:    values.MarginPadding12,
+			Bottom: values.MarginPadding12,
+			Left:   values.MarginPadding16,
+			Right:  values.MarginPadding16,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							lb := l.Theme.Label(values.TextSize14, values.String(values.StrProposedFor))
+							lb.Color = l.Theme.Color.GrayText1
+							return lb.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							txt := fmt.Sprintf("RFP: %s", title)
+							lb := l.Theme.Label(values.TextSize14, txt)
+							lb.Font.Weight = font.SemiBold
+							return lb.Layout(gtx)
+						}),
+					)
+				}),
+				layout.Flexed(1, func(gtx C) D {
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return cryptomaterial.LinearLayout{
+							Width:       cryptomaterial.WrapContent,
+							Height:      cryptomaterial.WrapContent,
+							Orientation: layout.Horizontal,
+							Alignment:   layout.Middle,
+							Clickable:   click,
+						}.Layout(gtx,
+							layout.Rigid(l.Theme.Icons.ChevronRight.Layout24dp),
+						)
+					})
+				}),
+			)
+		})
+	})
+}
+
+func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
+	proposal := item.Proposal
+	grayCol := l.Theme.Color.GrayText2
+
+	nameLabel := l.Theme.Body2(proposal.Username)
+	nameLabel.Color = grayCol
+
+	dotLabel := l.Theme.H4(" . ")
+	dotLabel.Color = grayCol
+
+	stateLabel := getStateLabel(l, proposal)
+
+	timeAgoLabel := l.Theme.Body2(TimeAgo(proposal.Timestamp))
+	timeAgoLabel.Color = grayCol
+
+	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
+	versionLabel.Color = grayCol
+
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(nameLabel.Layout),
@@ -96,62 +232,22 @@ func layoutAuthorAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 			)
 		}),
 		layout.Rigid(func(gtx C) D {
+			if proposal.Category != libwallet.ProposalCategoryPre {
+				return D{}
+			}
 			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(categoryLabel.Layout),
+				layout.Rigid(stateLabel.Layout),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
 				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
-								return layout.Inset{
-									Right: values.MarginPadding4,
-								}.Layout(gtx, stateLabel.Layout)
-							}
-							return D{}
-						}),
-						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryActive {
-								return layout.Inset{
-									Right: values.MarginPadding4,
-									Top:   values.MarginPadding3,
-								}.Layout(gtx, l.Theme.Icons.TimerIcon.Layout12dp)
-							}
-							return D{}
-						}),
-						layout.Rigid(timeAgoLabel.Layout),
-						layout.Rigid(func(gtx C) D {
-							if item.Proposal.Category == libwallet.ProposalCategoryPre {
-								return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-									rect := image.Rectangle{
-										Min: gtx.Constraints.Min,
-										Max: gtx.Constraints.Max,
-									}
-									rect.Max.Y = 20
-									layoutInfoTooltip(gtx, rect, *item)
-
-									infoIcon := cryptomaterial.NewIcon(l.Theme.Icons.ActionInfo)
-									infoIcon.Color = l.Theme.Color.GrayText2
-									return infoIcon.Layout(gtx, values.MarginPadding20)
-								})
-							}
-							return D{}
-						}),
-					)
-				}),
+				layout.Rigid(timeAgoLabel.Layout),
 			)
+
 		}),
 	)
 }
 
-func layoutTitle(gtx C, l *load.Load, proposal libwallet.Proposal) D {
-	lbl := l.Theme.H6(proposal.Name)
-	lbl.Font.Weight = font.SemiBold
-	return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
-}
-
-func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem) D {
+func layoutProposalVoteBar(gtx C, item *ProposalItem) D {
 	proposal := item.Proposal
 	yes := float32(proposal.YesVotes)
 	no := float32(proposal.NoVotes)
@@ -163,21 +259,14 @@ func layoutProposalVoteBar(window app.WindowNavigator, gtx C, item *ProposalItem
 		SetYesNoVoteParams(yes, no).
 		SetVoteValidityParams(eligibleTickets, quorumPercent, passPercentage).
 		SetProposalDetails(proposal.NumComments, proposal.PublishedAt, proposal.Token).
-		Layout(window, gtx)
-}
-
-func layoutInfoTooltip(gtx C, rect image.Rectangle, item ProposalItem) {
-	inset := layout.Inset{Top: values.MarginPadding20, Left: values.MarginPaddingMinus195}
-	item.tooltip.Layout(gtx, rect, inset, func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding195)
-		gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding195)
-		return item.tooltipLabel.Layout(gtx)
-	})
+		Layout(gtx)
 }
 
 func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D {
 	var selectedCategory string
 	switch category {
+	case libwallet.ProposalCategoryAll:
+		selectedCategory = values.String(values.StrFound)
 	case libwallet.ProposalCategoryApproved:
 		selectedCategory = values.String(values.StrApproved)
 	case libwallet.ProposalCategoryRejected:
@@ -203,10 +292,10 @@ func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D
 	})
 }
 
-func LoadProposals(l *load.Load, category, offset, pageSize int32, newestFirst bool) []*ProposalItem {
+func LoadProposals(l *load.Load, category, offset, pageSize int32, newestFirst bool, key string) []*ProposalItem {
 	proposalItems := make([]*ProposalItem, 0)
 
-	proposals, err := l.AssetsManager.Politeia.GetProposalsRaw(category, offset, pageSize, newestFirst)
+	proposals, err := l.AssetsManager.Politeia.GetProposalsRaw(category, offset, pageSize, newestFirst, key)
 	if err == nil {
 		for i := 0; i < len(proposals); i++ {
 			proposal := proposals[i]

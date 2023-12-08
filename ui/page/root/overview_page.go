@@ -194,7 +194,7 @@ func (pg *OverviewPage) OnNavigatedTo() {
 	go pg.updateAssetsUSDBalance()
 	go pg.loadTransactions()
 
-	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true)
+	pg.proposalItems = components.LoadProposals(pg.Load, libwallet.ProposalCategoryAll, 0, 3, true, "")
 	pg.orders = components.LoadOrders(pg.Load, 0, 3, true)
 
 	if pg.AssetsManager.ExchangeRateFetchingEnabled() {
@@ -963,7 +963,7 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 		return pg.recentProposalList.Layout(gtx, len(pg.proposalItems), func(gtx C, i int) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.ProposalsList(pg.ParentWindow(), gtx, pg.Load, pg.proposalItems[i])
+					return components.ProposalsList(gtx, pg.Load, pg.proposalItems[i])
 				}),
 				layout.Rigid(func(gtx C) D {
 					// No divider for last row

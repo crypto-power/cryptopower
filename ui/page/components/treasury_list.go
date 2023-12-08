@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
@@ -27,29 +26,25 @@ func (t *TreasuryItem) SetVoteChoices(voteChoices [3]string) {
 
 func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(layoutVoteChoice(l, treasuryItem)),
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					lbl := l.Theme.Label(values.TextSize18, values.String(values.StrSetTreasuryPolicy))
+					lbl.Font.Weight = font.SemiBold
+					return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layoutItems(l, treasuryItem)...)
+					})
+				}),
+			)
+		}),
 		layout.Rigid(func(gtx C) D {
 			return layoutPolicyVoteAction(gtx, l, treasuryItem)
 		}),
 	)
-}
-
-func layoutVoteChoice(l *load.Load, treasuryItem *TreasuryItem) layout.Widget {
-	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				lbl := l.Theme.Label(values.TextSize16, values.String(values.StrSetTreasuryPolicy))
-				lbl.Font.Weight = font.SemiBold
-				return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
-			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding10, Left: values.MarginPadding0}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layoutItems(l, treasuryItem)...)
-				})
-			}),
-		)
-	}
 }
 
 func layoutItems(l *load.Load, treasuryItem *TreasuryItem) []layout.FlexChild {
@@ -69,7 +64,7 @@ func layoutItems(l *load.Load, treasuryItem *TreasuryItem) []layout.FlexChild {
 }
 
 func layoutPolicyVoteAction(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
-	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(unit.Dp(150)), gtx.Dp(unit.Dp(200))
+	gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding100), gtx.Dp(values.MarginPadding150)
 	treasuryItem.SetChoiceButton.Background = l.Theme.Color.Gray3
 	treasuryItem.SetChoiceButton.SetEnabled(false)
 
@@ -77,7 +72,7 @@ func layoutPolicyVoteAction(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 		treasuryItem.SetChoiceButton.Background = l.Theme.Color.Primary
 		treasuryItem.SetChoiceButton.SetEnabled(true)
 	}
-	return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, treasuryItem.SetChoiceButton.Layout)
+	return treasuryItem.SetChoiceButton.Layout(gtx)
 }
 
 func LayoutNoPoliciesFound(gtx C, l *load.Load, syncing bool) D {
