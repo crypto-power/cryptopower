@@ -302,7 +302,7 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *ProposalsPage) layoutDesktop(gtx C) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		inset := layout.Inset{
 			Top:    values.MarginPadding16,
@@ -319,16 +319,14 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
 							layout.Expanded(func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding150}.Layout(gtx, pg.layoutContent)
+								return layout.Inset{Top: values.MarginPadding120}.Layout(gtx, pg.layoutContent)
 							}),
 							layout.Expanded(func(gtx C) D {
 								return layout.Inset{
 									Top: values.MarginPadding50,
 								}.Layout(gtx, pg.searchEditor.Layout)
 							}),
-							layout.Expanded(func(gtx C) D {
-								return pg.dropdownLayout(gtx)
-							}),
+							layout.Expanded(pg.dropdownLayout),
 						)
 					})
 				}),
@@ -337,35 +335,28 @@ func (pg *ProposalsPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	})
 }
 
-func (pg *ProposalsPage) dropdownLayout(gtx layout.Context) layout.Dimensions {
+func (pg *ProposalsPage) dropdownLayout(gtx C) D {
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
 				return D{}
 			}
-			return layout.W.Layout(gtx, func(gtx C) D {
-				return pg.walletDropDown.Layout(gtx)
-			})
+			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(pg.statusDropDown.Layout),
 				layout.Rigid(func(gtx C) D {
-					return pg.statusDropDown.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						dropdown := pg.orderDropDown.Layout(gtx)
-						return dropdown
-					})
+					return layout.E.Layout(gtx, pg.orderDropDown.Layout)
 				}),
 			)
 		}),
 	)
 }
 
-func (pg *ProposalsPage) layoutMobile(gtx layout.Context) layout.Dimensions {
+func (pg *ProposalsPage) layoutMobile(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.layoutSectionHeader)
 		}),
 		layout.Flexed(1, func(gtx C) D {

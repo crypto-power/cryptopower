@@ -356,7 +356,7 @@ func (pg *ConsensusPage) layoutDesktop(gtx C) D {
 					)
 				}),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding14}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
 							layout.Stacked(func(gtx C) D {
 								return layout.Inset{
@@ -386,10 +386,7 @@ func (pg *ConsensusPage) dropdownLayout(gtx C) D {
 					return layout.Flex{}.Layout(gtx,
 						layout.Rigid(pg.statusDropDown.Layout),
 						layout.Rigid(func(gtx C) D {
-							return layout.E.Layout(gtx, func(gtx C) D {
-								dropdown := pg.orderDropDown.Layout(gtx)
-								return dropdown
-							})
+							return layout.E.Layout(gtx, pg.orderDropDown.Layout)
 						}),
 					)
 				}),

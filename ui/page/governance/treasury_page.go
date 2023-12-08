@@ -257,9 +257,7 @@ func (pg *TreasuryPage) dropdownLayout(gtx layout.Context) layout.Dimensions {
 			if pg.walletDropDown == nil {
 				return D{}
 			}
-			return layout.W.Layout(gtx, func(gtx C) D {
-				return pg.walletDropDown.Layout(gtx)
-			})
+			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Separator().Layout)
