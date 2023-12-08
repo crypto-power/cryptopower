@@ -29,7 +29,7 @@ type BottomNavigationBar struct {
 	*load.Load
 
 	FloatingActionButton []BottomNavigationBarHandler
-	BottomNaigationItems []BottomNavigationBarHandler
+	BottomNavigationItems []BottomNavigationBarHandler
 	CurrentPage          string
 
 	axis        layout.Axis
@@ -51,24 +51,24 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 			}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					list := layout.List{Axis: layout.Horizontal}
-					return list.Layout(gtx, len(bottomNavigationbar.BottomNaigationItems), func(gtx C, i int) D {
+					return list.Layout(gtx, len(bottomNavigationbar.BottomNavigationItems), func(gtx C, i int) D {
 						appWidth := gtx.Dp(bottomNavigationbar.Load.CurrentAppWidth())
 						return cryptomaterial.LinearLayout{
 							Orientation: bottomNavigationbar.axis,
-							Width:       appWidth / len(bottomNavigationbar.BottomNaigationItems), // Divide each cell equally
+							Width:       appWidth / len(bottomNavigationbar.BottomNavigationItems), // Divide each cell equally
 							Height:      cryptomaterial.WrapContent,
 							Padding:     layout.Inset{Bottom: values.MarginPadding10},
 							Alignment:   bottomNavigationbar.alignment,
 							Direction:   bottomNavigationbar.direction,
 							Background:  bottomNavigationbar.Theme.Color.Surface,
-							Clickable:   bottomNavigationbar.BottomNaigationItems[i].Clickable,
+							Clickable:   bottomNavigationbar.BottomNavigationItems[i].Clickable,
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								return layout.Stack{Alignment: layout.N}.Layout(gtx,
 									layout.Stacked(func(gtx C) D {
-										if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+										if bottomNavigationbar.BottomNavigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNavigationItems[i].PageID == bottomNavigationbar.CurrentPage {
 											tabHeight := gtx.Dp(values.MarginPadding4)
-											selectedTabDimsWidth := appWidth / (len(bottomNavigationbar.BottomNaigationItems) * 8)
+											selectedTabDimsWidth := appWidth / (len(bottomNavigationbar.BottomNavigationItems) * 8)
 											tabRect := image.Rect(0, 0, 100+selectedTabDimsWidth, tabHeight)
 											defer clip.RRect{Rect: tabRect, SE: 10, SW: 10, NW: 0, NE: 0}.Push(gtx.Ops).Pop()
 
@@ -86,10 +86,10 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 								return layout.Inset{
 									Top: values.MarginPadding8,
 								}.Layout(gtx, func(gtx C) D {
-									img := bottomNavigationbar.BottomNaigationItems[i].ImageInactive
+									img := bottomNavigationbar.BottomNavigationItems[i].ImageInactive
 
-									if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
-										img = bottomNavigationbar.BottomNaigationItems[i].Image
+									if bottomNavigationbar.BottomNavigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNavigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+										img = bottomNavigationbar.BottomNavigationItems[i].Image
 									}
 
 									return img.Layout24dp(gtx)
@@ -100,10 +100,10 @@ func (bottomNavigationbar *BottomNavigationBar) LayoutBottomNavigationBar(gtx la
 									Bottom: bottomNavigationbar.bottomInset,
 								}.Layout(gtx, func(gtx C) D {
 									textColor := bottomNavigationbar.Theme.Color.GrayText1
-									if bottomNavigationbar.BottomNaigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNaigationItems[i].PageID == bottomNavigationbar.CurrentPage {
+									if bottomNavigationbar.BottomNavigationItems[i].Title == bottomNavigationbar.CurrentPage || bottomNavigationbar.BottomNavigationItems[i].PageID == bottomNavigationbar.CurrentPage {
 										textColor = bottomNavigationbar.Theme.Color.DefaultThemeColors().Primary
 									}
-									txt := bottomNavigationbar.Theme.Label(bottomNavigationbar.textSize, bottomNavigationbar.BottomNaigationItems[i].Title)
+									txt := bottomNavigationbar.Theme.Label(bottomNavigationbar.textSize, bottomNavigationbar.BottomNavigationItems[i].Title)
 									txt.Color = textColor
 									return txt.Layout(gtx)
 								})

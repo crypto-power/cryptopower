@@ -123,6 +123,7 @@ func (pg *TransactionsPage) initWalletSelector() {
 	if len(pg.assetWallets) > 1 {
 		items := []cryptomaterial.DropDownItem{
 			{
+				Icon: pg.Theme.Icons.WalletIcon,
 				Text: values.String(values.StrAllWallets),
 			},
 		}
@@ -158,8 +159,8 @@ func (pg *TransactionsPage) getAssetType() utils.AssetType {
 
 func (pg *TransactionsPage) refreshAvailableTxType() {
 	items := []cryptomaterial.DropDownItem{}
-	_, keysinfo := components.TxPageDropDownFields(pg.getAssetType(), pg.selectedTxCategoryTab)
-	for _, name := range keysinfo {
+	_, keysInfo := components.TxPageDropDownFields(pg.getAssetType(), pg.selectedTxCategoryTab)
+	for _, name := range keysInfo {
 		items = append(items, cryptomaterial.DropDownItem{Text: name})
 	}
 	pg.txTypeDropDown = pg.Theme.DropdownWithCustomPos(items, values.TxDropdownGroup, 0, 2, true)
@@ -178,11 +179,11 @@ func (pg *TransactionsPage) refreshAvailableTxType() {
 		// txs to be counted.
 		go func() {
 			items := []cryptomaterial.DropDownItem{}
-			mapinfo, keysinfo := components.TxPageDropDownFields(pg.getAssetType(), pg.selectedTxCategoryTab)
-			for _, name := range keysinfo {
+			mapInfo, keysInfo := components.TxPageDropDownFields(pg.getAssetType(), pg.selectedTxCategoryTab)
+			for _, name := range keysInfo {
 				var txTypeCount int
 				for _, wal := range wallets {
-					count, _ := wal.CountTransactions(mapinfo[name])
+					count, _ := wal.CountTransactions(mapInfo[name])
 					txTypeCount += count
 				}
 				items = append(items, cryptomaterial.DropDownItem{
@@ -242,14 +243,14 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32) ([]*multiWal
 }
 
 func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize int32) ([]*multiWalletTx, int, error) {
-	mapinfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTxCategoryTab)
-	if len(mapinfo) < 1 {
+	mapInfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTxCategoryTab)
+	if len(mapInfo) < 1 {
 		err := fmt.Errorf("unable to resolve asset filters for asset type (%v)", wal.GetAssetType())
 		return nil, -1, err
 	}
 
 	selectedVal, _, _ := strings.Cut(pg.txTypeDropDown.Selected(), " ")
-	txFilter, ok := mapinfo[selectedVal]
+	txFilter, ok := mapInfo[selectedVal]
 	if !ok {
 		err := fmt.Errorf("unsupported field(%v) for asset type(%v) and txCategoryTab index(%d) found",
 			selectedVal, wal.GetAssetType(), pg.selectedTxCategoryTab)
@@ -484,9 +485,8 @@ func (pg *TransactionsPage) txAndWallet(mtx *multiWalletTx) (*sharedW.Transactio
 // displayed.
 // Part of the load.Page interface.
 func (pg *TransactionsPage) HandleUserInteractions() {
-	for pg.txTypeDropDown.Changed() {
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
-		break
+	if pg.txTypeDropDown.Changed() {
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 
 	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
@@ -527,24 +527,24 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 		}
 
 		pg.refreshAvailableTxType()
-		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
+		go pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
 	}
 }
 
 func (pg *TransactionsPage) listenForTxNotifications() {
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
 		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
+			// Listen for all new txs but ignore ntfns if the wallet sending the
+			// ntfn is not the currently selected wallet.
 			if pg.selectedWallet != nil && pg.selectedWallet.GetWalletID() != walletID {
 				return // ignore tx
 			}
 
 			pg.scroll.FetchScrollData(false, pg.ParentWindow(), false)
-			pg.ParentWindow().Reload()
 		},
 	}
 
-	// Listen for ntfns for all wallets. But ignore ntfns if the wallet sending
-	// the ntfn is not the currently selected wallet.
+	// Listen for ntfns for all wallets.
 	for _, w := range pg.assetWallets {
 		w.RemoveTxAndBlockNotificationListener(TransactionsPageID)
 		err := w.AddTxAndBlockNotificationListener(txAndBlockNotificationListener, TransactionsPageID)
