@@ -28,9 +28,9 @@ type BottomNavigationBarHandler struct {
 type BottomNavigationBar struct {
 	*load.Load
 
-	FloatingActionButton []BottomNavigationBarHandler
+	FloatingActionButton  []BottomNavigationBarHandler
 	BottomNavigationItems []BottomNavigationBarHandler
-	CurrentPage          string
+	CurrentPage           string
 
 	axis        layout.Axis
 	textSize    unit.Sp
