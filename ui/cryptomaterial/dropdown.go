@@ -248,8 +248,7 @@ func (d *DropDown) collapsedAndExpandedLayout(gtx C) D {
 		return display
 	})}
 
-	// No need to display expanded view when there is only one item.
-	if d.expanded && len(d.items) > 1 {
+	if d.expanded {
 		layoutContents = append(layoutContents, layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 			// Adding d.ExpandedLayoutInset.Top accounts for the the extra
 			// shift in vertical space set by d.ExpandedLayoutInset.Top to
@@ -347,7 +346,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			if !item.PreventSelection && len(d.items) > 1 {
+			if !item.PreventSelection {
 				return d.layoutActiveIcon(gtx, index)
 			}
 			return D{}
