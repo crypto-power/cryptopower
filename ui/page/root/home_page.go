@@ -410,8 +410,8 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 	padding10 := values.MarginPadding10
 
 	topBottomPadding := padding10
-	// Remove top and bottom padding if on mobile view and on the SingleWalletMasterPage.
-	// this hides the gap between the top bar and the page content.
+	// Remove top and bottom padding if on the SingleWalletMasterPage.
+	// This hides the gap between the top bar and the page content.
 	if hp.CurrentPageID() == MainPageID {
 		topBottomPadding = values.MarginPadding0
 	}
@@ -429,8 +429,8 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			// Hide the total asset balance usd amount while on mobile view
-			// and on the SingleWalletMasterPage.
+			// Hide the total asset balance usd amount while
+			// on the SingleWalletMasterPage.
 			if hp.CurrentPageID() == MainPageID {
 				return D{}
 			}

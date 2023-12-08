@@ -500,13 +500,14 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 										}.Layout(gtx,
 											layout.Rigid(func(gtx C) D {
 												image := components.CoinImageBySymbol(swmp.Load, assetType, isWatchOnlyWallet)
-												if image != nil {
-													if swmp.Load.IsMobileView() {
-														return image.Layout16dp(gtx)
-													}
-													return image.Layout24dp(gtx)
+												if image == nil {
+													return D{}
 												}
-												return D{}
+
+												if swmp.Load.IsMobileView() {
+													return image.Layout16dp(gtx)
+												}
+												return image.Layout24dp(gtx)
 											}),
 											layout.Rigid(func(gtx C) D {
 												lbl := swmp.Theme.H6(swmp.selectedWallet.GetWalletName())
@@ -519,18 +520,19 @@ func (swmp *SingleWalletMasterPage) LayoutTopBar(gtx C) D {
 												}.Layout(gtx, lbl.Layout)
 											}),
 											layout.Rigid(func(gtx C) D {
-												if isWatchOnlyWallet {
-													return layout.Inset{
-														Left: values.MarginPadding10,
-													}.Layout(gtx, func(gtx C) D {
-														textSize := values.TextSize16
-														if swmp.Load.IsMobileView() {
-															textSize = values.TextSize12
-														}
-														return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
-													})
+												if !isWatchOnlyWallet {
+													return D{}
 												}
-												return D{}
+
+												return layout.Inset{
+													Left: values.MarginPadding10,
+												}.Layout(gtx, func(gtx C) D {
+													textSize := values.TextSize16
+													if swmp.Load.IsMobileView() {
+														textSize = values.TextSize12
+													}
+													return components.WalletHightlighLabel(swmp.Theme, gtx, textSize, values.String(values.StrWatchOnly))
+												})
 											}),
 										)
 									}),

@@ -81,10 +81,7 @@ func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 // parameter which is used to determine if the segmented control should be displayed in mobile view
 // or not. If the parameter is not provided, isMobileView defaults to false.
 func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bool) D {
-	sc.isMobileView = false
-	if len(isMobileView) > 0 {
-		sc.isMobileView = isMobileView[0]
-	}
+	sc.isMobileView = len(isMobileView) > 0 && isMobileView[0]
 
 	return UniformPadding(gtx, func(gtx C) D {
 		return layout.Flex{
