@@ -97,9 +97,9 @@ func (s *Slider) Layout(gtx C, items []layout.Widget) D {
 					return D{}
 				}
 				return layout.Inset{
-					Right:  values.MarginPadding15,
-					Left:   values.MarginPadding15,
-					Bottom: values.MarginPadding10,
+					Right:  values.MarginPadding16,
+					Left:   values.MarginPadding16,
+					Bottom: values.MarginPadding16,
 				}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{
 						Axis: layout.Horizontal,
