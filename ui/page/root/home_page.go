@@ -261,6 +261,8 @@ func (hp *HomePage) HandleUserInteractions() {
 			switch item.Title {
 			case values.String(values.StrOverview):
 				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+			case values.String(values.StrTransactions):
+				pg = transaction.NewTransactionsPage(hp.Load, nil)
 			case values.String(values.StrWallets):
 				pg = hp.walletSelectorPage
 			case values.String(values.StrTrade):
@@ -407,6 +409,13 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 	padding20 := values.MarginPadding20
 	padding10 := values.MarginPadding10
 
+	topBottomPadding := padding10
+	// Remove top and bottom padding if on the SingleWalletMasterPage.
+	// This hides the gap between the top bar and the page content.
+	if hp.CurrentPageID() == MainPageID {
+		topBottomPadding = values.MarginPadding0
+	}
+
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
 		Height:      cryptomaterial.WrapContent,
@@ -415,11 +424,19 @@ func (hp *HomePage) LayoutTopBar(gtx C) D {
 		Padding: layout.Inset{
 			Right:  padding20,
 			Left:   padding20,
-			Top:    padding10,
-			Bottom: padding10,
+			Top:    topBottomPadding,
+			Bottom: topBottomPadding,
 		},
 	}.Layout(gtx,
-		layout.Rigid(hp.totalBalanceLayout),
+		layout.Rigid(func(gtx C) D {
+			// Hide the total asset balance usd amount while
+			// on the SingleWalletMasterPage.
+			if hp.CurrentPageID() == MainPageID {
+				return D{}
+			}
+
+			return hp.totalBalanceLayout(gtx)
+		}),
 		layout.Rigid(func(gtx C) D {
 			if hp.Load.IsMobileView() {
 				return D{}
@@ -441,6 +458,13 @@ func (hp *HomePage) initBottomNavItems() {
 				ImageInactive: hp.Theme.Icons.OverviewIconInactive,
 				Title:         values.String(values.StrOverview),
 				PageID:        OverviewPageID,
+			},
+			{
+				Clickable:     hp.Theme.NewClickable(true),
+				Image:         hp.Theme.Icons.TransactionsIcon,
+				ImageInactive: hp.Theme.Icons.TransactionsIconInactive,
+				Title:         values.String(values.StrTransactions),
+				PageID:        transaction.TransactionsPageID,
 			},
 			{
 				Clickable:     hp.Theme.NewClickable(true),
@@ -497,6 +521,12 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				if hp.Load.IsMobileView() {
+					// Hide the total balance text, settings and notfication icons
+					// while on mobile view and on the SingleWalletMasterPage.
+					if hp.CurrentPageID() == MainPageID {
+						return D{}
+					}
+
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(hp.totalBalanceTextAndIconButtonLayout),
 						layout.Rigid(hp.notificationSettingsLayout),
@@ -507,6 +537,12 @@ func (hp *HomePage) totalBalanceLayout(gtx C) D {
 			layout.Rigid(hp.balanceLayout),
 			layout.Rigid(func(gtx C) D {
 				if !hp.Load.IsMobileView() {
+					return D{}
+				}
+
+				// Hide the top bar send/receive buttons while on mobile view
+				// and on the SingleWalletMasterPage.
+				if hp.CurrentPageID() == MainPageID {
 					return D{}
 				}
 

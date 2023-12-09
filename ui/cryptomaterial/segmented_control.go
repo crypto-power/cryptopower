@@ -36,9 +36,11 @@ type SegmentedControl struct {
 	slideActionTitle     *SlideAction
 	segmentType          SegmentType
 
-	allowCycle bool
+	allowCycle   bool
+	isMobileView bool
 }
 
+// Segmented control is a linear set of two or more segments, each of which functions as a button.
 func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType) *SegmentedControl {
 	list := t.NewClickableList(layout.Horizontal)
 	list.IsHoverable = false
@@ -75,7 +77,12 @@ func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 	sc.isSwipeActionEnabled = enable
 }
 
-func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D) D {
+// Layout handles the segmented control's layout, it receives an optional isMobileView bool
+// parameter which is used to determine if the segmented control should be displayed in mobile view
+// or not. If the parameter is not provided, isMobileView defaults to false.
+func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bool) D {
+	sc.isMobileView = len(isMobileView) > 0 && isMobileView[0]
+
 	return UniformPadding(gtx, func(gtx C) D {
 		return layout.Flex{
 			Axis:      layout.Vertical,
@@ -140,16 +147,26 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 
 func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 	sc.handleEvents()
+	flexWidthLeft := float32(.035)
+	flexWidthCenter := float32(.8)
+	flexWidthRight := float32(.035)
+	linearLayoutWidth := gtx.Dp(values.MarginPadding700)
+	if sc.isMobileView {
+		flexWidthLeft = 0   // hide the left nav button in mobile view
+		flexWidthCenter = 1 // occupy the whole width in mobile view
+		flexWidthRight = 0  // hide the right nav button in mobile view
+		linearLayoutWidth = MatchParent
+	}
 	return LinearLayout{
-		Width:       gtx.Dp(values.MarginPadding700),
+		Width:       linearLayoutWidth,
 		Height:      WrapContent,
 		Orientation: layout.Horizontal,
 		Alignment:   layout.Middle,
 	}.Layout(gtx,
-		layout.Flexed(.035, func(gtx C) D {
+		layout.Flexed(flexWidthLeft, func(gtx C) D {
 			return sc.leftNavBtn.Layout(gtx, sc.theme.Icons.ChevronLeft.Layout24dp)
 		}),
-		layout.Flexed(.8, func(gtx C) D {
+		layout.Flexed(flexWidthCenter, func(gtx C) D {
 			return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 				isSelectedSegment := sc.SelectedIndex() == i
 				return layout.Center.Layout(gtx, func(gtx C) D {
@@ -184,7 +201,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 				})
 			})
 		}),
-		layout.Flexed(.035, func(gtx C) D {
+		layout.Flexed(flexWidthRight, func(gtx C) D {
 			return sc.rightNavBtn.Layout(gtx, sc.theme.Icons.ChevronRight.Layout24dp)
 		}),
 	)
