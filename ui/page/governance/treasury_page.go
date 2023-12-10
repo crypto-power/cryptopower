@@ -222,10 +222,11 @@ func (pg *TreasuryPage) layout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrTreasurySpending)).Layout),
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Rigid(pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrTreasurySpending)).Layout),
 								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+									return pg.infoButton.Layout(gtx)
+									// return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.infoButton.Layout)
 								}),
 							)
 						}),
@@ -277,7 +278,7 @@ func (pg *TreasuryPage) layoutVerifyGovernanceKeys(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
 						Top: values.MarginPaddingMinus2,
-					}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrVerifyGovernanceKeys)).Layout)
+					}.Layout(gtx, pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), values.String(values.StrVerifyGovernanceKeys)).Layout)
 				}),
 			)
 		})
@@ -311,7 +312,7 @@ func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 	}
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize18, values.String(values.StrPiKey))
+			lbl := pg.Theme.Label(pg.ConvertTextSize(values.TextSize18), values.String(values.StrPiKey))
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		}),
@@ -331,7 +332,7 @@ func (pg *TreasuryPage) layoutPiKey(gtx C) D {
 					Left:   values.MarginPadding8,
 					Right:  values.MarginPadding8,
 				},
-			}.Layout2(gtx, pg.Theme.Label(values.TextSize14, pg.PiKey).Layout)
+			}.Layout2(gtx, pg.Theme.Label(pg.ConvertTextSize(values.TextSize14), pg.PiKey).Layout)
 		}),
 	)
 }

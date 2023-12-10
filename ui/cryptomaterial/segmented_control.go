@@ -121,9 +121,13 @@ func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
 			return sc.slideActionTitle.DragLayout(gtx, func(gtx C) D {
 				return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
 					isSelectedSegment := sc.SelectedIndex() == i
+					textSize := values.TextSize16
+					if sc.isMobileView {
+						textSize = values.TextSize12
+					}
 					return layout.Center.Layout(gtx, func(gtx C) D {
 						bg := sc.theme.Color.SurfaceHighlight
-						txt := sc.theme.DecoratedText(values.TextSize16, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
+						txt := sc.theme.DecoratedText(textSize, sc.segmentTitles[i], sc.theme.Color.GrayText1, font.SemiBold)
 						border := Border{Radius: Radius(0)}
 						if isSelectedSegment {
 							bg = sc.theme.Color.Surface

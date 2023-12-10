@@ -91,6 +91,8 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 		categoryLabelColor = grayCol
 	}
 	categoryLabel.Color = categoryLabelColor
+	categoryLabel.TextSize = l.ConvertTextSize(values.TextSize14)
+	timeAgoLabel.TextSize = l.ConvertTextSize(values.TextSize14)
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Flexed(0.7, func(gtx C) D {
@@ -111,7 +113,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 							},
 						}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								lb := l.Theme.Label(values.TextSize16, values.String(values.StrRFP))
+								lb := l.Theme.Label(l.ConvertTextSize(values.TextSize16), values.String(values.StrRFP))
 								lb.Color = l.Theme.Color.White
 								lb.Font.Weight = font.SemiBold
 								u4 := values.MarginPadding4
@@ -122,6 +124,7 @@ func layoutTitleAndDate(gtx C, l *load.Load, item *ProposalItem) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					lbl := l.Theme.H6(proposal.Name)
+					lbl.TextSize = l.ConvertTextSize(values.TextSize20)
 					lbl.Font.Weight = font.SemiBold
 					return lbl.Layout(gtx)
 				}),
@@ -173,13 +176,13 @@ func layoutProposalSubmission(gtx C, l *load.Load, title string, click *cryptoma
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							lb := l.Theme.Label(values.TextSize14, values.String(values.StrProposedFor))
+							lb := l.Theme.Label(l.ConvertTextSize(values.TextSize14), values.String(values.StrProposedFor))
 							lb.Color = l.Theme.Color.GrayText1
 							return lb.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
 							txt := fmt.Sprintf("RFP: %s", title)
-							lb := l.Theme.Label(values.TextSize14, txt)
+							lb := l.Theme.Label(l.ConvertTextSize(values.TextSize14), txt)
 							lb.Font.Weight = font.SemiBold
 							return lb.Layout(gtx)
 						}),
@@ -220,6 +223,10 @@ func layoutAuthor(gtx C, l *load.Load, item *ProposalItem) D {
 
 	versionLabel := l.Theme.Body2(values.String(values.StrVersion) + " " + proposal.Version)
 	versionLabel.Color = grayCol
+
+	versionLabel.TextSize = l.ConvertTextSize(values.TextSize14)
+	timeAgoLabel.TextSize = l.ConvertTextSize(values.TextSize14)
+	nameLabel.TextSize = l.ConvertTextSize(values.TextSize14)
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -283,6 +290,7 @@ func LayoutNoProposalsFound(gtx C, l *load.Load, syncing bool, category int32) D
 	if syncing {
 		text = l.Theme.Body1(values.String(values.StrFetchingProposals))
 	}
+	text.TextSize = l.ConvertTextSize(values.TextSize14)
 
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Inset{

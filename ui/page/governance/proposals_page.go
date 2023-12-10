@@ -8,7 +8,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
@@ -75,6 +74,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 
 	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
 	pg.searchEditor.Editor.SingleLine = true
+	pg.searchEditor.TextSize = pg.ConvertTextSize(l.Theme.TextSize)
 
 	pg.updatedIcon = cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
 	pg.updatedIcon.Color = pg.Theme.Color.Success
@@ -111,6 +111,8 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.orderDropDown.Width = values.MarginPadding100
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
+	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
+	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
 	pg.initWalletSelector()
 
@@ -280,6 +282,7 @@ func (pg *ProposalsPage) initWalletSelector() {
 	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 2, 0, false)
 	pg.walletDropDown.Width = values.MarginPadding150
 	settingCommonDropdown(pg.Theme, pg.walletDropDown)
+	pg.walletDropDown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
 func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
@@ -296,9 +299,9 @@ func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.Drop
 // Part of the load.Page interface.
 func (pg *ProposalsPage) Layout(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
+	// if pg.Load.IsMobileView() {
+	// 	return pg.layoutMobile(gtx)
+	// }
 	return pg.layoutDesktop(gtx)
 }
 
@@ -354,42 +357,42 @@ func (pg *ProposalsPage) dropdownLayout(gtx C) D {
 	)
 }
 
-func (pg *ProposalsPage) layoutMobile(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.layoutSectionHeader)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding70}.Layout(gtx, pg.layoutContent)
-					}),
-					layout.Expanded(func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.E.Layout(gtx, func(gtx C) D {
-							card := pg.Theme.Card()
-							card.Radius = cryptomaterial.Radius(8)
-							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-								return card.Layout(gtx, func(gtx C) D {
-									return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
-								})
-							})
-						})
-					}),
-					layout.Expanded(func(gtx C) D {
-						if pg.statusDropDown.Reversed() {
-							pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
-						} else {
-							pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
-						}
-						return pg.statusDropDown.Layout(gtx)
-					}),
-				)
-			})
-		}),
-	)
-}
+// func (pg *ProposalsPage) layoutMobile(gtx C) D {
+// 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+// 		layout.Rigid(func(gtx C) D {
+// 			return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, pg.layoutSectionHeader)
+// 		}),
+// 		layout.Flexed(1, func(gtx C) D {
+// 			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+// 				return layout.Stack{}.Layout(gtx,
+// 					layout.Expanded(func(gtx C) D {
+// 						return layout.Inset{Top: values.MarginPadding70}.Layout(gtx, pg.layoutContent)
+// 					}),
+// 					layout.Expanded(func(gtx C) D {
+// 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 						return layout.E.Layout(gtx, func(gtx C) D {
+// 							card := pg.Theme.Card()
+// 							card.Radius = cryptomaterial.Radius(8)
+// 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+// 								return card.Layout(gtx, func(gtx C) D {
+// 									return layout.UniformInset(values.MarginPadding8).Layout(gtx, pg.layoutSyncSection)
+// 								})
+// 							})
+// 						})
+// 					}),
+// 					layout.Expanded(func(gtx C) D {
+// 						if pg.statusDropDown.Reversed() {
+// 							pg.statusDropDown.ExpandedLayoutInset.Right = values.DP55
+// 						} else {
+// 							pg.statusDropDown.ExpandedLayoutInset.Left = values.DP55
+// 						}
+// 						return pg.statusDropDown.Layout(gtx)
+// 					}),
+// 				)
+// 			})
+// 		}),
+// 	)
+// }
 
 func (pg *ProposalsPage) layoutContent(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
@@ -420,35 +423,39 @@ func (pg *ProposalsPage) layoutContent(gtx C) D {
 	)
 }
 
-func (pg *ProposalsPage) layoutSyncSection(gtx C) D {
-	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
-	if isProposalSyncing {
-		return pg.layoutIsSyncingSection(gtx)
-	} else if pg.syncCompleted {
-		return pg.updatedIcon.Layout(gtx, values.MarginPadding20)
-	}
-	return pg.layoutStartSyncSection(gtx)
-}
+// func (pg *ProposalsPage) layoutSyncSection(gtx C) D {
+// 	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
+// 	if isProposalSyncing {
+// 		return pg.layoutIsSyncingSection(gtx)
+// 	} else if pg.syncCompleted {
+// 		return pg.updatedIcon.Layout(gtx, values.MarginPadding20)
+// 	}
+// 	return pg.layoutStartSyncSection(gtx)
+// }
 
-func (pg *ProposalsPage) layoutIsSyncingSection(gtx C) D {
-	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding24)
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	loader := material.Loader(pg.Theme.Base)
-	loader.Color = pg.Theme.Color.Gray1
-	return loader.Layout(gtx)
-}
+// func (pg *ProposalsPage) layoutIsSyncingSection(gtx C) D {
+// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding24)
+// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 	loader := material.Loader(pg.Theme.Base)
+// 	loader.Color = pg.Theme.Color.Gray1
+// 	return loader.Layout(gtx)
+// }
 
-func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
-	// TODO: use cryptomaterial clickable
-	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
-}
+// func (pg *ProposalsPage) layoutStartSyncSection(gtx C) D {
+// 	// TODO: use cryptomaterial clickable
+// 	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
+// }
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 	isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrProposal)).Layout), // Do we really need to display the title? nav is proposals already
+				layout.Rigid(func(gtx C) D {
+					lb := pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrProposal))
+					lb.Font.Weight = font.SemiBold
+					return lb.Layout(gtx)
+				}), // Do we really need to display the title? nav is proposals already
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
 				}),
@@ -467,7 +474,7 @@ func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
 							text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.Politeia.GetLastSyncedTimeStamp())
 						}
 
-						lastUpdatedInfo := pg.Theme.Label(values.TextSize10, text)
+						lastUpdatedInfo := pg.Theme.Label(pg.ConvertTextSize(values.TextSize10), text)
 						lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 						if pg.syncCompleted {
 							lastUpdatedInfo.Color = pg.Theme.Color.Success

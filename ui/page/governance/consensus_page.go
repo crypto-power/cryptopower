@@ -3,11 +3,10 @@ package governance
 import (
 	"time"
 
-	"gioui.org/font/gofont"
+	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -100,6 +99,8 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.orderDropDown.Width = values.MarginPadding100
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
+	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
+	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
 	pg.initWalletSelector()
 	return pg
@@ -126,6 +127,7 @@ func (pg *ConsensusPage) initWalletSelector() {
 	pg.walletDropDown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 1, 0, false)
 	pg.walletDropDown.Width = values.MarginPadding150
 	settingCommonDropdown(pg.Theme, pg.walletDropDown)
+	pg.walletDropDown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
 func (pg *ConsensusPage) isAgendaAPIAllowed() bool {
@@ -323,9 +325,9 @@ func (pg *ConsensusPage) Layout(gtx C) D {
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.IsMobileView() {
-			return pg.layoutMobile(gtx)
-		}
+		// if pg.Load.IsMobileView() {
+		// 	return pg.layoutMobile(gtx)
+		// }
 		return pg.layoutDesktop(gtx)
 	})
 
@@ -341,12 +343,16 @@ func (pg *ConsensusPage) layoutDesktop(gtx C) D {
 		}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
+								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+									lb := pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrConsensusChange))
+									lb.Font.Weight = font.SemiBold
+									return lb.Layout(gtx)
+								}), // Do we really need to display the title? nav is proposals already
 								layout.Rigid(func(gtx C) D {
-									return layout.Inset{Top: values.MarginPadding3}.Layout(gtx, pg.infoButton.Layout)
+									return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.infoButton.Layout)
 								}),
 							)
 						}),
@@ -398,46 +404,46 @@ func (pg *ConsensusPage) dropdownLayout(gtx C) D {
 	)
 }
 
-func (pg *ConsensusPage) layoutMobile(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
-						layout.Rigid(pg.infoButton.Layout),
-					)
-				}),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return layout.Inset{Right: values.MarginPadding10, Top: values.MarginPadding5}.Layout(gtx, pg.layoutRedirectVoting)
-					})
-				}),
-			)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-				return layout.Stack{}.Layout(gtx,
-					layout.Expanded(func(gtx C) D {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.E.Layout(gtx, func(gtx C) D {
-							card := pg.Theme.Card()
-							card.Radius = cryptomaterial.Radius(8)
-							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-								return card.Layout(gtx, func(gtx C) D {
-									return layout.UniformInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
-										return pg.layoutSyncSection(gtx)
-									})
-								})
-							})
-						})
-					}),
-					layout.Expanded(pg.statusDropDown.Layout),
-				)
-			})
-		}),
-	)
-}
+// func (pg *ConsensusPage) layoutMobile(gtx C) D {
+// 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+// 		layout.Rigid(func(gtx C) D {
+// 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+// 				layout.Rigid(func(gtx C) D {
+// 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+// 						layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrConsensusChange)).Layout), // Do we really need to display the title? nav is proposals already
+// 						layout.Rigid(pg.infoButton.Layout),
+// 					)
+// 				}),
+// 				layout.Flexed(1, func(gtx C) D {
+// 					return layout.E.Layout(gtx, func(gtx C) D {
+// 						return layout.Inset{Right: values.MarginPadding10, Top: values.MarginPadding5}.Layout(gtx, pg.layoutRedirectVoting)
+// 					})
+// 				}),
+// 			)
+// 		}),
+// 		layout.Flexed(1, func(gtx C) D {
+// 			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+// 				return layout.Stack{}.Layout(gtx,
+// 					layout.Expanded(func(gtx C) D {
+// 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 						return layout.E.Layout(gtx, func(gtx C) D {
+// 							card := pg.Theme.Card()
+// 							card.Radius = cryptomaterial.Radius(8)
+// 							return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+// 								return card.Layout(gtx, func(gtx C) D {
+// 									return layout.UniformInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
+// 										return pg.layoutSyncSection(gtx)
+// 									})
+// 								})
+// 							})
+// 						})
+// 					}),
+// 					layout.Expanded(pg.statusDropDown.Layout),
+// 				)
+// 			})
+// 		}),
+// 	)
+// }
 
 func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
@@ -452,7 +458,7 @@ func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{
 							Top: values.MarginPaddingMinus2,
-						}.Layout(gtx, pg.Theme.Label(values.TextSize16, values.String(values.StrVotingDashboard)).Layout)
+						}.Layout(gtx, pg.Theme.Label(pg.ConvertTextSize(values.TextSize16), values.String(values.StrVotingDashboard)).Layout)
 					}),
 				)
 			})
@@ -511,27 +517,27 @@ func (pg *ConsensusPage) layoutContent(gtx C) D {
 	)
 }
 
-func (pg *ConsensusPage) layoutSyncSection(gtx C) D {
-	if pg.isSyncing {
-		return pg.layoutIsSyncingSection(gtx)
-	} else if pg.syncCompleted {
-		updatedIcon := cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
-		updatedIcon.Color = pg.Theme.Color.Success
-		return updatedIcon.Layout(gtx, values.MarginPadding20)
-	}
-	return pg.layoutStartSyncSection(gtx)
-}
+// func (pg *ConsensusPage) layoutSyncSection(gtx C) D {
+// 	if pg.isSyncing {
+// 		return pg.layoutIsSyncingSection(gtx)
+// 	} else if pg.syncCompleted {
+// 		updatedIcon := cryptomaterial.NewIcon(pg.Theme.Icons.NavigationCheck)
+// 		updatedIcon.Color = pg.Theme.Color.Success
+// 		return updatedIcon.Layout(gtx, values.MarginPadding20)
+// 	}
+// 	return pg.layoutStartSyncSection(gtx)
+// }
 
-func (pg *ConsensusPage) layoutIsSyncingSection(gtx C) D {
-	th := material.NewTheme(gofont.Collection())
-	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding24)
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	loader := material.Loader(th)
-	loader.Color = pg.Theme.Color.Gray1
-	return loader.Layout(gtx)
-}
+// func (pg *ConsensusPage) layoutIsSyncingSection(gtx C) D {
+// 	th := material.NewTheme(gofont.Collection())
+// 	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding24)
+// 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 	loader := material.Loader(th)
+// 	loader.Color = pg.Theme.Color.Gray1
+// 	return loader.Layout(gtx)
+// }
 
-func (pg *ConsensusPage) layoutStartSyncSection(gtx C) D {
-	// TODO: use cryptomaterial clickable
-	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
-}
+// func (pg *ConsensusPage) layoutStartSyncSection(gtx C) D {
+// 	// TODO: use cryptomaterial clickable
+// 	return material.Clickable(gtx, pg.syncButton, pg.Theme.Icons.Restore.Layout24dp)
+// }
