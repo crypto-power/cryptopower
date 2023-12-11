@@ -26,23 +26,28 @@ func (t *TreasuryItem) SetVoteChoices(voteChoices [3]string) {
 
 func TreasuryItemWidget(gtx C, l *load.Load, treasuryItem *TreasuryItem) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+	axis := layout.Horizontal
+	if l.IsMobileView() {
+		axis = layout.Vertical
+	}
+	return layout.Flex{Axis: axis, Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize18), values.String(values.StrSetTreasuryPolicy))
-					lbl.Font.Weight = font.SemiBold
-					return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
-				}),
+			lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize18), values.String(values.StrSetTreasuryPolicy))
+			lbl.Font.Weight = font.SemiBold
+			return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, lbl.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layoutItems(l, treasuryItem)...)
 					})
 				}),
+				layout.Rigid(func(gtx C) D {
+					return layoutPolicyVoteAction(gtx, l, treasuryItem)
+				}),
 			)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layoutPolicyVoteAction(gtx, l, treasuryItem)
 		}),
 	)
 }

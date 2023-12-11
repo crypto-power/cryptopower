@@ -123,6 +123,7 @@ func (pg *TreasuryPage) initWalletSelector() {
 
 	pg.walletDropDown.Width = values.MarginPadding150
 	settingCommonDropdown(pg.Theme, pg.walletDropDown)
+	pg.walletDropDown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
 func (pg *TreasuryPage) HandleUserInteractions() {
@@ -213,10 +214,14 @@ func (pg *TreasuryPage) layout(gtx C) D {
 		return pg.decredWalletRequired(gtx)
 	}
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		padding := values.MarginPadding24
+		if pg.IsMobileView() {
+			padding = values.MarginPadding12
+		}
 		return layout.Inset{
-			Left:  values.MarginPadding24,
+			Left:  padding,
 			Top:   values.MarginPadding16,
-			Right: values.MarginPadding24,
+			Right: padding,
 		}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {

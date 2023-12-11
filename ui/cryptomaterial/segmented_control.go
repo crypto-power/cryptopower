@@ -105,7 +105,7 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 				})
 			}),
 		)
-	})
+	}, true)
 }
 
 func (sc *SegmentedControl) GroupTileLayout(gtx C) D {

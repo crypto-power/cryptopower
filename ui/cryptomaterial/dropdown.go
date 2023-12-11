@@ -63,8 +63,7 @@ type DropDown struct {
 	ExpandedLayoutInset  layout.Inset
 	collapsedLayoutInset layout.Inset
 
-	isMobileView    bool
-	ConvertTextSize func(unit.Sp) unit.Sp
+	convertTextSize func(unit.Sp) unit.Sp
 }
 
 type DropDownItem struct {
@@ -90,7 +89,7 @@ func (t *Theme) DropDown(items []DropDownItem, group uint, reversePos bool) *Dro
 // Dropdown pos will result in inconsistent dropdown backdrop. {dropdownInset}
 // parameter is the left  inset for the dropdown if {reversePos} is false, else
 // it'll become the right inset for the dropdown.
-func (t *Theme) DropdownWithCustomPos(items []DropDownItem, group uint, groupPosition uint, dropdownInset int, reversePos bool, isMobileView ...bool) *DropDown {
+func (t *Theme) DropdownWithCustomPos(items []DropDownItem, group uint, groupPosition uint, dropdownInset int, reversePos bool) *DropDown {
 	d := &DropDown{
 		theme:          t,
 		expanded:       false,
@@ -113,7 +112,6 @@ func (t *Theme) DropdownWithCustomPos(items []DropDownItem, group uint, groupPos
 		padding:                      layout.Inset{Top: values.MarginPadding8, Bottom: values.MarginPadding8},
 		shadow:                       t.Shadow(),
 		CollapsedLayoutTextDirection: layout.W,
-		isMobileView:                 len(isMobileView) > 0 && isMobileView[0],
 	}
 
 	d.revs = reversePos
@@ -154,14 +152,14 @@ func (d *DropDown) SelectedIndex() int {
 }
 
 func (d *DropDown) SetConvertTextSize(fun func(unit.Sp) unit.Sp) {
-	d.ConvertTextSize = fun
+	d.convertTextSize = fun
 }
 
 func (d *DropDown) getTextSize(textSize unit.Sp) unit.Sp {
-	if d.ConvertTextSize == nil {
+	if d.convertTextSize == nil {
 		return textSize
 	}
-	return d.ConvertTextSize(textSize)
+	return d.convertTextSize(textSize)
 }
 
 func (d *DropDown) Len() int {
