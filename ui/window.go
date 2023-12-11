@@ -18,7 +18,6 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -36,8 +35,6 @@ type Window struct {
 	navigator app.WindowNavigator
 
 	load *load.Load
-
-	txAuthor dcr.TxAuthor
 
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
@@ -64,9 +61,9 @@ type WriteClipboard struct {
 func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Time) (*Window, error) {
 	appTitle := giouiApp.Title(values.String(values.StrAppName))
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
-	appSize := giouiApp.Size(values.MobileAppWidth, values.MobileAppHeight)
+	appSize := giouiApp.Size(values.AppWidth, values.AppWidth)
 	// appMinSize is the minimum size the app.
-	appMinSize := giouiApp.MinSize(values.MobileAppWidth, values.MobileAppHeight)
+	appMinSize := giouiApp.MinSize(values.AppHeight, values.AppHeight)
 	// Display network on the app title if its not on mainnet.
 	if net := mw.NetType(); net != libutils.Mainnet {
 		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, net.Display()))
