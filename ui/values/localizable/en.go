@@ -872,6 +872,6 @@ const EN = `
 "multipleAssetTypeRequiredToTradeDEX" = "Multiple coin type wallets are required to trade on DCRDEX."
 "noSupportedBondAsset" = "DEX server (%s) does not support available asset wallets. Please choose another server."
 "dexPassword" = "DCRDEX Password"
-"insufficientBondAmount" = "Insufficient funds in this account, you a minimum of %v to post bond."
+"insufficientBondAmount" = "Insufficient funds in this account, you need a minimum of %v to post bond."
 "DEXInitErrorMsg" = "Something unexpected happened, please restart the Cryptopower Wallet."
 `

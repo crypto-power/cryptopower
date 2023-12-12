@@ -4,7 +4,7 @@ import (
 	"decred.org/dcrdex/client/core"
 )
 
-type clientCore interface {
+type dexClient interface {
 	Ready() <-chan struct{}
 	WaitForShutdown() <-chan struct{}
 	IsDEXPasswordSet() bool

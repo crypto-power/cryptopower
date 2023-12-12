@@ -2,9 +2,7 @@ package root
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,7 +10,6 @@ import (
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -36,9 +33,7 @@ type HomePage struct {
 
 	*load.Load
 
-	dexCtx  context.Context
-	dexcMtx sync.Mutex
-	dexc    *dexc.DEXClient
+	dexCtx context.Context
 
 	ctx                 context.Context
 	ctxCancel           context.CancelFunc
@@ -149,8 +144,8 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	go hp.CalculateAssetsUSDBalance()
-	if !hp.dexcReady() {
-		go hp.initializeDEX()
+	if !hp.AssetsManager.DexcReady() {
+		go hp.AssetsManager.InitializeDEX(hp.dexCtx)
 	}
 
 	if hp.CurrentPage() == nil {
@@ -281,11 +276,11 @@ func (hp *HomePage) displaySelectedPage(title string) {
 	case values.String(values.StrWallets):
 		pg = hp.walletSelectorPage
 	case values.String(values.StrTrade):
-		if !hp.dexcReady() {
+		if !hp.AssetsManager.DexcReady() {
 			// Attempt to initialize dex again.
-			hp.initializeDEX()
+			hp.AssetsManager.InitializeDEX(hp.dexCtx)
 		}
-		pg = NewTradePage(hp.Load, hp.dexc)
+		pg = NewTradePage(hp.Load)
 	case values.String(values.StrGovernance):
 		pg = governance.NewGovernancePage(hp.Load)
 	}
@@ -835,32 +830,4 @@ func (hp *HomePage) CalculateAssetsUSDBalance() {
 		hp.totalBalanceUSD = utils.FormatAsUSDString(hp.Printer, totalBalance)
 		hp.ParentWindow().Reload()
 	}
-}
-
-func (hp *HomePage) dexcReady() bool {
-	hp.dexcMtx.Lock()
-	defer hp.dexcMtx.Unlock()
-	return hp.dexc != nil
-}
-
-// initializeDEX initializes hp.dexCore
-func (hp *HomePage) initializeDEX() {
-	am := hp.AssetsManager
-	logDir := filepath.Dir(am.LogFile())
-	dexc, err := dexc.Start(hp.dexCtx, am.RootDir(), am.GetLanguagePreference(), logDir, am.GetLogLevels(), am.NetType(), 0 /* TODO: Make configurable */)
-	if err != nil {
-		log.Errorf("Error starting dex client: %v", err)
-		return
-	}
-
-	hp.dexcMtx.Lock()
-	hp.dexc = dexc
-	hp.dexcMtx.Unlock()
-
-	go func() {
-		<-hp.dexc.WaitForShutdown()
-		hp.dexcMtx.Lock()
-		hp.dexc = nil
-		hp.dexcMtx.Unlock()
-	}()
 }

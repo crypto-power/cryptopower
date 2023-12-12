@@ -40,13 +40,11 @@ type TradePage struct {
 	dcrdexBtn   *cryptomaterial.Clickable
 }
 
-func NewTradePage(l *load.Load, dexc *dexc.DEXClient) *TradePage {
+func NewTradePage(l *load.Load) *TradePage {
 	pg := &TradePage{
 		Load:       l,
 		MasterPage: app.NewMasterPage(TradePageID),
-		dexc:       dexc,
-
-		shadowBox: l.Theme.Shadow(),
+		shadowBox:  l.Theme.Shadow(),
 		scrollContainer: &widget.List{
 			List: layout.List{
 				Axis:      layout.Vertical,
@@ -82,7 +80,7 @@ func (pg *TradePage) OnNavigatedTo() {
 	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
-		pg.Display(dcrdex.NewDEXPage(pg.Load, pg.dexc))
+		pg.Display(dcrdex.NewDEXPage(pg.Load))
 	}
 }
 
@@ -93,7 +91,7 @@ func (pg *TradePage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
 	if pg.tab.SelectedIndex() == 0 && pg.CurrentPageID() != dcrdex.DCRDEXPageID {
-		pg.Display(dcrdex.NewDEXPage(pg.Load, pg.dexc))
+		pg.Display(dcrdex.NewDEXPage(pg.Load))
 	} else if pg.CurrentPageID() != exchange.CreateOrderPageID && pg.tab.SelectedIndex() == 1 {
 		pg.Display(exchange.NewCreateOrderPage(pg.Load))
 	}

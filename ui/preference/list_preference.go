@@ -114,6 +114,7 @@ func (lp *ListPreferenceModal) SavePreferenceKeyedValue() {
 		// TODO: We should be able to update dex core's language when the user
 		// changes language.
 		lp.AssetsManager.SetLanguagePreference(val)
+	case sharedW.LogLevelConfigKey:
 		lp.AssetsManager.SetLogLevels(val)
 	}
 }

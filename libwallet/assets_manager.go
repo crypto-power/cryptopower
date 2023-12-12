@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
@@ -61,6 +63,9 @@ type AssetsManager struct {
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
 	RateSource      ext.RateSource
+
+	dexcMtx sync.RWMutex
+	dexc    *dexc.DEXClient
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -881,4 +886,38 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	}
 
 	return assetsTotalUSDBalance, nil
+}
+
+// DexClient returns a dexc client that MUST never be modified.
+func (mgr *AssetsManager) DexClient() *dexc.DEXClient {
+	mgr.dexcMtx.RLock()
+	defer mgr.dexcMtx.RUnlock()
+	return mgr.dexc
+}
+
+func (mgr *AssetsManager) DexcReady() bool {
+	mgr.dexcMtx.RLock()
+	defer mgr.dexcMtx.RUnlock()
+	return mgr.dexc != nil
+}
+
+// InitializeDEX initializes mgr.dexc.
+func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+	logDir := filepath.Dir(mgr.LogFile())
+	dexc, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
+	if err != nil {
+		log.Errorf("Error starting dex client: %v", err)
+		return
+	}
+
+	mgr.dexcMtx.Lock()
+	mgr.dexc = dexc
+	mgr.dexcMtx.Unlock()
+
+	go func() {
+		<-mgr.dexc.WaitForShutdown()
+		mgr.dexcMtx.Lock()
+		mgr.dexc = nil
+		mgr.dexcMtx.Unlock()
+	}()
 }

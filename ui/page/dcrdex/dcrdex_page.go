@@ -4,7 +4,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
-	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -26,18 +25,15 @@ type DEXPage struct {
 
 	*load.Load
 
-	// Might be nil but interaction with this page will be disabled if it is.
-	dexc                 *dexc.DEXClient
 	generalSettingsBtn   cryptomaterial.Button
 	openTradeMainPage    *cryptomaterial.Clickable
 	splashPageInfoButton cryptomaterial.IconButton
 	splashPageContainer  *widget.List
 	startTradingBtn      cryptomaterial.Button
 	isDexFirstVisit      bool
-	inited               bool
 }
 
-func NewDEXPage(l *load.Load, dexc *dexc.DEXClient) *DEXPage {
+func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
 		MasterPage:        app.NewMasterPage(DCRDEXPageID),
 		Load:              l,
@@ -48,13 +44,11 @@ func NewDEXPage(l *load.Load, dexc *dexc.DEXClient) *DEXPage {
 			Axis:      layout.Vertical,
 		}},
 		isDexFirstVisit:    true,
-		dexc:               dexc,
 		generalSettingsBtn: l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange))),
 	}
 
 	// Init splash page more info widget.
 	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
-	dp.inited = dexc != nil && len(dexc.Exchanges()) > 0
 	return dp
 }
 
@@ -70,16 +64,16 @@ func (pg *DEXPage) ID() string {
 // displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
-	if pg.dexc == nil {
+	if !pg.AssetsManager.DexcReady() {
 		return
 	}
 
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().OnNavigatedTo()
-	} else if pg.inited {
+	} else if len(pg.AssetsManager.DexClient().Exchanges()) > 0 {
 		pg.Display(NewDEXMarketPage(pg.Load))
 	} else {
-		pg.Display(NewDEXOnboarding(pg.Load, pg.dexc))
+		pg.Display(NewDEXOnboarding(pg.Load))
 	}
 }
 
@@ -102,7 +96,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if pg.dexc == nil {
+	} else if pg.AssetsManager.DexClient() == nil {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 
