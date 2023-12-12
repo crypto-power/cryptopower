@@ -141,7 +141,7 @@ func getProposalType(payload string) ProposalType {
 
 	var meta metadataProposal
 	err = json.Unmarshal(decodedBytes, &meta)
-	if err == nil {
+	if err != nil {
 		log.Error("error unmarshalling metadataProposal:", err)
 		return prop
 	}
