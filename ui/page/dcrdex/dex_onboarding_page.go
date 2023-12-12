@@ -953,6 +953,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					pg.connectServerAndPrepareForBonding()
 					return true
 				})
+			dexPasswordModal.SetPasswordTitleVisibility(false)
 			pg.ParentWindow().ShowModal(dexPasswordModal)
 		case onboardingPostBond:
 			// Validate all input fields.

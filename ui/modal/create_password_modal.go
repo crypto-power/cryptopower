@@ -172,6 +172,10 @@ func (cm *CreatePasswordModal) SetError(err string) {
 	cm.serverError = values.TranslateErr(err)
 }
 
+func (cm *CreatePasswordModal) SetPasswordTitleVisibility(show bool) {
+	cm.passwordEditor.IsTitleLabel = show
+}
+
 func (cm *CreatePasswordModal) UseCustomWidget(layout layout.Widget) *CreatePasswordModal {
 	cm.customWidget = layout
 	return cm
