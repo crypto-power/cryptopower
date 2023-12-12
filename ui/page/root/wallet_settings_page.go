@@ -649,7 +649,15 @@ func (pg *WalletSettingsPage) HandleUserInteractions() {
 			pg.ParentWindow().ShowModal(textModal)
 
 		} else {
-			pg.wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
+			mixingEnabled := pg.wallet.ReadBoolConfigValueForKey(sharedW.AccountMixerConfigSet, false)
+			if !mixingEnabled {
+				pg.spendUnmixedFunds.SetChecked(true)
+				mixingNotEnabled := values.String(values.StrMixingNotSetUp)
+				info := modal.NewErrorModal(pg.Load, mixingNotEnabled, modal.DefaultClickFunc())
+				pg.ParentWindow().ShowModal(info)
+			} else {
+				pg.wallet.SetBoolConfigValueForKey(sharedW.SpendUnmixedFundsKey, false)
+			}
 		}
 	}
 

@@ -3,7 +3,6 @@ package privacy
 import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
-	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
@@ -70,13 +69,13 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrConfirmToCreateAccs)).
 		SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+			defer pm.Dismiss()
 			err := dcrWallet.CreateMixerAccounts(values.String(values.StrMixed), values.String(values.StrUnmixed), password)
 			if err != nil {
 				pm.SetError(err.Error())
 				pm.SetLoading(false)
 				return false
 			}
-			dcrWallet.SetBoolConfigValueForKey(sharedW.AccountMixerConfigSet, true)
 
 			if movefundsChecked {
 				err := moveFundsFromDefaultToUnmixed(conf, dcrWallet, password)
@@ -87,8 +86,6 @@ func showModalSetupMixerAcct(conf *sharedModalConfig, dcrWallet *dcr.Asset, move
 					return false
 				}
 			}
-
-			pm.Dismiss()
 
 			conf.pageNavigator.Display(NewAccountMixerPage(conf.Load, dcrWallet))
 
@@ -107,6 +104,13 @@ func moveFundsFromDefaultToUnmixed(conf *sharedModalConfig, dcrWallet *dcr.Asset
 
 	// get the first account in the wallet as this is the default
 	sourceAccount := acc.Accounts[0]
+
+	balAtom := sourceAccount.Balance.Spendable.ToInt()
+	if balAtom <= 0 {
+		// Nothing to do.
+		return nil
+	}
+
 	destinationAccount := dcrWallet.UnmixedAccountNumber()
 
 	destinationAddress, err := dcrWallet.CurrentAddress(destinationAccount)
