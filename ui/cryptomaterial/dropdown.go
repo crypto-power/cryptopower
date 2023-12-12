@@ -355,7 +355,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 					lbl.Text = item.Text[:maxDropdownItemTextLen-3 /* subtract space for the ellipsis */] + "..."
 				}
 				lbl.Font.Weight = d.FontWeight
-				lbl.TextSize = d.getTextSize(values.TextSize16)
+				lbl.TextSize = d.getTextSize(values.TextSize14)
 				return lbl.Layout(gtx)
 			})
 		}),

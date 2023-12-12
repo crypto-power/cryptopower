@@ -48,6 +48,8 @@ type ConsensusPage struct {
 	statusDropDown *cryptomaterial.DropDown
 	walletDropDown *cryptomaterial.DropDown
 	consensusList  *cryptomaterial.ClickableList
+	filterBtn      *cryptomaterial.Clickable
+	isFilterOpen   bool
 
 	infoButton            cryptomaterial.IconButton
 	navigateToSettingsBtn cryptomaterial.Button
@@ -74,7 +76,7 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 	pg.navigateToSettingsBtn = pg.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrGovernance)))
-
+	pg.filterBtn = l.Theme.NewClickable(false)
 	pg.orderDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrNewest)},
 		{Text: values.String(values.StrOldest)},
@@ -97,6 +99,10 @@ func NewConsensusPage(l *load.Load) *ConsensusPage {
 	pg.statusDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.Width = values.MarginPadding100
+	if l.IsMobileView() {
+		pg.orderDropDown.Width = values.DP85
+		pg.statusDropDown.Width = values.DP118
+	}
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
 	settingCommonDropdown(pg.Theme, pg.orderDropDown)
 	pg.statusDropDown.SetConvertTextSize(pg.ConvertTextSize)
@@ -273,6 +279,10 @@ func (pg *ConsensusPage) HandleUserInteractions() {
 			pg.ParentWindow().Reload()
 		})
 	}
+
+	for pg.filterBtn.Clicked() {
+		pg.isFilterOpen = !pg.isFilterOpen
+	}
 }
 
 func (pg *ConsensusPage) FetchAgendas() {
@@ -346,8 +356,8 @@ func (pg *ConsensusPage) layout(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							return layout.Flex{}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
 									lb := pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrConsensusChange))
 									lb.Font.Weight = font.SemiBold
 									return lb.Layout(gtx)
@@ -366,8 +376,12 @@ func (pg *ConsensusPage) layout(gtx C) D {
 					return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
 							layout.Stacked(func(gtx C) D {
+								topInset := values.MarginPadding50
+								if pg.IsMobileView() && pg.isFilterOpen {
+									topInset = values.MarginPadding80
+								}
 								return layout.Inset{
-									Top: values.MarginPadding60,
+									Top: topInset,
 								}.Layout(gtx, pg.layoutContent)
 							}),
 							layout.Expanded(pg.dropdownLayout),
@@ -380,29 +394,58 @@ func (pg *ConsensusPage) layout(gtx C) D {
 }
 
 func (pg *ConsensusPage) dropdownLayout(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	if pg.IsMobileView() {
+		return layout.Stack{}.Layout(gtx,
+			layout.Stacked(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Inset{Top: values.MarginPadding40}.Layout(gtx, pg.rightDropdown)
+			}),
+			layout.Expanded(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.leftDropdown(gtx)
+			}),
+		)
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(pg.leftDropdown),
+		layout.Rigid(pg.rightDropdown),
+	)
+}
+
+func (pg *ConsensusPage) leftDropdown(gtx C) D {
+	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if pg.walletDropDown == nil {
-						return D{}
-					}
-					return layout.W.Layout(gtx, pg.walletDropDown.Layout)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(pg.statusDropDown.Layout),
-						layout.Rigid(func(gtx C) D {
-							return layout.E.Layout(gtx, pg.orderDropDown.Layout)
-						}),
-					)
-				}),
-			)
+			if pg.walletDropDown == nil {
+				return D{}
+			}
+			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.Theme.Separator().Layout)
+			if !pg.IsMobileView() {
+				return D{}
+			}
+			icon := pg.Theme.Icons.FilterIcon
+			if pg.isFilterOpen {
+				icon = pg.Theme.Icons.FilterOffIcon
+			}
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
+			})
 		}),
 	)
+}
+
+func (pg *ConsensusPage) rightDropdown(gtx C) D {
+	if !pg.isFilterOpen && pg.IsMobileView() {
+		return D{}
+	}
+	return layout.E.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(pg.statusDropDown.Layout),
+			layout.Rigid(pg.orderDropDown.Layout),
+		)
+	})
 }
 
 func (pg *ConsensusPage) layoutRedirectVoting(gtx C) D {

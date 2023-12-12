@@ -50,6 +50,8 @@ type ProposalsPage struct {
 	statusDropDown *cryptomaterial.DropDown
 	orderDropDown  *cryptomaterial.DropDown
 	walletDropDown *cryptomaterial.DropDown
+	filterBtn      *cryptomaterial.Clickable
+	isFilterOpen   bool
 
 	proposalsList *cryptomaterial.ClickableList
 	syncButton    *widget.Clickable
@@ -88,6 +90,8 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	_, pg.infoButton = components.SubpageHeaderButtons(l)
 	pg.infoButton.Size = values.MarginPadding20
 
+	pg.filterBtn = l.Theme.NewClickable(false)
+
 	pg.statusDropDown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: values.String(values.StrAll)},
 		{Text: values.String(values.StrUnderReview)},
@@ -119,7 +123,6 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
 	pg.initWalletSelector()
-
 	return pg
 }
 
@@ -256,6 +259,10 @@ func (pg *ProposalsPage) HandleUserInteractions() {
 			}
 		}
 	}
+
+	for pg.filterBtn.Clicked() {
+		pg.isFilterOpen = !pg.isFilterOpen
+	}
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -323,14 +330,20 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 					}.Layout(gtx, func(gtx C) D {
 						return layout.Stack{}.Layout(gtx,
 							layout.Expanded(func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding120}.Layout(gtx, pg.layoutContent)
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(func(gtx C) D {
+										topInset := values.MarginPadding50
+										if pg.IsMobileView() && pg.isFilterOpen {
+											topInset = values.MarginPadding80
+										}
+										return layout.Inset{
+											Top: topInset,
+										}.Layout(gtx, pg.searchEditor.Layout)
+									}),
+									layout.Rigid(pg.layoutContent),
+								)
 							}),
-							layout.Expanded(func(gtx C) D {
-								return layout.Inset{
-									Top: values.MarginPadding50,
-								}.Layout(gtx, pg.searchEditor.Layout)
-							}),
-							layout.Expanded(pg.dropdownLayout),
+							layout.Stacked(pg.dropdownLayout),
 						)
 					})
 				}),
@@ -340,7 +353,27 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 }
 
 func (pg *ProposalsPage) dropdownLayout(gtx C) D {
+	if pg.IsMobileView() {
+		return layout.Stack{}.Layout(gtx,
+			layout.Stacked(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Inset{Top: values.MarginPadding40}.Layout(gtx, pg.rightDropdown)
+			}),
+			layout.Expanded(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.leftDropdown(gtx)
+			}),
+		)
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(pg.leftDropdown),
+		layout.Rigid(pg.rightDropdown),
+	)
+}
+
+func (pg *ProposalsPage) leftDropdown(gtx C) D {
+	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
 				return D{}
@@ -348,43 +381,55 @@ func (pg *ProposalsPage) dropdownLayout(gtx C) D {
 			return layout.W.Layout(gtx, pg.walletDropDown.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(pg.statusDropDown.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.E.Layout(gtx, pg.orderDropDown.Layout)
-				}),
-			)
+			if !pg.IsMobileView() {
+				return D{}
+			}
+			icon := pg.Theme.Icons.FilterIcon
+			if pg.isFilterOpen {
+				icon = pg.Theme.Icons.FilterOffIcon
+			}
+			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
+			})
 		}),
 	)
 }
 
+func (pg *ProposalsPage) rightDropdown(gtx C) D {
+	if !pg.isFilterOpen && pg.IsMobileView() {
+		return D{}
+	}
+	return layout.E.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(pg.statusDropDown.Layout),
+			layout.Rigid(pg.orderDropDown.Layout),
+		)
+	})
+}
+
 func (pg *ProposalsPage) layoutContent(gtx C) D {
-	return layout.Stack{}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					if pg.scroll.ItemsCount() <= 0 {
-						isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
-						return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
-					}
-					proposalItems := pg.scroll.FetchedData()
-					return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return components.ProposalsList(gtx, pg.Load, proposalItems[i])
-							}),
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{
-									Top:    values.MarginPadding7,
-									Bottom: values.MarginPadding7,
-								}.Layout(gtx, pg.Theme.Separator().Layout)
-							}),
-						)
-					})
-				})
+	return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+			if pg.scroll.ItemsCount() <= 0 {
+				isProposalSyncing := pg.AssetsManager.Politeia.IsSyncing()
+				return components.LayoutNoProposalsFound(gtx, pg.Load, isProposalSyncing || pg.scroll.ItemsCount() == -1, 0)
+			}
+			proposalItems := pg.scroll.FetchedData()
+			return pg.proposalsList.Layout(gtx, len(proposalItems), func(gtx C, i int) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return components.ProposalsList(gtx, pg.Load, proposalItems[i])
+					}),
+					layout.Rigid(func(gtx C) D {
+						return layout.Inset{
+							Top:    values.MarginPadding7,
+							Bottom: values.MarginPadding7,
+						}.Layout(gtx, pg.Theme.Separator().Layout)
+					}),
+				)
 			})
-		}),
-	)
+		})
+	})
 }
 
 func (pg *ProposalsPage) layoutSectionHeader(gtx C) D {
