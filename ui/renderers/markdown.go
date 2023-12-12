@@ -1,6 +1,7 @@
 package renderers
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
@@ -34,7 +35,6 @@ type MarkdownProvider struct {
 	listItemNumber int // should be negative when not rendering a list
 	links          map[string]*widget.Clickable
 	table          *table
-	label          *cryptomaterial.Label
 	prefix         string
 
 	stringBuilder strings.Builder
@@ -42,15 +42,12 @@ type MarkdownProvider struct {
 }
 
 func RenderMarkdown(l *load.Load, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
-	lbl := theme.Body1("")
-	lbl.TextSize = l.ConvertTextSize(values.TextSize14)
 	source = strings.Replace(source, " \n*", " \n\n *", -1)
 
 	mdProvider := &MarkdownProvider{
 		Load:           l,
 		theme:          theme,
 		listItemNumber: -1,
-		label:          &lbl,
 	}
 	source = mdProvider.prepare(source)
 
@@ -167,6 +164,7 @@ func (p *MarkdownProvider) renderListItem(content string) {
 		lbl := p.getLabel()
 		strongLabel := p.getLabel()
 		strongLabel.Font.Weight = font.Bold
+		fmt.Println("-------getLabel----222222-->", lbl.TextSize)
 
 		return layout.Flex{}.Layout(gtx,
 			layout.Flexed(0.02, func(gtx C) D {
@@ -204,7 +202,11 @@ func (p *MarkdownProvider) prepareHeading(node *ast.Heading, entering bool) {
 		content := p.stringBuilder.String()
 		p.stringBuilder.Reset()
 		p.createNewRow()
-		p.appendToLastRow(getHeading(content, node.Level, p.theme).Layout)
+		p.appendToLastRow(func(gtx C) D {
+			lbl := getHeading(content, node.Level, p.theme)
+			lbl.TextSize = p.ConvertTextSize(lbl.TextSize)
+			return lbl.Layout(gtx)
+		})
 		p.addVerticalSpacing(8)
 		if node.Level == 1 {
 			p.drawLineRow(layout.Horizontal)
@@ -218,6 +220,7 @@ func (p *MarkdownProvider) prepareLink(_ /*node*/ *ast.Link, _ /*entering*/ bool
 }
 
 func (p *MarkdownProvider) renderBlock() {
+	fmt.Println("------renderBlock---->")
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 
@@ -275,7 +278,9 @@ func (p *MarkdownProvider) renderBlock() {
 
 func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 	lbl := p.theme.Body1("")
-	lbl.TextSize = p.ConvertTextSize(values.TextSize14)
+	size := p.ConvertTextSize(values.TextSize16)
+	// fmt.Println("-------getLabel------>", size)
+	lbl.TextSize = size
 	if len(p.tagStack) > 0 {
 		for i := range p.tagStack {
 			switch p.tagStack[i] {
@@ -294,6 +299,7 @@ func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 
 func (p *MarkdownProvider) render(content *strings.Builder) {
 	lbl := p.getLabel()
+	fmt.Println("-------getLabel----111111-->", lbl.TextSize)
 	words := strings.Fields(content.String())
 	content.Reset()
 

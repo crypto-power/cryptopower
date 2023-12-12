@@ -40,8 +40,8 @@ type ProposalDetails struct {
 
 	descriptionList *layout.List
 
-	proposal      *libwallet.Proposal
-	proposalItems map[string]proposalItemWidgets
+	proposal       *libwallet.Proposal
+	proposalDesRaw string
 
 	scrollbarList *widget.List
 	rejectedIcon  *widget.Icon
@@ -79,7 +79,6 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 			List: layout.List{Axis: layout.Vertical},
 		},
 		redirectIcon:      l.Theme.Icons.RedirectIcon,
-		proposalItems:     make(map[string]proposalItemWidgets),
 		rejectedIcon:      l.Theme.Icons.NavigationCancel,
 		successIcon:       l.Theme.Icons.ActionCheckCircle,
 		viewInPoliteiaBtn: l.Theme.NewClickable(true),
@@ -110,6 +109,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedTo() {
+	pg.loadProposalDescription()
 	pg.listenForSyncNotifications() // listener is stopped in OnNavigatedFrom()
 }
 
@@ -133,6 +133,88 @@ func (pg *ProposalDetails) initWalletSelector() {
 	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
+func (pg *ProposalDetails) loadProposalDescription() {
+	if pg.proposalDesRaw == "" && !pg.loadingDescription {
+		pg.loadingDescription = true
+		go func() {
+			var proposalDescription string
+			if pg.proposal.IndexFile != "" && pg.proposal.IndexFileVersion == pg.proposal.Version {
+				proposalDescription = pg.proposal.IndexFile
+			} else {
+				var err error
+				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(pg.proposal.Token)
+				if err != nil {
+					log.Errorf("Error loading proposal description: %v", err)
+					time.Sleep(7 * time.Second)
+					pg.loadingDescription = false
+					return
+				}
+			}
+
+			pg.proposalDesRaw = proposalDescription
+			pg.loadingDescription = false
+		}()
+	}
+}
+
+// Layout draws the page UI components into the provided layout context
+// to be eventually drawn on screen.
+// Part of the load.Page interface.
+func (pg *ProposalDetails) Layout(gtx C) D {
+	proposal := pg.proposal
+	page := components.SubPage{
+		Load:       pg.Load,
+		Title:      components.TruncateString(proposal.Name, 40),
+		BackButton: pg.backButton,
+		Back: func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		},
+		Body: func(gtx C) D {
+			return pg.layoutDescription(gtx)
+		},
+		ExtraHeader: func(gtx C) D {
+			return layout.Inset{Bottom: values.MarginPadding16, Top: values.MarginPadding16}.Layout(gtx, pg.layoutTitle)
+		},
+		ExtraItem: pg.tempRightHead,
+		Extra: func(gtx C) D {
+			grayCol := pg.Load.Theme.Color.GrayText2
+			timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
+			timeAgoLabel.Color = grayCol
+
+			dotLabel := pg.Load.Theme.H4(" . ")
+			dotLabel.Color = grayCol
+
+			categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
+			categoryLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+			timeAgoLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+			return layout.Inset{}.Layout(gtx, func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(categoryLabel.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+						}),
+						layout.Rigid(timeAgoLabel.Layout),
+					)
+				})
+			})
+		},
+	}
+	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
+}
+
+func (pg *ProposalDetails) getProposalItemWidgets() *proposalItemWidgets {
+	if pg.proposalDesRaw == "" {
+		return nil
+	}
+	r := renderers.RenderMarkdown(pg.Load, pg.Theme, pg.proposalDesRaw)
+	proposalWidgets, proposalClickables := r.Layout()
+	return &proposalItemWidgets{
+		widgets:    proposalWidgets,
+		clickables: proposalClickables,
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -142,14 +224,6 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 		//TODO: implement when selected wallet
-	}
-
-	for token := range pg.proposalItems {
-		for location, clickable := range pg.proposalItems[token].clickables {
-			if clickable.Clicked() {
-				components.GoToURL(location)
-			}
-		}
 	}
 
 	if pg.vote.Clicked() {
@@ -527,9 +601,10 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),
 	}
 
-	_, ok := pg.proposalItems[proposal.Token]
-	if ok {
-		w = append(w, pg.proposalItems[proposal.Token].widgets...)
+	// _, ok := pg.proposalItems[proposal.Token]
+	itemWidgets := pg.getProposalItemWidgets()
+	if itemWidgets != nil {
+		w = append(w, itemWidgets.widgets...)
 	} else {
 		loading := func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layout.Flexed(1, func(gtx C) D {
@@ -583,141 +658,4 @@ func (pg *ProposalDetails) lineSeparator(inset layout.Inset) layout.Widget {
 	return func(gtx C) D {
 		return inset.Layout(gtx, pg.Theme.Separator().Layout)
 	}
-}
-
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
-// Part of the load.Page interface.
-func (pg *ProposalDetails) Layout(gtx C) D {
-	// if pg.Load.IsMobileView() {
-	// 	return pg.layoutMobile(gtx)
-	// }
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *ProposalDetails) layoutDesktop(gtx C) D {
-	proposal := pg.proposal
-	_, ok := pg.proposalItems[proposal.Token]
-	if !ok && !pg.loadingDescription {
-		pg.loadingDescription = true
-		go func() {
-			var proposalDescription string
-			if proposal.IndexFile != "" && proposal.IndexFileVersion == proposal.Version {
-				proposalDescription = proposal.IndexFile
-			} else {
-				var err error
-				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
-				if err != nil {
-					log.Errorf("Error loading proposal description: %v", err)
-					time.Sleep(7 * time.Second)
-					pg.loadingDescription = false
-					return
-				}
-			}
-
-			r := renderers.RenderMarkdown(pg.Load, pg.Theme, proposalDescription)
-			proposalWidgets, proposalClickables := r.Layout()
-			pg.proposalItems[proposal.Token] = proposalItemWidgets{
-				widgets:    proposalWidgets,
-				clickables: proposalClickables,
-			}
-			pg.loadingDescription = false
-		}()
-	}
-
-	page := components.SubPage{
-		Load:       pg.Load,
-		Title:      components.TruncateString(proposal.Name, 40),
-		BackButton: pg.backButton,
-		Back: func() {
-			pg.ParentNavigator().CloseCurrentPage()
-		},
-		Body: func(gtx C) D {
-			return pg.layoutDescription(gtx)
-		},
-		ExtraHeader: func(gtx C) D {
-			return layout.Inset{Bottom: values.MarginPadding16, Top: values.MarginPadding16}.Layout(gtx, pg.layoutTitle)
-		},
-		ExtraItem: pg.tempRightHead,
-		Extra: func(gtx C) D {
-			grayCol := pg.Load.Theme.Color.GrayText2
-			timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
-			timeAgoLabel.Color = grayCol
-
-			dotLabel := pg.Load.Theme.H4(" . ")
-			dotLabel.Color = grayCol
-
-			categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
-			categoryLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
-			timeAgoLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
-			return layout.Inset{}.Layout(gtx, func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(categoryLabel.Layout),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-						}),
-						layout.Rigid(timeAgoLabel.Layout),
-					)
-				})
-			})
-		},
-	}
-	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
-}
-
-func (pg *ProposalDetails) layoutMobile(gtx C) D {
-	proposal := pg.proposal
-	_, ok := pg.proposalItems[proposal.Token]
-	if !ok && !pg.loadingDescription {
-		pg.loadingDescription = true
-		go func() {
-			var proposalDescription string
-			if proposal.IndexFile != "" && proposal.IndexFileVersion == proposal.Version {
-				proposalDescription = proposal.IndexFile
-			} else {
-				var err error
-				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
-				if err != nil {
-					log.Errorf("Error loading proposal description: %v", err)
-					time.Sleep(7 * time.Second)
-					pg.loadingDescription = false
-					return
-				}
-			}
-
-			r := renderers.RenderMarkdown(pg.Load, pg.Theme, proposalDescription)
-			proposalWidgets, proposalClickables := r.Layout()
-			pg.proposalItems[proposal.Token] = proposalItemWidgets{
-				widgets:    proposalWidgets,
-				clickables: proposalClickables,
-			}
-			pg.loadingDescription = false
-		}()
-	}
-
-	body := func(gtx C) D {
-		page := components.SubPage{
-			Load:       pg.Load,
-			Title:      components.TruncateString(proposal.Name, 30),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
-					}),
-					layout.Rigid(pg.layoutDescription),
-				)
-			},
-			ExtraItem: pg.viewInPoliteiaBtn,
-			Extra: func(gtx C) D {
-				return layout.Inset{}.Layout(gtx, pg.redirectIcon.Layout24dp)
-			},
-		}
-		return page.Layout(pg.ParentWindow(), gtx)
-	}
-	return components.UniformMobile(gtx, false, false, body)
 }
