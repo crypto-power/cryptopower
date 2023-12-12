@@ -255,7 +255,7 @@ func (hp *HomePage) HandleUserInteractions() {
 
 	hp.bottomNavigationBar.CurrentPage = hp.CurrentPageID()
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
-	for _, item := range hp.bottomNavigationBar.BottomNaigationItems {
+	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
 		for item.Clickable.Clicked() {
 			var pg app.Page
 			switch item.Title {
@@ -451,7 +451,7 @@ func (hp *HomePage) initBottomNavItems() {
 	hp.bottomNavigationBar = components.BottomNavigationBar{
 		Load:        hp.Load,
 		CurrentPage: hp.CurrentPageID(),
-		BottomNaigationItems: []components.BottomNavigationBarHandler{
+		BottomNavigationItems: []components.BottomNavigationBarHandler{
 			{
 				Clickable:     hp.Theme.NewClickable(true),
 				Image:         hp.Theme.Icons.OverviewIcon,

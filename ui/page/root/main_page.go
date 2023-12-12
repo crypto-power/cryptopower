@@ -647,7 +647,7 @@ func (swmp *SingleWalletMasterPage) postTransactionNotification(t *sharedW.Trans
 		notification = values.StringF(values.StrDcrReceived, amount)
 	case dcr.TxTypeVote:
 		reward := strconv.FormatFloat(wal.ToAmount(t.VoteReward).ToCoin(), 'f', -1, 64)
-		notification = values.StringF(values.StrTicektVoted, reward)
+		notification = values.StringF(values.StrTicketVoted, reward)
 	case dcr.TxTypeRevocation:
 		notification = values.String(values.StrTicketRevoked)
 	default:
@@ -711,7 +711,7 @@ func (swmp *SingleWalletMasterPage) listenForNotifications() {
 	}
 
 	txAndBlockNotificationListener := &sharedW.TxAndBlockNotificationListener{
-		OnTransaction: func(transaction *sharedW.Transaction) {
+		OnTransaction: func(walletID int, transaction *sharedW.Transaction) {
 			swmp.updateBalance()
 			if swmp.AssetsManager.IsTransactionNotificationsOn() {
 				// TODO: SPV wallets only receive mempool tx ntfn for txs that

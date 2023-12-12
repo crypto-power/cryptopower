@@ -132,25 +132,27 @@ func (c *politeiaClient) batchProposals(tokens []string) ([]Proposal, error) {
 }
 
 func getProposalType(payload string) ProposalType {
+	prop := ProposalTypeNormal
 	decodedBytes, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
-		fmt.Println("error decoding proposalmetadata:", err)
-		return ProposalTypeNormal
+		fmt.Println("error decoding proposal metadata:", err)
+		return prop
 	}
 
 	var meta metadataProposal
 	err = json.Unmarshal(decodedBytes, &meta)
 	if err != nil {
 		log.Error("error unmarshalling metadataProposal:", err)
+		return prop
 	}
 
 	if meta.LinkTo != "" {
-		return ProposalTypeRFPSubmission
+		prop = ProposalTypeRFPSubmission
 	} else if meta.LinkBy != 0 {
-		return ProposalTypeRFPProposal
-	} else {
-		return ProposalTypeNormal
+		prop = ProposalTypeRFPProposal
 	}
+
+	return prop
 }
 
 func (c *politeiaClient) proposalDetails(token string) (*www.ProposalDetailsReply, error) {

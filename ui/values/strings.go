@@ -723,7 +723,7 @@ const (
 	StrSyncSteps                       = "syncSteps"
 	StrTakenAccount                    = "takenAccount"
 	StrTapToCopy                       = "tapToCopy"
-	StrTicektVoted                     = "ticektVoted"
+	StrTicketVoted                     = "ticketVoted"
 	StrTicket                          = "ticket"
 	StrTicketConfirmed                 = "ticketConfirmed"
 	StrTicketDetails                   = "ticketDetails"
@@ -977,4 +977,5 @@ const (
 	StrBooked                          = "booked"
 	StrExecuted                        = "executed"
 	StrCannotSpendWatchOnlyWallet      = "cannotSpendWatchOnlyWallet"
+	StrAllWallets                      = "allWallets"
 )

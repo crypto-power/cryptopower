@@ -613,7 +613,7 @@ const EN = `
 "syncSteps" = "Step %d/3"
 "takenAccount" = "Account name is taken"
 "tapToCopy" = "(Tap to copy)"
-"ticektVoted" =  "A ticket just voted\nVote reward: %s DCR"
+"ticketVoted" =  "A ticket just voted\nVote reward: %s DCR"
 "ticket" = "Ticket"
 "ticketConfirmed" = "Ticket(s) Confirmed"
 "ticketDetails" = "Ticket details"
@@ -868,5 +868,5 @@ const EN = `
 "booked" = "Booked"
 "executed" = "Executed"
 "cannotSpendWatchOnlyWallet" = "You cannot spend from a watch only wallet, try creating another wallet."
-
+"allWallets" = "All Wallets"
 `
