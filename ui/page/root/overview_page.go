@@ -429,7 +429,11 @@ func (pg *OverviewPage) contentSliderLayout(item *assetBalanceSliderItem) layout
 				}),
 				layout.Rigid(func(gtx C) D {
 					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-						return item.image.LayoutSize(gtx, values.MarginPadding65)
+						imageSize := values.MarginPadding65
+						if pg.IsMobileView() {
+							imageSize = values.DP61
+						}
+						return item.image.LayoutSize(gtx, imageSize)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
