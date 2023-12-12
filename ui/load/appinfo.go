@@ -80,3 +80,16 @@ func (app *AppInfo) ConvertTextSize(size unit.Sp) unit.Sp {
 		return size
 	}
 }
+
+// This function return icon size for desktop and mobile
+func (app *AppInfo) ConvertIconSize(size unit.Dp) unit.Dp {
+	if !app.isMobileView {
+		return size
+	}
+	switch size {
+	case values.MarginPadding24:
+		return values.MarginPadding16
+	default:
+		return size
+	}
+}

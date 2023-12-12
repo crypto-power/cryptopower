@@ -91,6 +91,12 @@ func UniformHorizontalInset(v unit.Dp) layout.Inset {
 	return layout.Inset{Right: v, Left: v}
 }
 
+// UniformVeticalInset creates an inset with the specified amount applied uniformly to both the top and bottom edges.
+// This function is useful for ensuring consistent vetical padding or margin around elements, without affecting the horizontal spacing.
+func UniformVeticalInset(v unit.Dp) layout.Inset {
+	return layout.Inset{Right: v, Left: v}
+}
+
 func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
 	width := gtx.Constraints.Max.X
 

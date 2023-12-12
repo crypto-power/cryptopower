@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/gomarkdown/markdown/ast"
 )
@@ -27,6 +28,7 @@ type layoutRow struct {
 }
 
 type MarkdownProvider struct {
+	*load.Load
 	containers     []layoutRow
 	theme          *cryptomaterial.Theme
 	listItemNumber int // should be negative when not rendering a list
@@ -37,15 +39,15 @@ type MarkdownProvider struct {
 
 	stringBuilder strings.Builder
 	tagStack      []string
-
-	shouldRemoveBold bool
 }
 
-func RenderMarkdown(_ C, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
+func RenderMarkdown(l *load.Load, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
 	lbl := theme.Body1("")
+	lbl.TextSize = l.ConvertTextSize(values.TextSize14)
 	source = strings.Replace(source, " \n*", " \n\n *", -1)
 
 	mdProvider := &MarkdownProvider{
+		Load:           l,
 		theme:          theme,
 		listItemNumber: -1,
 		label:          &lbl,
@@ -104,7 +106,9 @@ func (p *MarkdownProvider) prepareCodeBlock(node *ast.CodeBlock, _ /*entering*/ 
 			Padding:     layout.UniformInset(values.MarginPadding16),
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return p.theme.Body1(content).Layout(gtx)
+				lbl := p.theme.Body1(content)
+				lbl.TextSize = p.ConvertTextSize(values.TextSize14)
+				return lbl.Layout(gtx)
 			}),
 		)
 	}
@@ -271,6 +275,7 @@ func (p *MarkdownProvider) renderBlock() {
 
 func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 	lbl := p.theme.Body1("")
+	lbl.TextSize = p.ConvertTextSize(values.TextSize14)
 	if len(p.tagStack) > 0 {
 		for i := range p.tagStack {
 			switch p.tagStack[i] {

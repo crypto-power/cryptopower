@@ -75,9 +75,6 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda *dcr.Agenda) D {
 			lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize20), agenda.AgendaID)
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
-			// return layout.Flex{}.Layout(gtx,
-			// 	layout.Rigid(lbl.Layout),
-			// )
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -132,7 +129,7 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingW
 func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	lb := l.Theme.Body1(values.String(values.StrNoAgendaYet))
-	lb.TextSize = l.ConvertTextSize(values.TextSize14)
+	lb.TextSize = l.ConvertTextSize(values.TextSize16)
 	lb.Color = l.Theme.Color.GrayText3
 	if syncing {
 		lb.Text = values.String(values.StrFetchingAgenda)
