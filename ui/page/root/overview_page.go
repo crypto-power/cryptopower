@@ -346,7 +346,7 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 						return pg.assetBalanceSliderLayout(gtx, 0)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, pg.mixerSliderLayout)
+						return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, pg.mixerSliderLayout)
 					}),
 				)
 			}
@@ -417,43 +417,49 @@ func (pg *OverviewPage) assetBalanceItemLayout(item *assetBalanceSliderItem, row
 func (pg *OverviewPage) contentSliderLayout(item *assetBalanceSliderItem) layout.Widget {
 	col := pg.Theme.Color.InvText
 	return func(gtx C) D {
-		return layout.Flex{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				lbl := pg.Theme.Body1(item.assetType)
-				lbl.Color = col
-				return pg.centerLayout(gtx, values.MarginPadding15, values.MarginPadding10, lbl.Layout)
-			}),
-			layout.Rigid(func(gtx C) D {
-				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-					return item.image.LayoutSize(gtx, values.MarginPadding65)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
-					return components.LayoutBalanceColorWithState(gtx, pg.Load, item.totalBalance.String(), col)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				card := pg.Theme.Card()
-				card.Radius = cryptomaterial.Radius(12)
-				card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
-				return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
-					return card.Layout(gtx, func(gtx C) D {
-						return layout.Inset{
-							Top:    values.MarginPadding4,
-							Bottom: values.MarginPadding4,
-							Right:  values.MarginPadding8,
-							Left:   values.MarginPadding8,
-						}.Layout(gtx, func(gtx C) D {
-							return components.LayoutBalanceColorWithStateUSD(gtx, pg.Load, item.totalBalanceUSD, col)
+		return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					lbl := pg.Theme.Body1(item.assetType)
+					lbl.Color = col
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, lbl.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+						imageSize := values.MarginPadding65
+						if pg.IsMobileView() {
+							imageSize = values.DP61
+						}
+						return item.image.LayoutSize(gtx, imageSize)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding10, func(gtx C) D {
+						return components.LayoutBalanceColorWithState(gtx, pg.Load, item.totalBalance.String(), col)
+					})
+				}),
+				layout.Rigid(func(gtx C) D {
+					card := pg.Theme.Card()
+					card.Radius = cryptomaterial.Radius(12)
+					card.Color = values.TransparentColor(values.TransparentBlack, 0.2)
+					return pg.centerLayout(gtx, values.MarginPadding0, values.MarginPadding0, func(gtx C) D {
+						return card.Layout(gtx, func(gtx C) D {
+							return layout.Inset{
+								Top:    values.MarginPadding4,
+								Bottom: values.MarginPadding4,
+								Right:  values.MarginPadding8,
+								Left:   values.MarginPadding8,
+							}.Layout(gtx, func(gtx C) D {
+								return components.LayoutBalanceColorWithStateUSD(gtx, pg.Load, item.totalBalanceUSD, col)
+							})
 						})
 					})
-				})
-			}),
-		)
+				}),
+			)
+		})
 	}
 }
 
@@ -466,6 +472,10 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 		addMixerSlideWidget := func(k int) {
 			if slideData, ok := pg.mixerSliderData[k]; ok {
 				sliderWidget = append(sliderWidget, func(gtx C) D {
+					height := cryptomaterial.WrapContent
+					if len(pg.sortedMixerSlideKeys) > 1 {
+						height = gtx.Dp(values.DP210)
+					}
 					return components.MixerComponent{
 						Load:           pg.Load,
 						WalletName:     slideData.GetWalletName(),
@@ -473,7 +483,7 @@ func (pg *OverviewPage) mixerSliderLayout(gtx C) D {
 						ForwardButton:  pg.forwardButton,
 						InfoButton:     pg.infoButton,
 						Width:          gtx.Constraints.Max.X,
-						Height:         gtx.Dp(values.MarginPadding221),
+						Height:         height,
 					}.MixerLayout(gtx)
 				})
 			}

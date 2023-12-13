@@ -19,7 +19,6 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/assets"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -40,8 +39,6 @@ type Window struct {
 	ctxCancel context.CancelFunc
 
 	load *load.Load
-
-	txAuthor dcr.TxAuthor
 
 	// Quit channel used to trigger background process to begin implementing the
 	// shutdown protocol.
