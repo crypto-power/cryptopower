@@ -951,7 +951,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 
 		case onBoardingStepWaitForConfirmation:
 			if pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
-				fmt.Println("Bond paid!!")
+				pg.ParentNavigator().Display(NewDEXMarketPage(pg.Load))
 			}
 		}
 	}
@@ -1093,7 +1093,6 @@ func (pg *DEXOnboarding) postBond() {
 			return true
 		})
 	pg.ParentWindow().ShowModal(walletPasswordModal)
-
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
