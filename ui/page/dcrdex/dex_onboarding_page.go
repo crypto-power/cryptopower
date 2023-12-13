@@ -226,6 +226,11 @@ func (pg *DEXOnboarding) OnNavigatedTo() {}
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedFrom() {
+	// Empty dex pass
+	for i := range pg.dexPass {
+		pg.dexPass[i] = 0
+	}
+
 	// Remove bond confirmation listener if any.
 	if pg.bondSourceWalletSelector != nil {
 		pg.bondSourceWalletSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
@@ -478,7 +483,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	case onboardingChooseServer, onBoardingStepAddServer:
 		backBtnEnabled = !pg.dexc.IsDEXPasswordSet()
 	case onboardingPostBond:
-		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough()
+		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough() && !pg.isLoading
 	}
 
 	pg.nextBtn.Text = values.String(values.StrNext)
@@ -889,53 +894,10 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					return
 				}
 			}
+
 			pg.bondServer = serverInfo
+			pg.connectServerAndPrepareForBonding()
 
-			// Proceed to next step if we already have the dex pass cached.
-			if len(pg.dexPass) > 0 {
-				go pg.connectServerAndPrepareForBonding()
-				break
-			}
-
-			if !pg.dexc.IsDEXPasswordSet() {
-				// Fresh onboarding process.
-				pg.isLoading = true
-				go func() {
-					defer func() {
-						pg.isLoading = false
-					}()
-
-					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
-					if err := pg.dexc.InitWithPassword(pg.dexPass, nil); err != nil {
-						pg.notifyError(err.Error())
-						return
-					}
-
-					pg.connectServerAndPrepareForBonding()
-				}()
-				break
-			}
-
-			// User already has dex password set but did not finish the
-			// onboarding.
-			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				EnableName(false).
-				EnableConfirmPassword(false).
-				Title(values.String(values.StrDexPassword)).
-				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					pg.dexPass = []byte(password)
-					err := pg.dexc.Login(pg.dexPass)
-					if err != nil {
-						pm.SetError(err.Error())
-						pm.SetLoading(false)
-						return false
-					}
-
-					pg.connectServerAndPrepareForBonding()
-					return true
-				})
-			dexPasswordModal.SetPasswordTitleVisibility(false)
-			pg.ParentWindow().ShowModal(dexPasswordModal)
 		case onboardingPostBond:
 			// Validate all input fields.
 			hasEnough := pg.bondAccountHasEnough()
@@ -944,137 +906,47 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				break
 			}
 
-			asset := pg.bondSourceWalletSelector.SelectedWallet()
-			if !asset.IsSynced() { // Only fully synced wallets should post bonds.
+			if !pg.bondSourceWalletSelector.SelectedWallet().IsSynced() { // Only fully synced wallets should post bonds.
 				pg.notifyError(values.String(values.StrWalletNotSynced))
 				return
 			}
 
-			bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
-			postBond := &core.PostBondForm{
-				Addr:      pg.bondServer.url,
-				AppPass:   pg.dexPass,
-				Asset:     &bondAsset.ID,
-				Bond:      uint64(pg.newTier) * bondAsset.Amt,
-				Cert:      pg.bondServer.cert,
-				FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
-			}
-
-			pg.isLoading = true
-			go func() {
-				defer func() {
-					pg.isLoading = false
-				}()
-
-				res, err := pg.dexc.PostBond(postBond)
-				if err != nil {
-					pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
-					return
-				}
-
-				pg.bondConfirmationInfo = &bondConfirmationInfo{
-					requiredBondConf: res.ReqConfirms,
-					bondCoinID:       res.BondID,
-				}
-
-				pg.currentStep = onBoardingStepWaitForConfirmation
-				pg.scrollContainer.Position.Offset = 0 // Scroll to the top of the confirmation page after leaving the long post bond form.
-				pg.ParentWindow().Reload()
-			}()
-
 			dexClient := pg.AssetsManager.DexClient()
-			hasDEXPass := dexClient.IsDEXPasswordSet()
-			nextStep := func(dexPass []byte) {
-				pg.bondConfirmationInfo = new(bondConfirmationInfo)
-				bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
-				postBond := &core.PostBondForm{
-					Addr:      pg.bondServer.url,
-					AppPass:   dexPass,
-					Asset:     &bondAsset.ID,
-					Bond:      uint64(pg.newTier) * bondAsset.Amt,
-					Cert:      pg.bondServer.cert,
-					FeeBuffer: dexClient.BondsFeeBuffer(bondAsset.ID),
-				}
+			// Initialize with password now, if dex password has not been
+			// initialized.
+			if !dexClient.IsDEXPasswordSet() {
+				pg.isLoading = true
+				go func() {
+					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
+					if err := dexClient.InitWithPassword(pg.dexPass, nil); err != nil {
+						pg.isLoading = false
+						pg.notifyError(err.Error())
+						return
+					}
 
-				walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-					EnableName(false).
-					EnableConfirmPassword(false).
-					Title(values.String(values.StrEnterSpendingPassword)).
-					SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
-						pg.isLoading = true
-						go func() {
-							defer func() {
-								pg.isLoading = false
-							}()
-
-							if !hasDEXPass {
-								if err := dexClient.InitWithPassword(dexPass, nil); err != nil {
-									pg.notifyError(err.Error())
-									return
-								}
-							}
-
-							if !dexClient.HasWallet(int32(bondAsset.ID)) {
-								cfg := map[string]string{
-									dexc.DexDcrWalletIDConfigKey:          fmt.Sprintf("%d", asset.GetWalletID()),
-									dexc.DexDcrWalletAccountNameConfigKey: pg.bondSourceAccountSelector.SelectedAccount().AccountName,
-								}
-
-								// Add bond wallet to core if it does not exist.
-								err := dexClient.AddWallet(*postBond.Asset, cfg, dexPass, []byte(walletPass))
-								if err != nil {
-									pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
-									return
-								}
-							}
-
-							res, err := dexClient.PostBond(postBond)
-							if err != nil {
-								pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
-								return
-							}
-
-							// Listen for new block updates. This listener is removed in OnNavigateFrom().
-							asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
-								OnBlockAttached: func(_ int, _ int32) {
-									pg.bondConfirmationInfo.currentBondConf++
-									pg.ParentWindow().Reload()
-								},
-							}, DEXOnboardingPageID)
-
-							pg.bondConfirmationInfo.requiredBondConf = res.ReqConfirms
-							pg.bondConfirmationInfo.bondCoinID = res.BondID
-							pg.currentStep = onBoardingStepWaitForConfirmation
-							pg.scrollContainer.Position.Offset = 0 // Scroll to the top of the confirmation page after leaving the long post bond form.
-							pg.ParentWindow().Reload()
-						}()
-
-						return true
-					})
-				pg.ParentWindow().ShowModal(walletPasswordModal)
+					pg.isLoading = false
+					pg.postBond()
+				}()
 			}
 
-			if !hasDEXPass {
-				nextStep([]byte(pg.passwordEditor.Editor.Text()))
-				return
-			}
-
+			// dexc password has been sent already.
 			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
 				EnableName(false).
 				EnableConfirmPassword(false).
 				Title(values.String(values.StrDexPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					err := dexClient.Login([]byte(password))
+					pg.dexPass = []byte(password)
+					err := dexClient.Login(pg.dexPass)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
 						return false
 					}
 
-					pm.Dismiss()
-					nextStep([]byte(password))
+					go pg.postBond()
 					return true
 				})
+			dexPasswordModal.SetPasswordTitleVisibility(false)
 			pg.ParentWindow().ShowModal(dexPasswordModal)
 
 		case onBoardingStepWaitForConfirmation:
@@ -1151,6 +1023,77 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	pg.bondStrengthEditor.Editor.SetText(fmt.Sprintf("%d", minimumBondStrength))
 	pg.newTier = minimumBondStrength
 	pg.ParentWindow().Reload()
+}
+
+func (pg *DEXOnboarding) postBond() {
+	dexClient := pg.AssetsManager.DexClient()
+	asset := pg.bondSourceWalletSelector.SelectedWallet()
+	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
+	postBond := &core.PostBondForm{
+		Addr:      pg.bondServer.url,
+		AppPass:   pg.dexPass,
+		Asset:     &bondAsset.ID,
+		Bond:      uint64(pg.newTier) * bondAsset.Amt,
+		Cert:      pg.bondServer.cert,
+		FeeBuffer: dexClient.BondsFeeBuffer(bondAsset.ID),
+	}
+
+	// postBondFn sends the actual request to post bond.
+	postBondFn := func(walletPass string) {
+		defer func() {
+			pg.isLoading = false
+		}()
+
+		// Add bond wallet to core if it does not exist.
+		if !dexClient.HasWallet(int32(bondAsset.ID)) {
+			cfg := map[string]string{
+				dexc.DexDcrWalletIDConfigKey:          fmt.Sprintf("%d", asset.GetWalletID()),
+				dexc.DexDcrWalletAccountNameConfigKey: pg.bondSourceAccountSelector.SelectedAccount().AccountName,
+			}
+
+			err := dexClient.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
+			if err != nil {
+				pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
+				return
+			}
+		}
+
+		res, err := dexClient.PostBond(postBond)
+		if err != nil {
+			pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
+			return
+		}
+
+		pg.bondConfirmationInfo = &bondConfirmationInfo{
+			requiredBondConf: res.ReqConfirms,
+			bondCoinID:       res.BondID,
+		}
+
+		// Listen for new block updates. This listener is removed in OnNavigateFrom().
+		asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
+			OnBlockAttached: func(_ int, _ int32) {
+				pg.bondConfirmationInfo.currentBondConf++
+				pg.ParentWindow().Reload()
+			},
+		}, DEXOnboardingPageID)
+
+		pg.currentStep = onBoardingStepWaitForConfirmation
+		pg.scrollContainer.Position.Offset = 0 // Scroll to the top of the confirmation page after leaving the long post bond form.
+		pg.ParentWindow().Reload()
+	}
+
+	// Request for wallet password before attempting to post bond.
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrEnterSpendingPassword)).
+		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
+			pg.isLoading = true
+			go postBondFn(walletPass)
+			return true
+		})
+	pg.ParentWindow().ShowModal(walletPasswordModal)
+
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {

@@ -120,9 +120,9 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 	// Use a goroutine to start dex core as it'll block until dex core exits.
 	go func() {
 		dc.Run(ctx)
-		close(shutdownChan)
-		dc.Core = nil
 		logCloser()
+		close(shutdownChan)
+		dc.Core = nil // do this after all shutdownChan listeners must've stopped waiting
 	}()
 
 	return dc, nil
@@ -136,9 +136,9 @@ func (dc *DEXClient) HasWallet(assetID int32) bool {
 
 // AddWallet attempts to connect or create the wallet with the provided details
 // to the DEX client.
-// NOTE: Before connecting a dcr wallet, first call mw.UseDcrWalletForDex to
-// configure the dcr ExchangeWallet to use a custom wallet instead of the
-// default rpc wallet.
+// NOTE: Before connecting a dcr wallet, dcr ExchangeWallet must have been
+// configured to use a custom wallet instead of the default rpc wallet. See
+// libwallet.AssetManager.PrepareDexSupportForDcrWallet().
 func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error {
 	assetInfo, err := asset.Info(assetID)
 	if err != nil {

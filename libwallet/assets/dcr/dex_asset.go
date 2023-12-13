@@ -507,5 +507,5 @@ func (da *DEXAsset) AddressPrivKey(ctx context.Context, addr stdaddr.Address) (*
 
 // Part of the Wallet interface.
 func (da *DEXAsset) Reconfigure(_ context.Context, cfg *dexasset.WalletConfig, _ dex.Network, _, _ string) (restart bool, err error) {
-	return cfg.Type != walletTypeSPV, nil
+	return false, nil
 }
