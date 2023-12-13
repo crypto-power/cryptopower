@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	// CustomDexDcrWalletType is a keyword that identifies a custom dcr wallet
-	// used by the DEX client.
-	CustomDexDcrWalletType = "cryptopowerwallet"
+	// CustomDexWalletType is a keyword that identifies a custom Cryptopower
+	// wallet used by the DEX client.
+	CustomDexWalletType = "cryptopowerwallet"
 	// DexDcrWalletIDConfigKey is the key that holds the wallet ID value in the
 	// settings map used to connect an existing dcr wallet to the DEX client.
 	DexDcrWalletIDConfigKey = "walletid"
@@ -148,7 +148,7 @@ func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW
 	validWalletType := false
 	config := map[string]string{}
 	for _, def := range assetInfo.AvailableWallets {
-		if def.Type == CustomDexDcrWalletType {
+		if def.Type == CustomDexWalletType {
 			validWalletType = true
 			// Start building the wallet config with default values.
 			for _, option := range def.ConfigOpts {
@@ -159,7 +159,7 @@ func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW
 	}
 
 	if !validWalletType {
-		return fmt.Errorf("invalid type %q for %s wallet", CustomDexDcrWalletType, assetInfo.Name)
+		return fmt.Errorf("wallet type %q is not supported for %s wallet", CustomDexWalletType, assetInfo.Name)
 	}
 
 	// User-provided settings should override defaults.
@@ -170,7 +170,7 @@ func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW
 	return dc.Core.CreateWallet(appPW, walletPW, &core.WalletForm{
 		AssetID: assetID,
 		Config:  config,
-		Type:    CustomDexDcrWalletType,
+		Type:    CustomDexWalletType,
 	})
 }
 

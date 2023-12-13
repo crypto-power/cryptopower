@@ -93,7 +93,7 @@ func (mgr *AssetsManager) StartScheduler(ctx context.Context, params instantswap
 			return mgr.InstantSwap.SchedulerCtx.Err()
 		}
 
-		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber, nil)
+		sourceAccountBalance, err := sourceWallet.GetAccountBalance(params.Order.SourceAccountNumber)
 		if err != nil {
 			log.Error("unable to get account balance")
 			return errors.E(op, err)

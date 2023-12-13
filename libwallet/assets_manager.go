@@ -952,7 +952,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 	}
 
 	def := &asset.WalletDefinition{
-		Type:        dexc.CustomDexDcrWalletType,
+		Type:        dexc.CustomDexWalletType,
 		Description: "Uses an existing cryptopower Wallet instance instead of an rpc connection.",
 		ConfigOpts:  customWalletConfigOpts,
 	}
@@ -983,17 +983,16 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 
 		// Ensure the accountName exists.
 		accountName := settings[dexc.DexDcrWalletAccountNameConfigKey]
-		accountNumber, err := wallet.AccountNumber(accountName)
-		if err != nil {
+		if _, err = wallet.AccountNumber(accountName); err != nil {
 			return nil, fmt.Errorf("error checking selected DEX account: %w", err)
 		}
 
-		dexWallet, ok := wallet.(*dcr.Asset)
+		dcrAsset, ok := wallet.(*dcr.Asset)
 		if !ok {
 			return nil, fmt.Errorf("DEX wallet not supported for %s", walletParams.Name)
 		}
 
-		return dcr.NewDEXAsset(dexWallet, uint32(accountNumber), accountName), nil
+		return dcr.NewDEXWallet(dcrAsset.Internal().DCR, dcrAsset.SyncData()), nil
 	}
 
 	err := dexDcr.RegisterCustomWallet(walletMaker, def)

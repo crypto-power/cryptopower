@@ -37,10 +37,42 @@ type SyncData struct {
 	// Flag to notify syncCanceled callback if the sync was canceled so as to be restarted.
 	restartSyncRequested bool
 
-	rescanning     bool
-	connectedPeers int32
+	rescanning          bool
+	numOfConnectedPeers int32
 
 	*activeSyncData
+}
+
+func (s *SyncData) isSynced() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.synced
+}
+
+func (s *SyncData) connectedPeers() int32 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.numOfConnectedPeers
+}
+
+func (s *SyncData) generalSyncProgress() *sharedW.GeneralSyncProgress {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.syncing {
+		switch s.syncStage {
+		case HeadersFetchSyncStage:
+			return s.headersFetchProgress.GeneralSyncProgress
+		case AddressDiscoverySyncStage:
+			return s.addressDiscoveryProgress.GeneralSyncProgress
+		case HeadersRescanSyncStage:
+			return s.headersRescanProgress.GeneralSyncProgress
+		case CFiltersFetchSyncStage:
+			return s.cfiltersFetchProgress.GeneralSyncProgress
+		}
+	}
+
+	return nil
 }
 
 // reading/writing of properties of this struct are protected by syncData.mu.
@@ -189,7 +221,7 @@ func (asset *Asset) SyncInactiveForPeriod(totalInactiveSeconds int64) {
 	}
 
 	asset.syncData.totalInactiveSeconds += totalInactiveSeconds
-	if asset.syncData.connectedPeers == 0 {
+	if asset.syncData.numOfConnectedPeers == 0 {
 		// assume it would take another 60 seconds to reconnect to peers
 		asset.syncData.totalInactiveSeconds += 60
 	}
@@ -341,9 +373,7 @@ func (asset *Asset) IsConnectedToDecredNetwork() bool {
 }
 
 func (asset *Asset) IsSynced() bool {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-	return asset.syncData.synced
+	return asset.syncData.isSynced()
 }
 
 func (asset *Asset) IsSyncShuttingDown() bool {
@@ -361,30 +391,19 @@ func (asset *Asset) CurrentSyncStage() utils.SyncStage {
 	return InvalidSyncStage
 }
 
+func (asset *Asset) ConnectedPeers() int32 {
+	return asset.syncData.connectedPeers()
+}
+
 func (asset *Asset) GeneralSyncProgress() *sharedW.GeneralSyncProgress {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-
-	if asset.syncData != nil && asset.syncData.syncing {
-		switch asset.syncData.syncStage {
-		case HeadersFetchSyncStage:
-			return asset.syncData.headersFetchProgress.GeneralSyncProgress
-		case AddressDiscoverySyncStage:
-			return asset.syncData.addressDiscoveryProgress.GeneralSyncProgress
-		case HeadersRescanSyncStage:
-			return asset.syncData.headersRescanProgress.GeneralSyncProgress
-		case CFiltersFetchSyncStage:
-			return asset.syncData.cfiltersFetchProgress.GeneralSyncProgress
-		}
+	if asset.syncData != nil {
+		return asset.syncData.generalSyncProgress()
 	}
-
 	return nil
 }
 
-func (asset *Asset) ConnectedPeers() int32 {
-	asset.syncData.mu.RLock()
-	defer asset.syncData.mu.RUnlock()
-	return asset.syncData.connectedPeers
+func (asset *Asset) SyncData() *SyncData {
+	return asset.syncData
 }
 
 func (asset *Asset) PeerInfoRaw() ([]sharedW.PeerInfo, error) {

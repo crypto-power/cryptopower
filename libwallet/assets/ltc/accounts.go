@@ -54,7 +54,7 @@ func (asset *Asset) GetAccountsRaw() (*sharedW.Accounts, error) {
 
 	accounts := make([]*sharedW.Account, len(resp.Accounts))
 	for i, a := range resp.Accounts {
-		balance, err := asset.GetAccountBalance(int32(a.AccountNumber), nil)
+		balance, err := asset.GetAccountBalance(int32(a.AccountNumber))
 		if err != nil {
 			return nil, err
 		}
@@ -99,19 +99,12 @@ func (asset *Asset) GetAccount(accountNumber int32) (*sharedW.Account, error) {
 }
 
 // GetAccountBalance returns the balance for the provided account number.
-// confirms is optional.
-func (asset *Asset) GetAccountBalance(accountNumber int32, confirms *int32) (*sharedW.Balance, error) {
+func (asset *Asset) GetAccountBalance(accountNumber int32) (*sharedW.Balance, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrLTCNotInitialized
 	}
 
-	var confs int32
-	if confirms != nil {
-		confs = *confirms
-	} else {
-		confs = asset.RequiredConfirmations()
-	}
-	balance, err := asset.Internal().LTC.CalculateAccountBalances(uint32(accountNumber), confs)
+	balance, err := asset.Internal().LTC.CalculateAccountBalances(uint32(accountNumber), asset.RequiredConfirmations())
 	if err != nil {
 		return nil, err
 	}
