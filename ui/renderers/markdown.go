@@ -1,7 +1,6 @@
 package renderers
 
 import (
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -164,8 +163,6 @@ func (p *MarkdownProvider) renderListItem(content string) {
 		lbl := p.getLabel()
 		strongLabel := p.getLabel()
 		strongLabel.Font.Weight = font.Bold
-		fmt.Println("-------getLabel----222222-->", lbl.TextSize)
-
 		return layout.Flex{}.Layout(gtx,
 			layout.Flexed(0.02, func(gtx C) D {
 				strongLabel.Text = ""
@@ -220,7 +217,6 @@ func (p *MarkdownProvider) prepareLink(_ /*node*/ *ast.Link, _ /*entering*/ bool
 }
 
 func (p *MarkdownProvider) renderBlock() {
-	fmt.Println("------renderBlock---->")
 	content := p.stringBuilder.String()
 	p.stringBuilder.Reset()
 
@@ -279,7 +275,6 @@ func (p *MarkdownProvider) renderBlock() {
 func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 	lbl := p.theme.Body1("")
 	size := p.ConvertTextSize(values.TextSize16)
-	// fmt.Println("-------getLabel------>", size)
 	lbl.TextSize = size
 	if len(p.tagStack) > 0 {
 		for i := range p.tagStack {
@@ -299,7 +294,6 @@ func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 
 func (p *MarkdownProvider) render(content *strings.Builder) {
 	lbl := p.getLabel()
-	fmt.Println("-------getLabel----111111-->", lbl.TextSize)
 	words := strings.Fields(content.String())
 	content.Reset()
 

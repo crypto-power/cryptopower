@@ -229,10 +229,7 @@ func (pg *TreasuryPage) layout(gtx C) D {
 						layout.Rigid(func(gtx C) D {
 							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(pg.Theme.Label(pg.ConvertTextSize(values.TextSize20), values.String(values.StrTreasurySpending)).Layout),
-								layout.Rigid(func(gtx C) D {
-									return pg.infoButton.Layout(gtx)
-									// return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.infoButton.Layout)
-								}),
+								layout.Rigid(pg.infoButton.Layout),
 							)
 						}),
 						layout.Flexed(1, func(gtx C) D {

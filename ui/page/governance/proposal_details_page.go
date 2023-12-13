@@ -173,31 +173,18 @@ func (pg *ProposalDetails) Layout(gtx C) D {
 			return pg.layoutDescription(gtx)
 		},
 		ExtraHeader: func(gtx C) D {
-			return layout.Inset{Bottom: values.MarginPadding16, Top: values.MarginPadding16}.Layout(gtx, pg.layoutTitle)
+			marginTop := values.MarginPadding16
+			if pg.IsMobileView() {
+				marginTop = values.MarginPaddingMinus8
+			}
+			return layout.Inset{Bottom: values.MarginPadding16, Top: marginTop}.Layout(gtx, pg.layoutTitle)
 		},
 		ExtraItem: pg.tempRightHead,
 		Extra: func(gtx C) D {
-			grayCol := pg.Load.Theme.Color.GrayText2
-			timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
-			timeAgoLabel.Color = grayCol
-
-			dotLabel := pg.Load.Theme.H4(" . ")
-			dotLabel.Color = grayCol
-
-			categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
-			categoryLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
-			timeAgoLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
-			return layout.Inset{}.Layout(gtx, func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(categoryLabel.Layout),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-						}),
-						layout.Rigid(timeAgoLabel.Layout),
-					)
-				})
-			})
+			if pg.IsMobileView() {
+				return D{}
+			}
+			return pg.statusAndTimeLayout(gtx)
 		},
 	}
 	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
@@ -331,6 +318,33 @@ func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 		SetBottomLayout(pg.sumaryInfo).
 		SetDisableInfoTitle(true).
 		Layout(gtx)
+}
+
+func (pg *ProposalDetails) statusAndTimeLayout(gtx C) D {
+	grayCol := pg.Load.Theme.Color.GrayText2
+	timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(pg.proposal.Timestamp))
+	timeAgoLabel.Color = grayCol
+
+	dotLabel := pg.Load.Theme.H4(" . ")
+	dotLabel.Color = grayCol
+
+	categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
+	categoryLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	timeAgoLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	spacing := layout.SpaceStart
+	if pg.IsMobileView() {
+		spacing = layout.SpaceBetween
+	}
+	return layout.Flex{Spacing: spacing}.Layout(gtx,
+		layout.Rigid(categoryLabel.Layout),
+		layout.Rigid(func(gtx C) D {
+			if pg.IsMobileView() {
+				return D{}
+			}
+			return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+		}),
+		layout.Rigid(timeAgoLabel.Layout),
+	)
 }
 
 func (pg *ProposalDetails) sumaryInfo(gtx C) D {
@@ -498,32 +512,45 @@ func (pg *ProposalDetails) getCategoryText() string {
 
 func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 	proposal := pg.proposal
-
-	return layout.Stack{}.Layout(gtx,
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
-					layout.Rigid(pg.layoutProposalVoteBar),
-					layout.Rigid(func(gtx C) D {
-						if proposal.Category != libwallet.ProposalCategoryActive {
-							return D{}
-						}
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
-							layout.Rigid(pg.layoutProposalVoteAction),
-						)
-					}),
-				)
-			})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if !pg.IsMobileView() {
+				return D{}
+			}
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, pg.statusAndTimeLayout)
 		}),
-		layout.Expanded(pg.walletDropDown.Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Stack{}.Layout(gtx,
+				layout.Stacked(func(gtx C) D {
+					marginTop := values.MarginPadding50
+					if pg.IsMobileView() {
+						marginTop = values.MarginPadding30
+					}
+					return layout.Inset{Top: marginTop}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
+							layout.Rigid(pg.layoutProposalVoteBar),
+							layout.Rigid(func(gtx C) D {
+								if proposal.Category != libwallet.ProposalCategoryActive {
+									return D{}
+								}
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
+									layout.Rigid(pg.layoutProposalVoteAction),
+								)
+							}),
+						)
+					})
+				}),
+				layout.Expanded(pg.walletDropDown.Layout),
+			)
+		}),
 	)
 }
 
 func (pg *ProposalDetails) layoutTitle(gtx C) D {
 	proposal := pg.proposal
-
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
 		if proposal.Category == libwallet.ProposalCategoryPre {
 			return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
@@ -601,7 +628,6 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),
 	}
 
-	// _, ok := pg.proposalItems[proposal.Token]
 	itemWidgets := pg.getProposalItemWidgets()
 	if itemWidgets != nil {
 		w = append(w, itemWidgets.widgets...)

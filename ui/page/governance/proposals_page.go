@@ -114,7 +114,7 @@ func NewProposalsPage(l *load.Load) *ProposalsPage {
 	pg.orderDropDown.CollapsedLayoutTextDirection = layout.E
 	pg.orderDropDown.Width = values.MarginPadding100
 	if l.IsMobileView() {
-		pg.orderDropDown.Width = values.DP85
+		pg.orderDropDown.Width = values.MarginPadding85
 		pg.statusDropDown.Width = values.DP118
 	}
 	settingCommonDropdown(pg.Theme, pg.statusDropDown)
@@ -333,6 +333,9 @@ func (pg *ProposalsPage) Layout(gtx C) D {
 								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
 										topInset := values.MarginPadding50
+										if !pg.isFilterOpen && pg.IsMobileView() {
+											return layout.Spacer{Height: topInset}.Layout(gtx)
+										}
 										if pg.IsMobileView() && pg.isFilterOpen {
 											topInset = values.MarginPadding80
 										}
@@ -373,7 +376,7 @@ func (pg *ProposalsPage) dropdownLayout(gtx C) D {
 }
 
 func (pg *ProposalsPage) leftDropdown(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.walletDropDown == nil {
 				return D{}
@@ -384,11 +387,11 @@ func (pg *ProposalsPage) leftDropdown(gtx C) D {
 			if !pg.IsMobileView() {
 				return D{}
 			}
-			icon := pg.Theme.Icons.FilterIcon
+			icon := pg.Theme.Icons.FilterOffImgIcon
 			if pg.isFilterOpen {
-				icon = pg.Theme.Icons.FilterOffIcon
+				icon = pg.Theme.Icons.FilterImgIcon
 			}
-			return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
 			})
 		}),
