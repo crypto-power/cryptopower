@@ -911,14 +911,13 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				return
 			}
 
-			dexClient := pg.AssetsManager.DexClient()
 			// Initialize with password now, if dex password has not been
 			// initialized.
-			if !dexClient.IsDEXPasswordSet() {
+			if !pg.dexc.IsDEXPasswordSet() {
 				pg.isLoading = true
 				go func() {
 					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
-					if err := dexClient.InitWithPassword(pg.dexPass, nil); err != nil {
+					if err := pg.dexc.InitWithPassword(pg.dexPass, nil); err != nil {
 						pg.isLoading = false
 						pg.notifyError(err.Error())
 						return
@@ -936,7 +935,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				Title(values.String(values.StrDexPassword)).
 				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
 					pg.dexPass = []byte(password)
-					err := dexClient.Login(pg.dexPass)
+					err := pg.dexc.Login(pg.dexPass)
 					if err != nil {
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
@@ -1026,7 +1025,6 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 }
 
 func (pg *DEXOnboarding) postBond() {
-	dexClient := pg.AssetsManager.DexClient()
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	postBond := &core.PostBondForm{
@@ -1035,7 +1033,7 @@ func (pg *DEXOnboarding) postBond() {
 		Asset:     &bondAsset.ID,
 		Bond:      uint64(pg.newTier) * bondAsset.Amt,
 		Cert:      pg.bondServer.cert,
-		FeeBuffer: dexClient.BondsFeeBuffer(bondAsset.ID),
+		FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
 	}
 
 	// postBondFn sends the actual request to post bond.
@@ -1045,20 +1043,20 @@ func (pg *DEXOnboarding) postBond() {
 		}()
 
 		// Add bond wallet to core if it does not exist.
-		if !dexClient.HasWallet(int32(bondAsset.ID)) {
+		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
 			cfg := map[string]string{
 				dexc.DexDcrWalletIDConfigKey:          fmt.Sprintf("%d", asset.GetWalletID()),
 				dexc.DexDcrWalletAccountNameConfigKey: pg.bondSourceAccountSelector.SelectedAccount().AccountName,
 			}
 
-			err := dexClient.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
+			err := pg.dexc.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
 			if err != nil {
 				pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
 				return
 			}
 		}
 
-		res, err := dexClient.PostBond(postBond)
+		res, err := pg.dexc.PostBond(postBond)
 		if err != nil {
 			pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
 			return

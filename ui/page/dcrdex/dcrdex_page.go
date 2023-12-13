@@ -47,6 +47,10 @@ func NewDEXPage(l *load.Load) *DEXPage {
 		generalSettingsBtn: l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange))),
 	}
 
+	if dp.AssetsManager.DexcReady() && dp.AssetsManager.DexClient().IsDEXPasswordSet() {
+		dp.isDexFirstVisit = false
+	}
+
 	// Init splash page more info widget.
 	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
 	return dp
@@ -96,7 +100,7 @@ func (pg *DEXPage) Layout(gtx C) D {
 		msg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
 	} else if !hasMultipleWallets {
 		msg = values.String(values.StrMultipleAssetRequiredMsg)
-	} else if pg.AssetsManager.DexClient() == nil {
+	} else if !pg.AssetsManager.DexcReady() {
 		msg = values.String(values.StrDEXInitErrorMsg)
 	}
 
