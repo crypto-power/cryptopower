@@ -75,7 +75,7 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 // log file.  This must be performed early during application startup by calling
 // initLogRotator.
 var (
-	// dcrLogger, btcLogger, mainLogger indentifies the respective loggers.
+	// dcrLogger, btcLogger, mainLogger identifies the respective loggers.
 	dcrLogger, btcLogger, mainLogger = "dcr.log", "btc.log", libwallet.LogFilename
 	ltcLogger                        = "ltc.log"
 	// backendLog is the logging backend used to create all subsystem loggers.
@@ -86,8 +86,11 @@ var (
 	ltcBackendLog = btclog.NewBackend(logWriter{ltcLogger})
 	backendLog    = slog.NewBackend(logWriter{mainLogger})
 
-	// logRotator is one of the logging outputs.  It should be closed on
-	// application shutdown.
+	// logRotator is one of the logging outputs.
+	// NOTE: There are concurrency issues with closing the log rotators used by
+	// btcd and btcwallet since they (btcd and btcwallet) have unsupervised
+	// goroutines still running after shutdown. So we leave the rotator running
+	// at the risk of losing some logs.
 	logRotators map[string]*rotator.Rotator
 
 	log          = backendLog.Logger("CRPW")

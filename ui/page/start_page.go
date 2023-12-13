@@ -1,6 +1,7 @@
 package page
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -62,6 +63,7 @@ type startPage struct {
 	// helper methods for accessing the PageNavigator that displayed this page
 	// and the root WindowNavigator.
 	*app.GenericPageModal
+	ctx context.Context
 
 	addWalletButton cryptomaterial.Button
 	nextButton      cryptomaterial.Button
@@ -80,8 +82,9 @@ type startPage struct {
 	selectedSettingsOptionIndex int
 }
 
-func NewStartPage(l *load.Load, isShuttingDown ...bool) app.Page {
+func NewStartPage(ctx context.Context, l *load.Load, isShuttingDown ...bool) app.Page {
 	sp := &startPage{
+		ctx:              ctx,
 		Load:             l,
 		GenericPageModal: app.NewGenericPageModal(StartPageID),
 		loading:          true,
@@ -219,7 +222,7 @@ func (sp *startPage) openWalletsAndDisplayHomePage(password string) error {
 		return err
 	}
 
-	sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.Load))
+	sp.ParentNavigator().ClearStackAndDisplay(root.NewHomePage(sp.ctx, sp.Load))
 	return nil
 }
 
@@ -233,7 +236,7 @@ func (sp *startPage) HandleUserInteractions() {
 		createWalletPage := components.NewCreateWallet(sp.Load, func() {
 			sp.setLanguagePref(false)
 			sp.updateSettings()
-			sp.ParentNavigator().Display(root.NewHomePage(sp.Load))
+			sp.ParentNavigator().Display(root.NewHomePage(sp.ctx, sp.Load))
 		})
 		sp.ParentNavigator().Display(createWalletPage)
 	}

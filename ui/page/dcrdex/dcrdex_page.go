@@ -1,14 +1,15 @@
 package dcrdex
 
 import (
-	"context"
-
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet/utils"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -24,33 +25,30 @@ type DEXPage struct {
 
 	*load.Load
 
-	ctx       context.Context // page context
-	ctxCancel context.CancelFunc
-
-	openTradeMainPage     *cryptomaterial.Clickable
-	splashPageInfoButton  cryptomaterial.IconButton
-	splashPageContainer   *widget.List
-	finalizeOnboardingBtn cryptomaterial.Button
-	isDexFirstVisit       bool
-	inited                bool
+	generalSettingsBtn   cryptomaterial.Button
+	openTradeMainPage    *cryptomaterial.Clickable
+	splashPageInfoButton cryptomaterial.IconButton
+	splashPageContainer  *widget.List
+	startTradingBtn      cryptomaterial.Button
+	isDexFirstVisit      bool
 }
 
 func NewDEXPage(l *load.Load) *DEXPage {
 	dp := &DEXPage{
-		MasterPage:            app.NewMasterPage(DCRDEXPageID),
-		Load:                  l,
-		openTradeMainPage:     l.Theme.NewClickable(false),
-		finalizeOnboardingBtn: l.Theme.Button(values.String(values.StrStartTrading)),
+		MasterPage:        app.NewMasterPage(DCRDEXPageID),
+		Load:              l,
+		openTradeMainPage: l.Theme.NewClickable(false),
+		startTradingBtn:   l.Theme.Button(values.String(values.StrStartTrading)),
 		splashPageContainer: &widget.List{List: layout.List{
 			Alignment: layout.Middle,
 			Axis:      layout.Vertical,
 		}},
-		isDexFirstVisit: true,
+		isDexFirstVisit:    true,
+		generalSettingsBtn: l.Theme.Button(values.StringF(values.StrEnableAPI, values.String(values.StrExchange))),
 	}
 
 	// Init splash page more info widget.
 	_, dp.splashPageInfoButton = components.SubpageHeaderButtons(l)
-	dp.inited = true // TODO: Set value
 	return dp
 }
 
@@ -66,10 +64,13 @@ func (pg *DEXPage) ID() string {
 // displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedTo() {
-	pg.ctx, pg.ctxCancel = context.WithCancel(context.TODO())
+	if !pg.AssetsManager.DexcReady() {
+		return
+	}
+
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().OnNavigatedTo()
-	} else if pg.inited {
+	} else if len(pg.AssetsManager.DexClient().Exchanges()) > 0 {
 		pg.Display(NewDEXMarketPage(pg.Load))
 	} else {
 		pg.Display(NewDEXOnboarding(pg.Load))
@@ -85,7 +86,40 @@ func (pg *DEXPage) Layout(gtx C) D {
 			return pg.splashPage(gtx)
 		})
 	}
+
+	hasMultipleWallets := pg.isMultipleAssetTypeWalletAvailable()
+	privacyModeOff := pg.AssetsManager.IsHTTPAPIPrivacyModeOff(utils.ExchangeHTTPAPI)
+	var msg string
+	var actionBtn *cryptomaterial.Button
+	if !privacyModeOff {
+		actionBtn = &pg.generalSettingsBtn
+		msg = values.StringF(values.StrNotAllowed, values.String(values.StrExchange))
+	} else if !hasMultipleWallets {
+		msg = values.String(values.StrMultipleAssetRequiredMsg)
+	} else if pg.AssetsManager.DexClient() == nil {
+		msg = values.String(values.StrDEXInitErrorMsg)
+	}
+
+	if msg != "" {
+		return components.DisablePageWithOverlay(pg.Load, nil, gtx, msg, actionBtn)
+	}
+
 	return pg.CurrentPage().Layout(gtx)
+}
+
+// isMultipleAssetTypeWalletAvailable checks if wallets exist for more than 1
+// asset type. If not, dex functionality is disable till different asset type
+// wallets are created.
+func (pg *DEXPage) isMultipleAssetTypeWalletAvailable() bool {
+	allWallets := pg.AssetsManager.AllWallets()
+	assetTypes := make(map[libutils.AssetType]bool)
+	for _, wallet := range allWallets {
+		assetTypes[wallet.GetAssetType()] = true
+		if len(assetTypes) > 1 {
+			return true
+		}
+	}
+	return false
 }
 
 // HandleUserInteractions is called just before Layout() to determine if any
@@ -93,16 +127,17 @@ func (pg *DEXPage) Layout(gtx C) D {
 // page's UI components shortly before they are displayed.
 // Part of the load.Page interface.
 func (pg *DEXPage) HandleUserInteractions() {
-	if pg.openTradeMainPage.Clicked() {
-		pg.ParentNavigator().CloseCurrentPage()
+	if pg.generalSettingsBtn.Button.Clicked() {
+		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
 	}
+
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().HandleUserInteractions()
 	}
 	if pg.splashPageInfoButton.Button.Clicked() {
 		pg.showInfoModal()
 	}
-	if pg.finalizeOnboardingBtn.Button.Clicked() {
+	if pg.startTradingBtn.Button.Clicked() {
 		pg.isDexFirstVisit = false
 	}
 }

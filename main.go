@@ -38,10 +38,11 @@ func main() {
 		return
 	}
 
-	// before the asset manager is initialized use command line debuglevel option if passed or
-	// default to log level info for startup logs.
+	//  Initialize loggers and set log level before the asset manager is
+	//  initialized.
+	initLogRotator(cfg.LogDir, cfg.MaxLogZips)
 	if cfg.DebugLevel == "" {
-		logger.SetLogLevels(utils.LogLevelInfo)
+		logger.SetLogLevels(utils.DefaultLogLevel)
 	} else {
 		logger.SetLogLevels(cfg.DebugLevel)
 	}
@@ -64,16 +65,8 @@ func main() {
 		buildDate = time.Now()
 	}
 
-	var net string
-	switch cfg.Network {
-	case "testnet":
-		net = "testnet3"
-	default:
-		net = cfg.Network
-	}
-
-	logDir := filepath.Join(cfg.LogDir, net)
-	assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, logDir, net)
+	logDir := filepath.Join(cfg.LogDir, string(cfg.net))
+	assetsManager, err := libwallet.NewAssetsManager(cfg.HomeDir, logDir, cfg.net)
 	if err != nil {
 		log.Errorf("init assetsManager error: %v", err)
 		return

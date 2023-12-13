@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"decred.org/dcrwallet/v3/errors"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/libwallet/ext"
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/internal/politeia"
@@ -61,6 +63,9 @@ type AssetsManager struct {
 	InstantSwap     *instantswap.InstantSwap
 	ExternalService *ext.Service
 	RateSource      ext.RateSource
+
+	dexcMtx sync.RWMutex
+	dexc    *dexc.DEXClient
 }
 
 // initializeAssetsFields validate the network provided is valid for all assets before proceeding
@@ -111,13 +116,8 @@ func initializeAssetsFields(rootDir, dbDriver, logDir string, netType utils.Netw
 }
 
 // NewAssetsManager creates a new AssetsManager instance.
-func NewAssetsManager(rootDir, logDir, net string) (*AssetsManager, error) {
+func NewAssetsManager(rootDir, logDir string, netType utils.NetworkType) (*AssetsManager, error) {
 	errors.Separator = ":: "
-
-	netType := utils.ToNetworkType(net)
-	if netType == utils.Unknown {
-		return nil, fmt.Errorf("network type is not supportted: %s", net)
-	}
 
 	// Create a root dir that has the path up the network folder.
 	rootDir = filepath.Join(rootDir, string(netType))
@@ -198,6 +198,10 @@ func NewAssetsManager(rootDir, logDir, net string) (*AssetsManager, error) {
 	mgr.listenForShutdown()
 
 	return mgr, nil
+}
+
+func (mgr *AssetsManager) RootDir() string {
+	return mgr.params.RootDir
 }
 
 // initRateSource initializes the user's rate source and starts a loop to
@@ -882,4 +886,38 @@ func (mgr *AssetsManager) CalculateAssetsUSDBalance(balances map[utils.AssetType
 	}
 
 	return assetsTotalUSDBalance, nil
+}
+
+// DexClient returns a dexc client that MUST never be modified.
+func (mgr *AssetsManager) DexClient() *dexc.DEXClient {
+	mgr.dexcMtx.RLock()
+	defer mgr.dexcMtx.RUnlock()
+	return mgr.dexc
+}
+
+func (mgr *AssetsManager) DexcReady() bool {
+	mgr.dexcMtx.RLock()
+	defer mgr.dexcMtx.RUnlock()
+	return mgr.dexc != nil
+}
+
+// InitializeDEX initializes mgr.dexc.
+func (mgr *AssetsManager) InitializeDEX(ctx context.Context) {
+	logDir := filepath.Dir(mgr.LogFile())
+	dexc, err := dexc.Start(ctx, mgr.RootDir(), mgr.GetLanguagePreference(), logDir, mgr.GetLogLevels(), mgr.NetType(), 0 /* TODO: Make configurable */)
+	if err != nil {
+		log.Errorf("Error starting dex client: %v", err)
+		return
+	}
+
+	mgr.dexcMtx.Lock()
+	mgr.dexc = dexc
+	mgr.dexcMtx.Unlock()
+
+	go func() {
+		<-mgr.dexc.WaitForShutdown()
+		mgr.dexcMtx.Lock()
+		mgr.dexc = nil
+		mgr.dexcMtx.Unlock()
+	}()
 }

@@ -33,6 +33,8 @@ type HomePage struct {
 
 	*load.Load
 
+	dexCtx context.Context
+
 	ctx                 context.Context
 	ctxCancel           context.CancelFunc
 	sendReceiveNavItems []components.NavBarItem
@@ -67,11 +69,12 @@ var navigationTabTitles = []string{
 	values.String(values.StrGovernance),
 }
 
-func NewHomePage(l *load.Load) *HomePage {
+func NewHomePage(dexCtx context.Context, l *load.Load) *HomePage {
 	hp := &HomePage{
 		Load:        l,
 		MasterPage:  app.NewMasterPage(HomePageID),
 		isConnected: new(atomic.Bool),
+		dexCtx:      dexCtx,
 	}
 
 	hp.hideBalanceButton = hp.Theme.NewClickable(false)
@@ -141,6 +144,9 @@ func (hp *HomePage) OnNavigatedTo() {
 	hp.ctx, hp.ctxCancel = context.WithCancel(context.TODO())
 
 	go hp.CalculateAssetsUSDBalance()
+	if !hp.AssetsManager.DexcReady() {
+		go hp.AssetsManager.InitializeDEX(hp.dexCtx)
+	}
 
 	if hp.CurrentPage() == nil {
 		hp.Display(NewOverviewPage(hp.Load, hp.showNavigationFunc))
@@ -181,21 +187,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	}
 
 	if hp.navigationTab.Changed() {
-		var pg app.Page
-		switch hp.navigationTab.SelectedTab() {
-		case values.String(values.StrOverview):
-			pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
-		case values.String(values.StrTransactions):
-			pg = transaction.NewTransactionsPage(hp.Load, nil)
-		case values.String(values.StrWallets):
-			pg = hp.walletSelectorPage
-		case values.String(values.StrTrade):
-			pg = NewTradePage(hp.Load)
-		case values.String(values.StrGovernance):
-			pg = governance.NewGovernancePage(hp.Load)
-		}
-
-		hp.Display(pg)
+		hp.displaySelectedPage(hp.navigationTab.SelectedTab())
 	}
 
 	// set the page to the active nav, especially when navigating from over pages
@@ -257,26 +249,10 @@ func (hp *HomePage) HandleUserInteractions() {
 	hp.floatingActionButton.CurrentPage = hp.CurrentPageID()
 	for _, item := range hp.bottomNavigationBar.BottomNavigationItems {
 		for item.Clickable.Clicked() {
-			var pg app.Page
-			switch item.Title {
-			case values.String(values.StrOverview):
-				pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
-			case values.String(values.StrTransactions):
-				pg = transaction.NewTransactionsPage(hp.Load, nil)
-			case values.String(values.StrWallets):
-				pg = hp.walletSelectorPage
-			case values.String(values.StrTrade):
-				pg = NewTradePage(hp.Load)
-			case values.String(values.StrGovernance):
-				pg = governance.NewGovernancePage(hp.Load)
-			}
-
-			if pg == nil || hp.ID() == hp.CurrentPageID() {
+			hp.displaySelectedPage(item.Title)
+			if hp.ID() == hp.CurrentPageID() {
 				continue
 			}
-
-			// clear stack
-			hp.Display(pg)
 		}
 	}
 
@@ -288,6 +264,27 @@ func (hp *HomePage) HandleUserInteractions() {
 			}
 		}
 	}
+}
+
+func (hp *HomePage) displaySelectedPage(title string) {
+	var pg app.Page
+	switch title {
+	case values.String(values.StrOverview):
+		pg = NewOverviewPage(hp.Load, hp.showNavigationFunc)
+	case values.String(values.StrTransactions):
+		pg = transaction.NewTransactionsPage(hp.Load, nil)
+	case values.String(values.StrWallets):
+		pg = hp.walletSelectorPage
+	case values.String(values.StrTrade):
+		if !hp.AssetsManager.DexcReady() {
+			// Attempt to initialize dex again.
+			hp.AssetsManager.InitializeDEX(hp.dexCtx)
+		}
+		pg = NewTradePage(hp.Load)
+	case values.String(values.StrGovernance):
+		pg = governance.NewGovernancePage(hp.Load)
+	}
+	hp.Display(pg)
 }
 
 func (hp *HomePage) showWarningNoSpendableWallet() {

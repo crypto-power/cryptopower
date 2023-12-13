@@ -20,7 +20,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/page/staking"
 	"github.com/crypto-power/cryptopower/ui/page/transaction"
 	"github.com/crypto-power/cryptopower/ui/values"
-	"github.com/decred/dcrd/dcrutil/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 )
 
 const InfoID = "Info"

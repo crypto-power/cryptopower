@@ -30,7 +30,8 @@ type Editor struct {
 	errorLabel Label
 	LineColor  color.NRGBA
 
-	// IsRequired if true, displays a required field text at the buttom of the editor.
+	// IsRequired if true, displays a required field text at the bottom of the
+	// editor.
 	IsRequired bool
 	// IsTitleLabel if true makes the title label visible.
 	IsTitleLabel bool

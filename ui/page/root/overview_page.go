@@ -14,7 +14,7 @@ import (
 
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet"
-	"github.com/decred/dcrd/dcrutil/v3"
+	"github.com/decred/dcrd/dcrutil/v4"
 
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -750,7 +750,7 @@ func (pg *OverviewPage) marketTableHeader(gtx C) D {
 				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.StrPrice), col))
 			}),
 			layout.Flexed(.2, func(gtx C) D {
-				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.Str24hChange), col))
+				return layout.E.Layout(gtx, pg.assetTableLabel(values.String(values.Str24HChange), col))
 			}),
 		)
 	}
