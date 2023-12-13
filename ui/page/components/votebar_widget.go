@@ -224,19 +224,22 @@ func (v *VoteBar) Layout(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								yesLabel := v.Theme.Body1(values.String(values.StrYes) + values.String(values.StrColon))
+								yesLabel.TextSize = v.ConvertTextSize(values.TextSize14)
 								return v.layoutIconAndText(gtx, yesLabel, int(v.yesVotes), v.yesColor)
 							}),
 							layout.Rigid(func(gtx C) D {
 								noLabel := v.Theme.Body1(values.String(values.StrNo) + values.String(values.StrColon))
+								noLabel.TextSize = v.ConvertTextSize(values.TextSize14)
 								return v.layoutIconAndText(gtx, noLabel, int(v.noVotes), v.noColor)
 							}),
 							layout.Flexed(1, func(gtx C) D {
-								if v.isDisableInfoTitle {
+								if v.isDisableInfoTitle || v.IsMobileView() {
 									return D{}
 								}
 
 								return layout.E.Layout(gtx, func(gtx C) D {
 									lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
+									lb.TextSize = v.ConvertTextSize(values.TextSize14)
 									lb.Font.Weight = font.SemiBold
 									return lb.Layout(gtx)
 								})
@@ -246,7 +249,18 @@ func (v *VoteBar) Layout(gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, v.votebarLayout)
 					}),
-
+					layout.Rigid(func(gtx C) D {
+						if !v.IsMobileView() {
+							return D{}
+						}
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.E.Layout(gtx, func(gtx C) D {
+							lb := v.Theme.Body1(values.StringF(values.StrVotes, v.totalVotes))
+							lb.TextSize = v.ConvertTextSize(values.TextSize14)
+							lb.Font.Weight = font.SemiBold
+							return lb.Layout(gtx)
+						})
+					}),
 					layout.Rigid(func(gtx C) D {
 						if v.BottomExtra == nil {
 							return D{}
@@ -280,8 +294,9 @@ func (v *VoteBar) layoutIconAndText(gtx C, lbl cryptomaterial.Label, count int, 
 				}
 				percentageStr := strconv.FormatFloat(percentage, 'f', 1, 64) + "%"
 				countStr := strconv.FormatFloat(count, 'f', 0, 64)
-
-				return v.Theme.Body1(fmt.Sprintf("%s (%s)", countStr, percentageStr)).Layout(gtx)
+				lb := v.Theme.Body1(fmt.Sprintf("%s (%s)", countStr, percentageStr))
+				lb.TextSize = v.ConvertTextSize(values.TextSize14)
+				return lb.Layout(gtx)
 			}),
 		)
 	})

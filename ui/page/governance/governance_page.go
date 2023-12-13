@@ -1,18 +1,12 @@
 package governance
 
 import (
-	"image"
-
-	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 
 	"github.com/crypto-power/cryptopower/app"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
@@ -127,112 +121,8 @@ func (pg *Page) HandleUserInteractions() {
 }
 
 func (pg *Page) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *Page) layoutDesktop(gtx layout.Context) layout.Dimensions {
 	if !pg.isGovernanceAPIAllowed() {
 		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
-	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
-}
-
-func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	return components.UniformMobile(gtx, false, true, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.layoutPageTopNav),
-			layout.Rigid(pg.layoutTabs),
-			layout.Rigid(pg.Theme.Separator().Layout),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *Page) selectedTabIndex() int {
-	switch pg.CurrentPageID() {
-	case ProposalsPageID:
-		return 0
-	case ConsensusPageID:
-		return 1
-	case TreasuryPageID:
-		return 2
-	default:
-		return -1
-	}
-}
-
-func (pg *Page) layoutTabs(gtx C) D {
-	var selectedTabDims layout.Dimensions
-
-	return layout.Inset{
-		Top: values.MarginPadding20,
-	}.Layout(gtx, func(gtx C) D {
-		return pg.tabCategoryList.Layout(gtx, len(governanceTabTitles), func(gtx C, i int) D {
-			isSelectedTab := pg.selectedTabIndex() == i
-			return layout.Stack{Alignment: layout.S}.Layout(gtx,
-				layout.Stacked(func(gtx C) D {
-					return layout.Inset{
-						Right:  values.MarginPadding24,
-						Bottom: values.MarginPadding8,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Center.Layout(gtx, func(gtx C) D {
-							lbl := pg.Theme.Label(values.TextSize16, governanceTabTitles[i])
-							lbl.Color = pg.Theme.Color.GrayText1
-							if isSelectedTab {
-								lbl.Color = pg.Theme.Color.Primary
-								selectedTabDims = lbl.Layout(gtx)
-							}
-
-							return lbl.Layout(gtx)
-						})
-					})
-				}),
-				layout.Stacked(func(gtx C) D {
-					if !isSelectedTab {
-						return D{}
-					}
-
-					tabHeight := gtx.Dp(values.MarginPadding2)
-					tabRect := image.Rect(0, 0, selectedTabDims.Size.X, tabHeight)
-
-					return layout.Inset{
-						Left: values.MarginPaddingMinus22,
-					}.Layout(gtx, func(gtx C) D {
-						paint.FillShape(gtx.Ops, pg.Theme.Color.Primary, clip.Rect(tabRect).Op())
-						return layout.Dimensions{
-							Size: image.Point{X: selectedTabDims.Size.X, Y: tabHeight},
-						}
-					})
-				}),
-			)
-		})
-	})
-}
-
-func (pg *Page) layoutPageTopNav(gtx C) D {
-	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Left: values.MarginPadding20,
-			}.Layout(gtx, func(gtx C) D {
-				txt := pg.Theme.Label(values.TextSize20, values.String(values.StrGovernance))
-				txt.Font.Weight = font.SemiBold
-				return txt.Layout(gtx)
-			})
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return D{}
-				// TODO: governance syncing functionality.
-				// TODO: Split wallet sync from governance
-			})
-		}),
-	)
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

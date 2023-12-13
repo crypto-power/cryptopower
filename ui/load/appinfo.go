@@ -61,3 +61,35 @@ func (app *AppInfo) CurrentAppWidth() unit.Dp {
 func (app *AppInfo) IsMobileView() bool {
 	return app.isMobileView
 }
+
+// This function return text size for desktop and mobile
+func (app *AppInfo) ConvertTextSize(size unit.Sp) unit.Sp {
+	if !app.isMobileView {
+		return size
+	}
+	switch size {
+	case values.TextSize20, values.TextSize24:
+		return values.TextSize16
+	case values.TextSize18:
+		return values.TextSize14
+	case values.TextSize16:
+		return values.TextSize12
+	case values.TextSize14:
+		return values.TextSize12
+	default:
+		return size
+	}
+}
+
+// This function return icon size for desktop and mobile
+func (app *AppInfo) ConvertIconSize(size unit.Dp) unit.Dp {
+	if !app.isMobileView {
+		return size
+	}
+	switch size {
+	case values.MarginPadding24:
+		return values.MarginPadding16
+	default:
+		return size
+	}
+}

@@ -37,44 +37,33 @@ func AgendaItemWidget(gtx C, l *load.Load, consensusItem *ConsensusItem, hasVoti
 }
 
 func layoutAgendaStatus(gtx C, l *load.Load, agenda *dcr.Agenda) D {
-	var statusLabel cryptomaterial.Label
+	var statusLabel cryptomaterial.Label = l.Theme.Label(l.ConvertTextSize(values.TextSize14), agenda.Status)
 	var statusIcon *cryptomaterial.Icon
 	var backgroundColor color.NRGBA
 
 	switch agenda.Status {
-	case dcr.AgendaStatusFinished.String():
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
-		statusLabel.Color = l.Theme.Color.GreenText
-		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCheck)
-		statusIcon.Color = l.Theme.Color.Green500
-		backgroundColor = l.Theme.Color.Green50
-	case dcr.AgendaStatusLockedIn.String():
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
+	case dcr.AgendaStatusFinished.String(), dcr.AgendaStatusLockedIn.String():
 		statusLabel.Color = l.Theme.Color.GreenText
 		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCheck)
 		statusIcon.Color = l.Theme.Color.Green500
 		backgroundColor = l.Theme.Color.Green50
 	case dcr.AgendaStatusFailed.String():
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
 		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.NavigationCancel)
 		statusIcon.Color = l.Theme.Color.Gray1
 		backgroundColor = l.Theme.Color.Gray2
 	case dcr.AgendaStatusInProgress.String():
 		clr := l.Theme.Color.Primary
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = clr
 		statusIcon = cryptomaterial.NewIcon(l.Theme.NavMoreIcon)
 		statusIcon.Color = clr
 		backgroundColor = l.Theme.Color.LightBlue
 	case dcr.AgendaStatusUpcoming.String():
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
 		statusIcon = cryptomaterial.NewIcon(l.Theme.Icons.PlayIcon)
 		statusIcon.Color = l.Theme.Color.DeepBlue
 		backgroundColor = l.Theme.Color.Gray2
 	default:
-		statusLabel = l.Theme.Label(values.TextSize14, agenda.Status)
 		statusLabel.Color = l.Theme.Color.Text
 		statusIcon = cryptomaterial.NewIcon(l.Theme.NavMoreIcon)
 		statusIcon.Color = l.Theme.Color.Gray1
@@ -83,11 +72,9 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda *dcr.Agenda) D {
 
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lbl := l.Theme.Label(values.TextSize20, agenda.AgendaID)
+			lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize20), agenda.AgendaID)
 			lbl.Font.Weight = font.SemiBold
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(lbl.Layout),
-			)
+			return lbl.Layout(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return cryptomaterial.LinearLayout{
@@ -112,7 +99,7 @@ func layoutAgendaStatus(gtx C, l *load.Load, agenda *dcr.Agenda) D {
 
 func layoutAgendaDetails(l *load.Load, data string, weight ...font.Weight) layout.Widget {
 	return func(gtx C) D {
-		lbl := l.Theme.Label(values.TextSize16, data)
+		lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize16), data)
 		lbl.Font.Weight = font.Light
 		if len(weight) > 0 {
 			lbl.Font.Weight = weight[0]
@@ -141,16 +128,17 @@ func layoutAgendaVoteAction(gtx C, l *load.Load, item *ConsensusItem, hasVotingW
 
 func LayoutNoAgendasFound(gtx C, l *load.Load, syncing bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	text := l.Theme.Body1(values.String(values.StrNoAgendaYet))
-	text.Color = l.Theme.Color.GrayText3
+	lb := l.Theme.Body1(values.String(values.StrNoAgendaYet))
+	lb.TextSize = l.ConvertTextSize(values.TextSize16)
+	lb.Color = l.Theme.Color.GrayText3
 	if syncing {
-		text = l.Theme.Body1(values.String(values.StrFetchingAgenda))
+		lb.Text = values.String(values.StrFetchingAgenda)
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Inset{
 			Top:    values.MarginPadding10,
 			Bottom: values.MarginPadding10,
-		}.Layout(gtx, text.Layout)
+		}.Layout(gtx, lb.Layout)
 	})
 }
 
@@ -176,9 +164,11 @@ func LoadAgendas(l *load.Load, dcrWallet *dcr.Asset, newestFirst bool) []*Consen
 		} else {
 			agenda.VotingPreference = "-"
 		}
+		button := l.Theme.Button(values.String(values.StrSetChoice))
+		button.TextSize = l.ConvertTextSize(values.TextSize16)
 		consensusItems[i] = &ConsensusItem{
 			Agenda:     agenda,
-			VoteButton: l.Theme.Button(values.String(values.StrSetChoice)),
+			VoteButton: button,
 		}
 	}
 

@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
+	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/values"
 	"github.com/gomarkdown/markdown/ast"
 )
@@ -27,28 +28,25 @@ type layoutRow struct {
 }
 
 type MarkdownProvider struct {
+	*load.Load
 	containers     []layoutRow
 	theme          *cryptomaterial.Theme
 	listItemNumber int // should be negative when not rendering a list
 	links          map[string]*widget.Clickable
 	table          *table
-	label          *cryptomaterial.Label
 	prefix         string
 
 	stringBuilder strings.Builder
 	tagStack      []string
-
-	shouldRemoveBold bool
 }
 
-func RenderMarkdown(_ C, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
-	lbl := theme.Body1("")
+func RenderMarkdown(l *load.Load, theme *cryptomaterial.Theme, source string) *MarkdownProvider {
 	source = strings.Replace(source, " \n*", " \n\n *", -1)
 
 	mdProvider := &MarkdownProvider{
+		Load:           l,
 		theme:          theme,
 		listItemNumber: -1,
-		label:          &lbl,
 	}
 	source = mdProvider.prepare(source)
 
@@ -104,7 +102,9 @@ func (p *MarkdownProvider) prepareCodeBlock(node *ast.CodeBlock, _ /*entering*/ 
 			Padding:     layout.UniformInset(values.MarginPadding16),
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return p.theme.Body1(content).Layout(gtx)
+				lbl := p.theme.Body1(content)
+				lbl.TextSize = p.ConvertTextSize(values.TextSize14)
+				return lbl.Layout(gtx)
 			}),
 		)
 	}
@@ -163,7 +163,6 @@ func (p *MarkdownProvider) renderListItem(content string) {
 		lbl := p.getLabel()
 		strongLabel := p.getLabel()
 		strongLabel.Font.Weight = font.Bold
-
 		return layout.Flex{}.Layout(gtx,
 			layout.Flexed(0.02, func(gtx C) D {
 				strongLabel.Text = ""
@@ -200,7 +199,11 @@ func (p *MarkdownProvider) prepareHeading(node *ast.Heading, entering bool) {
 		content := p.stringBuilder.String()
 		p.stringBuilder.Reset()
 		p.createNewRow()
-		p.appendToLastRow(getHeading(content, node.Level, p.theme).Layout)
+		p.appendToLastRow(func(gtx C) D {
+			lbl := getHeading(content, node.Level, p.theme)
+			lbl.TextSize = p.ConvertTextSize(lbl.TextSize)
+			return lbl.Layout(gtx)
+		})
 		p.addVerticalSpacing(8)
 		if node.Level == 1 {
 			p.drawLineRow(layout.Horizontal)
@@ -271,6 +274,8 @@ func (p *MarkdownProvider) renderBlock() {
 
 func (p *MarkdownProvider) getLabel() cryptomaterial.Label {
 	lbl := p.theme.Body1("")
+	size := p.ConvertTextSize(values.TextSize16)
+	lbl.TextSize = size
 	if len(p.tagStack) > 0 {
 		for i := range p.tagStack {
 			switch p.tagStack[i] {

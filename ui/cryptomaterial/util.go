@@ -139,20 +139,26 @@ func AnyKeyWithOptionalModifier(modifier key.Modifiers, keys ...string) key.Set 
 	return key.Set(keysWithModifier)
 }
 
-func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {
+func UniformPadding(gtx layout.Context, body layout.Widget, isMobileView ...bool) layout.Dimensions {
+	_isMobileView := len(isMobileView) > 0 && isMobileView[0]
 	width := gtx.Constraints.Max.X
+	paddingHorizontal := values.MarginPadding24
+	bottomPadding := values.MarginPadding24
 
-	padding := values.MarginPadding24
-
-	if (width - 2*gtx.Dp(padding)) > gtx.Dp(values.AppWidth) {
+	if (width - 2*gtx.Dp(paddingHorizontal)) > gtx.Dp(values.AppWidth) {
 		paddingValue := float32(width-gtx.Dp(values.AppWidth)) / 4
-		padding = unit.Dp(paddingValue)
+		paddingHorizontal = unit.Dp(paddingValue)
+	}
+
+	if _isMobileView {
+		paddingHorizontal = values.MarginPadding16
+		bottomPadding = values.MarginPadding0
 	}
 
 	return layout.Inset{
 		Top:    values.MarginPadding24,
-		Right:  padding,
-		Bottom: values.MarginPadding24,
-		Left:   padding,
+		Right:  paddingHorizontal,
+		Bottom: bottomPadding,
+		Left:   paddingHorizontal,
 	}.Layout(gtx, body)
 }

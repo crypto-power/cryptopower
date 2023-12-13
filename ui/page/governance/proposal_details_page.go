@@ -7,7 +7,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
@@ -41,8 +40,8 @@ type ProposalDetails struct {
 
 	descriptionList *layout.List
 
-	proposal      *libwallet.Proposal
-	proposalItems map[string]proposalItemWidgets
+	proposal       *libwallet.Proposal
+	proposalDesRaw string
 
 	scrollbarList *widget.List
 	rejectedIcon  *widget.Icon
@@ -80,7 +79,6 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 			List: layout.List{Axis: layout.Vertical},
 		},
 		redirectIcon:      l.Theme.Icons.RedirectIcon,
-		proposalItems:     make(map[string]proposalItemWidgets),
 		rejectedIcon:      l.Theme.Icons.NavigationCancel,
 		successIcon:       l.Theme.Icons.ActionCheckCircle,
 		viewInPoliteiaBtn: l.Theme.NewClickable(true),
@@ -92,7 +90,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 	pg.backButton, _ = components.SubpageHeaderButtons(l)
 
 	pg.vote = l.Theme.Button(values.String(values.StrVote))
-	pg.vote.TextSize = values.TextSize14
+	pg.vote.TextSize = l.ConvertTextSize(values.TextSize14)
 	pg.vote.Background = l.Theme.Color.Primary
 	pg.vote.Color = l.Theme.Color.Surface
 	pg.vote.Inset = layout.Inset{
@@ -111,6 +109,7 @@ func NewProposalDetailsPage(l *load.Load, proposal *libwallet.Proposal) *Proposa
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *ProposalDetails) OnNavigatedTo() {
+	pg.loadProposalDescription()
 	pg.listenForSyncNotifications() // listener is stopped in OnNavigatedFrom()
 }
 
@@ -134,6 +133,75 @@ func (pg *ProposalDetails) initWalletSelector() {
 	settingCommonDropdown(pg.Theme, pg.walletDropDown)
 }
 
+func (pg *ProposalDetails) loadProposalDescription() {
+	if pg.proposalDesRaw == "" && !pg.loadingDescription {
+		pg.loadingDescription = true
+		go func() {
+			var proposalDescription string
+			if pg.proposal.IndexFile != "" && pg.proposal.IndexFileVersion == pg.proposal.Version {
+				proposalDescription = pg.proposal.IndexFile
+			} else {
+				var err error
+				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(pg.proposal.Token)
+				if err != nil {
+					log.Errorf("Error loading proposal description: %v", err)
+					time.Sleep(7 * time.Second)
+					pg.loadingDescription = false
+					return
+				}
+			}
+
+			pg.proposalDesRaw = proposalDescription
+			pg.loadingDescription = false
+		}()
+	}
+}
+
+// Layout draws the page UI components into the provided layout context
+// to be eventually drawn on screen.
+// Part of the load.Page interface.
+func (pg *ProposalDetails) Layout(gtx C) D {
+	proposal := pg.proposal
+	page := components.SubPage{
+		Load:       pg.Load,
+		Title:      components.TruncateString(proposal.Name, 40),
+		BackButton: pg.backButton,
+		Back: func() {
+			pg.ParentNavigator().CloseCurrentPage()
+		},
+		Body: func(gtx C) D {
+			return pg.layoutDescription(gtx)
+		},
+		ExtraHeader: func(gtx C) D {
+			marginTop := values.MarginPadding16
+			if pg.IsMobileView() {
+				marginTop = values.MarginPaddingMinus8
+			}
+			return layout.Inset{Bottom: values.MarginPadding16, Top: marginTop}.Layout(gtx, pg.layoutTitle)
+		},
+		ExtraItem: pg.tempRightHead,
+		Extra: func(gtx C) D {
+			if pg.IsMobileView() {
+				return D{}
+			}
+			return pg.statusAndTimeLayout(gtx)
+		},
+	}
+	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
+}
+
+func (pg *ProposalDetails) getProposalItemWidgets() *proposalItemWidgets {
+	if pg.proposalDesRaw == "" {
+		return nil
+	}
+	r := renderers.RenderMarkdown(pg.Load, pg.Theme, pg.proposalDesRaw)
+	proposalWidgets, proposalClickables := r.Layout()
+	return &proposalItemWidgets{
+		widgets:    proposalWidgets,
+		clickables: proposalClickables,
+	}
+}
+
 // HandleUserInteractions is called just before Layout() to determine
 // if any user interaction recently occurred on the page and may be
 // used to update the page's UI components shortly before they are
@@ -143,14 +211,6 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 	if pg.walletDropDown != nil && pg.walletDropDown.Changed() {
 		pg.selectedDCRWallet = pg.assetWallets[pg.walletDropDown.SelectedIndex()]
 		//TODO: implement when selected wallet
-	}
-
-	for token := range pg.proposalItems {
-		for location, clickable := range pg.proposalItems[token].clickables {
-			if clickable.Clicked() {
-				components.GoToURL(location)
-			}
-		}
 	}
 
 	if pg.vote.Clicked() {
@@ -194,12 +254,13 @@ func (pg *ProposalDetails) HandleUserInteractions() {
 							})
 						})
 					}),
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+					layout.Stacked(func(gtx C) D {
 						return layout.Inset{
 							Top:  values.MarginPaddingMinus10,
 							Left: values.MarginPadding10,
 						}.Layout(gtx, func(gtx C) D {
 							label := pg.Theme.Body2(values.String(values.StrWebURL))
+							label.TextSize = pg.ConvertTextSize(values.TextSize14)
 							label.Color = pg.Theme.Color.GrayText2
 							return label.Layout(gtx)
 						})
@@ -259,6 +320,33 @@ func (pg *ProposalDetails) layoutProposalVoteBar(gtx C) D {
 		Layout(gtx)
 }
 
+func (pg *ProposalDetails) statusAndTimeLayout(gtx C) D {
+	grayCol := pg.Load.Theme.Color.GrayText2
+	timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(pg.proposal.Timestamp))
+	timeAgoLabel.Color = grayCol
+
+	dotLabel := pg.Load.Theme.H4(" . ")
+	dotLabel.Color = grayCol
+
+	categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
+	categoryLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	timeAgoLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	spacing := layout.SpaceStart
+	if pg.IsMobileView() {
+		spacing = layout.SpaceBetween
+	}
+	return layout.Flex{Spacing: spacing}.Layout(gtx,
+		layout.Rigid(categoryLabel.Layout),
+		layout.Rigid(func(gtx C) D {
+			if pg.IsMobileView() {
+				return D{}
+			}
+			return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+		}),
+		layout.Rigid(timeAgoLabel.Layout),
+	)
+}
+
 func (pg *ProposalDetails) sumaryInfo(gtx C) D {
 	totalVotes := fmt.Sprintf("%d", pg.proposal.YesVotes+pg.proposal.NoVotes)
 	quorum := fmt.Sprintf("%d", (pg.proposal.QuorumPercentage/100)*pg.proposal.EligibleTickets)
@@ -276,6 +364,7 @@ func (pg *ProposalDetails) sumaryInfo(gtx C) D {
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						lbl := pg.Theme.Body2(totalVotes)
+						lbl.TextSize = pg.ConvertTextSize(values.TextSize14)
 						return lbl.Layout(gtx)
 					})
 				}),
@@ -291,6 +380,7 @@ func (pg *ProposalDetails) sumaryInfo(gtx C) D {
 				layout.Flexed(1, func(gtx C) D {
 					return layout.E.Layout(gtx, func(gtx C) D {
 						lbl := pg.Theme.Body2(quorum)
+						lbl.TextSize = pg.ConvertTextSize(values.TextSize14)
 						return lbl.Layout(gtx)
 					})
 				}),
@@ -318,6 +408,7 @@ func (pg *ProposalDetails) summaryRow(title, content string, gtx C) D {
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				lbl := pg.Theme.Body2(content)
+				lbl.TextSize = pg.ConvertTextSize(values.TextSize14)
 				return lbl.Layout(gtx)
 			})
 		}),
@@ -335,15 +426,16 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 
 	proposal := pg.proposal
 
-	c := func(gtx layout.Context, val int32, info string) layout.Dimensions {
+	c := func(gtx C, val int32, info string) D {
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				if proposal.VoteStatus == val || proposal.VoteStatus < val {
 					c := pg.Theme.Card()
 					c.Color = pg.Theme.Color.Primary
-					c.Radius = cryptomaterial.Radius(9)
 					lbl := pg.Theme.Body1(fmt.Sprint(val))
+					lbl.TextSize = pg.ConvertTextSize(values.TextSize18)
 					lbl.Color = pg.Theme.Color.Surface
+					c.Radius = cryptomaterial.Radius(int(lbl.TextSize)/2 + 1)
 					if proposal.VoteStatus < val {
 						c.Color = pg.Theme.Color.Gray4
 						lbl.Color = pg.Theme.Color.GrayText3
@@ -374,6 +466,7 @@ func (pg *ProposalDetails) layoutInDiscussionState(gtx C) D {
 					}
 				}
 				lbl := pg.Theme.Body1(txt)
+				lbl.TextSize = pg.ConvertTextSize(values.TextSize18)
 				lbl.Color = col
 				return layout.Inset{Left: values.MarginPadding16}.Layout(gtx, lbl.Layout)
 			}),
@@ -419,32 +512,45 @@ func (pg *ProposalDetails) getCategoryText() string {
 
 func (pg *ProposalDetails) layoutNormalTitle(gtx C) D {
 	proposal := pg.proposal
-
-	return layout.Stack{}.Layout(gtx,
-		layout.Stacked(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding50}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
-					layout.Rigid(pg.layoutProposalVoteBar),
-					layout.Rigid(func(gtx C) D {
-						if proposal.Category != libwallet.ProposalCategoryActive {
-							return D{}
-						}
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
-							layout.Rigid(pg.layoutProposalVoteAction),
-						)
-					}),
-				)
-			})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if !pg.IsMobileView() {
+				return D{}
+			}
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, pg.statusAndTimeLayout)
 		}),
-		layout.Expanded(pg.walletDropDown.Layout),
+		layout.Rigid(func(gtx C) D {
+			return layout.Stack{}.Layout(gtx,
+				layout.Stacked(func(gtx C) D {
+					marginTop := values.MarginPadding50
+					if pg.IsMobileView() {
+						marginTop = values.MarginPadding30
+					}
+					return layout.Inset{Top: marginTop}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16})),
+							layout.Rigid(pg.layoutProposalVoteBar),
+							layout.Rigid(func(gtx C) D {
+								if proposal.Category != libwallet.ProposalCategoryActive {
+									return D{}
+								}
+								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+									layout.Rigid(pg.lineSeparator(layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10})),
+									layout.Rigid(pg.layoutProposalVoteAction),
+								)
+							}),
+						)
+					})
+				}),
+				layout.Expanded(pg.walletDropDown.Layout),
+			)
+		}),
 	)
 }
 
 func (pg *ProposalDetails) layoutTitle(gtx C) D {
 	proposal := pg.proposal
-
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
 		if proposal.Category == libwallet.ProposalCategoryPre {
 			return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
@@ -474,40 +580,61 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	updatedLabel := pg.Theme.Body2(values.String(values.StrUpdated) + " " + components.TimeAgo(proposal.Timestamp))
 	updatedLabel.Color = grayCol
 
+	userLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	versionLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	publishedLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+	updatedLabel.TextSize = pg.ConvertTextSize(values.TextSize14)
+
 	w := []layout.Widget{
 		func(gtx C) D {
 			lbl := pg.Theme.H5(proposal.Name)
+			lbl.TextSize = pg.ConvertTextSize(values.TextSize20)
 			lbl.Font.Weight = font.SemiBold
 			return lbl.Layout(gtx)
 		},
 		func(gtx C) D {
-			return layout.Flex{}.Layout(gtx,
-				layout.Rigid(userLabel.Layout),
+			axis := layout.Horizontal
+			if pg.IsMobileView() {
+				axis = layout.Vertical
+			}
+			return layout.Flex{Axis: axis}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(userLabel.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+						}),
+						layout.Rigid(publishedLabel.Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+						}),
+						layout.Rigid(versionLabel.Layout),
+					)
 				}),
-				layout.Rigid(publishedLabel.Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+					return layout.Flex{}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							if pg.IsMobileView() {
+								return D{}
+							}
+							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
+						}),
+						layout.Rigid(updatedLabel.Layout),
+					)
 				}),
-				layout.Rigid(versionLabel.Layout),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-				}),
-				layout.Rigid(updatedLabel.Layout),
 			)
 		},
 		pg.layoutRedirect(values.String(values.StrViewOnPoliteia), pg.redirectIcon, pg.viewInPoliteiaBtn),
 		pg.lineSeparator(layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}),
 	}
 
-	_, ok := pg.proposalItems[proposal.Token]
-	if ok {
-		w = append(w, pg.proposalItems[proposal.Token].widgets...)
+	itemWidgets := pg.getProposalItemWidgets()
+	if itemWidgets != nil {
+		w = append(w, itemWidgets.widgets...)
 	} else {
 		loading := func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8)}.Layout(gtx, func(gtx C) D {
+				return components.UniformVeticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
 					return layout.Center.Layout(gtx, material.Loader(pg.Theme.Base).Layout)
 				})
 			}))
@@ -518,9 +645,13 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 
 	return pg.descriptionCard.Layout(gtx, func(gtx C) D {
 		return pg.Theme.List(pg.scrollbarList).Layout(gtx, 1, func(gtx C, i int) D {
-			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+			mpSize := values.MarginPadding16
+			if pg.IsMobileView() {
+				mpSize = values.MarginPadding12
+			}
+			return layout.UniformInset(mpSize).Layout(gtx, func(gtx C) D {
 				return pg.descriptionList.Layout(gtx, len(w), func(gtx C, i int) D {
-					return layout.UniformInset(unit.Dp(0)).Layout(gtx, w[i])
+					return w[i](gtx)
 				})
 			})
 		})
@@ -532,13 +663,17 @@ func (pg *ProposalDetails) layoutRedirect(text string, icon *cryptomaterial.Imag
 		return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
 			return btn.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Flex{}.Layout(gtx,
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-							return layout.E.Layout(gtx, icon.Layout24dp)
+							return icon.LayoutSize(gtx, pg.ConvertIconSize(values.MarginPadding24))
 						})
 					}),
-					layout.Rigid(pg.Theme.Body1(text).Layout),
+					layout.Rigid(func(gtx C) D {
+						lb := pg.Theme.Body1(text)
+						lb.TextSize = pg.ConvertTextSize(values.TextSize14)
+						return lb.Layout(gtx)
+					}),
 				)
 			})
 		})
@@ -549,139 +684,4 @@ func (pg *ProposalDetails) lineSeparator(inset layout.Inset) layout.Widget {
 	return func(gtx C) D {
 		return inset.Layout(gtx, pg.Theme.Separator().Layout)
 	}
-}
-
-// Layout draws the page UI components into the provided layout context
-// to be eventually drawn on screen.
-// Part of the load.Page interface.
-func (pg *ProposalDetails) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *ProposalDetails) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	proposal := pg.proposal
-	_, ok := pg.proposalItems[proposal.Token]
-	if !ok && !pg.loadingDescription {
-		pg.loadingDescription = true
-		go func() {
-			var proposalDescription string
-			if proposal.IndexFile != "" && proposal.IndexFileVersion == proposal.Version {
-				proposalDescription = proposal.IndexFile
-			} else {
-				var err error
-				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
-				if err != nil {
-					log.Errorf("Error loading proposal description: %v", err)
-					time.Sleep(7 * time.Second)
-					pg.loadingDescription = false
-					return
-				}
-			}
-
-			r := renderers.RenderMarkdown(gtx, pg.Theme, proposalDescription)
-			proposalWidgets, proposalClickables := r.Layout()
-			pg.proposalItems[proposal.Token] = proposalItemWidgets{
-				widgets:    proposalWidgets,
-				clickables: proposalClickables,
-			}
-			pg.loadingDescription = false
-		}()
-	}
-
-	page := components.SubPage{
-		Load:       pg.Load,
-		Title:      components.TruncateString(proposal.Name, 40),
-		BackButton: pg.backButton,
-		Back: func() {
-			pg.ParentNavigator().CloseCurrentPage()
-		},
-		Body: func(gtx C) D {
-			return pg.layoutDescription(gtx)
-		},
-		ExtraHeader: func(gtx C) D {
-			return layout.Inset{Bottom: values.MarginPadding16, Top: values.MarginPadding16}.Layout(gtx, pg.layoutTitle)
-		},
-		ExtraItem: pg.tempRightHead,
-		Extra: func(gtx C) D {
-			grayCol := pg.Load.Theme.Color.GrayText2
-			timeAgoLabel := pg.Load.Theme.Body2(components.TimeAgo(proposal.Timestamp))
-			timeAgoLabel.Color = grayCol
-
-			dotLabel := pg.Load.Theme.H4(" . ")
-			dotLabel.Color = grayCol
-
-			categoryLabel := pg.Load.Theme.Body2(pg.getCategoryText())
-			return layout.Inset{}.Layout(gtx, func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(categoryLabel.Layout),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPaddingMinus22}.Layout(gtx, dotLabel.Layout)
-						}),
-						layout.Rigid(timeAgoLabel.Layout),
-					)
-				})
-			})
-		},
-	}
-	return page.LayoutWithHeadCard(pg.ParentWindow(), gtx)
-}
-
-func (pg *ProposalDetails) layoutMobile(gtx layout.Context) layout.Dimensions {
-	proposal := pg.proposal
-	_, ok := pg.proposalItems[proposal.Token]
-	if !ok && !pg.loadingDescription {
-		pg.loadingDescription = true
-		go func() {
-			var proposalDescription string
-			if proposal.IndexFile != "" && proposal.IndexFileVersion == proposal.Version {
-				proposalDescription = proposal.IndexFile
-			} else {
-				var err error
-				proposalDescription, err = pg.AssetsManager.Politeia.FetchProposalDescription(proposal.Token)
-				if err != nil {
-					log.Errorf("Error loading proposal description: %v", err)
-					time.Sleep(7 * time.Second)
-					pg.loadingDescription = false
-					return
-				}
-			}
-
-			r := renderers.RenderMarkdown(gtx, pg.Theme, proposalDescription)
-			proposalWidgets, proposalClickables := r.Layout()
-			pg.proposalItems[proposal.Token] = proposalItemWidgets{
-				widgets:    proposalWidgets,
-				clickables: proposalClickables,
-			}
-			pg.loadingDescription = false
-		}()
-	}
-
-	body := func(gtx C) D {
-		page := components.SubPage{
-			Load:       pg.Load,
-			Title:      components.TruncateString(proposal.Name, 30),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, pg.layoutTitle)
-					}),
-					layout.Rigid(pg.layoutDescription),
-				)
-			},
-			ExtraItem: pg.viewInPoliteiaBtn,
-			Extra: func(gtx C) D {
-				return layout.Inset{}.Layout(gtx, pg.redirectIcon.Layout24dp)
-			},
-		}
-		return page.Layout(pg.ParentWindow(), gtx)
-	}
-	return components.UniformMobile(gtx, false, false, body)
 }

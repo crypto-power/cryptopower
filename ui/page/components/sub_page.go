@@ -31,8 +31,11 @@ func SubpageHeaderButtons(l *load.Load) (cryptomaterial.IconButton, cryptomateri
 	backButton := l.Theme.IconButton(l.Theme.Icons.NavigationArrowBack)
 	infoButton := l.Theme.IconButton(l.Theme.Icons.ActionInfo)
 
-	m24 := values.MarginPadding24
-	backButton.Size, infoButton.Size = m24, m24
+	size := values.MarginPadding24
+	if l.IsMobileView() {
+		size = values.MarginPadding16
+	}
+	backButton.Size, infoButton.Size = size, size
 
 	buttonInset := layout.UniformInset(values.MarginPadding0)
 	backButton.Inset, infoButton.Inset = buttonInset, buttonInset
@@ -54,11 +57,15 @@ func (sp *SubPage) Layout(window app.WindowNavigator, gtx C) D {
 func (sp *SubPage) LayoutWithHeadCard(window app.WindowNavigator, gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			horizontalPadding := values.MarginPadding24
+			if sp.IsMobileView() {
+				horizontalPadding = 16
+			}
 			return sp.Theme.Card().Layout(gtx, func(gtx C) D {
 				return layout.Inset{
 					Top:   values.MarginPadding16,
-					Left:  values.MarginPadding24,
-					Right: values.MarginPadding24,
+					Left:  horizontalPadding,
+					Right: horizontalPadding,
 				}.Layout(gtx, func(gtx C) D {
 					return sp.Header(window, gtx)
 				})
@@ -78,18 +85,18 @@ func (sp *SubPage) Header(window app.WindowNavigator, gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
-						Right: values.MarginPadding20,
+						Right: values.MarginPadding4,
 					}.Layout(gtx, sp.BackButton.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(sp.Load.Theme.SemiBoldLabelWithSize(values.TextSize20, sp.Title).Layout),
+						layout.Rigid(sp.Load.Theme.SemiBoldLabelWithSize(sp.ConvertTextSize(values.TextSize20), sp.Title).Layout),
 						layout.Rigid(func(gtx C) D {
 							if !utils.StringNotEmpty(sp.SubTitle) {
 								return D{}
 							}
 
-							sub := sp.Load.Theme.Label(values.TextSize14, sp.SubTitle)
+							sub := sp.Load.Theme.Label(sp.ConvertTextSize(values.TextSize14), sp.SubTitle)
 							sub.Color = sp.Load.Theme.Color.GrayText2
 							return sub.Layout(gtx)
 						}),

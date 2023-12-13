@@ -62,6 +62,8 @@ type DropDown struct {
 	// MakeCollapsedLayoutVisibleWhenExpanded is true.
 	ExpandedLayoutInset  layout.Inset
 	collapsedLayoutInset layout.Inset
+
+	convertTextSize func(unit.Sp) unit.Sp
 }
 
 type DropDownItem struct {
@@ -147,6 +149,17 @@ func (d *DropDown) ClearWithSelectedItem(item DropDownItem) {
 
 func (d *DropDown) SelectedIndex() int {
 	return d.selectedIndex
+}
+
+func (d *DropDown) SetConvertTextSize(fun func(unit.Sp) unit.Sp) {
+	d.convertTextSize = fun
+}
+
+func (d *DropDown) getTextSize(textSize unit.Sp) unit.Sp {
+	if d.convertTextSize == nil {
+		return textSize
+	}
+	return d.convertTextSize(textSize)
 }
 
 func (d *DropDown) Len() int {
@@ -342,6 +355,7 @@ func (d *DropDown) itemLayout(gtx C, index int, clickable *Clickable, item *Drop
 					lbl.Text = item.Text[:maxDropdownItemTextLen-3 /* subtract space for the ellipsis */] + "..."
 				}
 				lbl.Font.Weight = d.FontWeight
+				lbl.TextSize = d.getTextSize(values.TextSize14)
 				return lbl.Layout(gtx)
 			})
 		}),
