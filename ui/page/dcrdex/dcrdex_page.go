@@ -1,9 +1,11 @@
 package dcrdex
 
 import (
+	"decred.org/dcrdex/client/core"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/libwallet"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -74,10 +76,19 @@ func (pg *DEXPage) OnNavigatedTo() {
 
 	if pg.CurrentPage() != nil {
 		pg.CurrentPage().OnNavigatedTo()
-	} else if len(pg.AssetsManager.DexClient().Exchanges()) > 0 {
-		pg.Display(NewDEXMarketPage(pg.Load))
-	} else {
+		return
+	}
+
+	showOnBoardingPage := true
+	if len(pg.AssetsManager.DexClient().Exchanges()) != 0 { // has at least one exchange
+		_, _, pendingBond := pendingBondConfirmation(pg.AssetsManager)
+		showOnBoardingPage = pendingBond != nil
+	}
+
+	if showOnBoardingPage {
 		pg.Display(NewDEXOnboarding(pg.Load))
+	} else {
+		pg.Display(NewDEXMarketPage(pg.Load))
 	}
 }
 
@@ -154,3 +165,22 @@ func (pg *DEXPage) HandleUserInteractions() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *DEXPage) OnNavigatedFrom() {}
+
+// pendingBondConfirmation is a convenience function based on arbitrary
+// heuristics to determine when to show bond confirmation step.
+func pendingBondConfirmation(am *libwallet.AssetsManager) (string, *core.BondAsset, *core.PendingBondState) {
+	xcs := am.DexClient().Exchanges()
+	if len(xcs) == 1 { // first or only exchange
+		for _, xc := range xcs {
+			if len(xc.PendingBonds) == 1 {
+				for _, bond := range xc.PendingBonds {
+					bondAsset := xc.BondAssets[bond.Symbol]
+					if bond.Confs < bondAsset.Confs {
+						return xc.Host, bondAsset, bond
+					}
+				}
+			}
+		}
+	}
+	return "", nil, nil
+}

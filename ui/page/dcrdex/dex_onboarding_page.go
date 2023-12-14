@@ -32,7 +32,6 @@ import (
 const (
 	DEXOnboardingPageID = "dex_onboarding"
 	minimumBondStrength = 1
-	bondOverlap         = 2
 )
 
 var (
@@ -77,7 +76,6 @@ type dexOnboardingStep struct {
 type bondServerInfo struct {
 	url                  string
 	cert                 []byte
-	exchange             *core.Exchange
 	bondAssets           map[libutils.AssetType]*core.BondAsset
 	noSupportedBondAsset bool
 }
@@ -216,7 +214,9 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 // may be used to initialize page features that are only relevant when
 // the page is displayed.
 // Part of the load.Page interface.
-func (pg *DEXOnboarding) OnNavigatedTo() {}
+func (pg *DEXOnboarding) OnNavigatedTo() {
+	pg.checkForPendingBondPayment()
+}
 
 // OnNavigatedFrom is called when the page is about to be removed from
 // the displayed window. This method should ideally be used to disable
@@ -232,8 +232,8 @@ func (pg *DEXOnboarding) OnNavigatedFrom() {
 	}
 
 	// Remove bond confirmation listener if any.
-	if pg.bondSourceWalletSelector != nil {
-		pg.bondSourceWalletSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	if pg.bondSourceAccountSelector != nil {
+		pg.bondSourceAccountSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
 	}
 }
 
@@ -790,7 +790,7 @@ func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 	icon := pg.Theme.AssetIcon(assetType)
 	bondAsset := pg.bondServer.bondAssets[assetType]
 	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
-	amt := uint64(pg.newTier)*bondAsset.Amt*bondOverlap + bondsFeeBuffer
+	amt := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if icon == nil {
@@ -857,7 +857,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.bondStrengthEditor.SetError("")
 	}
 
-	if pg.nextBtn.Clicked() || isSubmit && !pg.isLoading {
+	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
 		switch pg.currentStep {
 		case onboardingSetPassword:
 			ok := pg.validPasswordInputs()
@@ -896,7 +896,11 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 			}
 
 			pg.bondServer = serverInfo
-			pg.connectServerAndPrepareForBonding()
+			pg.isLoading = true
+			go func() {
+				pg.connectServerAndPrepareForBonding()
+				pg.isLoading = false
+			}()
 
 		case onboardingPostBond:
 			// Validate all input fields.
@@ -913,9 +917,10 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 
 			// Initialize with password now, if dex password has not been
 			// initialized.
+			pg.isLoading = true
 			if !pg.dexc.IsDEXPasswordSet() {
-				pg.isLoading = true
 				go func() {
+					// Set password.
 					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
 					if err := pg.dexc.InitWithPassword(pg.dexPass, nil); err != nil {
 						pg.isLoading = false
@@ -923,9 +928,18 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 						return
 					}
 
-					pg.isLoading = false
+					// Login.
+					err := pg.dexc.Login(pg.dexPass)
+					if err != nil {
+						pg.isLoading = false
+						pg.notifyError(err.Error())
+						return
+					}
+
 					pg.postBond()
 				}()
+
+				return
 			}
 
 			// dexc password has been sent already.
@@ -937,54 +951,35 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					pg.dexPass = []byte(password)
 					err := pg.dexc.Login(pg.dexPass)
 					if err != nil {
+						pg.isLoading = false
 						pm.SetError(err.Error())
 						pm.SetLoading(false)
 						return false
 					}
 
-					go pg.postBond()
+					pg.postBond()
 					return true
 				})
 			dexPasswordModal.SetPasswordTitleVisibility(false)
 			pg.ParentWindow().ShowModal(dexPasswordModal)
-
-		case onBoardingStepWaitForConfirmation:
-			if pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
-				pg.ParentNavigator().Display(NewDEXMarketPage(pg.Load))
-			}
 		}
 	}
 }
 
 func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
-	pg.isLoading = true
-	defer func() {
-		pg.isLoading = false
-	}()
-
 	xc, err := pg.dexc.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
 	if err != nil {
 		pg.notifyError(fmt.Errorf("Error discovering account: %w", err).Error())
 		return
 	}
-	pg.bondServer.exchange = xc
 
 	pg.bondServer.bondAssets = make(map[libutils.AssetType]*core.BondAsset)
 	var supportedBondAssets []libutils.AssetType
 	for _, asset := range xc.BondAssets {
-		assetSym := dex.BipIDSymbol(asset.ID)
-		var assetType libutils.AssetType
-		switch {
-		case strings.EqualFold(assetSym, libutils.DCRWalletAsset.String()):
-			assetType = libutils.DCRWalletAsset
-		case strings.EqualFold(assetSym, libutils.BTCWalletAsset.String()):
-			assetType = libutils.BTCWalletAsset
-		case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
-			assetType = libutils.LTCWalletAsset
-		default:
-			continue // unsupported asset
+		assetType := convertAssetIDToAssetType(asset.ID)
+		if assetType == "" {
+			continue
 		}
-
 		supportedBondAssets = append(supportedBondAssets, assetType)
 		pg.bondServer.bondAssets[assetType] = asset
 	}
@@ -1024,7 +1019,10 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	pg.ParentWindow().Reload()
 }
 
+// postBond prepares the data required to post bond and starts the bond posting
+// process. C
 func (pg *DEXOnboarding) postBond() {
+	pg.isLoading = true
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	postBond := &core.PostBondForm{
@@ -1038,10 +1036,6 @@ func (pg *DEXOnboarding) postBond() {
 
 	// postBondFn sends the actual request to post bond.
 	postBondFn := func(walletPass string) {
-		defer func() {
-			pg.isLoading = false
-		}()
-
 		// Add bond wallet to core if it does not exist.
 		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
 			cfg := map[string]string{
@@ -1067,16 +1061,7 @@ func (pg *DEXOnboarding) postBond() {
 			bondCoinID:       res.BondID,
 		}
 
-		// Listen for new block updates. This listener is removed in OnNavigateFrom().
-		asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
-			OnBlockAttached: func(_ int, _ int32) {
-				pg.bondConfirmationInfo.currentBondConf++
-				pg.ParentWindow().Reload()
-			},
-		}, DEXOnboardingPageID)
-
-		pg.currentStep = onBoardingStepWaitForConfirmation
-		pg.scrollContainer.Position.Offset = 0 // Scroll to the top of the confirmation page after leaving the long post bond form.
+		pg.waitForConfirmationAndListenForBlockNotifications()
 		pg.ParentWindow().Reload()
 	}
 
@@ -1085,12 +1070,68 @@ func (pg *DEXOnboarding) postBond() {
 		EnableName(false).
 		EnableConfirmPassword(false).
 		Title(values.String(values.StrEnterSpendingPassword)).
+		SetNegativeButtonCallback(func() {
+			pg.isLoading = false
+		}).
 		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
-			pg.isLoading = true
-			go postBondFn(walletPass)
+			postBondFn(walletPass)
+			pg.isLoading = false
 			return true
-		})
+		}).
+		SetCancelable(false) // user cannot close modal until postBondFn exists
+
 	pg.ParentWindow().ShowModal(walletPasswordModal)
+}
+
+func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
+	pg.currentStep = onBoardingStepWaitForConfirmation
+	pg.scrollContainer.Position.Offset = 0
+
+	// Listen for new block updates. This listener is removed in
+	// OnNavigateFrom().
+	asset := pg.bondSourceAccountSelector.SelectedWallet()
+	asset.RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
+		OnBlockAttached: func(_ int, _ int32) {
+			pg.bondConfirmationInfo.currentBondConf++
+			if pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
+				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
+			} else {
+				pg.ParentWindow().Reload()
+			}
+		},
+	}, DEXOnboardingPageID)
+}
+
+func (pg *DEXOnboarding) checkForPendingBondPayment() {
+	// Check if bond has already been posted but still pending confirmation.
+	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager)
+	if bond == nil {
+		return
+	}
+
+	pg.newTier = 1
+	pg.currentStep = onBoardingStepWaitForConfirmation
+	pg.bondConfirmationInfo = &bondConfirmationInfo{
+		requiredBondConf: uint16(bondAsset.Confs),
+		currentBondConf:  int32(bond.Confs),
+	}
+
+	// Set fields required by pg.stepWaitForBondConfirmation page. Also See:
+	// pg.bondAmountInfoDisplay.
+	bondAssetType := convertAssetIDToAssetType(bondAsset.ID)
+	pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
+		bondAssetType: bondAsset,
+	}
+	pg.bondServer.url = xcHost
+	pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
+	ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
+	if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
+		pg.notifyError(values.String(values.StrNoWalletLoaded))
+		return
+	}
+
+	pg.waitForConfirmationAndListenForBlockNotifications()
 }
 
 func (pg *DEXOnboarding) notifyError(errMsg string) {
@@ -1105,7 +1146,7 @@ func (pg *DEXOnboarding) bondAccountHasEnough() bool {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
-	bondCost := uint64(pg.newTier)*bondAsset.Amt*bondOverlap + bondsFeeBuffer
+	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
 	if ac.Balance.Spendable.ToInt() < bondAmt.ToInt() {
 		pg.bondSourceAccountSelector.SetError(values.StringF(values.StrInsufficientBondAmount, bondAmt.String()))
@@ -1177,4 +1218,18 @@ func newTextEditor(th *cryptomaterial.Theme, title string, hint string, multiLin
 	e.Editor.Submit = true
 	e.Hint = hint
 	return e
+}
+
+func convertAssetIDToAssetType(assetID uint32) libutils.AssetType {
+	assetSym := dex.BipIDSymbol(assetID)
+	switch {
+	case strings.EqualFold(assetSym, libutils.DCRWalletAsset.String()):
+		return libutils.DCRWalletAsset
+	case strings.EqualFold(assetSym, libutils.BTCWalletAsset.String()):
+		return libutils.BTCWalletAsset
+	case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
+		return libutils.LTCWalletAsset
+	default:
+		return ""
+	}
 }

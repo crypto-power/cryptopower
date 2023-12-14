@@ -992,7 +992,7 @@ func (mgr *AssetsManager) PrepareDexSupportForDcrWallet() error {
 			return nil, fmt.Errorf("DEX wallet not supported for %s", walletParams.Name)
 		}
 
-		return dcr.NewDEXWallet(dcrAsset.Internal().DCR, dcrAsset.SyncData()), nil
+		return dcr.NewDEXWallet(dcrAsset.Wallet, dcrAsset.SyncData()), nil
 	}
 
 	err := dexDcr.RegisterCustomWallet(walletMaker, def)
