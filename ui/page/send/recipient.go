@@ -184,7 +184,7 @@ func (rp *recipient) resetDestinationAccountSelector() {
 	rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(rp.selectedWallet)
 }
 
-func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app.WindowNavigator) layout.Widget {
+func (rp *recipient) recipientLayout(index int, showIcon bool, window app.WindowNavigator) layout.Widget {
 	rp.handle()
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
@@ -203,12 +203,12 @@ func (rp *recipient) recipientLayout(gtx C, index int, showIcon bool, window app
 					return rp.contentWrapper(gtx, "Destination Address", rp.sendDestination.destinationAddressEditor.Layout)
 				}
 				if !rp.sendDestination.sendToAddress {
-					layoutBody = rp.walletAccountlayout(gtx, window)
+					layoutBody = rp.walletAccountlayout(window)
 				}
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return rp.addressAndAmountlayout(gtx, window)
+				return rp.addressAndAmountlayout(gtx)
 			}),
 			layout.Rigid(rp.txLabelSection),
 		)
@@ -229,7 +229,7 @@ func (rp *recipient) topLayout(gtx C, index int) D {
 	)
 }
 
-func (rp *recipient) walletAccountlayout(gtx C, window app.WindowNavigator) layout.Widget {
+func (rp *recipient) walletAccountlayout(window app.WindowNavigator) layout.Widget {
 	return func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
@@ -267,7 +267,7 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 	})
 }
 
-func (rp *recipient) addressAndAmountlayout(gtx C, window app.WindowNavigator) D {
+func (rp *recipient) addressAndAmountlayout(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return rp.contentWrapper(gtx, "Amount", rp.amount.amountEditor.Layout)

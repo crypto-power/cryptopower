@@ -114,7 +114,7 @@ func (pg *Page) recipientsLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				recipient := pg.recipient.recipientLayout(gtx, 1, false, pg.ParentWindow())
+				recipient := pg.recipient.recipientLayout(1, false, pg.ParentWindow())
 				return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, recipient)
 			}),
 			layout.Rigid(func(gtx C) D {

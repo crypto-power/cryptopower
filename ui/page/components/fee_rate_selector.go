@@ -3,20 +3,16 @@ package components
 import (
 	"fmt"
 	"strconv"
-	"strings"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/crypto-power/cryptopower/app"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -72,9 +68,11 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 	fs.SaveRate = fs.Theme.Button(values.String(values.StrSave))
 
 	fs.feeRateSwitch = fs.Theme.SegmentedControl([]string{
-		"Fetched",
-		"Manual",
+		values.String(values.StrFetched),
+		values.String(values.StrManual),
 	}, cryptomaterial.SegmentTypeDynamicSplit)
+	fs.feeRateSwitch.SetEnableSwipe(false)
+
 	fs.feeRateSwitch.LayoutPadding = layout.Inset{Top: values.MarginPadding4}
 
 	fs.SaveRate.TextSize = values.TextSize16
@@ -99,7 +97,7 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 
 // ShowSizeAndCost turns the showSizeAndCost Field to true
 // the component will show the estimated size and Fee when
-// showSizeAndCost is true.
+// showSizeAndCost is true.backupLaterbackupLater
 func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 	fs.showSizeAndCost = true
 	return fs
@@ -117,7 +115,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 		Orientation: layout.Vertical,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			title := fs.Theme.Body1("Fee Rate")
+			title := fs.Theme.Body1(values.String(values.StrFeeRates))
 			title.Font.Weight = font.SemiBold
 			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, title.Layout)
 		}),
@@ -144,7 +142,7 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 							}),
 						)
 					}
-					if fs.feeRateSwitch.SelectedSegment() == "Fetched" {
+					if fs.feeRateSwitch.SelectedSegment() == values.String(values.StrFetched) {
 						fs.fetchedRatesDropDown.Width = unit.Dp(gtx.Constraints.Max.X) / 2
 						layoutBody = fs.fetchedRatesDropDown.Layout
 					}
@@ -219,70 +217,6 @@ func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 	}
 
 	fs.fetchedRatesDropDown = fs.Theme.DropDown(items, values.WalletsDropdownGroup, false)
-}
-
-// FetchFeeRate will fetch the fee rate from the HTTP API.
-func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet sharedW.Asset) {
-	if fs.fetchingRate {
-		return
-	}
-	fs.fetchingRate = true
-	defer func() {
-		fs.fetchingRate = false
-	}()
-
-	feeRates, err := load.GetAPIFeeRate(selectedWallet)
-	if err != nil {
-		return
-	}
-
-	blocksStr := func(b int32) string {
-		val := strconv.Itoa(int(b)) + " block"
-		if b == 1 {
-			return val
-		}
-		return val + "s"
-	}
-
-	radiogroupbtns := new(widget.Enum)
-	items := make([]layout.FlexChild, 0)
-	for index, feerate := range feeRates {
-		key := strconv.Itoa(index)
-		value := fs.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
-		radioBtn := fs.Load.Theme.RadioButton(radiogroupbtns, key, value,
-			fs.Load.Theme.Color.DeepBlue, fs.Load.Theme.Color.Primary)
-		items = append(items, layout.Rigid(radioBtn.Layout))
-	}
-
-	info := modal.NewCustomModal(fs.Load).
-		Title(values.String(values.StrFeeRates)).
-		UseCustomWidget(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		}).
-		SetCancelable(true).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetPositiveButtonText(values.String(values.StrSave)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-			fields := strings.Fields(radiogroupbtns.Value)
-			index, _ := strconv.Atoi(fields[0])
-			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-			rateInt, err := load.SetAPIFeeRate(selectedWallet, rate)
-			if err != nil {
-				log.Error(err)
-				return false
-			}
-
-			fs.feeRateText = fs.addRatesUnits(rateInt)
-			fs.rateEditMode = false
-			blocks := feeRates[index].ConfirmedBlocks
-			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
-			fs.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), TimeAgo(timeBefore.Unix()))
-			im.Dismiss()
-			return true
-		})
-
-	window.ShowModal((info))
-	// fs.EditRates.SetEnabled(true)
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.

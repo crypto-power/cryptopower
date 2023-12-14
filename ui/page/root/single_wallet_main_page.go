@@ -124,7 +124,7 @@ func (swmp *SingleWalletMasterPage) OnNavigatedTo() {
 
 	needBackup := swmp.selectedWallet.GetEncryptedSeed() != ""
 	if needBackup && !backupLater {
-		// swmp.showBackupInfo()
+		swmp.showBackupInfo()
 	}
 
 	if swmp.CurrentPage() == nil {

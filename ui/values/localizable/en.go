@@ -245,6 +245,7 @@ const EN = `
 "fetchProposals" = "Fetch proposals"
 "fetchRateError" = "error fetching rate"
 "fetchRates" = "Fetch Rates"
+"fetched"="Fetched"
 "finished" = "Finished"
 "french" = "French"
 "frequency" = "Frequency"

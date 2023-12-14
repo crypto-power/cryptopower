@@ -39,6 +39,7 @@ func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination 
 		accountSwitch: l.Theme.SegmentedControl(tabOptions, cryptomaterial.SegmentTypeGroupMax),
 	}
 
+	dst.accountSwitch.SetEnableSwipe(false)
 	dst.destinationAddressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrDestAddr))
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")

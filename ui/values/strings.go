@@ -354,6 +354,7 @@ const (
 	StrFetchProposals                  = "fetchProposals"
 	StrFetchRateError                  = "fetchRateError"
 	StrFetchRates                      = "fetchRates"
+	StrFetched                         = "fetched"
 	StrFinished                        = "finished"
 	StrFrench                          = "french"
 	StrFrequency                       = "frequency"
