@@ -134,6 +134,10 @@ func LayoutBalanceSize(gtx layout.Context, l *load.Load, amount string, mainText
 	return formatBalance(gtx, l, amount, mainTextSize, l.Theme.Color.Text, false, false)
 }
 
+func LayoutBalanceCustom(gtx layout.Context, l *load.Load, amount string, mainTextSize unit.Sp, isBold bool) layout.Dimensions {
+	return formatBalance(gtx, l, amount, mainTextSize, l.Theme.Color.Text, isBold, false)
+}
+
 func LayoutBalanceColor(gtx layout.Context, l *load.Load, amount string, color color.NRGBA) layout.Dimensions {
 	return formatBalance(gtx, l, amount, values.TextSize20, color, false, false)
 }

@@ -874,4 +874,5 @@ const EN = `
 "dexPassword" = "DCRDEX Password"
 "insufficientBondAmount" = "Insufficient funds in this account, you need a minimum of %v to post bond."
 "DEXInitErrorMsg" = "Something unexpected happened, please restart the Cryptopower Wallet."
+"txRegular" = "Regular Transactions"
 `
