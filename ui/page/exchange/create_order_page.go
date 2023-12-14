@@ -988,9 +988,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			// if pg.Load.IsMobileView() {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			// }
 			return layout.Inset{
 				Top: values.MarginPadding16,
 			}.Layout(gtx, pg.createOrderBtn.Layout)
