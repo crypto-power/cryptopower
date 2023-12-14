@@ -295,7 +295,7 @@ func (pg *AccountMixerPage) mixerSettings(l *load.Load) layout.FlexChild {
 func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 		wdg := func(gtx C) D {
-			return layout.UniformInset(values.MarginPadding25).Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					pg.mixerHeaderContent(),
 					pg.balanceInfo(values.String(values.StrMixed), pg.mixedBalance.String(), pg.Theme.Icons.MixedTxIcon),
@@ -316,26 +316,10 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
+	if pg.IsMobileView() {
+		return pg.mixerPageLayout(gtx)
 	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *AccountMixerPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-		in := values.MarginPadding50
-		return layout.Inset{
-			Top:    values.MarginPadding25,
-			Left:   in,
-			Right:  in,
-			Bottom: in,
-		}.Layout(gtx, pg.mixerPageLayout)
-	})
-}
-
-func (pg *AccountMixerPage) layoutMobile(_ layout.Context) layout.Dimensions {
-	return D{}
+	return cryptomaterial.UniformPadding(gtx, pg.mixerPageLayout)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

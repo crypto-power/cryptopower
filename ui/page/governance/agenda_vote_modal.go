@@ -69,7 +69,7 @@ func (avm *agendaVoteModal) Layout(gtx layout.Context) D {
 		},
 	}
 
-	w = append(w, avm.CreatePasswordModal.LayoutComponents(gtx)...)
+	w = append(w, avm.CreatePasswordModal.LayoutComponents()...)
 
 	return avm.Modal.Layout(gtx, w)
 }
