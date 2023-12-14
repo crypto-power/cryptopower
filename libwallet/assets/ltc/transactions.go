@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"strings"
 	"sync"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -104,15 +105,24 @@ func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst b
 // get all transactions then return transactions that match the input limit and offset.
 // If offset and limit are 0, it will return all transactions
 // If newestFirst is true, it will return transactions from newest to oldest
-func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) ([]*sharedW.Transaction, error) {
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool, txHashSearch string) ([]*sharedW.Transaction, error) {
 	if !asset.WalletOpened() {
 		return nil, utils.ErrLTCNotInitialized
 	}
-
+	txHashSearch = strings.TrimSpace(txHashSearch)
 	transactions, err := asset.filterTxs(0, 0, txFilter, newestFirst)
 	if err != nil {
 		return nil, err
 	}
+
+	if txHashSearch != "" {
+		for _, tx := range transactions {
+			if tx.Hash == txHashSearch {
+				return []*sharedW.Transaction{tx}, nil
+			}
+		}
+	}
+
 	if offset == 0 && limit == 0 {
 		return transactions, nil
 	}

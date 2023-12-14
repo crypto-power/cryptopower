@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -59,6 +60,7 @@ type TransactionsPage struct {
 	walletDropDown *cryptomaterial.DropDown
 	filterBtn      *cryptomaterial.Clickable
 	isFilterOpen   bool
+	searchEditor   cryptomaterial.Editor
 
 	transactionList *cryptomaterial.ClickableList
 	txFilter,
@@ -86,6 +88,10 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 		txCategoryTab:    l.Theme.SegmentedControl(txTabs, cryptomaterial.SegmentTypeGroup),
 		selectedWallet:   wallet,
 	}
+
+	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
+	pg.searchEditor.Editor.SingleLine = true
+	pg.searchEditor.TextSize = pg.ConvertTextSize(l.Theme.TextSize)
 
 	// init the wallet selector if no wallet was pre-selected
 	if pg.selectedWallet == nil {
@@ -284,8 +290,8 @@ func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize
 		return nil, -1, err
 	}
 	pg.txFilter = txFilter
-
-	walletTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, newestFist)
+	searchKey := pg.searchEditor.Editor.Text()
+	walletTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, newestFist, searchKey)
 	if err != nil {
 		err = fmt.Errorf("error loading transactions: %v", err)
 	}
@@ -404,65 +410,75 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 	txListWidget := func(gtx C) D {
 		marginTop := values.MarginPadding50
 		if pg.isFilterOpen {
-			marginTop = values.MarginPadding90
+			marginTop = values.MarginPadding80
 		}
 		return layout.Inset{Top: marginTop}.Layout(gtx, func(gtx C) D {
-			itemCount := pg.scroll.ItemsCount()
-			card := pg.Theme.Card()
-			// return "No transactions yet" text if there are no transactions
-			if itemCount == 0 {
-				padding := values.MarginPadding16
-				txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
-				txt.TextSize = pg.ConvertTextSize(values.TextSize14)
-				txt.Color = pg.Theme.Color.GrayText3
-				return card.Layout(gtx, func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.Center.Layout(gtx, func(gtx C) D {
-						return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
-					})
-				})
-			}
-
-			if itemCount == -1 || pg.showLoader {
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Center.Layout(gtx, pg.materialLoader.Layout)
-			}
-
-			return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return card.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if !pg.isFilterOpen {
+						return D{}
+					}
+					return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.searchEditor.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					itemCount := pg.scroll.ItemsCount()
+					card := pg.Theme.Card()
+					// return "No transactions yet" text if there are no transactions
+					if itemCount == 0 {
 						padding := values.MarginPadding16
-						if pg.IsMobileView() {
-							padding = values.MarginPadding12
-						}
-						return layout.UniformInset(padding).Layout(gtx, func(gtx C) D {
-							wallTxs := pg.scroll.FetchedData()
-							return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
-								tx, wal := pg.txAndWallet(wallTxs[index])
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										hideAssetInfo := pg.selectedWallet != nil
-										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, hideAssetInfo)
-									}),
-									layout.Rigid(func(gtx C) D {
-										// No divider for last row
-										if index == len(wallTxs)-1 {
-											return layout.Dimensions{}
-										}
+						txt := pg.Theme.Body1(values.String(values.StrNoTransactions))
+						txt.TextSize = pg.ConvertTextSize(values.TextSize14)
+						txt.Color = pg.Theme.Color.GrayText3
+						return card.Layout(gtx, func(gtx C) D {
+							gtx.Constraints.Min.X = gtx.Constraints.Max.X
+							return layout.Center.Layout(gtx, func(gtx C) D {
+								return layout.Inset{Top: padding, Bottom: padding}.Layout(gtx, txt.Layout)
+							})
+						})
+					}
 
-										gtx.Constraints.Min.X = gtx.Constraints.Max.X
-										separator := pg.Theme.Separator()
-										return layout.E.Layout(gtx, func(gtx C) D {
-											// Show bottom divider for all rows except last
-											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
-										})
-									}),
-								)
+					if itemCount == -1 || pg.showLoader {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Center.Layout(gtx, pg.materialLoader.Layout)
+					}
+
+					return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
+						return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+							return card.Layout(gtx, func(gtx C) D {
+								padding := values.MarginPadding16
+								if pg.IsMobileView() {
+									padding = values.MarginPadding12
+								}
+								return layout.UniformInset(padding).Layout(gtx, func(gtx C) D {
+									wallTxs := pg.scroll.FetchedData()
+									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
+										tx, wal := pg.txAndWallet(wallTxs[index])
+										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												hideAssetInfo := pg.selectedWallet != nil
+												return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, hideAssetInfo)
+											}),
+											layout.Rigid(func(gtx C) D {
+												// No divider for last row
+												if index == len(wallTxs)-1 {
+													return layout.Dimensions{}
+												}
+
+												gtx.Constraints.Min.X = gtx.Constraints.Max.X
+												separator := pg.Theme.Separator()
+												return layout.E.Layout(gtx, func(gtx C) D {
+													// Show bottom divider for all rows except last
+													return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
+												})
+											}),
+										)
+									})
+								})
 							})
 						})
 					})
-				})
-			})
+				}),
+			)
 		})
 	}
 
@@ -551,6 +567,15 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	if pg.orderDropDown.Changed() {
 		pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+	}
+
+	for _, evt := range pg.searchEditor.Editor.Events() {
+		if pg.searchEditor.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			}
+		}
 	}
 }
 
