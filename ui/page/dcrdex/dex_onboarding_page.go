@@ -74,10 +74,9 @@ type dexOnboardingStep struct {
 }
 
 type bondServerInfo struct {
-	url                  string
-	cert                 []byte
-	bondAssets           map[libutils.AssetType]*core.BondAsset
-	noSupportedBondAsset bool
+	url        string
+	cert       []byte
+	bondAssets map[libutils.AssetType]*core.BondAsset
 }
 
 type bondConfirmationInfo struct {
@@ -299,11 +298,11 @@ func (pg *DEXOnboarding) onBoardingStepRow(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
-					u30 := values.MarginPadding30
+					dp30 := values.MarginPadding30
 					sep := pg.Theme.Separator()
 					sep.Width = gtx.Dp(values.MarginPadding500)
 					sep.Height = gtx.Dp(values.MarginPadding3)
-					return layout.Inset{Bottom: values.MarginPadding35, Right: u30, Left: u30}.Layout(gtx, sep.Layout)
+					return layout.Inset{Bottom: values.MarginPadding35, Right: dp30, Left: dp30}.Layout(gtx, sep.Layout)
 				}),
 				layout.Expanded(func(gtx C) D {
 					return layout.Flex{
@@ -342,10 +341,10 @@ func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			u40 := gtx.Dp(values.MarginPadding40)
+			dp40 := gtx.Dp(values.MarginPadding40)
 			return cryptomaterial.LinearLayout{
-				Width:       u40,
-				Height:      u40,
+				Width:       dp40,
+				Height:      dp40,
 				Background:  stepColor,
 				Orientation: layout.Horizontal,
 				Direction:   layout.Center,
@@ -492,8 +491,8 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		addBackBtn = false
 	}
 
-	u16 := values.MarginPadding16
-	u10 := values.MarginPadding10
+	dp16 := values.MarginPadding16
+	dp10 := values.MarginPadding10
 	var nextFlex float32 = 1.0
 	var goBackFlex float32
 	if addBackBtn {
@@ -507,8 +506,8 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		Spacing:   layout.SpaceBetween,
 		Alignment: layout.Middle,
 		Margin: layout.Inset{
-			Top:    u16,
-			Bottom: u16,
+			Top:    dp16,
+			Bottom: dp16,
 		},
 	}.Layout(gtx,
 		layout.Flexed(goBackFlex, func(gtx C) D {
@@ -516,7 +515,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 				return D{}
 			}
 			pg.goBackBtn.SetEnabled(backBtnEnabled)
-			return layout.Inset{Right: u10}.Layout(gtx, pg.goBackBtn.Layout)
+			return layout.Inset{Right: dp10}.Layout(gtx, pg.goBackBtn.Layout)
 		}),
 		layout.Flexed(nextFlex, func(gtx C) D {
 			if pg.isLoading {
@@ -531,7 +530,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 			if !addBackBtn {
 				return pg.nextBtn.Layout(gtx)
 			}
-			return layout.Inset{Left: u10}.Layout(gtx, pg.nextBtn.Layout)
+			return layout.Inset{Left: dp10}.Layout(gtx, pg.nextBtn.Layout)
 		}),
 	)
 }
@@ -673,8 +672,8 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 		cardBg = *bg
 	}
 	return func(gtx C) D {
-		u12 := values.MarginPadding12
-		u15 := values.MarginPadding15
+		dp12 := values.MarginPadding12
+		dp15 := values.MarginPadding15
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
 			Height:      cryptomaterial.WrapContent,
@@ -690,22 +689,22 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 				Bottom: dp2,
 			},
 			Padding: layout.Inset{
-				Top:    u12,
-				Bottom: u12,
-				Left:   u15,
-				Right:  u15,
+				Top:    dp12,
+				Bottom: dp12,
+				Left:   dp15,
+				Right:  dp15,
 			},
 		}.Layout2(gtx, info)
 	}
 }
 
 func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
-	u12 := values.MarginPadding12
+	dp12 := values.MarginPadding12
 	width := formWidth + values.MarginPadding100
 	gtx.Constraints.Max.X = gtx.Dp(width)
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, dp20, u12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
+			return pg.centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
@@ -984,8 +983,7 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 		pg.bondServer.bondAssets[assetType] = asset
 	}
 
-	pg.bondServer.noSupportedBondAsset = len(supportedBondAssets) == 0
-	if pg.bondServer.noSupportedBondAsset {
+	if len(supportedBondAssets) == 0 {
 		pg.notifyError(values.StringF(values.StrNoSupportedBondAsset, pg.bondServer.url))
 		return
 	}
@@ -1023,15 +1021,17 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 // process. C
 func (pg *DEXOnboarding) postBond() {
 	pg.isLoading = true
+	var maintainTier = false
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	postBond := &core.PostBondForm{
-		Addr:      pg.bondServer.url,
-		AppPass:   pg.dexPass,
-		Asset:     &bondAsset.ID,
-		Bond:      uint64(pg.newTier) * bondAsset.Amt,
-		Cert:      pg.bondServer.cert,
-		FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
+		Addr:         pg.bondServer.url,
+		AppPass:      pg.dexPass,
+		Asset:        &bondAsset.ID,
+		Bond:         uint64(pg.newTier) * bondAsset.Amt,
+		Cert:         pg.bondServer.cert,
+		FeeBuffer:    pg.dexc.BondsFeeBuffer(bondAsset.ID),
+		MaintainTier: &maintainTier,
 	}
 
 	// postBondFn sends the actual request to post bond.
