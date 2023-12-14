@@ -145,7 +145,7 @@ var (
 			switch size {
 			case MarginPadding24, MarginPadding30:
 				return MarginPadding16
-			case MarginPadding16:
+			case MarginPadding18, MarginPadding16:
 				return MarginPadding12
 			default:
 				return size
@@ -159,10 +159,10 @@ var (
 	TextSizeTransform = func(isMobileView bool, size unit.Sp) unit.Sp {
 		if isMobileView {
 			switch size {
-			case TextSize12:
-				return TextSize10
 			case TextSize16, TextSize18:
 				return TextSize14
+			case TextSize14:
+				return TextSize12
 			case TextSize20:
 				return TextSize16
 			case TextSize22:

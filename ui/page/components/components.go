@@ -980,11 +980,11 @@ func IconButton(icon *widget.Icon, txt string, inset layout.Inset, th *cryptomat
 }
 
 // ConditionalFlexedRigidLayout decides whether to use layout.Rigid or layout.Flexed
-func ConditionalFlexedRigidLayout(flexWidth float32, isMobileView bool, content layout.Widget) layout.FlexChild {
+func ConditionalFlexedRigidLayout(flexWeight float32, isMobileView bool, content layout.Widget) layout.FlexChild {
 	if isMobileView {
 		return layout.Rigid(content)
 	}
-	return layout.Flexed(flexWidth, content)
+	return layout.Flexed(flexWeight, content)
 }
 
 // GetServerIcon returns the icon for the provided server name.

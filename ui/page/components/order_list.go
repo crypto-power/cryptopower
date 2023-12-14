@@ -16,13 +16,10 @@ import (
 
 func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return cryptomaterial.LinearLayout{
-		Width:     cryptomaterial.WrapContent,
-		Height:    cryptomaterial.WrapContent,
-		Alignment: layout.Middle,
-		Border:    cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+	return cryptomaterial.Card{
+		Radius: cryptomaterial.Radius(14),
 	}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
+		func(gtx C) D {
 			textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
@@ -87,17 +84,14 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 								}),
 								layout.Rigid(func(gtx C) D {
 									return layout.Center.Layout(gtx, func(gtx C) D {
-										return layout.Inset{
-											Left:  values.MarginPadding8,
-											Right: values.MarginPadding8,
-										}.Layout(gtx, l.Theme.Icons.Dot.Layout8dp)
+										return UniformHorizontalInset(values.MarginPadding8).Layout(gtx, l.Theme.Icons.Dot.Layout8dp)
 									})
 								}),
 								layout.Rigid(l.Theme.Label(textSize16, orderItem.Status.String()).Layout),
-								layout.Rigid(func(gtx layout.Context) D {
+								layout.Rigid(func(gtx C) D {
 									statusLayout := statusIcon(l, orderItem.Status)
 									if statusLayout == nil {
-										return layout.Dimensions{}
+										return D{}
 									}
 									return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, statusLayout)
 								}),
@@ -126,7 +120,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 					)
 				}),
 			)
-		}),
+		},
 	)
 }
 
@@ -144,22 +138,16 @@ func statusIcon(l *load.Load, status api.Status) func(gtx C) D {
 	return nil
 }
 
-func LayoutNoOrderHistory(gtx C, l *load.Load, syncing bool) D {
-	return LayoutNoOrderHistoryWithMsg(gtx, l, syncing, values.String(values.StrNoOrders))
-}
-
 func LayoutNoOrderHistoryWithMsg(gtx C, l *load.Load, syncing bool, msg string) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	text := l.Theme.Body1(msg)
+	text := l.Theme.Label(values.TextSizeTransform(l.IsMobileView(), values.TextSize16), msg)
 	text.Color = l.Theme.Color.GrayText3
 	if syncing {
-		text = l.Theme.Body1(values.String(values.StrFetchingOrders))
+		text = l.Theme.Label(values.TextSizeTransform(l.IsMobileView(), values.TextSize16),
+			values.String(values.StrFetchingOrders))
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Inset{
-			Top:    values.MarginPadding30,
-			Bottom: values.MarginPadding30,
-		}.Layout(gtx, text.Layout)
+		return UniformVeticalInset(values.MarginPadding30).Layout(gtx, text.Layout)
 	})
 }
 

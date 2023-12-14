@@ -726,7 +726,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 		Left:   values.MarginPadding12,
 		Bottom: values.MarginPadding16,
 	}
-	if pg.Load.IsMobileView() {
+	if pg.IsMobileView() {
 		inset = layout.Inset{}
 	}
 	return cryptomaterial.LinearLayout{
@@ -755,7 +755,7 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 					// Disable main page from receiving events.
 					gtx = gtx.Disabled()
 				}
-				if pg.Load.IsMobileView() {
+				if pg.IsMobileView() {
 					return pg.layoutMobile(gtx)
 
 				}
@@ -767,8 +767,8 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 }
 
 func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
-	textSize16 := values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16)
-	textSize14 := values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize14)
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -776,11 +776,11 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 				Bottom: values.MarginPadding16,
 			}.Layout(gtx, func(gtx C) D {
 				axis := layout.Horizontal
-				if pg.Load.IsMobileView() {
+				if pg.IsMobileView() {
 					axis = layout.Vertical
 				}
 				return layout.Flex{Axis: axis}.Layout(gtx,
-					components.ConditionalFlexedRigidLayout(0.65, pg.Load.IsMobileView(), func(gtx C) D {
+					components.ConditionalFlexedRigidLayout(0.65, pg.IsMobileView(), func(gtx C) D {
 						return layout.E.Layout(gtx, func(gtx C) D {
 							return layout.Flex{
 								Axis:      layout.Horizontal,
@@ -799,7 +799,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 														return txt.Layout(gtx)
 													},
 													func(gtx C) D {
-														if !pg.Load.IsMobileView() {
+														if !pg.IsMobileView() {
 															return D{}
 														}
 														return pg.orderSchedulerLayout(gtx)
@@ -815,8 +815,8 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 							)
 						})
 					}),
-					components.ConditionalFlexedRigidLayout(0.35, pg.Load.IsMobileView(), func(gtx C) D {
-						if pg.Load.IsMobileView() {
+					components.ConditionalFlexedRigidLayout(0.35, pg.IsMobileView(), func(gtx C) D {
+						if pg.IsMobileView() {
 							return D{}
 						}
 						return pg.orderSchedulerLayout(gtx)
@@ -826,7 +826,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 		}),
 		layout.Rigid(func(gtx C) D {
 			axis := layout.Horizontal
-			if pg.Load.IsMobileView() {
+			if pg.IsMobileView() {
 				axis = layout.Vertical
 			}
 
@@ -834,7 +834,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 				Axis:      axis,
 				Alignment: layout.Middle,
 			}.Layout(gtx,
-				components.ConditionalFlexedRigidLayout(0.45, pg.Load.IsMobileView(), func(gtx C) D {
+				components.ConditionalFlexedRigidLayout(0.45, pg.IsMobileView(), func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							walletName := "----"
@@ -851,25 +851,22 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 							return lb.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if pg.Load.IsMobileView() {
+							if pg.IsMobileView() {
 								gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding280)
 							}
 							return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
 						}),
 					)
 				}),
-				components.ConditionalFlexedRigidLayout(0.1, pg.Load.IsMobileView(), func(gtx C) D {
-					if pg.Load.IsMobileView() {
-						return layout.Inset{
-							Top:    values.MarginPadding8,
-							Bottom: values.MarginPadding8,
-						}.Layout(gtx, func(gtx C) D {
+				components.ConditionalFlexedRigidLayout(0.1, pg.IsMobileView(), func(gtx C) D {
+					if pg.IsMobileView() {
+						return components.UniformVeticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
 							return layout.Center.Layout(gtx, pg.verticalSwapButton.Layout)
 						})
 					}
 					return layout.Center.Layout(gtx, pg.horizontalSwapButton.Layout)
 				}),
-				components.ConditionalFlexedRigidLayout(0.45, pg.Load.IsMobileView(), func(gtx C) D {
+				components.ConditionalFlexedRigidLayout(0.45, pg.IsMobileView(), func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							walletName := "----"
@@ -886,7 +883,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 							return lb.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if pg.Load.IsMobileView() {
+							if pg.IsMobileView() {
 								gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding280)
 							}
 							return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
@@ -1001,7 +998,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								size := values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize18)
+								size := values.TextSizeTransform(pg.IsMobileView(), values.TextSize18)
 								txt := pg.Theme.Label(size, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
 								txt.Font.Weight = font.SemiBold
 								return txt.Layout(gtx)
@@ -1024,7 +1021,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 														}
 													}
 
-													lastUpdatedInfo := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize12), text)
+													lastUpdatedInfo := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize12), text)
 													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 												}),
@@ -1038,13 +1035,14 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 														Margin:    layout.Inset{Left: values.MarginPadding10},
 													}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
-															if pg.AssetsManager.InstantSwap.IsSyncing() {
-																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
-															}
 															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+																if pg.AssetsManager.InstantSwap.IsSyncing() {
+																	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																	return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																}
+																size := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18)
+																return pg.refreshIcon.LayoutSize(gtx, size)
 															})
 														}),
 													)
@@ -1086,7 +1084,7 @@ func (pg *CreateOrderPage) layoutMobile(gtx C) D {
 // orderSchedulerLayout is the layout for the automatic order scheduler switch,
 // settings and indicator
 func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
-	textSize16 := values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16)
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 	return layout.E.Layout(gtx, func(gtx C) D {
 		return layout.Flex{
 			Axis:      layout.Horizontal,
@@ -1142,10 +1140,7 @@ func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
 				return D{}
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{
-					Right: values.MarginPadding10,
-					Left:  values.MarginPadding10,
-				}.Layout(gtx, pg.infoButton.Layout)
+				return components.UniformHorizontalInset(values.MarginPadding10).Layout(gtx, pg.infoButton.Layout)
 			}),
 			layout.Rigid(pg.settingsButton.Layout),
 		)
@@ -1159,7 +1154,7 @@ func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.O
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	if pg.scroll.ItemsCount() <= 0 {
-		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
+		return components.LayoutNoOrderHistoryWithMsg(gtx, pg.Load, false, values.String(values.StrNoOrders))
 	}
 	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,

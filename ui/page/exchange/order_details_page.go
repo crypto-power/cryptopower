@@ -145,7 +145,7 @@ func (pg *OrderDetailsPage) layout(gtx C) D {
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
 		width := gtx.Dp(values.MarginPadding550)
-		if pg.Load.IsMobileView() {
+		if pg.IsMobileView() {
 			width = gtx.Constraints.Max.X
 		}
 		return cryptomaterial.LinearLayout{
