@@ -522,7 +522,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 			pg.initWalletSelector()
 		}
 
-		if pg.walletDropDown.SelectedIndex() <= 0 {
+		if pg.walletDropDown == nil || pg.walletDropDown.SelectedIndex() <= 0 {
 			pg.selectedWallet = nil
 		}
 
