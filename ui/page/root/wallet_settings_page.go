@@ -279,14 +279,14 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
 			Padding: layout.Inset{
 				Top:   values.MarginPadding24,
-				Left:  values.MarginPadding24,
-				Right: values.MarginPadding24,
+				Left:  values.MarginPadding16,
+				Right: values.MarginPadding16,
 			},
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize20, title)
+						txt := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), title)
 						txt.Color = pg.Theme.Color.DeepBlue
 						txt.Font.Weight = font.SemiBold
 						return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, txt.Layout)
@@ -294,7 +294,7 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 					layout.Flexed(1, func(gtx C) D {
 						if title == values.String(values.StrSecurityTools) {
 							return layout.E.Layout(gtx, func(gtx C) D {
-								pg.infoButton.Size = values.MarginPadding16
+								pg.infoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding16)
 								return pg.infoButton.Layout(gtx)
 							})
 						}
@@ -303,7 +303,9 @@ func (pg *WalletSettingsPage) pageSections(gtx C, title string, body layout.Widg
 								if pg.wallet.IsWatchingOnlyWallet() {
 									return D{}
 								}
-								return pg.addAccount.Layout(gtx, pg.Theme.Icons.AddIcon.Layout24dp)
+								return pg.addAccount.Layout(gtx, func(gtx C) D {
+									return pg.Theme.Icons.AddIcon.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+								})
 							})
 						}
 
@@ -328,7 +330,7 @@ func (pg *WalletSettingsPage) sectionContent(clickable *cryptomaterial.Clickable
 
 func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.Clickable, title string) D {
 	return clickable.Layout(gtx, func(gtx C) D {
-		textLabel := pg.Theme.Label(values.TextSize16, title)
+		textLabel := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), title)
 		if title == values.String(values.StrRemoveWallet) {
 			textLabel.Color = pg.Theme.Color.Danger
 		}
@@ -338,7 +340,9 @@ func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 				layout.Rigid(textLabel.Layout),
 				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+					return layout.E.Layout(gtx, func(gtx C) D {
+						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+					})
 				}),
 			)
 		})
@@ -348,12 +352,12 @@ func (pg *WalletSettingsPage) sectionDimension(gtx C, clickable *cryptomaterial.
 func (pg *WalletSettingsPage) subSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Top: values.MarginPadding5, Bottom: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(pg.Theme.Label(values.TextSize16, title).Layout),
+			layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), title).Layout),
 			layout.Flexed(1, func(gtx C) D {
 				switch title {
 				case values.String(values.StrConnectToSpecificPeer):
 					if pg.isPrivacyModeOn() {
-						textlabel := pg.Theme.Label(values.TextSize12, values.String(values.StrPrivacyModeActive))
+						textlabel := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize12), values.String(values.StrPrivacyModeActive))
 						textlabel.Color = pg.Theme.Color.GrayText2
 						body = textlabel.Layout
 					}
@@ -527,12 +531,14 @@ func (pg *WalletSettingsPage) showSPVPeerDialog() {
 func (pg *WalletSettingsPage) clickableRow(gtx C, row clickableRowData) D {
 	return row.clickable.Layout(gtx, func(gtx C) D {
 		return pg.subSection(gtx, row.title, func(gtx C) D {
-			lbl := pg.Theme.Label(values.TextSize16, row.labelText)
+			lbl := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), row.labelText)
 			lbl.Color = pg.Theme.Color.GrayText2
 			return layout.Flex{}.Layout(gtx,
 				layout.Rigid(lbl.Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, pg.Theme.Icons.ChevronRight.Layout24dp)
+					return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding24)
+					})
 				}),
 			)
 		})
