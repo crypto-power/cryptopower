@@ -984,4 +984,5 @@ const (
 	StrInsufficientBondAmount          = "insufficientBondAmount"
 	StrDEXInitErrorMsg                 = "DEXInitErrorMsg"
 	StrTxRegular                       = "txRegular"
+	StrstakingTx                       = "stakingTx"
 )

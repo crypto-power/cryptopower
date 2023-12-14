@@ -38,7 +38,7 @@ type multiWalletTx struct {
 
 var txTabs = []string{
 	values.String(values.StrTxRegular),
-	values.String(values.StrStakingActivity),
+	values.String(values.StrstakingTx),
 }
 
 // TransactionsPage shows transactions for a specific wallet or for all wallets.
@@ -76,7 +76,8 @@ type TransactionsPage struct {
 	selectedWallet    sharedW.Asset
 
 	showLoader,
-	dcrWalletExists bool
+	dcrWalletExists,
+	isShowTitle bool
 }
 
 func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
@@ -87,6 +88,7 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 		transactionList:  l.Theme.NewClickableList(layout.Vertical),
 		txCategoryTab:    l.Theme.SegmentedControl(txTabs, cryptomaterial.SegmentTypeGroup),
 		selectedWallet:   wallet,
+		isShowTitle:      true,
 	}
 
 	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
@@ -97,6 +99,7 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 	if pg.selectedWallet == nil {
 		pg.multiWalletLayout = true
 		pg.initWalletSelector()
+		pg.isShowTitle = false
 	}
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTransactions)
@@ -117,6 +120,10 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 	pg.orderDropDown.SetConvertTextSize(pg.ConvertTextSize)
 
 	return pg
+}
+
+func (pg *TransactionsPage) DisableUniformTab() {
+	pg.txCategoryTab.DisableUniform(true)
 }
 
 // OnNavigatedTo is called when the page is about to be displayed and
@@ -374,8 +381,13 @@ func (pg *TransactionsPage) dropdownLayout(gtx C) D {
 }
 
 func (pg *TransactionsPage) leftDropdown(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			if pg.isShowTitle && pg.IsMobileView() {
+				lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrTransactions))
+				lbl.Font.Weight = font.Bold
+				return layout.Center.Layout(gtx, lbl.Layout)
+			}
 			if pg.walletDropDown == nil {
 				return D{}
 			}
@@ -386,7 +398,7 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 			if pg.isFilterOpen {
 				icon = pg.Theme.Icons.FilterImgIcon
 			}
-			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+			return layout.Center.Layout(gtx, func(gtx C) D {
 				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
 			})
 		}),
@@ -553,7 +565,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 			pg.initWalletSelector()
 		}
 
-		if pg.walletDropDown.SelectedIndex() <= 0 {
+		if pg.walletDropDown != nil && pg.walletDropDown.SelectedIndex() <= 0 {
 			pg.selectedWallet = nil
 		}
 

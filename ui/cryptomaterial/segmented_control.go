@@ -36,8 +36,9 @@ type SegmentedControl struct {
 	slideActionTitle     *SlideAction
 	segmentType          SegmentType
 
-	allowCycle   bool
-	isMobileView bool
+	allowCycle            bool
+	isMobileView          bool
+	disableUniformPadding bool
 }
 
 // Segmented control is a linear set of two or more segments, each of which functions as a button.
@@ -73,6 +74,10 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 	return sc
 }
 
+func (sc *SegmentedControl) DisableUniform(disable bool) {
+	sc.disableUniformPadding = disable
+}
+
 func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 	sc.isSwipeActionEnabled = enable
 }
@@ -82,8 +87,7 @@ func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 // or not. If the parameter is not provided, isMobileView defaults to false.
 func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bool) D {
 	sc.isMobileView = len(isMobileView) > 0 && isMobileView[0]
-
-	return UniformPadding(gtx, func(gtx C) D {
+	widget := func(gtx C) D {
 		return layout.Flex{
 			Axis:      layout.Vertical,
 			Alignment: layout.Middle,
@@ -105,7 +109,13 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 				})
 			}),
 		)
-	}, sc.isMobileView)
+	}
+
+	if sc.disableUniformPadding {
+		return widget(gtx)
+	}
+
+	return UniformPadding(gtx, widget, sc.isMobileView)
 }
 
 func (sc *SegmentedControl) GroupTileLayout(gtx C) D {
