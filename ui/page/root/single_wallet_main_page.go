@@ -183,7 +183,7 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 
 	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
 	// default layout padding based on design
-	swmp.pageNavigationTab.LayoutPadding = layout.Inset{
+	swmp.pageNavigationTab.ContentPadding = layout.Inset{
 		Left:  values.MarginPadding24,
 		Right: values.MarginPadding24,
 		Top:   values.MarginPadding32,

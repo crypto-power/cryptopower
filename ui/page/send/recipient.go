@@ -12,16 +12,14 @@ import (
 	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type recipient struct {
 	*load.Load
 
-	deleteBtn       *cryptomaterial.Clickable
-	description     cryptomaterial.Editor
-	feeRateSelector *components.FeeRateSelector
+	deleteBtn   *cryptomaterial.Clickable
+	description cryptomaterial.Editor
 
 	selectedWallet        sharedW.Asset
 	selectedSourceAccount *sharedW.Account
@@ -39,7 +37,7 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
 	rp := &recipient{
 		Load:           l,
 		selectedWallet: selectedWallet,
-		exchangeRate: -1,
+		exchangeRate:   -1,
 	}
 
 	assetType := rp.selectedWallet.GetAssetType()
@@ -53,14 +51,6 @@ func newRecipient(l *load.Load, selectedWallet sharedW.Asset) *recipient {
 	rp.description.IsTitleLabel = false
 	// Set the maximum characters the editor can accept.
 	rp.description.Editor.MaxLen = MaxTxLabelSize
-
-	callbackFunc := func() libUtil.AssetType {
-		return assetType
-	}
-	rp.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc).ShowSizeAndCost()
-	rp.feeRateSelector.TitleInset = layout.Inset{Bottom: values.MarginPadding10}
-	rp.feeRateSelector.ContainerInset = layout.Inset{Bottom: values.MarginPadding100}
-	rp.feeRateSelector.WrapperInset = layout.UniformInset(values.MarginPadding15)
 
 	return rp
 }
@@ -105,7 +95,7 @@ func (rp *recipient) initializeAccountSelectors(sourceAccount *sharedW.Account) 
 
 	rp.sendDestination.destinationWalletSelector.WalletSelected(func(selectedWallet sharedW.Asset) {
 		rp.sendDestination.destinationAccountSelector.SelectFirstValidAccount(selectedWallet)
-		//TODO
+		//TODO this should not be here.
 		// if rp.selectedWallet.GetAssetType() == libUtil.DCRWalletAsset {
 		// 	rp.sourceAccountSelector.SelectFirstValidAccount(rp.selectedWallet)
 		// }
@@ -142,7 +132,7 @@ func (rp *recipient) resetFields() {
 	rp.amount.resetFields()
 }
 
-func (rp *recipient) sendDestinationAddress() string {
+func (rp *recipient) destinationAddress() string {
 	address, err := rp.sendDestination.destinationAddress()
 	if err != nil {
 		rp.addressValidationError(err.Error())
@@ -151,8 +141,12 @@ func (rp *recipient) sendDestinationAddress() string {
 	return address
 }
 
-func (rp *recipient) sendDestinationAccount() *sharedW.Account {
+func (rp *recipient) destinationAccount() *sharedW.Account {
 	return rp.sendDestination.destinationAccount()
+}
+
+func (rp *recipient) descriptionText() string {
+	return rp.description.Editor.Text()
 }
 
 func (rp *recipient) addressValidated() bool {
@@ -179,12 +173,11 @@ func (rp *recipient) setAmount(amount int64) {
 
 func (rp *recipient) amountValidationError(err string) {
 	rp.amount.setError(err)
-	// rp.clearEstimates()
 }
 
 func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
-	// rp.clearEstimates()
+	rp.sendDestination.destinationAddressEditor.Editor.Focus()
 }
 
 func (rp *recipient) resetDestinationAccountSelector() {
@@ -292,6 +285,11 @@ func (rp *recipient) validateAmount() {
 	if len(rp.amount.amountEditor.Editor.Text()) > 0 {
 		rp.amount.validateAmount()
 	}
+}
+
+func (rp *recipient) restyleWidgets() {
+	rp.amount.styleWidgets()
+	rp.sendDestination.styleWidgets()
 }
 
 func (rp *recipient) handle() {

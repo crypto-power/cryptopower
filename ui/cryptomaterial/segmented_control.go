@@ -16,6 +16,7 @@ const (
 	SegmentTypeGroup SegmentType = iota
 	SegmentTypeSplit
 	SegmentTypeGroupMax
+	SegmentTypeDynamicSplit
 )
 
 type SegmentedControl struct {
@@ -25,9 +26,10 @@ type SegmentedControl struct {
 	leftNavBtn,
 	rightNavBtn *Clickable
 
-	Padding       layout.Inset
-	LayoutPadding layout.Inset
-	Alignment     layout.Alignment
+	Padding        layout.Inset
+	LayoutPadding  layout.Inset
+	ContentPadding layout.Inset
+	Alignment      layout.Alignment
 
 	selectedIndex int
 	segmentTitles []string
@@ -62,6 +64,9 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		slideActionTitle:     NewSlideAction(),
 		Padding:              layout.UniformInset(values.MarginPadding8),
 		LayoutPadding: layout.Inset{
+			Top: values.MarginPadding24,
+		},
+		ContentPadding: layout.Inset{
 			Top: values.MarginPadding16,
 		},
 		Alignment: layout.Middle,
@@ -96,6 +101,7 @@ func (sc *SegmentedControl) SetEnableSwipe(enable bool) {
 // or not. If the parameter is not provided, isMobileView defaults to false.
 func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bool) D {
 	sc.isMobileView = len(isMobileView) > 0 && isMobileView[0]
+
 	widget := func(gtx C) D {
 		return layout.Flex{
 			Axis:      layout.Vertical,
@@ -105,13 +111,15 @@ func (sc *SegmentedControl) Layout(gtx C, body func(gtx C) D, isMobileView ...bo
 				if sc.segmentType == SegmentTypeGroup {
 					return sc.GroupTileLayout(gtx)
 				} else if sc.segmentType == SegmentTypeGroupMax {
-					return sc.GroupTileMaxLayout(gtx)
+					return sc.groupTileMaxLayout(gtx)
+				} else if sc.segmentType == SegmentTypeDynamicSplit {
+					return sc.dynamicSplitTileLayout(gtx)
 				}
 				return sc.splitTileLayout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
 				// design margin is 32px
-				return sc.LayoutPadding.Layout(gtx, func(gtx C) D {
+				return sc.ContentPadding.Layout(gtx, func(gtx C) D {
 					if !sc.isSwipeActionEnabled {
 						return body(gtx)
 					}
@@ -232,7 +240,7 @@ func (sc *SegmentedControl) splitTileLayout(gtx C) D {
 	)
 }
 
-func (sc *SegmentedControl) GroupTileMaxLayout(gtx C) D {
+func (sc *SegmentedControl) groupTileMaxLayout(gtx C) D {
 	sc.handleEvents()
 	layoutSize := gtx.Constraints.Max.X
 	return LinearLayout{
@@ -269,6 +277,50 @@ func (sc *SegmentedControl) GroupTileMaxLayout(gtx C) D {
 			})
 		}),
 	)
+}
+
+func (sc *SegmentedControl) dynamicSplitTileLayout(gtx C) D {
+	sc.handleEvents()
+	return LinearLayout{
+		Width:       MatchParent,
+		Height:      WrapContent,
+		Orientation: layout.Horizontal,
+	}.Layout2(gtx, func(gtx C) D {
+		return sc.list.Layout(gtx, len(sc.segmentTitles), func(gtx C, i int) D {
+			isSelectedSegment := sc.SelectedIndex() == i
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				bg := sc.theme.Color.Surface
+				txt := sc.theme.DecoratedText(values.TextSize14, sc.segmentTitles[i], sc.theme.Color.GrayText2, font.SemiBold)
+				border := Border{Radius: Radius(12), Color: sc.theme.Color.Gray10}
+				if isSelectedSegment {
+					bg = sc.theme.Color.Gray2
+					txt.Color = sc.theme.Color.Text
+				}
+				txt.Alignment = text.Middle
+				paddingTB := values.MarginPadding4
+				paddingLR := values.MarginPadding12
+				pr := values.MarginPadding6
+				if i == len(sc.segmentTitles) { // no need to add padding to the last item
+					pr = values.MarginPadding0
+				}
+
+				return layout.Inset{Right: pr}.Layout(gtx, func(gtx C) D {
+					return LinearLayout{
+						Width:  WrapContent,
+						Height: WrapContent,
+						Padding: layout.Inset{
+							Top:    paddingTB,
+							Bottom: paddingTB,
+							Left:   paddingLR,
+							Right:  paddingLR,
+						},
+						Background: bg,
+						Border:     border,
+					}.Layout2(gtx, txt.Layout)
+				})
+			})
+		})
+	})
 }
 
 func (sc *SegmentedControl) handleEvents() {

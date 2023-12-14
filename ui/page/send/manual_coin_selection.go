@@ -336,7 +336,7 @@ func (pg *ManualCoinSelectionPage) computeUTXOsSize() string {
 	wallet := pg.sendPage.selectedWallet
 
 	// Access to coin selection page is restricted unless destination address is selected.
-	destination := pg.sendPage.recipient.sendDestinationAddress()
+	destination := pg.sendPage.recipient.destinationAddress()
 	feeNSize, err := wallet.ComputeTxSizeEstimation(destination, pg.selectedUTXOrows)
 	if err != nil {
 		log.Error(err)

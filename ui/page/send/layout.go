@@ -7,7 +7,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	// libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -34,12 +33,18 @@ func (pg *Page) initLayoutWidgets() {
 	pg.nextButton.TextSize = values.TextSize16
 	pg.nextButton.Inset = layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}
 	pg.nextButton.SetEnabled(false)
+
+	pg.toCoinSelection = pg.Theme.NewClickable(false)
 }
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *Page) Layout(gtx C) D {
+	if pg.modalLayout != nil {
+		modalContent := []layout.Widget{pg.layoutDesktop}
+		return pg.modalLayout.Layout(gtx, modalContent, 450)
+	}
 	return pg.layoutDesktop(gtx)
 }
 
@@ -64,6 +69,18 @@ func (pg *Page) sendLayout(gtx C) D {
 	return pg.sectionWrapper(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.titleLayout),
+			layout.Rigid(func(gtx C) D {
+				if pg.modalLayout != nil {
+					return layout.Inset{
+						Bottom: values.MarginPadding16,
+					}.Layout(gtx, func(gtx C) D {
+						return pg.contentWrapper(gtx, "Source Wallet", func(gtx C) D {
+							return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+						})
+					})
+				}
+				return D{}
+			}),
 			layout.Rigid(func(gtx C) D {
 				return pg.contentWrapper(gtx, "Source Account", func(gtx C) D {
 					return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
@@ -130,9 +147,16 @@ func (pg *Page) advanceOptionsLayout(gtx C) D {
 				}
 
 				collapsibleBody := func(gtx C) D {
+					if pg.modalLayout != nil {
+						// coin selection not allowed on the send modal
+						return pg.contentWrapper(gtx, "", func(gtx C) D {
+							return pg.feeRateSelector.Layout(gtx)
+						})
+					}
+
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							return pg.contentWrapper(gtx, "Fee Rate", func(gtx C) D {
+							return pg.contentWrapper(gtx, "", func(gtx C) D {
 								return pg.feeRateSelector.Layout(gtx)
 							})
 						}),
@@ -192,6 +216,8 @@ func (pg *Page) balanceSection(gtx C) D {
 			layout.Rigid(func(gtx C) D {
 				inset := layout.Inset{
 					Bottom: values.MarginPadding16,
+					Left:   values.MarginPadding5,
+					Right:  values.MarginPadding5,
 				}
 				return inset.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -239,6 +265,9 @@ func (pg *Page) sectionWrapper(gtx C, body layout.Widget) D {
 }
 
 func (pg *Page) contentWrapper(gtx C, title string, content layout.Widget) D {
+	if pg.modalLayout != nil && !pg.selectedWallet.IsSynced() {
+		gtx = gtx.Disabled()
+	}
 	return layout.Inset{
 		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
