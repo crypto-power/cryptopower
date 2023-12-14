@@ -125,13 +125,6 @@ func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirs
 	return
 }
 
-// func (asset *Asset) GetTransactionsRaw1(offset, limit, txFilter int32, newestFirst bool, txHashSearch string) (transactions []*sharedW.Transaction, err error) {
-// 	txHashSearch = strings.TrimSpace(txHashSearch)
-// 	asset.GetWalletDataDb().Find(q.Eq("Hash", txHashSearch), &transactions)
-// 	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
-// 	return
-// }
-
 func (asset *Asset) CountTransactions(txFilter int32) (int, error) {
 	return asset.GetWalletDataDb().Count(txFilter, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &sharedW.Transaction{})
 }

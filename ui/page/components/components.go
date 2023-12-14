@@ -408,7 +408,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 												lbl.Color = grayText
 												return lbl.Layout(gtx)
 											}
-											return txStakingStatus(gtx, l, wal, tx, statusIcon)
+											return txStakingStatus(gtx, l, wal, tx)
 										}
 
 										return status.Layout(gtx)
@@ -464,7 +464,7 @@ func txTitleAndWalletInfoHorizontal(gtx C, l *load.Load, assetIcon *cryptomateri
 	)
 }
 
-func txStakingStatus(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, icon *cryptomaterial.Image) D {
+func txStakingStatus(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction) D {
 	durationPrefix := values.String(values.StrVoted)
 	if tx.Type == txhelper.TxTypeTicketPurchase {
 		if wal.TxMatchesFilter(tx, libutils.TxFilterUnmined) {
