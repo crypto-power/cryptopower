@@ -93,7 +93,8 @@ var (
 	MarginPadding250      = unit.Dp(250)
 	MarginPaddingMinus230 = unit.Dp(-230)
 	MarginPadding280      = unit.Dp(280)
-	DP300                 = unit.Dp(300)
+	MarginPadding300      = unit.Dp(300)
+	MarginPadding340      = unit.Dp(340)
 	MarginPadding350      = unit.Dp(350)
 	MarginPadding368      = unit.Dp(368)
 	MarginPadding372      = unit.Dp(372)
@@ -137,4 +138,52 @@ var (
 	MobileAppHeight = unit.Dp(780)
 
 	StartMobileView = unit.Dp(600)
+
+	// MarginPaddingTransform is used to scale margin/padding for mobile view.
+	MarginPaddingTransform = func(isMobileView bool, size unit.Dp) unit.Dp {
+		if isMobileView {
+			switch size {
+			case MarginPadding24, MarginPadding30:
+				return MarginPadding16
+			case MarginPadding16:
+				return MarginPadding12
+			default:
+				return size
+			}
+		}
+
+		return size
+	}
+
+	// TextSizeTransform is used to scale text sizes for mobile view.
+	TextSizeTransform = func(isMobileView bool, size unit.Sp) unit.Sp {
+		if isMobileView {
+			switch size {
+			case TextSize12:
+				return TextSize10
+			case TextSize16, TextSize18:
+				return TextSize14
+			case TextSize20:
+				return TextSize16
+			case TextSize22:
+				return TextSize18
+			case TextSize24:
+				return TextSize20
+			case TextSize28:
+				return TextSize22
+			case TextSize30:
+				return TextSize24
+			case TextSize34:
+				return TextSize28
+			case TextSize32:
+				return TextSize28
+			case TextSize60:
+				return TextSize34
+			default:
+				return size
+			}
+		}
+
+		return size
+	}
 )

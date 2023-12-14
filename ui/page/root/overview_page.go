@@ -943,7 +943,12 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
+					return layout.Inset{
+						Top:    values.MarginPadding6,
+						Bottom: values.MarginPadding6,
+					}.Layout(gtx, func(gtx C) D {
+						return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
+					})
 				}),
 				layout.Rigid(func(gtx C) D {
 					// Show bottom divider for all rows except the last row.

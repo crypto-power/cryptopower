@@ -9,6 +9,7 @@ import (
 	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
+	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -82,7 +83,7 @@ func (es *ExSelector) SupportedExchanges(server ...instantswap.Server) []*Exchan
 			Server: instantswap.ExchangeServer{
 				Server: server[0],
 			},
-			Icon: es.setServerIcon(server[0].ToString()),
+			Icon: components.GetServerIcon(es.Theme, server[0].ToString()),
 		}
 
 		return []*Exchange{exchng}
@@ -95,37 +96,13 @@ func (es *ExSelector) SupportedExchanges(server ...instantswap.Server) []*Exchan
 		exchng := &Exchange{
 			Name:   exchangeServer.Server.CapFirstLetter(),
 			Server: exchangeServer,
-			Icon:   es.setServerIcon(exchangeServer.Server.ToString()),
+			Icon:   components.GetServerIcon(es.Theme, exchangeServer.Server.ToString()),
 		}
 
 		exchange = append(exchange, exchng)
 	}
 
 	return exchange
-}
-
-func (es *ExSelector) setServerIcon(serverName string) *cryptomaterial.Image {
-	switch serverName {
-	case instantswap.Changelly.ToString():
-		return es.Theme.Icons.ChangellyIcon
-	case instantswap.ChangeNow.ToString():
-		return es.Theme.Icons.ChangeNowIcon
-	case instantswap.CoinSwitch.ToString():
-		return es.Theme.Icons.CoinSwitchIcon
-	case instantswap.FlypMe.ToString():
-		return es.Theme.Icons.FlypMeIcon
-	case instantswap.GoDex.ToString():
-		return es.Theme.Icons.GodexIcon
-	case instantswap.SimpleSwap.ToString():
-		return es.Theme.Icons.SimpleSwapIcon
-	case instantswap.SwapZone.ToString():
-		return es.Theme.Icons.SwapzoneIcon
-	case instantswap.Trocador.ToString():
-		return es.Theme.Icons.TrocadorIcon
-
-	default:
-		return es.Theme.Icons.AddExchange
-	}
 }
 
 // SelectedExchange returns the currently selected Exchange.
