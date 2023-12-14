@@ -344,6 +344,9 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 
 		return layout.Inset{Top: values.MarginPaddingMinus5, Left: values.MarginPaddingMinus5}.Layout(gtx, func(gtx C) D {
 			in.checkbox.TextSize = values.TextSize14
+			if in.IsMobileView() {
+				in.checkbox.TextSize = values.TextSize12
+			}
 			in.checkbox.Color = in.Theme.Color.GrayText1
 			in.checkbox.IconColor = in.Theme.Color.Gray2
 			if in.checkbox.CheckBox.Value {
@@ -397,6 +400,9 @@ func (in *InfoModal) Layout(gtx layout.Context) D {
 func (in *InfoModal) titleLayout() layout.Widget {
 	return func(gtx C) D {
 		t := in.Theme.H6(in.dialogTitle)
+		if in.IsMobileView() {
+			t.TextSize = values.TextSize16
+		}
 		t.Alignment = in.titleTextAlignment
 		t.Font.Weight = font.SemiBold
 		return in.titleAlignment.Layout(gtx, t.Layout)
@@ -404,6 +410,13 @@ func (in *InfoModal) titleLayout() layout.Widget {
 }
 
 func (in *InfoModal) actionButtonsLayout() layout.Widget {
+	btnTextSize := values.TextSize16
+	if in.IsMobileView() {
+		btnTextSize = values.TextSize14
+	}
+	in.btnNegative.TextSize = btnTextSize
+	in.btnPositive.TextSize = btnTextSize
+
 	return func(gtx C) D {
 		return in.btnAlignment.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,

@@ -308,16 +308,26 @@ func (cm *CreatePasswordModal) passwordsMatch(editors ...*widget.Editor) bool {
 func (cm *CreatePasswordModal) titleLayout() layout.Widget {
 	return func(gtx C) D {
 		t := cm.Theme.H6(cm.dialogTitle)
+		if cm.IsMobileView() {
+			t.TextSize = values.TextSize16
+		}
 		t.Font.Weight = font.SemiBold
 		return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, t.Layout)
 	}
 }
 
 func (cm *CreatePasswordModal) Layout(gtx C) D {
-	return cm.Modal.Layout(gtx, cm.LayoutComponents(gtx))
+	return cm.Modal.Layout(gtx, cm.LayoutComponents())
 }
 
-func (cm *CreatePasswordModal) LayoutComponents(_ C) []layout.Widget {
+func (cm *CreatePasswordModal) LayoutComponents() []layout.Widget {
+	btnTextSize := values.TextSize16
+	if cm.IsMobileView() {
+		btnTextSize = values.TextSize14
+	}
+	cm.btnNegative.TextSize = btnTextSize
+	cm.btnPositive.TextSize = btnTextSize
+
 	w := []layout.Widget{}
 
 	if cm.dialogTitle != "" {

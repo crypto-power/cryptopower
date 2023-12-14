@@ -9,6 +9,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/ui/values"
 )
 
 type Modal struct {
@@ -118,6 +119,10 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 			maxWidth := float32(360)
 			if len(width) > 0 {
 				maxWidth = width[0]
+			} else if currentAppWidth := gtx.Metric.PxToDp(gtx.Constraints.Max.X); currentAppWidth <= values.StartMobileView {
+				// maxWidth must be less than currentAppWidth on mobile, so the
+				// modal does not touch the left and right edges of the screen.
+				maxWidth = 0.9 * float32(currentAppWidth)
 			}
 			gtx.Constraints.Max.X = gtx.Dp(unit.Dp(maxWidth))
 			inset := layout.Inset{
