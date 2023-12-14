@@ -247,7 +247,7 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 
 func (pg *OrderHistoryPage) layoutHistory(gtx C) D {
 	if pg.scroll.ItemsCount() <= 0 {
-		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
+		return components.LayoutNoOrderHistoryWithMsg(gtx, pg.Load, false, values.String(values.StrNoOrders))
 	}
 
 	orderItems := pg.scroll.FetchedData()

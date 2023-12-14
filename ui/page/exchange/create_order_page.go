@@ -58,20 +58,20 @@ type CreateOrderPage struct {
 	fromAmountEditor components.SelectAssetEditor
 	toAmountEditor   components.SelectAssetEditor
 
-	createOrderBtn         cryptomaterial.Button
-	swapButton             cryptomaterial.IconButton
-	refreshExchangeRateBtn cryptomaterial.IconButton
-	infoButton             cryptomaterial.IconButton
-	settingsButton         cryptomaterial.IconButton
-	iconClickable          *cryptomaterial.Clickable
-	refreshClickable       *cryptomaterial.Clickable
-	refreshIcon            *cryptomaterial.Image
-	viewAllButton          cryptomaterial.Button
-	navToSettingsBtn       cryptomaterial.Button
-	splashPageInfoButton   cryptomaterial.IconButton
-	splashPageContainer    *widget.List
-	startTradingBtn        cryptomaterial.Button
-	isFirstVisit           bool
+	createOrderBtn                           cryptomaterial.Button
+	horizontalSwapButton, verticalSwapButton cryptomaterial.IconButton
+	refreshExchangeRateBtn                   cryptomaterial.IconButton
+	infoButton                               cryptomaterial.IconButton
+	settingsButton                           cryptomaterial.IconButton
+	iconClickable                            *cryptomaterial.Clickable
+	refreshClickable                         *cryptomaterial.Clickable
+	refreshIcon                              *cryptomaterial.Image
+	viewAllButton                            cryptomaterial.Button
+	navToSettingsBtn                         cryptomaterial.Button
+	splashPageInfoButton                     cryptomaterial.IconButton
+	splashPageContainer                      *widget.List
+	startTradingBtn                          cryptomaterial.Button
+	isFirstVisit                             bool
 
 	min          float64
 	max          float64
@@ -142,24 +142,30 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchOrders)
 
 	pg.scheduler = pg.Theme.Switch()
-	pg.swapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
+	pg.horizontalSwapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapHoriz)
+	pg.verticalSwapButton = l.Theme.IconButton(l.Theme.Icons.ActionSwapVertical)
 	pg.refreshExchangeRateBtn = l.Theme.IconButton(l.Theme.Icons.NavigationRefresh)
-	pg.refreshExchangeRateBtn.Size = values.MarginPadding18
+	pg.refreshExchangeRateBtn.Size = values.MarginPaddingTransform(l.IsMobileView(), values.MarginPadding18)
 
 	pg.settingsButton = l.Theme.IconButton(l.Theme.Icons.ActionSettings)
+	pg.settingsButton.Size = values.MarginPaddingTransform(l.IsMobileView(), values.MarginPadding18)
 
 	pg.viewAllButton = l.Theme.Button(values.String(values.StrViewAllOrders))
 	pg.viewAllButton.Font.Weight = font.SemiBold
 	pg.viewAllButton.Color = l.Theme.Color.Primary
 	pg.viewAllButton.Inset = layout.UniformInset(values.MarginPadding4)
+	pg.viewAllButton.TextSize = values.TextSizeTransform(l.IsMobileView(), values.TextSize14)
 	pg.viewAllButton.Background = l.Theme.Color.DefaultThemeColors().SurfaceHighlight
 	pg.viewAllButton.HighlightColor = cryptomaterial.GenHighlightColor(l.Theme.Color.GrayText4)
 
 	pg.infoButton = l.Theme.IconButton(l.Theme.Icons.ActionInfo)
-	pg.infoButton.Size = values.MarginPadding18
+	pg.infoButton.Size = values.MarginPaddingTransform(l.IsMobileView(), values.MarginPadding18)
 	buttonInset := layout.UniformInset(values.MarginPadding0)
-	pg.settingsButton.Inset, pg.infoButton.Inset,
-		pg.swapButton.Inset, pg.refreshExchangeRateBtn.Inset = buttonInset, buttonInset, buttonInset, buttonInset
+	pg.settingsButton.Inset,
+		pg.infoButton.Inset,
+		pg.horizontalSwapButton.Inset,
+		pg.verticalSwapButton.Inset,
+		pg.refreshExchangeRateBtn.Inset = buttonInset, buttonInset, buttonInset, buttonInset, buttonInset
 
 	pg.exchangeRateInfo = fmt.Sprintf(values.String(values.StrMinMax), pg.min, pg.max)
 	pg.materialLoader = material.Loader(l.Theme.Base)
@@ -169,6 +175,14 @@ func NewCreateOrderPage(l *load.Load) *CreateOrderPage {
 
 	pg.toAmountEditor = *components.NewSelectAssetEditor(l)
 	pg.fromAmountEditor = *components.NewSelectAssetEditor(l)
+
+	pg.fromAmountEditor.Edit.HasCustomButton = true
+	pg.fromAmountEditor.Edit.CustomButton.Inset = layout.UniformInset(values.MarginPadding2)
+	pg.fromAmountEditor.Edit.CustomButton.Text = values.String(values.StrMax)
+	pg.fromAmountEditor.Edit.CustomButton.CornerRadius = values.MarginPadding0
+	pg.fromAmountEditor.Edit.CustomButton.Background = l.Theme.Color.Gray1
+	pg.fromAmountEditor.Edit.CustomButton.Color = l.Theme.Color.Surface
+	pg.fromAmountEditor.Edit.EditorStyle.Color = l.Theme.Color.Text
 
 	pg.fromAmountEditor.AssetTypeSelector.AssetTypeSelected(func(ati *components.AssetTypeItem) bool {
 		isMatching := pg.fromCurrency == pg.toCurrency && pg.fromCurrency != libutils.NilAsset
@@ -293,7 +307,7 @@ func (pg *CreateOrderPage) OnNavigatedFrom() {
 func (pg *CreateOrderPage) HandleUserInteractions() {
 	pg.createOrderBtn.SetEnabled(pg.canCreateOrder())
 
-	if pg.swapButton.Button.Clicked() {
+	if pg.horizontalSwapButton.Button.Clicked() || pg.verticalSwapButton.Button.Clicked() {
 		pg.swapCurrency()
 		if pg.exchange != nil {
 			go func() {
@@ -307,7 +321,7 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 	if clicked, selectedItem := pg.ordersList.ItemClicked(); clicked {
 		orderItems := pg.scroll.FetchedData()
-		pg.ParentNavigator().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
+		pg.ParentWindow().Display(NewOrderDetailsPage(pg.Load, orderItems[selectedItem]))
 	}
 
 	if pg.refreshExchangeRateBtn.Button.Clicked() {
@@ -358,32 +372,15 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 		pg.isFirstVisit = false
 	}
 
+	if pg.fromAmountEditor.Edit.CustomButton.Button.Clicked() {
+		pg.fromAmountEditor.Edit.Editor.Focused()
+	}
+
 	for _, evt := range pg.fromAmountEditor.Edit.Editor.Events() {
 		if pg.fromAmountEditor.Edit.Editor.Focused() {
 			switch evt.(type) {
 			case widget.ChangeEvent:
-				if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
-					fromAmt, err := strconv.ParseFloat(pg.fromAmountEditor.Edit.Editor.Text(), 32)
-					if err != nil {
-						// empty usd input
-						pg.toAmountEditor.Edit.Editor.SetText("")
-						pg.amountErrorText = values.String(values.StrInvalidAmount)
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
-						return
-					}
-					pg.amountErrorText = ""
-					if pg.exchangeRate != -1 {
-						value := fromAmt * pg.exchangeRate
-						v := strconv.FormatFloat(value, 'f', 8, 64)
-						pg.amountErrorText = ""
-						pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
-						pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
-					}
-				} else {
-					pg.toAmountEditor.Edit.Editor.SetText("")
-				}
+				pg.setToAmount(pg.fromAmountEditor.Edit.Editor.Text())
 			}
 		}
 	}
@@ -458,6 +455,31 @@ func (pg *CreateOrderPage) HandleUserInteractions() {
 
 	if pg.navToSettingsBtn.Button.Clicked() {
 		pg.ParentWindow().Display(settings.NewSettingsPage(pg.Load))
+	}
+}
+
+func (pg *CreateOrderPage) setToAmount(amount string) {
+	if pg.inputsNotEmpty(pg.fromAmountEditor.Edit.Editor) {
+		fromAmt, err := strconv.ParseFloat(amount, 32)
+		if err != nil {
+			// empty usd input
+			pg.toAmountEditor.Edit.Editor.SetText("")
+			pg.amountErrorText = values.String(values.StrInvalidAmount)
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Danger
+			return
+		}
+		pg.amountErrorText = ""
+		if pg.exchangeRate != -1 {
+			value := fromAmt * pg.exchangeRate
+			v := strconv.FormatFloat(value, 'f', 8, 64)
+			pg.amountErrorText = ""
+			pg.fromAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.toAmountEditor.Edit.LineColor = pg.Theme.Color.Gray2
+			pg.toAmountEditor.Edit.Editor.SetText(v) // 2 decimal places
+		}
+	} else {
+		pg.toAmountEditor.Edit.Editor.SetText("")
 	}
 }
 
@@ -698,137 +720,121 @@ func (pg *CreateOrderPage) Layout(gtx C) D {
 
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
+	inset := layout.Inset{
+		Top:    values.MarginPadding16,
+		Right:  values.MarginPadding12,
+		Left:   values.MarginPadding12,
+		Bottom: values.MarginPadding16,
+	}
+	if pg.IsMobileView() {
+		inset = layout.Inset{}
+	}
 	return cryptomaterial.LinearLayout{
-		Width:     cryptomaterial.MatchParent,
-		Height:    cryptomaterial.MatchParent,
-		Direction: layout.Center,
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.MatchParent,
+		Direction:   layout.Center,
+		Orientation: layout.Vertical,
+		Background:  pg.Theme.Color.Surface,
+		Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+		Margin:      layout.Inset{Right: values.MarginPadding8, Bottom: values.MarginPadding8},
 	}.Layout2(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:     cryptomaterial.MatchParent,
-			Height:    cryptomaterial.MatchParent,
-			Alignment: layout.Middle,
-			Direction: layout.Center,
-			Padding:   layout.Inset{Top: values.MarginPadding0},
-		}.Layout2(gtx, func(gtx C) D {
-			overlay := layout.Stacked(func(gtx C) D { return D{} })
-			if overlaySet {
-				gtxCopy := gtx
-				overlay = layout.Stacked(func(gtx C) D {
-					return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
-				})
-				// Disable main page from receiving events.
-				gtx = gtx.Disabled()
-			}
-			return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout), overlay)
+		return inset.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.LinearLayout{
+				Width:     cryptomaterial.WrapContent,
+				Height:    cryptomaterial.MatchParent,
+				Alignment: layout.Middle,
+				Direction: layout.Center,
+				Padding:   layout.Inset{Top: values.MarginPadding0},
+			}.Layout2(gtx, func(gtx C) D {
+				overlay := layout.Stacked(func(gtx C) D { return D{} })
+				if overlaySet {
+					gtxCopy := gtx
+					overlay = layout.Stacked(func(gtx C) D {
+						return components.DisablePageWithOverlay(pg.Load, nil, gtxCopy, msg, navBtn)
+					})
+					// Disable main page from receiving events.
+					gtx = gtx.Disabled()
+				}
+				if pg.IsMobileView() {
+					return pg.layoutMobile(gtx)
+
+				}
+				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layoutDesktop), overlay)
+
+			})
 		})
 	})
 }
 
-func (pg *CreateOrderPage) layout(gtx C) D {
+func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	textSize14 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize14)
+
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
 				Bottom: values.MarginPadding16,
 			}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Flexed(0.65, func(gtx C) D {
+				axis := layout.Horizontal
+				if pg.IsMobileView() {
+					axis = layout.Vertical
+				}
+				return layout.Flex{Axis: axis}.Layout(gtx,
+					components.ConditionalFlexedRigidLayout(0.65, pg.IsMobileView(), func(gtx C) D {
 						return layout.E.Layout(gtx, func(gtx C) D {
 							return layout.Flex{
 								Axis:      layout.Horizontal,
 								Alignment: layout.Middle,
 							}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Right: values.MarginPadding10,
-									}.Layout(gtx, func(gtx C) D {
-										return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-											layout.Rigid(func(gtx C) D {
-												txt := pg.Theme.Label(values.TextSize16, values.String(values.StrSelectServerTitle))
-												return txt.Layout(gtx)
-											}),
-											layout.Rigid(func(gtx C) D {
-												return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
-											}),
-										)
-									})
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											return layout.Inset{
+												Bottom: values.MarginPadding4,
+											}.Layout(gtx, func(gtx C) D {
+												return components.EndToEndRow(gtx,
+													func(gtx C) D {
+														txt := pg.Theme.Label(textSize16, values.String(values.StrSelectServer))
+														txt.Font.Weight = font.SemiBold
+														return txt.Layout(gtx)
+													},
+													func(gtx C) D {
+														if !pg.IsMobileView() {
+															return D{}
+														}
+														return pg.orderSchedulerLayout(gtx)
+													},
+												)
+											})
+										}),
+										layout.Rigid(func(gtx C) D {
+											return pg.exchangeSelector.Layout(pg.ParentWindow(), gtx)
+										}),
+									)
 								}),
 							)
 						})
 					}),
-					layout.Flexed(0.35, func(gtx C) D {
-						return layout.E.Layout(gtx, func(gtx C) D {
-							return layout.Flex{
-								Axis:      layout.Horizontal,
-								Alignment: layout.Middle,
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Flex{
-										Axis: layout.Vertical,
-									}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											title := pg.Theme.Label(values.TextSize16, values.String(values.StrScheduler))
-											title.Color = pg.Theme.Color.GrayText2
-											return title.Layout(gtx)
-										}),
-										layout.Rigid(func(gtx C) D {
-											if pg.AssetsManager.IsOrderSchedulerRunning() {
-												return layout.Flex{
-													Axis: layout.Horizontal,
-												}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														return layout.Inset{
-															Top:   values.MarginPadding5,
-															Right: values.MarginPadding2,
-														}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
-													}),
-													layout.Rigid(func(gtx C) D {
-														title := pg.Theme.Label(values.TextSize16, pg.AssetsManager.GetShedulerRuntime())
-														title.Color = pg.Theme.Color.GrayText2
-														return title.Layout(gtx)
-													}),
-												)
-											}
-
-											return D{}
-										}),
-									)
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Left: values.MarginPadding4,
-									}.Layout(gtx, pg.scheduler.Layout)
-								}),
-								layout.Rigid(func(gtx C) D {
-									if pg.AssetsManager.IsOrderSchedulerRunning() {
-										return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
-											gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
-											gtx.Constraints.Min.X = gtx.Constraints.Max.X
-											loader := material.Loader(pg.Theme.Base)
-											loader.Color = pg.Theme.Color.Gray1
-											return loader.Layout(gtx)
-										})
-									}
-									return D{}
-								}),
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Right: values.MarginPadding10,
-										Left:  values.MarginPadding10,
-									}.Layout(gtx, pg.infoButton.Layout)
-								}),
-								layout.Rigid(pg.settingsButton.Layout),
-							)
-						})
+					components.ConditionalFlexedRigidLayout(0.35, pg.IsMobileView(), func(gtx C) D {
+						if pg.IsMobileView() {
+							return D{}
+						}
+						return pg.orderSchedulerLayout(gtx)
 					}),
 				)
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
+			axis := layout.Horizontal
+			if pg.IsMobileView() {
+				axis = layout.Vertical
+			}
+
 			return layout.Flex{
-				Axis:      layout.Horizontal,
+				Axis:      axis,
 				Alignment: layout.Middle,
 			}.Layout(gtx,
-				layout.Flexed(0.45, func(gtx C) D {
+				components.ConditionalFlexedRigidLayout(0.45, pg.IsMobileView(), func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							walletName := "----"
@@ -840,19 +846,27 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								accountName = pg.sourceAccountSelector.SelectedAccount().Name
 							}
 							txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrSource), walletName, accountName)
-							lb := pg.Theme.Label(values.TextSize16, txt)
+							lb := pg.Theme.Label(textSize16, txt)
 							lb.Font.Weight = font.SemiBold
 							return lb.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
+							if pg.IsMobileView() {
+								gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding280)
+							}
 							return pg.fromAmountEditor.Layout(pg.ParentWindow(), gtx)
 						}),
 					)
 				}),
-				layout.Flexed(0.1, func(gtx C) D {
-					return layout.Center.Layout(gtx, pg.swapButton.Layout)
+				components.ConditionalFlexedRigidLayout(0.1, pg.IsMobileView(), func(gtx C) D {
+					if pg.IsMobileView() {
+						return components.UniformVeticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
+							return layout.Center.Layout(gtx, pg.verticalSwapButton.Layout)
+						})
+					}
+					return layout.Center.Layout(gtx, pg.horizontalSwapButton.Layout)
 				}),
-				layout.Flexed(0.45, func(gtx C) D {
+				components.ConditionalFlexedRigidLayout(0.45, pg.IsMobileView(), func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
 							walletName := "----"
@@ -864,11 +878,14 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								accountName = pg.destinationAccountSelector.SelectedAccount().Name
 							}
 							txt := fmt.Sprintf("%s: %s[%s]", values.String(values.StrDestination), walletName, accountName)
-							lb := pg.Theme.Label(values.TextSize16, txt)
+							lb := pg.Theme.Label(textSize16, txt)
 							lb.Font.Weight = font.SemiBold
 							return lb.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
+							if pg.IsMobileView() {
+								gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding280)
+							}
 							return pg.toAmountEditor.Layout(pg.ParentWindow(), gtx)
 						}),
 					)
@@ -887,7 +904,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								if pg.amountErrorText != "" {
-									txt := pg.Theme.Label(values.TextSize14, pg.amountErrorText)
+									txt := pg.Theme.Label(textSize14, pg.amountErrorText)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Danger
 									return txt.Layout(gtx)
@@ -903,7 +920,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 											gtx.Constraints.Min.X = gtx.Constraints.Max.X
 											return pg.materialLoader.Layout(gtx)
 										}
-										txt := pg.Theme.Label(values.TextSize14, pg.exchangeRateInfo)
+										txt := pg.Theme.Label(textSize14, pg.exchangeRateInfo)
 										txt.Color = pg.Theme.Color.Gray1
 										txt.Font.Weight = font.SemiBold
 										return txt.Layout(gtx)
@@ -933,7 +950,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 								layout.Rigid(func(gtx C) D {
 									serverName := pg.exchangeSelector.SelectedExchange().Name
 									exchangeRate := values.StringF(values.StrServerRate, serverName, fromCur, pg.exchangeRate, toCur)
-									txt := pg.Theme.Label(values.TextSize14, exchangeRate)
+									txt := pg.Theme.Label(textSize14, exchangeRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
 									return txt.Layout(gtx)
@@ -955,7 +972,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 									}
 
 									binanceRate := values.StringF(values.StrCurrencyConverterRate, pg.AssetsManager.RateSource.Name(), fromCur, rate, toCur)
-									txt := pg.Theme.Label(values.TextSize14, binanceRate)
+									txt := pg.Theme.Label(textSize14, binanceRate)
 									txt.Font.Weight = font.SemiBold
 									txt.Color = pg.Theme.Color.Gray1
 									return txt.Layout(gtx)
@@ -968,11 +985,10 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Inset{
-					Top: values.MarginPadding16,
-				}.Layout(gtx, pg.createOrderBtn.Layout)
-			})
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Inset{
+				Top: values.MarginPadding16,
+			}.Layout(gtx, pg.createOrderBtn.Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{
@@ -982,7 +998,8 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 					layout.Rigid(func(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
-								txt := pg.Theme.Label(values.TextSize18, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
+								size := values.TextSizeTransform(pg.IsMobileView(), values.TextSize18)
+								txt := pg.Theme.Label(size, values.StringF(values.StrRecentOrders, pg.scroll.ItemsCount()))
 								txt.Font.Weight = font.SemiBold
 								return txt.Layout(gtx)
 							}),
@@ -1004,7 +1021,7 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														}
 													}
 
-													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+													lastUpdatedInfo := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize12), text)
 													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 												}),
@@ -1018,13 +1035,14 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 														Margin:    layout.Inset{Left: values.MarginPadding10},
 													}.Layout(gtx,
 														layout.Rigid(func(gtx C) D {
-															if pg.AssetsManager.InstantSwap.IsSyncing() {
-																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
-															}
 															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+																if pg.AssetsManager.InstantSwap.IsSyncing() {
+																	gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+																	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+																	return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+																}
+																size := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding18)
+																return pg.refreshIcon.LayoutSize(gtx, size)
 															})
 														}),
 													)
@@ -1057,6 +1075,78 @@ func (pg *CreateOrderPage) layout(gtx C) D {
 	)
 }
 
+func (pg *CreateOrderPage) layoutMobile(gtx C) D {
+	return components.UniformMobile(gtx, false, false, func(gtx layout.Context) layout.Dimensions {
+		return layout.Stack{Alignment: layout.Direction(layout.Vertical)}.Layout(gtx, layout.Expanded(pg.layoutDesktop))
+	})
+}
+
+// orderSchedulerLayout is the layout for the automatic order scheduler switch,
+// settings and indicator
+func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
+	textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+	return layout.E.Layout(gtx, func(gtx C) D {
+		return layout.Flex{
+			Axis:      layout.Horizontal,
+			Alignment: layout.Middle,
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{
+					Axis: layout.Vertical,
+				}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						title := pg.Theme.Label(textSize16, values.String(values.StrScheduler))
+						title.Color = pg.Theme.Color.GrayText2
+						return title.Layout(gtx)
+					}),
+					layout.Rigid(func(gtx C) D {
+						if pg.AssetsManager.IsOrderSchedulerRunning() {
+							return layout.Flex{
+								Axis: layout.Horizontal,
+							}.Layout(gtx,
+								layout.Rigid(func(gtx C) D {
+									return layout.Inset{
+										Top:   values.MarginPadding5,
+										Right: values.MarginPadding2,
+									}.Layout(gtx, pg.Theme.Icons.TimerIcon.Layout12dp)
+								}),
+								layout.Rigid(func(gtx C) D {
+									title := pg.Theme.Label(textSize16, pg.AssetsManager.GetShedulerRuntime())
+									title.Color = pg.Theme.Color.GrayText2
+									return title.Layout(gtx)
+								}),
+							)
+						}
+
+						return D{}
+					}),
+				)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Left: values.MarginPadding4,
+				}.Layout(gtx, pg.scheduler.Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if pg.AssetsManager.IsOrderSchedulerRunning() {
+					return layout.Inset{Left: values.MarginPadding4, Top: unit.Dp(2)}.Layout(gtx, func(gtx C) D {
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding16)
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						loader := material.Loader(pg.Theme.Base)
+						loader.Color = pg.Theme.Color.Gray1
+						return loader.Layout(gtx)
+					})
+				}
+				return D{}
+			}),
+			layout.Rigid(func(gtx C) D {
+				return components.UniformHorizontalInset(values.MarginPadding10).Layout(gtx, pg.infoButton.Layout)
+			}),
+			layout.Rigid(pg.settingsButton.Layout),
+		)
+	})
+}
+
 func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true)
 	return orders, len(orders), false, nil
@@ -1064,7 +1154,7 @@ func (pg *CreateOrderPage) fetchOrders(offset, pageSize int32) ([]*instantswap.O
 
 func (pg *CreateOrderPage) layoutHistory(gtx C) D {
 	if pg.scroll.ItemsCount() <= 0 {
-		return components.LayoutNoOrderHistory(gtx, pg.Load, false)
+		return components.LayoutNoOrderHistoryWithMsg(gtx, pg.Load, false, values.String(values.StrNoOrders))
 	}
 	orderItems := pg.scroll.FetchedData()
 	return layout.Stack{}.Layout(gtx,

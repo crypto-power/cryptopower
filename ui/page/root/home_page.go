@@ -756,11 +756,6 @@ func (hp *HomePage) startSyncing(wallet sharedW.Asset, unlock load.NeedUnlockRes
 						log.Debugf("Error starting sync: %v", err)
 					}
 
-					if hp.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.ExchangeHTTPAPI) {
-						hp.AssetsManager.InstantSwap.StopSync() // in case it was syncing before losing network connection
-						hp.AssetsManager.InstantSwap.Sync()
-					}
-
 					// Trigger UI update
 					hp.ParentWindow().Reload()
 

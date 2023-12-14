@@ -77,7 +77,11 @@ func (pg *TradePage) ID() string {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedTo() {
-	if activeTab := pg.CurrentPage(); activeTab != nil {
+	// on mobile view, we display the cex tab by default
+	if pg.IsMobileView() {
+		pg.tab.SetSelectedSegment(tabTitles[1])
+		pg.Display(exchange.NewCreateOrderPage(pg.Load))
+	} else if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
 		pg.Display(dcrdex.NewDEXPage(pg.Load))
@@ -116,7 +120,7 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
+	if pg.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -143,5 +147,9 @@ func (pg *TradePage) layoutMobile(gtx C) D {
 }
 
 func (pg *TradePage) sectionNavTab(gtx C) D {
+	if pg.IsMobileView() { // Will DCRDEX be supported on mobile?
+		return D{}
+	}
+
 	return pg.tab.GroupTileLayout(gtx)
 }
