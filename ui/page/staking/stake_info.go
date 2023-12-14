@@ -78,7 +78,7 @@ func (pg *Page) stakePriceSection(gtx C) D {
 										}),
 										layout.Rigid(func(gtx C) D {
 											return layout.Center.Layout(gtx, func(gtx C) D {
-												if pg.dcrWallet.IsSyncing() || pg.dcrWallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
+												if !pg.dcrWallet.IsSynced() || pg.dcrWallet.IsRescanning() || !pg.isTicketsPurchaseAllowed() {
 													title := pg.Theme.Label(values.TextSize16, values.String(values.StrLoadingPrice))
 													title.Color = col
 													return title.Layout(gtx)
