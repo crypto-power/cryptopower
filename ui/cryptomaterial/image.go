@@ -91,8 +91,7 @@ func (img *Image) LayoutSize(gtx C, size unit.Dp) D {
 // LayoutTransform is used to scale images for mobile view.
 func (img *Image) LayoutTransform(gtx C, isMobileView bool, size unit.Dp) D {
 	if isMobileView {
-		size := values.MarginPaddingTransform(isMobileView, size)
-		return img.LayoutSize(gtx, size)
+		size = values.MarginPaddingTransform(isMobileView, size)
 	}
 
 	return img.LayoutSize(gtx, size)
