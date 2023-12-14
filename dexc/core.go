@@ -21,9 +21,10 @@ const (
 	// DexDcrWalletIDConfigKey is the key that holds the wallet ID value in the
 	// settings map used to connect an existing dcr wallet to the DEX client.
 	DexDcrWalletIDConfigKey = "walletid"
-	// DexDcrWalletAccountNameConfigKey is the key that holds the wallet account values
-	// in the settings map used to connect an existing dcr wallet to the DEX client.
-	DexDcrWalletAccountNameConfigKey = "accountname"
+	// DexDcrWalletAccountNameConfigKey is the key that holds the wallet account
+	// values in the settings map used to connect an existing dcr wallet to the
+	// DEX client.
+	DexDcrWalletAccountNameConfigKey = "account"
 )
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.
