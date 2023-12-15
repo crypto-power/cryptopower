@@ -43,6 +43,10 @@ func formatBalance(gtx C, l *load.Load, amount string, mainTextSize unit.Sp, col
 		stopIndex = len(amount)
 	}
 
+	if startIndex > stopIndex || stopIndex <= 0 || stopIndex > len(amount) {
+		return D{}
+	}
+
 	mainText, subText, unitText := amount[:startIndex], amount[startIndex:stopIndex], amount[stopIndex:]
 
 	subTextSize := unit.Sp(float32(mainTextSize) * defaultScale)

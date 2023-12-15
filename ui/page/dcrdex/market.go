@@ -30,7 +30,7 @@ const (
 var (
 	dp5                        = values.MarginPadding5
 	dp8                        = values.MarginPadding8
-	dp300                      = values.DP300
+	dp300                      = values.MarginPadding300
 	orderFormAndOrderBookWidth = (values.AppWidth / 2) - 40 // Minus 40 px to allow for margin between the order form and order book.
 	// orderFormAndOrderBookHeight is a an arbitrary height that accommodates
 	// the current order form elements and maxOrderDisplayedInOrderBook. Use

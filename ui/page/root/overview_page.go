@@ -275,7 +275,7 @@ func (pg *OverviewPage) OnCurrencyChanged() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *OverviewPage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
+	if pg.IsMobileView() {
 		return pg.layoutMobile(gtx)
 	}
 	return pg.layoutDesktop(gtx)
@@ -323,7 +323,7 @@ func (pg *OverviewPage) layoutMobile(gtx C) D {
 
 func (pg *OverviewPage) sliderLayout(gtx C) D {
 	axis := layout.Horizontal
-	if pg.Load.IsMobileView() {
+	if pg.IsMobileView() {
 		axis = layout.Vertical
 	}
 
@@ -340,7 +340,7 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 				return pg.assetBalanceSliderLayout(gtx, 0)
 			}
 
-			if pg.Load.IsMobileView() {
+			if pg.IsMobileView() {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return pg.assetBalanceSliderLayout(gtx, 0)
@@ -822,7 +822,7 @@ func (pg *OverviewPage) assetTableLabel(title string, col color.NRGBA) layout.Wi
 
 func (pg *OverviewPage) txStakingSection(gtx C) D {
 	axis := layout.Horizontal
-	if pg.Load.IsMobileView() {
+	if pg.IsMobileView() {
 		axis = layout.Vertical
 	}
 
@@ -833,7 +833,7 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if pg.Load.IsMobileView() {
+			if pg.IsMobileView() {
 				return layout.Flex{Axis: axis}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
@@ -943,7 +943,9 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
+					return components.UniformVeticalInset(values.MarginPadding6).Layout(gtx, func(gtx C) D {
+						return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
+					})
 				}),
 				layout.Rigid(func(gtx C) D {
 					// Show bottom divider for all rows except the last row.

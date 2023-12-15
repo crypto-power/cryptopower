@@ -48,7 +48,6 @@ var PageNavigationMap = map[string]string{
 // SingleWalletMasterPage is a master page for interacting with a single wallet.
 // It has sub pages for viewing a wallet's info, sending and receiving funds for
 // a wallet, viewing a wallet's transactions, etc.
-// TODO: Rename this file in a separate commit, for easier review.
 type SingleWalletMasterPage struct {
 	*app.MasterPage
 	*load.Load

@@ -23,6 +23,7 @@ import (
 	"github.com/crypto-power/cryptopower/app"
 	"github.com/crypto-power/cryptopower/libwallet/assets/dcr"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
+	"github.com/crypto-power/cryptopower/libwallet/instantswap"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -956,5 +957,38 @@ func IconButton(icon *widget.Icon, txt string, inset layout.Inset, th *cryptomat
 				}),
 			)
 		})
+	}
+}
+
+// ConditionalFlexedRigidLayout decides whether to use layout.Rigid or layout.Flexed
+func ConditionalFlexedRigidLayout(flexWeight float32, isMobileView bool, content layout.Widget) layout.FlexChild {
+	if isMobileView {
+		return layout.Rigid(content)
+	}
+	return layout.Flexed(flexWeight, content)
+}
+
+// GetServerIcon returns the icon for the provided server name.
+func GetServerIcon(theme *cryptomaterial.Theme, serverName string) *cryptomaterial.Image {
+	switch serverName {
+	case instantswap.Changelly.ToString():
+		return theme.Icons.ChangellyIcon
+	case instantswap.ChangeNow.ToString():
+		return theme.Icons.ChangeNowIcon
+	case instantswap.CoinSwitch.ToString():
+		return theme.Icons.CoinSwitchIcon
+	case instantswap.FlypMe.ToString():
+		return theme.Icons.FlypMeIcon
+	case instantswap.GoDex.ToString():
+		return theme.Icons.GodexIcon
+	case instantswap.SimpleSwap.ToString():
+		return theme.Icons.SimpleSwapIcon
+	case instantswap.SwapZone.ToString():
+		return theme.Icons.SwapzoneIcon
+	case instantswap.Trocador.ToString():
+		return theme.Icons.TrocadorIcon
+
+	default:
+		return theme.Icons.AddExchange
 	}
 }

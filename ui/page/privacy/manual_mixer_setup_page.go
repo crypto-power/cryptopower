@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -59,6 +60,7 @@ func NewManualMixerSetupPage(l *load.Load, dcrWallet *dcr.Asset) *ManualMixerSet
 			}
 
 			// Imported, watch only and default wallet accounts are invalid to use as a mixed account
+			// TODO: Watching only wallet should not even see this page, if they can't select an account!
 			accountIsValid := account.Number != load.MaxInt32 && !wal.IsWatchingOnlyWallet() && account.Number != dcr.DefaultAccountNum
 
 			if !accountIsValid || account.Number == unmixedAccNo {
@@ -112,120 +114,135 @@ func (pg *ManualMixerSetupPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ManualMixerSetupPage) Layout(gtx C) D {
+	pg.toPrivacySetup.TextSize = values.TextSize16
+	if pg.IsMobileView() {
+		pg.toPrivacySetup.TextSize = values.TextSize14
+	}
+
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		inset := layout.UniformInset(values.MarginPadding24)
+		if pg.IsMobileView() {
+			inset.Left, inset.Right = values.MarginPadding16, values.MarginPadding16
+		}
+
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Inset{Top: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
+				// back button - "Manual Setup" label
+				layout.Rigid(pg.backButtonAndPageHeading),
+				// 24px/16px space (mobile/desktop)
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Left: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-						gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding50)
-						return pg.backClickable.Layout(gtx, pg.backLayout)
-					})
+					if pg.IsMobileView() {
+						return layout.Spacer{Height: values.MarginPadding24}.Layout(gtx)
+					}
+					return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
 				}),
+				// "Mixed account" label, 4px space, mixed account dropdown
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					lbl := pg.Theme.Body1(values.String(values.StrMixedAccount))
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding4}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return pg.mixerAccountSections(gtx, values.String(values.StrMixedAccount), func(gtx C) D {
-								return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPaddingMinus15}.Layout(gtx, func(gtx C) D {
-								return pg.mixerAccountSections(gtx, values.String(values.StrUnmixedAccount), func(gtx C) D {
-									return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
-								})
-							})
-						}),
-						layout.Rigid(layout.Spacer{Height: values.MarginPadding15}.Layout),
-						layout.Rigid(pg.cautionCard),
-						layout.Rigid(layout.Spacer{Height: values.MarginPadding15}.Layout),
-					)
+					return pg.mixedAccountSelector.Layout(pg.ParentWindow(), gtx)
 				}),
+				// 16px/12px space (mobile/desktop)
 				layout.Rigid(func(gtx C) D {
-					return layout.UniformInset(values.MarginPadding15).Layout(gtx, pg.toPrivacySetup.Layout)
+					if pg.IsMobileView() {
+						return layout.Spacer{Height: values.MarginPadding16}.Layout(gtx)
+					}
+					return layout.Spacer{Height: values.MarginPadding12}.Layout(gtx)
 				}),
+				// "Unmixed account" label, 4px space, unmixed account dropdown
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					lbl := pg.Theme.Body1(values.String(values.StrUnmixedAccount))
+					lbl.Font.Weight = font.SemiBold
+					return lbl.Layout(gtx)
+				}),
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding4}.Layout),
+				layout.Rigid(func(gtx C) D {
+					return pg.unmixedAccountSelector.Layout(pg.ParentWindow(), gtx)
+				}),
+				// 24px space, then warning/caution text
+				layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+				layout.Rigid(pg.cautionCard),
+				// 40px/60px space (mobile/desktop), then "Set up" button.
+				layout.Rigid(func(gtx C) D {
+					if pg.IsMobileView() {
+						return layout.Spacer{Height: values.MarginPadding40}.Layout(gtx)
+					}
+					return layout.Spacer{Height: values.MarginPadding60}.Layout(gtx)
+				}),
+				layout.Rigid(pg.toPrivacySetup.Layout),
 			)
 		})
 	})
+}
+
+func (pg *ManualMixerSetupPage) backButtonAndPageHeading(gtx C) D {
+	// Setting a minimum Y larger than the label allows it to be centered.
+	// gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding50)
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return pg.backClickable.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Right: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+					iconSize := values.MarginPadding30
+					if pg.IsMobileView() {
+						iconSize = values.MarginPadding18
+					}
+					return pg.backIcon.Layout(gtx, iconSize)
+				})
+			})
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Center.Layout(gtx, func(gtx C) D {
+				lbl := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleManualTitle))
+				if pg.IsMobileView() {
+					lbl.TextSize = values.TextSize16
+				}
+				return lbl.Layout(gtx)
+			})
+		}),
+	)
 }
 
 func (pg *ManualMixerSetupPage) cautionCard(gtx C) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Inset{
-		Left:  values.MarginPadding15,
-		Right: values.MarginPadding15,
-	}.Layout(gtx, func(gtx C) D {
-		card := pg.Theme.Card()
-		card.Color = pg.Theme.Color.Gray4
-		return card.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding100)
-			gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
-			return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Start}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding40)
-						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							return pg.Theme.Icons.ActionInfo.Layout(gtx, pg.Theme.Color.Gray1)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Left: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleWarningTitle))
-									return label.Layout(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleWarningDesc))
-									return label.Layout(gtx)
-								}),
-							)
-						})
-					}),
-				)
-			})
-		})
-	})
-}
-
-func (pg *ManualMixerSetupPage) backLayout(gtx C) D {
-	return layout.Inset{Right: values.MarginPadding15}.Layout(gtx, func(gtx C) D {
-		// Setting a minimum Y larger than the label allows it to be centered.
-		gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding50)
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{
-					Left:  values.MarginPadding15,
-					Right: values.MarginPadding15,
-				}.Layout(gtx, func(gtx C) D {
-					return pg.backIcon.Layout(gtx, values.MarginPadding30)
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Center.Layout(gtx, func(gtx C) D {
-					return pg.Theme.H6(values.String(values.StrSetUpStakeShuffleManualTitle)).Layout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *ManualMixerSetupPage) mixerAccountSections(gtx C, title string, body layout.Widget) D {
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	card := pg.Theme.Card()
+	card.Color = pg.Theme.Color.Gray4
+	return card.Layout(gtx, func(gtx C) D {
+		inset := layout.UniformInset(values.MarginPadding16)
+		if pg.IsMobileView() {
+			inset.Left, inset.Right = values.MarginPadding8, values.MarginPadding8
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Bottom: values.MarginPadding8,
-					}.Layout(gtx, pg.Theme.Body1(title).Layout)
+					return pg.Theme.Icons.ActionInfo.Layout(gtx, pg.Theme.Color.Gray1)
 				}),
-				layout.Rigid(body),
+				layout.Rigid(layout.Spacer{Width: values.MarginPadding12}.Layout),
+				layout.Rigid(func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleWarningTitle))
+							if pg.IsMobileView() {
+								label.TextSize = values.TextSize16
+							}
+							return label.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx C) D {
+							label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleWarningDesc))
+							if pg.IsMobileView() {
+								label.TextSize = values.TextSize14
+							}
+							return label.Layout(gtx)
+						}),
+					)
+				}),
 			)
 		})
 	})
+
 }
 
 func (pg *ManualMixerSetupPage) showModalSetupMixerAcct() {
@@ -286,27 +303,15 @@ func (pg *ManualMixerSetupPage) HandleUserInteractions() {
 	if pg.toPrivacySetup.Clicked() {
 		go pg.showModalSetupMixerAcct()
 	}
-	enableToPriv := func() {
-		mixed, unmixed := pg.mixedAccountSelector.SelectedAccount(), pg.unmixedAccountSelector.SelectedAccount()
-		if mixed == nil || unmixed == nil {
-			pg.toPrivacySetup.SetEnabled(false)
-			return
-		}
 
-		if mixed.Number == unmixed.Number {
-			pg.toPrivacySetup.SetEnabled(false)
-			return
-		}
-
-		// Disable set up button if either mixed or unmixed account is the default account.
-		if mixed.Number == dcr.DefaultAccountNum ||
-			unmixed.Number == dcr.DefaultAccountNum {
-			pg.toPrivacySetup.SetEnabled(false)
-			return
-		}
+	mixed, unmixed := pg.mixedAccountSelector.SelectedAccount(), pg.unmixedAccountSelector.SelectedAccount()
+	validMixedAccountSelected := mixed != nil && mixed.Number != dcr.DefaultAccountNum
+	validUnmixedAccountSelected := unmixed != nil && unmixed.Number != dcr.DefaultAccountNum
+	if validMixedAccountSelected && validUnmixedAccountSelected && mixed.Number != unmixed.Number {
 		pg.toPrivacySetup.SetEnabled(true)
+	} else {
+		pg.toPrivacySetup.SetEnabled(false)
 	}
-	enableToPriv()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from

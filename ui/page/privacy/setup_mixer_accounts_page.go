@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -65,35 +66,53 @@ func (pg *SetupMixerAccountsPage) OnNavigatedTo() {
 // Part of the load.Page interface.
 func (pg *SetupMixerAccountsPage) Layout(gtx C) D {
 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		inset := layout.UniformInset(24)
+		var headingTextSize, normalTextSize unit.Sp = 20, 16
+		verticalSpace1 := values.MarginPadding12
+
+		if pg.IsMobileView() {
+			inset = layout.Inset{Top: 24, Bottom: 24, Left: 16, Right: 16}
+			headingTextSize, normalTextSize = 16, 14
+			verticalSpace1 = values.MarginPadding16
+		}
+
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Inset{
-			Top:   values.MarginPadding25,
-			Left:  values.MarginPadding24,
-			Right: values.MarginPadding24,
-		}.Layout(gtx, func(gtx C) D {
+		return inset.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleAutoOrManualA))
+					label.TextSize = headingTextSize
 					return label.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
+					return layout.Spacer{Height: verticalSpace1}.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
 					label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleAutoOrManualB))
+					label.TextSize = normalTextSize
 					return label.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Spacer{Height: verticalSpace1}.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
 					// TODO: Find a way to make Mixed and Unmixed bold while keeping to the theme.
 					label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleAutoOrManualC))
-					return layout.Inset{
-						Top: values.MarginPadding10,
-					}.Layout(gtx, label.Layout)
+					label.TextSize = normalTextSize
+					return label.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Spacer{Height: verticalSpace1}.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
 					label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleAutoOrManualD))
-					return layout.Inset{
-						Top: values.MarginPadding10,
-					}.Layout(gtx, label.Layout)
+					label.TextSize = normalTextSize
+					return label.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
+					if pg.IsMobileView() {
+						return layout.Spacer{Height: values.MarginPadding40}.Layout(gtx)
+					}
 					return layout.Spacer{Height: values.MarginPadding80}.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
@@ -101,89 +120,63 @@ func (pg *SetupMixerAccountsPage) Layout(gtx C) D {
 					return line.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.autoSetupClickable.Layout(gtx, pg.autoSetupLayout)
+					return layout.Spacer{Height: values.MarginPadding24}.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return pg.manualSetupClickable.Layout(gtx, pg.manualSetupLayout)
+					return pg.autoSetupClickable.Layout(gtx, func(gtx C) D {
+						return pg.layoutHeadingDescAndNextIcon(gtx,
+							values.String(values.StrSetUpStakeShuffleAutoTitle),
+							values.String(values.StrSetUpStakeShuffleAutoDesc))
+					})
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Spacer{Height: values.MarginPadding10}.Layout(gtx)
+					return layout.Spacer{Height: values.MarginPadding24}.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.manualSetupClickable.Layout(gtx, func(gtx C) D {
+						return pg.layoutHeadingDescAndNextIcon(gtx,
+							values.String(values.StrSetUpStakeShuffleManualTitle),
+							values.String(values.StrSetUpStakeShuffleManualDesc))
+					})
 				}),
 			)
 		})
 	})
 }
 
-func (pg *SetupMixerAccountsPage) autoSetupLayout(gtx C) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding70)
-	gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
-	return layout.Inset{
-		Top:    values.MarginPadding10,
-		Bottom: values.MarginPadding10,
-	}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-			layout.Flexed(5, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleAutoTitle))
-						return label.Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleAutoDesc))
-						return label.Layout(gtx)
-					}),
-				)
-			}),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle, Spacing: layout.SpaceAround}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Right: values.MarginPadding24,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.nextIcon.Layout(gtx, values.MarginPadding30)
-						})
-					}),
-				)
-			}),
-		)
-	})
-}
+func (pg *SetupMixerAccountsPage) layoutHeadingDescAndNextIcon(gtx C, heading, desc string) D {
+	var headingTextSize, normalTextSize unit.Sp = 20, 16
+	spacingBtwTexts := values.MarginPadding8
+	if pg.IsMobileView() {
+		headingTextSize, normalTextSize = 16, 14
+		spacingBtwTexts = values.MarginPadding4
+	}
 
-func (pg *SetupMixerAccountsPage) manualSetupLayout(gtx C) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding70)
-	gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
-	return layout.Inset{
-		Top:    values.MarginPadding10,
-		Bottom: values.MarginPadding10,
-	}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-			layout.Flexed(5, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.H6(values.String(values.StrSetUpStakeShuffleManualTitle))
-						return label.Layout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						label := pg.Theme.Body1(values.String(values.StrSetUpStakeShuffleManualDesc))
-						return label.Layout(gtx)
-					}),
-				)
-			}),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle, Spacing: layout.SpaceAround}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Right: values.MarginPadding24,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.nextIcon.Layout(gtx, values.MarginPadding30)
-						})
-					}),
-				)
-			}),
-		)
-	})
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					label := pg.Theme.H6(heading)
+					label.TextSize = headingTextSize
+					return label.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return layout.Spacer{Height: spacingBtwTexts}.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx C) D {
+					label := pg.Theme.Body1(desc)
+					label.TextSize = normalTextSize
+					return label.Layout(gtx)
+				}),
+			)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Spacer{Width: values.MarginPadding24}.Layout(gtx)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return pg.nextIcon.Layout(gtx, values.MarginPadding24)
+		}),
+	)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

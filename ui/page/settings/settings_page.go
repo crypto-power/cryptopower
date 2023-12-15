@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -109,21 +110,31 @@ func (pg *SettingPage) OnNavigatedTo() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *SettingPage) Layout(gtx C) D {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *SettingPage) layoutDesktop(gtx C) D {
-	return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
+	body := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(pg.pageHeaderLayout),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.pageContentLayout)
+				return layout.Inset{
+					Top:    values.MarginPadding20,
+					Bottom: values.MarginPadding20,
+				}.Layout(gtx, pg.pageContentLayout)
 			}),
 		)
-	})
+	}
+
+	if pg.Load.IsMobileView() {
+		return pg.layoutMobile(gtx, body)
+	}
+
+	return pg.layoutDesktop(gtx, body)
+}
+
+func (pg *SettingPage) layoutDesktop(gtx C, body func(gtx C) D) D {
+	return layout.UniformInset(values.MarginPadding20).Layout(gtx, body)
+}
+
+func (pg *SettingPage) layoutMobile(gtx C, body func(gtx C) D) D {
+	return components.UniformMobile(gtx, false, true, body)
 }
 
 func (pg *SettingPage) pageHeaderLayout(gtx C) layout.Dimensions {
@@ -136,7 +147,7 @@ func (pg *SettingPage) pageHeaderLayout(gtx C) layout.Dimensions {
 							Right: values.MarginPadding16,
 						}.Layout(gtx, pg.backButton.Layout)
 					}),
-					layout.Rigid(pg.Theme.Label(values.TextSize20, values.String(values.StrSettings)).Layout),
+					layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), values.String(values.StrSettings)).Layout),
 				)
 			})
 		}),
@@ -154,6 +165,9 @@ func (pg *SettingPage) pageContentLayout(gtx C) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Dp(values.MarginPadding500)
+		if pg.Load.IsMobileView() {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		}
 		gtx.Constraints.Max.X = gtx.Constraints.Min.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
@@ -162,80 +176,77 @@ func (pg *SettingPage) pageContentLayout(gtx C) D {
 	})
 }
 
-func (pg *SettingPage) layoutMobile(gtx C) D {
-	return layout.UniformInset(values.MarginPadding20).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.pageHeaderLayout),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, pg.pageContentLayout)
-			}),
-		)
-	})
-}
-
-func (pg *SettingPage) settingLine(gtx C) D {
-	line := pg.Theme.Line(1, 0)
-	line.Color = pg.Theme.Color.Gray3
-	return line.Layout(gtx)
-}
-
 func (pg *SettingPage) wrapSection(gtx C, title string, body layout.Widget) D {
 	return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding15).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										txt := pg.Theme.Body2(title)
-										txt.Color = pg.Theme.Color.GrayText2
-										return txt.Layout(gtx)
-									}),
-									layout.Rigid(func(gtx C) D {
-										return layout.W.Layout(gtx, func(gtx C) D {
-											if title == values.String(values.StrPrivacySettings) {
-												pg.networkInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
-												pg.networkInfoButton.Size = values.MarginPadding20
-												return pg.networkInfoButton.Layout(gtx)
-											}
-											return D{}
-										})
-									}),
-								)
-							})
-						}),
-
-						layout.Flexed(1, func(gtx C) D {
-							switch title {
-							case values.String(values.StrSecurity):
-								pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
-								pg.infoButton.Size = values.MarginPadding20
-								return layout.E.Layout(gtx, pg.infoButton.Layout)
-
-							case values.String(values.StrGeneral):
-								return layout.E.Layout(gtx, func(gtx C) D {
-									appearanceIcon := pg.Theme.Icons.DarkMode
-									if pg.isDarkModeOn {
-										appearanceIcon = pg.Theme.Icons.LightMode
-									}
-									return pg.appearanceMode.Layout(gtx, appearanceIcon.Layout16dp)
+		return cryptomaterial.LinearLayout{
+			Orientation: layout.Vertical,
+			Width:       cryptomaterial.WrapContent,
+			Height:      cryptomaterial.WrapContent,
+			Background:  pg.Theme.Color.Surface,
+			Direction:   layout.Center,
+			Border:      cryptomaterial.Border{Radius: cryptomaterial.Radius(14)},
+			Padding: layout.Inset{
+				Top:   values.MarginPadding24,
+				Left:  values.MarginPadding16,
+				Right: values.MarginPadding16,
+			},
+		}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+							layout.Rigid(func(gtx C) D {
+								return layout.Inset{Bottom: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											txt := pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize20), title)
+											txt.Color = pg.Theme.Color.DeepBlue
+											txt.Font.Weight = font.SemiBold
+											return txt.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											return layout.W.Layout(gtx, func(gtx C) D {
+												if title == values.String(values.StrPrivacySettings) {
+													pg.networkInfoButton.Inset = layout.UniformInset(values.MarginPadding0)
+													pg.networkInfoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding20)
+													return pg.networkInfoButton.Layout(gtx)
+												}
+												return D{}
+											})
+										}),
+									)
 								})
-							case values.String(values.StrPrivacySettings):
-								return layout.E.Layout(gtx, pg.privacyActive.Layout)
-							default:
-								return D{}
-							}
-						}),
-					)
-				}),
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, pg.settingLine)
-				}),
-				layout.Rigid(body),
-			)
-		})
+							}),
+
+							layout.Flexed(1, func(gtx C) D {
+								switch title {
+								case values.String(values.StrSecurity):
+									pg.infoButton.Inset = layout.UniformInset(values.MarginPadding0)
+									pg.infoButton.Size = values.MarginPaddingTransform(pg.Load.IsMobileView(), values.MarginPadding20)
+									return layout.E.Layout(gtx, pg.infoButton.Layout)
+
+								case values.String(values.StrGeneral):
+									return layout.E.Layout(gtx, func(gtx C) D {
+										appearanceIcon := pg.Theme.Icons.DarkMode
+										if pg.isDarkModeOn {
+											appearanceIcon = pg.Theme.Icons.LightMode
+										}
+										return pg.appearanceMode.Layout(gtx, func(gtx C) D {
+											return appearanceIcon.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
+										})
+									})
+								case values.String(values.StrPrivacySettings):
+									return layout.E.Layout(gtx, pg.privacyActive.Layout)
+								default:
+									return D{}
+								}
+							}),
+						)
+					}),
+					layout.Rigid(body),
+				)
+			}),
+		)
 	})
 }
 
@@ -387,7 +398,9 @@ func (pg *SettingPage) clickableRow(gtx C, row row) D {
 			return pg.subSection(gtx, row.title, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(row.label.Layout),
-					layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
+					layout.Rigid(func(gtx C) D {
+						return pg.Theme.Icons.ChevronRight.LayoutTransform(gtx, pg.Load.IsMobileView(), values.MarginPadding20)
+					}),
 				)
 			})
 		})
@@ -396,7 +409,7 @@ func (pg *SettingPage) clickableRow(gtx C, row row) D {
 
 func (pg *SettingPage) subSectionLabel(title string) layout.Widget {
 	return func(gtx C) D {
-		return pg.Theme.Body1(title).Layout(gtx)
+		return pg.Theme.Label(values.TextSizeTransform(pg.Load.IsMobileView(), values.TextSize16), title).Layout(gtx)
 	}
 }
 
