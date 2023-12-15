@@ -492,7 +492,13 @@ func (pg *WalletInfo) reloadMixerBalances() {
 }
 
 func (pg *WalletInfo) loadTransactions() {
-	txs, err := pg.wallet.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true, "")
+	mapInfo, _ := components.TxPageDropDownFields(pg.wallet.GetAssetType(), 0)
+	if len(mapInfo) == 0 {
+		log.Errorf("no tx filters for asset type (%v)", pg.wallet.GetAssetType())
+		return
+	}
+
+	txs, err := pg.wallet.GetTransactionsRaw(0, 3, mapInfo[values.String(values.StrAll)], true,  "")
 	if err != nil {
 		log.Errorf("error loading transactions: %v", err)
 		return
