@@ -72,9 +72,7 @@ func (app *AppInfo) ConvertTextSize(size unit.Sp) unit.Sp {
 		return values.TextSize16
 	case values.TextSize18:
 		return values.TextSize14
-	case values.TextSize16:
-		return values.TextSize12
-	case values.TextSize14:
+	case values.TextSize16, values.TextSize14:
 		return values.TextSize12
 	default:
 		return size
