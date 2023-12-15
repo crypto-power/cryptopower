@@ -1,7 +1,9 @@
 package exchange
 
 import (
+	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -31,11 +33,18 @@ type OrderHistoryPage struct {
 
 	materialLoader material.LoaderStyle
 
-	backButton cryptomaterial.IconButton
+	backButton   cryptomaterial.IconButton
+	searchEditor cryptomaterial.Editor
+
+	exchangeServers []instantswap.ExchangeServer
 
 	refreshClickable *cryptomaterial.Clickable
 	refreshIcon      *cryptomaterial.Image
 	statusDropdown   *cryptomaterial.DropDown
+	orderDropdown    *cryptomaterial.DropDown
+	serverDropdown   *cryptomaterial.DropDown
+	filterBtn        *cryptomaterial.Clickable
+	isFilterOpen     bool
 }
 
 func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
@@ -51,10 +60,16 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 	pageSize := int32(10)
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchOrders)
 
+	pg.searchEditor = l.Theme.SearchEditor(new(widget.Editor), values.String(values.StrSearch), l.Theme.Icons.SearchIcon)
+	pg.searchEditor.Editor.SingleLine = true
+	pg.searchEditor.TextSize = pg.ConvertTextSize(l.Theme.TextSize)
+
 	pg.materialLoader = material.Loader(l.Theme.Base)
 
 	pg.ordersList = pg.Theme.NewClickableList(layout.Vertical)
 	pg.ordersList.IsShadowEnabled = true
+
+	pg.filterBtn = l.Theme.NewClickable(false)
 
 	pg.statusDropdown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
 		{Text: api.OrderStatusWaitingForDeposit.String()},
@@ -62,8 +77,33 @@ func NewOrderHistoryPage(l *load.Load) *OrderHistoryPage {
 		{Text: api.OrderStatusNew.String()},
 		{Text: api.OrderStatusCompleted.String()},
 		{Text: api.OrderStatusExpired.String()},
-	}, values.OrderStatusDropdownGroup, 0, 10, true)
+	}, values.OrderStatusDropdownGroup, 1, 0, true)
+	// pg.statusDropdown.Width = values.MarginPadding221
 
+	pg.orderDropdown = l.Theme.DropdownWithCustomPos([]cryptomaterial.DropDownItem{
+		{Text: values.String(values.StrNewest)},
+		{Text: values.String(values.StrOldest)},
+	}, values.ProposalDropdownGroup, 1, 0, true)
+
+	if pg.statusDropdown.Reversed() {
+		pg.statusDropdown.ExpandedLayoutInset.Right = values.MarginPadding10
+	} else {
+		pg.statusDropdown.ExpandedLayoutInset.Left = values.MarginPadding10
+	}
+
+	pg.statusDropdown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropdown.CollapsedLayoutTextDirection = layout.E
+	pg.orderDropdown.Width = values.MarginPadding100
+	if l.IsMobileView() {
+		pg.orderDropdown.Width = values.MarginPadding85
+		pg.statusDropdown.Width = values.DP118
+	}
+	settingCommonDropdown(pg.Theme, pg.statusDropdown)
+	settingCommonDropdown(pg.Theme, pg.orderDropdown)
+	pg.statusDropdown.SetConvertTextSize(pg.ConvertTextSize)
+	pg.orderDropdown.SetConvertTextSize(pg.ConvertTextSize)
+
+	pg.initServerSelector()
 	return pg
 }
 
@@ -93,40 +133,80 @@ func (pg *OrderHistoryPage) HandleUserInteractions() {
 	if pg.refreshClickable.Clicked() {
 		go pg.AssetsManager.InstantSwap.Sync() // does nothing if already syncing
 	}
+
+	for _, evt := range pg.searchEditor.Editor.Events() {
+		if pg.searchEditor.Editor.Focused() {
+			switch evt.(type) {
+			case widget.ChangeEvent:
+				pg.scroll.FetchScrollData(false, pg.ParentWindow(), true)
+			}
+		}
+	}
+
+	for pg.filterBtn.Clicked() {
+		pg.isFilterOpen = !pg.isFilterOpen
+	}
+}
+
+// initWalletSelector initializes the wallet selector dropdown to enable
+// filtering proposals
+func (pg *OrderHistoryPage) initServerSelector() {
+	pg.exchangeServers = pg.AssetsManager.InstantSwap.ExchangeServers()
+
+	items := []cryptomaterial.DropDownItem{}
+	for _, server := range pg.exchangeServers {
+		item := cryptomaterial.DropDownItem{
+			Text: server.Server.CapFirstLetter(),
+			Icon: components.GetServerIcon(pg.Theme, server.Server.ToString()),
+		}
+		items = append(items, item)
+	}
+
+	pg.serverDropdown = pg.Theme.DropdownWithCustomPos(items, values.WalletsDropdownGroup, 2, 0, false)
+	pg.serverDropdown.Width = values.MarginPadding150
+	settingCommonDropdown(pg.Theme, pg.serverDropdown)
+	pg.serverDropdown.SetConvertTextSize(pg.ConvertTextSize)
 }
 
 func (pg *OrderHistoryPage) Layout(gtx C) D {
 	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
 
 	container := func(gtx C) D {
-		sp := components.SubPage{
-			Load:       pg.Load,
-			Title:      values.String(values.StrOrderHistory),
-			BackButton: pg.backButton,
-			Back: func() {
-				pg.ParentNavigator().CloseCurrentPage()
-			},
-			Body: func(gtx C) D {
-				return layout.Stack{}.Layout(gtx, layout.Expanded(pg.layout))
-			},
-		}
-
-		return cryptomaterial.LinearLayout{
-			Width:     cryptomaterial.MatchParent,
-			Height:    cryptomaterial.MatchParent,
-			Direction: layout.Center,
-		}.Layout2(gtx, func(gtx C) D {
-			return cryptomaterial.LinearLayout{
-				Width:     gtx.Dp(values.MarginPadding550),
-				Height:    cryptomaterial.MatchParent,
-				Alignment: layout.Middle,
-			}.Layout2(gtx, func(gtx C) D {
-				return sp.Layout(pg.ParentWindow(), gtx)
-			})
-		})
+		return layout.Stack{}.Layout(gtx,
+			layout.Expanded(pg.layout), // Assuming pg.layout is a valid function that matches layout.Widget
+		)
 	}
 
-	return cryptomaterial.UniformPadding(gtx, container)
+	// return cryptomaterial.LinearLayout{
+	// 	Width:     cryptomaterial.MatchParent,
+	// 	Height:    cryptomaterial.MatchParent,
+	// 	Direction: layout.Center,
+	// }.Layout2(gtx, func(gtx C) D {
+	// 	return cryptomaterial.LinearLayout{
+	// 		Width:     gtx.Dp(values.MarginPadding550),
+	// 		Height:    cryptomaterial.MatchParent,
+	// 		Alignment: layout.Middle,
+	// 	}.Layout2(gtx, func(gtx C) D {
+	// 		return cryptomaterial.UniformPadding(gtx, container)
+	// 	})
+	// })
+
+	padding := values.MarginPadding24
+	if pg.IsMobileView() {
+		padding = values.MarginPadding12
+	}
+	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		inset := layout.Inset{
+			// Top:    values.MarginPadding16,
+			Right:  padding,
+			Left:   padding,
+			Bottom: values.MarginPadding16,
+		}
+		return inset.Layout(gtx, func(gtx C) D {
+			return cryptomaterial.UniformPadding(gtx, container)
+		})
+	})
+
 }
 
 func (pg *OrderHistoryPage) layout(gtx C) D {
@@ -135,83 +215,155 @@ func (pg *OrderHistoryPage) layout(gtx C) D {
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
 	}.Layout2(gtx, func(gtx C) D {
-		return cryptomaterial.LinearLayout{
-			Width:  gtx.Dp(values.MarginPadding550),
-			Height: cryptomaterial.MatchParent,
-			Margin: layout.Inset{
-				Bottom: values.MarginPadding30,
-			},
-		}.Layout2(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Inset{}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-									layout.Flexed(1, func(gtx C) D {
-										body := func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													var text string
-													if pg.AssetsManager.InstantSwap.IsSyncing() {
-														text = values.String(values.StrSyncingState)
-													} else {
-														text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+								layout.Flexed(1, func(gtx C) D {
+									body := func(gtx C) D {
+										return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
+											layout.Rigid(func(gtx C) D {
+												var text string
+												if pg.AssetsManager.InstantSwap.IsSyncing() {
+													text = values.String(values.StrSyncingState)
+												} else {
+													text = values.String(values.StrUpdated) + " " + components.TimeAgo(pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp())
 
-														if pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
-															text = values.String(values.StrNeverSynced)
-														}
+													if pg.AssetsManager.InstantSwap.GetLastSyncedTimeStamp() == 0 {
+														text = values.String(values.StrNeverSynced)
 													}
+												}
 
-													lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
-													lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
-													return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
-												}),
+												lastUpdatedInfo := pg.Theme.Label(values.TextSize12, text)
+												lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
+												return layout.Inset{Top: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
+											}),
+											layout.Rigid(func(gtx C) D {
+												return cryptomaterial.LinearLayout{
+													Width:     cryptomaterial.WrapContent,
+													Height:    cryptomaterial.WrapContent,
+													Clickable: pg.refreshClickable,
+													Direction: layout.Center,
+													Alignment: layout.Middle,
+													Margin:    layout.Inset{Left: values.MarginPadding10},
+												}.Layout(gtx,
+													layout.Rigid(func(gtx C) D {
+														if pg.AssetsManager.InstantSwap.IsSyncing() {
+															gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
+															gtx.Constraints.Min.X = gtx.Constraints.Max.X
+															return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
+														}
+														return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+															return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
+														})
+													}),
+												)
+											}),
+										)
+									}
+									return layout.E.Layout(gtx, body)
+								}),
+							)
+						}),
+						layout.Flexed(1, func(gtx C) D {
+							return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+								return layout.Stack{}.Layout(gtx,
+									layout.Expanded(func(gtx C) D {
+										return layout.Inset{
+											// Top: values.MarginPadding16,
+										}.Layout(gtx, func(gtx C) D {
+											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 												layout.Rigid(func(gtx C) D {
-													return cryptomaterial.LinearLayout{
-														Width:     cryptomaterial.WrapContent,
-														Height:    cryptomaterial.WrapContent,
-														Clickable: pg.refreshClickable,
-														Direction: layout.Center,
-														Alignment: layout.Middle,
-														Margin:    layout.Inset{Left: values.MarginPadding10},
-													}.Layout(gtx,
-														layout.Rigid(func(gtx C) D {
-															if pg.AssetsManager.InstantSwap.IsSyncing() {
-																gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding8)
-																gtx.Constraints.Min.X = gtx.Constraints.Max.X
-																return layout.Inset{Bottom: values.MarginPadding1}.Layout(gtx, pg.materialLoader.Layout)
-															}
-															return layout.Inset{Right: values.MarginPadding16}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-																return pg.refreshIcon.LayoutSize(gtx, values.MarginPadding18)
-															})
-														}),
-													)
+													topInset := values.MarginPadding50
+													if !pg.isFilterOpen && pg.IsMobileView() {
+														return layout.Spacer{Height: topInset}.Layout(gtx)
+													}
+													if pg.IsMobileView() && pg.isFilterOpen {
+														topInset = values.MarginPadding80
+													}
+													return layout.Inset{
+														Top: topInset,
+													}.Layout(gtx, pg.searchEditor.Layout)
 												}),
+												layout.Rigid(pg.layoutHistory),
 											)
-										}
-										return layout.E.Layout(gtx, body)
+										})
 									}),
+									layout.Stacked(pg.dropdownLayout),
 								)
-							}),
-							layout.Flexed(1, func(gtx C) D {
-								return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-									return layout.Stack{}.Layout(gtx,
-										layout.Expanded(func(gtx C) D {
-											return layout.Inset{
-												Top: values.MarginPadding60,
-											}.Layout(gtx, pg.layoutHistory)
-										}),
-										layout.Expanded(pg.statusDropdown.Layout),
-									)
-								})
-							}),
-						)
-					})
-				}),
-			)
-		})
+							})
+						}),
+					)
+				})
+			}),
+		)
 	})
+}
+
+func (pg *OrderHistoryPage) dropdownLayout(gtx C) D {
+	if pg.IsMobileView() {
+		return layout.Stack{}.Layout(gtx,
+			layout.Stacked(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Inset{Top: values.MarginPadding40}.Layout(gtx, pg.rightDropdown)
+			}),
+			layout.Expanded(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.leftDropdown(gtx)
+			}),
+		)
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(pg.leftDropdown),
+		layout.Rigid(pg.rightDropdown),
+	)
+}
+
+func (pg *OrderHistoryPage) leftDropdown(gtx C) D {
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if pg.serverDropdown == nil {
+				return D{}
+			}
+			return layout.W.Layout(gtx, pg.serverDropdown.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if !pg.IsMobileView() {
+				return D{}
+			}
+			icon := pg.Theme.Icons.FilterOffImgIcon
+			if pg.isFilterOpen {
+				icon = pg.Theme.Icons.FilterImgIcon
+			}
+			return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
+			})
+		}),
+	)
+}
+
+func (pg *OrderHistoryPage) rightDropdown(gtx C) D {
+	if !pg.isFilterOpen && pg.IsMobileView() {
+		return D{}
+	}
+	return layout.E.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(pg.statusDropdown.Layout),
+			layout.Rigid(pg.orderDropdown.Layout),
+		)
+	})
+}
+
+func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
+	drodown.FontWeight = font.SemiBold
+	drodown.Hoverable = false
+	drodown.SelectedItemIconColor = &t.Color.Primary
+	drodown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	drodown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	drodown.Background = &t.Color.Surface
 }
 
 func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.Order, int, bool, error) {
@@ -241,6 +393,7 @@ func (pg *OrderHistoryPage) fetchOrders(offset, pageSize int32) ([]*instantswap.
 		pg.previousStatus = statusFilter
 	}
 
+	// searchKey := pg.searchEditor.Editor.Text()
 	orders := components.LoadOrders(pg.Load, offset, pageSize, true, statusFilter)
 	return orders, len(orders), isReset, nil
 }

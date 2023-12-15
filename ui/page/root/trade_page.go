@@ -21,6 +21,7 @@ const (
 var tabTitles = []string{
 	values.String(values.StrDcrDex),
 	values.String(values.StrCentralizedExchange),
+	values.String(values.StrTradeHistory),
 }
 
 type TradePage struct {
@@ -52,8 +53,13 @@ func NewTradePage(l *load.Load) *TradePage {
 			},
 		},
 	}
+	filteredTabTitles := tabTitles
+	if l.IsMobileView() {
+		// Remove the first item for mobile view
+		filteredTabTitles = filteredTabTitles[1:]
+	}
 
-	pg.tab = l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup)
+	pg.tab = l.Theme.SegmentedControl(filteredTabTitles, cryptomaterial.SegmentTypeGroup)
 
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)
@@ -78,10 +84,7 @@ func (pg *TradePage) ID() string {
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedTo() {
 	// on mobile view, we display the cex tab by default
-	if pg.IsMobileView() {
-		pg.tab.SetSelectedSegment(tabTitles[1])
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
-	} else if activeTab := pg.CurrentPage(); activeTab != nil {
+	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
 		pg.Display(dcrdex.NewDEXPage(pg.Load))
@@ -94,10 +97,24 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
-	if pg.tab.SelectedIndex() == 0 && pg.CurrentPageID() != dcrdex.DCRDEXPageID {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
-	} else if pg.CurrentPageID() != exchange.CreateOrderPageID && pg.tab.SelectedIndex() == 1 {
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
+	selectedIndex := pg.tab.SelectedIndex()
+	if pg.IsMobileView() {
+		selectedIndex++ // Adjust index for mobile view
+	}
+
+	switch selectedIndex {
+	case 0: // DCRDEX
+		if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
+			pg.Display(dcrdex.NewDEXPage(pg.Load))
+		}
+	case 1: // Centralized Exchange
+		if pg.CurrentPageID() != exchange.CreateOrderPageID {
+			pg.Display(exchange.NewCreateOrderPage(pg.Load))
+		}
+	case 2: // Trade History
+		if pg.CurrentPageID() != exchange.OrderHistoryPageID {
+			pg.Display(exchange.NewOrderHistoryPage(pg.Load))
+		}
 	}
 
 	pg.CurrentPage().HandleUserInteractions()
@@ -147,9 +164,5 @@ func (pg *TradePage) layoutMobile(gtx C) D {
 }
 
 func (pg *TradePage) sectionNavTab(gtx C) D {
-	if pg.IsMobileView() { // Will DCRDEX be supported on mobile?
-		return D{}
-	}
-
 	return pg.tab.GroupTileLayout(gtx)
 }
