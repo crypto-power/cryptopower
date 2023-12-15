@@ -257,12 +257,14 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 		return D{}
 	}
 
+	dp16 := values.MarginPaddingTransform(l.IsMobileView(), values.MarginPadding16)
 	txStatus := TransactionTitleIcon(l, wal, tx)
 	amount := wal.ToAmount(tx.Amount).String()
 	assetIcon := CoinImageBySymbol(l, wal.GetAssetType(), wal.IsWatchingOnlyWallet())
 	walName := l.Theme.Label(values.TextSize12, wal.GetWalletName())
 	grayText := l.Theme.Color.GrayText2
 	insetLeft := values.MarginPadding16
+
 	if !hideTxAssetInfo {
 		insetLeft = values.MarginPadding8
 	}
@@ -273,7 +275,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 		Height:      cryptomaterial.WrapContent,
 		Alignment:   layout.Middle,
 		Padding: layout.Inset{
-			Top:    values.MarginPadding16,
+			Top:    dp16,
 			Bottom: values.MarginPadding10,
 		},
 	}.Layout(gtx,
@@ -355,7 +357,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 			)
 		}),
 		layout.Flexed(1, func(gtx C) D {
-			txSize := values.TextSize16
+			txSize := l.ConvertTextSize(values.TextSize16)
 			if !hideTxAssetInfo {
 				txSize = values.TextSize12
 			}

@@ -95,7 +95,7 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
-	pg.toBackup.TextSize = values.TextSize14
+	pg.toBackup.TextSize = pg.ConvertTextSize(values.TextSize14)
 
 	pg.viewAllTxButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
 	pg.viewAllTxButton.Font.Weight = font.Medium
@@ -150,23 +150,21 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-			items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
+		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
-			if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
-				items = append(items, layout.Rigid(pg.mixerLayout))
-			}
+		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+			items = append(items, layout.Rigid(pg.mixerLayout))
+		}
 
-			if len(pg.transactions) > 0 {
-				items = append(items, layout.Rigid(pg.recentTransactionLayout))
-			}
+		if len(pg.transactions) > 0 {
+			items = append(items, layout.Rigid(pg.recentTransactionLayout))
+		}
 
-			if len(pg.stakes) > 0 {
-				items = append(items, layout.Rigid(pg.recentStakeLayout))
-			}
+		if len(pg.stakes) > 0 {
+			items = append(items, layout.Rigid(pg.recentStakeLayout))
+		}
 
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		})
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
 }
 
@@ -531,4 +529,7 @@ func (pg *WalletInfo) OnNavigatedFrom() {
 	pg.wallet.RemoveSyncProgressListener(InfoID)
 	pg.wallet.RemoveTxAndBlockNotificationListener(InfoID)
 	pg.wallet.SetBlocksRescanProgressListener(nil)
+	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+		pg.wallet.(*dcr.Asset).RemoveAccountMixerNotificationListener(InfoID)
+	}
 }
