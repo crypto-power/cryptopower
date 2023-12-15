@@ -249,7 +249,7 @@ func TransactionTitleIcon(l *load.Load, wal sharedW.Asset, tx *sharedW.Transacti
 // LayoutTransactionRow is a single transaction row on the transactions and overview
 // page. It lays out a transaction's direction, balance, status. hideTxAssetInfo
 // determines if the transaction should display additional information about the tx
-// such as the wallet the tx belong to etc. This is usefil on pages where
+// such as the wallet the tx belong to etc. This is useful on pages where
 // the tx is displayed from multi wallets.
 func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Transaction, hideTxAssetInfo bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -310,7 +310,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 						Direction:   layout.W,
 					}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							if hideTxAssetInfo {
+							if tx.Type == txhelper.TxTypeRegular {
 								return D{}
 							}
 
@@ -323,12 +323,12 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 							return walBalTxt.Layout(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if dcrAsset, ok := wal.(*dcr.Asset); ok && !hideTxAssetInfo {
+							if dcrAsset, ok := wal.(*dcr.Asset); ok {
 								if ok, _ := dcrAsset.TicketHasVotedOrRevoked(tx.Hash); ok {
 									return layout.Inset{
 										Left: values.MarginPadding4,
 									}.Layout(gtx, func(gtx C) D {
-										ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+										ic := cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 										ic.Color = grayText
 										return ic.Layout(gtx, values.MarginPadding6)
 									})
@@ -342,7 +342,7 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 								ticketSpender, _ = dcrAsset.TicketSpender(tx.Hash)
 							}
 
-							if ticketSpender == nil || hideTxAssetInfo {
+							if ticketSpender == nil {
 								return D{}
 							}
 							amnt := wal.ToAmount(ticketSpender.VoteReward).ToCoin()
@@ -400,21 +400,22 @@ func LayoutTransactionRow(gtx C, l *load.Load, wal sharedW.Asset, tx *sharedW.Tr
 							layout.Rigid(func(gtx C) D {
 								return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 									layout.Rigid(func(gtx C) D {
-										if isStaking {
-											if hideTxAssetInfo {
-												title := values.String(values.StrRevoke)
-												if tx.Type == txhelper.TxTypeVote {
-													title = values.String(values.StrVote)
-												}
+										if !isStaking {
+											return status.Layout(gtx)
+										}
 
-												lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize16), fmt.Sprintf("%dd to %s", tx.DaysToVoteOrRevoke, title))
-												lbl.Color = grayText
-												return lbl.Layout(gtx)
-											}
+										if !hideTxAssetInfo {
 											return txStakingStatus(gtx, l, wal, tx)
 										}
 
-										return status.Layout(gtx)
+										title := values.String(values.StrRevoke)
+										if tx.Type == txhelper.TxTypeVote {
+											title = values.String(values.StrVote)
+										}
+
+										lbl := l.Theme.Label(l.ConvertTextSize(values.TextSize16), fmt.Sprintf("%dd to %s", tx.DaysToVoteOrRevoke, title))
+										lbl.Color = grayText
+										return lbl.Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
 										return layout.Inset{Left: values.MarginPadding7}.Layout(gtx, statusIcon.Layout12dp)

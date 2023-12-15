@@ -150,7 +150,7 @@ func (s *Slider) selectedItemIndicatorLayout(gtx C) D {
 		}.Layout(gtx, func(gtx C) D {
 			list := &layout.List{Axis: layout.Horizontal}
 			return list.Layout(gtx, len(s.slideItems), func(gtx C, i int) D {
-				ic := NewIcon(s.t.Icons.ImageBrightness1)
+				ic := NewIcon(s.t.Icons.DotIcon)
 				ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
 				if i == s.selected {
 					ic.Color = s.SelectedIndicatorColor

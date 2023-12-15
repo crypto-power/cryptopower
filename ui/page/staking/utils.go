@@ -207,7 +207,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 				Right: values.MarginPadding5,
 				Left:  values.MarginPadding5,
 			}.Layout(gtx, func(gtx C) D {
-				ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+				ic := cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 				ic.Color = col
 				return ic.Layout(gtx, values.MarginPadding6)
 			})

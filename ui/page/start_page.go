@@ -599,7 +599,7 @@ func (sp *startPage) currentPageIndicatorLayout(gtx C) D {
 				return D{}
 			}
 
-			ic := cryptomaterial.NewIcon(sp.Theme.Icons.ImageBrightness1)
+			ic := cryptomaterial.NewIcon(sp.Theme.Icons.DotIcon)
 			ic.Color = values.TransparentColor(values.TransparentBlack, 0.2)
 			if i == sp.currentPageIndex {
 				ic.Color = sp.Theme.Color.Primary
