@@ -14,7 +14,7 @@ import (
 )
 
 func (pg *WalletInfo) initWalletStatusWidgets() {
-	pg.walletStatusIcon = cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
+	pg.walletStatusIcon = cryptomaterial.NewIcon(pg.Theme.Icons.DotIcon)
 	pg.syncSwitch = pg.Theme.Switch()
 }
 
