@@ -124,5 +124,8 @@ func (pg *Page) Layout(gtx C) D {
 	if !pg.isGovernanceAPIAllowed() {
 		return cryptomaterial.UniformPadding(gtx, pg.splashScreen)
 	}
-	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
+
+	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
+		return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
+	})
 }

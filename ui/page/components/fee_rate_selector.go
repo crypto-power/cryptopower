@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -91,6 +90,7 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 	fs.ratesEditor.Bordered = false
 	fs.ratesEditor.Editor.SingleLine = true
 	fs.ratesEditor.TextSize = values.TextSize14
+	fs.ratesEditor.IsTitleLabel = false
 
 	return fs
 }
@@ -125,13 +125,20 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 					layoutBody := func(gtx C) D {
 						return layout.Flex{}.Layout(gtx,
 							layout.Flexed(.8, func(gtx C) D {
-								border := cryptomaterial.Border{Color: fs.Load.Theme.Color.Gray2, Width: values.MarginPadding1, Radius: cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}}
+								border := cryptomaterial.Border{
+									Color: fs.Load.Theme.Color.Gray2,
+									Width: values.MarginPadding1,
+									Radius: cryptomaterial.CornerRadius{
+										TopRight:    0,
+										TopLeft:     8,
+										BottomRight: 0,
+										BottomLeft:  8,
+									},
+								}
 								return border.Layout(gtx, func(gtx C) D {
 									return layout.Inset{
-										Top:    values.MarginPadding7,
-										Bottom: values.MarginPadding7,
-										Right:  values.MarginPadding12,
-										Left:   values.MarginPadding12,
+										Top:    values.MarginPadding4,
+										Bottom: values.MarginPadding4,
 									}.Layout(gtx, fs.ratesEditor.Layout)
 								})
 							}),
@@ -142,37 +149,40 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 							}),
 						)
 					}
+					// Fee rate fatching not currently supported by LTC
+					// TODO: Add fee rate API query for LTC
+					if fs.selectedWalletType() == libutils.LTCWalletAsset {
+						return layoutBody(gtx)
+					}
+
 					if fs.feeRateSwitch.SelectedSegment() == values.String(values.StrFetched) {
-						fs.fetchedRatesDropDown.Width = unit.Dp(gtx.Constraints.Max.X) / 2
+						fs.fetchedRatesDropDown.Width = values.MarginPadding510
 						layoutBody = fs.fetchedRatesDropDown.Layout
 					}
-					if !fs.isFeerateAPIApproved() || fs.selectedWalletType() == libutils.LTCWalletAsset || fs.selectedWalletType() == libutils.DCRWalletAsset {
-						gtx = gtx.Disabled()
-					}
+
 					return fs.feeRateSwitch.Layout(gtx, layoutBody)
 				}),
 				layout.Rigid(func(gtx C) D {
-					txt := fmt.Sprintf("Priority: %s, Transaction Size: %s", fs.priority, fs.EstSignedSize)
+					col := fs.Theme.Color.GrayText2
+					txSize := values.StringF(values.StrTxSize, fmt.Sprintf(": %s", fs.EstSignedSize))
+					priority := values.StringF(values.StrPriority, fmt.Sprintf(": %s", fs.priority))
+					txt := fmt.Sprintf("%s, %s", priority, txSize)
 					if fs.showSizeAndCost {
 						feeText := fs.TxFee
 						if fs.USDExchangeSet {
-							feeText = fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD)
+							feeText = values.StringF(values.StrCost, fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD))
 						}
-						txt = fmt.Sprintf("Priority: %s, Transaction Size: %s, Cost: %s", fs.priority, fs.EstSignedSize, feeText)
+						txt = fmt.Sprintf("%s, %s, %s", priority, txSize, feeText)
 					}
-					lbl := fs.Theme.Label(values.TextSize14, txt)
-					lbl.Color = fs.Theme.Color.GrayText2
 
 					// update label text and color if any of the conditions are met below
 					if !fs.isFeerateAPIApproved() {
-						lbl.Text = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
-						lbl.Color = fs.Theme.Color.Danger
-					} else if fs.selectedWalletType() == libutils.LTCWalletAsset || fs.selectedWalletType() == libutils.DCRWalletAsset {
-						// TODO: Add fee rate API query for LTC
-						lbl.Text = values.StringF(values.StrNotSupported, values.String(values.StrFeeRateAPI))
-						lbl.Color = fs.Theme.Color.Danger
+						txt = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
+						col = fs.Theme.Color.Danger
 					}
 
+					lbl := fs.Theme.Label(values.TextSize14, txt)
+					lbl.Color = col
 					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 						layout.Flexed(1, func(gtx C) D {
 							return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {

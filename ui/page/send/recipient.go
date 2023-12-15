@@ -177,7 +177,6 @@ func (rp *recipient) amountValidationError(err string) {
 
 func (rp *recipient) addressValidationError(err string) {
 	rp.sendDestination.setError(err)
-	rp.sendDestination.destinationAddressEditor.Editor.Focus()
 }
 
 func (rp *recipient) resetDestinationAccountSelector() {
@@ -200,29 +199,27 @@ func (rp *recipient) recipientLayout(index int, showIcon bool, window app.Window
 			}),
 			layout.Rigid(func(gtx C) D {
 				layoutBody := func(gtx C) D {
-					return rp.contentWrapper(gtx, "Destination Address", rp.sendDestination.destinationAddressEditor.Layout)
+					txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrAddress))
+					return rp.contentWrapper(gtx, txt, rp.sendDestination.destinationAddressEditor.Layout)
 				}
 				if !rp.sendDestination.sendToAddress {
 					layoutBody = rp.walletAccountlayout(window)
 				}
 				return rp.sendDestination.accountSwitch.Layout(gtx, layoutBody)
 			}),
-			layout.Rigid(func(gtx C) D {
-				return rp.addressAndAmountlayout(gtx)
-			}),
+			layout.Rigid(rp.addressAndAmountlayout),
 			layout.Rigid(rp.txLabelSection),
 		)
 	}
 }
 
 func (rp *recipient) topLayout(gtx C, index int) D {
-	titleTxt := rp.Theme.Label(values.TextSize16, fmt.Sprintf("To: Recipient %v", index))
+	txt := fmt.Sprintf("%s: %s %v", values.String(values.StrTo), values.String(values.StrRecipient), index)
+	titleTxt := rp.Theme.Label(values.TextSize16, txt)
 	titleTxt.Color = rp.Theme.Color.GrayText2
 
 	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return titleTxt.Layout(gtx)
-		}),
+		layout.Rigid(titleTxt.Layout),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, rp.Theme.Icons.DeleteIcon.Layout20dp)
 		}),
@@ -237,7 +234,8 @@ func (rp *recipient) walletAccountlayout(window app.WindowNavigator) layout.Widg
 			Orientation: layout.Vertical,
 		}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return rp.contentWrapper(gtx, "Destination Wallet", func(gtx C) D {
+				txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrWallet))
+				return rp.contentWrapper(gtx, txt, func(gtx C) D {
 					return rp.sendDestination.destinationWalletSelector.Layout(window, gtx)
 				})
 			}),
@@ -268,11 +266,7 @@ func (rp *recipient) contentWrapper(gtx C, title string, content layout.Widget) 
 }
 
 func (rp *recipient) addressAndAmountlayout(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return rp.contentWrapper(gtx, "Amount", rp.amount.amountEditor.Layout)
-		}),
-	)
+	return rp.contentWrapper(gtx, values.String(values.StrAmount), rp.amount.amountEditor.Layout)
 }
 
 func (rp *recipient) txLabelSection(gtx C) D {
