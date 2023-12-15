@@ -59,6 +59,7 @@ type TransactionsPage struct {
 	orderDropDown  *cryptomaterial.DropDown
 	walletDropDown *cryptomaterial.DropDown
 	filterBtn      *cryptomaterial.Clickable
+	exportBtn      *cryptomaterial.Clickable
 	isFilterOpen   bool
 	searchEditor   cryptomaterial.Editor
 
@@ -104,6 +105,7 @@ func NewTransactionsPage(l *load.Load, wallet sharedW.Asset) *TransactionsPage {
 
 	pg.scroll = components.NewScroll(l, pageSize, pg.fetchTransactions)
 	pg.filterBtn = l.Theme.NewClickable(false)
+	pg.exportBtn = l.Theme.NewClickable(false)
 	pg.transactionList.Radius = cryptomaterial.Radius(14)
 	pg.transactionList.IsShadowEnabled = true
 
@@ -381,12 +383,12 @@ func (pg *TransactionsPage) dropdownLayout(gtx C) D {
 }
 
 func (pg *TransactionsPage) leftDropdown(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween, Alignment: layout.Middle}.Layout(gtx,
+	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if pg.isShowTitle && pg.IsMobileView() {
 				lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrTransactions))
 				lbl.Font.Weight = font.Bold
-				return layout.Center.Layout(gtx, lbl.Layout)
+				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, lbl.Layout)
 			}
 			if pg.walletDropDown == nil {
 				return D{}
@@ -398,11 +400,41 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 			if pg.isFilterOpen {
 				icon = pg.Theme.Icons.FilterImgIcon
 			}
-			return layout.Center.Layout(gtx, func(gtx C) D {
-				return pg.filterBtn.Layout(gtx, icon.Layout16dp)
+			return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						margin := values.MarginPadding20
+						if pg.IsMobileView() {
+							margin = values.MarginPadding12
+						}
+						return layout.Inset{Right: margin}.Layout(gtx, func(gtx C) D {
+							return pg.filterBtn.Layout(gtx, pg.buttonWrap(icon, values.String(values.StrFilter)))
+						})
+					}),
+					layout.Rigid(func(gtx C) D {
+						return pg.exportBtn.Layout(gtx, pg.buttonWrap(pg.Theme.Icons.ShareIcon, values.String(values.StrExport)))
+					}),
+				)
 			})
 		}),
 	)
+}
+
+func (pg *TransactionsPage) buttonWrap(icon *cryptomaterial.Image, title string) layout.Widget {
+	return func(gtx C) D {
+		lbl := pg.Theme.Label(pg.ConvertTextSize(values.TextSize14), title)
+		lbl.Font.Weight = font.Bold
+		lbl.Color = pg.Theme.Color.GrayText1
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(icon.Layout16dp),
+			layout.Rigid(func(gtx C) D {
+				if pg.IsMobileView() {
+					return D{}
+				}
+				return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, lbl.Layout)
+			}),
+		)
+	}
 }
 
 func (pg *TransactionsPage) rightDropdown(gtx C) D {
@@ -575,6 +607,10 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 
 	for pg.filterBtn.Clicked() {
 		pg.isFilterOpen = !pg.isFilterOpen
+	}
+
+	for pg.exportBtn.Clicked() {
+		// TODO: implement logic when export clicked
 	}
 
 	if pg.orderDropDown.Changed() {

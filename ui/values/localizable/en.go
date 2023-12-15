@@ -876,4 +876,6 @@ const EN = `
 "DEXInitErrorMsg" = "Something unexpected happened, please restart the Cryptopower Wallet."
 "txRegular" = "Regular Transactions"
 "stakingTx" = "Staking Transactions"
+"filter" = "Filter"
+"export" = "Export"
 `

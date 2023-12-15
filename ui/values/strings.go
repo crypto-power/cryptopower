@@ -985,4 +985,6 @@ const (
 	StrDEXInitErrorMsg                 = "DEXInitErrorMsg"
 	StrTxRegular                       = "txRegular"
 	StrstakingTx                       = "stakingTx"
+	StrFilter                          = "filter"
+	StrExport                          = "export"
 )
