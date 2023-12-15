@@ -634,7 +634,7 @@ func (pg *ProposalDetails) layoutDescription(gtx C) D {
 	} else {
 		loading := func(gtx C) D {
 			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx, layout.Flexed(1, func(gtx C) D {
-				return components.UniformVeticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
+				return components.VerticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
 					return layout.Center.Layout(gtx, material.Loader(pg.Theme.Base).Layout)
 				})
 			}))

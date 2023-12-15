@@ -47,22 +47,21 @@ func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, b
 }
 
 func (pg *Page) ticketListLayout(gtx C) D {
+	isMobile := pg.IsMobileView()
+	margin24 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding24)
 	return layout.Inset{
 		Bottom: values.MarginPadding8,
 	}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return layout.Inset{
-				Left:   values.MarginPadding26,
-				Top:    values.MarginPadding26,
-				Bottom: values.MarginPadding26,
-			}.Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(margin24).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize20, values.String(values.StrTickets))
+						txt := pg.Theme.Label(values.TextSizeTransform(isMobile, values.TextSize20), values.String(values.StrTickets))
 						txt.Font.Weight = font.SemiBold
-						return layout.Inset{Bottom: values.MarginPadding18}.Layout(gtx, txt.Layout)
+						return txt.Layout(gtx)
 					}),
+					layout.Rigid(layout.Spacer{Height: margin24}.Layout),
 					layout.Rigid(func(gtx C) D {
 						if pg.scroll.ItemsCount() <= 0 {
 							gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -76,7 +75,6 @@ func (pg *Page) ticketListLayout(gtx C) D {
 						tickets := pg.scroll.FetchedData()
 						return pg.ticketsList.Layout(gtx, len(tickets), func(gtx C, index int) D {
 							ticket := tickets[index]
-
 							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 								// gray separator line
 								layout.Rigid(func(gtx C) D {

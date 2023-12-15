@@ -86,16 +86,16 @@ func (c Container) Layout(gtx layout.Context, w layout.Widget) layout.Dimensions
 	return c.Padding.Layout(gtx, w)
 }
 
-// UniformHorizontalInset creates an inset with the specified amount applied uniformly to both the left and right edges.
+// HorizontalInset creates an inset with the specified amount applied uniformly to both the left and right edges.
 // This function is useful for ensuring consistent horizontal padding or margin around elements, without affecting the vertical spacing.
-func UniformHorizontalInset(v unit.Dp) layout.Inset {
+func HorizontalInset(v unit.Dp) layout.Inset {
 	return layout.Inset{Right: v, Left: v}
 }
 
-// UniformVeticalInset creates an inset with the specified amount applied uniformly to both the top and bottom edges.
+// VerticalInset creates an inset with the specified amount applied uniformly to both the top and bottom edges.
 // This function is useful for ensuring consistent vetical padding or margin around elements, without affecting the horizontal spacing.
-func UniformVeticalInset(v unit.Dp) layout.Inset {
-	return layout.Inset{Right: v, Left: v}
+func VerticalInset(v unit.Dp) layout.Inset {
+	return layout.Inset{Top: v, Bottom: v}
 }
 
 func UniformPadding(gtx layout.Context, body layout.Widget) layout.Dimensions {

@@ -188,9 +188,6 @@ func (pg *Page) Layout(gtx C) D {
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.IsMobileView() {
-			return pg.layoutMobile(gtx)
-		}
 		return pg.layoutDesktop(gtx)
 	})
 
@@ -217,28 +214,13 @@ func (pg *Page) layoutDesktop(gtx C) D {
 	})
 }
 
-func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	widgets := []layout.Widget{
-		pg.stakePriceSection,
-		pg.ticketListLayout,
-	}
-
-	return components.UniformMobile(gtx, true, true, func(gtx layout.Context) layout.Dimensions {
-		return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-			return pg.scroll.List().Layout(gtx, len(widgets), func(gtx C, i int) D {
-				return widgets[i](gtx)
-			})
-		})
-	})
-}
-
 func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	return layout.Inset{
 		Bottom: values.MarginPadding16,
 	}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.UniformInset(values.MarginPadding24).Layout(gtx, body)
+			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding24)).Layout(gtx, body)
 		})
 	})
 }

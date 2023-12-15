@@ -168,7 +168,7 @@ func (pg *AccountMixerPage) mixerProgressBarLayout(gtx C) D {
 	pb := pg.Theme.MultiLayerProgressBar(totalAmount, items)
 	pb.ShowOverLayValue = true
 	pb.Height = values.MarginPadding18
-	return pb.Layout(gtx, labelWdg)
+	return pb.Layout(gtx, pg.IsMobileView(), labelWdg)
 }
 
 func (pg *AccountMixerPage) mixerHeaderContent() layout.FlexChild {
