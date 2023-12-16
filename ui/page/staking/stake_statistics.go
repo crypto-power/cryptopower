@@ -45,14 +45,14 @@ func (pg *Page) stakeStatisticsSection(gtx C) D {
 				var flexChilds []layout.FlexChild
 				if isMobile {
 					flexChilds = []layout.FlexChild{
-						pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, uminedItem, isMobile),
-						pg.dataStatisticsCol(gtx, votedItem, immatureItem, expiredItem, isMobile),
+						pg.dataStatisticsCol(totalRewardItem, revokedItem, uminedItem, isMobile),
+						pg.dataStatisticsCol(votedItem, immatureItem, expiredItem, isMobile),
 					}
 				} else {
 					flexChilds = []layout.FlexChild{
-						pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, nil, isMobile),
-						pg.dataStatisticsCol(gtx, uminedItem, votedItem, nil, isMobile),
-						pg.dataStatisticsCol(gtx, immatureItem, expiredItem, nil, isMobile),
+						pg.dataStatisticsCol(totalRewardItem, revokedItem, nil, isMobile),
+						pg.dataStatisticsCol(uminedItem, votedItem, nil, isMobile),
+						pg.dataStatisticsCol(immatureItem, expiredItem, nil, isMobile),
 					}
 				}
 				return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx, flexChilds...) // layout.Rigid(func(gtx C) D {
@@ -61,7 +61,7 @@ func (pg *Page) stakeStatisticsSection(gtx C) D {
 	})
 }
 
-func (pg *Page) dataStatisticsCol(gtx C, item1, item2, item3 *statisticsItem, isMobile bool) layout.FlexChild {
+func (pg *Page) dataStatisticsCol(item1, item2, item3 *statisticsItem, isMobile bool) layout.FlexChild {
 	spacerHeight := values.MarginPaddingTransform(isMobile, values.MarginPadding24)
 	return layout.Rigid(func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
