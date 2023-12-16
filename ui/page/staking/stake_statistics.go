@@ -42,50 +42,46 @@ func (pg *Page) stakeStatisticsSection(gtx C) D {
 				}.Layout(gtx, txt.Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						if isMobile {
-							return pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, uminedItem, isMobile)
-						}
-						return pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, nil, isMobile)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if isMobile {
-							return pg.dataStatisticsCol(gtx, votedItem, immatureItem, expiredItem, isMobile)
-						}
-						return pg.dataStatisticsCol(gtx, uminedItem, votedItem, nil, isMobile)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if isMobile {
-							return D{}
-						}
-						return pg.dataStatisticsCol(gtx, immatureItem, expiredItem, nil, isMobile)
-					}),
-				)
+				var flexChilds []layout.FlexChild
+				if isMobile {
+					flexChilds = []layout.FlexChild{
+						pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, uminedItem, isMobile),
+						pg.dataStatisticsCol(gtx, votedItem, immatureItem, expiredItem, isMobile),
+					}
+				} else {
+					flexChilds = []layout.FlexChild{
+						pg.dataStatisticsCol(gtx, totalRewardItem, revokedItem, nil, isMobile),
+						pg.dataStatisticsCol(gtx, uminedItem, votedItem, nil, isMobile),
+						pg.dataStatisticsCol(gtx, immatureItem, expiredItem, nil, isMobile),
+					}
+				}
+				return layout.Flex{Axis: layout.Horizontal, Spacing: layout.SpaceBetween}.Layout(gtx, flexChilds...) // layout.Rigid(func(gtx C) D {
 			}),
 		)
 	})
 }
 
-func (pg *Page) dataStatisticsCol(gtx C, item1, item2, item3 *statisticsItem, isMobile bool) D {
+func (pg *Page) dataStatisticsCol(gtx C, item1, item2, item3 *statisticsItem, isMobile bool) layout.FlexChild {
 	spacerHeight := values.MarginPaddingTransform(isMobile, values.MarginPadding24)
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return pg.dataStatisticsItem(gtx, item1)
-		}),
-		layout.Rigid(layout.Spacer{Height: spacerHeight}.Layout),
-		layout.Rigid(func(gtx C) D {
-			return pg.dataStatisticsItem(gtx, item2)
-		}),
-		layout.Rigid(func(gtx C) D {
-			if item3 == nil {
-				return D{}
-			}
-			return layout.Inset{Top: spacerHeight}.Layout(gtx, func(gtx C) D {
-				return pg.dataStatisticsItem(gtx, item3)
-			})
-		}),
-	)
+	return layout.Rigid(func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return pg.dataStatisticsItem(gtx, item1)
+			}),
+			layout.Rigid(layout.Spacer{Height: spacerHeight}.Layout),
+			layout.Rigid(func(gtx C) D {
+				return pg.dataStatisticsItem(gtx, item2)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if item3 == nil {
+					return D{}
+				}
+				return layout.Inset{Top: spacerHeight}.Layout(gtx, func(gtx C) D {
+					return pg.dataStatisticsItem(gtx, item3)
+				})
+			}),
+		)
+	})
 }
 
 func (pg *Page) dataStatisticsItem(gtx C, item *statisticsItem) D {
