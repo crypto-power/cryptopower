@@ -289,10 +289,7 @@ func (pg *ConsensusPage) FetchAgendas() {
 	selectedType := pg.statusDropDown.Selected()
 	pg.isSyncing = true
 
-	orderNewest := true
-	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
-		orderNewest = false
-	}
+	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
 	// Fetch (or re-fetch) agendas in background as this makes
 	// a network call. Refresh the window once the call completes.

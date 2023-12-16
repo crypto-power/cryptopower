@@ -243,10 +243,7 @@ func (pg *TransactionsPage) fetchTransactions(offset, pageSize int32) (txs []*mu
 		pg.previousTxFilter = pg.txFilter
 	}
 
-	orderNewest := true
-	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
-		orderNewest = false
-	}
+	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
 	wal := pg.selectedWallet
 	if wal == nil {
@@ -408,11 +405,11 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 							margin = values.MarginPadding12
 						}
 						return layout.Inset{Right: margin}.Layout(gtx, func(gtx C) D {
-							return pg.filterBtn.Layout(gtx, pg.buttonWrap(icon, values.String(values.StrFilter)))
+							return pg.buttonWrap(gtx, pg.filterBtn, icon, values.String(values.StrFilter))
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						return pg.exportBtn.Layout(gtx, pg.buttonWrap(pg.Theme.Icons.ShareIcon, values.String(values.StrExport)))
+						return pg.buttonWrap(gtx, pg.exportBtn, pg.Theme.Icons.ShareIcon, values.String(values.StrExport))
 					}),
 				)
 			})
@@ -420,21 +417,25 @@ func (pg *TransactionsPage) leftDropdown(gtx C) D {
 	)
 }
 
-func (pg *TransactionsPage) buttonWrap(icon *cryptomaterial.Image, title string) layout.Widget {
-	return func(gtx C) D {
-		lbl := pg.Theme.Label(pg.ConvertTextSize(values.TextSize14), title)
-		lbl.Font.Weight = font.Bold
-		lbl.Color = pg.Theme.Color.GrayText1
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(icon.Layout16dp),
-			layout.Rigid(func(gtx C) D {
-				if pg.IsMobileView() {
-					return D{}
-				}
-				return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, lbl.Layout)
-			}),
-		)
-	}
+func (pg *TransactionsPage) buttonWrap(gtx C, clickable *cryptomaterial.Clickable, icon *cryptomaterial.Image, title string) D {
+	return cryptomaterial.LinearLayout{
+		Width:      cryptomaterial.WrapContent,
+		Height:     cryptomaterial.WrapContent,
+		Background: pg.Theme.Color.DefaultThemeColors().SurfaceHighlight,
+		Clickable:  clickable,
+		Alignment:  layout.Middle,
+	}.Layout(gtx,
+		layout.Rigid(icon.Layout16dp),
+		layout.Rigid(func(gtx C) D {
+			if pg.IsMobileView() {
+				return D{}
+			}
+			lbl := pg.Theme.Label(pg.ConvertTextSize(values.TextSize14), title)
+			lbl.Font.Weight = font.Bold
+			lbl.Color = pg.Theme.Color.GrayText1
+			return layout.Inset{Left: values.MarginPadding2}.Layout(gtx, lbl.Layout)
+		}),
+	)
 }
 
 func (pg *TransactionsPage) rightDropdown(gtx C) D {
@@ -489,10 +490,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 					return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
 						return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
 							return card.Layout(gtx, func(gtx C) D {
-								padding := values.MarginPadding16
-								if pg.IsMobileView() {
-									padding = values.MarginPadding12
-								}
+								padding := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)
 								return layout.UniformInset(padding).Layout(gtx, func(gtx C) D {
 									wallTxs := pg.scroll.FetchedData()
 									return pg.transactionList.Layout(gtx, len(wallTxs), func(gtx C, index int) D {
@@ -505,7 +503,7 @@ func (pg *TransactionsPage) txListLayout(gtx C) D {
 											layout.Rigid(func(gtx C) D {
 												// No divider for last row
 												if index == len(wallTxs)-1 {
-													return layout.Dimensions{}
+													return D{}
 												}
 
 												gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -606,6 +604,7 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	for pg.filterBtn.Clicked() {
+		fmt.Println("------filterBtn----->", pg.isFilterOpen)
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 
