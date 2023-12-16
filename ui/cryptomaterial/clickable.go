@@ -63,7 +63,7 @@ func (cl *Clickable) Enabled() bool {
 // LayoutWithInset draws a layout of a clickable and applies an hover effect if
 // an hover action is detected. rightInset and bottomInset are used to restrict
 // hover layout and should be supplied ONLY if a right or bottom inset/margin
-// was applied to w. 
+// was applied to w.
 func (cl *Clickable) LayoutWithInset(gtx C, w layout.Widget, rightInset, bottomInset unit.Dp) D {
 	return cl.button.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Stack{}.Layout(gtx,
