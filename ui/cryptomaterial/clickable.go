@@ -60,19 +60,28 @@ func (cl *Clickable) Enabled() bool {
 	return cl.isEnabled
 }
 
-func (cl *Clickable) Layout(gtx C, w layout.Widget) D {
+// LayoutWithInset draws a layout of a clickable and applies an hover effect if
+// an hover action is detected. rightInset and bottomInset are used to restrict
+// hover layout and should be supplied ONLY if a right or bottom inset/margin
+// was applied to w. 
+func (cl *Clickable) LayoutWithInset(gtx C, w layout.Widget, rightInset, bottomInset unit.Dp) D {
 	return cl.button.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Stack{}.Layout(gtx,
 			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+				// Only hover on a widget, ignore inset or margin applied.
+				gtx.Constraints.Min.Y = gtx.Constraints.Min.Y - gtx.Dp(bottomInset)
+				gtx.Constraints.Min.X = gtx.Constraints.Min.X - gtx.Dp(rightInset)
 				tr := gtx.Dp(unit.Dp(cl.Radius.TopRight))
 				tl := gtx.Dp(unit.Dp(cl.Radius.TopLeft))
 				br := gtx.Dp(unit.Dp(cl.Radius.BottomRight))
 				bl := gtx.Dp(unit.Dp(cl.Radius.BottomLeft))
 				defer clip.RRect{
-					Rect: image.Rectangle{Max: image.Point{
-						X: gtx.Constraints.Min.X,
-						Y: gtx.Constraints.Min.Y,
-					}},
+					Rect: image.Rectangle{
+						Max: image.Point{
+							X: gtx.Constraints.Min.X,
+							Y: gtx.Constraints.Min.Y,
+						},
+					},
 					NW: tl, NE: tr, SE: br, SW: bl,
 				}.Push(gtx.Ops).Pop()
 				clip.Rect{Max: gtx.Constraints.Min}.Push(gtx.Ops).Pop()
@@ -89,4 +98,8 @@ func (cl *Clickable) Layout(gtx C, w layout.Widget) D {
 			layout.Stacked(w),
 		)
 	})
+}
+
+func (cl *Clickable) Layout(gtx C, w layout.Widget) D {
+	return cl.LayoutWithInset(gtx, w, 0, 0)
 }
