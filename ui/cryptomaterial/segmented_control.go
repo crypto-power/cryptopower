@@ -62,6 +62,7 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 	sc.slideAction.Draged(func(dragDirection SwipeDirection) {
 		isNext := dragDirection == SwipeLeft
 		sc.handleActionEvent(isNext)
+		sc.list.ScrollTo(sc.selectedIndex)
 	})
 
 	sc.slideActionTitle.SetDragEffect(50)
