@@ -67,7 +67,7 @@ func CreateWindow(mw *libwallet.AssetsManager, version string, buildDate time.Ti
 	// appSize overwrites gioui's default app size of 'Size(800, 600)'
 	appSize := giouiApp.Size(values.AppWidth, values.AppHeight)
 	// appMinSize is the minimum size the app.
-	appMinSize := giouiApp.MinSize(values.AppWidth, values.AppHeight)
+	appMinSize := giouiApp.MinSize(values.MobileAppWidth, values.MobileAppHeight)
 	// Display network on the app title if its not on mainnet.
 	if net := mw.NetType(); net != libutils.Mainnet {
 		appTitle = giouiApp.Title(values.StringF(values.StrAppTitle, net.Display()))

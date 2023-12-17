@@ -121,6 +121,7 @@ func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirs
 				return []*sharedW.Transaction{tx}, nil
 			}
 		}
+		return []*sharedW.Transaction{}, nil
 	}
 
 	if offset == 0 && limit == 0 {

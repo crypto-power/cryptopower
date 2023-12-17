@@ -281,7 +281,7 @@ func (pg *TransactionsPage) multiWalletTxns(offset, pageSize int32, newestFist b
 	return allTxs, len(allTxs), nil
 }
 
-func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize int32, newestFist bool) ([]*multiWalletTx, int, error) {
+func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize int32, newestFirst bool) ([]*multiWalletTx, int, error) {
 	mapInfo, _ := components.TxPageDropDownFields(wal.GetAssetType(), pg.selectedTxCategoryTab)
 	if len(mapInfo) < 1 {
 		err := fmt.Errorf("unable to resolve asset filters for asset type (%v)", wal.GetAssetType())
@@ -297,7 +297,8 @@ func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize
 	}
 	pg.txFilter = txFilter
 	searchKey := pg.searchEditor.Editor.Text()
-	walletTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, newestFist, searchKey)
+	fmt.Println("----------->", searchKey)
+	walletTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, newestFirst, searchKey)
 	if err != nil {
 		err = fmt.Errorf("error loading transactions: %v", err)
 	}
@@ -310,13 +311,13 @@ func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize
 	return txs, len(txs), err
 }
 
-func settingCommonDropdown(t *cryptomaterial.Theme, drodown *cryptomaterial.DropDown) {
-	drodown.FontWeight = font.SemiBold
-	drodown.Hoverable = false
-	drodown.SelectedItemIconColor = &t.Color.Primary
-	drodown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
-	drodown.MakeCollapsedLayoutVisibleWhenExpanded = true
-	drodown.Background = &t.Color.Gray4
+func settingCommonDropdown(t *cryptomaterial.Theme, dropdown *cryptomaterial.DropDown) {
+	dropdown.FontWeight = font.SemiBold
+	dropdown.Hoverable = false
+	dropdown.SelectedItemIconColor = &t.Color.Primary
+	dropdown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	dropdown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	dropdown.Background = &t.Color.Gray4
 }
 
 // Layout draws the page UI components into the provided layout context
@@ -604,7 +605,6 @@ func (pg *TransactionsPage) HandleUserInteractions() {
 	}
 
 	for pg.filterBtn.Clicked() {
-		fmt.Println("------filterBtn----->", pg.isFilterOpen)
 		pg.isFilterOpen = !pg.isFilterOpen
 	}
 
