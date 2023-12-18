@@ -498,7 +498,7 @@ func (pg *WalletInfo) loadTransactions() {
 		return
 	}
 
-	txs, err := pg.wallet.GetTransactionsRaw(0, 3, mapInfo[values.String(values.StrAll)], true,  "")
+	txs, err := pg.wallet.GetTransactionsRaw(0, 3, mapInfo[values.String(values.StrAll)], true, "")
 	if err != nil {
 		log.Errorf("error loading transactions: %v", err)
 		return
