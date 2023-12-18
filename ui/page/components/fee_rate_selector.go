@@ -71,8 +71,10 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 		values.String(values.StrManual),
 	}, cryptomaterial.SegmentTypeDynamicSplit)
 	fs.feeRateSwitch.SetEnableSwipe(false)
-
-	fs.feeRateSwitch.LayoutPadding = layout.Inset{Top: values.MarginPadding4}
+	fs.feeRateSwitch.DisableUniform(true)
+	fs.feeRateSwitch.ContentPadding = layout.Inset{
+		Top: values.MarginPadding4,
+	}
 
 	fs.SaveRate.TextSize = values.TextSize16
 	fs.SaveRate.Inset = layout.Inset{

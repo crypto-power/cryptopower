@@ -27,7 +27,6 @@ type SegmentedControl struct {
 	rightNavBtn *Clickable
 
 	Padding        layout.Inset
-	LayoutPadding  layout.Inset
 	ContentPadding layout.Inset
 	Alignment      layout.Alignment
 
@@ -63,9 +62,6 @@ func (t *Theme) SegmentedControl(segmentTitles []string, segmentType SegmentType
 		slideAction:          NewSlideAction(),
 		slideActionTitle:     NewSlideAction(),
 		Padding:              layout.UniformInset(values.MarginPadding8),
-		LayoutPadding: layout.Inset{
-			Top: values.MarginPadding24,
-		},
 		ContentPadding: layout.Inset{
 			Top: values.MarginPadding16,
 		},

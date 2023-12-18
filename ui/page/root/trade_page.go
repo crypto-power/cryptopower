@@ -127,9 +127,7 @@ func (pg *TradePage) Layout(gtx C) D {
 }
 
 func (pg *TradePage) layoutDesktop(gtx C) D {
-	return cryptomaterial.UniformPadding(gtx, func(gtx C) D {
-		return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
-	})
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
 }
 
 func (pg *TradePage) layoutMobile(gtx C) D {

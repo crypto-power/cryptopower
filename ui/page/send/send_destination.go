@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"gioui.org/layout"
 	"gioui.org/widget"
 
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
@@ -41,7 +40,7 @@ func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination 
 	}
 
 	dst.accountSwitch.SetEnableSwipe(false)
-	dst.accountSwitch.LayoutPadding = layout.Inset{Top: values.MarginPadding8}
+	dst.accountSwitch.DisableUniform(true)
 
 	dst.destinationAddressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrDestAddr))
 	dst.destinationAddressEditor.Editor.SingleLine = true
