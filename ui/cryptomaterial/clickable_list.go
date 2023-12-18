@@ -5,6 +5,11 @@ import (
 	"gioui.org/unit"
 )
 
+type ClickableInset struct {
+	Right  unit.Dp
+	Bottom unit.Dp
+}
+
 type ClickableList struct {
 	layout.List
 	theme           *Theme
@@ -14,6 +19,8 @@ type ClickableList struct {
 	DividerHeight   unit.Dp
 	IsShadowEnabled bool
 	IsHoverable     bool
+	CompleteRadius  bool           // used to control where to apply the Radius field.
+	ClickableInset  ClickableInset // Used to restrict hover layout
 }
 
 func (t *Theme) NewClickableList(axis layout.Axis) *ClickableList {
@@ -69,17 +76,19 @@ func (cl *ClickableList) Layout(gtx layout.Context, count int, w layout.ListElem
 }
 
 func (cl *ClickableList) row(gtx layout.Context, count int, i int, w layout.ListElement) layout.Dimensions {
-	if i == 0 { // first item
+	if cl.CompleteRadius { // all round
+		cl.clickables[i].Radius = cl.Radius
+	} else if i == 0 { // first item
 		cl.clickables[i].Radius.TopLeft = cl.Radius.TopLeft
 		cl.clickables[i].Radius.TopRight = cl.Radius.TopRight
-	}
-	if i == count-1 { // last item
+	} else if i == count-1 { // last item
 		cl.clickables[i].Radius.BottomLeft = cl.Radius.BottomLeft
 		cl.clickables[i].Radius.BottomRight = cl.Radius.BottomRight
 	}
-	row := cl.clickables[i].Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+
+	row := cl.clickables[i].LayoutWithInset(gtx, func(gtx layout.Context) layout.Dimensions {
 		return w(gtx, i)
-	})
+	}, cl.ClickableInset.Right, cl.ClickableInset.Bottom)
 
 	// add divider to all rows except last
 	if i < (count-1) && cl.DividerHeight > 0 {
