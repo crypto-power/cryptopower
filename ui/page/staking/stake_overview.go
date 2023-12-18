@@ -193,16 +193,7 @@ func (pg *Page) Layout(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(pg.stakePriceSection),
 				layout.Rigid(pg.stakeStatisticsSection),
-				layout.Rigid(func(gtx C) D {
-					if pg.showMaterialLoader {
-						gtx.Constraints.Min.X = gtx.Constraints.Max.X
-						return layout.Center.Layout(gtx, pg.materialLoader.Layout)
-					}
-					return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-						gtx.Constraints.Max.Y = ticketHeight
-						return pg.ticketListLayout(gtx)
-					})
-				}),
+				layout.Rigid(pg.ticketListLayout),
 			)
 		})
 	})

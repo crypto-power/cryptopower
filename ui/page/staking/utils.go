@@ -143,10 +143,11 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 	dateTime := fmt.Sprintf("%v at %v", date, timeSplit)
 	bestBlock := dcrWallet.GetBestBlock()
 	col := l.Theme.Color.GrayText3
+	textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 
 	switch tx.status.TicketStatus {
 	case dcr.TicketStatusUnmined:
-		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrUnminedInfo, components.TimeAgo(tx.transaction.Timestamp)))
+		lbl := l.Theme.Label(textSize16, values.StringF(values.StrUnminedInfo, components.TimeAgo(tx.transaction.Timestamp)))
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusImmature:
@@ -157,7 +158,7 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrImmatureInfo, blockRemaining, maturity,
+				lbl := l.Theme.Label(textSize16, values.StringF(values.StrImmatureInfo, blockRemaining, maturity,
 					maturityDuration.String()))
 				lbl.Color = col
 				return lbl.Layout(gtx)
@@ -175,14 +176,14 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 		)
 	case dcr.TicketStatusLive:
 		expiry := dcrWallet.TicketExpiry()
-		lbl := l.Theme.Label(values.TextSize16, values.StringF(values.StrLiveInfoDisc, expiry, getTimeToMatureOrExpire(dcrWallet, tx), expiry))
+		lbl := l.Theme.Label(textSize16, values.StringF(values.StrLiveInfoDisc, expiry, getTimeToMatureOrExpire(dcrWallet, tx), expiry))
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusVotedOrRevoked:
 		if tx.ticketSpender.Type == dcr.TxTypeVote {
 			return multiContent(gtx, l, dateTime, fmt.Sprintf("%s %v", values.String(values.StrVoted), components.TimeAgo(tx.transaction.Timestamp)))
 		}
-		lbl := l.Theme.Label(values.TextSize16, dateTime)
+		lbl := l.Theme.Label(textSize16, dateTime)
 		lbl.Color = col
 		return lbl.Layout(gtx)
 	case dcr.TicketStatusExpired:
@@ -193,10 +194,11 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 }
 
 func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
+	textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
 	col := l.Theme.Color.GrayText3
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			lbl := l.Theme.Label(values.TextSize16, leftText)
+			lbl := l.Theme.Label(textSize16, leftText)
 			lbl.Color = col
 			return lbl.Layout(gtx)
 		}),
@@ -211,7 +213,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 			})
 		}),
 		layout.Rigid(func(gtx C) D {
-			lbl := l.Theme.Label(values.TextSize16, rightText)
+			lbl := l.Theme.Label(textSize16, rightText)
 			lbl.Color = col
 			return lbl.Layout(gtx)
 		}),
@@ -230,7 +232,9 @@ func ticketListLayout(gtx C, l *load.Load, wallet *dcr.Asset, ticket *transactio
 						wrapIcon.Color = ticket.status.Background
 						wrapIcon.Radius = cryptomaterial.Radius(8)
 						dims := wrapIcon.Layout(gtx, func(gtx C) D {
-							return layout.UniformInset(values.MarginPadding10).Layout(gtx, ticket.status.Icon.Layout24dp)
+							return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
+								return ticket.status.Icon.LayoutTransform(gtx, l.IsMobileView(), values.MarginPadding24)
+							})
 						})
 
 						return layout.Inset{
@@ -239,7 +243,7 @@ func ticketListLayout(gtx C, l *load.Load, wallet *dcr.Asset, ticket *transactio
 							return dims
 						})
 					}),
-					layout.Rigid(l.Theme.Label(values.TextSize18, ticket.status.Title).Layout),
+					layout.Rigid(l.Theme.Label(values.TextSizeTransform(l.IsMobileView(), values.TextSize18), ticket.status.Title).Layout),
 				)
 			},
 			func(gtx C) D {
