@@ -96,7 +96,7 @@ func initWalletLoader(chainParams *chaincfg.Params, rootdir, walletDbDriver stri
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the DCR asset. It then generates the DCR loader interface
 // that is passed to be used upstream while creating a new wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a new wallet is created, the function to safely cancel network sync
 // is set. There after returning the new wallet's interface.
 func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -133,7 +133,7 @@ func CreateNewWallet(pass *sharedW.AuthInfo, params *sharedW.InitParams) (shared
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the DCR asset. It then generates the DCR loader interface
 // that is passed to be used upstream while creating the watch only wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately a watch only wallet is created, the function to safely cancel network sync
 // is set. There after returning the watch only wallet's interface.
 func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -168,7 +168,7 @@ func CreateWatchOnlyWallet(walletName, extendedPublicKey string, params *sharedW
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the DCR asset. It then generates the DCR loader interface
 // that is passed to be used upstream while restoring the wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately wallet restore is complete, the function to safely cancel network sync
 // is set. There after returning the restored wallet's interface.
 func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.InitParams) (sharedW.Asset, error) {
@@ -203,7 +203,7 @@ func RestoreWallet(seedMnemonic string, pass *sharedW.AuthInfo, params *sharedW.
 // It validates the network type passed by fetching the chain parameters
 // associated with it for the DCR asset. It then generates the DCR loader interface
 // that is passed to be used upstream while loading the existing the wallet in the
-// shared wallet implemenation.
+// shared wallet implementation.
 // Immediately loading the existing wallet is complete, the function to safely
 // cancel network sync is set. There after returning the loaded wallet's interface.
 func LoadExisting(w *sharedW.Wallet, params *sharedW.InitParams) (sharedW.Asset, error) {

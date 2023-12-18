@@ -17,6 +17,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/crypto-power/cryptopower/app"
+	"github.com/crypto-power/cryptopower/dexc"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -31,7 +32,6 @@ import (
 const (
 	DEXOnboardingPageID = "dex_onboarding"
 	minimumBondStrength = 1
-	bondOverlap         = 2
 )
 
 var (
@@ -74,11 +74,9 @@ type dexOnboardingStep struct {
 }
 
 type bondServerInfo struct {
-	url                  string
-	cert                 []byte
-	exchange             *core.Exchange
-	bondAssets           map[libutils.AssetType]*core.BondAsset
-	noSupportedBondAsset bool
+	url        string
+	cert       []byte
+	bondAssets map[libutils.AssetType]*core.BondAsset
 }
 
 type bondConfirmationInfo struct {
@@ -198,6 +196,10 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 	pg.goBackBtn.Color = pg.Theme.Color.Black
 	pg.goBackBtn.HighlightColor = pg.Theme.Color.Gray7
 
+	// Set defaults.
+	pg.newTier = minimumBondStrength
+	pg.bondStrengthEditor.Editor.SetText(fmt.Sprintf("%d", minimumBondStrength))
+
 	pg.isLoading = true
 	go func() {
 		<-pg.dexc.Ready()
@@ -212,28 +214,7 @@ func NewDEXOnboarding(l *load.Load) *DEXOnboarding {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedTo() {
-	ch := pg.dexc.NotificationFeed()
-	go func() {
-		for {
-			n, ok := <-ch
-			if !ok {
-				// TODO: Channel has been closed so return feed.
-				return
-			}
-
-			switch note := n.(type) {
-			case *core.BondPostNote:
-				if pg.bondConfirmationInfo != nil && pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
-					return
-				}
-
-				if pg.bondConfirmationInfo != nil && note.CoinID != nil && *note.CoinID == pg.bondConfirmationInfo.bondCoinID && note.Confirmations != nil {
-					pg.bondConfirmationInfo.currentBondConf = *note.Confirmations
-					pg.ParentWindow().Reload()
-				}
-			}
-		}
-	}()
+	pg.checkForPendingBondPayment()
 }
 
 // OnNavigatedFrom is called when the page is about to be removed from
@@ -244,11 +225,15 @@ func (pg *DEXOnboarding) OnNavigatedTo() {
 // components unless they'll be recreated in the OnNavigatedTo() method.
 // Part of the load.Page interface.
 func (pg *DEXOnboarding) OnNavigatedFrom() {
-	// Empty dex pass.
+	// Empty dex pass
 	for i := range pg.dexPass {
 		pg.dexPass[i] = 0
 	}
-	// TODO: return dex core note feed.
+
+	// Remove bond confirmation listener if any.
+	if pg.bondSourceAccountSelector != nil {
+		pg.bondSourceAccountSelector.SelectedWallet().RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	}
 }
 
 // Layout draws the page UI components into the provided C
@@ -313,11 +298,11 @@ func (pg *DEXOnboarding) onBoardingStepRow(gtx C) D {
 		layout.Rigid(func(gtx C) D {
 			return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 				layout.Stacked(func(gtx C) D {
-					u30 := values.MarginPadding30
+					dp30 := values.MarginPadding30
 					sep := pg.Theme.Separator()
 					sep.Width = gtx.Dp(values.MarginPadding500)
 					sep.Height = gtx.Dp(values.MarginPadding3)
-					return layout.Inset{Bottom: values.MarginPadding35, Right: u30, Left: u30}.Layout(gtx, sep.Layout)
+					return layout.Inset{Bottom: values.MarginPadding35, Right: dp30, Left: dp30}.Layout(gtx, sep.Layout)
 				}),
 				layout.Expanded(func(gtx C) D {
 					return layout.Flex{
@@ -356,10 +341,10 @@ func (pg *DEXOnboarding) onBoardingStep(gtx C, step onboardingStep, stepDesc str
 		Alignment: layout.Middle,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			u40 := gtx.Dp(values.MarginPadding40)
+			dp40 := gtx.Dp(values.MarginPadding40)
 			return cryptomaterial.LinearLayout{
-				Width:       u40,
-				Height:      u40,
+				Width:       dp40,
+				Height:      dp40,
 				Background:  stepColor,
 				Orientation: layout.Horizontal,
 				Direction:   layout.Center,
@@ -497,7 +482,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 	case onboardingChooseServer, onBoardingStepAddServer:
 		backBtnEnabled = !pg.dexc.IsDEXPasswordSet()
 	case onboardingPostBond:
-		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough()
+		nextBtnEnabled = pg.validateBondStrength() && pg.bondAccountHasEnough() && !pg.isLoading
 	}
 
 	pg.nextBtn.Text = values.String(values.StrNext)
@@ -506,8 +491,8 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		addBackBtn = false
 	}
 
-	u16 := values.MarginPadding16
-	u10 := values.MarginPadding10
+	dp16 := values.MarginPadding16
+	dp10 := values.MarginPadding10
 	var nextFlex float32 = 1.0
 	var goBackFlex float32
 	if addBackBtn {
@@ -521,8 +506,8 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 		Spacing:   layout.SpaceBetween,
 		Alignment: layout.Middle,
 		Margin: layout.Inset{
-			Top:    u16,
-			Bottom: u16,
+			Top:    dp16,
+			Bottom: dp16,
 		},
 	}.Layout(gtx,
 		layout.Flexed(goBackFlex, func(gtx C) D {
@@ -530,7 +515,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 				return D{}
 			}
 			pg.goBackBtn.SetEnabled(backBtnEnabled)
-			return layout.Inset{Right: u10}.Layout(gtx, pg.goBackBtn.Layout)
+			return layout.Inset{Right: dp10}.Layout(gtx, pg.goBackBtn.Layout)
 		}),
 		layout.Flexed(nextFlex, func(gtx C) D {
 			if pg.isLoading {
@@ -545,7 +530,7 @@ func (pg *DEXOnboarding) formFooterButtons(gtx C) D {
 			if !addBackBtn {
 				return pg.nextBtn.Layout(gtx)
 			}
-			return layout.Inset{Left: u10}.Layout(gtx, pg.nextBtn.Layout)
+			return layout.Inset{Left: dp10}.Layout(gtx, pg.nextBtn.Layout)
 		}),
 	)
 }
@@ -687,8 +672,8 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 		cardBg = *bg
 	}
 	return func(gtx C) D {
-		u12 := values.MarginPadding12
-		u15 := values.MarginPadding15
+		dp12 := values.MarginPadding12
+		dp15 := values.MarginPadding15
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
 			Height:      cryptomaterial.WrapContent,
@@ -704,22 +689,22 @@ func (pg *DEXOnboarding) viewOnlyCard(bg *color.NRGBA, info func(gtx C) D) func(
 				Bottom: dp2,
 			},
 			Padding: layout.Inset{
-				Top:    u12,
-				Bottom: u12,
-				Left:   u15,
-				Right:  u15,
+				Top:    dp12,
+				Bottom: dp12,
+				Left:   dp15,
+				Right:  dp15,
 			},
 		}.Layout2(gtx, info)
 	}
 }
 
 func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
-	u30 := values.MarginPadding30
+	dp12 := values.MarginPadding12
 	width := formWidth + values.MarginPadding100
 	gtx.Constraints.Max.X = gtx.Dp(width)
 	layoutFlex := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.centerLayout(gtx, dp20, values.MarginPadding12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
+			return pg.centerLayout(gtx, dp20, dp12, pg.Theme.H6(values.String(values.StrPostBond)).Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return pg.centerLayout(gtx, 0, 0, renderers.RenderHTML(values.String(values.StrPostBondDesc), pg.Theme).Layout)
@@ -732,7 +717,7 @@ func (pg *DEXOnboarding) stepWaitForBondConfirmation(gtx C) D {
 				Orientation: layout.Vertical,
 				Margin: layout.Inset{
 					Top:    dp20,
-					Bottom: u30,
+					Bottom: dp20,
 				},
 				Border: cryptomaterial.Border{
 					Radius: cryptomaterial.Radius(8),
@@ -804,7 +789,7 @@ func (pg *DEXOnboarding) bondAmountInfoDisplay(gtx C) D {
 	icon := pg.Theme.AssetIcon(assetType)
 	bondAsset := pg.bondServer.bondAssets[assetType]
 	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
-	amt := uint64(pg.newTier)*bondAsset.Amt*bondOverlap + bondsFeeBuffer
+	amt := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if icon == nil {
@@ -871,7 +856,7 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 		pg.bondStrengthEditor.SetError("")
 	}
 
-	if pg.nextBtn.Clicked() || isSubmit && !pg.isLoading {
+	if (pg.nextBtn.Clicked() || isSubmit) && !pg.isLoading {
 		switch pg.currentStep {
 		case onboardingSetPassword:
 			ok := pg.validPasswordInputs()
@@ -908,53 +893,14 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 					return
 				}
 			}
+
 			pg.bondServer = serverInfo
+			pg.isLoading = true
+			go func() {
+				pg.connectServerAndPrepareForBonding()
+				pg.isLoading = false
+			}()
 
-			// Proceed to next step if we already have the dex pass cached.
-			if len(pg.dexPass) > 0 {
-				go pg.connectServerAndPrepareForBonding()
-				break
-			}
-
-			if !pg.dexc.IsDEXPasswordSet() {
-				// Fresh onboarding process.
-				pg.isLoading = true
-				go func() {
-					defer func() {
-						pg.isLoading = false
-					}()
-
-					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
-					if err := pg.dexc.SetDEXPassword(pg.dexPass, nil); err != nil {
-						pg.notifyError(err.Error())
-						return
-					}
-
-					pg.connectServerAndPrepareForBonding()
-				}()
-				break
-			}
-
-			// User already has dex password set but did not finish the
-			// onboarding.
-			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
-				EnableName(false).
-				EnableConfirmPassword(false).
-				Title(values.String(values.StrDexPassword)).
-				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
-					pg.dexPass = []byte(password)
-					err := pg.dexc.Login(pg.dexPass)
-					if err != nil {
-						pm.SetError(err.Error())
-						pm.SetLoading(false)
-						return false
-					}
-
-					pg.connectServerAndPrepareForBonding()
-					return true
-				})
-			dexPasswordModal.SetPasswordTitleVisibility(false)
-			pg.ParentWindow().ShowModal(dexPasswordModal)
 		case onboardingPostBond:
 			// Validate all input fields.
 			hasEnough := pg.bondAccountHasEnough()
@@ -963,80 +909,81 @@ func (pg *DEXOnboarding) HandleUserInteractions() {
 				break
 			}
 
-			asset := pg.bondSourceWalletSelector.SelectedWallet()
-			bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
-			postBond := &core.PostBondForm{
-				Addr:      pg.bondServer.url,
-				AppPass:   pg.dexPass,
-				Asset:     &bondAsset.ID,
-				Bond:      uint64(pg.newTier) * bondAsset.Amt,
-				Cert:      pg.bondServer.cert,
-				FeeBuffer: pg.dexc.BondsFeeBuffer(bondAsset.ID),
+			if !pg.bondSourceWalletSelector.SelectedWallet().IsSynced() { // Only fully synced wallets should post bonds.
+				pg.notifyError(values.String(values.StrWalletNotSynced))
+				return
 			}
 
+			// Initialize with password now, if dex password has not been
+			// initialized.
 			pg.isLoading = true
-			go func() {
-				defer func() {
-					pg.isLoading = false
+			if !pg.dexc.IsDEXPasswordSet() {
+				go func() {
+					// Set password.
+					pg.dexPass = []byte(pg.passwordEditor.Editor.Text())
+					if err := pg.dexc.InitWithPassword(pg.dexPass, nil); err != nil {
+						pg.isLoading = false
+						pg.notifyError(err.Error())
+						return
+					}
+
+					// Login.
+					err := pg.dexc.Login(pg.dexPass)
+					if err != nil {
+						pg.isLoading = false
+						pg.notifyError(err.Error())
+						return
+					}
+
+					pg.postBond()
 				}()
 
-				res, err := pg.dexc.PostBond(postBond)
-				if err != nil {
-					pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
-					return
-				}
+				return
+			}
 
-				pg.bondConfirmationInfo = &bondConfirmationInfo{
-					requiredBondConf: res.ReqConfirms,
-					bondCoinID:       res.BondID,
-				}
+			// dexc password has been sent already.
+			dexPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+				EnableName(false).
+				EnableConfirmPassword(false).
+				Title(values.String(values.StrDexPassword)).
+				SetPositiveButtonCallback(func(_, password string, pm *modal.CreatePasswordModal) bool {
+					pg.dexPass = []byte(password)
+					err := pg.dexc.Login(pg.dexPass)
+					if err != nil {
+						pg.isLoading = false
+						pm.SetError(err.Error())
+						pm.SetLoading(false)
+						return false
+					}
 
-				pg.currentStep = onBoardingStepWaitForConfirmation
-				pg.scrollContainer.Position.Offset = 0 // Scroll to the top of the confirmation page after leaving the long post bond form.
-				pg.ParentWindow().Reload()
-			}()
-
-			// TODO: handle onBoardingStepWaitForConfirmation and display market
-			// page when we have enough confirmation.
+					pg.postBond()
+					return true
+				})
+			dexPasswordModal.SetPasswordTitleVisibility(false)
+			pg.ParentWindow().ShowModal(dexPasswordModal)
 		}
 	}
 }
 
 func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
-	pg.isLoading = true
-	defer func() {
-		pg.isLoading = false
-	}()
-
-	xc, _, err := pg.dexc.DiscoverAccount(pg.bondServer.url, pg.dexPass, pg.bondServer.cert)
+	xc, err := pg.dexc.GetDEXConfig(pg.bondServer.url, pg.bondServer.cert)
 	if err != nil {
 		pg.notifyError(fmt.Errorf("Error discovering account: %w", err).Error())
 		return
 	}
-	pg.bondServer.exchange = xc
 
 	pg.bondServer.bondAssets = make(map[libutils.AssetType]*core.BondAsset)
 	var supportedBondAssets []libutils.AssetType
 	for _, asset := range xc.BondAssets {
-		assetSym := dex.BipIDSymbol(asset.ID)
-		var assetType libutils.AssetType
-		switch {
-		case strings.EqualFold(assetSym, libutils.DCRWalletAsset.String()):
-			assetType = libutils.DCRWalletAsset
-		case strings.EqualFold(assetSym, libutils.BTCWalletAsset.String()):
-			assetType = libutils.BTCWalletAsset
-		case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
-			assetType = libutils.LTCWalletAsset
-		default:
-			continue // unsupported asset
+		assetType := convertAssetIDToAssetType(asset.ID)
+		if assetType == "" {
+			continue
 		}
-
 		supportedBondAssets = append(supportedBondAssets, assetType)
 		pg.bondServer.bondAssets[assetType] = asset
 	}
 
-	pg.bondServer.noSupportedBondAsset = len(supportedBondAssets) == 0
-	if pg.bondServer.noSupportedBondAsset {
+	if len(supportedBondAssets) == 0 {
 		pg.notifyError(values.StringF(values.StrNoSupportedBondAsset, pg.bondServer.url))
 		return
 	}
@@ -1070,6 +1017,123 @@ func (pg *DEXOnboarding) connectServerAndPrepareForBonding() {
 	pg.ParentWindow().Reload()
 }
 
+// postBond prepares the data required to post bond and starts the bond posting
+// process. C
+func (pg *DEXOnboarding) postBond() {
+	pg.isLoading = true
+	var maintainTier = false
+	asset := pg.bondSourceWalletSelector.SelectedWallet()
+	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
+	postBond := &core.PostBondForm{
+		Addr:         pg.bondServer.url,
+		AppPass:      pg.dexPass,
+		Asset:        &bondAsset.ID,
+		Bond:         uint64(pg.newTier) * bondAsset.Amt,
+		Cert:         pg.bondServer.cert,
+		FeeBuffer:    pg.dexc.BondsFeeBuffer(bondAsset.ID),
+		MaintainTier: &maintainTier,
+	}
+
+	// postBondFn sends the actual request to post bond.
+	postBondFn := func(walletPass string) {
+		// Add bond wallet to core if it does not exist.
+		if !pg.dexc.HasWallet(int32(bondAsset.ID)) {
+			cfg := map[string]string{
+				dexc.DexDcrWalletIDConfigKey:          fmt.Sprintf("%d", asset.GetWalletID()),
+				dexc.DexDcrWalletAccountNameConfigKey: pg.bondSourceAccountSelector.SelectedAccount().AccountName,
+			}
+
+			err := pg.dexc.AddWallet(*postBond.Asset, cfg, pg.dexPass, []byte(walletPass))
+			if err != nil {
+				pg.notifyError(fmt.Sprintf("Failed to prepare bond wallet: %v", err))
+				return
+			}
+		}
+
+		res, err := pg.dexc.PostBond(postBond)
+		if err != nil {
+			pg.notifyError(fmt.Sprintf("Failed to post bond: %v", err))
+			return
+		}
+
+		pg.bondConfirmationInfo = &bondConfirmationInfo{
+			requiredBondConf: res.ReqConfirms,
+			bondCoinID:       res.BondID,
+		}
+
+		pg.waitForConfirmationAndListenForBlockNotifications()
+		pg.ParentWindow().Reload()
+	}
+
+	// Request for wallet password before attempting to post bond.
+	walletPasswordModal := modal.NewCreatePasswordModal(pg.Load).
+		EnableName(false).
+		EnableConfirmPassword(false).
+		Title(values.String(values.StrEnterSpendingPassword)).
+		SetNegativeButtonCallback(func() {
+			pg.isLoading = false
+		}).
+		SetPositiveButtonCallback(func(_, walletPass string, pm *modal.CreatePasswordModal) bool {
+			postBondFn(walletPass)
+			pg.isLoading = false
+			return true
+		}).
+		SetCancelable(false) // user cannot close modal until postBondFn exists
+
+	pg.ParentWindow().ShowModal(walletPasswordModal)
+}
+
+func (pg *DEXOnboarding) waitForConfirmationAndListenForBlockNotifications() {
+	pg.currentStep = onBoardingStepWaitForConfirmation
+	pg.scrollContainer.Position.Offset = 0
+
+	// Listen for new block updates. This listener is removed in
+	// OnNavigateFrom().
+	asset := pg.bondSourceAccountSelector.SelectedWallet()
+	asset.RemoveTxAndBlockNotificationListener(DEXOnboardingPageID)
+	asset.AddTxAndBlockNotificationListener(&sharedW.TxAndBlockNotificationListener{
+		OnBlockAttached: func(_ int, _ int32) {
+			pg.bondConfirmationInfo.currentBondConf++
+			if pg.bondConfirmationInfo.currentBondConf >= int32(pg.bondConfirmationInfo.requiredBondConf) {
+				pg.ParentNavigator().ClearStackAndDisplay(NewDEXMarketPage(pg.Load))
+			} else {
+				pg.ParentWindow().Reload()
+			}
+		},
+	}, DEXOnboardingPageID)
+}
+
+func (pg *DEXOnboarding) checkForPendingBondPayment() {
+	// Check if bond has already been posted but still pending confirmation.
+	xcHost, bondAsset, bond := pendingBondConfirmation(pg.AssetsManager)
+	if bond == nil {
+		return
+	}
+
+	pg.newTier = 1
+	pg.currentStep = onBoardingStepWaitForConfirmation
+	pg.bondConfirmationInfo = &bondConfirmationInfo{
+		requiredBondConf: uint16(bondAsset.Confs),
+		currentBondConf:  int32(bond.Confs),
+	}
+
+	// Set fields required by pg.stepWaitForBondConfirmation page. Also See:
+	// pg.bondAmountInfoDisplay.
+	bondAssetType := convertAssetIDToAssetType(bondAsset.ID)
+	pg.bondServer.bondAssets = map[libutils.AssetType]*core.BondAsset{
+		bondAssetType: bondAsset,
+	}
+	pg.bondServer.url = xcHost
+	pg.bondSourceAccountSelector = components.NewWalletAndAccountSelector(pg.Load, bondAssetType)
+	ok := pg.bondSourceAccountSelector.SetSelectedAsset(bondAssetType)
+	if !ok { // impossible but can happen if user deletes wallet shortly after posting bonds.
+		pg.notifyError(values.String(values.StrNoWalletLoaded))
+		return
+	}
+
+	pg.waitForConfirmationAndListenForBlockNotifications()
+}
+
 func (pg *DEXOnboarding) notifyError(errMsg string) {
 	errModal := modal.NewErrorModal(pg.Load, errMsg, modal.DefaultClickFunc())
 	pg.ParentWindow().ShowModal(errModal)
@@ -1082,7 +1146,7 @@ func (pg *DEXOnboarding) bondAccountHasEnough() bool {
 	asset := pg.bondSourceWalletSelector.SelectedWallet()
 	bondAsset := pg.bondServer.bondAssets[asset.GetAssetType()]
 	bondsFeeBuffer := pg.dexc.BondsFeeBuffer(bondAsset.ID)
-	bondCost := uint64(pg.newTier)*bondAsset.Amt*bondOverlap + bondsFeeBuffer
+	bondCost := uint64(pg.newTier)*bondAsset.Amt + bondsFeeBuffer
 	bondAmt := asset.ToAmount(int64(bondCost))
 	if ac.Balance.Spendable.ToInt() < bondAmt.ToInt() {
 		pg.bondSourceAccountSelector.SetError(values.StringF(values.StrInsufficientBondAmount, bondAmt.String()))
@@ -1154,4 +1218,18 @@ func newTextEditor(th *cryptomaterial.Theme, title string, hint string, multiLin
 	e.Editor.Submit = true
 	e.Hint = hint
 	return e
+}
+
+func convertAssetIDToAssetType(assetID uint32) libutils.AssetType {
+	assetSym := dex.BipIDSymbol(assetID)
+	switch {
+	case strings.EqualFold(assetSym, libutils.DCRWalletAsset.String()):
+		return libutils.DCRWalletAsset
+	case strings.EqualFold(assetSym, libutils.BTCWalletAsset.String()):
+		return libutils.BTCWalletAsset
+	case strings.EqualFold(assetSym, libutils.LTCWalletAsset.String()):
+		return libutils.LTCWalletAsset
+	default:
+		return ""
+	}
 }

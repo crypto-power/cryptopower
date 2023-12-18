@@ -33,7 +33,7 @@ func (asset *Asset) spvSyncNotificationCallbacks() *spv.Notifications {
 
 func (asset *Asset) handlePeerCountUpdate(peerCount int32) {
 	asset.syncData.mu.Lock()
-	asset.syncData.connectedPeers = peerCount
+	asset.syncData.numOfConnectedPeers = peerCount
 	shouldLog := asset.syncData.showLogs && asset.syncData.syncing
 	asset.syncData.mu.Unlock()
 

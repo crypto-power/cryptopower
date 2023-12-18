@@ -4,12 +4,27 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
+	"decred.org/dcrdex/client/asset"
 	"decred.org/dcrdex/client/core"
 	"decred.org/dcrdex/dex"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
+)
+
+const (
+	// CustomDexWalletType is a keyword that identifies a custom Cryptopower
+	// wallet used by the DEX client.
+	CustomDexWalletType = "cryptopowerwallet"
+	// DexDcrWalletIDConfigKey is the key that holds the wallet ID value in the
+	// settings map used to connect an existing dcr wallet to the DEX client.
+	DexDcrWalletIDConfigKey = "walletid"
+	// DexDcrWalletAccountNameConfigKey is the key that holds the wallet account
+	// values in the settings map used to connect an existing dcr wallet to the
+	// DEX client.
+	DexDcrWalletAccountNameConfigKey = "account"
 )
 
 // DEXClient represents the Decred DEX client and embeds *core.Core.
@@ -21,7 +36,7 @@ type DEXClient struct {
 	log             dex.Logger
 }
 
-func (dc *DEXClient) SetDEXPassword(pw []byte, seed []byte) error {
+func (dc *DEXClient) InitWithPassword(pw []byte, seed []byte) error {
 	return dc.InitializeClient(pw, seed)
 }
 
@@ -106,12 +121,58 @@ func Start(ctx context.Context, root, lang, logDir, logLvl string, net libutils.
 	// Use a goroutine to start dex core as it'll block until dex core exits.
 	go func() {
 		dc.Run(ctx)
-		close(shutdownChan)
-		dc.Core = nil
 		logCloser()
+		close(shutdownChan)
+		dc.Core = nil // do this after all shutdownChan listeners must've stopped waiting
 	}()
 
 	return dc, nil
+}
+
+// HasWallet is true if a wallet has been added to the DEX client for the
+// specified asset.
+func (dc *DEXClient) HasWallet(assetID int32) bool {
+	return dc.Core.WalletState(uint32(assetID)) != nil
+}
+
+// AddWallet attempts to connect or create the wallet with the provided details
+// to the DEX client.
+// NOTE: Before connecting a dcr wallet, dcr ExchangeWallet must have been
+// configured to use a custom wallet instead of the default rpc wallet. See
+// libwallet.AssetManager.PrepareDexSupportForDcrWallet().
+func (dc *DEXClient) AddWallet(assetID uint32, settings map[string]string, appPW, walletPW []byte) error {
+	assetInfo, err := asset.Info(assetID)
+	if err != nil {
+		return fmt.Errorf("unsupported asset %d", assetID)
+	}
+
+	validWalletType := false
+	config := map[string]string{}
+	for _, def := range assetInfo.AvailableWallets {
+		if def.Type == CustomDexWalletType {
+			validWalletType = true
+			// Start building the wallet config with default values.
+			for _, option := range def.ConfigOpts {
+				config[strings.ToLower(option.Key)] = fmt.Sprintf("%v", option.DefaultValue)
+			}
+			break
+		}
+	}
+
+	if !validWalletType {
+		return fmt.Errorf("wallet type %q is not supported for %s wallet", CustomDexWalletType, assetInfo.Name)
+	}
+
+	// User-provided settings should override defaults.
+	for k, v := range settings {
+		config[k] = v
+	}
+
+	return dc.Core.CreateWallet(appPW, walletPW, &core.WalletForm{
+		AssetID: assetID,
+		Config:  config,
+		Type:    CustomDexWalletType,
+	})
 }
 
 func parseDEXNet(net libutils.NetworkType) (dex.Network, error) {
