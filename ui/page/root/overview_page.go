@@ -964,6 +964,10 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 }
 
 func (pg *OverviewPage) recentProposal(gtx C) D {
+	if !pg.AssetsManager.IsHTTPAPIPrivacyModeOff(libutils.GovernanceHTTPAPI) {
+		return D{}
+	}
+
 	return pg.pageContentWrapper(gtx, values.String(values.StrRecentProposals), nil, func(gtx C) D {
 		if len(pg.proposalItems) == 0 {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
