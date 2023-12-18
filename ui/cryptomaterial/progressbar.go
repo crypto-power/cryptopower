@@ -221,7 +221,7 @@ func (mp *MultiLayerProgressBar) progressBarLayout(gtx C) D {
 	)
 }
 
-func (mp *MultiLayerProgressBar) Layout(gtx C, additionalWidget layout.Widget) D {
+func (mp *MultiLayerProgressBar) Layout(gtx C, isMobileView bool, additionalWidget layout.Widget) D {
 	if additionalWidget == nil {
 		// We're only displaying the progress bar, no need for flex layout to wrap it.
 		// TODO: Verify if a top padding is necessary if we're only displaying the progressbar.
@@ -229,6 +229,9 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, additionalWidget layout.Widget) D
 	}
 
 	progressBarTopPadding, otherWidget := values.MarginPadding24, additionalWidget
+	if isMobileView {
+		progressBarTopPadding = values.MarginPadding16
+	}
 	if !mp.ShowOtherWidgetFirst {
 		// reduce the top padding if we're showing the progress bar before the other widget
 		progressBarTopPadding = values.MarginPadding5

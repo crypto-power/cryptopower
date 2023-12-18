@@ -860,7 +860,7 @@ func (pg *CreateOrderPage) layoutDesktop(gtx C) D {
 				}),
 				components.ConditionalFlexedRigidLayout(0.1, pg.IsMobileView(), func(gtx C) D {
 					if pg.IsMobileView() {
-						return components.UniformVeticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
+						return components.VerticalInset(values.MarginPadding8).Layout(gtx, func(gtx C) D {
 							return layout.Center.Layout(gtx, pg.verticalSwapButton.Layout)
 						})
 					}
@@ -1140,7 +1140,7 @@ func (pg *CreateOrderPage) orderSchedulerLayout(gtx C) D {
 				return D{}
 			}),
 			layout.Rigid(func(gtx C) D {
-				return components.UniformHorizontalInset(values.MarginPadding10).Layout(gtx, pg.infoButton.Layout)
+				return components.HorizontalInset(values.MarginPadding10).Layout(gtx, pg.infoButton.Layout)
 			}),
 			layout.Rigid(pg.settingsButton.Layout),
 		)

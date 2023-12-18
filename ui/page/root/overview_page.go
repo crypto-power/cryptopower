@@ -943,7 +943,7 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return components.UniformVeticalInset(values.MarginPadding6).Layout(gtx, func(gtx C) D {
+					return components.VerticalInset(values.MarginPadding6).Layout(gtx, func(gtx C) D {
 						return components.OrderItemWidget(gtx, pg.Load, pg.orders[i])
 					})
 				}),

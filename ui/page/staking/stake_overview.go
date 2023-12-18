@@ -188,48 +188,17 @@ func (pg *Page) Layout(gtx C) D {
 	}
 
 	mainChild := layout.Expanded(func(gtx C) D {
-		if pg.Load.IsMobileView() {
-			return pg.layoutMobile(gtx)
-		}
-		return pg.layoutDesktop(gtx)
+		pg.scroll.OnScrollChangeListener(pg.ParentWindow())
+		return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(pg.stakePriceSection),
+				layout.Rigid(pg.stakeStatisticsSection),
+				layout.Rigid(pg.ticketListLayout),
+			)
+		})
 	})
 
 	return layout.Stack{}.Layout(gtx, mainChild, overlay)
-}
-
-func (pg *Page) layoutDesktop(gtx C) D {
-	pg.scroll.OnScrollChangeListener(pg.ParentWindow())
-	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(pg.stakePriceSection),
-			layout.Rigid(pg.stakeStatisticsSection),
-			layout.Rigid(func(gtx C) D {
-				if pg.showMaterialLoader {
-					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					return layout.Center.Layout(gtx, pg.materialLoader.Layout)
-				}
-				return pg.scroll.List().Layout(gtx, 1, func(gtx C, i int) D {
-					gtx.Constraints.Max.Y = ticketHeight
-					return pg.ticketListLayout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	widgets := []layout.Widget{
-		pg.stakePriceSection,
-		pg.ticketListLayout,
-	}
-
-	return components.UniformMobile(gtx, true, true, func(gtx layout.Context) layout.Dimensions {
-		return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-			return pg.scroll.List().Layout(gtx, len(widgets), func(gtx C, i int) D {
-				return widgets[i](gtx)
-			})
-		})
-	})
 }
 
 func (pg *Page) pageSections(gtx C, body layout.Widget) D {
@@ -238,7 +207,7 @@ func (pg *Page) pageSections(gtx C, body layout.Widget) D {
 	}.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.UniformInset(values.MarginPadding24).Layout(gtx, body)
+			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding24)).Layout(gtx, body)
 		})
 	})
 }

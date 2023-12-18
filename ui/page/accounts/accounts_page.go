@@ -128,7 +128,7 @@ func (pg *Page) fetchExchangeRate() {
 func (pg *Page) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			return components.UniformHorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
+			return components.HorizontalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(pg.headerLayout),
 					layout.Rigid(pg.bodyLayout),

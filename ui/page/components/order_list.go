@@ -84,7 +84,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 								}),
 								layout.Rigid(func(gtx C) D {
 									return layout.Center.Layout(gtx, func(gtx C) D {
-										return UniformHorizontalInset(values.MarginPadding8).Layout(gtx, l.Theme.Icons.Dot.Layout8dp)
+										return HorizontalInset(values.MarginPadding8).Layout(gtx, l.Theme.Icons.Dot.Layout8dp)
 									})
 								}),
 								layout.Rigid(l.Theme.Label(textSize16, orderItem.Status.String()).Layout),
@@ -147,7 +147,7 @@ func LayoutNoOrderHistoryWithMsg(gtx C, l *load.Load, syncing bool, msg string) 
 			values.String(values.StrFetchingOrders))
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
-		return UniformVeticalInset(values.MarginPadding30).Layout(gtx, text.Layout)
+		return VerticalInset(values.MarginPadding30).Layout(gtx, text.Layout)
 	})
 }
 

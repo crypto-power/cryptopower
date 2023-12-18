@@ -118,10 +118,11 @@ func (tb *ticketBuyerModal) OnResume() {
 	}
 }
 
-func (tb *ticketBuyerModal) Layout(gtx layout.Context) layout.Dimensions {
+func (tb *ticketBuyerModal) Layout(gtx C) D {
 	l := []layout.Widget{
 		func(gtx C) D {
 			t := tb.Theme.H6(values.String(values.StrAutoTicketPurchase))
+			t.TextSize = values.TextSizeTransform(tb.IsMobileView(), values.TextSize20)
 			t.Font.Weight = font.SemiBold
 			return t.Layout(gtx)
 		},
@@ -131,18 +132,16 @@ func (tb *ticketBuyerModal) Layout(gtx layout.Context) layout.Dimensions {
 					return layout.Inset{
 						Top:    values.MarginPadding8,
 						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					}.Layout(gtx, func(gtx C) D {
 						return tb.accountSelector.Layout(tb.ParentWindow(), gtx)
 					})
 				}),
 				layout.Rigid(func(gtx C) D {
+					tb.balToMaintainEditor.TextSize = values.TextSizeTransform(tb.IsMobileView(), values.TextSize14)
 					return tb.balToMaintainEditor.Layout(gtx)
 				}),
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding16,
-						Bottom: values.MarginPadding16,
-					}.Layout(gtx, func(gtx C) D {
+					return components.VerticalInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
 						return tb.vspSelector.Layout(tb.ParentWindow(), gtx)
 					})
 				}),

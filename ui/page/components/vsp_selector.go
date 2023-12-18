@@ -75,7 +75,7 @@ func (v *VSPSelector) handle(window app.WindowNavigator) {
 	}
 }
 
-func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) layout.Dimensions {
+func (v *VSPSelector) Layout(window app.WindowNavigator, gtx C) D {
 	v.handle(window)
 
 	border := widget.Border{
@@ -85,25 +85,26 @@ func (v *VSPSelector) Layout(window app.WindowNavigator, gtx layout.Context) lay
 	}
 
 	return border.Layout(gtx, func(gtx C) D {
+		textSize16 := values.TextSizeTransform(v.IsMobileView(), values.TextSize16)
 		return layout.UniformInset(values.MarginPadding12).Layout(gtx, func(gtx C) D {
 			return v.showVSPModal.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
 						if v.selectedVSP == nil {
-							txt := v.Theme.Label(values.TextSize16, values.String(values.StrSelectVSP))
+							txt := v.Theme.Label(textSize16, values.String(values.StrSelectVSP))
 							txt.Color = v.Theme.Color.GrayText3
 							return txt.Layout(gtx)
 						}
-						return v.Theme.Label(values.TextSize16, v.selectedVSP.Host).Layout(gtx)
+						return v.Theme.Label(textSize16, v.selectedVSP.Host).Layout(gtx)
 					}),
 					layout.Flexed(1, func(gtx C) D {
 						return layout.E.Layout(gtx, func(gtx C) D {
 							return layout.Flex{}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
 									if v.selectedVSP == nil {
-										return layout.Dimensions{}
+										return D{}
 									}
-									txt := v.Theme.Label(values.TextSize16, fmt.Sprintf("%v%%", v.selectedVSP.FeePercentage))
+									txt := v.Theme.Label(textSize16, fmt.Sprintf("%v%%", v.selectedVSP.FeePercentage))
 									return txt.Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
@@ -215,13 +216,16 @@ func (v *vspSelectorModal) vspSelected(callback func(*dcr.VSP)) *vspSelectorModa
 	return v
 }
 
-func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
+func (v *vspSelectorModal) Layout(gtx C) D {
+	textSize20 := values.TextSizeTransform(v.IsMobileView(), values.TextSize20)
+	textSize14 := values.TextSizeTransform(v.IsMobileView(), values.TextSize14)
+	textSize16 := values.TextSizeTransform(v.IsMobileView(), values.TextSize16)
 	return v.Modal.Layout(gtx, []layout.Widget{
 		func(gtx C) D {
-			title := v.Theme.Label(values.TextSize20, v.dialogTitle)
+			title := v.Theme.Label(textSize20, v.dialogTitle)
 			// Override title when VSP is loading.
 			if v.isLoadingVSP {
-				title = v.Theme.Label(values.TextSize20, values.String(values.StrLoadingVSP))
+				title = v.Theme.Label(textSize20, values.String(values.StrLoadingVSP))
 			}
 			title.Font.Weight = font.SemiBold
 			return title.Layout(gtx)
@@ -234,25 +238,22 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 						return D{}
 					}
 
-					txt := v.Theme.Label(values.TextSize14, values.String(values.StrAddress))
+					txt := v.Theme.Label(textSize14, values.String(values.StrAddress))
 					txt.Color = v.Theme.Color.GrayText2
-					txtFee := v.Theme.Label(values.TextSize14, values.String(values.StrFee))
+					txtFee := v.Theme.Label(textSize14, values.String(values.StrFee))
 					txtFee.Color = v.Theme.Color.GrayText2
 					return EndToEndRow(gtx, txt.Layout, txtFee.Layout)
 				}),
 				layout.Rigid(func(gtx C) D {
 					// if VSP(s) are being loaded, show loading UI.
 					if v.isLoadingVSP {
-						return layout.Inset{Top: values.MarginPadding140,
-							Right:  values.MarginPadding140,
-							Bottom: values.MarginPadding140,
-							Left:   values.MarginPadding140}.Layout(gtx, v.materialLoader.Layout)
+						return layout.UniformInset(values.MarginPadding140).Layout(gtx, v.materialLoader.Layout)
 					}
 
 					// if no vsp loaded, display a no vsp text
 					vsps := v.dcrImpl.KnownVSPs()
 					if len(vsps) == 0 && !v.isLoadingVSP {
-						noVsp := v.Theme.Label(values.TextSize14, values.String(values.StrNoVSPLoaded))
+						noVsp := v.Theme.Label(textSize14, values.String(values.StrNoVSPLoaded))
 						noVsp.Color = v.Theme.Color.GrayText2
 						return layout.Inset{Top: values.MarginPadding5}.Layout(gtx, noVsp.Layout)
 					}
@@ -263,14 +264,14 @@ func (v *vspSelectorModal) Layout(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 							layout.Flexed(0.8, func(gtx C) D {
 								return layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-									txt := v.Theme.Label(values.TextSize14, fmt.Sprintf("%v%%", vsps[i].FeePercentage))
+									txt := v.Theme.Label(textSize14, fmt.Sprintf("%v%%", vsps[i].FeePercentage))
 									txt.Color = v.Theme.Color.GrayText1
-									return EndToEndRow(gtx, v.Theme.Label(values.TextSize16, vsps[i].Host).Layout, txt.Layout)
+									return EndToEndRow(gtx, v.Theme.Label(textSize16, vsps[i].Host).Layout, txt.Layout)
 								})
 							}),
 							layout.Rigid(func(gtx C) D {
 								if v.selectedVSP == nil || v.selectedVSP.Host != vsps[i].Host {
-									return layout.Dimensions{}
+									return D{}
 								}
 								ic := cryptomaterial.NewIcon(v.Theme.Icons.NavigationCheck)
 								return ic.Layout(gtx, values.MarginPadding20)

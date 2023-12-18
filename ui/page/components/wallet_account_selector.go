@@ -270,6 +270,7 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 		}
 	}
 
+	textSize16 := values.TextSizeTransform(ws.IsMobileView(), values.TextSize16)
 	return layout.Stack{}.Layout(gtx,
 		layout.Stacked(func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -287,11 +288,14 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 								if ws.selectedAccount == nil {
 									return ws.Theme.Body1("").Layout(gtx)
 								}
-								return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Baseline}.Layout(gtx,
-									layout.Rigid(ws.Theme.Body1(ws.SelectedAccount().Name).Layout),
-								)
+								lbl := ws.Theme.Body1(ws.SelectedAccount().Name)
+								lbl.TextSize = textSize16
+								return lbl.Layout(gtx)
 							}
-							return ws.Theme.SemiBoldLabel(ws.SelectedWallet().GetWalletName()).Layout(gtx)
+
+							lbl := ws.Theme.SemiBoldLabel(ws.SelectedWallet().GetWalletName())
+							lbl.TextSize = textSize16
+							return lbl.Layout(gtx)
 						}),
 						layout.Flexed(1, func(gtx C) D {
 							dim := func(gtx C) D {
@@ -302,13 +306,13 @@ func (ws *WalletAndAccountSelector) Layout(window app.WindowNavigator, gtx C) D 
 										}
 										if ws.accountSelector {
 											if ws.selectedAccount == nil {
-												return ws.Theme.Body1(string(ws.selectedWallet.GetAssetType())).Layout(gtx)
+												return ws.Theme.Label(textSize16, string(ws.selectedWallet.GetAssetType())).Layout(gtx)
 											}
-											return ws.Theme.Body1(ws.totalBalance).Layout(gtx)
+											return ws.Theme.Label(textSize16, ws.totalBalance).Layout(gtx)
 										}
 										selectWallet := ws.SelectedWallet()
 										totalBal, _ := walletBalance(selectWallet)
-										return ws.Theme.Body1(selectWallet.ToAmount(totalBal).String()).Layout(gtx)
+										return ws.Theme.Label(textSize16, selectWallet.ToAmount(totalBal).String()).Layout(gtx)
 									}),
 									layout.Rigid(func(gtx C) D {
 										inset := layout.Inset{
