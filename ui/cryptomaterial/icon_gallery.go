@@ -28,7 +28,7 @@ type Icons struct {
 	RevealIcon, InfoAction, LightMode, DarkMode, AddIcon, ChevronRight, AddExchange, FlypMeIcon, ChangellyIcon,
 	SimpleSwapIcon, SwapzoneIcon, ShapeShiftIcon, GodexIcon, CoinSwitchIcon, ChangeNowIcon, TrocadorIcon, CaretUp, CaretDown,
 	LTCBackground, LTCGroupIcon, DCRBackground, DCRGroupIcon, BTCBackground, BTCGroupIcon, CrossPlatformIcon,
-	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon *Image
+	IntegratedExchangeIcon, MultiWalletIcon, Dot, TradeExchangeIcon, FilterImgIcon, FilterOffImgIcon, ShareIcon *Image
 
 	NewStakeIcon,
 	TicketImmatureIcon,
@@ -124,7 +124,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.TicketImmatureIcon = NewImage(decredIcons["ticket_immature"])
 	i.TicketUnminedIcon = NewImage(decredIcons["ticket_unmined"])
 	i.TicketLiveIcon = NewImage(decredIcons["ticket_live"])
-	i.TicketVotedIcon = NewImage(decredIcons["ticket_voted"])
+	i.TicketVotedIcon = NewImage(decredIcons["ic_ticket_voted"])
 	i.TicketMissedIcon = NewImage(decredIcons["ticket_missed"])
 	i.TicketExpiredIcon = NewImage(decredIcons["ticket_expired"])
 	i.TicketRevokedIcon = NewImage(decredIcons["ticket_revoked"])
@@ -207,6 +207,7 @@ func (i *Icons) DefaultIcons() *Icons {
 	i.CrossPlatformIcon = NewImage(decredIcons["crossPlatformIcon"])
 	i.FilterImgIcon = NewImage(decredIcons["ic_filter"])
 	i.FilterOffImgIcon = NewImage(decredIcons["ic_filter_off"])
+	i.ShareIcon = NewImage(decredIcons["ic_share"])
 
 	return i
 }

@@ -290,7 +290,9 @@ func (swmp *SingleWalletMasterPage) HandleUserInteractions() {
 		case values.String(values.StrInfo):
 			pg = info.NewInfoPage(swmp.Load, swmp.selectedWallet)
 		case values.String(values.StrTransactions):
-			pg = transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
+			txPage := transaction.NewTransactionsPage(swmp.Load, swmp.selectedWallet)
+			txPage.DisableUniformTab()
+			pg = txPage
 		case values.String(values.StrStakeShuffle):
 			dcrW := swmp.selectedWallet.(*dcr.Asset)
 			if dcrW != nil {
@@ -398,7 +400,7 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
 			alignment := layout.Middle
-			if swmp.Load.IsMobileView() {
+			if swmp.IsMobileView() {
 				alignment = layout.Start
 			}
 			return cryptomaterial.LinearLayout{
@@ -429,7 +431,7 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 							default:
 								return swmp.CurrentPage().Layout(gtx)
 							}
-						}, swmp.Load.IsMobileView())
+						}, swmp.IsMobileView())
 					})
 				}),
 			)

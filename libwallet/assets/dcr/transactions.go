@@ -2,8 +2,10 @@ package dcr
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	"github.com/crypto-power/cryptopower/libwallet/txhelper"
 	"github.com/crypto-power/cryptopower/libwallet/utils"
@@ -100,7 +102,7 @@ func (asset *Asset) GetTransactionRaw(txHash string) (*sharedW.Transaction, erro
 }
 
 func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst bool) (string, error) {
-	transactions, err := asset.GetTransactionsRaw(offset, limit, txFilter, newestFirst)
+	transactions, err := asset.GetTransactionsRaw(offset, limit, txFilter, newestFirst, "")
 	if err != nil {
 		return "", err
 	}
@@ -113,7 +115,12 @@ func (asset *Asset) GetTransactions(offset, limit, txFilter int32, newestFirst b
 	return string(jsonEncodedTransactions), nil
 }
 
-func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool) (transactions []*sharedW.Transaction, err error) {
+func (asset *Asset) GetTransactionsRaw(offset, limit, txFilter int32, newestFirst bool, txHashSearch string) (transactions []*sharedW.Transaction, err error) {
+	txHashSearch = strings.TrimSpace(txHashSearch)
+	if txHashSearch != "" {
+		err = asset.GetWalletDataDb().Find(q.Eq("Hash", txHashSearch), &transactions)
+		return
+	}
 	err = asset.GetWalletDataDb().Read(offset, limit, txFilter, newestFirst, asset.RequiredConfirmations(), asset.GetBestBlockHeight(), &transactions)
 	return
 }

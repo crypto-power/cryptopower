@@ -496,7 +496,7 @@ func (pg *WalletInfo) reloadMixerBalances() {
 }
 
 func (pg *WalletInfo) loadTransactions() {
-	txs, err := pg.wallet.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true)
+	txs, err := pg.wallet.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true, "")
 	if err != nil {
 		log.Errorf("error loading transactions: %v", err)
 		return
@@ -507,7 +507,7 @@ func (pg *WalletInfo) loadTransactions() {
 func (pg *WalletInfo) loadStakes() {
 	pg.stakes = make([]*sharedW.Transaction, 0)
 
-	txs, err := pg.wallet.GetTransactionsRaw(0, 10, libutils.TxFilterStaking, true)
+	txs, err := pg.wallet.GetTransactionsRaw(0, 10, libutils.TxFilterStaking, true, "")
 	if err != nil {
 		log.Errorf("error loading staking activities: %v", err)
 		return
