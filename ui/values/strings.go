@@ -983,4 +983,8 @@ const (
 	StrDexPassword                     = "dexPassword"
 	StrInsufficientBondAmount          = "insufficientBondAmount"
 	StrDEXInitErrorMsg                 = "DEXInitErrorMsg"
+	StrTxRegular                       = "txRegular"
+	StrstakingTx                       = "stakingTx"
+	StrFilter                          = "filter"
+	StrExport                          = "export"
 )

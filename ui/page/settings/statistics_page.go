@@ -62,7 +62,7 @@ func NewStatPage(l *load.Load, wallet sharedW.Asset) *StatPage {
 // the page is displayed.
 // Part of the load.Page interface.
 func (pg *StatPage) OnNavigatedTo() {
-	txs, err := pg.wallet.GetTransactionsRaw(0, 0, dcr.TxFilterAll, true)
+	txs, err := pg.wallet.GetTransactionsRaw(0, 0, dcr.TxFilterAll, true, "")
 	if err != nil {
 		log.Errorf("Error getting txs: %s", err.Error())
 	} else {

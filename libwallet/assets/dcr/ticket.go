@@ -18,7 +18,7 @@ import (
 )
 
 func (asset *Asset) TotalStakingRewards() (int64, error) {
-	voteTransactions, err := asset.GetTransactionsRaw(0, 0, TxFilterVoted, true)
+	voteTransactions, err := asset.GetTransactionsRaw(0, 0, TxFilterVoted, true, "")
 	if err != nil {
 		return 0, err
 	}
@@ -568,7 +568,7 @@ func (asset *Asset) NextTicketPriceRemaining() (secs int64, err error) {
 func (asset *Asset) UnspentUnexpiredTickets() ([]*sharedW.Transaction, error) {
 	var tickets []*sharedW.Transaction
 	for _, filter := range []int32{TxFilterUnmined, TxFilterImmature, TxFilterLive} {
-		tx, err := asset.GetTransactionsRaw(0, 0, filter, true)
+		tx, err := asset.GetTransactionsRaw(0, 0, filter, true, "")
 		if err != nil {
 			return nil, err
 		}

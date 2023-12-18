@@ -35,7 +35,7 @@ func (pg *Page) stopTxNotificationsListener() {
 }
 
 func (pg *Page) fetchTickets(offset, pageSize int32) ([]*transactionItem, int, bool, error) {
-	txs, err := pg.dcrWallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true)
+	txs, err := pg.dcrWallet.GetTransactionsRaw(offset, pageSize, dcr.TxFilterTickets, true, "")
 	if err != nil {
 		return nil, -1, false, err
 	}

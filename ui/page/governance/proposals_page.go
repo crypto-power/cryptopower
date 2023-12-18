@@ -166,10 +166,7 @@ func (pg *ProposalsPage) fetchProposals(offset, pageSize int32) ([]*components.P
 		proposalFilter = libwallet.ProposalCategoryAll
 	}
 
-	orderNewest := true
-	if pg.orderDropDown.Selected() == values.String(values.StrOldest) {
-		orderNewest = false
-	}
+	orderNewest := pg.orderDropDown.Selected() != values.String(values.StrOldest)
 
 	isReset := proposalFilter != pg.previousFilter.TypeFilter || orderNewest == pg.previousFilter.OrderNewest
 	if isReset {

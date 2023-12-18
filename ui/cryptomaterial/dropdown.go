@@ -200,9 +200,9 @@ func (d *DropDown) Changed() bool {
 				if item.PreventSelection {
 					return false
 				}
-
+				oldSelected := d.selectedIndex
 				d.selectedIndex = index
-				return true
+				return oldSelected != index
 			}
 		}
 	}
@@ -400,13 +400,13 @@ func (d *DropDown) drawLayout(gtx C, body layout.Widget) D {
 		d.linearLayout.Padding = d.padding
 		d.linearLayout.Shadow = d.shadow
 	} else {
-		d.linearLayout.Background = d.theme.Color.Gray2
+		if d.Background != nil {
+			d.linearLayout.Background = *d.Background
+		} else {
+			d.linearLayout.Background = d.theme.Color.Gray2
+		}
 		d.linearLayout.Padding = layout.Inset{}
 		d.linearLayout.Shadow = nil
-	}
-
-	if d.Background != nil {
-		d.linearLayout.Background = *d.Background
 	}
 
 	if d.BorderWidth > 0 {
