@@ -240,7 +240,8 @@ func (rp *recipient) walletAccountlayout(window app.WindowNavigator) layout.Widg
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return rp.contentWrapper(gtx, values.String(values.StrAccount), func(gtx C) D {
+				txt := fmt.Sprintf("%s %s", values.String(values.StrDestination), values.String(values.StrAccount))
+				return rp.contentWrapper(gtx, txt, func(gtx C) D {
 					return rp.sendDestination.destinationAccountSelector.Layout(window, gtx)
 				})
 			}),
