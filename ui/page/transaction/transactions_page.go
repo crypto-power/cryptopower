@@ -297,7 +297,6 @@ func (pg *TransactionsPage) loadTransactions(wal sharedW.Asset, offset, pageSize
 	}
 	pg.txFilter = txFilter
 	searchKey := pg.searchEditor.Editor.Text()
-	fmt.Println("----------->", searchKey)
 	walletTxs, err := wal.GetTransactionsRaw(offset, pageSize, txFilter, newestFirst, searchKey)
 	if err != nil {
 		err = fmt.Errorf("error loading transactions: %v", err)
