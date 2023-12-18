@@ -64,7 +64,7 @@ func (pg *Page) layoutDesktop(gtx C) D {
 
 	return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
 		mp := values.MarginPadding32
-		if i == len(pageContent) {
+		if i == len(pageContent)-1 {
 			mp = values.MarginPadding0
 		}
 		return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
@@ -200,7 +200,8 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
 			inset := layout.UniformInset(values.MarginPadding15)
 			return inset.Layout(gtx, func(gtx C) D {
-				textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
+				textLabel := pg.Theme.Label(values.TextSize16, selectedOption)
+				textLabel.Font.Weight = font.SemiBold
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 					layout.Rigid(textLabel.Layout),
 					layout.Flexed(1, func(gtx C) D {
@@ -211,10 +212,7 @@ func (pg *Page) coinSelectionSection(gtx C) D {
 								Orientation: layout.Horizontal,
 								Alignment:   layout.Middle,
 								Clickable:   pg.toCoinSelection,
-							}.Layout(gtx,
-								layout.Rigid(pg.Theme.Label(values.TextSize16, selectedOption).Layout),
-								layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
-							)
+							}.Layout2(gtx, pg.Theme.Icons.ChevronRight.Layout20dp)
 						})
 					}),
 				)

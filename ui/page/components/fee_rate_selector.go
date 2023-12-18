@@ -183,13 +183,10 @@ func (fs *FeeRateSelector) Layout(gtx C) D {
 
 					lbl := fs.Theme.Label(values.TextSize14, txt)
 					lbl.Color = col
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Flexed(1, func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
-								return layout.E.Layout(gtx, lbl.Layout)
-							})
-						}),
-					)
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+						return layout.E.Layout(gtx, lbl.Layout)
+					})
 				}),
 			)
 		}),
