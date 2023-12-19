@@ -281,7 +281,7 @@ func (pg *OverviewPage) Layout(gtx C) D {
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *OverviewPage) layoutDesktop(gtx layout.Context) layout.Dimensions {
+func (pg *OverviewPage) layoutDesktop(gtx C) D {
 	pageContent := []func(gtx C) D{
 		pg.sliderLayout,
 		pg.marketOverview,
@@ -361,7 +361,7 @@ func (pg *OverviewPage) sliderLayout(gtx C) D {
 					return pg.assetBalanceSliderLayout(gtx, mixerSliderDims.Size.Y)
 				}),
 				layout.Flexed(.5, func(gtx C) D {
-					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 						call.Add(gtx.Ops)
 						return mixerSliderDims
 					})
@@ -500,14 +500,14 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 		return D{}
 	}
 
-	titleLayout := func(gtx layout.Context) layout.Dimensions {
+	titleLayout := func(gtx C) D {
 		return cryptomaterial.LinearLayout{
 			Width:       cryptomaterial.MatchParent,
 			Height:      cryptomaterial.WrapContent,
 			Orientation: layout.Horizontal,
 			Spacing:     layout.SpaceBetween,
 		}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			layout.Rigid(func(gtx C) D {
 				return pg.Theme.Body2(values.String(values.StrMarketOverview)).Layout(gtx)
 			}),
 			layout.Flexed(1, func(gtx C) D {
@@ -539,7 +539,7 @@ func (pg *OverviewPage) marketOverview(gtx C) D {
 							layout.Rigid(func(gtx C) D {
 								// No divider for last row
 								if i == len(pg.mktValues)-1 {
-									return layout.Dimensions{}
+									return D{}
 								}
 
 								gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -586,7 +586,7 @@ func (pg *OverviewPage) mobileMarketOverview(gtx C) D {
 						Orientation: layout.Horizontal,
 						Spacing:     layout.SpaceBetween,
 					}.Layout(gtx,
-						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						layout.Rigid(func(gtx C) D {
 							txt := pg.Theme.Label(values.TextSize18, values.String(values.StrMarketOverview))
 							txt.Color = pg.Theme.Color.Text
 							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, txt.Layout)
@@ -833,101 +833,90 @@ func (pg *OverviewPage) txStakingSection(gtx C) D {
 		Direction:   layout.Center,
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
+			var flexChilds []layout.FlexChild
 			if pg.IsMobileView() {
-				return layout.Flex{Axis: axis}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
-								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
-								})
-							})
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-							return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
-								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
-								})
-							})
-						})
-					}),
-				)
+				flexChilds = []layout.FlexChild{
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+					layout.Rigid(pg.recentTransactionsLayout),
+					layout.Rigid(pg.recentStakingsLayout),
+				}
+			} else {
+				flexChilds = []layout.FlexChild{
+					layout.Flexed(.5, pg.recentTransactionsLayout),
+					layout.Rigid(layout.Spacer{Width: values.MarginPadding10}.Layout),
+					layout.Flexed(.5, pg.recentStakingsLayout),
+				}
 			}
 
-			return layout.Flex{}.Layout(gtx,
-				layout.Flexed(.5, func(gtx C) D {
-					return layout.Inset{Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-						return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
-							if len(pg.transactions) == 0 {
-								return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
-								})
-							}
+			return layout.Flex{Axis: axis}.Layout(gtx, flexChilds...)
+		}),
+	)
+}
 
-							return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
-								tx, wal := pg.txAndWallet(pg.transactions[index])
-								return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-									layout.Rigid(func(gtx C) D {
-										return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
-									}),
-									layout.Rigid(func(gtx C) D {
-										// No divider for last row
-										if index == len(pg.transactions)-1 {
-											return D{}
-										}
+func (pg *OverviewPage) recentTransactionsLayout(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrRecentTransactions), nil, func(gtx C) D {
+		if len(pg.transactions) == 0 {
+			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.Theme.Body1(values.String(values.StrNoTransactions)).Layout(gtx)
+			})
+		}
 
-										gtx.Constraints.Min.X = gtx.Constraints.Max.X
-										separator := pg.Theme.Separator()
-										return layout.E.Layout(gtx, func(gtx C) D {
-											// Show bottom divider for all rows except last
-											return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
-										})
-									}),
-								)
-							})
-						})
-					})
+		return pg.recentTransactions.Layout(gtx, len(pg.transactions), func(gtx C, index int) D {
+			tx, wal := pg.txAndWallet(pg.transactions[index])
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
 				}),
-				layout.Flexed(.5, func(gtx C) D {
-					return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
-						if len(pg.stakes) == 0 {
-							return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
-							})
-						}
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if index == len(pg.transactions)-1 {
+						return D{}
+					}
 
-						return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
-							tx, wal := pg.txAndWallet(pg.stakes[index])
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
-								}),
-								layout.Rigid(func(gtx C) D {
-									// No divider for last row
-									if index == len(pg.stakes)-1 {
-										return D{}
-									}
-
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									separator := pg.Theme.Separator()
-									return layout.E.Layout(gtx, func(gtx C) D {
-										// Show bottom divider for all rows except last
-										return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
-									})
-								}),
-							)
-						})
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					separator := pg.Theme.Separator()
+					return layout.E.Layout(gtx, func(gtx C) D {
+						// Show bottom divider for all rows except last
+						return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
 					})
 				}),
 			)
-		}),
-	)
+		})
+	})
+}
+
+func (pg *OverviewPage) recentStakingsLayout(gtx C) D {
+	return pg.pageContentWrapper(gtx, values.String(values.StrStakingActivity), nil, func(gtx C) D {
+		if len(pg.stakes) == 0 {
+			return pg.centerLayout(gtx, values.MarginPadding10, values.MarginPadding10, func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.Theme.Body1(values.String(values.StrNoStaking)).Layout(gtx)
+			})
+		}
+
+		return pg.recentStakes.Layout(gtx, len(pg.stakes), func(gtx C, index int) D {
+			tx, wal := pg.txAndWallet(pg.stakes[index])
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return components.LayoutTransactionRow(gtx, pg.Load, wal, tx, false)
+				}),
+				layout.Rigid(func(gtx C) D {
+					// No divider for last row
+					if index == len(pg.stakes)-1 {
+						return D{}
+					}
+
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					separator := pg.Theme.Separator()
+					return layout.E.Layout(gtx, func(gtx C) D {
+						// Show bottom divider for all rows except last
+						return layout.Inset{Left: values.MarginPadding32}.Layout(gtx, separator.Layout)
+					})
+				}),
+			)
+		})
+	})
 }
 
 func (pg *OverviewPage) recentTrades(gtx C) D {
@@ -950,7 +939,7 @@ func (pg *OverviewPage) recentTrades(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					// Show bottom divider for all rows except the last row.
 					if i == len(pg.orders)-1 {
-						return layout.Dimensions{}
+						return D{}
 					}
 
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -980,7 +969,7 @@ func (pg *OverviewPage) recentProposal(gtx C) D {
 				layout.Rigid(func(gtx C) D {
 					// No divider for last row
 					if i == len(pg.proposalItems)-1 {
-						return layout.Dimensions{}
+						return D{}
 					}
 					return pg.Theme.Separator().Layout(gtx)
 				}),
@@ -1224,10 +1213,10 @@ func (pg *OverviewPage) reloadBalances() {
 }
 
 func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
-	return func(gtx layout.Context) layout.Dimensions {
+	return func(gtx C) D {
 		refreshing := pg.AssetsManager.RateSource.Refreshing()
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			layout.Rigid(func(gtx C) D {
 				var text string
 				if refreshing {
 					text = values.String(values.StrRefreshState)
@@ -1239,7 +1228,7 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 				lastUpdatedInfo.Color = pg.Theme.Color.GrayText2
 				return layout.Inset{Bottom: values.MarginPadding2}.Layout(gtx, lastUpdatedInfo.Layout)
 			}),
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			layout.Rigid(func(gtx C) D {
 				return cryptomaterial.LinearLayout{
 					Width:     cryptomaterial.WrapContent,
 					Height:    cryptomaterial.WrapContent,
@@ -1247,13 +1236,13 @@ func (pg *OverviewPage) ratesRefreshComponent() func(gtx C) D {
 					Alignment: layout.End,
 					Margin:    layout.Inset{Left: values.MarginPadding8},
 					Clickable: pg.forceRefreshRates,
-				}.Layout2(gtx, func(gtx layout.Context) layout.Dimensions {
+				}.Layout2(gtx, func(gtx C) D {
 					if refreshing {
 						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding20)
 						gtx.Constraints.Min.X = gtx.Constraints.Max.X
 						return layout.Inset{Left: values.MarginPadding5, Bottom: values.MarginPadding2}.Layout(gtx, pg.materialLoader.Layout)
 					}
-					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+					return layout.Inset{Left: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
 						return pg.Theme.Icons.Restore.LayoutSize(gtx, values.MarginPadding18)
 					})
 				})
