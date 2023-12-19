@@ -44,10 +44,10 @@ type WalletInfo struct {
 	container *widget.List
 
 	transactions       []*sharedW.Transaction
-	recentTransactions layout.List
+	recentTransactions *cryptomaterial.ClickableList
 
 	stakes       []*sharedW.Transaction
-	recentStakes layout.List
+	recentStakes *cryptomaterial.ClickableList
 
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
@@ -84,14 +84,8 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		recentTransactions: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
-		recentStakes: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
+		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 	}
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
@@ -335,6 +329,14 @@ func (pg *WalletInfo) HandleUserInteractions() {
 				pg.wallet.SaveUserConfigValue(sharedW.AutoSyncConfigKey, b)
 			})
 		}()
+	}
+
+	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.transactions[selectedItem]))
+	}
+
+	if clicked, selectedItem := pg.recentStakes.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.stakes[selectedItem]))
 	}
 
 	if pg.toBackup.Button.Clicked() {
