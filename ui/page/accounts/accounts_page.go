@@ -55,6 +55,9 @@ func NewAccountPage(l *load.Load, wallet sharedW.Asset) *Page {
 		accountsList:  l.Theme.NewClickableList(layout.Vertical),
 		wallet:        wallet,
 	}
+	pg.accountsList.Radius = cryptomaterial.Radius(8)
+	pg.accountsList.CompleteRadius = true
+	pg.accountsList.ClickableInset = cryptomaterial.ClickableInset{Bottom: values.MarginPadding20}
 
 	return pg
 }
@@ -139,33 +142,12 @@ func (pg *Page) Layout(gtx C) D {
 }
 
 func (pg *Page) bodyLayout(gtx C) D {
-	inset := layout.Inset{Top: values.MarginPadding24, Bottom: values.MarginPadding24}
-	if pg.IsMobileView() {
-		inset = layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}
-		pg.accountsList.Radius = cryptomaterial.Radius(8)
-		pg.accountsList.CompleteRadius = true
-		pg.accountsList.ClickableInset = cryptomaterial.ClickableInset{Bottom: values.MarginPadding20}
-	}
-	return inset.Layout(gtx, func(gtx C) D {
+	dp24 := values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding24)
+	return layout.Inset{Top: dp24, Bottom: dp24}.Layout(gtx, func(gtx C) D {
 		return pg.accountsList.Layout(gtx, len(pg.accounts), func(gtx C, i int) D {
-			if pg.IsMobileView() {
-				return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
-					return pg.mobileAccountItemLayout(gtx, pg.accounts[i])
-				})
-			}
-
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return pg.accountItemLayout(gtx, pg.accounts[i])
-				}),
-				layout.Rigid(func(gtx C) D {
-					isLastItem := i == len(pg.accounts)-1
-					if isLastItem {
-						return D{}
-					}
-					return pg.itemLine(gtx)
-				}),
-			)
+			return layout.Inset{Bottom: values.MarginPadding20}.Layout(gtx, func(gtx C) D {
+				return pg.accountItemLayout(gtx, pg.accounts[i])
+			})
 		})
 	})
 }
@@ -207,15 +189,7 @@ func (pg *Page) addAccountBtnLayout(gtx C) D {
 	)
 }
 
-func (pg *Page) itemLine(gtx C) D {
-	return layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}.Layout(gtx, func(gtx C) D {
-		line := pg.Theme.Line(1, 0)
-		line.Color = pg.Theme.Color.Gray9
-		return line.Layout(gtx)
-	})
-}
-
-func (pg *Page) mobileAccountItemLayout(gtx C, account *sharedW.Account) D {
+func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
 	dp10 := values.MarginPadding10
 	return cryptomaterial.LinearLayout{
 		Width:       cryptomaterial.MatchParent,
@@ -229,18 +203,18 @@ func (pg *Page) mobileAccountItemLayout(gtx C, account *sharedW.Account) D {
 		},
 	}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return pg.mobileAccountBalanceLayout(gtx, false, account)
+			return pg.accountBalanceLayout(gtx, false, account)
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: dp10, Bottom: dp10}.Layout(gtx, pg.Theme.Separator().Layout)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return pg.mobileAccountBalanceLayout(gtx, true, account)
+			return pg.accountBalanceLayout(gtx, true, account)
 		}),
 	)
 }
 
-func (pg *Page) mobileAccountBalanceLayout(gtx C, spendableLayout bool, account *sharedW.Account) D {
+func (pg *Page) accountBalanceLayout(gtx C, spendableLayout bool, account *sharedW.Account) D {
 	var label, balanceTxt cryptomaterial.Label
 	var balanceAmt float64
 	if !spendableLayout {
@@ -279,58 +253,6 @@ func (pg *Page) mobileAccountBalanceLayout(gtx C, spendableLayout bool, account 
 				return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 					layout.Rigid(balanceTxt.Layout),
 					layout.Rigid(usdAmtLabel.Layout),
-				)
-			})
-		}),
-	)
-}
-
-func (pg *Page) accountItemLayout(gtx C, account *sharedW.Account) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding24}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize18, account.AccountName)
-						txt.Font.Weight = font.SemiBold
-						return txt.Layout(gtx)
-					}),
-					layout.Flexed(1, func(gtx C) D {
-						balance := account.Balance.Total.String()
-						totalBalance := pg.wallet.ToAmount(account.Balance.Total.ToInt()).ToCoin()
-						if pg.exchangeRate != -1 && pg.usdExchangeSet {
-							balanceUSD := utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, totalBalance))
-							balance = fmt.Sprintf("%s (%s)", balance, balanceUSD)
-						}
-						txt := pg.Theme.Label(values.TextSize18, balance)
-						txt.Font.Weight = font.SemiBold
-						return layout.E.Layout(gtx, txt.Layout)
-					}),
-				)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAmountSpendable))
-						txt.Font.Weight = font.SemiBold
-						txt.Color = pg.Theme.Color.GrayText3
-						return txt.Layout(gtx)
-					}),
-
-					layout.Flexed(1, func(gtx C) D {
-						spendable := account.Balance.Spendable.String()
-						spendableCoin := pg.wallet.ToAmount(account.Balance.Spendable.ToInt()).ToCoin()
-						if pg.exchangeRate != -1 && pg.usdExchangeSet {
-							balanceUSD := utils.FormatAsUSDString(pg.Printer, utils.CryptoToUSD(pg.exchangeRate, spendableCoin))
-							spendable = fmt.Sprintf("%s (%s)", spendable, balanceUSD)
-						}
-						txt := pg.Theme.Label(values.TextSize16, spendable)
-						txt.Color = pg.Theme.Color.GrayText3
-						txt.Font.Weight = font.SemiBold
-						return layout.E.Layout(gtx, txt.Layout)
-					}),
 				)
 			})
 		}),
