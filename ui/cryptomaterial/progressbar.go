@@ -255,7 +255,7 @@ func (mp *MultiLayerProgressBar) Layout(gtx C, isMobileView bool, additionalWidg
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, flexWidgets...)
 }
 
-func (t *Theme) ProgressBarCirle(progress int) ProgressCircleStyle {
+func (t *Theme) ProgressBarCircle(progress int) ProgressCircleStyle {
 	return ProgressCircleStyle{ProgressCircleStyle: material.ProgressCircle(t.Base, float32(progress)/100)}
 }
 

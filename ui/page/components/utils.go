@@ -118,7 +118,7 @@ func LayoutIconAndTextWithSize(l *load.Load, gtx C, text string, col color.NRGBA
 				return layout.Inset{
 					Right: values.MarginPadding5,
 				}.Layout(gtx, func(gtx C) D {
-					ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+					ic := cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 					ic.Color = col
 					return ic.Layout(gtx, iconSize)
 				})

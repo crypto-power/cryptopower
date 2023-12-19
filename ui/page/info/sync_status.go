@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
@@ -13,7 +14,7 @@ import (
 )
 
 func (pg *WalletInfo) initWalletStatusWidgets() {
-	pg.walletStatusIcon = cryptomaterial.NewIcon(pg.Theme.Icons.ImageBrightness1)
+	pg.walletStatusIcon = cryptomaterial.NewIcon(pg.Theme.Icons.DotIcon)
 	pg.syncSwitch = pg.Theme.Switch()
 }
 
@@ -66,7 +67,7 @@ func (pg *WalletInfo) syncStatusSection(gtx C) D {
 
 // syncBoxTitleRow lays out widgets in the title row inside the sync status box.
 func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
-	statusLabel := pg.Theme.Label(values.TextSize14, values.String(values.StrOffline))
+	statusLabel := pg.textSize14Label(values.String(values.StrOffline))
 	pg.walletStatusIcon.Color = pg.Theme.Color.Danger
 	if pg.wallet.IsConnectedToNetwork() {
 		statusLabel.Text = values.String(values.StrOnline)
@@ -75,19 +76,25 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.End}.Layout(gtx,
-		layout.Rigid(pg.Theme.Label(values.TextSize14, values.String(values.StrWalletStatus)).Layout),
+		layout.Rigid(func(gtx C) D {
+			if pg.IsMobileView() {
+				return D{} // not enough space
+			}
+			return pg.textSize14Label(values.String(values.StrWalletStatus)).Layout(gtx)
+		}),
 		layout.Rigid(func(gtx C) D {
 			if pg.wallet.IsSyncShuttingDown() {
 				return layout.Inset{
 					Left: values.MarginPadding4,
-				}.Layout(gtx, pg.Theme.Label(values.TextSize14, values.String(values.StrCanceling)).Layout)
+				}.Layout(gtx, pg.textSize14Label(values.String(values.StrCanceling)).Layout)
 			}
 			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
-					return layout.Inset{
-						Right: values.MarginPadding4,
-						Left:  values.MarginPadding4,
-					}.Layout(gtx, func(gtx C) D {
+					inset := layout.Inset{Right: values.MarginPadding4}
+					if !pg.IsMobileView() {
+						inset.Left = values.MarginPadding4
+					}
+					return inset.Layout(gtx, func(gtx C) D {
 						return pg.walletStatusIcon.Layout(gtx, values.MarginPadding15)
 					})
 				}),
@@ -97,15 +104,15 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 							layout.Rigid(func(gtx C) D {
 								connectedPeers := fmt.Sprintf("%d", pg.wallet.ConnectedPeers())
-								return pg.Theme.Label(values.TextSize14, values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
+								return pg.textSize14Label(values.StringF(values.StrConnectedTo, connectedPeers)).Layout(gtx)
 							}),
 						)
 					}
 
 					if !pg.isStatusConnected {
-						return pg.Theme.Label(values.TextSize14, values.String(values.StrNoInternet)).Layout(gtx)
+						return pg.textSize14Label(values.String(values.StrNoInternet)).Layout(gtx)
 					}
-					return pg.Theme.Label(values.TextSize14, values.String(values.StrNoConnectedPeer)).Layout(gtx)
+					return pg.textSize14Label(values.String(values.StrNoConnectedPeer)).Layout(gtx)
 				}),
 			)
 		}),
@@ -113,6 +120,10 @@ func (pg *WalletInfo) syncBoxTitleRow(gtx C) D {
 			return layout.E.Layout(gtx, pg.layoutAutoSyncSection)
 		}),
 	)
+}
+
+func (pg *WalletInfo) textSize14Label(txt string) cryptomaterial.Label {
+	return pg.Theme.Label(pg.ConvertTextSize(values.TextSize14), txt)
 }
 
 func (pg *WalletInfo) syncStatusIcon(gtx C) D {
@@ -125,7 +136,7 @@ func (pg *WalletInfo) syncStatusIcon(gtx C) D {
 
 	i := layout.Inset{Left: values.MarginPadding16}
 	return i.Layout(gtx, func(gtx C) D {
-		return icon.LayoutSize(gtx, values.MarginPadding20)
+		return icon.LayoutSize(gtx, pg.ConvertIconSize(values.MarginPadding20))
 	})
 }
 
@@ -137,48 +148,37 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 	isBtcORLtcAsset := isBtcAsset || isLtcAsset
 	// Rescanning should happen on a synced chain.
 	isRescanning := pg.wallet.IsRescanning() && !isSyncing
-	isInprogress := isSyncing || isRescanning
+	isInProgress := isSyncing || isRescanning
 	bestBlock := pg.wallet.GetBestBlock()
+	dp8 := values.MarginPadding8
 	return uniform.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(pg.labelTexSize16Layout(values.String(values.StrLatestBlock), dp8, true)),
 					layout.Rigid(func(gtx C) D {
-						latestBlockTitle := pg.Theme.Body1(values.String(values.StrLatestBlock))
-						latestBlockTitle.Color = pg.Theme.Color.GrayText2
-						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if !isInprogress {
+						if !isInProgress {
 							return D{}
 						}
-						blockHeaderFetched := pg.Theme.Body1(values.String(values.StrBlockHeaderFetched))
-						blockHeaderFetched.Color = pg.Theme.Color.GrayText2
-						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeaderFetched.Layout)
+						return pg.labelTexSize16Layout(values.String(values.StrBlockHeaderFetched), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if isRescanning && (isBtcORLtcAsset) {
 							return D{}
 						}
-						syncProgress := pg.Theme.Body1(values.String(values.StrSyncingProgress))
-						syncProgress.Color = pg.Theme.Color.GrayText2
-						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgress.Layout)
+						return pg.labelTexSize16Layout(values.String(values.StrSyncingProgress), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if !isInprogress || (isRescanning && (isBtcORLtcAsset)) {
+						if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 							return D{}
 						}
-						estTime := pg.Theme.Body1(values.String(values.StrSyncCompTime))
-						estTime.Color = pg.Theme.Color.GrayText2
-						return estTime.Layout(gtx)
+						return pg.labelTexSize16Layout(values.String(values.StrSyncCompTime), dp8, true)(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
 						if !(isRescanning && (isBtcORLtcAsset)) {
 							return D{}
 						}
-						addrDiscovery := pg.Theme.Body1(values.String(values.StrAddressDiscoveryInProgress))
-						addrDiscovery.Color = pg.Theme.Color.GrayText2
-						return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, addrDiscovery.Layout)
+						return pg.labelTexSize16Layout(values.String(values.StrAddressDiscoveryInProgress), dp8, true)(gtx)
 					}),
 				)
 			}),
@@ -186,18 +186,15 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 				return layout.E.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
 						layout.Rigid(func(gtx C) D {
-							latestBlockTitle := pg.Theme.Body1(fmt.Sprintf("%d (%s)", bestBlock.Height, components.TimeAgo(bestBlock.Timestamp)))
-							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, latestBlockTitle.Layout)
+							latestBlockTitle := fmt.Sprintf("%d (%s)", bestBlock.Height, components.TimeAgo(bestBlock.Timestamp))
+							return pg.labelTexSize16Layout(latestBlockTitle, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInprogress || (isRescanning && (isBtcORLtcAsset)) {
+							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
-							pgrss := pg.fetchSyncProgress()
-							blockHeightFetchedText := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height,
-								pgrss.headersToFetchOrScan)
-							blockHeightFetched := pg.Theme.Body1(blockHeightFetchedText)
-							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, blockHeightFetched.Layout)
+							blockHeightFetched := values.StringF(values.StrBlockHeaderFetchedCount, bestBlock.Height, pg.fetchSyncProgress().headersToFetchOrScan)
+							return pg.labelTexSize16Layout(blockHeightFetched, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
 							currentSeconds := time.Now().Unix()
@@ -213,22 +210,31 @@ func (pg *WalletInfo) syncContent(gtx C, uniform layout.Inset) D {
 								syncProgress = values.String(values.StrComplete)
 							}
 
-							syncProgressBody := pg.Theme.Body1(syncProgress)
-							return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, syncProgressBody.Layout)
+							return pg.labelTexSize16Layout(syncProgress, dp8, false)(gtx)
 						}),
 						layout.Rigid(func(gtx C) D {
-							if !isInprogress || (isRescanning && (isBtcORLtcAsset)) {
+							if !isInProgress || (isRescanning && (isBtcORLtcAsset)) {
 								return D{}
 							}
 							_, timeLeft := pg.progressStatusDetails()
-							estTime := pg.Theme.Body1(timeLeft)
-							return estTime.Layout(gtx)
+							return pg.labelTexSize16Layout(timeLeft, dp8, false)(gtx)
 						}),
 					)
 				})
 			}),
 		)
 	})
+}
+
+func (pg *WalletInfo) labelTexSize16Layout(txt string, bottomInset unit.Dp, colorGrey bool) func(gtx C) D {
+	return func(gtx C) D {
+		lbl := pg.Theme.Body1(txt)
+		if colorGrey {
+			lbl.Color = pg.Theme.Color.GrayText2
+		}
+		lbl.TextSize = pg.ConvertTextSize(values.TextSize16)
+		return layout.Inset{Bottom: bottomInset}.Layout(gtx, lbl.Layout)
+	}
 }
 
 func (pg *WalletInfo) layoutAutoSyncSection(gtx C) D {
@@ -251,7 +257,7 @@ func (pg *WalletInfo) progressBarRow(gtx C) D {
 		p.Color = pg.Theme.Color.Success
 		p.TrackColor = pg.Theme.Color.Gray2
 
-		progressTitleLabel := pg.Theme.Label(values.TextSize14, fmt.Sprintf("%v%%", progress))
+		progressTitleLabel := pg.textSize14Label(fmt.Sprintf("%v%%", progress))
 		progressTitleLabel.Color = pg.Theme.Color.Text
 		return p.TextLayout(gtx, progressTitleLabel.Layout)
 	})
@@ -297,22 +303,18 @@ func (pg *WalletInfo) rescanDetailsLayout(gtx C, inset layout.Inset) D {
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						headersFetchedTitleLabel := pg.Theme.Body2(values.String(values.StrBlocksScanned))
-						headersFetchedTitleLabel.Color = pg.Theme.Color.GrayText2
-
-						blocksScannedLabel := pg.Theme.Body1(fmt.Sprint(pg.rescanUpdate.CurrentRescanHeight))
 						return inset.Layout(gtx, func(gtx C) D {
-							return components.EndToEndRow(gtx, headersFetchedTitleLabel.Layout, blocksScannedLabel.Layout)
+							headersFetchedTitleLabel := pg.labelTexSize16Layout(values.String(values.StrBlocksScanned), 0, true)
+							blocksScannedLabel := pg.labelTexSize16Layout(fmt.Sprint(pg.rescanUpdate.CurrentRescanHeight), 0, false)
+							return components.EndToEndRow(gtx, headersFetchedTitleLabel, blocksScannedLabel)
 						})
 					}),
 					layout.Rigid(func(gtx C) D {
-						progressTitleLabel := pg.Theme.Body2(values.String(values.StrSyncingProgress))
-						progressTitleLabel.Color = pg.Theme.Color.GrayText2
-
-						rescanProgress := values.StringF(values.StrBlocksLeft, pg.rescanUpdate.TotalHeadersToScan-pg.rescanUpdate.CurrentRescanHeight)
-						blocksScannedLabel := pg.Theme.Body1(rescanProgress)
 						return inset.Layout(gtx, func(gtx C) D {
-							return components.EndToEndRow(gtx, progressTitleLabel.Layout, blocksScannedLabel.Layout)
+							progressTitleLabel := pg.labelTexSize16Layout(values.String(values.StrSyncingProgress), 0, true)
+							rescanProgress := values.StringF(values.StrBlocksLeft, pg.rescanUpdate.TotalHeadersToScan-pg.rescanUpdate.CurrentRescanHeight)
+							blocksScannedLabel := pg.labelTexSize16Layout(rescanProgress, 0, false)
+							return components.EndToEndRow(gtx, progressTitleLabel, blocksScannedLabel)
 						})
 					}),
 				)

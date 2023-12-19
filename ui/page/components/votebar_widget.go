@@ -57,7 +57,7 @@ func NewVoteBar(l *load.Load) *VoteBar {
 		noColor:       l.Theme.Color.Danger,
 		passTooltip:   l.Theme.Tooltip(),
 		quorumTooltip: l.Theme.Tooltip(),
-		legendIcon:    cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1),
+		legendIcon:    cryptomaterial.NewIcon(l.Theme.Icons.DotIcon),
 	}
 
 	_, vb.infoButton = SubpageHeaderButtons(l)
