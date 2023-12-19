@@ -994,4 +994,6 @@ const (
 	StrstakingTx                       = "stakingTx"
 	StrFilter                          = "filter"
 	StrExport                          = "export"
+	StrMyAddress                       = "myAddress"
+	StrRegenerate                      = "regenerate"
 )

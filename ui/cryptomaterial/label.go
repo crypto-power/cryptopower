@@ -39,6 +39,10 @@ func (t *Theme) H6(txt string) Label {
 	return t.labelWithDefaultColor(Label{material.H6(t.Base, txt)})
 }
 
+func (t *Theme) Subtitle1(txt string) Label {
+	return t.labelWithDefaultColor(Label{material.Subtitle1(t.Base, txt)})
+}
+
 func (t *Theme) Body1(txt string) Label {
 	return t.labelWithDefaultColor(Label{material.Body1(t.Base, txt)})
 }

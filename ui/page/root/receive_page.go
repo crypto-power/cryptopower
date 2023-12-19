@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/semantic"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/crypto-power/cryptopower/app"
@@ -41,9 +39,11 @@ type ReceivePage struct {
 	currentAddress    string
 	qrImage           *image.Image
 	newAddr, copy     cryptomaterial.Button
+	newAddr1, copy1   *cryptomaterial.Clickable
 	info, more        cryptomaterial.IconButton
 	card              cryptomaterial.Card
 	receiveAddress    cryptomaterial.Label
+	copyLabel         cryptomaterial.Label
 	selector          *components.WalletAndAccountSelector
 	copyAddressButton cryptomaterial.Button
 
@@ -64,10 +64,13 @@ func NewReceivePage(l *load.Load, wallet sharedW.Asset) *ReceivePage {
 			List: layout.List{Axis: layout.Vertical},
 		},
 		info:           l.Theme.IconButton(cryptomaterial.MustIcon(widget.NewIcon(icons.ActionInfo))),
+		copy1:          l.Theme.NewClickable(false),
+		newAddr1:       l.Theme.NewClickable(false),
 		copy:           l.Theme.Button(values.String(values.StrCopy)),
 		more:           l.Theme.IconButton(l.Theme.Icons.NavigationMore),
 		newAddr:        l.Theme.Button(values.String(values.StrGenerateAddress)),
-		receiveAddress: l.Theme.Label(values.TextSize20, ""),
+		receiveAddress: l.Theme.Label(values.TextSize16, ""),
+		copyLabel:      l.Theme.Label(values.TextSize16, ""),
 		card:           l.Theme.Card(),
 		backdrop:       new(widget.Clickable),
 		selectedWallet: wallet,
@@ -175,164 +178,230 @@ func (pg *ReceivePage) Layout(gtx C) D {
 	pg.handleCopyEvent(gtx)
 	pg.pageBackdropLayout(gtx)
 
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
+	// if pg.Load.IsMobileView() {
+	// 	return pg.layoutMobile(gtx)
+	// }
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *ReceivePage) layoutDesktop(gtx layout.Context) layout.Dimensions {
-	pageContent := []func(gtx C) D{
-		func(gtx C) D {
-			return pg.pageSections(gtx, func(gtx C) D {
-				return pg.selector.Layout(pg.ParentWindow(), gtx)
-			})
-		},
-		func(gtx C) D {
-			return pg.Theme.Separator().Layout(gtx)
-		},
-		func(gtx C) D {
-			return pg.pageSections(gtx, func(gtx C) D {
+func (pg *ReceivePage) layoutDesktop(gtx C) D {
+	// pageContent := []func(gtx C) D{
+	// 	func(gtx C) D {
+	// 		// return pg.pageSections(gtx, func(gtx C) D {
+	// 		return pg.selector.Layout(pg.ParentWindow(), gtx)
+	// 		// })
+	// 	},
+	// 	func(gtx C) D {
+	// 		return pg.Theme.Separator().Layout(gtx)
+	// 	},
+	// 	func(gtx C) D {
+	// 		return pg.pageSections(gtx, func(gtx C) D {
+	// 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	// 				layout.Rigid(func(gtx C) D {
+	// 					return pg.titleLayout(gtx)
+	// 				}),
+	// 				layout.Rigid(func(gtx C) D {
+	// 					if pg.selectedWallet.IsWatchingOnlyWallet() {
+	// 						warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningWatchWallet))
+	// 						warning.Color = pg.Theme.Color.Danger
+	// 						return layout.Center.Layout(gtx, warning.Layout)
+	// 					}
+	// 					return D{}
+	// 				}),
+	// 				layout.Rigid(func(gtx C) D {
+	// 					return layout.Center.Layout(gtx, func(gtx C) D {
+	// 						return layout.Flex{
+	// 							Axis:      layout.Vertical,
+	// 							Alignment: layout.Middle,
+	// 						}.Layout(gtx,
+	// 							layout.Rigid(func(gtx C) D {
+	// 								if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
+	// 									// Display generated address only on a synced wallet
+	// 									return pg.addressLayout(gtx)
+	// 								}
+	// 								return D{}
+	// 							}),
+	// 							layout.Rigid(func(gtx C) D {
+	// 								if pg.qrImage == nil || !pg.selectedWallet.IsSynced() {
+	// 									// Display generated address only on a synced wallet
+	// 									return D{}
+	// 								}
+
+	// 								return pg.Theme.ImageIcon(gtx, *pg.qrImage, 180)
+	// 							}),
+	// 						)
+	// 					})
+	// 				}),
+	// 			)
+	// 		})
+	// 	},
+	// }
+	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+			return layout.UniformInset(values.MarginPaddingTransform(pg.IsMobileView(), values.MarginPadding16)).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(pg.headerLayout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
 					layout.Rigid(func(gtx C) D {
-						return pg.titleLayout(gtx)
+						textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
+						lbl := pg.Theme.Label(textSize16, values.String(values.StrAccount))
+						lbl.Font.Weight = font.Bold
+						return lbl.Layout(gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						if pg.selectedWallet.IsWatchingOnlyWallet() {
-							warning := pg.Theme.Label(values.TextSize16, values.String(values.StrWarningWatchWallet))
-							warning.Color = pg.Theme.Color.Danger
-							return layout.Center.Layout(gtx, warning.Layout)
-						}
-						return D{}
+						return pg.selector.Layout(pg.ParentWindow(), gtx)
 					}),
 					layout.Rigid(func(gtx C) D {
-						return layout.Center.Layout(gtx, func(gtx C) D {
-							return layout.Flex{
-								Axis:      layout.Vertical,
-								Alignment: layout.Middle,
-							}.Layout(gtx,
+						return components.VerticalInset(values.MarginPadding24).Layout(gtx, pg.Theme.Separator().Layout)
+					}),
+					layout.Rigid(func(gtx C) D {
+						gtx.Constraints.Min.X = gtx.Constraints.Max.X
+						return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 								layout.Rigid(func(gtx C) D {
-									if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
-										// Display generated address only on a synced wallet
-										return pg.addressLayout(gtx)
-									}
-									return D{}
+									txt := pg.Theme.Body2(values.String(values.StrMyAddress))
+									txt.Color = pg.Theme.Color.GrayText2
+									return txt.Layout(gtx)
 								}),
+								layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
 								layout.Rigid(func(gtx C) D {
 									if pg.qrImage == nil || !pg.selectedWallet.IsSynced() {
 										// Display generated address only on a synced wallet
 										return D{}
 									}
-
-									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 180)
+									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 150)
 								}),
 							)
 						})
 					}),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding24}.Layout),
+					layout.Rigid(pg.addressLayout),
+					layout.Rigid(layout.Spacer{Height: values.MarginPadding16}.Layout),
+					layout.Rigid(pg.copyAndNewAddressLayout),
 				)
 			})
-		},
-	}
-
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-				return pg.topNav(gtx)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-				return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-					return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-						return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-							return pageContent[i](gtx)
-						})
-					})
-				})
-			})
-		}),
-	)
+		})
+	})
 }
 
-func (pg *ReceivePage) layoutMobile(gtx layout.Context) layout.Dimensions {
-	pageContent := []func(gtx C) D{
-		func(gtx C) D {
-			return pg.pageSections(gtx, func(gtx C) D {
-				return pg.selector.Layout(pg.ParentWindow(), gtx)
-			})
-		},
-		func(gtx C) D {
-			return pg.Theme.Separator().Layout(gtx)
-		},
-		func(gtx C) D {
-			return pg.pageSections(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return pg.titleLayout(gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						return layout.Center.Layout(gtx, func(gtx C) D {
-							return layout.Flex{
-								Axis:      layout.Vertical,
-								Alignment: layout.Middle,
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									if pg.qrImage == nil {
-										return layout.Dimensions{}
-									}
-
-									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 500)
-								}),
-								layout.Rigid(func(gtx C) D {
-									if pg.currentAddress != "" {
-										pg.copyAddressButton.Text = pg.currentAddress
-										return pg.copyAddressButton.Layout(gtx)
-									}
-									return layout.Dimensions{}
-								}),
-								layout.Rigid(func(gtx C) D {
-									tapToCopy := pg.Theme.Label(values.TextSize10, values.String(values.StrTapToCopy))
-									tapToCopy.Color = pg.Theme.Color.Text
-									return tapToCopy.Layout(gtx)
-								}),
-							)
-						})
-					}),
-				)
-			})
-		},
-	}
-
-	dims := components.UniformMobile(gtx, false, true, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+func (pg *ReceivePage) copyAndNewAddressLayout(gtx C) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Bottom: values.MarginPadding16, Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-					return pg.topNav(gtx)
-				})
+				return pg.buttonIconLayout(gtx, pg.Theme.Icons.CopyIcon, values.String(values.StrCopy), pg.copy1)
 			}),
+			layout.Rigid(layout.Spacer{Width: values.MarginPadding32}.Layout),
 			layout.Rigid(func(gtx C) D {
-				return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
-					return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-						return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-							return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
-								return pageContent[i](gtx)
-							})
-						})
-					})
-				})
+				return pg.buttonIconLayout(gtx, pg.Theme.Icons.Restore, values.String(values.StrRegenerate), pg.newAddr1)
 			}),
 		)
 	})
-
-	return dims
 }
 
-func (pg *ReceivePage) pageSections(gtx layout.Context, body layout.Widget) layout.Dimensions {
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.UniformInset(values.MarginPadding16).Layout(gtx, body)
-	})
+func (pg *ReceivePage) buttonIconLayout(gtx C, icon *cryptomaterial.Image, text string, clickable *cryptomaterial.Clickable) D {
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			dp40 := gtx.Dp(values.MarginPadding40)
+			return cryptomaterial.LinearLayout{
+				Width:       dp40,
+				Height:      dp40,
+				Background:  pg.Theme.Color.Gray2,
+				Orientation: layout.Horizontal,
+				Direction:   layout.Center,
+				Border: cryptomaterial.Border{
+					Radius: cryptomaterial.Radius(20),
+				},
+				Clickable: clickable,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Top: values.MarginPadding10, Bottom: values.MarginPadding10}.Layout(gtx, icon.Layout24dp)
+				}),
+			)
+		}),
+		layout.Rigid(pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize14), text).Layout),
+	)
 }
+
+// func (pg *ReceivePage) layoutMobile(gtx C) D {
+// 	pageContent := []func(gtx C) D{
+// 		func(gtx C) D {
+// 			return pg.pageSections(gtx, func(gtx C) D {
+// 				return pg.selector.Layout(pg.ParentWindow(), gtx)
+// 			})
+// 		},
+// 		func(gtx C) D {
+// 			return pg.Theme.Separator().Layout(gtx)
+// 		},
+// 		func(gtx C) D {
+// 			return pg.pageSections(gtx, func(gtx C) D {
+// 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+// 					layout.Rigid(func(gtx C) D {
+// 						return pg.titleLayout(gtx)
+// 					}),
+// 					layout.Rigid(func(gtx C) D {
+// 						return layout.Center.Layout(gtx, func(gtx C) D {
+// 							return layout.Flex{
+// 								Axis:      layout.Vertical,
+// 								Alignment: layout.Middle,
+// 							}.Layout(gtx,
+// 								layout.Rigid(func(gtx C) D {
+// 									if pg.qrImage == nil {
+// 										return D{}
+// 									}
+
+// 									return pg.Theme.ImageIcon(gtx, *pg.qrImage, 500)
+// 								}),
+// 								layout.Rigid(func(gtx C) D {
+// 									if pg.currentAddress != "" {
+// 										pg.copyAddressButton.Text = pg.currentAddress
+// 										return pg.copyAddressButton.Layout(gtx)
+// 									}
+// 									return D{}
+// 								}),
+// 								layout.Rigid(func(gtx C) D {
+// 									tapToCopy := pg.Theme.Label(values.TextSize10, values.String(values.StrTapToCopy))
+// 									tapToCopy.Color = pg.Theme.Color.Text
+// 									return tapToCopy.Layout(gtx)
+// 								}),
+// 							)
+// 						})
+// 					}),
+// 				)
+// 			})
+// 		},
+// 	}
+
+// 	dims := components.UniformMobile(gtx, false, true, func(gtx C) D {
+// 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+// 			layout.Rigid(func(gtx C) D {
+// 				return layout.Inset{Bottom: values.MarginPadding16, Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+// 					return pg.headerLayout(gtx)
+// 				})
+// 			}),
+// 			layout.Rigid(func(gtx C) D {
+// 				return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
+// 					return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
+// 						return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+// 							return pg.pageContainer.Layout(gtx, len(pageContent), func(gtx C, i int) D {
+// 								return pageContent[i](gtx)
+// 							})
+// 						})
+// 					})
+// 				})
+// 			}),
+// 		)
+// 	})
+
+// 	return dims
+// }
+
+// func (pg *ReceivePage) pageSections(gtx C, body layout.Widget) D {
+// 	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+// 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+// 		return layout.UniformInset(values.MarginPadding16).Layout(gtx, body)
+// 	})
+// }
 
 // pageBackdropLayout layout of background overlay when the popup button generate new address is show,
 // click outside of the generate new address button to hide the button
@@ -341,82 +410,98 @@ func (pg *ReceivePage) pageBackdropLayout(gtx C) {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		m := op.Record(gtx.Ops)
-		pg.backdrop.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		pg.backdrop.Layout(gtx, func(gtx C) D {
 			semantic.Button.Add(gtx.Ops)
-			return layout.Dimensions{Size: gtx.Constraints.Min}
+			return D{Size: gtx.Constraints.Min}
 		})
 		op.Defer(gtx.Ops, m.Stop())
 	}
 }
 
-func (pg *ReceivePage) topNav(gtx C) D {
-	// m := values.MarginPadding0
+func (pg *ReceivePage) headerLayout(gtx C) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			textWithUnit := values.String(values.StrReceive) + " " + string(pg.selectedWallet.GetAssetType())
-			return /*layout.Inset{Left: m}.Layout(gtx, */ pg.Theme.H6(textWithUnit).Layout(gtx)
+			lbl := pg.Theme.H6(values.String(values.StrReceive))
+			lbl.TextSize = values.TextSizeTransform(pg.IsMobileView(), values.TextSize20)
+			return lbl.Layout(gtx)
 		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Right: values.MarginPadding5}.Layout(gtx, pg.infoButton.Layout)
-			})
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: values.MarginPadding6}.Layout(gtx, pg.infoButton.Layout)
 		}),
 	)
 }
 
-func (pg *ReceivePage) titleLayout(gtx C) D {
-	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			txt := pg.Theme.Body2(values.String(values.StrYourAddress))
-			txt.Color = pg.Theme.Color.GrayText2
-			return txt.Layout(gtx)
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					if pg.isNewAddr {
-						m := op.Record(gtx.Ops)
-						layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
-							return pg.Theme.Shadow().Layout(gtx, pg.newAddr.Layout)
-						})
-						op.Defer(gtx.Ops, m.Stop())
-					}
-					return D{}
-				}),
-				layout.Rigid(pg.more.Layout),
-			)
-		}),
-	)
-}
+// func (pg *ReceivePage) titleLayout(gtx C) D {
+// 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,
+// 		layout.Rigid(func(gtx C) D {
+// 			txt := pg.Theme.Body2(values.String(values.StrYourAddress))
+// 			txt.Color = pg.Theme.Color.GrayText2
+// 			return txt.Layout(gtx)
+// 		}),
+// 		layout.Rigid(func(gtx C) D {
+// 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+// 				layout.Rigid(func(gtx C) D {
+// 					if pg.isNewAddr {
+// 						m := op.Record(gtx.Ops)
+// 						layout.Inset{Top: values.MarginPadding30, Left: unit.Dp(-152)}.Layout(gtx, func(gtx C) D {
+// 							return pg.Theme.Shadow().Layout(gtx, pg.newAddr.Layout)
+// 						})
+// 						op.Defer(gtx.Ops, m.Stop())
+// 					}
+// 					return D{}
+// 				}),
+// 				layout.Rigid(pg.more.Layout),
+// 			)
+// 		}),
+// 	)
+// }
 
 func (pg *ReceivePage) addressLayout(gtx C) D {
-	return layout.Inset{Top: values.MarginPadding14, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				card := cryptomaterial.Card{Color: pg.Theme.Color.Gray4}
-				card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
-				return card.Layout(gtx, func(gtx C) D {
-					return layout.Inset{
-						Top:    values.MarginPadding8,
-						Bottom: values.MarginPadding8,
-						Left:   values.MarginPadding30,
-						Right:  values.MarginPadding30,
-					}.Layout(gtx, func(gtx C) D {
-						pg.receiveAddress.Text = pg.currentAddress
-						return pg.receiveAddress.Layout(gtx)
-					})
-				})
-			}),
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D { return D{} })
-			}),
-			layout.Rigid(func(gtx C) D {
-				card := cryptomaterial.Card{Color: pg.copy.Background}
-				card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
-				return card.Layout(gtx, pg.copy.Layout)
-			}),
-		)
+	// return layout.Inset{Top: values.MarginPadding14, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
+	// return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+	// layout.Rigid(func(gtx C) D {
+	border := widget.Border{
+		Color:        pg.Theme.Color.Gray4,
+		CornerRadius: values.MarginPadding10,
+		Width:        values.MarginPadding2,
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return border.Layout(gtx, func(gtx C) D {
+		// return pg.Theme.Card().Layout(gtx, func(gtx C) D {
+		return components.VerticalInset(values.MarginPadding12).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			lbl := pg.Theme.Label(values.TextSizeTransform(pg.IsMobileView(), values.TextSize16), "")
+			if pg.currentAddress != "" && pg.selectedWallet.IsSynced() {
+				lbl.Text = pg.currentAddress
+			}
+			return layout.Center.Layout(gtx, lbl.Layout)
+			// return lbl.Layout(gtx)
+		})
+		// })
 	})
+	// card := cryptomaterial.Card{Color: pg.Theme.Color.Gray4}
+	// card.Radius = cryptomaterial.CornerRadius{TopRight: 0, TopLeft: 8, BottomRight: 0, BottomLeft: 8}
+	// return card.Layout(gtx, func(gtx C) D {
+	// 	return layout.Inset{
+	// 		Top:    values.MarginPadding8,
+	// 		Bottom: values.MarginPadding8,
+	// 		Left:   values.MarginPadding30,
+	// 		Right:  values.MarginPadding30,
+	// 	}.Layout(gtx, func(gtx C) D {
+	// 		pg.receiveAddress.Text = pg.currentAddress
+	// 		return pg.receiveAddress.Layout(gtx)
+	// 	})
+	// })
+	// }),
+	// layout.Rigid(func(gtx C) D {
+	// 	return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D { return D{} })
+	// }),
+	// layout.Rigid(func(gtx C) D {
+	// 	card := cryptomaterial.Card{Color: pg.copy.Background}
+	// 	card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
+	// 	return card.Layout(gtx, pg.copy.Layout)
+	// }),
+	// )
+	// })
 }
 
 // HandleUserInteractions is called just before Layout() to determine
@@ -436,7 +521,7 @@ func (pg *ReceivePage) HandleUserInteractions() {
 		}
 	}
 
-	if pg.newAddr.Clicked() {
+	if pg.newAddr1.Clicked() {
 		newAddr, err := pg.generateNewAddress()
 		if err != nil {
 			log.Debug("Error generating new address" + err.Error())
@@ -477,17 +562,18 @@ generateAddress:
 
 func (pg *ReceivePage) handleCopyEvent(gtx C) {
 	// Prevent copying again if the timer hasn't expired
-	if pg.copy.Clicked() && !pg.isCopying {
+	if pg.copy1.Clicked() && !pg.isCopying {
 		clipboard.WriteOp{Text: pg.currentAddress}.Add(gtx.Ops)
+		pg.Toast.Notify(values.String(values.StrCopied))
 
-		pg.copy.Text = values.String(values.StrCopied)
-		pg.copy.Background = pg.Theme.Color.Success
-		pg.isCopying = true
-		time.AfterFunc(time.Second*4, func() {
-			pg.copy.Text = values.String(values.StrCopy)
-			pg.copy.Background = pg.Theme.Color.Primary
-			pg.isCopying = false
-		})
+		// pg.copy.Text = values.String(values.StrCopied)
+		// pg.copy.Background = pg.Theme.Color.Success
+		// pg.isCopying = true
+		// time.AfterFunc(time.Second*4, func() {
+		// 	pg.copy.Text = values.String(values.StrCopy)
+		// 	pg.copy.Background = pg.Theme.Color.Primary
+		// 	pg.isCopying = false
+		// })
 	}
 
 	if pg.copyAddressButton.Clicked() {
