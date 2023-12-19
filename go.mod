@@ -66,6 +66,8 @@ require (
 	golang.org/x/text v0.11.0
 )
 
+require github.com/yeqown/go-qrcode/v2 v2.2.2 // indirect
+
 require (
 	decred.org/cspp/v2 v2.1.0 // indirect
 	decred.org/dcrwallet v1.7.0 // indirect
@@ -200,6 +202,7 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/yeqown/go-qrcode/writer/standard v1.2.2
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	github.com/zquestz/grab v0.0.0-20190224022517-abcee96e61b1 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
