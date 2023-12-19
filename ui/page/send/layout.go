@@ -5,6 +5,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
@@ -59,16 +60,31 @@ func (pg *Page) layoutDesktop(gtx C) D {
 		pageContent = append(pageContent, pg.advanceOptionsLayout)
 	}
 
-	// add balance layout
-	pageContent = append(pageContent, pg.balanceSection)
-
-	return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-		mp := values.MarginPadding32
-		if i == len(pageContent)-1 {
-			mp = values.MarginPadding0
-		}
-		return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
+	cgtx := gtx
+	macro := op.Record(cgtx.Ops)
+	dims := pg.balanceSection(cgtx)
+	call := macro.Stop()
+	pageContent = append(pageContent, func(gtx C) D {
+		return layout.Spacer{Height: gtx.Metric.PxToDp(dims.Size.Y)}.Layout(gtx)
 	})
+
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
+				mp := values.MarginPadding32
+				if i == len(pageContent)-1 {
+					mp = values.MarginPadding0
+				}
+				return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
+			})
+		}),
+		layout.Expanded(func(gtx C) D {
+			return layout.S.Layout(gtx, func(gtx C) D {
+				call.Add(gtx.Ops)
+				return dims
+			})
+		}),
+	)
 }
 
 func (pg *Page) sendLayout(gtx C) D {

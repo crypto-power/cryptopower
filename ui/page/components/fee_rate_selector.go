@@ -31,7 +31,6 @@ type FeeRateSelector struct {
 
 	ratesEditor  cryptomaterial.Editor
 	priority     string
-	rateEditMode bool
 	fetchingRate bool
 	// EstSignedSize holds the estimated size of signed tx.
 	EstSignedSize string
@@ -226,6 +225,12 @@ func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 	}
 
 	fs.fetchedRatesDropDown = fs.Theme.DropDown(items, values.WalletsDropdownGroup, false)
+	fs.fetchedRatesDropDown.FontWeight = font.SemiBold
+	fs.fetchedRatesDropDown.Hoverable = false
+	fs.fetchedRatesDropDown.SelectedItemIconColor = &fs.Theme.Color.Primary
+	fs.fetchedRatesDropDown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	fs.fetchedRatesDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	fs.fetchedRatesDropDown.Background = &fs.Theme.Color.Gray4
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
