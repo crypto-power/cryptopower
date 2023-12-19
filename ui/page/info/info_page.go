@@ -87,6 +87,11 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
 		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 	}
+	pg.recentTransactions.Radius = cryptomaterial.Radius(14)
+	pg.recentTransactions.IsShadowEnabled = true
+	pg.recentStakes.Radius = cryptomaterial.Radius(14)
+	pg.recentStakes.IsShadowEnabled = true
+
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
 	pg.toBackup.TextSize = pg.ConvertTextSize(values.TextSize14)
