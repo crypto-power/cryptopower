@@ -149,7 +149,7 @@ var (
 		}
 
 		switch size {
-		case MarginPadding24, MarginPadding30:
+		case MarginPadding24, MarginPadding30, MarginPadding32:
 			return MarginPadding16
 		case MarginPadding18, MarginPadding16:
 			return MarginPadding12

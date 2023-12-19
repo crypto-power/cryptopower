@@ -156,31 +156,16 @@ func (pg *WalletSettingsPage) loadWalletAccount() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *WalletSettingsPage) Layout(gtx C) D {
-	body := func(gtx C) D {
-		w := []func(gtx C) D{
-			pg.generalSection(),
-			pg.securityTools(),
-			pg.debug(),
-			pg.dangerZone(),
-		}
-
-		return pg.Theme.List(pg.pageContainer).Layout(gtx, len(w), func(gtx C, i int) D {
-			return w[i](gtx)
-		})
+	w := []func(gtx C) D{
+		pg.generalSection(),
+		pg.securityTools(),
+		pg.debug(),
+		pg.dangerZone(),
 	}
 
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx, body)
-	}
-	return pg.layoutDesktop(gtx, body)
-}
-
-func (pg *WalletSettingsPage) layoutDesktop(gtx C, body layout.Widget) D {
-	return body(gtx)
-}
-
-func (pg *WalletSettingsPage) layoutMobile(gtx C, body layout.Widget) D {
-	return components.UniformMobile(gtx, false, false, body)
+	return pg.Theme.List(pg.pageContainer).Layout(gtx, len(w), func(gtx C, i int) D {
+		return w[i](gtx)
+	})
 }
 
 func (pg *WalletSettingsPage) generalSection() layout.Widget {
