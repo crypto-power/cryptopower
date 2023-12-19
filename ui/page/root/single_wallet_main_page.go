@@ -182,6 +182,13 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	}
 
 	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
+	swmp.pageNavigationTab.DisableUniform(true)
+	// default layout padding based on design
+	swmp.pageNavigationTab.ContentPadding = layout.Inset{
+		Left:  values.MarginPadding24,
+		Right: values.MarginPadding24,
+		Top:   values.MarginPadding32,
+	}
 }
 
 func (swmp *SingleWalletMasterPage) isGovernanceAPIAllowed() bool {
@@ -412,8 +419,11 @@ func (swmp *SingleWalletMasterPage) layoutDesktop(gtx C) D {
 				layout.Rigid(swmp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
+						Top:    values.MarginPadding24,
 						Bottom: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
+						// design states the entire UI dimension should be 600px
+						gtx.Constraints.Max.X = gtx.Dp(values.MarginPadding600)
 						return swmp.pageNavigationTab.Layout(gtx, func(gtx C) D {
 							if swmp.CurrentPage() == nil {
 								return D{}

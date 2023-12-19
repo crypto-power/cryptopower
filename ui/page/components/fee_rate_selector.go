@@ -3,19 +3,15 @@ package components
 import (
 	"fmt"
 	"strconv"
-	"strings"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"gioui.org/widget/material"
-	"github.com/crypto-power/cryptopower/app"
+
 	sharedW "github.com/crypto-power/cryptopower/libwallet/assets/wallet"
 	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -26,13 +22,15 @@ type FeeRateSelector struct {
 	*load.Load
 
 	feeRateText string
-	// EditRates is a material button to trigger edit/save tx fee rate.
-	EditRates cryptomaterial.Button
-	// FetchRates button initiates call to rates HTTP API.
-	FetchRates   cryptomaterial.Button
+	// SaveRate is a material button to trigger save tx fee rate.
+	SaveRate cryptomaterial.Button
+
+	fetchedRatesDropDown *cryptomaterial.DropDown
+
+	feeRateSwitch *cryptomaterial.SegmentedControl
+
 	ratesEditor  cryptomaterial.Editor
 	priority     string
-	rateEditMode bool
 	fetchingRate bool
 	// EstSignedSize holds the estimated size of signed tx.
 	EstSignedSize string
@@ -46,16 +44,6 @@ type FeeRateSelector struct {
 	// independent of the set wallet within the Load input parameter.
 	selectedWalletType walletTypeCallbackFunc
 
-	// ContainerInset should be used to set the inset for
-	// FeeRateSelector component container.
-	ContainerInset layout.Inset
-	// WrapperInset should be used to set the inset for
-	// for the wrapper container.
-	WrapperInset layout.Inset
-	// TitleInset sets the inset for the title label.
-	TitleInset layout.Inset
-	// TitleFontWeight sets the font weight for the title label.
-	TitleFontWeight font.Weight
 	// USDExchangeSet determines if this component will in addition
 	// to the TxFee show the USD rate of fee.
 	USDExchangeSet bool
@@ -75,32 +63,42 @@ func NewFeeRateSelector(l *load.Load, callback walletTypeCallbackFunc) *FeeRateS
 	fs.TxFee = " - "
 	fs.TxFeeUSD = " - "
 	fs.priority = values.String(values.StrUnknown)
-	fs.EditRates = fs.Theme.Button(values.String(values.StrEdit))
-	fs.FetchRates = fs.Theme.Button(values.String(values.StrFetchRates))
+	fs.SaveRate = fs.Theme.Button(values.String(values.StrSave))
 
-	buttonInset := layout.Inset{
-		Top:    values.MarginPadding4,
-		Right:  values.MarginPadding8,
-		Bottom: values.MarginPadding4,
-		Left:   values.MarginPadding8,
+	fs.feeRateSwitch = fs.Theme.SegmentedControl([]string{
+		values.String(values.StrFetched),
+		values.String(values.StrManual),
+	}, cryptomaterial.SegmentTypeDynamicSplit)
+	fs.feeRateSwitch.SetEnableSwipe(false)
+	fs.feeRateSwitch.DisableUniform(true)
+	fs.feeRateSwitch.ContentPadding = layout.Inset{
+		Top: values.MarginPadding4,
 	}
-	fs.FetchRates.TextSize, fs.EditRates.TextSize = values.TextSize12, values.TextSize12
-	fs.FetchRates.Inset, fs.EditRates.Inset = buttonInset, buttonInset
+
+	fs.SaveRate.TextSize = values.TextSize16
+	fs.SaveRate.Inset = layout.Inset{
+		Top:    values.MarginPadding12,
+		Right:  values.MarginPadding16,
+		Bottom: values.MarginPadding12,
+		Left:   values.MarginPadding16,
+	}
+
+	fs.fetchedRatesDropDown = fs.Theme.DropDown([]cryptomaterial.DropDownItem{}, values.WalletsDropdownGroup, false)
+	fs.fetchedRatesDropDown.BorderColor = &fs.Theme.Color.Gray2
 
 	fs.ratesEditor = fs.Theme.Editor(new(widget.Editor), "In "+fs.ratesUnit())
 	fs.ratesEditor.HasCustomButton = false
+	fs.ratesEditor.Bordered = false
 	fs.ratesEditor.Editor.SingleLine = true
 	fs.ratesEditor.TextSize = values.TextSize14
-	fs.ContainerInset = layout.Inset{Bottom: values.MarginPadding15}
-	fs.WrapperInset = layout.Inset{Bottom: values.MarginPadding15}
-	fs.TitleInset = layout.Inset{Bottom: values.MarginPadding0}
+	fs.ratesEditor.IsTitleLabel = false
 
 	return fs
 }
 
 // ShowSizeAndCost turns the showSizeAndCost Field to true
 // the component will show the estimated size and Fee when
-// showSizeAndCost is true.
+// showSizeAndCost is true.backupLaterbackupLater
 func (fs *FeeRateSelector) ShowSizeAndCost() *FeeRateSelector {
 	fs.showSizeAndCost = true
 	return fs
@@ -112,141 +110,92 @@ func (fs *FeeRateSelector) isFeerateAPIApproved() bool {
 
 // Layout draws the UI components.
 func (fs *FeeRateSelector) Layout(gtx C) D {
-	return fs.ContainerInset.Layout(gtx, func(gtx C) D {
-		border := widget.Border{CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-		wrapper := fs.Load.Theme.Card()
-		return border.Layout(gtx, func(gtx C) D {
-			return wrapper.Layout(gtx, func(gtx C) D {
-				return cryptomaterial.LinearLayout{
-					Width:       cryptomaterial.WrapContent,
-					Height:      cryptomaterial.WrapContent,
-					Orientation: layout.Vertical,
-					Margin:      fs.WrapperInset,
-				}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						title := fs.Theme.Body1(values.String(values.StrTxFee))
-						title.Font.Weight = fs.TitleFontWeight
-						return fs.TitleInset.Layout(gtx, func(gtx C) D {
-							return title.Layout(gtx)
-						})
-					}),
-					layout.Rigid(func(gtx C) D {
-						border := widget.Border{Color: fs.Load.Theme.Color.Gray2, CornerRadius: values.MarginPadding10, Width: values.MarginPadding2}
-						wrapper := fs.Load.Theme.Card()
-						wrapper.Color = fs.Load.Theme.Color.Background
-						return border.Layout(gtx, func(gtx C) D {
-							return wrapper.Layout(gtx, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X // Wrapper should fill available width
-								return layout.UniformInset(values.MarginPadding10).Layout(gtx, func(gtx C) D {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-										layout.Rigid(func(gtx C) D {
-											return layout.Inset{Bottom: values.MarginPadding5}.Layout(gtx, func(gtx C) D {
-												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														if fs.rateEditMode {
-															gtx.Constraints.Max.X = gtx.Constraints.Max.X / 3
-															return fs.ratesEditor.Layout(gtx)
-														}
-														feerateLabel := fs.Theme.Label(values.TextSize14, fs.feeRateText)
-														feerateLabel.Font.Weight = font.SemiBold
-														return feerateLabel.Layout(gtx)
-													}),
-													layout.Rigid(func(gtx C) D {
-														return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, fs.EditRates.Layout)
-													}),
-													layout.Rigid(func(gtx C) D {
-														if fs.fetchingRate {
-															return layout.Inset{
-																Left:   values.MarginPadding18,
-																Right:  values.MarginPadding8,
-																Bottom: values.MarginPadding4,
-															}.Layout(gtx, func(gtx C) D {
-																return material.Loader(fs.Theme.Base).Layout(gtx)
-															})
-														}
-
-														str := fs.FetchRates.Text
-														if !fs.isFeerateAPIApproved() {
-															str = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
-															fs.FetchRates.SetEnabled(false)
-														} else if fs.selectedWalletType() == libutils.LTCWalletAsset {
-															// TODO: Add fee rate API query for LTC
-															str = values.StringF(values.StrNotSupported, values.String(values.StrFeeRateAPI))
-															fs.FetchRates.SetEnabled(false)
-														}
-														fs.FetchRates.Text = str
-														return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, fs.FetchRates.Layout)
-													}),
-												)
-											})
-										}),
-										layout.Rigid(func(gtx C) D {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													priorityLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrPriority, " : "))
-													priorityLabel.Font.Weight = font.SemiBold
-													return priorityLabel.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													priorityVal := fs.Theme.Label(values.TextSize14, fs.priority)
-													priorityVal.Font.Style = font.Italic
-													return priorityVal.Layout(gtx)
-												}),
-											)
-										}),
-										layout.Rigid(func(gtx C) D {
-											if fs.showSizeAndCost {
-												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrTxSize, " : "))
-														sizeLabel.Font.Weight = font.SemiBold
-														return sizeLabel.Layout(gtx)
-													}),
-													layout.Rigid(func(gtx C) D {
-														txSize := fs.Theme.Label(values.TextSize14, fs.EstSignedSize)
-														txSize.Font.Style = font.Italic
-														return txSize.Layout(gtx)
-													}),
-												)
-											}
-											return D{}
-										}),
-										layout.Rigid(func(gtx C) D {
-											if fs.showSizeAndCost {
-												return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-													layout.Rigid(func(gtx C) D {
-														sizeLabel := fs.Theme.Label(values.TextSize14, values.StringF(values.StrCost, " : "))
-														sizeLabel.Font.Weight = font.SemiBold
-														return sizeLabel.Layout(gtx)
-													}),
-													layout.Rigid(func(gtx C) D {
-														feeText := fs.TxFee
-														if fs.USDExchangeSet {
-															feeText = fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD)
-														}
-
-														txSize := fs.Theme.Label(values.TextSize14, feeText)
-														txSize.Font.Style = font.Italic
-														return txSize.Layout(gtx)
-													}),
-												)
-											}
-
-											return D{}
-										}),
-									)
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.WrapContent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Vertical,
+	}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			title := fs.Theme.Body1(values.String(values.StrFeeRates))
+			title.Font.Weight = font.SemiBold
+			return layout.Inset{Bottom: values.MarginPadding4}.Layout(gtx, title.Layout)
+		}),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					layoutBody := func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Flexed(.8, func(gtx C) D {
+								border := cryptomaterial.Border{
+									Color: fs.Load.Theme.Color.Gray2,
+									Width: values.MarginPadding1,
+									Radius: cryptomaterial.CornerRadius{
+										TopRight:    0,
+										TopLeft:     8,
+										BottomRight: 0,
+										BottomLeft:  8,
+									},
+								}
+								return border.Layout(gtx, func(gtx C) D {
+									return layout.Inset{
+										Top:    values.MarginPadding4,
+										Bottom: values.MarginPadding4,
+									}.Layout(gtx, fs.ratesEditor.Layout)
 								})
-							})
-						})
-					}),
-				)
-			})
-		})
-	})
+							}),
+							layout.Rigid(func(gtx C) D {
+								card := cryptomaterial.Card{Color: fs.SaveRate.Background}
+								card.Radius = cryptomaterial.CornerRadius{TopRight: 8, TopLeft: 0, BottomRight: 8, BottomLeft: 0}
+								return card.Layout(gtx, fs.SaveRate.Layout)
+							}),
+						)
+					}
+					// Fee rate fatching not currently supported by LTC
+					// TODO: Add fee rate API query for LTC
+					if fs.selectedWalletType() == libutils.LTCWalletAsset {
+						return layoutBody(gtx)
+					}
+
+					if fs.feeRateSwitch.SelectedSegment() == values.String(values.StrFetched) {
+						fs.fetchedRatesDropDown.Width = values.MarginPadding510
+						layoutBody = fs.fetchedRatesDropDown.Layout
+					}
+
+					return fs.feeRateSwitch.Layout(gtx, layoutBody)
+				}),
+				layout.Rigid(func(gtx C) D {
+					col := fs.Theme.Color.GrayText2
+					txSize := values.StringF(values.StrTxSize, fmt.Sprintf(": %s", fs.EstSignedSize))
+					priority := values.StringF(values.StrPriority, fmt.Sprintf(": %s", fs.priority))
+					txt := fmt.Sprintf("%s, %s", priority, txSize)
+					if fs.showSizeAndCost {
+						feeText := fs.TxFee
+						if fs.USDExchangeSet {
+							feeText = values.StringF(values.StrCost, fmt.Sprintf("%s (%s)", fs.TxFee, fs.TxFeeUSD))
+						}
+						txt = fmt.Sprintf("%s, %s, %s", priority, txSize, feeText)
+					}
+
+					// update label text and color if any of the conditions are met below
+					if !fs.isFeerateAPIApproved() {
+						txt = values.StringF(values.StrNotAllowed, values.String(values.StrFeeRates))
+						col = fs.Theme.Color.Danger
+					}
+
+					lbl := fs.Theme.Label(values.TextSize14, txt)
+					lbl.Color = col
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, func(gtx C) D {
+						return layout.E.Layout(gtx, lbl.Layout)
+					})
+				}),
+			)
+		}),
+	)
 }
 
 // FetchFeeRate will fetch the fee rate from the HTTP API.
-func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWallet sharedW.Asset) {
+func (fs *FeeRateSelector) UpdatedFeeRate(selectedWallet sharedW.Asset) {
 	if fs.fetchingRate {
 		return
 	}
@@ -268,61 +217,30 @@ func (fs *FeeRateSelector) FetchFeeRate(window app.WindowNavigator, selectedWall
 		return val + "s"
 	}
 
-	radiogroupbtns := new(widget.Enum)
-	items := make([]layout.FlexChild, 0)
-	for index, feerate := range feeRates {
-		key := strconv.Itoa(index)
-		value := fs.addRatesUnits(feerate.Feerate.ToInt()) + " - " + blocksStr(feerate.ConfirmedBlocks)
-		radioBtn := fs.Load.Theme.RadioButton(radiogroupbtns, key, value,
-			fs.Load.Theme.Color.DeepBlue, fs.Load.Theme.Color.Primary)
-		items = append(items, layout.Rigid(radioBtn.Layout))
+	items := []cryptomaterial.DropDownItem{}
+	for index := range feeRates {
+		items = append(items, cryptomaterial.DropDownItem{
+			Text: fs.addRatesUnits(feeRates[index].Feerate.ToInt()) + " - " + blocksStr(feeRates[index].ConfirmedBlocks),
+		})
 	}
 
-	info := modal.NewCustomModal(fs.Load).
-		Title(values.String(values.StrFeeRates)).
-		UseCustomWidget(func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		}).
-		SetCancelable(true).
-		SetNegativeButtonText(values.String(values.StrCancel)).
-		SetPositiveButtonText(values.String(values.StrSave)).
-		SetPositiveButtonCallback(func(isChecked bool, im *modal.InfoModal) bool {
-			fields := strings.Fields(radiogroupbtns.Value)
-			index, _ := strconv.Atoi(fields[0])
-			rate := strconv.Itoa(int(feeRates[index].Feerate.ToInt()))
-			rateInt, err := load.SetAPIFeeRate(selectedWallet, rate)
-			if err != nil {
-				log.Error(err)
-				return false
-			}
-
-			fs.feeRateText = fs.addRatesUnits(rateInt)
-			fs.rateEditMode = false
-			blocks := feeRates[index].ConfirmedBlocks
-			timeBefore := time.Now().Add(time.Duration(-10*blocks) * time.Minute)
-			fs.priority = fmt.Sprintf("%v (~%v)", blocksStr(blocks), TimeAgo(timeBefore.Unix()))
-			im.Dismiss()
-			return true
-		})
-
-	window.ShowModal((info))
-	fs.EditRates.SetEnabled(true)
+	fs.fetchedRatesDropDown = fs.Theme.DropDown(items, values.WalletsDropdownGroup, false)
+	fs.fetchedRatesDropDown.FontWeight = font.SemiBold
+	fs.fetchedRatesDropDown.Hoverable = false
+	fs.fetchedRatesDropDown.SelectedItemIconColor = &fs.Theme.Color.Primary
+	fs.fetchedRatesDropDown.ExpandedLayoutInset = layout.Inset{Top: values.MarginPadding35}
+	fs.fetchedRatesDropDown.MakeCollapsedLayoutVisibleWhenExpanded = true
+	fs.fetchedRatesDropDown.Background = &fs.Theme.Color.Gray4
 }
 
 // OnEditRateCliked is called when the edit feerate button is clicked.
 func (fs *FeeRateSelector) OnEditRateClicked(selectedWallet sharedW.Asset) {
-	fs.rateEditMode = !fs.rateEditMode
-	if fs.rateEditMode {
-		fs.EditRates.Text = values.String(values.StrSave)
+	rateStr := fs.ratesEditor.Editor.Text()
+	rateInt, err := load.SetAPIFeeRate(selectedWallet, rateStr)
+	if err != nil {
+		fs.feeRateText = " - "
 	} else {
-		rateStr := fs.ratesEditor.Editor.Text()
-		rateInt, err := load.SetAPIFeeRate(selectedWallet, rateStr)
-		if err != nil {
-			fs.feeRateText = " - "
-		} else {
-			fs.feeRateText = fs.addRatesUnits(rateInt)
-		}
-		fs.EditRates.Text = values.String(values.StrEdit)
+		fs.feeRateText = fs.addRatesUnits(rateInt)
 	}
 }
 

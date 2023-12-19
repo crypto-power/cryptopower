@@ -92,7 +92,6 @@ func newOrderSettingsModalModal(l *load.Load, data *orderData) *orderSettingsMod
 	}
 
 	osm.feeRateSelector = components.NewFeeRateSelector(l, callbackFunc)
-	osm.feeRateSelector.TitleFontWeight = font.SemiBold
 	osm.initWalletSelectors()
 
 	return osm
@@ -137,6 +136,7 @@ func (osm *orderSettingsModal) OnResume() {
 		}
 		osm.addressEditor.Editor.SetText(address)
 	})
+	go osm.feeRateSelector.UpdatedFeeRate(osm.sourceWalletSelector.SelectedWallet())
 }
 
 func (osm *orderSettingsModal) SetLoading(loading bool) {
@@ -196,11 +196,7 @@ func (osm *orderSettingsModal) Handle() {
 		osm.ParentWindow().ShowModal(info)
 	}
 
-	if osm.feeRateSelector.FetchRates.Clicked() {
-		go osm.feeRateSelector.FetchFeeRate(osm.ParentWindow(), osm.sourceWalletSelector.SelectedWallet())
-	}
-
-	if osm.feeRateSelector.EditRates.Clicked() {
+	if osm.feeRateSelector.SaveRate.Clicked() {
 		osm.feeRateSelector.OnEditRateClicked(osm.sourceWalletSelector.SelectedWallet())
 	}
 }

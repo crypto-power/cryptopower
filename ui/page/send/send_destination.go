@@ -2,7 +2,6 @@ package send
 
 import (
 	"fmt"
-	"image/color"
 	"strings"
 
 	"gioui.org/widget"
@@ -15,10 +14,10 @@ import (
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
-const (
-	sendToAddress int = 1
-	SendToWallet  int = 2
-)
+var tabOptions = []string{
+	values.String(values.StrAddress),
+	values.String(values.StrWallets),
+}
 
 type destination struct {
 	*load.Load
@@ -29,24 +28,25 @@ type destination struct {
 	destinationWalletSelector  *components.WalletAndAccountSelector
 
 	sendToAddress bool
-	accountSwitch *cryptomaterial.SwitchButtonText
+	accountSwitch *cryptomaterial.SegmentedControl
 
 	selectedIndex int
 }
 
 func newSendDestination(l *load.Load, assetType libUtil.AssetType) *destination {
 	dst := &destination{
-		Load: l,
+		Load:          l,
+		accountSwitch: l.Theme.SegmentedControl(tabOptions, cryptomaterial.SegmentTypeGroupMax),
 	}
+
+	dst.accountSwitch.SetEnableSwipe(false)
+	dst.accountSwitch.DisableUniform(true)
 
 	dst.destinationAddressEditor = l.Theme.Editor(new(widget.Editor), values.String(values.StrDestAddr))
 	dst.destinationAddressEditor.Editor.SingleLine = true
 	dst.destinationAddressEditor.Editor.SetText("")
+	dst.destinationAddressEditor.IsTitleLabel = false
 
-	dst.accountSwitch = l.Theme.SwitchButtonText([]cryptomaterial.SwitchItem{
-		{Text: values.String(values.StrAddress)},
-		{Text: values.String(values.StrWallets)},
-	})
 	dst.initDestinationWalletSelector(assetType)
 	return dst
 }
@@ -117,11 +117,10 @@ func (dst *destination) validate() bool {
 }
 
 func (dst *destination) setError(errMsg string) {
-	switch dst.accountSwitch.SelectedIndex() {
-	case SendToWallet:
-		dst.destinationAccountSelector.SetError(errMsg)
-	default: // SendToAddress option
+	if dst.sendToAddress {
 		dst.destinationAddressEditor.SetError(errMsg)
+	} else {
+		dst.destinationAccountSelector.SetError(errMsg)
 	}
 }
 
@@ -131,14 +130,9 @@ func (dst *destination) clearAddressInput() {
 }
 
 func (dst *destination) handle() {
-	dst.selectedIndex = dst.accountSwitch.SelectedIndex()
-	if dst.selectedIndex == 0 {
-		dst.selectedIndex = sendToAddress // default value is sendToAddress option
-	}
+	dst.sendToAddress = dst.accountSwitch.SelectedSegment() == values.String(values.StrAddress)
 
-	isSendToAddress := dst.accountSwitch.SelectedIndex() == sendToAddress
-	if isSendToAddress != dst.sendToAddress { // switch changed
-		dst.sendToAddress = isSendToAddress
+	if dst.accountSwitch.Changed() {
 		dst.addressChanged()
 	}
 
@@ -154,7 +148,7 @@ func (dst *destination) handle() {
 
 // styleWidgets sets the appropriate colors for the destination widgets.
 func (dst *destination) styleWidgets() {
-	dst.accountSwitch.Active, dst.accountSwitch.Inactive = dst.Theme.Color.Surface, color.NRGBA{}
-	dst.accountSwitch.ActiveTextColor, dst.accountSwitch.InactiveTextColor = dst.Theme.Color.GrayText1, dst.Theme.Color.Surface
+	// dst.accountSwitch.Active, dst.accountSwitch.Inactive = dst.Theme.Color.Surface, color.NRGBA{}
+	// dst.accountSwitch.ActiveTextColor, dst.accountSwitch.InactiveTextColor = dst.Theme.Color.GrayText1, dst.Theme.Color.Surface
 	dst.destinationAddressEditor.EditorStyle.Color = dst.Theme.Color.Text
 }

@@ -5,9 +5,10 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 
-	libUtil "github.com/crypto-power/cryptopower/libwallet/utils"
+	libutils "github.com/crypto-power/cryptopower/libwallet/utils"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/values"
@@ -25,61 +26,23 @@ func (pg *Page) initLayoutWidgets() {
 			Alignment: layout.Middle,
 		},
 	}
-
-	buttonInset := layout.Inset{
-		Top:    values.MarginPadding4,
-		Right:  values.MarginPadding8,
-		Bottom: values.MarginPadding4,
-		Left:   values.MarginPadding8,
-	}
-
-	pg.nextButton = pg.Theme.Button(values.String(values.StrNext))
-	pg.nextButton.TextSize = values.TextSize18
-	pg.nextButton.Inset = layout.Inset{Top: values.MarginPadding15, Bottom: values.MarginPadding15}
-	pg.nextButton.SetEnabled(false)
+	pg.advanceOptions = pg.Theme.Collapsible()
+	pg.advanceOptions.IconStyle = cryptomaterial.Caret
 
 	_, pg.infoButton = components.SubpageHeaderButtons(pg.Load)
 
-	pg.retryExchange = pg.Theme.Button(values.String(values.StrRetry))
-	pg.retryExchange.Background = pg.Theme.Color.Gray1
-	pg.retryExchange.Color = pg.Theme.Color.Surface
-	pg.retryExchange.TextSize = values.TextSize12
-	pg.retryExchange.Inset = buttonInset
-
-	pg.txLabelInputEditor = pg.Theme.Editor(new(widget.Editor), values.String(values.StrNote))
-	pg.txLabelInputEditor.Editor.SingleLine = false
-	pg.txLabelInputEditor.Editor.SetText("")
-	// Set the maximum characters the editor can accept.
-	pg.txLabelInputEditor.Editor.MaxLen = MaxTxLabelSize
+	pg.nextButton = pg.Theme.Button(values.String(values.StrNext))
+	pg.nextButton.TextSize = values.TextSize16
+	pg.nextButton.Inset = layout.Inset{Top: values.MarginPadding12, Bottom: values.MarginPadding12}
+	pg.nextButton.SetEnabled(false)
 
 	pg.toCoinSelection = pg.Theme.NewClickable(false)
-}
-
-func (pg *Page) topNav(gtx layout.Context) layout.Dimensions {
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(pg.Theme.H6(values.String(values.StrSend)+" "+string(pg.selectedWallet.GetAssetType())).Layout),
-			)
-		}),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-					layout.Rigid(pg.infoButton.Layout),
-				)
-			})
-		}),
-	)
 }
 
 // Layout draws the page UI components into the provided layout context
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
-func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
-	if pg.Load.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-
+func (pg *Page) Layout(gtx C) D {
 	if pg.modalLayout != nil {
 		modalContent := []layout.Widget{pg.layoutDesktop}
 		return pg.modalLayout.Layout(gtx, modalContent, 450)
@@ -87,341 +50,185 @@ func (pg *Page) Layout(gtx layout.Context) layout.Dimensions {
 	return pg.layoutDesktop(gtx)
 }
 
-func (pg *Page) layoutDesktop(gtx layout.Context) D {
+func (pg *Page) layoutDesktop(gtx C) D {
 	pageContent := []func(gtx C) D{
-		func(gtx C) D {
-			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						if pg.modalLayout != nil {
-							return layout.Inset{
-								Bottom: values.MarginPadding16,
-							}.Layout(gtx, func(gtx C) D {
-								return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
-							})
-						}
-						return D{}
-					}),
-					layout.Rigid(func(gtx C) D {
-						return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
-					}),
-					layout.Rigid(func(gtx C) D {
-						if pg.selectedWallet.IsSynced() {
-							return D{}
-						}
-						txt := pg.Theme.Label(values.TextSize14, values.String(values.StrFunctionUnavailable))
-						txt.Font.Weight = font.SemiBold
-						txt.Color = pg.Theme.Color.Danger
-						return txt.Layout(gtx)
-					}),
-				)
-			})
-		},
-		func(gtx C) D {
-			// disable this section if the layout is a modal layout
-			// and the selected wallet is not synced.
-			if pg.modalLayout != nil && !pg.selectedWallet.IsSynced() {
-				gtx = gtx.Disabled()
-			}
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(pg.toSection),
-				layout.Rigid(func(gtx C) D {
-					if pg.modalLayout != nil {
-						// coin selection not allowed on the send modal
-						return D{}
-					}
-					return pg.coinSelectionSection(gtx)
-				}),
-				layout.Rigid(pg.txLabelSection),
-			)
-		},
+		pg.sendLayout,
+		pg.recipientsLayout,
 	}
 
-	// Display the transaction fee rate selection only for btc and ltc wallets.
-	switch pg.selectedWallet.GetAssetType() {
-	case libUtil.BTCWalletAsset, libUtil.LTCWalletAsset:
-		pageContent = append(pageContent, pg.feeRateSelector.Layout)
+	if pg.modalLayout == nil || (pg.modalLayout != nil && pg.selectedWallet.GetAssetType() != libutils.DCRWalletAsset) {
+		pageContent = append(pageContent, pg.advanceOptionsLayout)
 	}
 
-	// Add the bottom spacing section as the last.
-	inset := layout.Inset{
-		Bottom: values.MarginPadding50,
-	}
+	cgtx := gtx
+	macro := op.Record(cgtx.Ops)
+	dims := pg.balanceSection(cgtx)
+	call := macro.Stop()
 	pageContent = append(pageContent, func(gtx C) D {
-		return inset.Layout(gtx, func(gtx C) D { return D{} })
+		return layout.Spacer{Height: gtx.Metric.PxToDp(dims.Size.Y)}.Layout(gtx)
 	})
 
-	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
+	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return layout.Inset{
-						Left:   values.MarginPadding24,
-						Right:  values.MarginPadding24,
-						Bottom: values.MarginPadding24,
-					}.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: values.MarginPadding16}.Layout(gtx, pg.topNav)
-							}),
-							layout.Rigid(func(gtx C) D {
-								return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-									return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-										return layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, pageContent[i])
-									})
-								})
-							}),
-						)
-					})
-				}),
-			)
+			return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
+				mp := values.MarginPadding32
+				if i == len(pageContent)-1 {
+					mp = values.MarginPadding0
+				}
+				return layout.Inset{Bottom: mp}.Layout(gtx, pageContent[i])
+			})
 		}),
-		layout.Stacked(func(gtx C) D {
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
+		layout.Expanded(func(gtx C) D {
 			return layout.S.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, pg.balanceSection)
+				call.Add(gtx.Ops)
+				return dims
 			})
 		}),
 	)
-
-	return dims
 }
 
-func (pg *Page) layoutMobile(gtx layout.Context) layout.Dimensions {
-	pageContent := []func(gtx C) D{
-		func(gtx C) D {
-			return pg.pageSections(gtx, values.String(values.StrFrom), false, func(gtx C) D {
-				return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
-			})
-		},
-		func(gtx C) D {
-			return pg.toSection(gtx)
-		},
-		func(gtx C) D {
-			return pg.coinSelectionSection(gtx)
-		},
-	}
-
-	dims := layout.Stack{Alignment: layout.S}.Layout(gtx,
-		layout.Expanded(func(gtx C) D {
-			return layout.Stack{Alignment: layout.NE}.Layout(gtx,
-				layout.Expanded(func(gtx C) D {
-					return components.UniformMobile(gtx, false, true, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								return layout.Inset{Bottom: values.MarginPadding16, Right: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-									return pg.topNav(gtx)
-								})
-							}),
-							layout.Rigid(func(gtx C) D {
-								return pg.Theme.List(pg.pageContainer).Layout(gtx, len(pageContent), func(gtx C, i int) D {
-									return layout.Inset{Bottom: values.MarginPadding16, Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-										return layout.Inset{Bottom: values.MarginPadding4, Top: values.MarginPadding4}.Layout(gtx, pageContent[i])
-									})
-								})
-							}),
-						)
-					})
-				}),
-			)
-		}),
-		layout.Stacked(func(gtx C) D {
-			gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
-			return layout.S.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Left: values.MarginPadding1}.Layout(gtx, func(gtx C) D {
-					return pg.balanceSection(gtx)
-				})
-			})
-		}),
-	)
-
-	return dims
-}
-
-func (pg *Page) pageSections(gtx layout.Context, title string, showAccountSwitch bool, body layout.Widget) layout.Dimensions {
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		return layout.UniformInset(values.MarginPadding16).Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							inset := layout.Inset{
-								Bottom: values.MarginPadding16,
-							}
-							titleTxt := pg.Theme.Body1(title)
-							titleTxt.Color = pg.Theme.Color.Text
-							return inset.Layout(gtx, titleTxt.Layout)
-						}),
-						layout.Flexed(1, func(gtx C) D {
-							if showAccountSwitch {
-								return layout.E.Layout(gtx, func(gtx C) D {
-									inset := layout.Inset{
-										Top: values.MarginPaddingMinus5,
-									}
-									pg.sendDestination.accountSwitch.SetSelectedIndex(pg.sendDestination.selectedIndex)
-									return inset.Layout(gtx, pg.sendDestination.accountSwitch.Layout)
-								})
-							}
-							return layout.Dimensions{}
-						}),
-					)
-				}),
-				layout.Rigid(body),
-			)
-		})
-	})
-}
-
-func (pg *Page) toSection(gtx layout.Context) layout.Dimensions {
-	return layout.Inset{Bottom: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
-		return pg.pageSections(gtx, values.String(values.StrTo), true, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
+func (pg *Page) sendLayout(gtx C) D {
+	return pg.sectionWrapper(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{
+					Bottom: values.MarginPadding16,
+				}.Layout(gtx, pg.titleLayout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if pg.modalLayout != nil {
 					return layout.Inset{
 						Bottom: values.MarginPadding16,
 					}.Layout(gtx, func(gtx C) D {
-						if !pg.sendDestination.sendToAddress {
-							return cryptomaterial.LinearLayout{
-								Width:       cryptomaterial.MatchParent,
-								Height:      cryptomaterial.WrapContent,
-								Orientation: layout.Vertical,
-								Margin:      layout.Inset{Bottom: values.MarginPadding16},
-							}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									return layout.Inset{
-										Bottom: values.MarginPadding16,
-									}.Layout(gtx, func(gtx C) D {
-										return pg.sendDestination.destinationWalletSelector.Layout(pg.ParentWindow(), gtx)
-									})
-								}),
-								layout.Rigid(func(gtx C) D {
-									return pg.sendDestination.destinationAccountSelector.Layout(pg.ParentWindow(), gtx)
-								}),
-							)
-						}
-						return pg.sendDestination.destinationAddressEditor.Layout(gtx)
+						return pg.contentWrapper(gtx, values.String(values.StrSourceWallet), false, func(gtx C) D {
+							return pg.sourceWalletSelector.Layout(pg.ParentWindow(), gtx)
+						})
 					})
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.exchangeRate != -1 && pg.usdExchangeSet {
-						return layout.Flex{
-							Axis:      layout.Horizontal,
-							Alignment: layout.Middle,
-						}.Layout(gtx,
-							layout.Flexed(0.45, func(gtx C) D {
-								return pg.amount.amountEditor.Layout(gtx)
-							}),
-							layout.Flexed(0.1, func(gtx C) D {
-								return layout.Center.Layout(gtx, func(gtx C) D {
-									icon := pg.Theme.Icons.CurrencySwapIcon
-									return icon.Layout12dp(gtx)
-								})
-							}),
-							layout.Flexed(0.45, func(gtx C) D {
-								return pg.amount.usdAmountEditor.Layout(gtx)
-							}),
-						)
-					}
-					return pg.amount.amountEditor.Layout(gtx)
-				}),
-				layout.Rigid(func(gtx C) D {
-					if pg.exchangeRateMessage == "" {
-						return layout.Dimensions{}
-					}
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return layout.Inset{Top: values.MarginPadding16, Bottom: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								gtx.Constraints.Min.Y = gtx.Dp(values.MarginPadding1)
-								return cryptomaterial.Fill(gtx, pg.Theme.Color.Gray1)
-							})
-						}),
-						layout.Rigid(func(gtx C) D {
-							return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-								layout.Rigid(func(gtx C) D {
-									label := pg.Theme.Body2(pg.exchangeRateMessage)
-									label.Color = pg.Theme.Color.Danger
-									if pg.isFetchingExchangeRate {
-										label.Color = pg.Theme.Color.Primary
-									}
-									return label.Layout(gtx)
-								}),
-								layout.Rigid(func(gtx C) D {
-									if pg.isFetchingExchangeRate {
-										return layout.Dimensions{}
-									}
-									gtx.Constraints.Min.X = gtx.Constraints.Max.X
-									return layout.E.Layout(gtx, pg.retryExchange.Layout)
-								}),
-							)
-						}),
-					)
-				}),
-			)
-		})
+				}
+				return D{}
+			}),
+			layout.Rigid(func(gtx C) D {
+				return pg.contentWrapper(gtx, values.String(values.StrSourceAccount), true, func(gtx C) D {
+					return pg.sourceAccountSelector.Layout(pg.ParentWindow(), gtx)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				if pg.selectedWallet.IsSynced() {
+					return D{}
+				}
+				txt := pg.Theme.Label(values.TextSize14, values.String(values.StrFunctionUnavailable))
+				txt.Font.Weight = font.SemiBold
+				txt.Color = pg.Theme.Color.Danger
+				return layout.Inset{Top: values.MarginPadding4}.Layout(gtx, txt.Layout)
+			}),
+		)
 	})
 }
 
-func (pg *Page) coinSelectionSection(gtx layout.Context) D {
+func (pg *Page) titleLayout(gtx C) D {
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Right: values.MarginPadding6}.Layout(gtx, func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSize20, values.String(values.StrSend))
+				lbl.Font.Weight = font.SemiBold
+				return lbl.Layout(gtx)
+			})
+		}),
+		layout.Rigid(pg.infoButton.Layout),
+	)
+}
+
+func (pg *Page) recipientsLayout(gtx C) D {
+	return pg.sectionWrapper(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				recipient := pg.recipient.recipientLayout(1, false, pg.ParentWindow())
+				return layout.Inset{Bottom: values.MarginPadding24}.Layout(gtx, recipient)
+			}),
+			// TODO: to be implemented in follow up PR.
+			// layout.Rigid(func(gtx C) D {
+			// 	return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+			// 		layout.Flexed(1, func(gtx C) D {
+			// 			return layout.E.Layout(gtx, pg.Theme.Icons.AddIcon.Layout16dp)
+			// 		}),
+			// 		layout.Rigid(func(gtx C) D {
+			// 			txt := pg.Theme.Label(values.TextSize16, values.String(values.StrAddRecipient))
+			// 			txt.Color = pg.Theme.Color.Primary
+			// 			txt.Font.Weight = font.SemiBold
+			// 			return layout.Inset{
+			// 				Left: values.MarginPadding8,
+			// 			}.Layout(gtx, txt.Layout)
+			// 		}),
+			// 	)
+			// }),
+		)
+	})
+}
+
+func (pg *Page) advanceOptionsLayout(gtx C) D {
+	return pg.sectionWrapper(gtx, func(gtx C) D {
+		collapsibleHeader := func(gtx C) D {
+			lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrAdvancedOptions))
+			lbl.Font.Weight = font.SemiBold
+			return lbl.Layout(gtx)
+		}
+
+		collapsibleBody := func(gtx C) D {
+			if pg.selectedWallet.GetAssetType() == libutils.DCRWalletAsset {
+				return layout.Inset{
+					Top: values.MarginPadding16,
+				}.Layout(gtx, func(gtx C) D {
+					return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
+				})
+			}
+
+			if pg.modalLayout != nil {
+				// coin selection not allowed on the send modal
+				return pg.contentWrapper(gtx, "", true, pg.feeRateSelector.Layout)
+			}
+
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					return pg.contentWrapper(gtx, "", false, pg.feeRateSelector.Layout)
+				}),
+				layout.Rigid(func(gtx C) D {
+					return pg.contentWrapper(gtx, values.String(values.StrCoinSelection), true, pg.coinSelectionSection)
+				}),
+			)
+		}
+		return pg.advanceOptions.Layout(gtx, collapsibleHeader, collapsibleBody)
+	})
+}
+
+func (pg *Page) coinSelectionSection(gtx C) D {
 	selectedOption := automaticCoinSelection
 	sourceAcc := pg.sourceAccountSelector.SelectedAccount()
 	if len(pg.selectedUTXOs.selectedUTXOs) > 0 && pg.selectedUTXOs.sourceAccount == sourceAcc {
 		selectedOption = manualCoinSelection
 	}
 
-	return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-		inset := layout.UniformInset(values.MarginPadding15)
-		return inset.Layout(gtx, func(gtx C) D {
-			textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrCoinSelection))
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Rigid(textLabel.Layout),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return cryptomaterial.LinearLayout{
-							Width:       cryptomaterial.WrapContent,
-							Height:      cryptomaterial.WrapContent,
-							Orientation: layout.Horizontal,
-							Alignment:   layout.Middle,
-							Clickable:   pg.toCoinSelection,
-						}.Layout(gtx,
-							layout.Rigid(pg.Theme.Label(values.TextSize16, selectedOption).Layout),
-							layout.Rigid(pg.Theme.Icons.ChevronRight.Layout24dp),
-						)
-					})
-				}),
-			)
-		})
-	})
-}
-
-func (pg *Page) txLabelSection(gtx layout.Context) D {
-	return layout.Inset{Top: values.MarginPadding8}.Layout(gtx, func(gtx C) D {
+	border := widget.Border{
+		Color:        pg.Theme.Color.Gray4,
+		CornerRadius: values.MarginPadding10,
+		Width:        values.MarginPadding2,
+	}
+	return border.Layout(gtx, func(gtx C) D {
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
-			topContainer := layout.UniformInset(values.MarginPadding15)
-			return topContainer.Layout(gtx, func(gtx C) D {
-				textLabel := pg.Theme.Label(values.TextSize16, values.String(values.StrDescriptionNote))
-				count := len(pg.txLabelInputEditor.Editor.Text())
-				txt := fmt.Sprintf("(%d/%d)", count, pg.txLabelInputEditor.Editor.MaxLen)
-				wordsCount := pg.Theme.Label(values.TextSize14, txt)
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-							layout.Rigid(textLabel.Layout),
-							layout.Flexed(1,
-								func(gtx C) D {
-									return layout.Inset{
-										Top:  values.MarginPadding2,
-										Left: values.MarginPadding5,
-									}.Layout(gtx, wordsCount.Layout)
-								}),
-						)
-					}),
-
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{
-							Top: values.MarginPadding10,
-						}.Layout(gtx, func(gtx C) D {
-							return pg.txLabelInputEditor.Layout(gtx)
+			inset := layout.UniformInset(values.MarginPadding15)
+			return inset.Layout(gtx, func(gtx C) D {
+				textLabel := pg.Theme.Label(values.TextSize16, selectedOption)
+				textLabel.Font.Weight = font.SemiBold
+				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					layout.Rigid(textLabel.Layout),
+					layout.Flexed(1, func(gtx C) D {
+						return layout.E.Layout(gtx, func(gtx C) D {
+							return cryptomaterial.LinearLayout{
+								Width:       cryptomaterial.WrapContent,
+								Height:      cryptomaterial.WrapContent,
+								Orientation: layout.Horizontal,
+								Alignment:   layout.Middle,
+								Clickable:   pg.toCoinSelection,
+							}.Layout2(gtx, pg.Theme.Icons.ChevronRight.Layout20dp)
 						})
 					}),
 				)
@@ -430,63 +237,99 @@ func (pg *Page) txLabelSection(gtx layout.Context) D {
 	})
 }
 
-func (pg *Page) balanceSection(gtx layout.Context) layout.Dimensions {
-	c := pg.Theme.Card()
-	c.Radius = cryptomaterial.Radius(0)
-	return c.Layout(gtx, func(gtx C) D {
-		inset := layout.Inset{
-			Top:    values.MarginPadding10,
-			Bottom: values.MarginPadding10,
-			Left:   values.MarginPadding15,
-			Right:  values.MarginPadding15,
-		}
-		return inset.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-				layout.Flexed(0.6, func(gtx C) D {
-					inset := layout.Inset{
-						Right: values.MarginPadding15,
-					}
-					return inset.Layout(gtx, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(func(gtx C) D {
-								totalCostText := pg.totalCost
-								if pg.exchangeRate != -1 && pg.usdExchangeSet {
-									totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)
-								}
+func (pg *Page) balanceSection(gtx C) D {
+	return pg.sectionWrapper(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				inset := layout.Inset{
+					Bottom: values.MarginPadding16,
+					Left:   values.MarginPadding5,
+					Right:  values.MarginPadding5,
+				}
+				return inset.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							totalCostText := pg.totalCost
+							if pg.exchangeRate != -1 && pg.usdExchangeSet {
+								totalCostText = fmt.Sprintf("%s (%s)", pg.totalCost, pg.totalCostUSD)
+							}
+							inset := layout.Inset{
+								Bottom: values.MarginPadding12,
+							}
+							return inset.Layout(gtx, func(gtx C) D {
 								return pg.contentRow(gtx, values.String(values.StrTotalCost), totalCostText)
-							}),
-							layout.Rigid(func(gtx C) D {
-								balanceAfterSendText := pg.balanceAfterSend
-								if pg.exchangeRate != -1 && pg.usdExchangeSet {
-									balanceAfterSendText = fmt.Sprintf("%s (%s)", pg.balanceAfterSend, pg.balanceAfterSendUSD)
-								}
-								return pg.contentRow(gtx, values.String(values.StrBalanceAfter), balanceAfterSendText)
-							}),
-						)
-					})
-				}),
-				layout.Flexed(0.3, func(gtx C) D {
-					return pg.nextButton.Layout(gtx)
-				}),
-			)
-		})
+							})
+						}),
+						layout.Rigid(func(gtx C) D {
+							balanceAfterSendText := pg.balanceAfterSend
+							if pg.exchangeRate != -1 && pg.usdExchangeSet {
+								balanceAfterSendText = fmt.Sprintf("%s (%s)", pg.balanceAfterSend, pg.balanceAfterSendUSD)
+							}
+							return pg.contentRow(gtx, values.String(values.StrBalanceAfter), balanceAfterSendText)
+						}),
+					)
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return pg.nextButton.Layout(gtx)
+			}),
+		)
 	})
 }
 
-func (pg *Page) contentRow(gtx layout.Context, leftValue, rightValue string) layout.Dimensions {
+func (pg *Page) sectionWrapper(gtx C, body layout.Widget) D {
+	return cryptomaterial.LinearLayout{
+		Width:       cryptomaterial.MatchParent,
+		Height:      cryptomaterial.WrapContent,
+		Orientation: layout.Vertical,
+		Padding:     layout.UniformInset(values.MarginPadding16),
+		Background:  pg.Theme.Color.Surface,
+		Border: cryptomaterial.Border{
+			Radius: cryptomaterial.Radius(8),
+		},
+	}.Layout2(gtx, body)
+}
+
+func (pg *Page) contentWrapper(gtx C, title string, zeroBottomPadding bool, content layout.Widget) D {
+	if pg.modalLayout != nil && !pg.selectedWallet.IsSynced() {
+		gtx = gtx.Disabled()
+	}
+	padding := values.MarginPadding16
+	if zeroBottomPadding {
+		padding = values.MarginPadding0
+	}
+	return layout.Inset{
+		Bottom: padding,
+	}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				lbl := pg.Theme.Label(values.TextSize16, title)
+				lbl.Font.Weight = font.SemiBold
+				return layout.Inset{
+					Bottom: values.MarginPadding4,
+				}.Layout(gtx, lbl.Layout)
+			}),
+			layout.Rigid(content),
+		)
+	})
+}
+
+func (pg *Page) contentRow(gtx C, leftValue, rightValue string) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			txt := pg.Theme.Body2(leftValue)
-			txt.Color = pg.Theme.Color.GrayText2
-			return txt.Layout(gtx)
+			lbl := pg.Theme.Label(values.TextSize16, leftValue)
+			lbl.Color = pg.Theme.Color.GrayText2
+			return lbl.Layout(gtx)
 		}),
 		layout.Flexed(1, func(gtx C) D {
 			return layout.E.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						rightText := pg.Theme.Body1(rightValue)
-						rightText.Color = pg.Theme.Color.Text
-						return rightText.Layout(gtx)
+						lbl := pg.Theme.Label(values.TextSize16, rightValue)
+						lbl.Color = pg.Theme.Color.Text
+						lbl.Font.Weight = font.SemiBold
+						return lbl.Layout(gtx)
 					}),
 				)
 			})
