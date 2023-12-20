@@ -202,8 +202,7 @@ func (hp *HomePage) HandleUserInteractions() {
 		for item.Clickable.Clicked() {
 			switch strings.ToLower(item.PageID) {
 			case values.StrReceive:
-				hp.ParentWindow().ShowModal(components.NewReceiveModal(hp.Load))
-				// hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
+				hp.ParentWindow().ShowModal(NewReceivePage(hp.Load, nil))
 			case values.StrSend:
 				allWallets := hp.AssetsManager.AllWallets()
 				isSendAvailable := false
