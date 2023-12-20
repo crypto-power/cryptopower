@@ -14,6 +14,7 @@ jobs:
         include:
           - os: linux
             arch: amd64
+          # Uncomment and add other OS and architecture combinations as needed
           # - os: linux
           #   arch: arm64
           # - os: darwin
@@ -32,8 +33,7 @@ jobs:
       BUILDOS: ${{ matrix.os }}
       BUILDARCH: ${{ matrix.arch }}
       BINARY_NAME: cryptopower-${{ matrix.os }}-${{ matrix.arch }}
-      
-     steps:
+    steps:
     - uses: actions/checkout@v2
 
     - name: Copy instantswap file
@@ -56,7 +56,7 @@ jobs:
           BUILDARCH=${{ env.BUILDARCH }}
           BUILDNAME=${{ env.BINARY_NAME }}
 
-    - name: Create Container
+    - name: Create Container and Copy Binary
       run: |
         docker create --name temp-container user/app:latest
         docker cp temp-container:/app/${{ env.BINARY_NAME }} ./${{ env.BINARY_NAME }}
