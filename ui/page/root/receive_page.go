@@ -174,7 +174,7 @@ func (pg *ReceivePage) OnNavigatedTo() {
 }
 
 func (pg *ReceivePage) generateQRForAddress() {
-	qrCode, err := qrcode.New(pg.currentAddress, qrcode.WithLogoImage(pg.getLogo()))
+	qrCode, err := qrcode.New(pg.currentAddress, qrcode.WithLogoImage(pg.getSelectedWalletLogo()))
 	if err != nil {
 		log.Error("Error generating address qrCode: " + err.Error())
 		return
@@ -196,7 +196,7 @@ func (pg *ReceivePage) generateQRForAddress() {
 	pg.qrImage = &imgdec
 }
 
-func (pg *ReceivePage) getLogo() *cryptomaterial.Image {
+func (pg *ReceivePage) getSelectedWalletLogo() *cryptomaterial.Image {
 	pg.selectedWallet.GetAssetType()
 	switch pg.selectedWallet.GetAssetType() {
 	case utils.BTCWalletAsset:
@@ -214,15 +214,15 @@ func (pg *ReceivePage) getLogo() *cryptomaterial.Image {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *ReceivePage) Layout(gtx C) D {
-	if pg.modalLayout != nil {
-		var modalWidth float32 = 450
-		if pg.IsMobileView() {
-			modalWidth = 0
-		}
-		modalContent := []layout.Widget{pg.contentLayout}
-		return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
+	if pg.modalLayout == nil {
+		return pg.contentLayout(gtx)
 	}
-	return pg.contentLayout(gtx)
+	var modalWidth float32 = 450
+	if pg.IsMobileView() {
+		modalWidth = 0
+	}
+	modalContent := []layout.Widget{pg.contentLayout}
+	return pg.modalLayout.Layout(gtx, modalContent, modalWidth)
 }
 
 func (pg *ReceivePage) contentLayout(gtx C) D {

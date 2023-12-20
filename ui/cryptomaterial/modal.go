@@ -131,10 +131,10 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 				Top:    unit.Dp(30),
 				Bottom: unit.Dp(30),
 			}
-			insetUniform := layout.UniformInset(m.padding)
+			uniformInset := layout.UniformInset(m.padding)
 			horizontalMargin := values.MarginPaddingTransform(m.isMobileView, values.MarginPadding24)
-			insetUniform.Left = horizontalMargin
-			insetUniform.Right = horizontalMargin
+			uniformInset.Left = horizontalMargin
+			uniformInset.Right = horizontalMargin
 			return inset.Layout(gtx, func(gtx C) D {
 				return layout.Stack{Alignment: layout.Center}.Layout(gtx,
 					layout.Expanded(func(gtx C) D {
@@ -147,7 +147,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 							Orientation: layout.Vertical,
 							Width:       WrapContent,
 							Height:      WrapContent,
-							Padding:     insetUniform,
+							Padding:     uniformInset,
 							Alignment:   layout.Middle,
 							Border: Border{
 								Radius: Radius(14),
@@ -159,7 +159,7 @@ func (m *Modal) Layout(gtx layout.Context, widgets []layout.Widget, width ...flo
 								if m.isFloatTitle && len(widgets) > 0 {
 									gtx.Constraints.Min.X = gtx.Constraints.Max.X
 									if m.padding == unit.Dp(0) {
-										return insetUniform.Layout(gtx, title)
+										return uniformInset.Layout(gtx, title)
 									}
 
 									inset := layout.Inset{
