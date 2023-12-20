@@ -231,7 +231,7 @@ func (pg *ReceivePage) contentLayout(gtx C) D {
 	return pg.Theme.List(pg.scrollContainer).Layout(gtx, 1, func(gtx C, i int) D {
 		textSize16 := values.TextSizeTransform(pg.IsMobileView(), values.TextSize16)
 		uniformSize := values.MarginPadding16
-		if pg.modalLayout == nil {
+		if pg.modalLayout != nil {
 			uniformSize = values.MarginPadding0
 		}
 		return pg.Theme.Card().Layout(gtx, func(gtx C) D {
