@@ -124,6 +124,7 @@ var (
 	TextSize28   = unit.Sp(28)
 	TextSize30   = unit.Sp(30)
 	TextSize34   = unit.Sp(34)
+	TextSize36   = unit.Sp(36)
 	TextSize32   = unit.Sp(32)
 	TextSize60   = unit.Sp(60)
 
@@ -149,6 +150,8 @@ var (
 		}
 
 		switch size {
+		case MarginPadding420:
+			return MarginPadding340
 		case MarginPadding24, MarginPadding30, MarginPadding32:
 			return MarginPadding16
 		case MarginPadding18, MarginPadding16:

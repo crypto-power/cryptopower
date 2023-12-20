@@ -185,9 +185,14 @@ func (pg *CreateWallet) Layout(gtx C) D {
 		Width:     cryptomaterial.MatchParent,
 		Height:    cryptomaterial.MatchParent,
 		Direction: layout.Center,
+		Padding:   layout.UniformInset(values.MarginPadding20),
 	}.Layout2(gtx, func(gtx C) D {
+		width := gtx.Dp(values.MarginPadding377)
+		if pg.IsMobileView() {
+			width = gtx.Dp(values.MarginPadding350)
+		}
 		return cryptomaterial.LinearLayout{
-			Width:     gtx.Dp(values.MarginPadding377),
+			Width:     width,
 			Height:    cryptomaterial.MatchParent,
 			Alignment: layout.Middle,
 			Margin: layout.Inset{
@@ -224,7 +229,6 @@ func (pg *CreateWallet) Layout(gtx C) D {
 	})
 }
 
-// todo bitcoin wallet creation
 func (pg *CreateWallet) walletTypeSection(gtx C) D {
 	return layout.Flex{Axis: layout.Vertical, Spacing: layout.SpaceBetween}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

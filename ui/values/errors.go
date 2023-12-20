@@ -21,7 +21,7 @@ func TranslateErr(errStr string) string {
 		return String(StrNotConnected)
 
 	case utils.ErrInsufficientBalance:
-		return String(StrInsufficentFund)
+		return String(StrInsufficientFund)
 
 	default:
 		if strings.Contains(errStr, "strconv.ParseFloat") {
