@@ -20,7 +20,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 		Radius: cryptomaterial.Radius(14),
 	}.Layout(gtx,
 		func(gtx C) D {
-			textSize16 := values.TextSizeTransform(l.IsMobileView(), values.TextSize16)
+			textSize16 := l.ConvertTextSize(values.TextSize16)
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{

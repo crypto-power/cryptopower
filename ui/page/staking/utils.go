@@ -164,7 +164,7 @@ func TicketStatusDetails(gtx C, l *load.Load, dcrWallet *dcr.Asset, tx *transact
 				return lbl.Layout(gtx)
 			}),
 			layout.Rigid(func(gtx C) D {
-				p := l.Theme.ProgressBarCirle(int(tx.progress))
+				p := l.Theme.ProgressBarCircle(int(tx.progress))
 				p.Color = tx.status.ProgressBarColor
 				return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
 					sz := gtx.Dp(values.MarginPadding22)
@@ -207,7 +207,7 @@ func multiContent(gtx C, l *load.Load, leftText, rightText string) D {
 				Right: values.MarginPadding5,
 				Left:  values.MarginPadding5,
 			}.Layout(gtx, func(gtx C) D {
-				ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+				ic := cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 				ic.Color = col
 				return ic.Layout(gtx, values.MarginPadding6)
 			})

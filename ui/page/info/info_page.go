@@ -44,10 +44,10 @@ type WalletInfo struct {
 	container *widget.List
 
 	transactions       []*sharedW.Transaction
-	recentTransactions layout.List
+	recentTransactions *cryptomaterial.ClickableList
 
 	stakes       []*sharedW.Transaction
-	recentStakes layout.List
+	recentStakes *cryptomaterial.ClickableList
 
 	walletStatusIcon *cryptomaterial.Icon
 	syncSwitch       *cryptomaterial.Switch
@@ -84,18 +84,17 @@ func NewInfoPage(l *load.Load, wallet sharedW.Asset) *WalletInfo {
 		container: &widget.List{
 			List: layout.List{Axis: layout.Vertical},
 		},
-		recentTransactions: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
-		recentStakes: layout.List{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		},
+		recentTransactions: l.Theme.NewClickableList(layout.Vertical),
+		recentStakes:       l.Theme.NewClickableList(layout.Vertical),
 	}
+	pg.recentTransactions.Radius = cryptomaterial.Radius(14)
+	pg.recentTransactions.IsShadowEnabled = true
+	pg.recentStakes.Radius = cryptomaterial.Radius(14)
+	pg.recentStakes.IsShadowEnabled = true
+
 	pg.toBackup = pg.Theme.Button(values.String(values.StrBackupNow))
 	pg.toBackup.Font.Weight = font.Medium
-	pg.toBackup.TextSize = values.TextSize14
+	pg.toBackup.TextSize = pg.ConvertTextSize(values.TextSize14)
 
 	pg.viewAllTxButton = pg.Theme.OutlineButton(values.String(values.StrViewAll))
 	pg.viewAllTxButton.Font.Weight = font.Medium
@@ -150,23 +149,21 @@ func (pg *WalletInfo) OnNavigatedTo() {
 // Layout lays out the widgets for the main wallets pg.
 func (pg *WalletInfo) Layout(gtx C) D {
 	return pg.Theme.List(pg.container).Layout(gtx, 1, func(gtx C, i int) D {
-		return layout.Inset{Right: values.MarginPadding2}.Layout(gtx, func(gtx C) D {
-			items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
+		items := []layout.FlexChild{layout.Rigid(pg.walletInfoLayout)}
 
-			if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
-				items = append(items, layout.Rigid(pg.mixerLayout))
-			}
+		if pg.wallet.GetAssetType() == libutils.DCRWalletAsset && pg.wallet.(*dcr.Asset).IsAccountMixerActive() {
+			items = append(items, layout.Rigid(pg.mixerLayout))
+		}
 
-			if len(pg.transactions) > 0 {
-				items = append(items, layout.Rigid(pg.recentTransactionLayout))
-			}
+		if len(pg.transactions) > 0 {
+			items = append(items, layout.Rigid(pg.recentTransactionLayout))
+		}
 
-			if len(pg.stakes) > 0 {
-				items = append(items, layout.Rigid(pg.recentStakeLayout))
-			}
+		if len(pg.stakes) > 0 {
+			items = append(items, layout.Rigid(pg.recentStakeLayout))
+		}
 
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
-		})
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, items...)
 	})
 }
 
@@ -339,6 +336,14 @@ func (pg *WalletInfo) HandleUserInteractions() {
 		}()
 	}
 
+	if clicked, selectedItem := pg.recentTransactions.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.transactions[selectedItem]))
+	}
+
+	if clicked, selectedItem := pg.recentStakes.ItemClicked(); clicked {
+		pg.ParentNavigator().Display(transaction.NewTransactionDetailsPage(pg.Load, pg.wallet, pg.stakes[selectedItem]))
+	}
+
 	if pg.toBackup.Button.Clicked() {
 		currentPage := pg.ParentWindow().CurrentPageID()
 		pg.ParentWindow().Display(seedbackup.NewBackupInstructionsPage(pg.Load, pg.wallet, func(load *load.Load, navigator app.WindowNavigator) {
@@ -494,7 +499,13 @@ func (pg *WalletInfo) reloadMixerBalances() {
 }
 
 func (pg *WalletInfo) loadTransactions() {
-	txs, err := pg.wallet.GetTransactionsRaw(0, 3, libutils.TxFilterAllTx, true, "")
+	mapInfo, _ := components.TxPageDropDownFields(pg.wallet.GetAssetType(), 0)
+	if len(mapInfo) == 0 {
+		log.Errorf("no tx filters for asset type (%v)", pg.wallet.GetAssetType())
+		return
+	}
+
+	txs, err := pg.wallet.GetTransactionsRaw(0, 3, mapInfo[values.String(values.StrAll)], true, "")
 	if err != nil {
 		log.Errorf("error loading transactions: %v", err)
 		return
@@ -531,4 +542,7 @@ func (pg *WalletInfo) OnNavigatedFrom() {
 	pg.wallet.RemoveSyncProgressListener(InfoID)
 	pg.wallet.RemoveTxAndBlockNotificationListener(InfoID)
 	pg.wallet.SetBlocksRescanProgressListener(nil)
+	if pg.wallet.GetAssetType() == libutils.DCRWalletAsset {
+		pg.wallet.(*dcr.Asset).RemoveAccountMixerNotificationListener(InfoID)
+	}
 }

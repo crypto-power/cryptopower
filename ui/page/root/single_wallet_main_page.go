@@ -182,12 +182,11 @@ func (swmp *SingleWalletMasterPage) initTabOptions() {
 	}
 
 	swmp.pageNavigationTab = swmp.Theme.SegmentedControl(commonTabs, cryptomaterial.SegmentTypeSplit)
-	swmp.pageNavigationTab.DisableUniform(true)
-	// default layout padding based on design
+	dp5 := values.MarginPadding5
 	swmp.pageNavigationTab.ContentPadding = layout.Inset{
-		Left:  values.MarginPadding24,
-		Right: values.MarginPadding24,
-		Top:   values.MarginPadding32,
+		Left:  dp5,
+		Right: dp5,
+		Top:   values.MarginPaddingTransform(swmp.IsMobileView(), values.MarginPadding32),
 	}
 }
 
@@ -398,15 +397,11 @@ func (swmp *SingleWalletMasterPage) OnNavigatedFrom() {
 func (swmp *SingleWalletMasterPage) Layout(gtx C) D {
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			alignment := layout.Middle
-			if swmp.IsMobileView() {
-				alignment = layout.Start
-			}
 			return cryptomaterial.LinearLayout{
 				Width:       cryptomaterial.MatchParent,
 				Height:      cryptomaterial.MatchParent,
 				Orientation: layout.Vertical,
-				Alignment:   alignment,
+				Alignment:   layout.Middle,
 			}.Layout(gtx,
 				layout.Rigid(swmp.LayoutTopBar),
 				layout.Rigid(func(gtx C) D {

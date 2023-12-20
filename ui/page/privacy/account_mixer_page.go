@@ -316,10 +316,7 @@ func (pg *AccountMixerPage) mixerPageLayout(gtx C) D {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *AccountMixerPage) Layout(gtx layout.Context) layout.Dimensions {
-	if pg.IsMobileView() {
-		return pg.mixerPageLayout(gtx)
-	}
-	return cryptomaterial.UniformPadding(gtx, pg.mixerPageLayout)
+	return pg.mixerPageLayout(gtx)
 }
 
 // HandleUserInteractions is called just before Layout() to determine

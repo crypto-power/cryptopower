@@ -38,7 +38,7 @@ type multiWalletTx struct {
 
 var txTabs = []string{
 	values.String(values.StrTxRegular),
-	values.String(values.StrstakingTx),
+	values.String(values.StrStakingTx),
 }
 
 // TransactionsPage shows transactions for a specific wallet or for all wallets.

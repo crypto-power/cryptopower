@@ -118,7 +118,7 @@ func LayoutIconAndTextWithSize(l *load.Load, gtx C, text string, col color.NRGBA
 				return layout.Inset{
 					Right: values.MarginPadding5,
 				}.Layout(gtx, func(gtx C) D {
-					ic := cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+					ic := cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 					ic.Color = col
 					return ic.Layout(gtx, iconSize)
 				})
@@ -157,5 +157,5 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 		convertedAmountStr = "Unsupported asset type"
 	}
 
-	return l.Theme.Label(values.TextSizeTransform(l.IsMobileView(), values.TextSize16), convertedAmountStr).Layout(gtx)
+	return l.Theme.Label(l.ConvertTextSize(values.TextSize16), convertedAmountStr).Layout(gtx)
 }

@@ -126,7 +126,7 @@ func NewTransactionDetailsPage(l *load.Load, wallet sharedW.Asset, transaction *
 
 	pg.backButton, _ = components.SubpageHeaderButtons(pg.Load)
 
-	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.ImageBrightness1)
+	pg.dot = cryptomaterial.NewIcon(l.Theme.Icons.DotIcon)
 	pg.dot.Color = l.Theme.Color.Gray1
 
 	pg.moreItems = pg.getMoreItem()
@@ -360,18 +360,19 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									layout.Rigid(pg.Theme.Label(values.TextSize16, values.String(values.StrStatus)+": ").Layout),
 									layout.Rigid(pg.Theme.Label(values.TextSize16, pg.txnWidgets.txStatus.Title).Layout),
 									layout.Rigid(func(gtx C) D {
-										// immature tx section
-										if pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusImmature {
-											p := pg.Theme.ProgressBarCirle(pg.getTimeToMatureOrExpire())
-											p.Color = pg.txnWidgets.txStatus.ProgressBarColor
-											return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
-												sz := gtx.Dp(values.MarginPadding22)
-												gtx.Constraints.Max = image.Point{X: sz, Y: sz}
-												gtx.Constraints.Min = gtx.Constraints.Max
-												return p.Layout(gtx)
-											})
+										if pg.txnWidgets.txStatus.TicketStatus != dcr.TicketStatusImmature {
+											return D{}
 										}
-										return D{}
+
+										// immature tx section
+										p := pg.Theme.ProgressBarCircle(pg.getTimeToMatureOrExpire())
+										p.Color = pg.txnWidgets.txStatus.ProgressBarColor
+										return layout.Inset{Left: values.MarginPadding10}.Layout(gtx, func(gtx C) D {
+											sz := gtx.Dp(values.MarginPadding22)
+											gtx.Constraints.Max = image.Point{X: sz, Y: sz}
+											gtx.Constraints.Min = gtx.Constraints.Max
+											return p.Layout(gtx)
+										})
 									}),
 								)
 							}
@@ -405,19 +406,20 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									}.Layout(gtx, lbl.Layout)
 								}),
 								layout.Rigid(func(gtx C) D {
-									// immature tx section
-									if pg.transaction.Type == txhelper.TxTypeVote || pg.transaction.Type == txhelper.TxTypeRevocation {
-										title := values.String(values.StrRevoke)
-										if pg.transaction.Type == txhelper.TxTypeVote {
-											title = values.String(values.StrVote)
-										}
-
-										lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
-										lbl.Color = col
-										return lbl.Layout(gtx)
+									immatureVoteOrRevocation := pg.txnWidgets.txStatus.TicketStatus == dcr.TicketStatusImmature && (pg.transaction.Type == txhelper.TxTypeVote || pg.transaction.Type == txhelper.TxTypeRevocation)
+									if !immatureVoteOrRevocation {
+										return D{}
 									}
 
-									return D{}
+									// immature tx section
+									title := values.String(values.StrRevoke)
+									if pg.transaction.Type == txhelper.TxTypeVote {
+										title = values.String(values.StrVote)
+									}
+
+									lbl := pg.Theme.Label(values.TextSize16, fmt.Sprintf("%d days to %s", pg.transaction.DaysToVoteOrRevoke, title))
+									lbl.Color = col
+									return lbl.Layout(gtx)
 								}),
 							)
 						}),
@@ -453,23 +455,23 @@ func (pg *TxDetailsPage) txDetailsHeader(gtx C) D {
 									)
 
 								case dcr.TicketStatusVotedOrRevoked:
-									if pg.ticketSpender != nil { // voted or revoked
-										if pg.ticketSpender.Type == txhelper.TxTypeVote {
-											return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-												layout.Rigid(func(gtx C) D {
-													lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
-													lbl.Color = col
-													return lbl.Layout(gtx)
-												}),
-												layout.Rigid(func(gtx C) D {
-													lbl := pg.Theme.Label(values.TextSize16, pg.wallet.ToAmount(pg.ticketSpender.VoteReward).String())
-													lbl.Color = col
-													return lbl.Layout(gtx)
-												}),
-											)
-										}
+									if pg.ticketSpender == nil || pg.ticketSpender.Type != txhelper.TxTypeVote {
+										return D{}
 									}
-									return D{}
+
+									// voted or revoked
+									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+										layout.Rigid(func(gtx C) D {
+											lbl := pg.Theme.Label(values.TextSize16, values.String(values.StrReward)+": ")
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}),
+										layout.Rigid(func(gtx C) D {
+											lbl := pg.Theme.Label(values.TextSize16, pg.wallet.ToAmount(pg.ticketSpender.VoteReward).String())
+											lbl.Color = col
+											return lbl.Layout(gtx)
+										}),
+									)
 								}
 							}
 							return D{}

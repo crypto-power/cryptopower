@@ -125,6 +125,7 @@ var (
 	TextSize28   = unit.Sp(28)
 	TextSize30   = unit.Sp(30)
 	TextSize34   = unit.Sp(34)
+	TextSize36   = unit.Sp(36)
 	TextSize32   = unit.Sp(32)
 	TextSize60   = unit.Sp(60)
 
@@ -145,49 +146,51 @@ var (
 
 	// MarginPaddingTransform is used to scale margin/padding for mobile view.
 	MarginPaddingTransform = func(isMobileView bool, size unit.Dp) unit.Dp {
-		if isMobileView {
-			switch size {
-			case MarginPadding24, MarginPadding30:
-				return MarginPadding16
-			case MarginPadding18, MarginPadding16:
-				return MarginPadding12
-			default:
-				return size
-			}
+		if !isMobileView {
+			return size
 		}
 
-		return size
+		switch size {
+		case MarginPadding420:
+			return MarginPadding340
+		case MarginPadding24, MarginPadding30, MarginPadding32:
+			return MarginPadding16
+		case MarginPadding18, MarginPadding16:
+			return MarginPadding12
+		default:
+			return size
+		}
 	}
 
 	// TextSizeTransform is used to scale text sizes for mobile view.
 	TextSizeTransform = func(isMobileView bool, size unit.Sp) unit.Sp {
-		if isMobileView {
-			switch size {
-			case TextSize16, TextSize18:
-				return TextSize14
-			case TextSize14:
-				return TextSize12
-			case TextSize20:
-				return TextSize16
-			case TextSize22:
-				return TextSize18
-			case TextSize24:
-				return TextSize20
-			case TextSize28:
-				return TextSize22
-			case TextSize30:
-				return TextSize24
-			case TextSize34:
-				return TextSize28
-			case TextSize32:
-				return TextSize28
-			case TextSize60:
-				return TextSize34
-			default:
-				return size
-			}
+		if !isMobileView {
+			return size
 		}
 
-		return size
+		switch size {
+		case TextSize16, TextSize18:
+			return TextSize14
+		case TextSize14:
+			return TextSize12
+		case TextSize20:
+			return TextSize16
+		case TextSize22:
+			return TextSize18
+		case TextSize24:
+			return TextSize20
+		case TextSize28:
+			return TextSize22
+		case TextSize30:
+			return TextSize24
+		case TextSize34:
+			return TextSize28
+		case TextSize32:
+			return TextSize28
+		case TextSize60:
+			return TextSize34
+		default:
+			return size
+		}
 	}
 )
