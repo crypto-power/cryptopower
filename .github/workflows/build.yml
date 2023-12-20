@@ -14,22 +14,24 @@ jobs:
         include:
           - os: linux
             arch: amd64
-          - os: linux
-            arch: arm64
-          - os: darwin
-            arch: amd64
-          - os: darwin
-            arch: arm64
-          - os: windows
-            arch: amd64
-          - os: windows
-            arch: 386
-          - os: freebsd
-            arch: amd64
-          - os: freebsd
-            arch: arm
+          # - os: linux
+          #   arch: arm64
+          # - os: darwin
+          #   arch: amd64
+          # - os: darwin
+          #   arch: arm64
+          # - os: windows
+          #   arch: amd64
+          # - os: windows
+          #   arch: 386
+          # - os: freebsd
+          #   arch: amd64
+          # - os: freebsd
+          #   arch: arm
     steps:
     - uses: actions/checkout@v2
+    - name: Copy instantswap file
+      run: cp ./libwallet/instantswap/instant_example.json ./libwallet/instantswap/instant.json
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
     - name: Build and push
