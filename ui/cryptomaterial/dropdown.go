@@ -438,3 +438,8 @@ func DisplayOneDropdown(dropdowns ...*DropDown) {
 		}
 	}
 }
+
+// Items returns the items of the dropdown.
+func (d *DropDown) Items() []DropDownItem {
+	return d.items
+}

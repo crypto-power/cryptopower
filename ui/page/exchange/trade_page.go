@@ -1,4 +1,4 @@
-package root
+package exchange
 
 import (
 	"gioui.org/layout"
@@ -8,9 +8,7 @@ import (
 	"github.com/crypto-power/cryptopower/dexc"
 	"github.com/crypto-power/cryptopower/ui/cryptomaterial"
 	"github.com/crypto-power/cryptopower/ui/load"
-	"github.com/crypto-power/cryptopower/ui/page/components"
 	"github.com/crypto-power/cryptopower/ui/page/dcrdex"
-	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/values"
 )
 
@@ -21,6 +19,7 @@ const (
 var tabTitles = []string{
 	values.String(values.StrDcrDex),
 	values.String(values.StrCentralizedExchange),
+	values.String(values.StrTradeHistory),
 }
 
 type TradePage struct {
@@ -52,8 +51,14 @@ func NewTradePage(l *load.Load) *TradePage {
 			},
 		},
 	}
+	filteredTabTitles := tabTitles
+	if l.IsMobileView() {
+		// Remove dcrdex for mobile view,
+		// dcrdex isn't supported on mobile yet
+		filteredTabTitles = filteredTabTitles[1:]
+	}
 
-	pg.tab = l.Theme.SegmentedControl(tabTitles, cryptomaterial.SegmentTypeGroup)
+	pg.tab = l.Theme.SegmentedControl(filteredTabTitles, cryptomaterial.SegmentTypeGroup)
 
 	rad := cryptomaterial.Radius(14)
 	pg.exchangeBtn = l.Theme.NewClickable(false)
@@ -78,10 +83,7 @@ func (pg *TradePage) ID() string {
 // Part of the load.Page interface.
 func (pg *TradePage) OnNavigatedTo() {
 	// on mobile view, we display the cex tab by default
-	if pg.IsMobileView() {
-		pg.tab.SetSelectedSegment(tabTitles[1])
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
-	} else if activeTab := pg.CurrentPage(); activeTab != nil {
+	if activeTab := pg.CurrentPage(); activeTab != nil {
 		activeTab.OnNavigatedTo()
 	} else {
 		pg.Display(dcrdex.NewDEXPage(pg.Load))
@@ -94,10 +96,24 @@ func (pg *TradePage) OnNavigatedTo() {
 // displayed.
 // Part of the load.Page interface.
 func (pg *TradePage) HandleUserInteractions() {
-	if pg.tab.SelectedIndex() == 0 && pg.CurrentPageID() != dcrdex.DCRDEXPageID {
-		pg.Display(dcrdex.NewDEXPage(pg.Load))
-	} else if pg.CurrentPageID() != exchange.CreateOrderPageID && pg.tab.SelectedIndex() == 1 {
-		pg.Display(exchange.NewCreateOrderPage(pg.Load))
+	selectedIndex := pg.tab.SelectedIndex()
+	if pg.IsMobileView() {
+		selectedIndex++ // Adjust index for mobile view
+	}
+
+	switch selectedIndex {
+	case 0: // DCRDEX
+		if pg.CurrentPageID() != dcrdex.DCRDEXPageID {
+			pg.Display(dcrdex.NewDEXPage(pg.Load))
+		}
+	case 1: // Centralized Exchange
+		if pg.CurrentPageID() != CreateOrderPageID {
+			pg.Display(NewCreateOrderPage(pg.Load))
+		}
+	case 2: // Trade History
+		if pg.CurrentPageID() != OrderHistoryPageID {
+			pg.Display(NewOrderHistoryPage(pg.Load))
+		}
 	}
 
 	pg.CurrentPage().HandleUserInteractions()
@@ -120,36 +136,5 @@ func (pg *TradePage) OnNavigatedFrom() {
 // to be eventually drawn on screen.
 // Part of the load.Page interface.
 func (pg *TradePage) Layout(gtx C) D {
-	if pg.IsMobileView() {
-		return pg.layoutMobile(gtx)
-	}
-	return pg.layoutDesktop(gtx)
-}
-
-func (pg *TradePage) layoutDesktop(gtx C) D {
-	return pg.tab.Layout(gtx, pg.CurrentPage().Layout)
-}
-
-func (pg *TradePage) layoutMobile(gtx C) D {
-	return components.UniformMobile(gtx, false, true, func(gtx C) D {
-		return layout.Flex{
-			Axis:      layout.Vertical,
-			Alignment: layout.Middle,
-		}.Layout(gtx,
-			layout.Rigid(pg.sectionNavTab),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: values.MarginPadding16}.Layout(gtx, func(gtx C) D {
-					return pg.CurrentPage().Layout(gtx)
-				})
-			}),
-		)
-	})
-}
-
-func (pg *TradePage) sectionNavTab(gtx C) D {
-	if pg.IsMobileView() { // Will DCRDEX be supported on mobile?
-		return D{}
-	}
-
-	return pg.tab.GroupTileLayout(gtx)
+	return pg.tab.Layout(gtx, pg.CurrentPage().Layout, pg.IsMobileView())
 }

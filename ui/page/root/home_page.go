@@ -16,6 +16,7 @@ import (
 	"github.com/crypto-power/cryptopower/ui/load"
 	"github.com/crypto-power/cryptopower/ui/modal"
 	"github.com/crypto-power/cryptopower/ui/page/components"
+	"github.com/crypto-power/cryptopower/ui/page/exchange"
 	"github.com/crypto-power/cryptopower/ui/page/governance"
 	"github.com/crypto-power/cryptopower/ui/page/send"
 	"github.com/crypto-power/cryptopower/ui/page/settings"
@@ -194,7 +195,7 @@ func (hp *HomePage) HandleUserInteractions() {
 	// like the overview page slider.
 	if hp.CurrentPageID() == WalletSelectorPageID && hp.navigationTab.SelectedTab() != values.String(values.StrWallets) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrWallets))
-	} else if hp.CurrentPageID() == TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
+	} else if hp.CurrentPageID() == exchange.TradePageID && hp.navigationTab.SelectedTab() != values.String(values.StrTrade) {
 		hp.navigationTab.SetSelectedTab(values.String(values.StrTrade))
 	}
 
@@ -280,7 +281,7 @@ func (hp *HomePage) displaySelectedPage(title string) {
 			// Attempt to initialize dex again.
 			hp.AssetsManager.InitializeDEX(hp.dexCtx)
 		}
-		pg = NewTradePage(hp.Load)
+		pg = exchange.NewTradePage(hp.Load)
 	case values.String(values.StrGovernance):
 		pg = governance.NewGovernancePage(hp.Load)
 	}
@@ -475,7 +476,7 @@ func (hp *HomePage) initBottomNavItems() {
 				Image:         hp.Theme.Icons.TradeIconActive,
 				ImageInactive: hp.Theme.Icons.TradeIconInactive,
 				Title:         values.String(values.StrTrade),
-				PageID:        TradePageID,
+				PageID:        exchange.TradePageID,
 			},
 			{
 				Clickable:     hp.Theme.NewClickable(true),
