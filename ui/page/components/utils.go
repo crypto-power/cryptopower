@@ -157,5 +157,5 @@ func LayoutOrderAmount(l *load.Load, gtx C, assetType string, amount float64) D 
 		convertedAmountStr = "Unsupported asset type"
 	}
 
-	return l.Theme.Label(values.TextSizeTransform(l.IsMobileView(), values.TextSize14), convertedAmountStr).Layout(gtx)
+	return l.Theme.Label(l.ConvertTextSize(values.TextSize16), convertedAmountStr).Layout(gtx)
 }

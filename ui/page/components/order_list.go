@@ -20,7 +20,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 		Radius: cryptomaterial.Radius(14),
 	}.Layout(gtx,
 		func(gtx C) D {
-			textSize14 := values.TextSizeTransform(l.IsMobileView(), values.TextSize14)
+			textSize16 := l.ConvertTextSize(values.TextSize16)
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{
@@ -80,14 +80,14 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 									if l.IsMobileView() {
 										return D{}
 									}
-									return l.Theme.Label(textSize14, orderItem.ExchangeServer.Server.CapFirstLetter()).Layout(gtx)
+									return l.Theme.Label(textSize16, orderItem.ExchangeServer.Server.CapFirstLetter()).Layout(gtx)
 								}),
 								layout.Rigid(func(gtx C) D {
 									return layout.Center.Layout(gtx, func(gtx C) D {
 										return HorizontalInset(values.MarginPadding8).Layout(gtx, l.Theme.Icons.Dot.Layout8dp)
 									})
 								}),
-								layout.Rigid(l.Theme.Label(textSize14, orderItem.Status.String()).Layout),
+								layout.Rigid(l.Theme.Label(textSize16, orderItem.Status.String()).Layout),
 								layout.Rigid(func(gtx C) D {
 									statusLayout := statusIcon(l, orderItem.Status)
 									if statusLayout == nil {
@@ -110,7 +110,7 @@ func OrderItemWidget(gtx C, l *load.Load, orderItem *instantswap.Order) D {
 										if l.IsMobileView() {
 											createdAt = fmt.Sprintf("%v", date)
 										}
-										timestamp := l.Theme.Label(textSize14, createdAt)
+										timestamp := l.Theme.Label(textSize16, createdAt)
 										timestamp.Color = l.Theme.Color.GrayText2
 										return timestamp.Layout(gtx)
 									}),
