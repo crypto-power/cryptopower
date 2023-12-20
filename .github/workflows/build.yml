@@ -28,32 +28,42 @@ jobs:
           #   arch: amd64
           # - os: freebsd
           #   arch: arm
-    steps:
+    env:
+      BUILDOS: ${{ matrix.os }}
+      BUILDARCH: ${{ matrix.arch }}
+      BINARY_NAME: cryptopower-${{ matrix.os }}-${{ matrix.arch }}
+      
+     steps:
     - uses: actions/checkout@v2
+
     - name: Copy instantswap file
       run: cp ./libwallet/instantswap/instant_example.json ./libwallet/instantswap/instant.json
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
+
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
         context: .
         file: ./reproduciblebuilds/Dockerfile
+        load: true
         platforms: ${{ matrix.os }}/${{ matrix.arch }}
         push: false
         tags: user/app:latest
         build-args: |
-          BUILDOS=${{ matrix.os }}
-          BUILDARCH=${{ matrix.arch }}
-          BUILDNAME=cryptopower-${{ matrix.os }}-${{ matrix.arch }}
+          BUILDOS=${{ env.BUILDOS }}
+          BUILDARCH=${{ env.BUILDARCH }}
+          BUILDNAME=${{ env.BINARY_NAME }}
+
     - name: Create Container
       run: |
         docker create --name temp-container user/app:latest
-        docker cp temp-container:/app/myapp-linux-amd64 ./myapp-linux-amd64
+        docker cp temp-container:/app/${{ env.BINARY_NAME }} ./${{ env.BINARY_NAME }}
         docker rm temp-container
 
     - name: Upload Binary
       uses: actions/upload-artifact@v2
       with:
-        name: myapp-binary
-        path: ./myapp-linux-amd64
+        name: ${{ env.BINARY_NAME }}
+        path: ./${{ env.BINARY_NAME }}
